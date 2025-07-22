@@ -7,7 +7,7 @@ using System.Windows.Forms;
 namespace SP_GridTypeView
 {
     [DefaultProperty("TextBoxFontSize")]
-    public class PropertyCollectionView : UserControl
+    public partial class PropertyCollectionView : UserControl
     {
         private TableLayoutPanel tableLayoutPanel;
         private Panel scrollPanel;
@@ -75,17 +75,21 @@ namespace SP_GridTypeView
         public PropertyCollectionView()
         {
             InitializeComponent();
-
+            InitializeComponentUser();
             var properties = new PropertyCollection();
-            properties.Add(new PropertyBase("이름", "홍길동"));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
+            properties.Add(new TitleOnlyProperty("Common"));
+            properties.Add(new PropertyBase("ROI Visible", "Enable"));
+            properties.Add(new PropertyBase("Cross Visible", "Enable"));
+            properties.Add(new TitleOnlyProperty("Lens Scale"));
+            properties.Add(new PropertyBase("Lens Scale X", "1.000"));
+            properties.Add(new PropertyBase("Lens Scale Y", "1.000"));
+            properties.Add(new TitleOnlyProperty("Gain & Offset"));
+            properties.Add(new PropertyBase("Gain", "1.000"));
+            properties.Add(new PropertyBase("Offset", "0.000"));
             SetProperties(properties);
         }
 
-        private void InitializeComponent()
+        private void InitializeComponentUser()
         {
             scrollPanel = new Panel
             {
@@ -100,7 +104,7 @@ namespace SP_GridTypeView
                 ColumnCount = 2,
                 RowCount = 0,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single // 외곽선 유지
             };
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
@@ -120,7 +124,8 @@ namespace SP_GridTypeView
             tableLayoutPanel.RowCount = 0;
             _textBoxPropertyMap.Clear();
             _currentProperties = properties;
-            InitialHeight= Math.Max(InitialHeight, this.Height);
+            InitialHeight = Math.Max(InitialHeight, this.Height);
+
             if (properties == null)
             {
                 tableLayoutPanel.ResumeLayout();
@@ -135,39 +140,88 @@ namespace SP_GridTypeView
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
 
-                var titleLabel = new Label
+                if (prop is TitleOnlyProperty)
                 {
-                    Text = prop.Title,
-                    Dock = DockStyle.Fill,
-                    TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                    AutoSize = false,
-                    Margin = new Padding(2),
-                    Padding = new Padding(0)
-                };
+                    var titleLabel = new Label
+                    {
+                        Text = prop.Title,
+                        Dock = DockStyle.Fill,
+                        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(2),
+                        Padding = new Padding(0),
+                        Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold), // 타이틀을 강조
+                        BackColor = Color.LightGray // 타이틀 배경색 추가
+                    };
 
-                var valueTextBox = new TextBox
+                    tableLayoutPanel.Controls.Add(titleLabel, 0, row);
+                    tableLayoutPanel.SetColumnSpan(titleLabel, 2); // 두 열 병합
+                }
+                else if (prop is ComboBoxProperty comboBoxProperty)
                 {
-                    Text = prop.Value?.ToString() ?? string.Empty,
-                    Dock = DockStyle.Fill,
-                    Margin = new Padding(0),
-                    BorderStyle = BorderStyle.FixedSingle,
-                    Font = _textBoxFont,
-                    TextAlign = _textBoxTextAlign
-                };
+                    var titleLabel = new Label
+                    {
+                        Text = prop.Title,
+                        Dock = DockStyle.Fill,
+                        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(2),
+                        Padding = new Padding(0)
+                    };
 
-                valueTextBox.MinimumSize = new Size(0, textBoxHeight);
-                valueTextBox.Height = textBoxHeight;
+                    var comboBox = new ComboBox
+                    {
+                        Dock = DockStyle.Fill,
+                        Margin = new Padding(0),
+                        Font = _textBoxFont,
+                        DropDownStyle = ComboBoxStyle.DropDownList,
+                        DataSource = comboBoxProperty.Options,
+                        SelectedItem = comboBoxProperty.Value?.ToString()
+                    };
 
-                tableLayoutPanel.Controls.Add(titleLabel, 0, row);
-                tableLayoutPanel.Controls.Add(valueTextBox, 1, row);
+                    comboBox.SelectedIndexChanged += (sender, args) =>
+                    {
+                        comboBoxProperty.SetValue(comboBox.SelectedItem.ToString());
+                    };
 
-                _textBoxPropertyMap.Add(Tuple.Create(valueTextBox, prop));
+                    tableLayoutPanel.Controls.Add(titleLabel, 0, row);
+                    tableLayoutPanel.Controls.Add(comboBox, 1, row);
+                }
+                else
+                {
+                    var titleLabel = new Label
+                    {
+                        Text = prop.Title,
+                        Dock = DockStyle.Fill,
+                        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(2),
+                        Padding = new Padding(0)
+                    };
+
+                    var valueTextBox = new TextBox
+                    {
+                        Text = prop.Value?.ToString() ?? string.Empty,
+                        Dock = DockStyle.Fill,
+                        Margin = new Padding(0),
+                        BorderStyle = BorderStyle.FixedSingle,
+                        Font = _textBoxFont,
+                        TextAlign = _textBoxTextAlign
+                    };
+
+                    valueTextBox.MinimumSize = new Size(0, textBoxHeight);
+                    valueTextBox.Height = textBoxHeight;
+
+                    tableLayoutPanel.Controls.Add(titleLabel, 0, row);
+                    tableLayoutPanel.Controls.Add(valueTextBox, 1, row);
+                    _textBoxPropertyMap.Add(Tuple.Create(valueTextBox, prop));
+                }
 
                 row++;
             }
 
             int totalRows = properties.Count;
-            int MinRows= (int)Math.Max(MinVisibleRows, Math.Max(this.Height, InitialHeight) / textBoxHeight);
+            int MinRows = (int)Math.Max(MinVisibleRows, Math.Max(this.Height, InitialHeight) / textBoxHeight);
             int visibleRows = Math.Min(totalRows, MinRows);
             int neededHeight = visibleRows * textBoxHeight;
 

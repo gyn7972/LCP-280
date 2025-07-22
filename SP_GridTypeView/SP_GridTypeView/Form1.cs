@@ -13,6 +13,7 @@ namespace SP_GridTypeView
     public partial class Form1 : Form
     {
         private PropertyCollectionView propertyCollectionView;
+        private WaferMapView waferMapView;
 
         PropertyBase MYName = new PropertyBase("이름", "홍길동");
 
@@ -23,41 +24,63 @@ namespace SP_GridTypeView
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            // 예시 데이터 생성
+            // WaferMapView 초기화
+            waferMapView = new WaferMapView
+            {
+                Dock = DockStyle.Fill
+            };
+            Controls.Add(waferMapView);
+
+            // WaferMap 데이터 생성
+            var items = GenerateWaferMapDataForImage();
+
+            // WaferMapView에 데이터 설정
+            waferMapView.SetItems(items);
+
+            // PropertyCollectionView 예시 데이터 생성
             var properties = new PropertyCollection();
-            properties.Add(MYName);
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
-            properties.Add(new PropertyBase("전화번호", "010-1234-5678"));
-            properties.Add(new PropertyBase("상태", "활성"));
-            properties.Add(new PropertyBase("설명", "이것은 예시 데이터입니다."));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
-            properties.Add(new PropertyBase("전화번호", "010-1234-5678"));
-            properties.Add(new PropertyBase("상태", "활성"));
-            properties.Add(new PropertyBase("설명", "이것은 예시 데이터입니다."));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
-            properties.Add(new PropertyBase("전화번호", "010-1234-5678"));
-            properties.Add(new PropertyBase("상태", "활성"));
-            properties.Add(new PropertyBase("설명", "이것은 예시 데이터입니다."));
+            properties.Add(new TitleOnlyProperty("Common"));
+            properties.Add(new ComboBoxProperty("ROI Visible", "Enable", new List<string> { "Enable", "Disable" }));
+            properties.Add(new ComboBoxProperty("Cross Visible", "Enable", new List<string> { "Enable", "Disable" }));
+            properties.Add(new TitleOnlyProperty("Lens Scale"));
+            properties.Add(new PropertyBase("Lens Scale X", "1.000"));
+            properties.Add(new PropertyBase("Lens Scale Y", "1.000"));
+            properties.Add(new TitleOnlyProperty("Gain & Offset"));
+            properties.Add(new PropertyBase("Gain", "1.000"));
+            properties.Add(new PropertyBase("Offset", "0.000"));
+
             // PropertyCollectionView에 데이터 바인딩
             propertyCollectionView1.SetProperties(properties);
+            this.propertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+    | System.Windows.Forms.AnchorStyles.Left)
+    | System.Windows.Forms.AnchorStyles.Right)));
+        }
+
+        private List<WaferMapItem> GenerateWaferMapDataForImage()
+        {
+            var items = new List<WaferMapItem>();
+            int radius = 5; // WaferMap의 반지름
+            int center = radius; // 중심 좌표
+
+            for (int y = 0; y <= 2 * radius; y++)
+            {
+                for (int x = 0; x <= 2 * radius; x++)
+                {
+                    // 원형 영역 계산
+                    int dx = x - center;
+                    int dy = y - center;
+                    if (dx * dx + dy * dy <= radius * radius)
+                    {
+                        // 작업 유무 설정 (녹색 영역)
+                        bool isProcessed = (x >= center + 2 && x <= center + 3) && (y >= center - 1 && y <= center + 1);
+
+                        // BinRank는 예시로 모두 1로 설정
+                        items.Add(new WaferMapItem(x, y, 1, isProcessed));
+                    }
+                }
+            }
+
+            return items;
         }
     }
 }

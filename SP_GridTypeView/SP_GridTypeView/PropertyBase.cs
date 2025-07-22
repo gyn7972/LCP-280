@@ -32,4 +32,16 @@ namespace SP_GridTypeView
             Value = text;
         }
     }
+
+    public class TitleOnlyProperty : PropertyBase
+    {
+        public TitleOnlyProperty(string title) : base(title, null)
+        {
+        }
+
+        public override void SetValue(string text)
+        {
+            // Value를 설정하지 않음
+        }
+    }
 }

@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ComboBoxProperty.cs" />
     <Compile Include="Custom\DeleteInnerBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -54,6 +55,12 @@
     </Compile>
     <Compile Include="Custom\DeleteLogoBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="PropertyCollectionView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="PropertyCollectionView.Designer.cs">
+      <DependentUpon>PropertyCollectionView.cs</DependentUpon>
     </Compile>
     <Compile Include="TopContentsLoginModeControl.cs">
       <SubType>UserControl</SubType>
@@ -112,7 +119,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />
     <Compile Include="PropertyCollection.cs" />
-    <Compile Include="PropertyCollectionView.cs">
+    <Compile Include="WaferMapItem.cs" />
+    <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <EmbeddedResource Include="TopContentsLoginModeControl.resx">
