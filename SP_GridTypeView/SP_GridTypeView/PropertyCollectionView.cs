@@ -75,14 +75,6 @@ namespace SP_GridTypeView
         public PropertyCollectionView()
         {
             InitializeComponent();
-
-            var properties = new PropertyCollection();
-            properties.Add(new PropertyBase("이름", "홍길동"));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
-            SetProperties(properties);
         }
 
         private void InitializeComponent()

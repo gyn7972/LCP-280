@@ -16,6 +16,8 @@ namespace SP_GridTypeView
             this.StartPosition = FormStartPosition.CenterScreen; // 화면 중앙에 위치
             this.WindowState = FormWindowState.Normal;           // 일반 상태로 시작
             this.Load += MainForm_Load;
+
+            
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -76,5 +78,7 @@ namespace SP_GridTypeView
                 }
             };
         }
+
+
     }
 }

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.propertyCollectionView3 = new IOPropertyCollectionView();
             this.SuspendLayout();
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -35,10 +36,19 @@
             this.Name = "MainForm";
             this.Text = "MainForm";
             this.ResumeLayout(false);
-
+            // 
+            // propertyCollectionView2      
+            // 
+            this.propertyCollectionView3.Location = new System.Drawing.Point(50, 50);
+            this.propertyCollectionView3.Name = "propertyCollectionView";
+            this.propertyCollectionView3.Size = new System.Drawing.Size(404, 193);
+            this.propertyCollectionView3.TabIndex = 1;
+            this.propertyCollectionView3.TextBoxFont = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.propertyCollectionView3.TextBoxFontSize = 12F;
         }
 
         #endregion
+        private IOPropertyCollectionView propertyCollectionView3;
     }
 }
 

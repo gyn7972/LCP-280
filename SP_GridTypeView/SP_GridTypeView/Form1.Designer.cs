@@ -28,8 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.propertyCollectionView1 = new SP_GridTypeView.PropertyCollectionView();
-            this.propertyCollectionView2 = new SP_GridTypeView.PropertyCollectionView();
+            this.propertyCollectionView1 = new SP_GridTypeView.IOPropertyCollectionView();
             this.SuspendLayout();
             // 
             // propertyCollectionView1
@@ -41,21 +40,11 @@
             this.propertyCollectionView1.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.propertyCollectionView1.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
-            // propertyCollectionView2
-            // 
-            this.propertyCollectionView2.Location = new System.Drawing.Point(164, 115);
-            this.propertyCollectionView2.Name = "propertyCollectionView2";
-            this.propertyCollectionView2.Size = new System.Drawing.Size(404, 193);
-            this.propertyCollectionView2.TabIndex = 1;
-            this.propertyCollectionView2.TextBoxFont = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.propertyCollectionView2.TextBoxFontSize = 12F;
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1162, 531);
-            this.Controls.Add(this.propertyCollectionView2);
             this.Controls.Add(this.propertyCollectionView1);
             this.Name = "Form1";
             this.Text = "Form1";
@@ -66,8 +55,7 @@
 
         #endregion
 
-        private PropertyCollectionView propertyCollectionView1;
-        private PropertyCollectionView propertyCollectionView2;
+        private IOPropertyCollectionView propertyCollectionView1;
     }
 }
 

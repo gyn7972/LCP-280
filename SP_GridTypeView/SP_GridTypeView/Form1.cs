@@ -12,10 +12,6 @@ namespace SP_GridTypeView
 {
     public partial class Form1 : Form
     {
-        private PropertyCollectionView propertyCollectionView;
-
-        PropertyBase MYName = new PropertyBase("이름", "홍길동");
-
         public Form1()
         {
             InitializeComponent();
@@ -25,39 +21,12 @@ namespace SP_GridTypeView
         {
             // 예시 데이터 생성
             var properties = new PropertyCollection();
-            properties.Add(MYName);
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
-            properties.Add(new PropertyBase("전화번호", "010-1234-5678"));
-            properties.Add(new PropertyBase("상태", "활성"));
-            properties.Add(new PropertyBase("설명", "이것은 예시 데이터입니다."));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
-            properties.Add(new PropertyBase("전화번호", "010-1234-5678"));
-            properties.Add(new PropertyBase("상태", "활성"));
-            properties.Add(new PropertyBase("설명", "이것은 예시 데이터입니다."));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new DoubleProperty("점수", 95.5));
-            properties.Add(new PropertyBase("나이", "30세"));
-            properties.Add(new PropertyBase("성별", "남성"));
-            properties.Add(new PropertyBase("주소", "서울시 강남구 역삼동"));
-            properties.Add(new PropertyBase("전화번호", "010-1234-5678"));
-            properties.Add(new PropertyBase("상태", "활성"));
-            properties.Add(new PropertyBase("설명", "이것은 예시 데이터입니다."));
+            properties.Add(new PropertyState("X00", "X00 Item Name", true));
+            properties.Add(new PropertyState("X01", "X01 Item Name", true));
+            properties.Add(new PropertyState("X02", "X02 Item Name", false));
+            propertyCollectionView1.SetPropertiesWithState(properties);
+
             // PropertyCollectionView에 데이터 바인딩
-            propertyCollectionView1.SetProperties(properties);
         }
     }
 }
