@@ -75,6 +75,8 @@ namespace SP_GridTypeView
         public PropertyCollectionView()
         {
             InitializeComponent();
+<<<<<<< HEAD
+=======
             InitializeComponentUser();
             var properties = new PropertyCollection();
             properties.Add(new TitleOnlyProperty("Common"));
@@ -87,6 +89,7 @@ namespace SP_GridTypeView
             properties.Add(new PropertyBase("Gain", "1.000"));
             properties.Add(new PropertyBase("Offset", "0.000"));
             SetProperties(properties);
+>>>>>>> origin/master
         }
 
         private void InitializeComponentUser()

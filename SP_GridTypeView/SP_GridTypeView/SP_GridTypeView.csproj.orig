@@ -59,12 +59,21 @@
     <Compile Include="Custom\DeleteLogoBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+<<<<<<< HEAD
     <Compile Include="IOPropertyCollectionView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="PropertyCollectionPart.cs" />
+    <Compile Include="PropertyCollectionConfig.cs" />
+    <Compile Include="PropertyState.cs" />
+=======
+    <Compile Include="PropertyCollectionView.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="PropertyCollectionView.Designer.cs">
       <DependentUpon>PropertyCollectionView.cs</DependentUpon>
     </Compile>
+>>>>>>> origin/master
     <Compile Include="TopContentsLoginModeControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

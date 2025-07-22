@@ -12,7 +12,14 @@ namespace SP_GridTypeView
 {
     public partial class Form1 : Form
     {
+<<<<<<< HEAD
+=======
+        private PropertyCollectionView propertyCollectionView;
         private WaferMapView waferMapView;
+
+        PropertyBase MYName = new PropertyBase("이름", "홍길동");
+
+>>>>>>> origin/master
         public Form1()
         {
             InitializeComponent();
@@ -35,6 +42,14 @@ namespace SP_GridTypeView
 
             // PropertyCollectionView 예시 데이터 생성
             var properties = new PropertyCollection();
+<<<<<<< HEAD
+            properties.Add(new PropertyState("X00", "X00 Item Name", true));
+            properties.Add(new PropertyState("X01", "X01 Item Name", true));
+            properties.Add(new PropertyState("X02", "X02 Item Name", false));
+            propertyCollectionView1.SetPropertiesWithState(properties);
+
+            // PropertyCollectionView에 데이터 바인딩
+=======
             properties.Add(new TitleOnlyProperty("Common"));
             properties.Add(new ComboBoxProperty("ROI Visible", "Enable", new List<string> { "Enable", "Disable" }));
             properties.Add(new ComboBoxProperty("Cross Visible", "Enable", new List<string> { "Enable", "Disable" }));
@@ -46,6 +61,7 @@ namespace SP_GridTypeView
             properties.Add(new PropertyBase("Offset", "0.000"));
 
             // PropertyCollectionView에 데이터 바인딩
+            propertyCollectionView1.SetProperties(properties);
             this.propertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
@@ -76,6 +92,7 @@ namespace SP_GridTypeView
             }
 
             return items;
+>>>>>>> origin/master
         }
     }
 }
