@@ -25,7 +25,8 @@ namespace SP_GridTypeView
         private CustomBorderLabel _systemMessageLabel;
         private CustomBorderLabel _operationRecipeLabel;
 
-        private int _labelSize;
+        private int _labelSize = 8;
+        private int _labelMargin = 2;
 
         private IndividualMenuButton _AlarmClearButton;
 
@@ -37,7 +38,6 @@ namespace SP_GridTypeView
         public TopContentsStatusControl()
         {
             InitializeComponent();
-            _labelSize = 8;
             this.BackColor = Color.White;
             InitTableLayoutPanel();
             SetControlValue();
@@ -75,9 +75,10 @@ namespace SP_GridTypeView
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Fill,
                     Font = new Font("Arial", _labelSize, FontStyle.Bold),
+                    BorderColor = Color.FromArgb(208, 206, 206)
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_mesMessageTitleLabel, 0, 0);
-                _mesMessageTitleLabel.Margin = new Padding(2);
+                _mesMessageTitleLabel.Margin = new Padding(_labelMargin);
 
                 _systemMessageTitleLabel = new CustomBorderLabel
                 {
@@ -85,10 +86,10 @@ namespace SP_GridTypeView
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Fill,
                     Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                    Size = new Size(100, 25)
+                    BorderColor = Color.FromArgb(208, 206, 206)
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_systemMessageTitleLabel, 0, 1);
-                _systemMessageTitleLabel.Margin = new Padding(2);
+                _systemMessageTitleLabel.Margin = new Padding(_labelMargin);
 
                 _operationRecipeTitleLabel = new CustomBorderLabel
                 {
@@ -96,9 +97,10 @@ namespace SP_GridTypeView
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Fill,
                     Font = new Font("Arial", _labelSize, FontStyle.Bold),
+                    BorderColor = Color.FromArgb(208, 206, 206)
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_operationRecipeTitleLabel, 0, 2);
-                _operationRecipeTitleLabel.Margin = new Padding(2);
+                _operationRecipeTitleLabel.Margin = new Padding(_labelMargin);
             }
             {
                 _mesMessageLabel = new CustomBorderLabel
@@ -111,7 +113,7 @@ namespace SP_GridTypeView
                     BackColor = Color.Black
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_mesMessageLabel, 1, 0);
-                _mesMessageLabel.Margin = new Padding(2);
+                _mesMessageLabel.Margin = new Padding(_labelMargin);
 
                 _systemMessageLabel = new CustomBorderLabel
                 {
@@ -123,7 +125,7 @@ namespace SP_GridTypeView
                     BackColor = Color.Black
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_systemMessageLabel, 1, 1);
-                _systemMessageLabel.Margin = new Padding(2);
+                _systemMessageLabel.Margin = new Padding(_labelMargin);
 
                 _operationRecipeLabel = new CustomBorderLabel
                 {
@@ -135,7 +137,7 @@ namespace SP_GridTypeView
                     BackColor = Color.Black
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_operationRecipeLabel, 1, 2);
-                _operationRecipeLabel.Margin = new Padding(2);
+                _operationRecipeLabel.Margin = new Padding(_labelMargin);
             }
         }
 

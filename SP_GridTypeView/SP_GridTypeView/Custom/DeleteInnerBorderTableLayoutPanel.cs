@@ -4,17 +4,17 @@ using System.Windows.Forms;
 
 namespace SP_GridTypeView
 {
-    public class BorderTableLayoutPanel : TableLayoutPanel
+    public class DeleteInnerBorderTableLayoutPanel : TableLayoutPanel
     {
         public Color OuterBorderColor { get; set; } = Color.Black;
         public int OuterBorderWidth { get; set; } = 1;
 
         public Color InnerBorderColor { get; set; } = Color.White;
-        public int InnerBorderWidth { get; set; } = 1;
+        public int InnerBorderWidth { get; set; } = 2;
 
         public bool ShowInnerBorder { get; set; } = false;
 
-        public BorderTableLayoutPanel()
+        public DeleteInnerBorderTableLayoutPanel()
         {
             this.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
         }

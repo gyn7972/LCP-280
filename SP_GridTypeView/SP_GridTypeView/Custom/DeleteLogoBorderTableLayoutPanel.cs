@@ -3,12 +3,12 @@ using System.Windows.Forms;
 
 namespace SP_GridTypeView
 {
-    public class CustomBorderTableLayoutPanel : TableLayoutPanel
+    public class DeleteLogoBorderTableLayoutPanel : TableLayoutPanel
     {
         public Color BorderColor { get; set; } = Color.Black;
         public int BorderWidth { get; set; } = 1;
 
-        public CustomBorderTableLayoutPanel()
+        public DeleteLogoBorderTableLayoutPanel()
         {
             this.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
             this.DoubleBuffered = true;

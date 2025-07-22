@@ -18,12 +18,14 @@ namespace SP_GridTypeView
     public partial class TopContentsEquipmentControl : UserControl
     {
         #region Field
-        private Label _machineName;
-        private Label _dateLabel;
-        private Label _timeLabel;
-        private Label _buildVerLabel;
+        private CustomBorderLabel _machineName;
+        private CustomBorderLabel _dateLabel;
+        private CustomBorderLabel _timeLabel;
+        private CustomBorderLabel _buildVerLabel;
         private Timer _timer;
-        private int _labelSize;
+        private int _labelSize = 8;
+        private int _labelMargin = 3;
+
         #endregion
         #region Property
         #endregion
@@ -31,7 +33,6 @@ namespace SP_GridTypeView
         public TopContentsEquipmentControl()
         {
             InitializeComponent();
-            _labelSize = 8;
             this.BackColor = Color.White;
             InitTableLayoutPanel();
             SetControlValue();
@@ -83,50 +84,56 @@ namespace SP_GridTypeView
             tableLayoutContentsEquipmentPanel.SetRowSpan(pictureBox, 2);
 
             // (0, 0) Date Label
-            _machineName = new Label
+            _machineName = new CustomBorderLabel
             {
                 Text = "Machine Name",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill,
                 Font = new Font("Arial", _labelSize, FontStyle.Bold),
                 AutoSize = false,
-                Size = new Size(5, 5)
-
+                BorderColor = Color.White
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_machineName, 0, 2);
+            _machineName.Margin = new Padding(_labelMargin);
 
             // (1,0) Date Label
-            _dateLabel = new Label
+            _dateLabel = new CustomBorderLabel
             {
                 Text = "",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill,
                 Font = new Font("Arial", _labelSize, FontStyle.Bold),
                 AutoSize = false,
-                Size = new Size(5, 5)
-
+                BorderColor = Color.White
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_dateLabel, 1, 0);
+            _dateLabel.Margin = new Padding(_labelMargin);
 
             // (1,1) Time Label
-            _timeLabel = new Label
+            _timeLabel = new CustomBorderLabel
             {
                 Text = "",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill,
-                Font = new Font("Arial", _labelSize, FontStyle.Bold)
+                Font = new Font("Arial", _labelSize, FontStyle.Bold),
+                AutoSize = false,
+                BorderColor = Color.White
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_timeLabel, 1, 1);
+            _timeLabel.Margin = new Padding(_labelMargin);
 
             // (1,2) BuildVer Label
-            _buildVerLabel = new Label
+            _buildVerLabel = new CustomBorderLabel
             {
                 Text = "Build Ver.",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill,
-                Font = new Font("Arial", _labelSize, FontStyle.Bold)
+                Font = new Font("Arial", _labelSize, FontStyle.Bold),
+                AutoSize = false,
+                BorderColor = Color.White
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_buildVerLabel, 1, 2);
+            _buildVerLabel.Margin = new Padding(_labelMargin);
         }
 
         private void SetTopContentsEquipmentValue(string machineName, string buildVersion)
@@ -156,6 +163,7 @@ namespace SP_GridTypeView
             // tableLayoutMenuButtonPanel 크기 조정
             this.Size = new Size(panelWidth, panelHeight);
             tableLayoutContentsEquipmentPanel.Size = new Size(panelWidth, panelHeight);
+            tableLayoutContentsEquipmentPanel.ClientSize = new Size(panelWidth, panelHeight);
 
             // 좌측 정렬, 위아래 중앙 정렬
             int x = 0; // 좌측

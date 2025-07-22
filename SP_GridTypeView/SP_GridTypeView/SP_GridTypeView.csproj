@@ -46,13 +46,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Custom\BorderTableLayoutPanel.cs">
+    <Compile Include="Custom\DeleteInnerBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Custom\CustomBorderLabel.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Custom\CustomBorderTableLayoutPanel.cs">
+    <Compile Include="Custom\DeleteLogoBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="TopContentsLoginModeControl.cs">

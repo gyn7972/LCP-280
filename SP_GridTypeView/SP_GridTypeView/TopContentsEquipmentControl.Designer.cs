@@ -30,7 +30,7 @@ namespace SP_GridTypeView
         /// </summary>
         private void InitializeComponent()
         {
-            this.tableLayoutContentsEquipmentPanel = new CustomBorderTableLayoutPanel();
+            this.tableLayoutContentsEquipmentPanel = new DeleteLogoBorderTableLayoutPanel();
             this.SuspendLayout();
             // 
             // tableLayoutContentsEquipmentPanel
@@ -65,6 +65,6 @@ namespace SP_GridTypeView
 
         #endregion
 
-        private CustomBorderTableLayoutPanel tableLayoutContentsEquipmentPanel;
+        private DeleteLogoBorderTableLayoutPanel tableLayoutContentsEquipmentPanel;
     }
 }

@@ -7,7 +7,7 @@ namespace SP_GridTypeView
 {
     public class CustomBorderLabel : Label
     {
-        private Color borderColor = Color.FromArgb(208, 206, 206);
+        private Color borderColor;
         [Category("Appearance")]
         public Color BorderColor
         {

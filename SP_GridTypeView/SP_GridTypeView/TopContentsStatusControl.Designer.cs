@@ -31,7 +31,7 @@ namespace SP_GridTypeView
         /// </summary>
         private void InitializeComponent()
         {
-            this.tableLayoutContentsStatusPanel = new BorderTableLayoutPanel();
+            this.tableLayoutContentsStatusPanel = new DeleteInnerBorderTableLayoutPanel();
             this.SuspendLayout();
             // 
             // tableLayoutContentsStatusPanel
@@ -66,6 +66,6 @@ namespace SP_GridTypeView
 
         #endregion
 
-        private BorderTableLayoutPanel tableLayoutContentsStatusPanel;
+        private DeleteInnerBorderTableLayoutPanel tableLayoutContentsStatusPanel;
     }
 }
