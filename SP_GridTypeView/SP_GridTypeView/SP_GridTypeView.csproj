@@ -62,6 +62,9 @@
     <Compile Include="IOPropertyCollectionView.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="IOPropertyCollectionView.Designer.cs">
+      <DependentUpon>IOPropertyCollectionView.cs</DependentUpon>
+    </Compile>
     <Compile Include="PropertyCollectionView.cs">
       <SubType>UserControl</SubType>
     </Compile>

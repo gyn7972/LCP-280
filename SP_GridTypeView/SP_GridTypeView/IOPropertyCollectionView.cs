@@ -1,11 +1,18 @@
+ï»¿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace SP_GridTypeView
 {
-    public class IOPropertyCollectionView : PropertyCollectionView
+    public partial class IOPropertyCollectionView : PropertyCollectionView
     {
-        public IOPropertyCollectionView() : base() { }
+        private Label _selectedNameLabel = null;
+
+        public IOPropertyCollectionView() : base()
+        {
+            InitializeComponent();
+        }
 
         public new void SetProperties(PropertyCollection properties)
         {
@@ -16,49 +23,136 @@ namespace SP_GridTypeView
             tableLayoutPanel.RowStyles.Clear();
             tableLayoutPanel.RowCount = 0;
 
-            // State ¿­ Ãß°¡
-            tableLayoutPanel.ColumnCount = 3;
-            if (tableLayoutPanel.ColumnStyles.Count < 3)
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
-            tableLayoutPanel.ColumnStyles[0].Width = 40F;
-            tableLayoutPanel.ColumnStyles[1].Width = 40F;
-            tableLayoutPanel.ColumnStyles[2].Width = 20F;
+            int textBoxHeight = TextRenderer.MeasureText("A", _textBoxFont).Height + 8;
+
+            var headerProp = properties.OfType<TitleOnlyProperty>().FirstOrDefault();
+            int colCount = headerProp != null ? headerProp.Titles.Length : 2;
+            tableLayoutPanel.ColumnCount = colCount;
+            tableLayoutPanel.ColumnStyles.Clear();
+
+            // ì—´ ë¹„ìœ¨ ì„¤ì •
+            if (colCount == 2)
+            {
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F)); // Name
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F)); // State
+            }
+            else if (colCount == 3)
+            {
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F)); // No
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F)); // Name
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F)); // State
+            }
+            else
+            {
+                // ê¸°ë³¸ ê· ë“± ë¶„í• 
+                for (int i = 0; i < colCount; i++)
+                    tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / colCount));
+            }
 
             int row = 0;
-            foreach (var prop in properties)
+            if (headerProp != null)
             {
                 tableLayoutPanel.RowCount++;
-                tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
-
-                var titleLabel = new Label
+                tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
+                for (int i = 0; i < colCount; i++)
                 {
-                    Text = prop.Title,
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    AutoSize = false,
-                    Margin = new Padding(0),
-                    Padding = new Padding(0),
-                    BackColor = Color.LightGray
-                };
+                    var headerLabel = new Label
+                    {
+                        Text = headerProp.Titles[i],
+                        Dock = DockStyle.Fill,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                        BackColor = Color.LightGray,
+                        BorderStyle = BorderStyle.FixedSingle,
+                        AutoSize = false,
+                        Margin = new Padding(0),
+                        Padding = new Padding(0)
+                    };
+                    tableLayoutPanel.Controls.Add(headerLabel, i, row);
+                }
+                row++;
+            }
 
-                var valueLabel = new Label
+            foreach (var prop in properties)
+            {
+                if (prop is TitleOnlyProperty) continue;
+
+                tableLayoutPanel.RowCount++;
+                tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
+
+                int colIdx = 0;
+                Label nameLabel = null;
+
+                if (headerProp != null && colCount == 3)
                 {
-                    Text = (string)prop.Value,
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    AutoSize = false,
-                    Margin = new Padding(0),
-                    Padding = new Padding(0),
-                    BackColor = Color.White
-                };
+                    // No ì…€
+                    var noLabel = new Label
+                    {
+                        Text = prop.Title,
+                        Dock = DockStyle.Fill,
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(0),
+                        Padding = new Padding(0),
+                        BorderStyle = BorderStyle.FixedSingle,
+                        BackColor = Color.LightGray // No. ì—´ ë°°ê²½ìƒ‰ì„ íšŒìƒ‰ìœ¼ë¡œ ì§€ì •
+                    };
+                    tableLayoutPanel.Controls.Add(noLabel, colIdx++, row);
 
-                // State¸¦ Ç¥½ÃÇÒ PictureBox·Î º¯°æ
+                    // Name ì…€
+                    nameLabel = new Label
+                    {
+                        Text = prop.Value?.ToString() ?? "",
+                        Dock = DockStyle.Fill,
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(0),
+                        Padding = new Padding(0),
+                        BorderStyle = BorderStyle.FixedSingle,
+                        BackColor = Color.White
+                    };
+                    // í´ë¦­ ì´ë²¤íŠ¸ ì¶”ê°€
+                    nameLabel.Click += (s, e) =>
+                    {
+                        if (_selectedNameLabel != null)
+                            _selectedNameLabel.BackColor = Color.White;
+                        nameLabel.BackColor = Color.Yellow;
+                        _selectedNameLabel = nameLabel;
+                    };
+                    tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
+                }
+                else
+                {
+                    // Name ì…€ë§Œ
+                    nameLabel = new Label
+                    {
+                        Text = prop.Title,
+                        Dock = DockStyle.Fill,
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(0),
+                        Padding = new Padding(0),
+                        BorderStyle = BorderStyle.FixedSingle,
+                        BackColor = Color.White
+                    };
+                    nameLabel.Click += (s, e) =>
+                    {
+                        if (_selectedNameLabel != null)
+                            _selectedNameLabel.BackColor = Color.White;
+                        nameLabel.BackColor = Color.Yellow;
+                        _selectedNameLabel = nameLabel;
+                    };
+                    tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
+                }
+
+                // State ì…€
                 var statePictureBox = new PictureBox
                 {
                     Dock = DockStyle.Fill,
                     Margin = new Padding(0),
                     Padding = new Padding(0),
                     SizeMode = PictureBoxSizeMode.StretchImage,
+                    BorderStyle = BorderStyle.FixedSingle,
                     BackColor = Color.Empty
                 };
 
@@ -66,25 +160,23 @@ namespace SP_GridTypeView
                 {
                     if (ps.State)
                     {
-                        // Input.PNG ÀÌ¹ÌÁö¸¦ Ç¥½Ã
                         try
                         {
                             statePictureBox.Image = Properties.Resources.Input;
                         }
                         catch
                         {
-                            statePictureBox.Image = null; // ÀÌ¹ÌÁö°¡ ¾øÀ¸¸é Ç¥½ÃÇÏÁö ¾ÊÀ½
+                            statePictureBox.Image = null;
                         }
                     }
                     else
                     {
                         statePictureBox.Image = null;
+                        statePictureBox.BackColor = Color.Red;
                     }
                 }
 
-                tableLayoutPanel.Controls.Add(titleLabel, 0, row);
-                tableLayoutPanel.Controls.Add(valueLabel, 1, row);
-                tableLayoutPanel.Controls.Add(statePictureBox, 2, row);
+                tableLayoutPanel.Controls.Add(statePictureBox, colIdx, row);
 
                 row++;
             }

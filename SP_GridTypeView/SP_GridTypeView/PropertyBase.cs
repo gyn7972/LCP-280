@@ -35,8 +35,12 @@ namespace SP_GridTypeView
 
     public class TitleOnlyProperty : PropertyBase
     {
-        public TitleOnlyProperty(string title) : base(title, null)
+        public string[] Titles { get; }
+
+        public TitleOnlyProperty(params string[] titles)
+            : base(titles.Length == 1 ? titles[0] : string.Empty, null)
         {
+            Titles = titles;
         }
 
         public override void SetValue(string text)

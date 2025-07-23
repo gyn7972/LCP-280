@@ -13,7 +13,7 @@ namespace SP_GridTypeView
         private Panel scrollPanel;
 
         // 디자이너에서 편집 가능한 속성의 기본값
-        private Font _textBoxFont = new Font("맑은 고딕", 9f); // Windows Forms 기본 폰트와 크기
+        protected Font _textBoxFont = new Font("맑은 고딕", 9f); // Windows Forms 기본 폰트와 크기
         private HorizontalAlignment _textBoxTextAlign = HorizontalAlignment.Left;
 
         private const int MinVisibleRows = 5;
@@ -129,22 +129,51 @@ namespace SP_GridTypeView
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
 
-                if (prop is TitleOnlyProperty)
+                if (prop is TitleOnlyProperty titleOnlyProp)
                 {
-                    var titleLabel = new Label
+                    if (titleOnlyProp.Titles.Length == 1)
                     {
-                        Text = prop.Title,
-                        Dock = DockStyle.Fill,
-                        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                        AutoSize = false,
-                        Margin = new Padding(2),
-                        Padding = new Padding(0),
-                        Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold), // 타이틀을 강조
-                        BackColor = Color.LightGray // 타이틀 배경색 추가
-                    };
+                        var titleLabel = new Label
+                        {
+                            Text = titleOnlyProp.Titles[0],
+                            Dock = DockStyle.Fill,
+                            TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                            AutoSize = false,
+                            Margin = new Padding(0),
+                            Padding = new Padding(0),
+                            Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                            BackColor = Color.LightGray
+                        };
 
-                    tableLayoutPanel.Controls.Add(titleLabel, 0, row);
-                    tableLayoutPanel.SetColumnSpan(titleLabel, 2); // 두 열 병합
+                        tableLayoutPanel.Controls.Add(titleLabel, 0, row);
+                        tableLayoutPanel.SetColumnSpan(titleLabel, tableLayoutPanel.ColumnCount);
+                    }
+                    else
+                    {
+                        // 열 개수 조정
+                        tableLayoutPanel.ColumnCount = titleOnlyProp.Titles.Length;
+                        tableLayoutPanel.ColumnStyles.Clear();
+                        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
+                        {
+                            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / titleOnlyProp.Titles.Length));
+                        }
+
+                        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
+                        {
+                            var titleLabel = new Label
+                            {
+                                Text = titleOnlyProp.Titles[i],
+                                Dock = DockStyle.Fill,
+                                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                                AutoSize = false,
+                                Margin = new Padding(0),
+                                Padding = new Padding(0),
+                                Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                                BackColor = Color.LightGray
+                            };
+                            tableLayoutPanel.Controls.Add(titleLabel, i, row);
+                        }
+                    }
                 }
                 else if (prop is ComboBoxProperty comboBoxProperty)
                 {

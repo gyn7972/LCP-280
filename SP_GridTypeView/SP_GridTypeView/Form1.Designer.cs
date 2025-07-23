@@ -49,7 +49,7 @@
             this.ioPropertyCollectionView1.TabIndex = 1;
             this.ioPropertyCollectionView1.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.ioPropertyCollectionView1.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            // 
+            //
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);

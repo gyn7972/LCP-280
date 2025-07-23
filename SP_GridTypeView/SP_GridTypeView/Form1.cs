@@ -25,7 +25,7 @@ namespace SP_GridTypeView
             {
                 Dock = DockStyle.Fill
             };
-            Controls.Add(waferMapView);
+            //Controls.Add(waferMapView);
 
             // WaferMap 데이터 생성
             var items = GenerateWaferMapDataForImage();
@@ -51,6 +51,7 @@ namespace SP_GridTypeView
     | System.Windows.Forms.AnchorStyles.Right)));
             
             var ioProperties = new PropertyCollection();
+            ioProperties.Add(new TitleOnlyProperty("No", "Name", "State"));
             ioProperties.Add(new PropertyState("X00", "X00 Item Name", true));
             ioProperties.Add(new PropertyState("X01", "X01 Item Name", true));
             ioProperties.Add(new PropertyState("X02", "X02 Item Name", false));
