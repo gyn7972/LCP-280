@@ -44,9 +44,18 @@ namespace SP_GridTypeView
             properties.Add(new TitleOnlyProperty("Gain & Offset"));
             properties.Add(new PropertyBase("Gain", "1.000"));
             properties.Add(new PropertyBase("Offset", "0.000"));
-
+            this.propertyCollectionView1.SetProperties(properties);
             // PropertyCollectionView에 데이터 바인딩
             this.propertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+    | System.Windows.Forms.AnchorStyles.Left)
+    | System.Windows.Forms.AnchorStyles.Right)));
+            
+            var ioProperties = new PropertyCollection();
+            ioProperties.Add(new PropertyState("X00", "X00 Item Name", true));
+            ioProperties.Add(new PropertyState("X01", "X01 Item Name", true));
+            ioProperties.Add(new PropertyState("X02", "X02 Item Name", false));
+            this.ioPropertyCollectionView1.SetProperties(ioProperties);
+            this.ioPropertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
         }

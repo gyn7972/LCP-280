@@ -7,7 +7,7 @@ namespace SP_GridTypeView
     {
         public IOPropertyCollectionView() : base() { }
 
-        public void SetPropertiesWithState(PropertyCollection properties)
+        public new void SetProperties(PropertyCollection properties)
         {
             var tableLayoutPanelField = typeof(PropertyCollectionView).GetField("tableLayoutPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var tableLayoutPanel = tableLayoutPanelField.GetValue(this) as TableLayoutPanel;
