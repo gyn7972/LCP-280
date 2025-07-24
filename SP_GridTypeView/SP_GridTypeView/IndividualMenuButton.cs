@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace SP_GridTypeView
@@ -16,14 +10,57 @@ namespace SP_GridTypeView
         protected Image m_imgOffImage;
         private bool m_bButtonState;
 
-        public Size ImageSize { set; get; }
+        public Size ImageSize { get; set; }
+
+        // 사용자 지정 글씨색/배경색 속성 추가
+        private Color _customForeColor = Color.Black;
+        public Color CustomForeColor
+        {
+            get => _customForeColor;
+            set
+            {
+                _customForeColor = value;
+                this.ForeColor = value;
+                Invalidate();
+            }
+        }
+
+        private Color _customBackColor = Color.FromArgb(217, 217, 217);
+        public Color CustomBackColor
+        {
+            get => _customBackColor;
+            set
+            {
+                _customBackColor = value;
+                this.BackColor = value;
+                Invalidate();
+            }
+        }
+
+        // 사용자 지정 폰트 속성 추가
+        private Font _customFont = new Font("Arial", 10, FontStyle.Bold);
+        public Font CustomFont
+        {
+            get => _customFont;
+            set
+            {
+                _customFont = value;
+                this.Font = value;
+                Invalidate();
+            }
+        }
+
         public IndividualMenuButton()
         {
             this.BackgroundImageLayout = ImageLayout.Center;
-            this.Font = new Font("Arial", 10, FontStyle.Bold);
             this.ImageSize = new Size(45, 45);
             this.TabStop = false;
+            // 기본 상태 적용
+            this.Font = _customFont;
+            this.ForeColor = _customForeColor;
+            this.BackColor = _customBackColor;
         }
+
         public void SetImage(Image onImage, Image offImage)
         {
             this.m_imgOnImage = resizeImage(onImage, ImageSize);
@@ -41,8 +78,8 @@ namespace SP_GridTypeView
             else
             {
                 this.Image = m_imgOffImage;
-                this.ForeColor = Color.Black;
-                this.BackColor = Color.FromArgb(217, 217, 217);
+                this.ForeColor = _customForeColor;
+                this.BackColor = _customBackColor;
             }
             this.m_bButtonState = bOn;
         }

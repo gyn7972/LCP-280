@@ -129,6 +129,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />
     <Compile Include="PropertyCollection.cs" />
+    <Compile Include="VisionImageView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="VisionImageView.Designer.cs">
+      <DependentUpon>VisionImageView.cs</DependentUpon>
+    </Compile>
     <Compile Include="WaferMapItem.cs" />
     <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
@@ -189,9 +195,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Module\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Input.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

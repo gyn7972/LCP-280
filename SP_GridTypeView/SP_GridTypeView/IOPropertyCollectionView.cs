@@ -155,7 +155,7 @@ namespace SP_GridTypeView
                 {
                     try
                     {
-                        statePictureBox.Image = Properties.Resources.Input;
+                        statePictureBox.BackColor = Color.FromArgb(0, 176, 240);
                     }
                     catch
                     {

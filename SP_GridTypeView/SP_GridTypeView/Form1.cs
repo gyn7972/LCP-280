@@ -51,15 +51,24 @@ namespace SP_GridTypeView
     | System.Windows.Forms.AnchorStyles.Right)));
             
             var ioProperties = new PropertyCollection();
-            ioProperties.ShowNoColumn = false; // 또는 false
+            ioProperties.ShowNoColumn = true; // 0열 표시 옵션
             //ioProperties.Add(new TitleOnlyProperty("No", "Name", "State")); // title 행 표시
             ioProperties.Add(new PropertyState("X00", "X00 Item Name", true)); 
-            ioProperties.Add(new PropertyState("X01", "X01 Item Name", true));
-            ioProperties.Add(new PropertyState("X02", "X02 Item Name", true));
+            ioProperties.Add(new PropertyState("X01", "X01 Item Name", false));
+            ioProperties.Add(new PropertyState("X02", "X02 Item Name", false));
             this.ioPropertyCollectionView1.SetProperties(ioProperties);
             this.ioPropertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
+
+            visionImageview.ShowLiveGrabButtons = false;
+            visionImageview.SetImageViewName("Input Camera", "Output Camera");
+            this.visionImageview.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+    | System.Windows.Forms.AnchorStyles.Left)
+    | System.Windows.Forms.AnchorStyles.Right)));
+
+            visionImageview.SetImage(0, new Bitmap("D:\\01.Project\\11.LCP-280\\개발\\AI_참고그림\\WaferMap.png")); // 이미지 경로 설정
+            visionImageview.SetImage(1, new Bitmap("D:\\01.Project\\11.LCP-280\\개발\\AI_참고그림\\Mapping.png"));
         }
 
         private List<WaferMapItem> GenerateWaferMapDataForImage()

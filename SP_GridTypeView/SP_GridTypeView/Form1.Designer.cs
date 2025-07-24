@@ -30,6 +30,7 @@
         {
             this.propertyCollectionView1 = new SP_GridTypeView.PropertyCollectionView();
             this.ioPropertyCollectionView1 = new SP_GridTypeView.IOPropertyCollectionView();
+            this.visionImageview = new SP_GridTypeView.VisionImageView();
             this.SuspendLayout();
             // 
             // propertyCollectionView1
@@ -41,20 +42,28 @@
             this.propertyCollectionView1.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.propertyCollectionView1.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
-            // iopropertyCollectionView1
+            // ioPropertyCollectionView1
             // 
             this.ioPropertyCollectionView1.Location = new System.Drawing.Point(200, 500);
-            this.ioPropertyCollectionView1.Name = "iopropertyCollectionView1";
+            this.ioPropertyCollectionView1.Name = "ioPropertyCollectionView1";
             this.ioPropertyCollectionView1.Size = new System.Drawing.Size(337, 245);
             this.ioPropertyCollectionView1.TabIndex = 1;
             this.ioPropertyCollectionView1.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.ioPropertyCollectionView1.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // visionImageview
+            // 
+            this.visionImageview.Location = new System.Drawing.Point(12, 12);
+            this.visionImageview.Name = "visionImageview";
+            this.visionImageview.Size = new System.Drawing.Size(200, 200);
+            this.visionImageview.TabIndex = 2;
             //
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1162, 531);
+            this.Controls.Add(this.visionImageview);
             this.Controls.Add(this.propertyCollectionView1);
             this.Controls.Add(this.ioPropertyCollectionView1);
             this.Name = "Form1";
@@ -68,6 +77,7 @@
 
         private PropertyCollectionView propertyCollectionView1;
         private IOPropertyCollectionView ioPropertyCollectionView1;
+        private VisionImageView visionImageview;
     }
 }
 
