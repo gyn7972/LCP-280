@@ -25,67 +25,63 @@ namespace SP_GridTypeView
 
             int textBoxHeight = TextRenderer.MeasureText("A", _textBoxFont).Height + 8;
 
-            var headerProp = properties.OfType<TitleOnlyProperty>().FirstOrDefault();
-            int colCount = headerProp != null ? headerProp.Titles.Length : 2;
+            // PropertyState의 ShowNoColumn 옵션에 따라 열 개수 결정
+            var stateProps = properties.OfType<PropertyState>().ToList();
+            bool hasNoColumn = stateProps.Any(p => properties.ShowNoColumn);
+            int colCount = hasNoColumn ? 3 : 2;
             tableLayoutPanel.ColumnCount = colCount;
             tableLayoutPanel.ColumnStyles.Clear();
 
-            // 열 비율 설정
             if (colCount == 2)
             {
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F)); // Name
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F)); // State
-            }
-            else if (colCount == 3)
-            {
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F)); // No
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F)); // Name
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F)); // State
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
             }
             else
             {
-                // 기본 균등 분할
-                for (int i = 0; i < colCount; i++)
-                    tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / colCount));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F));
             }
 
             int row = 0;
+
+            // TitleOnlyProperty가 있으면 헤더만 생성 (열 개수에는 영향 없음)
+            var headerProp = properties.OfType<TitleOnlyProperty>().FirstOrDefault();
             if (headerProp != null)
             {
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
                 for (int i = 0; i < colCount; i++)
                 {
-                    var headerLabel = new Label
+                    var titleLabel = new Label
                     {
-                        Text = headerProp.Titles[i],
+                        Text = i < headerProp.Titles.Length ? headerProp.Titles[i] : "",
                         Dock = DockStyle.Fill,
-                        TextAlign = ContentAlignment.MiddleCenter,
-                        Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
-                        BackColor = Color.LightGray,
-                        BorderStyle = BorderStyle.FixedSingle,
+                        TextAlign = ContentAlignment.MiddleLeft,
                         AutoSize = false,
                         Margin = new Padding(0),
-                        Padding = new Padding(0)
+                        Padding = new Padding(0),
+                        Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                        BackColor = Color.LightGray
                     };
-                    tableLayoutPanel.Controls.Add(headerLabel, i, row);
+                    tableLayoutPanel.Controls.Add(titleLabel, i, row);
                 }
                 row++;
             }
 
-            foreach (var prop in properties)
+            // PropertyState 행 추가
+            foreach (var prop in stateProps)
             {
-                if (prop is TitleOnlyProperty) continue;
-
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
 
                 int colIdx = 0;
                 Label nameLabel = null;
 
-                if (headerProp != null && colCount == 3)
+                if (colCount == 3 && prop.ShowNoColumn)
                 {
-                    // No 셀
+                    // 0번 열(No) 표시
                     var noLabel = new Label
                     {
                         Text = prop.Title,
@@ -95,11 +91,11 @@ namespace SP_GridTypeView
                         Margin = new Padding(0),
                         Padding = new Padding(0),
                         BorderStyle = BorderStyle.FixedSingle,
-                        BackColor = Color.LightGray // No. 열 배경색을 회색으로 지정
+                        BackColor = Color.LightGray
                     };
                     tableLayoutPanel.Controls.Add(noLabel, colIdx++, row);
 
-                    // Name 셀
+                    // 1번 열(Name)
                     nameLabel = new Label
                     {
                         Text = prop.Value?.ToString() ?? "",
@@ -111,7 +107,6 @@ namespace SP_GridTypeView
                         BorderStyle = BorderStyle.FixedSingle,
                         BackColor = Color.White
                     };
-                    // 클릭 이벤트 추가
                     nameLabel.Click += (s, e) =>
                     {
                         if (_selectedNameLabel != null)
@@ -123,10 +118,10 @@ namespace SP_GridTypeView
                 }
                 else
                 {
-                    // Name 셀만
+                    // 0번 열(No) 숨김 → 1번 열(Name)부터 시작
                     nameLabel = new Label
                     {
-                        Text = prop.Title,
+                        Text = prop.Value?.ToString() ?? "",
                         Dock = DockStyle.Fill,
                         TextAlign = ContentAlignment.MiddleLeft,
                         AutoSize = false,
@@ -145,7 +140,7 @@ namespace SP_GridTypeView
                     tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
                 }
 
-                // State 셀
+                // 2번 열(State)
                 var statePictureBox = new PictureBox
                 {
                     Dock = DockStyle.Fill,
@@ -156,24 +151,21 @@ namespace SP_GridTypeView
                     BackColor = Color.Empty
                 };
 
-                if (prop is PropertyState ps)
+                if (prop.State)
                 {
-                    if (ps.State)
+                    try
                     {
-                        try
-                        {
-                            statePictureBox.Image = Properties.Resources.Input;
-                        }
-                        catch
-                        {
-                            statePictureBox.Image = null;
-                        }
+                        statePictureBox.Image = Properties.Resources.Input;
                     }
-                    else
+                    catch
                     {
                         statePictureBox.Image = null;
-                        statePictureBox.BackColor = Color.Red;
                     }
+                }
+                else
+                {
+                    statePictureBox.Image = null;
+                    statePictureBox.BackColor = Color.Red;
                 }
 
                 tableLayoutPanel.Controls.Add(statePictureBox, colIdx, row);

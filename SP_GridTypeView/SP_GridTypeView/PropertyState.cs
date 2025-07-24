@@ -5,22 +5,13 @@ namespace SP_GridTypeView
     public class PropertyState : PropertyBase
     {
         public bool State { get; set; }
+        public bool ShowNoColumn { get; set; }
 
-        public PropertyState() : base()
-        {
-            State = false;
-        }
-
-        public PropertyState(string title, object value, bool state = false) : base(title, value)
+        public PropertyState(string no, string name, bool state, bool showNoColumn = true)
+            : base(no, name)
         {
             State = state;
-        }
-
-        public override void SetValue(string text)
-        {
-            base.SetValue(text);
-            if (bool.TryParse(text, out bool result))
-                State = result;
+            ShowNoColumn = showNoColumn;
         }
     }
 }

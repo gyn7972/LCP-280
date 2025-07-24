@@ -6,6 +6,7 @@ namespace SP_GridTypeView
     public class PropertyCollection : IEnumerable<PropertyBase>
     {
         private readonly List<PropertyBase> _properties = new List<PropertyBase>();
+        public bool ShowNoColumn { get; set; } = true; // 기본값 true, 필요시 false로 설정
 
         public void Add(PropertyBase property)
         {

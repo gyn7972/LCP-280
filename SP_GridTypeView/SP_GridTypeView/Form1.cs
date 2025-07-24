@@ -51,10 +51,11 @@ namespace SP_GridTypeView
     | System.Windows.Forms.AnchorStyles.Right)));
             
             var ioProperties = new PropertyCollection();
-            ioProperties.Add(new TitleOnlyProperty("No", "Name", "State"));
-            ioProperties.Add(new PropertyState("X00", "X00 Item Name", true));
+            ioProperties.ShowNoColumn = false; // 또는 false
+            //ioProperties.Add(new TitleOnlyProperty("No", "Name", "State")); // title 행 표시
+            ioProperties.Add(new PropertyState("X00", "X00 Item Name", true)); 
             ioProperties.Add(new PropertyState("X01", "X01 Item Name", true));
-            ioProperties.Add(new PropertyState("X02", "X02 Item Name", false));
+            ioProperties.Add(new PropertyState("X02", "X02 Item Name", true));
             this.ioPropertyCollectionView1.SetProperties(ioProperties);
             this.ioPropertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
