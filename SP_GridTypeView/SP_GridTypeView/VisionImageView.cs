@@ -131,6 +131,7 @@ namespace SP_GridTypeView
             if (idx >= 0 && idx < zoomFactors.Count && idx < pictureBoxes.Count)
             {
                 zoomFactors[idx] = 1.0f;
+                imageOffsets[idx] = Point.Empty; // ← 추가: 오프셋도 초기화
                 pictureBoxes[idx].Invalidate();
             }
             // 버튼 선택 상태 변경
@@ -276,12 +277,12 @@ namespace SP_GridTypeView
                     int idx = pictureBoxes.IndexOf((PictureBox)s);
                     if (idx < 0) return;
 
-                    if (e.Delta > 0)
-                        zoomFactors[idx] = Math.Min(zoomFactors[idx] * 1.1f, 10f); // 최대 10배
-                    else
-                        zoomFactors[idx] = Math.Max(zoomFactors[idx] / 1.1f, 0.1f); // 최소 0.1배
+                    float currentZoom = zoomFactors[idx];
+                    float newZoom = e.Delta > 0
+                        ? Math.Min(currentZoom * 1.1f, 10f)
+                        : Math.Max(currentZoom / 1.1f, 1.0f);
 
-                    ((PictureBox)s).Invalidate();
+                    ZoomAtPoint(idx, newZoom, (PictureBox)s);
                 };
 
                 // 더블 클릭 시 줌 1배로 초기화
@@ -440,8 +441,7 @@ namespace SP_GridTypeView
                     int idx = pictureBoxes.IndexOf(pictureBox);
                     if (idx >= 0)
                     {
-                        zoomFactors[idx] = 2.0f;
-                        pictureBox.Invalidate();
+                        ZoomAtPoint(idx, 2.0f, pictureBox);
                     }
                 };
                 zoom4xMenuItem.Click += (s, e) =>
@@ -449,8 +449,7 @@ namespace SP_GridTypeView
                     int idx = pictureBoxes.IndexOf(pictureBox);
                     if (idx >= 0)
                     {
-                        zoomFactors[idx] = 4.0f;
-                        pictureBox.Invalidate();
+                        ZoomAtPoint(idx, 4.0f, pictureBox);
                     }
                 };
                 zoom8xMenuItem.Click += (s, e) =>
@@ -458,8 +457,7 @@ namespace SP_GridTypeView
                     int idx = pictureBoxes.IndexOf(pictureBox);
                     if (idx >= 0)
                     {
-                        zoomFactors[idx] = 8.0f;
-                        pictureBox.Invalidate();
+                        ZoomAtPoint(idx, 8.0f, pictureBox);
                     }
                 };
 
@@ -498,25 +496,21 @@ namespace SP_GridTypeView
                         int drawWidth = (int)(img.Width * zoom);
                         int drawHeight = (int)(img.Height * zoom);
 
-                        int minOffsetX = pb.Width - drawWidth;
-                        int maxOffsetX = 0;
-                        int minOffsetY = pb.Height - drawHeight;
-                        int maxOffsetY = 0;
+                        // Zoom 모드 중앙정렬 기준 clamp
+                        int maxOffsetX = (drawWidth - pb.Width) / 2;
+                        int minOffsetX = -maxOffsetX;
+                        int maxOffsetY = (drawHeight - pb.Height) / 2;
+                        int minOffsetY = -maxOffsetY;
 
                         if (drawWidth <= pb.Width)
-                        {
-                            minOffsetX = maxOffsetX = 0;
                             newOffset.X = 0;
-                        }
-                        if (drawHeight <= pb.Height)
-                        {
-                            minOffsetY = maxOffsetY = 0;
-                            newOffset.Y = 0;
-                        }
+                        else
+                            newOffset.X = Math.Max(minOffsetX, Math.Min(newOffset.X, maxOffsetX));
 
-                        // Clamp
-                        newOffset.X = Math.Max(minOffsetX, Math.Min(newOffset.X, maxOffsetX));
-                        newOffset.Y = Math.Max(minOffsetY, Math.Min(newOffset.Y, maxOffsetY));
+                        if (drawHeight <= pb.Height)
+                            newOffset.Y = 0;
+                        else
+                            newOffset.Y = Math.Max(minOffsetY, Math.Min(newOffset.Y, maxOffsetY));
 
                         imageOffsets[idx] = newOffset;
                         pictureBoxes[idx].Invalidate();
@@ -578,6 +572,46 @@ namespace SP_GridTypeView
         {
             // 원하는 동작 구현
             MessageBox.Show($"Grab 버튼 클릭: 탭 인덱스 {tabIndex}");
+        }
+
+        private void ZoomAtPoint(int idx, float newZoom, PictureBox pictureBox)
+        {
+            var img = pictureBox.Image;
+            if (img == null) return;
+
+            float oldZoom = zoomFactors[idx];
+            if (Math.Abs(oldZoom - newZoom) < 0.0001f) return;
+
+            // 1배율 이하로 줄어들면 무조건 1배율+중앙정렬
+            if (newZoom <= 1.0f)
+            {
+                zoomFactors[idx] = 1.0f;
+                imageOffsets[idx] = Point.Empty;
+                pictureBox.Invalidate();
+                return;
+            }
+
+            // 줌인(배율 증가)은 이미지 중앙 기준 확대
+            Point centerPt = new Point(pictureBox.Width / 2, pictureBox.Height / 2);
+
+            int oldDrawWidth = (int)(img.Width * oldZoom);
+            int oldDrawHeight = (int)(img.Height * oldZoom);
+            int oldX = (pictureBox.Width - oldDrawWidth) / 2 + imageOffsets[idx].X;
+            int oldY = (pictureBox.Height - oldDrawHeight) / 2 + imageOffsets[idx].Y;
+            float imgX = (centerPt.X - oldX) / oldZoom;
+            float imgY = (centerPt.Y - oldY) / oldZoom;
+
+            int newDrawWidth = (int)(img.Width * newZoom);
+            int newDrawHeight = (int)(img.Height * newZoom);
+            int newX = (pictureBox.Width - newDrawWidth) / 2;
+            int newY = (pictureBox.Height - newDrawHeight) / 2;
+
+            int newOffsetX = (int)(centerPt.X - newX - imgX * newZoom);
+            int newOffsetY = (int)(centerPt.Y - newY - imgY * newZoom);
+
+            zoomFactors[idx] = newZoom;
+            imageOffsets[idx] = new Point(newOffsetX, newOffsetY);
+            pictureBox.Invalidate();
         }
     }
 }
