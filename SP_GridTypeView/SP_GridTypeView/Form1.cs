@@ -10,6 +10,14 @@ using System.Windows.Forms;
 
 namespace SP_GridTypeView
 {
+    enum ServoPosition
+    {
+        Home,
+        Position1,
+        Position2,
+        Position3,
+        Position4
+    }
     public partial class Form1 : Form
     {
         private WaferMapView waferMapView;
@@ -35,6 +43,7 @@ namespace SP_GridTypeView
 
             // PropertyCollectionView 예시 데이터 생성
             var properties = new PropertyCollection();
+            properties.IsInputParameter = false;
             properties.Add(new TitleOnlyProperty("Common"));
             properties.Add(new ComboBoxProperty("ROI Visible", "Enable", new List<string> { "Enable", "Disable" }));
             properties.Add(new ComboBoxProperty("Cross Visible", "Enable", new List<string> { "Enable", "Disable" }));
@@ -44,31 +53,56 @@ namespace SP_GridTypeView
             properties.Add(new TitleOnlyProperty("Gain & Offset"));
             properties.Add(new PropertyBase("Gain", "1.000"));
             properties.Add(new PropertyBase("Offset", "0.000"));
-            this.propertyCollectionView1.SetProperties(properties);
+            this.propertyCollectionView.SetProperties(properties);
             // PropertyCollectionView에 데이터 바인딩
-            this.propertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
             
             var ioProperties = new PropertyCollection();
-            ioProperties.ShowNoColumn = true; // 0열 표시 옵션
+            ioProperties.ShowNoColumn = false; // 0열 표시 옵션
             //ioProperties.Add(new TitleOnlyProperty("No", "Name", "State")); // title 행 표시
             ioProperties.Add(new PropertyState("X00", "X00 Item Name", true)); 
-            ioProperties.Add(new PropertyState("X01", "X01 Item Name", false));
+            ioProperties.Add(new PropertyState("Y01", "Y01 Item Name", true));
             ioProperties.Add(new PropertyState("X02", "X02 Item Name", false));
-            this.ioPropertyCollectionView1.SetProperties(ioProperties);
-            this.ioPropertyCollectionView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            ioProperties.Add(new PropertyState("Y02", "Y02 Item Name", false));
+            this.ioPropertyCollectionView.SetProperties(ioProperties);
+            this.ioPropertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
 
-            visionImageview.ShowLiveGrabButtons = false;
+            visionImageview.ShowLiveGrabButtons = true;
             visionImageview.SetImageViewName("Input Camera", "Output Camera");
             this.visionImageview.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
 
-            visionImageview.SetImage(0, new Bitmap("D:\\01.Project\\11.LCP-280\\개발\\AI_참고그림\\WaferMap.png")); // 이미지 경로 설정
-            visionImageview.SetImage(1, new Bitmap("D:\\01.Project\\11.LCP-280\\개발\\AI_참고그림\\Mapping.png"));
+            string imagePath = System.IO.Path.Combine(Application.StartupPath, "AI_참고그림", "WaferMap.png");
+            if (System.IO.File.Exists(imagePath))
+            {
+                visionImageview.SetImage(0, new Bitmap(imagePath));
+            }
+            else
+            {
+                MessageBox.Show("이미지 파일을 찾을 수 없습니다: " + imagePath);
+            }
+            string imagePath2 = System.IO.Path.Combine(Application.StartupPath, "AI_참고그림", "Mapping.png");
+            if (System.IO.File.Exists(imagePath2))
+            {
+                visionImageview.SetImage(1, new Bitmap(imagePath2));
+            }
+            else
+            {
+                MessageBox.Show("이미지 파일을 찾을 수 없습니다: " + imagePath2);
+            }
+
+            // ListBoxCollecitonView 예시 데이터 설정
+            // 기존 코드: this.listBoxItemsView.SetItems(ServoPosition);
+            // ServoPosition은 enum 타입이므로, enum의 값들을 배열로 전달해야 합니다.
+            this.listBoxItemsView.SetItems(typeof(ServoPosition));
+            this.listBoxItemsView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+    | System.Windows.Forms.AnchorStyles.Left)
+    | System.Windows.Forms.AnchorStyles.Right)));
         }
 
         private List<WaferMapItem> GenerateWaferMapDataForImage()

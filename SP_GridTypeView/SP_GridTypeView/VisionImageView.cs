@@ -190,7 +190,7 @@ namespace SP_GridTypeView
         /// <summary>
         /// 탭 이름 배열을 받아 탭과 PictureBox를 동적으로 생성합니다.
         /// </summary>
-        public void SetImageViewName(params string[] tabNames)
+        public void SetImageViewName(params object[] tabNames)
         {
             tabControl.TabPages.Clear();
             pictureBoxes.Clear();
@@ -204,7 +204,7 @@ namespace SP_GridTypeView
             for (int i = 0; i < tabNames.Length; i++)
             {
                 var name = tabNames[i];
-                var tabPage = new TabPage(name)
+                var tabPage = new TabPage((string)name)
                 {
                     Padding = new Padding(0)
                 };

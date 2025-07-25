@@ -65,6 +65,12 @@
     <Compile Include="IOPropertyCollectionView.Designer.cs">
       <DependentUpon>IOPropertyCollectionView.cs</DependentUpon>
     </Compile>
+    <Compile Include="ListBoxItemsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ListBoxItemsView.Designer.cs">
+      <DependentUpon>ListBoxItemsView.cs</DependentUpon>
+    </Compile>
     <Compile Include="PropertyCollectionView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -72,6 +78,12 @@
       <DependentUpon>PropertyCollectionView.cs</DependentUpon>
     </Compile>
     <Compile Include="PropertyState.cs" />
+    <Compile Include="RadioButtonView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="RadioButtonView.Designer.cs">
+      <DependentUpon>RadioButtonView.cs</DependentUpon>
+    </Compile>
     <Compile Include="TopContentsLoginModeControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

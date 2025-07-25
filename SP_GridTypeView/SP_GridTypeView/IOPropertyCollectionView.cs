@@ -14,7 +14,7 @@ namespace SP_GridTypeView
             InitializeComponent();
         }
 
-        public new void SetProperties(PropertyCollection properties)
+        public override void SetProperties(PropertyCollection properties)
         {
             var tableLayoutPanelField = typeof(PropertyCollectionView).GetField("tableLayoutPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var tableLayoutPanel = tableLayoutPanelField.GetValue(this) as TableLayoutPanel;
@@ -151,21 +151,21 @@ namespace SP_GridTypeView
                     BackColor = Color.Empty
                 };
 
-                if (prop.State)
+                string title = prop.Title ?? "";
+                string titleAlpha = new string(title.Where(char.IsLetter).ToArray());
+
+                if (titleAlpha.Contains("X"))
                 {
-                    try
-                    {
-                        statePictureBox.BackColor = Color.FromArgb(0, 176, 240);
-                    }
-                    catch
-                    {
-                        statePictureBox.Image = null;
-                    }
+                    statePictureBox.BackColor = prop.State ? Color.FromArgb(0, 176, 240) : Color.White;
+                }
+                else if (titleAlpha.Contains("Y"))
+                {
+                    statePictureBox.BackColor = prop.State ? Color.Red : Color.White;
                 }
                 else
                 {
-                    statePictureBox.Image = null;
-                    statePictureBox.BackColor = Color.Red;
+                    // X/Y가 없을 때 검은색
+                    statePictureBox.BackColor = Color.Black;
                 }
 
                 tableLayoutPanel.Controls.Add(statePictureBox, colIdx, row);

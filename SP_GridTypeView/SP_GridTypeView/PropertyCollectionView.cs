@@ -105,7 +105,7 @@ namespace SP_GridTypeView
         /// <summary>
         /// PropertyCollection을 화면에 표시합니다.
         /// </summary>
-        public void SetProperties(PropertyCollection properties)
+        public virtual void SetProperties(PropertyCollection properties)
         {
             tableLayoutPanel.SuspendLayout();
             tableLayoutPanel.Controls.Clear();
@@ -224,11 +224,26 @@ namespace SP_GridTypeView
                         Margin = new Padding(0),
                         BorderStyle = BorderStyle.FixedSingle,
                         Font = _textBoxFont,
-                        TextAlign = _textBoxTextAlign
+                        TextAlign = HorizontalAlignment.Left
                     };
 
                     valueTextBox.MinimumSize = new Size(0, textBoxHeight);
                     valueTextBox.Height = textBoxHeight;
+
+                    // 조건 분기: PropertyCollection.UseValueColor 옵션에 따라 처리
+                    if (properties.IsInputParameter)
+                    {
+                        valueTextBox.ForeColor = Color.Black;
+                        valueTextBox.BackColor = Color.White;
+                    }
+                    else
+                    {
+                        valueTextBox.ReadOnly = true;
+                        valueTextBox.TabStop = false;
+                        valueTextBox.ForeColor = Color.LimeGreen;
+                        valueTextBox.BackColor = Color.Black;
+
+                    }
 
                     tableLayoutPanel.Controls.Add(titleLabel, 0, row);
                     tableLayoutPanel.Controls.Add(valueTextBox, 1, row);

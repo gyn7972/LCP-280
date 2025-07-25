@@ -28,44 +28,61 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.propertyCollectionView1 = new SP_GridTypeView.PropertyCollectionView();
-            this.ioPropertyCollectionView1 = new SP_GridTypeView.IOPropertyCollectionView();
+            this.propertyCollectionView = new SP_GridTypeView.PropertyCollectionView();
+            this.ioPropertyCollectionView = new SP_GridTypeView.IOPropertyCollectionView();
             this.visionImageview = new SP_GridTypeView.VisionImageView();
+            this.listBoxItemsView = new SP_GridTypeView.ListBoxItemsView();
             this.SuspendLayout();
             // 
             // propertyCollectionView1
             // 
-            this.propertyCollectionView1.Location = new System.Drawing.Point(690, 171);
-            this.propertyCollectionView1.Name = "propertyCollectionView1";
-            this.propertyCollectionView1.Size = new System.Drawing.Size(337, 245);
-            this.propertyCollectionView1.TabIndex = 0;
-            this.propertyCollectionView1.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.propertyCollectionView1.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.propertyCollectionView.Location = new System.Drawing.Point(690, 171);
+            this.propertyCollectionView.Name = "propertyCollectionView1";
+            this.propertyCollectionView.Size = new System.Drawing.Size(337, 245);
+            this.propertyCollectionView.TabIndex = 0;
+            this.propertyCollectionView.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.propertyCollectionView.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // ioPropertyCollectionView1
             // 
-            this.ioPropertyCollectionView1.Location = new System.Drawing.Point(200, 500);
-            this.ioPropertyCollectionView1.Name = "ioPropertyCollectionView1";
-            this.ioPropertyCollectionView1.Size = new System.Drawing.Size(337, 245);
-            this.ioPropertyCollectionView1.TabIndex = 1;
-            this.ioPropertyCollectionView1.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.ioPropertyCollectionView1.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.ioPropertyCollectionView.Location = new System.Drawing.Point(400, 500);
+            this.ioPropertyCollectionView.Name = "ioPropertyCollectionView1";
+            this.ioPropertyCollectionView.Size = new System.Drawing.Size(337, 245);
+            this.ioPropertyCollectionView.TabIndex = 1;
+            this.ioPropertyCollectionView.TextBoxFont = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.ioPropertyCollectionView.TextBoxTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // visionImageview
             // 
+            this.visionImageview.CrossLineWidth = 1;
             this.visionImageview.Location = new System.Drawing.Point(12, 12);
             this.visionImageview.Name = "visionImageview";
+            this.visionImageview.ShowLiveGrabButtons = true;
             this.visionImageview.Size = new System.Drawing.Size(200, 200);
+            this.visionImageview.TabBorderColor = System.Drawing.Color.Black;
+            this.visionImageview.TabBorderWidth = 2;
+            this.visionImageview.TabFont = new System.Drawing.Font("맑은 고딕", 9F);
+            this.visionImageview.TabHeight = 28;
             this.visionImageview.TabIndex = 2;
-            //
+            // 
+            // listBoxItemsView
+            // 
+            this.listBoxItemsView.BorderWidth = 2;
+            this.listBoxItemsView.Location = new System.Drawing.Point(12, 520);
+            this.listBoxItemsView.Name = "listBoxItemsView";
+            this.listBoxItemsView.SelectedIndex = -1;
+            this.listBoxItemsView.Size = new System.Drawing.Size(200, 200);
+            this.listBoxItemsView.TabIndex = 3;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1162, 531);
             this.Controls.Add(this.visionImageview);
-            this.Controls.Add(this.propertyCollectionView1);
-            this.Controls.Add(this.ioPropertyCollectionView1);
+            this.Controls.Add(this.propertyCollectionView);
+            this.Controls.Add(this.ioPropertyCollectionView);
+            this.Controls.Add(this.listBoxItemsView);
             this.Name = "Form1";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -75,9 +92,10 @@
 
         #endregion
 
-        private PropertyCollectionView propertyCollectionView1;
-        private IOPropertyCollectionView ioPropertyCollectionView1;
+        private PropertyCollectionView propertyCollectionView;
+        private IOPropertyCollectionView ioPropertyCollectionView;
         private VisionImageView visionImageview;
+        private ListBoxItemsView listBoxItemsView;
     }
 }
 
