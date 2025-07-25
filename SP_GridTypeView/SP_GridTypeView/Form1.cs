@@ -18,6 +18,11 @@ namespace SP_GridTypeView
         Position3,
         Position4
     }
+    enum MoveMode
+    {
+        Absolute,
+        Relative
+    }
     public partial class Form1 : Form
     {
         private WaferMapView waferMapView;
@@ -58,11 +63,11 @@ namespace SP_GridTypeView
             this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
-            
+
             var ioProperties = new PropertyCollection();
             ioProperties.ShowNoColumn = false; // 0열 표시 옵션
             //ioProperties.Add(new TitleOnlyProperty("No", "Name", "State")); // title 행 표시
-            ioProperties.Add(new PropertyState("X00", "X00 Item Name", true)); 
+            ioProperties.Add(new PropertyState("X00", "X00 Item Name", true));
             ioProperties.Add(new PropertyState("Y01", "Y01 Item Name", true));
             ioProperties.Add(new PropertyState("X02", "X02 Item Name", false));
             ioProperties.Add(new PropertyState("Y02", "Y02 Item Name", false));
@@ -103,6 +108,48 @@ namespace SP_GridTypeView
             this.listBoxItemsView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
     | System.Windows.Forms.AnchorStyles.Left)
     | System.Windows.Forms.AnchorStyles.Right)));
+
+            this.radioButtonView.SetOptions(false, typeof(MoveMode));
+
+            { 
+            var cassetteList = new List<CassetteData>();
+
+            // 첫 번째 CassetteData 생성
+            var cassetteA = new CassetteData
+            {
+                CassetteIndex = 0,
+                CassetteId = "A001",
+                State = CassetteState.Present
+            };
+            cassetteA.GenerateWaferData(20); // 슬롯 개수 예시: 25
+
+            // 두 번째 CassetteData 생성
+            var cassetteB = new CassetteData
+            {
+                CassetteIndex = 1,
+                CassetteId = "B001",
+                State = CassetteState.Present
+            };
+            cassetteB.GenerateWaferData(20);
+
+            cassetteList.Add(cassetteA);
+            cassetteList.Add(cassetteB);
+
+            // CassetteMapView에 전달
+            cassetteMapView.SetCassettes(cassetteList);
+
+
+            // 예시: 모든 Wafer의 모든 Slot을 Loaded로 변경
+            foreach (var cassette in cassetteList)
+            {
+                foreach (var wafer in cassette.WaferList)
+                {
+                    for (int i = 0; i < wafer.SlotStates.Length; i++)
+                    {
+                        wafer.SlotStates[i] = WaferCassetteLoadState.Loaded;
+                    }
+                }
+            }}
         }
 
         private List<WaferMapItem> GenerateWaferMapDataForImage()

@@ -36,41 +36,50 @@ namespace SP_GridTypeView
             {
                 Dock = DockStyle.Fill,
                 AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 FlowDirection = FlowDirection.LeftToRight,
                 WrapContents = false,
                 Padding = new Padding(2)
             };
+            this.AutoSize = true; // UserControl도 자동 크기 조정
+            this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             this.Controls.Add(panel);
         }
 
-        // 옵션 설정
-        public void SetOptions(params string[] options)
+        public void SetOptions(bool isVertical, params object[] options)
         {
             panel.Controls.Clear();
             if (options == null || options.Length == 0)
                 return;
 
-            radioButtons = new RadioButton[options.Length];
-            for (int i = 0; i < options.Length; i++)
+            // enum 타입이 단일로 들어온 경우 처리
+            if (options.Length == 1 && options[0] is Type enumType && enumType.IsEnum)
             {
-                var rb = new RadioButton
+                var enumValues = Enum.GetValues(enumType);
+                radioButtons = new RadioButton[enumValues.Length];
+                for (int i = 0; i < enumValues.Length; i++)
                 {
-                    Text = options[i],
-                    AutoSize = true,
-                    Margin = new Padding(8, 4, 8, 4),
-                    Font = new Font("맑은 고딕", 12f),
-                    TabStop = true
-                };
-                rb.CheckedChanged += (s, e) =>
-                {
-                    if (rb.Checked)
-                        OptionSelected?.Invoke(this, Array.IndexOf(radioButtons, rb));
-                };
-                radioButtons[i] = rb;
-                panel.Controls.Add(rb);
+                    string text = enumValues.GetValue(i).ToString();
+                    var rb = new RadioButton
+                    {
+                        Text = text,
+                        AutoSize = true,
+                        Margin = new Padding(8, 4, 8, 4),
+                        Font = new Font("맑은 고딕", 9f),
+                        TabStop = true
+                    };
+                    rb.CheckedChanged += (s, e) =>
+                    {
+                        if (rb.Checked)
+                            OptionSelected?.Invoke(this, Array.IndexOf(radioButtons, rb));
+                    };
+                    radioButtons[i] = rb;
+                    panel.Controls.Add(rb);
+                }
+                radioButtons[0].Checked = true;
+                this.Orientation = isVertical ? Orientation.Vertical : Orientation.Horizontal;
+                return;
             }
-            radioButtons[0].Checked = true; // 첫 번째 옵션 기본 선택
-            Orientation = _orientation; // 방향 적용
         }
 
         // 선택된 인덱스 접근

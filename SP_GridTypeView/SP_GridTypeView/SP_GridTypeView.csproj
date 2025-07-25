@@ -49,6 +49,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CassetteData.cs" />
+    <Compile Include="CassetteMapView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="CassetteMapView.Designer.cs">
+      <DependentUpon>CassetteMapView.cs</DependentUpon>
+    </Compile>
     <Compile Include="ComboBoxProperty.cs" />
     <Compile Include="Custom\DeleteInnerBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
@@ -147,6 +154,8 @@
     <Compile Include="VisionImageView.Designer.cs">
       <DependentUpon>VisionImageView.cs</DependentUpon>
     </Compile>
+    <Compile Include="WaferData.cs" />
+    <Compile Include="WaferDataConfig.cs" />
     <Compile Include="WaferMapItem.cs" />
     <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
