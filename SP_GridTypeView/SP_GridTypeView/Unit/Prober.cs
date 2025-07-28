@@ -1,8 +1,18 @@
 
 namespace SP_GridTypeView.Unit
 {
-    public class Prober
+    public class Prober : BaseUnit
     {
-        // ...추가 멤버 필요시 여기에 작성...
+        public override void OnRun()
+        {
+            base.OnRun();
+            // 필요시 동작 구현
+        }
+
+        public override void OnStop()
+        {
+            base.OnStop();
+            // 필요시 동작 구현
+        }
     }
 }

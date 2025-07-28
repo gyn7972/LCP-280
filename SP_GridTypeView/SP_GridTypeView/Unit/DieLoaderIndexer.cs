@@ -1,9 +1,28 @@
-
+using SP_GridTypeView.Coponent;
 
 namespace SP_GridTypeView.Unit
 {
-    public class DieLoaderIndexer
+    public class DieLoaderIndexer : BaseUnit, IDiePickPlace
     {
-        // ...추가 멤버 필요시 여기에 작성...
+        public DiePicker DiePicker { get; }
+        public DiePlacer DiePlacer { get; }
+
+        public DieLoaderIndexer()
+        {
+            DiePicker = new DiePicker();
+            DiePlacer = new DiePlacer();
+        }
+
+        public override void OnRun()
+        {
+            base.OnRun();
+            // 필요시 동작 구현
+        }
+
+        public override void OnStop()
+        {
+            base.OnStop();
+            // 필요시 동작 구현
+        }
     }
 }

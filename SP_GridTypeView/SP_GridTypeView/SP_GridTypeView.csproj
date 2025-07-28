@@ -49,9 +49,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlarmInfo.cs" />
+    <Compile Include="AlarmManager.cs" />
     <Compile Include="CassetteData.cs" />
     <Compile Include="CassetteDataConfig.cs" />
-    <Compile Include="CassetteMapper.cs" />
+    <Compile Include="Component\CassetteMapper.cs" />
     <Compile Include="CassetteMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -59,8 +61,8 @@
       <DependentUpon>CassetteMapView.cs</DependentUpon>
     </Compile>
     <Compile Include="ComboBoxProperty.cs" />
+    <Compile Include="Component\BaseComponent.cs" />
     <Compile Include="Component\CassetteElevator.cs" />
-    <Compile Include="Component\CasstteMapper.cs" />
     <Compile Include="Component\DieLiftPin.cs" />
     <Compile Include="Component\DieLocator.cs" />
     <Compile Include="Component\DiePicker.cs" />
@@ -163,10 +165,13 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />
     <Compile Include="PropertyCollection.cs" />
+    <Compile Include="Unit\BaseUnit.cs" />
     <Compile Include="Unit\CassetteLoadingElevator.cs" />
     <Compile Include="Unit\CassetteUnloadingElevator.cs" />
     <Compile Include="Unit\DieLoaderIndexer.cs" />
     <Compile Include="Unit\DieUnloaderIndexer.cs" />
+    <Compile Include="Unit\ICassetteElevatorUnit.cs" />
+    <Compile Include="Unit\IDiePickPlace.cs" />
     <Compile Include="Unit\Prober.cs" />
     <Compile Include="Unit\WaferAlignmentSystem.cs" />
     <Compile Include="Unit\WaferInputStage.cs" />
