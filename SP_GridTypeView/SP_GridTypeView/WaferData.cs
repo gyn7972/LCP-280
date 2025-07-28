@@ -15,7 +15,10 @@ namespace SP_GridTypeView
         Processing,        // 작업중
         Processed,         // 작업완료
         Unloading,         // 업로딩중
-        Unloaded           // 언로딩완료
+        Unloaded,          // 언로딩완료
+        BarcodeReading,    // 바코드 리딩 중
+        BarcodeRead,       // 바코드 리딩 완료
+        BarcodeReadFail    // 바코드 리딩 실패
     }
 
     public class WaferData
@@ -24,8 +27,6 @@ namespace SP_GridTypeView
         public string WaferName { get; set; }
         public int SlotNo { get; set; }
         public WaferCassetteLoadState[] SlotStates { get; set; }
-
-        public WaferDataConfig waferDataConfig { get; set; }
 
         public WaferData(int slotCount)
         {
