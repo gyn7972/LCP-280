@@ -6,7 +6,7 @@ namespace SP_GridTypeView.Unit
     public interface ICassetteElevatorUnit
     {
         CassetteElevator CassetteElevator { get; }
-        CassetteMapper CassetteMapper { get; }
+        WaferSlotScanner WaferSlotScanner { get; }
         WaferTransferArm WaferTransferArm { get; }
     }
 }

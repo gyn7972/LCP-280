@@ -53,7 +53,9 @@
     <Compile Include="AlarmManager.cs" />
     <Compile Include="CassetteData.cs" />
     <Compile Include="CassetteDataConfig.cs" />
-    <Compile Include="Component\CassetteMapper.cs" />
+    <Compile Include="Component\CassetteElevatorConfig.cs" />
+    <Compile Include="Component\BaseConfig.cs" />
+    <Compile Include="Component\WaferSlotScanner.cs" />
     <Compile Include="CassetteMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -73,7 +75,9 @@
     <Compile Include="Component\WaferHandler.cs" />
     <Compile Include="Component\WaferIDReader.cs" />
     <Compile Include="Component\WaferMapLoader.cs" />
+    <Compile Include="Component\WaferSlotScannerConfig.cs" />
     <Compile Include="Component\WaferTransferArm.cs" />
+    <Compile Include="Component\WaferTransferArmConfig.cs" />
     <Compile Include="Custom\DeleteInnerBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>

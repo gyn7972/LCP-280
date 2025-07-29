@@ -6,44 +6,48 @@ namespace SP_GridTypeView.Component
     public enum CassetteElevatorPosition
     {
         Ready,
-        Scan,
         Loading,
-        Unloading
+        Unloading,
+        Scanning
     }
 
     public class CassetteElevator : BaseComponent
     {
+        public CassetteElevatorConfig Config { get; private set; }
         public CassetteElevatorPosition CurrentPosition { get; private set; }
 
-        public CassetteElevator() : base("CassetteElevator")
+        public CassetteElevator(CassetteElevatorConfig config = null) : base("CassetteElevator")
         {
+            Config = config ?? new CassetteElevatorConfig();
             CurrentPosition = CassetteElevatorPosition.Ready;
         }
 
         public void MoveToReady()
         {
-            // Z축을 Ready 위치로 이동하는 로직
+            // Config의 ReadyPosition을 사용하여 이동
             CurrentPosition = CassetteElevatorPosition.Ready;
-            // 실제 하드웨어 제어 코드 또는 시뮬레이션 코드 추가
-            // 오류 발생 시 알람 발생
-        }
-
-        public void MoveToScan()
-        {
-            // Z축을 Scan 위치로 이동하는 로직
-            CurrentPosition = CassetteElevatorPosition.Scan;
+            // 실제 하드웨어 제어: Config.ReadyPosition 사용
         }
 
         public void MoveToLoading()
         {
-            // Z축을 Loading 위치로 이동하는 로직
+            // Config의 LoadingPosition을 사용하여 이동
             CurrentPosition = CassetteElevatorPosition.Loading;
+            // 실제 하드웨어 제어: Config.LoadingPosition 사용
         }
 
         public void MoveToUnloading()
         {
-            // Z축을 Unloading 위치로 이동하는 로직
+            // Config의 UnloadingPosition을 사용하여 이동
             CurrentPosition = CassetteElevatorPosition.Unloading;
+            // 실제 하드웨어 제어: Config.UnloadingPosition 사용
+        }
+
+        public void MoveToScanning()
+        {
+            // Config의 ScanningPosition을 사용하여 이동
+            CurrentPosition = CassetteElevatorPosition.Scanning;
+            // 실제 하드웨어 제어: Config.ScanningPosition 사용
         }
     }
 }

@@ -23,6 +23,5 @@ namespace SP_GridTypeView
         // 매핑 방향
         public MappingDirection MappingDirection { get; set; } = MappingDirection.TopToBottom;
         // 기타 확장 파라미터
-        public Dictionary<string, object> ExtraParameters { get; set; } = new Dictionary<string, object>();
     }
 }

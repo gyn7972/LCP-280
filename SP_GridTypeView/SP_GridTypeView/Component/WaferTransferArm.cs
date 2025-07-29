@@ -1,16 +1,38 @@
-
 using SP_GridTypeView.Component;
 
 namespace SP_GridTypeView.Coponent
 {
     public class WaferTransferArm : BaseComponent
     {
-        public WaferTransferArm() : base("WaferTransferArm")
+        public WaferTransferArmConfig Config { get; private set; }
+
+        public WaferTransferArm(WaferTransferArmConfig config = null) : base("WaferTransferArm")
         {
-            // 생성자에서 필요한 초기화 작업을 수행할 수 있습니다.
-            // 예를 들어, WaferTransferArm의 기본 속성이나 상태를 설정할 수 있습니다.
+            Config = config ?? new WaferTransferArmConfig();
         }
-        // 여기에 WaferTransferArm에 필요한 추가 멤버나 메서드를 정의할 수 있습니다.
-        // 예를 들어, WaferTransferArm의 동작을 제어하는 메서드 등을 추가할 수 있습니다.
+
+        public void ExtendArm()
+        {
+            // Config의 ExtendPosition을 사용하여 암 확장
+            // 실제 하드웨어 제어: Config.ExtendPosition 사용
+        }
+
+        public void RetractArm()
+        {
+            // Config의 RetractPosition을 사용하여 암 후퇴
+            // 실제 하드웨어 제어: Config.RetractPosition 사용
+        }
+
+        public void PickWafer()
+        {
+            // Config의 PickPosition, VacuumOnDelayMs 등을 사용
+            // 실제 하드웨어 제어: Config 설정값들 사용
+        }
+
+        public void PlaceWafer()
+        {
+            // Config의 PlacePosition, VacuumOffDelayMs 등을 사용
+            // 실제 하드웨어 제어: Config 설정값들 사용
+        }
     }
 }
