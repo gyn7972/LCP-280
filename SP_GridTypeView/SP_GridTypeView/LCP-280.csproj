@@ -87,6 +87,12 @@
     <Compile Include="Custom\DeleteLogoBorderTableLayoutPanel.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="FormConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormConfig.Designer.cs">
+      <DependentUpon>FormConfig.cs</DependentUpon>
+    </Compile>
     <Compile Include="IOPropertyCollectionView.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -192,6 +198,9 @@
     <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <EmbeddedResource Include="IOPropertyCollectionView.resx">
+      <DependentUpon>IOPropertyCollectionView.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="TopContentsLoginModeControl.resx">
       <DependentUpon>TopContentsLoginModeControl.cs</DependentUpon>
       <SubType>Designer</SubType>

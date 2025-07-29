@@ -12,25 +12,26 @@ namespace SP_GridTypeView
 
         private string _fontFamily = "맑은 고딕";
         private float _fontSize = 10f;
+        private string _groupName = "Group Title";
 
         public event EventHandler<int> ItemSelected;
-        // 글꼴 설정
+
+        // GroupBox 이름 프로퍼티
         [Browsable(true)]
-        public override Font Font
+        [Category("Appearance")]
+        [Description("GroupBox 이름")]
+        public string GroupName
         {
-            get => base.Font;
+            get => groupBox.Text;
             set
             {
-                base.Font = value;
-                if (listBox != null)
-                    listBox.Font = value;
-                // FontFamily, FontSize도 동기화
-                _fontFamily = value.FontFamily.Name;
-                _fontSize = value.Size;
+                _groupName = value;
+                if (groupBox != null)
+                    groupBox.Text = value;
             }
         }
 
-        
+        // BorderWidth property for designer/code use
         [Browsable(true)]
         [Category("Appearance")]
         [Description("ListBox 테두리 두께")]
@@ -40,44 +41,31 @@ namespace SP_GridTypeView
             set
             {
                 _borderWidth = Math.Max(1, value);
-                listBox.Invalidate();
+                if (listBox != null)
+                    listBox.Invalidate();
             }
         }
 
-        [Browsable(true)]
-        [Category("Appearance")]
-        [Description("ListBox 글씨체")]
-        public string FontFamily
-        {
-            get => _fontFamily;
-            set
-            {
-                _fontFamily = value;
-                UpdateListBoxFont();
-            }
-        }
-
-        [Browsable(true)]
-        [Category("Appearance")]
-        [Description("ListBox 글씨 크기")]
-        public float FontSize
-        {
-            get => _fontSize;
-            set
-            {
-                _fontSize = value;
-                UpdateListBoxFont();
-            }
-        }
-
-        public ListBoxItemsView()
+        // 생성자: 그룹 이름 지정 가능
+        public ListBoxItemsView(string groupName = "Group Title")
         {
             InitializeComponent();
+            GroupName = groupName;
             InitializeListBox();
+            // GroupBox 스타일을 이미지처럼 보이게 조정
+            groupBox.Font = new Font("맑은 고딕", 10f, FontStyle.Regular);
+            groupBox.ForeColor = Color.Black;
+            groupBox.BackColor = Color.White; // 배경색을 하얀색으로 설정
+            groupBox.Padding = new Padding(8, 18, 8, 8); // 제목과 내용 간격 조정
+            groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         }
 
         private void InitializeListBox()
         {
+            // 기존 ListBox가 있으면 제거
+            if (listBox != null && listBox.Parent != null)
+                listBox.Parent.Controls.Remove(listBox);
+
             listBox = new ListBox
             {
                 Dock = DockStyle.Fill,
@@ -89,7 +77,36 @@ namespace SP_GridTypeView
                 e.ItemHeight = (int)Math.Ceiling(_fontSize * 1.8f);
             };
             listBox.SelectedIndexChanged += ListBox_SelectedIndexChanged;
-            this.Controls.Add(listBox);
+
+            // groupBox에 ListBox 추가
+            groupBox.Controls.Clear();
+            groupBox.Controls.Add(listBox);
+        }
+
+        // Override OnResize to ensure GroupBox resizes properly
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            
+            // GroupBox는 Dock = Fill로 설정되어 있어 자동으로 리사이즈되지만,
+            // 추가적인 레이아웃 갱신이 필요한 경우를 위해
+            if (groupBox != null)
+            {
+                groupBox.Size = this.ClientSize;
+                groupBox.Invalidate();
+            }
+        }
+
+        // Override SetBoundsCore to ensure proper sizing behavior
+        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
+        {
+            base.SetBoundsCore(x, y, width, height, specified);
+            
+            // GroupBox 크기 동기화
+            if (groupBox != null && (specified & BoundsSpecified.Size) != 0)
+            {
+                groupBox.Size = new Size(width, height);
+            }
         }
 
         // params string[]로 항목 추가
@@ -106,7 +123,6 @@ namespace SP_GridTypeView
                 listBox.Items.AddRange(items);
             }
         }
-
 
         // 선택 인덱스 배경 노란색
         private void ListBox_DrawItem(object sender, DrawItemEventArgs e)

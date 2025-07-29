@@ -118,6 +118,7 @@ namespace SP_GridTypeView
                 DrawMode = TabDrawMode.OwnerDrawFixed,
                 ItemSize = new Size(120, _tabHeight),
                 SizeMode = TabSizeMode.Fixed,
+                Font = _tabFont,
             };
             tabControl.DrawItem += TabControl_DrawItem;
             tabControl.SelectedIndexChanged += TabControl_SelectedIndexChanged;

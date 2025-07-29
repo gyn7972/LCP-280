@@ -7,6 +7,9 @@ namespace SP_GridTypeView
     public partial class FormBottom : Form
     {
         private BottomMenuButtonControl menuControl;
+        
+        // FormMain이 구독할 수 있는 이벤트 추가
+        public event MenuButtonClickEventHandler MenuButtonClicked;
 
         public FormBottom()
         {
@@ -22,7 +25,8 @@ namespace SP_GridTypeView
 
         private void BottomMenuButtonControl_ClickBottomMenuButton(MenuButtonType type)
         {
-            MessageBox.Show($"Clicked: {type}", "Menu Button Clicked", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // 이벤트를 상위로 전달
+            MenuButtonClicked?.Invoke(type);
         }
 
         private void AlignMenuControl()

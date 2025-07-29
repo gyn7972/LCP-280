@@ -31,5 +31,7 @@ namespace SP_GridTypeView.Component
             // Config 값의 유효성을 검사하는 로직
             return true;
         }
+        public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
+        
     }
 }

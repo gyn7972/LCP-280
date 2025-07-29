@@ -15,7 +15,7 @@ namespace SP_GridTypeView.Unit
         {
             UnitName = unitName;
         }
-
+        
         public virtual void AddComponents() { }
         // Unit 공통 동작 메서드
         public virtual void OnRun() { }

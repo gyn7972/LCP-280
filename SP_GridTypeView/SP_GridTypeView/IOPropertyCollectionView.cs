@@ -8,30 +8,60 @@ namespace SP_GridTypeView
     public partial class IOPropertyCollectionView : PropertyCollectionView
     {
         private Label _selectedNameLabel = null;
+        private const int IOMaxVisibleRows = 10;
+        private const int IOGroupBoxHeaderHeight = 20;
+        private const int IOGroupBoxPadding = 16;
 
-        public IOPropertyCollectionView() : base()
+        public IOPropertyCollectionView(string groupName = "IO Property Group") : base(groupName)
         {
             InitializeComponent();
         }
 
+        public IOPropertyCollectionView() : this("IO Property Group")
+        {
+        }
+
         public override void SetProperties(PropertyCollection properties)
         {
+            // base의 필드 참조 (PropertyCollectionView와 동일한 방식)
             var tableLayoutPanelField = typeof(PropertyCollectionView).GetField("tableLayoutPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var scrollPanelField = typeof(PropertyCollectionView).GetField("scrollPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var textBoxFontField = typeof(PropertyCollectionView).GetField("_textBoxFont", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var groupBoxField = typeof(PropertyCollectionView).GetField("groupBox", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
             var tableLayoutPanel = tableLayoutPanelField.GetValue(this) as TableLayoutPanel;
+            var scrollPanel = scrollPanelField.GetValue(this) as Panel;
+            var textBoxFont = textBoxFontField.GetValue(this) as Font;
+            var groupBox = groupBoxField.GetValue(this) as GroupBox;
+
+            // PropertyCollectionView와 완전히 동일한 방식으로 초기화
             tableLayoutPanel.SuspendLayout();
             tableLayoutPanel.Controls.Clear();
             tableLayoutPanel.RowStyles.Clear();
             tableLayoutPanel.RowCount = 0;
 
-            int textBoxHeight = TextRenderer.MeasureText("A", _textBoxFont).Height + 8;
+            if (properties == null)
+            {
+                // 속성이 없을 때 최소 크기로 설정 (PropertyCollectionView와 동일)
+                int minHeight = IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
+                this.Height = minHeight;
+                this.MinimumSize = new Size(this.Width, minHeight);
+                this.MaximumSize = new Size(this.Width, minHeight);
+                tableLayoutPanel.ResumeLayout();
+                return;
+            }
 
-            // PropertyState의 ShowNoColumn 옵션에 따라 열 개수 결정
+            int textBoxHeight = TextRenderer.MeasureText("A", textBoxFont).Height + 8;
+
+            // TitleOnlyProperty와 PropertyState 처리
+            var headerProp = properties.OfType<TitleOnlyProperty>().FirstOrDefault();
             var stateProps = properties.OfType<PropertyState>().ToList();
             bool hasNoColumn = stateProps.Any(p => properties.ShowNoColumn);
             int colCount = hasNoColumn ? 3 : 2;
+            
+            // 열 개수 및 스타일 설정 (IO 전용)
             tableLayoutPanel.ColumnCount = colCount;
             tableLayoutPanel.ColumnStyles.Clear();
-
             if (colCount == 2)
             {
                 tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
@@ -46,12 +76,12 @@ namespace SP_GridTypeView
 
             int row = 0;
 
-            // TitleOnlyProperty가 있으면 헤더만 생성 (열 개수에는 영향 없음)
-            var headerProp = properties.OfType<TitleOnlyProperty>().FirstOrDefault();
+            // 헤더 행 추가 (PropertyCollectionView와 동일한 방식)
             if (headerProp != null)
             {
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
+                
                 for (int i = 0; i < colCount; i++)
                 {
                     var titleLabel = new Label
@@ -62,7 +92,7 @@ namespace SP_GridTypeView
                         AutoSize = false,
                         Margin = new Padding(0),
                         Padding = new Padding(0),
-                        Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                        Font = new Font(textBoxFont.FontFamily, textBoxFont.Size, FontStyle.Bold),
                         BackColor = Color.LightGray
                     };
                     tableLayoutPanel.Controls.Add(titleLabel, i, row);
@@ -70,12 +100,12 @@ namespace SP_GridTypeView
                 row++;
             }
 
-            // PropertyState 행 추가
+            // PropertyState 행 추가 (PropertyCollectionView의 foreach 방식과 동일)
             foreach (var prop in stateProps)
             {
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
-
+                
                 int colIdx = 0;
                 Label nameLabel = null;
 
@@ -90,7 +120,6 @@ namespace SP_GridTypeView
                         AutoSize = false,
                         Margin = new Padding(0),
                         Padding = new Padding(0),
-                        BorderStyle = BorderStyle.FixedSingle,
                         BackColor = Color.LightGray
                     };
                     tableLayoutPanel.Controls.Add(noLabel, colIdx++, row);
@@ -102,9 +131,8 @@ namespace SP_GridTypeView
                         Dock = DockStyle.Fill,
                         TextAlign = ContentAlignment.MiddleLeft,
                         AutoSize = false,
-                        Margin = new Padding(0),
-                        Padding = new Padding(0),
-                        BorderStyle = BorderStyle.FixedSingle,
+                        Margin = new Padding(0), // 2에서 0으로 변경하여 노란색이 꽉 차게
+                        Padding = new Padding(2), // 텍스트와 경계 사이의 여백은 Padding으로
                         BackColor = Color.White
                     };
                     nameLabel.Click += (s, e) =>
@@ -125,9 +153,8 @@ namespace SP_GridTypeView
                         Dock = DockStyle.Fill,
                         TextAlign = ContentAlignment.MiddleLeft,
                         AutoSize = false,
-                        Margin = new Padding(0),
-                        Padding = new Padding(0),
-                        BorderStyle = BorderStyle.FixedSingle,
+                        Margin = new Padding(0), // 2에서 0으로 변경하여 노란색이 꽉 차게
+                        Padding = new Padding(2), // 텍스트와 경계 사이의 여백은 Padding으로
                         BackColor = Color.White
                     };
                     nameLabel.Click += (s, e) =>
@@ -140,16 +167,19 @@ namespace SP_GridTypeView
                     tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
                 }
 
-                // 2번 열(State)
+                // State 열 (PropertyCollectionView의 TextBox와 유사하게 설정)
                 var statePictureBox = new PictureBox
                 {
                     Dock = DockStyle.Fill,
                     Margin = new Padding(0),
-                    Padding = new Padding(0),
                     SizeMode = PictureBoxSizeMode.StretchImage,
-                    BorderStyle = BorderStyle.FixedSingle,
+                    BorderStyle = BorderStyle.None,
                     BackColor = Color.Empty
                 };
+
+                // PropertyCollectionView의 TextBox와 동일한 크기 제약 적용
+                statePictureBox.MinimumSize = new Size(0, textBoxHeight);
+                statePictureBox.Height = textBoxHeight;
 
                 string title = prop.Title ?? "";
                 string titleAlpha = new string(title.Where(char.IsLetter).ToArray());
@@ -164,15 +194,44 @@ namespace SP_GridTypeView
                 }
                 else
                 {
-                    // X/Y가 없을 때 검은색
                     statePictureBox.BackColor = Color.Black;
                 }
 
                 tableLayoutPanel.Controls.Add(statePictureBox, colIdx, row);
-
                 row++;
             }
+
+            // PropertyCollectionView와 완전히 동일한 동적 크기 계산
+            int totalRows = (headerProp != null ? 1 : 0) + stateProps.Count;
+            int calculatedHeight = (totalRows * textBoxHeight) + IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
+            int maxHeight = (IOMaxVisibleRows * textBoxHeight) + IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
+
+            // PropertyCollectionView와 동일한 TableLayoutPanel 높이 설정
+            tableLayoutPanel.Height = totalRows * textBoxHeight;
+
+            if (totalRows > IOMaxVisibleRows)
+            {
+                this.Height = maxHeight;
+                this.MinimumSize = new Size(this.Width, maxHeight);
+                this.MaximumSize = new Size(this.Width, maxHeight);
+                scrollPanel.AutoScroll = true;
+                scrollPanel.VerticalScroll.Visible = true;
+                scrollPanel.VerticalScroll.Value = scrollPanel.VerticalScroll.Maximum;
+            }
+            else
+            {
+                this.Height = calculatedHeight;
+                this.MinimumSize = new Size(this.Width, calculatedHeight);
+                this.MaximumSize = new Size(this.Width, calculatedHeight);
+                scrollPanel.AutoScroll = false;
+                scrollPanel.VerticalScroll.Visible = false;
+            }
+
             tableLayoutPanel.ResumeLayout();
+
+            // 부모 컨트롤에게 크기 변경 알림 (PropertyCollectionView와 동일)
+            this.Invalidate();
+            this.Parent?.PerformLayout();
         }
     }
 }

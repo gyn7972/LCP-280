@@ -11,14 +11,30 @@ namespace SP_GridTypeView
     {
         private TableLayoutPanel tableLayoutPanel;
         private Panel scrollPanel;
+        private GroupBox groupBox; // GroupBox to wrap the property controls
 
         // 디자이너에서 편집 가능한 속성의 기본값
         protected Font _textBoxFont = new Font("맑은 고딕", 9f); // Windows Forms 기본 폰트와 크기
         private HorizontalAlignment _textBoxTextAlign = HorizontalAlignment.Left;
 
-        private const int MinVisibleRows = 5;
+        private const int MinVisibleRows = 3; // 최소 보이는 행 수 줄임
+        private const int MaxVisibleRows = 15; // 최대 보이는 행 수 설정
+        private const int GroupBoxHeaderHeight = 20; // GroupBox 헤더 높이
+        private const int GroupBoxPadding = 16; // GroupBox 패딩
 
-        int InitialHeight = 0;
+        // GroupBox 이름 프로퍼티
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("GroupBox 이름")]
+        public string GroupName
+        {
+            get => groupBox?.Text ?? "";
+            set
+            {
+                if (groupBox != null)
+                    groupBox.Text = value ?? "";
+            }
+        }
 
         [Category("Appearance")]
         [Description("텍스트박스의 폰트 크기")]
@@ -72,34 +88,99 @@ namespace SP_GridTypeView
         private List<Tuple<TextBox, PropertyBase>> _textBoxPropertyMap = new List<Tuple<TextBox, PropertyBase>>();
         private PropertyCollection _currentProperties;
 
-        public PropertyCollectionView()
+        public PropertyCollectionView(string groupName = "Property Group")
         {
             InitializeComponent();
-            InitializeComponentUser();
+            InitializeComponentUser(groupName);
+            PropertyCollection propertyCollection = new PropertyCollection();
+            propertyCollection.Add(new DoubleProperty("메롱",3.141592));
+
+
         }
 
-        private void InitializeComponentUser()
+        public PropertyCollectionView() : this("Property Group")
         {
+        }
+
+        private void InitializeComponentUser(string groupName)
+        {
+            // GroupBox 생성 및 스타일 적용 (ListBoxItemsView와 동일한 스타일)
+            groupBox = new GroupBox();
+            groupBox.Dock = DockStyle.Fill;
+            groupBox.Font = new Font("맑은 고딕", 10f, FontStyle.Regular);
+            groupBox.ForeColor = Color.Black;
+            groupBox.BackColor = Color.White; // 배경색을 하얀색으로 설정
+            groupBox.Text = groupName;
+            groupBox.Padding = new Padding(8, 8, 8, 8); // 제목과 내용 간격 조정
+            groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            this.Controls.Add(groupBox);
+
             scrollPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true
+                AutoScroll = true,
+                BackColor = Color.White
             };
 
             tableLayoutPanel = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
-                AutoSize = true,
+                Dock = DockStyle.Fill, // Top에서 Fill로 변경하여 빈 공간 제거
+                AutoSize = false, // AutoSize를 false로 변경
                 ColumnCount = 2,
                 RowCount = 0,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                AutoSizeMode = AutoSizeMode.GrowOnly, // GrowAndShrink에서 GrowOnly로 변경
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.Single // 외곽선 유지
             };
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
 
             scrollPanel.Controls.Add(tableLayoutPanel);
-            Controls.Add(scrollPanel);
+            groupBox.Controls.Add(scrollPanel);
+        }
+
+        // Override OnResize to ensure GroupBox resizes properly
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            
+            // GroupBox와 내부 컨트롤들이 정확히 맞춰지도록 조정
+            if (groupBox != null)
+            {
+                groupBox.Size = this.ClientSize;
+                groupBox.Invalidate();
+                
+                // ScrollPanel과 TableLayoutPanel도 동기화
+                if (scrollPanel != null)
+                {
+                    scrollPanel.Invalidate();
+                }
+                if (tableLayoutPanel != null)
+                {
+                    tableLayoutPanel.Invalidate();
+                }
+            }
+        }
+
+        // Override SetBoundsCore to ensure proper sizing behavior
+        protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
+        {
+            base.SetBoundsCore(x, y, width, height, specified);
+            
+            // GroupBox 크기 동기화 (PropertyCollection 배열 크기에 따른 동적 조정 반영)
+            if (groupBox != null && (specified & BoundsSpecified.Size) != 0)
+            {
+                groupBox.Size = new Size(width, height);
+                
+                // 내부 컨트롤들도 함께 업데이트
+                if (scrollPanel != null)
+                {
+                    scrollPanel.Invalidate();
+                }
+                if (tableLayoutPanel != null)
+                {
+                    tableLayoutPanel.Invalidate();
+                }
+            }
         }
 
         /// <summary>
@@ -113,10 +194,14 @@ namespace SP_GridTypeView
             tableLayoutPanel.RowCount = 0;
             _textBoxPropertyMap.Clear();
             _currentProperties = properties;
-            InitialHeight = Math.Max(InitialHeight, this.Height);
 
             if (properties == null)
             {
+                // 속성이 없을 때 최소 크기로 설정
+                int minHeight = GroupBoxHeaderHeight + groupBox.Padding.Top + GroupBoxPadding;
+                this.Height = minHeight;
+                this.MinimumSize = new Size(this.Width, minHeight);
+                this.MaximumSize = new Size(this.Width, minHeight);
                 tableLayoutPanel.ResumeLayout();
                 return;
             }
@@ -254,14 +339,38 @@ namespace SP_GridTypeView
             }
 
             int totalRows = properties.Count;
-            int MinRows = (int)Math.Max(MinVisibleRows, Math.Max(this.Height, InitialHeight) / textBoxHeight);
-            int visibleRows = Math.Min(totalRows, MinRows);
-            int neededHeight = visibleRows * textBoxHeight;
+            int calculatedHeight = (totalRows * textBoxHeight) + GroupBoxHeaderHeight + groupBox.Padding.Top + GroupBoxPadding;
+            int maxHeight = (MaxVisibleRows * textBoxHeight) + GroupBoxHeaderHeight + groupBox.Padding.Top + GroupBoxPadding;
 
+            // TableLayoutPanel 크기를 항상 모든 행을 포함하도록 설정
             tableLayoutPanel.Height = totalRows * textBoxHeight;
-            this.Height = neededHeight;
+
+            // PropertyCollection.Count가 MaxVisibleRows 이하이면 실제 row 개수만큼 크기, 초과면 MaxVisibleRows 크기+스크롤
+            if (totalRows > MaxVisibleRows)
+            {
+                this.Height = maxHeight;
+                this.MinimumSize = new Size(this.Width, maxHeight);
+                this.MaximumSize = new Size(this.Width, maxHeight);
+                scrollPanel.AutoScroll = true;
+                scrollPanel.VerticalScroll.Visible = true;
+
+                // 마지막 행이 스크롤 영역에 포함되도록 보장
+                scrollPanel.VerticalScroll.Value = scrollPanel.VerticalScroll.Maximum;
+            }
+            else
+            {
+                this.Height = calculatedHeight;
+                this.MinimumSize = new Size(this.Width, calculatedHeight);
+                this.MaximumSize = new Size(this.Width, calculatedHeight);
+                scrollPanel.AutoScroll = false;
+                scrollPanel.VerticalScroll.Visible = false;
+            }
 
             tableLayoutPanel.ResumeLayout();
+
+            // 부모 컨트롤에게 크기 변경 알림
+            this.Invalidate();
+            this.Parent?.PerformLayout();
         }
 
         /// <summary>

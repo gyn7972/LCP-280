@@ -43,7 +43,8 @@ namespace SP_GridTypeView
                 Dock = DockStyle.Fill,
                 DrawMode = TabDrawMode.OwnerDrawFixed,
                 ItemSize = new Size(120, 28), // VisionImageView와 동일
-                SizeMode = TabSizeMode.Fixed
+                SizeMode = TabSizeMode.Fixed,
+                Font = _tabFont,
             };
             tabControl.DrawItem += TabControl_DrawItem;
             this.Controls.Add(tabControl);

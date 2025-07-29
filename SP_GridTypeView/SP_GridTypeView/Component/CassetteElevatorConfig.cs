@@ -26,6 +26,13 @@ namespace SP_GridTypeView.Component
 
         public CassetteElevatorConfig() : base("CassetteElevatorConfig")
         {
+            propertyBases.Add(new DoubleProperty("ReadyPosition", ReadyPosition));
+            propertyBases.Add(new DoubleProperty("LoadingPosition", LoadingPosition));
+            propertyBases.Add(new DoubleProperty("UnloadingPosition", UnloadingPosition));
+            propertyBases.Add(new DoubleProperty("ScanningPosition", ScanningPosition));
+
+
+
         }
 
         public override bool Validate()
