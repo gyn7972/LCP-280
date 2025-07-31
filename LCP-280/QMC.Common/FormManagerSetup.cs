@@ -1,0 +1,186 @@
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+
+namespace QMC.Common
+{
+    /// <summary>
+    /// Setup 메뉴용 전용 FormManager
+    /// </summary>
+    public class FormManagerSetup
+    {
+        private static FormManagerSetup _instance;
+        
+        public static FormManagerSetup Instance
+        {
+            get
+            {
+                if (_instance == null)
+                    _instance = new FormManagerSetup();
+                return _instance;
+            }
+        }
+
+        private FormManagerSetup() { }
+
+        /// <summary>
+        /// Setup용 폼을 등록
+        /// </summary>
+        /// <param name="formType">Setup 폼 타입</param>
+        /// <param name="displayName">표시명</param>
+        /// <param name="description">설명</param>
+        public void RegisterSetupForm(Type formType, string displayName, string description = null)
+        {
+            FormManager.Instance.RegisterForm(MenuButtonType.Setup, formType, displayName, description ?? displayName);
+        }
+
+        /// <summary>
+        /// Setup 폼을 자동으로 검색하여 등록
+        /// (XXUnit_Setup 패턴의 폼들을 자동으로 찾아서 등록)
+        /// </summary>
+        /// <param name="assemblyToSearch">검색할 어셈블리 (null이면 현재 어셈블리)</param>
+        public void AutoRegisterUnitSetupForms(System.Reflection.Assembly assemblyToSearch = null)
+        {
+            try
+            {
+                if (assemblyToSearch == null)
+                {
+                    // QMC.LCP_280.Process 어셈블리에서 검색
+                    var processAssembly = System.Reflection.Assembly.LoadFrom("QMC.LCP_280.Process.exe");
+                    if (processAssembly != null)
+                        assemblyToSearch = processAssembly;
+                    else
+                        assemblyToSearch = System.Reflection.Assembly.GetExecutingAssembly();
+                }
+
+                var types = assemblyToSearch.GetTypes();
+                foreach (var type in types)
+                {
+                    // Form을 상속받고 이름이 "Setup"로 끝나는 클래스 찾기
+                    if (typeof(Form).IsAssignableFrom(type) && 
+                        !type.IsAbstract && 
+                        (type.Name.EndsWith("Setup") || type.Name.Contains("Unit_Setup") || type.Name.Contains("UnitSetup") ||
+                         type.Name.Contains("Calibration") || type.Name.Contains("Initialize") || type.Name.EndsWith("Init")))
+                    {
+                        // Unit 이름 추출
+                        string unitName = ExtractUnitNameFromType(type);
+                        RegisterSetupForm(type, unitName, $"{unitName} Setup & Calibration");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unit Setup 폼 자동 등록 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        /// <summary>
+        /// 타입 이름에서 Unit 이름을 추출
+        /// </summary>
+        /// <param name="type">폼 타입</param>
+        /// <returns>Unit 이름</returns>
+        private string ExtractUnitNameFromType(Type type)
+        {
+            string typeName = type.Name;
+            
+            // XXUnit_Setup, XXUnitSetup 패턴에서 XX 부분 추출
+            if (typeName.Contains("Unit_Setup"))
+            {
+                return typeName.Replace("Unit_Setup", "").Replace("_", " ");
+            }
+            else if (typeName.Contains("UnitSetup"))
+            {
+                return typeName.Replace("UnitSetup", "");
+            }
+            else if (typeName.EndsWith("Setup"))
+            {
+                return typeName.Replace("Setup", "");
+            }
+            else if (typeName.Contains("Calibration"))
+            {
+                return typeName.Replace("Calibration", "");
+            }
+            else if (typeName.Contains("Initialize"))
+            {
+                return typeName.Replace("Initialize", "");
+            }
+            else if (typeName.EndsWith("Init"))
+            {
+                return typeName.Replace("Init", "");
+            }
+            
+            return typeName;
+        }
+
+        /// <summary>
+        /// Setup용으로 등록된 폼들을 가져옴
+        /// </summary>
+        /// <returns>Setup 폼 정보 리스트</returns>
+        public List<FormInfo> GetSetupForms()
+        {
+            return FormManager.Instance.GetRegisteredForms(MenuButtonType.Setup);
+        }
+
+        /// <summary>
+        /// 특정 Unit의 Setup 폼을 생성
+        /// </summary>
+        /// <param name="unitName">Unit 이름</param>
+        /// <returns>Setup 폼 인스턴스</returns>
+        public Form CreateSetupForm(string unitName = null)
+        {
+            var setupForms = GetSetupForms();
+            
+            if (!string.IsNullOrEmpty(unitName))
+            {
+                var targetForm = setupForms.Find(f => f.DisplayName.Contains(unitName));
+                if (targetForm != null)
+                {
+                    return FormManager.Instance.CreateFormInstance(targetForm);
+                }
+                throw new ArgumentException($"{unitName}에 대한 Setup 폼을 찾을 수 없습니다.");
+            }
+            
+            // 첫 번째 등록된 폼 반환
+            if (setupForms.Count > 0)
+            {
+                return FormManager.Instance.CreateFormInstance(setupForms[0]);
+            }
+            
+            // 등록된 폼이 없으면 기본 폼 반환
+            return CreateDefaultSetupForm();
+        }
+
+        /// <summary>
+        /// 기본 Setup 폼 생성
+        /// </summary>
+        /// <returns>기본 Setup 폼</returns>
+        private Form CreateDefaultSetupForm()
+        {
+            Form defaultForm = new Form
+            {
+                Text = "Setup & Calibration",
+                BackColor = System.Drawing.Color.White
+            };
+
+            System.Windows.Forms.Label label = new System.Windows.Forms.Label
+            {
+                Text = "Setup & Calibration Area\n\nRegister your setup forms using FormManagerSetup.Instance.RegisterSetupForm()\n\nOr use AutoRegisterUnitSetupForms() to auto-discover XXUnit_Setup forms",
+                Font = new System.Drawing.Font("맑은 고딕", 12, System.Drawing.FontStyle.Regular),
+                TextAlign = System.Drawing.ContentAlignment.MiddleCenter,
+                Dock = DockStyle.Fill
+            };
+
+            defaultForm.Controls.Add(label);
+            return defaultForm;
+        }
+
+        /// <summary>
+        /// 등록된 Setup 폼들을 초기화하고 다시 로드
+        /// </summary>
+        public void RefreshSetupForms()
+        {
+            FormManager.Instance.ClearRegistrations(MenuButtonType.Setup);
+            AutoRegisterUnitSetupForms();
+        }
+    }
+}

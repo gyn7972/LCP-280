@@ -1,4 +1,4 @@
-using QMC.Common.Component;
+using QMC.Common;
 
 
 namespace QMC.LCP_280.Process.Component

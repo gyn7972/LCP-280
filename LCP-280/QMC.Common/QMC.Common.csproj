@@ -88,6 +88,13 @@
     <Compile Include="FormMain.Designer.cs">
       <DependentUpon>FormMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormManager.cs" />
+    <Compile Include="FormManagerConfig.cs" />
+    <Compile Include="FormManagerLog.cs" />
+    <Compile Include="FormManagerMain.cs" />
+    <Compile Include="FormManagerRecipe.cs" />
+    <Compile Include="FormManagerSetup.cs" />
+    <Compile Include="FormManagerWorking.cs" />
     <Compile Include="FormTop.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -186,6 +193,7 @@
     <EmbeddedResource Include="TopContentsStatusControl.resx">
       <DependentUpon>TopContentsStatusControl.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="FormManagerGuide.md" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

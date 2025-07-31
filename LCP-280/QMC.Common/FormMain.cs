@@ -29,6 +29,9 @@ namespace QMC.Common
             this.Size = MainSize;
             this.ClientSize = MainSize;
 
+            // FormManager 시스템 초기화
+            InitializeFormManagers();
+
             // TableLayoutPanel 생성 및 설정
             tableLayoutPanelFormMain = new TableLayoutPanel
             {
@@ -52,15 +55,6 @@ namespace QMC.Common
             formTop.Dock = DockStyle.Fill;
             tableLayoutPanelFormMain.Controls.Add(formTop, 0, 0);
             formTop.Show();
-
-            // Form1을 두 번째 행(인덱스 1)에 추가 (기본 화면)
-            //form1 = new Form1();
-            //form1.TopLevel = false;
-            //form1.FormBorderStyle = FormBorderStyle.None;
-            //form1.Dock = DockStyle.Fill;
-            //tableLayoutPanelFormMain.Controls.Add(form1, 0, 1);
-            //form1.Show();
-            //currentCenterForm = form1;
 
             // FormConfig 초기화 (숨김 상태)
             formConfig = new FormConfig();
@@ -94,6 +88,35 @@ namespace QMC.Common
             };
         }
 
+        /// <summary>
+        /// FormManager 시스템 초기화 및 샘플 폼 등록
+        /// </summary>
+        private void InitializeFormManagers()
+        {
+            try
+            {
+                // 모든 FormManager 타입의 자동 등록 실행
+                FormManagerConfig.Instance.AutoRegisterUnitConfigForms();
+                FormManagerMain.Instance.AutoRegisterUnitMainForms();
+                FormManagerWorking.Instance.AutoRegisterUnitWorkingForms();
+                FormManagerRecipe.Instance.AutoRegisterUnitRecipeForms();
+                FormManagerSetup.Instance.AutoRegisterUnitSetupForms();
+                FormManagerLog.Instance.AutoRegisterUnitLogForms();
+                
+                // 추가적인 수동 등록 예시 (필요시 사용)
+                // FormManagerMain.Instance.RegisterMainForm(typeof(CustomMainForm), "Custom Main", "사용자 정의 메인 화면");
+                // FormManagerWorking.Instance.RegisterWorkingForm(typeof(ProcessMonitorForm), "Process Monitor", "공정 모니터링");
+                // FormManagerRecipe.Instance.RegisterRecipeForm(typeof(RecipeEditorForm), "Recipe Editor", "레시피 편집기");
+                // FormManagerSetup.Instance.RegisterSetupForm(typeof(SystemSetupForm), "System Setup", "시스템 설정");
+                // FormManagerLog.Instance.RegisterLogForm(typeof(SystemLogForm), "System Log", "시스템 로그");
+                
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"FormManager 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
         private void FormBottom_MenuButtonClicked(MenuButtonType menuType)
         {
             SwitchCenterForm(menuType);
@@ -111,19 +134,26 @@ namespace QMC.Common
             switch (menuType)
             {
                 case MenuButtonType.Main:
-                    //currentCenterForm = form1;
+                    ShowMainForm();
                     break;
                 case MenuButtonType.Config:
                     currentCenterForm = formConfig;
                     break;
                 case MenuButtonType.Working:
+                    ShowWorkingForm();
+                    break;
                 case MenuButtonType.Recipe:
+                    ShowRecipeForm();
+                    break;
                 case MenuButtonType.Setup:
+                    ShowSetupForm();
+                    break;
                 case MenuButtonType.Log:
+                    ShowLogForm();
+                    break;
                 default:
-                    // 아직 구현되지 않은 메뉴는 기본 폼 표시
+                    // 기본값으로 Config 표시
                     currentCenterForm = formConfig;
-                    MessageBox.Show($"'{menuType}' 메뉴는 아직 구현되지 않았습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     break;
             }
 
@@ -133,6 +163,141 @@ namespace QMC.Common
                 currentCenterForm.Visible = true;
                 currentCenterForm.BringToFront();
             }
+        }
+
+        private void ShowMainForm()
+        {
+            try
+            {
+                // 기존 Main 폼이 있으면 제거
+                if (currentCenterForm != null && currentCenterForm.Name == "MainForm")
+                {
+                    currentCenterForm = null;
+                }
+
+                // FormManagerMain에서 Main 폼 생성
+                Form mainForm = FormManagerMain.Instance.CreateMainForm();
+                mainForm.TopLevel = false;
+                mainForm.FormBorderStyle = FormBorderStyle.None;
+                mainForm.Dock = DockStyle.Fill;
+                mainForm.Name = "MainForm";
+                
+                tableLayoutPanelFormMain.Controls.Add(mainForm, 0, 1);
+                currentCenterForm = mainForm;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Main 폼 로드 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                currentCenterForm = formConfig; // fallback
+            }
+        }
+
+        private void ShowWorkingForm()
+        {
+            var workingForms = FormManagerWorking.Instance.GetWorkingForms();
+            if (workingForms.Count > 0)
+            {
+                try
+                {
+                    Form workingForm = FormManagerWorking.Instance.CreateWorkingForm();
+                    SetupCenterForm(workingForm, "WorkingForm");
+                }
+                catch (Exception ex)
+                {
+                    ShowNotImplementedMessage("Working", ex.Message);
+                }
+            }
+            else
+            {
+                ShowNotImplementedMessage("Working", "등록된 Working 폼이 없습니다.");
+            }
+        }
+
+        private void ShowRecipeForm()
+        {
+            var recipeForms = FormManagerRecipe.Instance.GetRecipeForms();
+            if (recipeForms.Count > 0)
+            {
+                try
+                {
+                    Form recipeForm = FormManagerRecipe.Instance.CreateRecipeForm();
+                    SetupCenterForm(recipeForm, "RecipeForm");
+                }
+                catch (Exception ex)
+                {
+                    ShowNotImplementedMessage("Recipe", ex.Message);
+                }
+            }
+            else
+            {
+                ShowNotImplementedMessage("Recipe", "등록된 Recipe 폼이 없습니다.");
+            }
+        }
+
+        private void ShowSetupForm()
+        {
+            var setupForms = FormManagerSetup.Instance.GetSetupForms();
+            if (setupForms.Count > 0)
+            {
+                try
+                {
+                    Form setupForm = FormManagerSetup.Instance.CreateSetupForm();
+                    SetupCenterForm(setupForm, "SetupForm");
+                }
+                catch (Exception ex)
+                {
+                    ShowNotImplementedMessage("Setup", ex.Message);
+                }
+            }
+            else
+            {
+                ShowNotImplementedMessage("Setup", "등록된 Setup 폼이 없습니다.");
+            }
+        }
+
+        private void ShowLogForm()
+        {
+            var logForms = FormManagerLog.Instance.GetLogForms();
+            if (logForms.Count > 0)
+            {
+                try
+                {
+                    Form logForm = FormManagerLog.Instance.CreateLogForm();
+                    SetupCenterForm(logForm, "LogForm");
+                }
+                catch (Exception ex)
+                {
+                    ShowNotImplementedMessage("Log", ex.Message);
+                }
+            }
+            else
+            {
+                ShowNotImplementedMessage("Log", "등록된 Log 폼이 없습니다.");
+            }
+        }
+
+        private void SetupCenterForm(Form form, string formName)
+        {
+            form.TopLevel = false;
+            form.FormBorderStyle = FormBorderStyle.None;
+            form.Dock = DockStyle.Fill;
+            form.Name = formName;
+            
+            tableLayoutPanelFormMain.Controls.Add(form, 0, 1);
+            currentCenterForm = form;
+        }
+
+        private void ShowNotImplementedMessage(string menuName, string additionalInfo = null)
+        {
+            string message = $"'{menuName}' 메뉴는 아직 구현되지 않았습니다.";
+            if (!string.IsNullOrEmpty(additionalInfo))
+            {
+                message += $"\n\n{additionalInfo}";
+            }
+            message += $"\n\nFormManager{menuName}.Instance.Register{menuName}Form()을 사용하여 폼을 등록하세요.";
+            
+            MessageBox.Show(message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            currentCenterForm = formConfig; // fallback to config
         }
     }
 }
