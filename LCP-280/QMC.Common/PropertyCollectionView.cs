@@ -188,7 +188,15 @@ namespace QMC.Common
         /// </summary>
         public virtual void SetProperties(PropertyCollection properties)
         {
+            // 전체 컨트롤 화면 업데이트 중단
+            this.SuspendLayout();
+            groupBox.SuspendLayout();
+            scrollPanel.SuspendLayout();
             tableLayoutPanel.SuspendLayout();
+            
+            // 컨트롤이 생성되는 동안 화면 표시 비활성화
+            this.Visible = false;
+            
             tableLayoutPanel.Controls.Clear();
             tableLayoutPanel.RowStyles.Clear();
             tableLayoutPanel.RowCount = 0;
@@ -202,11 +210,21 @@ namespace QMC.Common
                 this.Height = minHeight;
                 this.MinimumSize = new Size(this.Width, minHeight);
                 this.MaximumSize = new Size(this.Width, minHeight);
-                tableLayoutPanel.ResumeLayout();
+                
+                // 레이아웃 재개 및 화면 표시 복원
+                tableLayoutPanel.ResumeLayout(false);
+                scrollPanel.ResumeLayout(false);
+                groupBox.ResumeLayout(false);
+                this.ResumeLayout(true);
+                this.Visible = true;
                 return;
             }
 
             int textBoxHeight = TextRenderer.MeasureText("A", _textBoxFont).Height + 8;
+
+            // 모든 컨트롤을 임시 리스트에 저장하여 한번에 추가
+            var controlsToAdd = new List<Tuple<Control, int, int>>();
+            var columnSpansToSet = new List<Tuple<Control, int>>();
 
             int row = 0;
             foreach (var prop in properties)
@@ -227,11 +245,12 @@ namespace QMC.Common
                             Margin = new Padding(0),
                             Padding = new Padding(0),
                             Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
-                            BackColor = Color.LightGray
+                            BackColor = Color.LightGray,
+                            Visible = false // 임시로 숨김
                         };
 
-                        tableLayoutPanel.Controls.Add(titleLabel, 0, row);
-                        tableLayoutPanel.SetColumnSpan(titleLabel, tableLayoutPanel.ColumnCount);
+                        controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
+                        columnSpansToSet.Add(Tuple.Create((Control)titleLabel, tableLayoutPanel.ColumnCount));
                     }
                     else
                     {
@@ -254,9 +273,10 @@ namespace QMC.Common
                                 Margin = new Padding(0),
                                 Padding = new Padding(0),
                                 Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
-                                BackColor = Color.LightGray
+                                BackColor = Color.LightGray,
+                                Visible = false // 임시로 숨김
                             };
-                            tableLayoutPanel.Controls.Add(titleLabel, i, row);
+                            controlsToAdd.Add(Tuple.Create((Control)titleLabel, i, row));
                         }
                     }
                 }
@@ -269,7 +289,8 @@ namespace QMC.Common
                         TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                         AutoSize = false,
                         Margin = new Padding(2),
-                        Padding = new Padding(0)
+                        Padding = new Padding(0),
+                        Visible = false // 임시로 숨김
                     };
 
                     var comboBox = new ComboBox
@@ -279,7 +300,8 @@ namespace QMC.Common
                         Font = _textBoxFont,
                         DropDownStyle = ComboBoxStyle.DropDownList,
                         DataSource = comboBoxProperty.Options,
-                        SelectedItem = comboBoxProperty.Value?.ToString()
+                        SelectedItem = comboBoxProperty.Value?.ToString(),
+                        Visible = false // 임시로 숨김
                     };
 
                     comboBox.SelectedIndexChanged += (sender, args) =>
@@ -287,8 +309,8 @@ namespace QMC.Common
                         comboBoxProperty.SetValue(comboBox.SelectedItem.ToString());
                     };
 
-                    tableLayoutPanel.Controls.Add(titleLabel, 0, row);
-                    tableLayoutPanel.Controls.Add(comboBox, 1, row);
+                    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
+                    controlsToAdd.Add(Tuple.Create((Control)comboBox, 1, row));
                 }
                 else
                 {
@@ -299,7 +321,8 @@ namespace QMC.Common
                         TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                         AutoSize = false,
                         Margin = new Padding(2),
-                        Padding = new Padding(0)
+                        Padding = new Padding(0),
+                        Visible = false // 임시로 숨김
                     };
 
                     var valueTextBox = new TextBox
@@ -309,7 +332,8 @@ namespace QMC.Common
                         Margin = new Padding(0),
                         BorderStyle = BorderStyle.FixedSingle,
                         Font = _textBoxFont,
-                        TextAlign = HorizontalAlignment.Left
+                        TextAlign = HorizontalAlignment.Left,
+                        Visible = false // 임시로 숨김
                     };
 
                     valueTextBox.MinimumSize = new Size(0, textBoxHeight);
@@ -327,15 +351,26 @@ namespace QMC.Common
                         valueTextBox.TabStop = false;
                         valueTextBox.ForeColor = Color.LimeGreen;
                         valueTextBox.BackColor = Color.Black;
-
                     }
 
-                    tableLayoutPanel.Controls.Add(titleLabel, 0, row);
-                    tableLayoutPanel.Controls.Add(valueTextBox, 1, row);
+                    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
+                    controlsToAdd.Add(Tuple.Create((Control)valueTextBox, 1, row));
                     _textBoxPropertyMap.Add(Tuple.Create(valueTextBox, prop));
                 }
 
                 row++;
+            }
+
+            // 모든 컨트롤을 한번에 추가
+            foreach (var controlInfo in controlsToAdd)
+            {
+                tableLayoutPanel.Controls.Add(controlInfo.Item1, controlInfo.Item2, controlInfo.Item3);
+            }
+
+            // ColumnSpan 설정
+            foreach (var spanInfo in columnSpansToSet)
+            {
+                tableLayoutPanel.SetColumnSpan(spanInfo.Item1, spanInfo.Item2);
             }
 
             int totalRows = properties.Count;
@@ -366,7 +401,21 @@ namespace QMC.Common
                 scrollPanel.VerticalScroll.Visible = false;
             }
 
-            tableLayoutPanel.ResumeLayout();
+            // 레이아웃 재개 (아직 화면 업데이트는 하지 않음)
+            tableLayoutPanel.ResumeLayout(false);
+            scrollPanel.ResumeLayout(false);
+            groupBox.ResumeLayout(false);
+            this.ResumeLayout(false);
+            
+            // 모든 컨트롤을 한번에 표시
+            foreach (var controlInfo in controlsToAdd)
+            {
+                controlInfo.Item1.Visible = true;
+            }
+            
+            // 최종적으로 화면 표시 복원 및 레이아웃 완료
+            this.Visible = true;
+            this.PerformLayout();
 
             // 부모 컨트롤에게 크기 변경 알림
             this.Invalidate();

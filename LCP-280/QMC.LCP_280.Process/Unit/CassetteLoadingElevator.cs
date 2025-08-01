@@ -3,6 +3,17 @@ using QMC.LCP_280.Process.Component;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    enum PositionItem
+    {
+        CassetteElevator_Loading_Position,
+        CassetteElevator_Unloading_Position,
+        CassetteElevator_Ready_Position,
+        CassetteElevator_Scanning_Position,
+        WaferTransferArm_Loading_Position,
+        WaferTransferArm_Unloading_Position,
+        WaferTransferArm_Ready_Position,
+        WaferSlotScanner_Reading_Position,
+    }
     public class CassetteLoadingElevator : BaseUnit, ICassetteElevatorUnit
     {
         public CassetteElevator CassetteElevator { get; private set; }

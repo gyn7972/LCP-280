@@ -16,20 +16,6 @@ namespace QMC.LCP_280.Process.Unit
             InitializeUI();
         }
 
-        private void InitializeComponent()
-        {
-            this.SuspendLayout();
-            
-            // Form 기본 설정
-            this.AutoScaleDimensions = new SizeF(6F, 13F);
-            this.AutoScaleMode = AutoScaleMode.Font;
-            this.ClientSize = new Size(800, 600);
-            this.Name = "WaferAlignmentUnit_Config";
-            this.Text = "Wafer Alignment Unit Configuration";
-            
-            this.ResumeLayout(false);
-        }
-
         private void InitializeUI()
         {
             this.BackColor = Color.White;

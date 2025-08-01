@@ -11,38 +11,45 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public partial class CassetteLoadingElevatorUnit_Config : Form
     {
-        private PropertyCollectionView propertyCollectionView;
-        
+        private CassetteLoadingElevator CassetteLoadingElevator { get; set; }
+
+
         public CassetteLoadingElevatorUnit_Config()
         {
             InitializeComponent();
+
+            // 폼 로딩 중에는 화면 업데이트 중단
+            this.SuspendLayout();
+
             InitializeUI();
+
+            // 모든 초기화가 완료된 후 화면 업데이트 재개
+            this.ResumeLayout(true);
         }
 
-        private void InitializeUI()
+        /// <summary>
+        /// 폼이 처음 표시될 때 호출되는 메서드 오버라이드
+        /// </summary>
+        protected override void SetVisibleCore(bool value)
         {
-            propertyCollectionView = new PropertyCollectionView("Position Item");
+            // 폼이 완전히 초기화되기 전까지는 화면에 표시하지 않음
+            if (!this.IsHandleCreated)
+            {
+                this.CreateHandle();
+            }
+            base.SetVisibleCore(value);
+        }
 
-            var properties = new PropertyCollection();
-            properties.IsInputParameter = false;
-            properties.Add(new TitleOnlyProperty("Common"));
-            properties.Add(new ComboBoxProperty("ROI Visible", "Enable", new List<string> { "Enable", "Disable" }));
-            properties.Add(new ComboBoxProperty("Cross Visible", "Enable", new List<string> { "Enable", "Disable" }));
-            properties.Add(new TitleOnlyProperty("Lens Scale"));
-            properties.Add(new PropertyBase("Lens Scale X", "1.000"));
-            properties.Add(new PropertyBase("Lens Scale Y", "1.000"));
-            properties.Add(new TitleOnlyProperty("Gain & Offset"));
-            properties.Add(new PropertyBase("Gain", "1.000"));
-            properties.Add(new PropertyBase("Position", "0.000"));
-            properties.Add(new PropertyBase("Offset", "0.000"));
-            this.propertyCollectionView.SetProperties(properties);
-
-            this.Controls.Add(propertyCollectionView);
-
-            // PropertyCollectionView에 데이터 바인딩
-            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-| System.Windows.Forms.AnchorStyles.Left)
-| System.Windows.Forms.AnchorStyles.Right)));
+        /// <summary>
+        /// 폼 로드 완료 후 호출
+        /// </summary>
+        protected override void OnLoad(EventArgs e)
+        {
+            // 모든 컨트롤이 로드된 후 한번에 화면 갱신
+            this.SuspendLayout();
+            base.OnLoad(e);
+            this.ResumeLayout(true);
+            this.Refresh();
         }
     }
 }
