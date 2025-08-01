@@ -92,10 +92,6 @@ namespace QMC.Common
         {
             InitializeComponent();
             InitializeComponentUser(groupName);
-            PropertyCollection propertyCollection = new PropertyCollection();
-            propertyCollection.Add(new DoubleProperty("메롱",3.141592));
-
-
         }
 
         public PropertyCollectionView() : this("Property Group")

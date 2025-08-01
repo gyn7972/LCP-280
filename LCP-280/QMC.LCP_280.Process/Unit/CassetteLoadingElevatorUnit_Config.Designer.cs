@@ -14,6 +14,7 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private PropertyCollectionView propertyCollectionView;
         private IOPropertyCollectionView IOPropertyCollectionView;
+        private ListBoxItemsView listBoxItemsView;
         private System.ComponentModel.IContainer components = null;
 
         /// <summary>
@@ -39,38 +40,52 @@ namespace QMC.LCP_280.Process.Unit
         {
             this.propertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.IOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
+            this.listBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.SuspendLayout();
             // 
             // propertyCollectionView
             // 
-            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.propertyCollectionView.GroupName = "Position Item";
-            this.propertyCollectionView.Location = new System.Drawing.Point(25, 39);
+            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)));
+            this.propertyCollectionView.GroupName = "Position Config";
+            this.propertyCollectionView.Location = new System.Drawing.Point(25, 80);
             this.propertyCollectionView.Name = "propertyCollectionView";
-            this.propertyCollectionView.Size = new System.Drawing.Size(326, 365);
+            this.propertyCollectionView.Size = new System.Drawing.Size(280, 320);
             this.propertyCollectionView.TabIndex = 0;
             this.propertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             // 
             // IOPropertyCollectionView
             // 
-            this.IOPropertyCollectionView.GroupName = "IO Property Group";
-            this.IOPropertyCollectionView.Location = new System.Drawing.Point(409, 98);
+            this.IOPropertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)));
+            this.IOPropertyCollectionView.GroupName = "Recipe Settings";
+            this.IOPropertyCollectionView.Location = new System.Drawing.Point(320, 80);
             this.IOPropertyCollectionView.Name = "IOPropertyCollectionView";
-            this.IOPropertyCollectionView.Size = new System.Drawing.Size(323, 178);
+            this.IOPropertyCollectionView.Size = new System.Drawing.Size(280, 320);
             this.IOPropertyCollectionView.TabIndex = 1;
-            this.propertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.IOPropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            // 
+            // listBoxItemsView
+            // 
+            this.listBoxItemsView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.listBoxItemsView.BorderWidth = 2;
+            this.listBoxItemsView.GroupName = "Position Items";
+            this.listBoxItemsView.Location = new System.Drawing.Point(620, 80);
+            this.listBoxItemsView.Name = "listBoxItemsView";
+            this.listBoxItemsView.Size = new System.Drawing.Size(200, 320);
+            this.listBoxItemsView.TabIndex = 2;
             // 
             // CassetteLoadingElevatorUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(850, 450);
             this.Controls.Add(this.propertyCollectionView);
             this.Controls.Add(this.IOPropertyCollectionView);
+            this.Controls.Add(this.listBoxItemsView);
             this.Name = "CassetteLoadingElevatorUnit_Config";
-            this.Text = "CassetteLoadingElevatorUnit_Config";
+            this.Text = "CassetteLoadingElevator Unit Configuration";
             this.ResumeLayout(false);
 
         }
@@ -86,6 +101,9 @@ namespace QMC.LCP_280.Process.Unit
                 // IO Properties 설정
                 var ioProperties = CreatePropertyCollection2();
                 IOPropertyCollectionView?.SetProperties(ioProperties);
+
+                // ListBoxItemsView에 PositionItem enum 설정
+                listBoxItemsView?.SetItems(typeof(PositionItem));
             }
             catch (Exception ex)
             {

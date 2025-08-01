@@ -59,8 +59,7 @@ namespace QMC.Common
                     // Form을 상속받고 이름이 "Log"로 끝나는 클래스 찾기
                     if (typeof(Form).IsAssignableFrom(type) && 
                         !type.IsAbstract && 
-                        (type.Name.EndsWith("Log") || type.Name.Contains("Unit_Log") || type.Name.Contains("UnitLog") ||
-                         type.Name.Contains("Logger") || type.Name.Contains("History") || type.Name.EndsWith("Viewer")))
+                        (type.Name.Contains("Unit_Log") || type.Name.Contains("UnitLog")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);

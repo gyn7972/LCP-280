@@ -10,7 +10,7 @@ namespace QMC.Common
     public class FormManagerWorking
     {
         private static FormManagerWorking _instance;
-        
+
         public static FormManagerWorking Instance
         {
             get
@@ -57,10 +57,9 @@ namespace QMC.Common
                 foreach (var type in types)
                 {
                     // Form을 상속받고 이름이 "Working"로 끝나는 클래스 찾기
-                    if (typeof(Form).IsAssignableFrom(type) && 
-                        !type.IsAbstract && 
-                        (type.Name.EndsWith("Working") || type.Name.Contains("Unit_Working") || type.Name.Contains("UnitWorking") || 
-                         type.Name.EndsWith("Monitor") || type.Name.Contains("Process")))
+                    if (typeof(Form).IsAssignableFrom(type) &&
+                        !type.IsAbstract &&
+                        (type.Name.Contains("Unit_Working") || type.Name.Contains("UnitWorking")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);
@@ -82,7 +81,7 @@ namespace QMC.Common
         private string ExtractUnitNameFromType(Type type)
         {
             string typeName = type.Name;
-            
+
             // XXUnit_Working, XXUnitWorking 패턴에서 XX 부분 추출
             if (typeName.Contains("Unit_Working"))
             {
@@ -104,7 +103,7 @@ namespace QMC.Common
             {
                 return typeName.Replace("Process", "");
             }
-            
+
             return typeName;
         }
 
@@ -125,7 +124,7 @@ namespace QMC.Common
         public Form CreateWorkingForm(string unitName = null)
         {
             var workingForms = GetWorkingForms();
-            
+
             if (!string.IsNullOrEmpty(unitName))
             {
                 var targetForm = workingForms.Find(f => f.DisplayName.Contains(unitName));
@@ -135,13 +134,13 @@ namespace QMC.Common
                 }
                 throw new ArgumentException($"{unitName}에 대한 Working 폼을 찾을 수 없습니다.");
             }
-            
+
             // 첫 번째 등록된 폼 반환
             if (workingForms.Count > 0)
             {
                 return FormManager.Instance.CreateFormInstance(workingForms[0]);
             }
-            
+
             // 등록된 폼이 없으면 기본 폼 반환
             return CreateDefaultWorkingForm();
         }

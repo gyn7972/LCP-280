@@ -10,7 +10,7 @@ namespace QMC.Common
     public class FormManagerSetup
     {
         private static FormManagerSetup _instance;
-        
+
         public static FormManagerSetup Instance
         {
             get
@@ -57,10 +57,9 @@ namespace QMC.Common
                 foreach (var type in types)
                 {
                     // Form을 상속받고 이름이 "Setup"로 끝나는 클래스 찾기
-                    if (typeof(Form).IsAssignableFrom(type) && 
-                        !type.IsAbstract && 
-                        (type.Name.EndsWith("Setup") || type.Name.Contains("Unit_Setup") || type.Name.Contains("UnitSetup") ||
-                         type.Name.Contains("Calibration") || type.Name.Contains("Initialize") || type.Name.EndsWith("Init")))
+                    if (typeof(Form).IsAssignableFrom(type) &&
+                        !type.IsAbstract &&
+                        (type.Name.Contains("Unit_Setup") || type.Name.Contains("UnitSetup")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);
@@ -82,7 +81,7 @@ namespace QMC.Common
         private string ExtractUnitNameFromType(Type type)
         {
             string typeName = type.Name;
-            
+
             // XXUnit_Setup, XXUnitSetup 패턴에서 XX 부분 추출
             if (typeName.Contains("Unit_Setup"))
             {
@@ -108,7 +107,7 @@ namespace QMC.Common
             {
                 return typeName.Replace("Init", "");
             }
-            
+
             return typeName;
         }
 
@@ -129,7 +128,7 @@ namespace QMC.Common
         public Form CreateSetupForm(string unitName = null)
         {
             var setupForms = GetSetupForms();
-            
+
             if (!string.IsNullOrEmpty(unitName))
             {
                 var targetForm = setupForms.Find(f => f.DisplayName.Contains(unitName));
@@ -139,13 +138,13 @@ namespace QMC.Common
                 }
                 throw new ArgumentException($"{unitName}에 대한 Setup 폼을 찾을 수 없습니다.");
             }
-            
+
             // 첫 번째 등록된 폼 반환
             if (setupForms.Count > 0)
             {
                 return FormManager.Instance.CreateFormInstance(setupForms[0]);
             }
-            
+
             // 등록된 폼이 없으면 기본 폼 반환
             return CreateDefaultSetupForm();
         }

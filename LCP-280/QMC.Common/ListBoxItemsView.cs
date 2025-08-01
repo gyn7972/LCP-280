@@ -9,6 +9,7 @@ namespace QMC.Common
     {
         private int _borderWidth = 2;
         private ListBox listBox;
+        private GroupBox groupBox; // PropertyCollectionView처럼 private 필드로 선언
 
         private string _fontFamily = "맑은 고딕";
         private float _fontSize = 10f;
@@ -22,7 +23,7 @@ namespace QMC.Common
         [Description("GroupBox 이름")]
         public string GroupName
         {
-            get => groupBox.Text;
+            get => groupBox?.Text ?? _groupName;
             set
             {
                 _groupName = value;
@@ -46,18 +47,41 @@ namespace QMC.Common
             }
         }
 
+        // 기본 생성자 추가 (PropertyCollectionView와 동일)
+        public ListBoxItemsView()
+        {
+            InitializeComponent();
+            InitializeUserControl("Group Title");
+        }
+
         // 생성자: 그룹 이름 지정 가능
         public ListBoxItemsView(string groupName = "Group Title")
         {
             InitializeComponent();
-            GroupName = groupName;
+            InitializeUserControl(groupName);
+        }
+
+        // PropertyCollectionView의 InitializeComponentUser와 유사한 초기화 메서드
+        private void InitializeUserControl(string groupName)
+        {
+            _groupName = groupName;
+
+            // GroupBox 생성 및 설정
+            groupBox = new GroupBox
+            {
+                Text = groupName,
+                Dock = DockStyle.Fill,
+                Font = new Font("맑은 고딕", 10f, FontStyle.Regular),
+                ForeColor = Color.Black,
+                BackColor = Color.White,
+                Padding = new Padding(8, 8, 8, 8)
+            };
+
+            // UserControl에 GroupBox 추가
+            this.Controls.Add(groupBox);
+
+            // ListBox 초기화
             InitializeListBox();
-            // GroupBox 스타일을 이미지처럼 보이게 조정
-            groupBox.Font = new Font("맑은 고딕", 10f, FontStyle.Regular);
-            groupBox.ForeColor = Color.Black;
-            groupBox.BackColor = Color.White; // 배경색을 하얀색으로 설정
-            groupBox.Padding = new Padding(8, 18, 8, 8); // 제목과 내용 간격 조정
-            groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         }
 
         private void InitializeListBox()
@@ -79,8 +103,11 @@ namespace QMC.Common
             listBox.SelectedIndexChanged += ListBox_SelectedIndexChanged;
 
             // groupBox에 ListBox 추가
-            groupBox.Controls.Clear();
-            groupBox.Controls.Add(listBox);
+            if (groupBox != null)
+            {
+                groupBox.Controls.Clear();
+                groupBox.Controls.Add(listBox);
+            }
         }
 
         // Override OnResize to ensure GroupBox resizes properly
@@ -112,6 +139,8 @@ namespace QMC.Common
         // params string[]로 항목 추가
         public void SetItems(params object[] items)
         {
+            if (listBox == null) return;
+
             listBox.Items.Clear();
             if (items != null && items.Length == 1 && items[0] is Type enumType && enumType.IsEnum)
             {
@@ -127,7 +156,7 @@ namespace QMC.Common
         // 선택 인덱스 배경 노란색
         private void ListBox_DrawItem(object sender, DrawItemEventArgs e)
         {
-            if (e.Index < 0) return;
+            if (e.Index < 0 || listBox == null) return;
 
             bool selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
             e.Graphics.FillRectangle(
@@ -159,6 +188,8 @@ namespace QMC.Common
         // 선택 이벤트
         private void ListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (listBox == null) return;
+
             ItemSelected?.Invoke(this, listBox.SelectedIndex);
 
             // 선택된 아이템의 이름 추출 및 메시지 박스 표시
@@ -186,8 +217,12 @@ namespace QMC.Common
         // 선택된 인덱스 접근
         public int SelectedIndex
         {
-            get => listBox.SelectedIndex;
-            set => listBox.SelectedIndex = value;
+            get => listBox?.SelectedIndex ?? -1;
+            set
+            {
+                if (listBox != null)
+                    listBox.SelectedIndex = value;
+            }
         }
 
         // 폰트 갱신 메서드

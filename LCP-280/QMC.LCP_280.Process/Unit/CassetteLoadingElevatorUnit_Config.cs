@@ -7,49 +7,60 @@ using QMC.Common;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// CassetteLoadingElevator Unit의 Config 폼 예시
+    /// CassetteLoadingElevator Unit의 Config 폼
+    /// Equipment와 연동하여 Config 및 Recipe 관리
     /// </summary>
     public partial class CassetteLoadingElevatorUnit_Config : Form
     {
-        private CassetteLoadingElevator CassetteLoadingElevator { get; set; }
+        private const string UNIT_NAME = "CassetteLoadingElevator";
+        
+        /// <summary>
+        /// Equipment 인스턴스 참조
+        /// </summary>
+        private Equipment Equipment => Equipment.Instance;
 
+        /// <summary>
+        /// 해당 Unit 인스턴스
+        /// </summary>
+        private CassetteLoadingElevator CassetteLoadingElevator { get; set; }
 
         public CassetteLoadingElevatorUnit_Config()
         {
             InitializeComponent();
-
+            InitializeUnit();
             // 폼 로딩 중에는 화면 업데이트 중단
             this.SuspendLayout();
-
             InitializeUI();
-
             // 모든 초기화가 완료된 후 화면 업데이트 재개
             this.ResumeLayout(true);
         }
 
-        /// <summary>
-        /// 폼이 처음 표시될 때 호출되는 메서드 오버라이드
-        /// </summary>
-        protected override void SetVisibleCore(bool value)
+        ///// <summary>
+        ///// Unit 초기화 및 Equipment에서 Unit 인스턴스 가져오기
+        ///// </summary>
+        private void InitializeUnit()
         {
-            // 폼이 완전히 초기화되기 전까지는 화면에 표시하지 않음
-            if (!this.IsHandleCreated)
+            try
             {
-                this.CreateHandle();
-            }
-            base.SetVisibleCore(value);
-        }
+                // Equipment에서 CassetteLoadingElevator Unit 가져오기
+                if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+                {
+                    CassetteLoadingElevator = unit as CassetteLoadingElevator;
+                }
 
-        /// <summary>
-        /// 폼 로드 완료 후 호출
-        /// </summary>
-        protected override void OnLoad(EventArgs e)
-        {
-            // 모든 컨트롤이 로드된 후 한번에 화면 갱신
-            this.SuspendLayout();
-            base.OnLoad(e);
-            this.ResumeLayout(true);
-            this.Refresh();
+                if (CassetteLoadingElevator == null)
+                {
+                    MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
+                        "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                Console.WriteLine($"{UNIT_NAME} Unit 연결 완료");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unit 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

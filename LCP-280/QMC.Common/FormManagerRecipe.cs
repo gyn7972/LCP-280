@@ -10,7 +10,7 @@ namespace QMC.Common
     public class FormManagerRecipe
     {
         private static FormManagerRecipe _instance;
-        
+
         public static FormManagerRecipe Instance
         {
             get
@@ -57,10 +57,9 @@ namespace QMC.Common
                 foreach (var type in types)
                 {
                     // Form을 상속받고 이름이 "Recipe"로 끝나는 클래스 찾기
-                    if (typeof(Form).IsAssignableFrom(type) && 
-                        !type.IsAbstract && 
-                        (type.Name.EndsWith("Recipe") || type.Name.Contains("Unit_Recipe") || type.Name.Contains("UnitRecipe") ||
-                         type.Name.Contains("Recipe") || type.Name.EndsWith("Parameter")))
+                    if (typeof(Form).IsAssignableFrom(type) &&
+                        !type.IsAbstract &&
+                        (type.Name.Contains("Unit_Recipe") || type.Name.Contains("UnitRecipe")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);
@@ -82,7 +81,7 @@ namespace QMC.Common
         private string ExtractUnitNameFromType(Type type)
         {
             string typeName = type.Name;
-            
+
             // XXUnit_Recipe, XXUnitRecipe 패턴에서 XX 부분 추출
             if (typeName.Contains("Unit_Recipe"))
             {
@@ -104,7 +103,7 @@ namespace QMC.Common
             {
                 return typeName.Replace("Recipe", "");
             }
-            
+
             return typeName;
         }
 
@@ -125,7 +124,7 @@ namespace QMC.Common
         public Form CreateRecipeForm(string unitName = null)
         {
             var recipeForms = GetRecipeForms();
-            
+
             if (!string.IsNullOrEmpty(unitName))
             {
                 var targetForm = recipeForms.Find(f => f.DisplayName.Contains(unitName));
@@ -135,13 +134,13 @@ namespace QMC.Common
                 }
                 throw new ArgumentException($"{unitName}에 대한 Recipe 폼을 찾을 수 없습니다.");
             }
-            
+
             // 첫 번째 등록된 폼 반환
             if (recipeForms.Count > 0)
             {
                 return FormManager.Instance.CreateFormInstance(recipeForms[0]);
             }
-            
+
             // 등록된 폼이 없으면 기본 폼 반환
             return CreateDefaultRecipeForm();
         }

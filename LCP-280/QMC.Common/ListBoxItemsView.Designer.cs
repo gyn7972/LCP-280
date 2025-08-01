@@ -2,7 +2,6 @@
 {
     partial class ListBoxItemsView
     {
-        protected System.Windows.Forms.GroupBox groupBox;
         /// <summary> 
         /// 필수 디자이너 변수입니다.
         /// </summary>
@@ -29,28 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.groupBox = new System.Windows.Forms.GroupBox();
-            this.SuspendLayout();
-            // 
-            // groupBox
-            // 
-            this.groupBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular);
-            this.groupBox.ForeColor = System.Drawing.Color.Black;
-            this.groupBox.Location = new System.Drawing.Point(0, 0);
-            this.groupBox.Name = "groupBox";
-            this.groupBox.Size = new System.Drawing.Size(250, 350);
-            this.groupBox.TabIndex = 0;
-            this.groupBox.TabStop = false;
-            this.groupBox.Text = "Group Title";
-            // 
-            // ListBoxItemsView
-            // 
+            components = new System.ComponentModel.Container();
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.groupBox);
-            this.Name = "ListBoxItemsView";
-            this.Size = new System.Drawing.Size(250, 350);
-            this.ResumeLayout(false);
         }
 
         #endregion
