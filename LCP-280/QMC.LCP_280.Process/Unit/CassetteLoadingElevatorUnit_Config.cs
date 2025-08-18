@@ -27,7 +27,7 @@ namespace QMC.LCP_280.Process.Unit
         public CassetteLoadingElevatorUnit_Config()
         {
             InitializeComponent();
-            InitializeUnit();
+            //InitializeUnit();
             // 폼 로딩 중에는 화면 업데이트 중단
             this.SuspendLayout();
             InitializeUI();

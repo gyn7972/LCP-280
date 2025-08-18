@@ -70,6 +70,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="DoubleProperty.cs" />
+    <Compile Include="Examples\PropertyPositionUsageExample.cs" />
     <Compile Include="FormBottom.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -125,6 +126,7 @@
     <Compile Include="PropertyCollectionView.Designer.cs">
       <DependentUpon>PropertyCollectionView.cs</DependentUpon>
     </Compile>
+    <Compile Include="PropertyPosition.cs" />
     <Compile Include="PropertyState.cs" />
     <Compile Include="RadioButtonView.cs">
       <SubType>UserControl</SubType>
@@ -210,5 +212,6 @@
   <ItemGroup>
     <Content Include="Resources\Logo.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

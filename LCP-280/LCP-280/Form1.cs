@@ -7,6 +7,10 @@
 //using System.Text;
 //using System.Threading.Tasks;
 //using System.Windows.Forms;
+// 🚀 Position 관련 using은 주석 처리 (프로젝트 참조 문제)
+//using QMC.Common;
+//using QMC.Common.Component;
+//using QMC.Common.UI;
 
 namespace LCP_280
 {
@@ -26,13 +30,113 @@ namespace LCP_280
     public partial class Form1// : Form
     {
         //private WaferMapView waferMapView;
+
+        // 🚀 Position 관련 변수들 주석 처리 (프로젝트 참조 문제)
+        //private PositionDataCollection _positionCollection;
+        //private PositionProperty _selectedPositionProperty;
+
         public Form1()
         {
             InitializeComponent();
         }
 
+        /// <summary>
+        /// 🚀 사용자 이미지와 같은 Position Item 및 Editor 구현 예제 (주석 처리)
+        /// 프로젝트 참조 설정 후 사용 가능
+        /// </summary>
+        /*
+        private void InitializePositionItemEditor()
+        {
+            try
+            {
+                Console.WriteLine("=== Position Item & Editor 초기화 시작 ===");
+
+                // 🚀 1. PositionDataCollection 생성 (사용자 이미지와 동일)
+                _positionCollection = new PositionDataCollection("Lifter & Feeder Unit");
+                
+                // 사용자 이미지의 Position Item들 추가
+                _positionCollection.Add(new BasePositionData("Lifter Loading Position", 0.0, "mm", "리프터 로딩 위치"));
+                _positionCollection.Add(new BasePositionData("Lifter Unloading Position", 50.0, "mm", "리프터 언로딩 위치"));
+                _positionCollection.Add(new BasePositionData("Cassette Slot Pitch", 10.0, "mm", "카세트 슬롯 간격"));
+                _positionCollection.Add(new BasePositionData("Feeder Ready Position", 100.0, "mm", "피더 준비 위치"));
+                _positionCollection.Add(new BasePositionData("Feeder Avoid Position", 150.0, "mm", "피더 회피 위치"));
+                _positionCollection.Add(new BasePositionData("Feeder Stage Position", 200.0, "mm", "피더 스테이지 위치"));
+                _positionCollection.Add(new BasePositionData("Feeder Cassette Position", 250.0, "mm", "피더 카세트 위치"));
+
+                // 🚀 2. ListBoxItemsView에 Position Item들 표시 (사용자 이미지 왼쪽)
+                // this.listBoxItemsView.GroupName = "Position Item";
+                // this.listBoxItemsView.SetPositionDataCollection(_positionCollection);
+
+                // 🚀 3. Position Item 선택 이벤트 연결
+                // this.listBoxItemsView.PropertySelected += OnPositionItemSelected;
+
+                // 🚀 4. 기본 PropertyCollectionView를 Editor로 설정 (사용자 이미지 오른쪽)
+                // this.propertyCollectionView.GroupName = "Editor";
+
+                Console.WriteLine($"✅ Position Item & Editor 초기화 완료: {_positionCollection.Count}개 Position");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Position Item & Editor 초기화 오류: {ex.Message}");
+            }
+        }
+        */
+
+        /// <summary>
+        /// 🚀 Position Item 선택 이벤트 처리 (주석 처리)
+        /// </summary>
+        /*
+        private void OnPositionItemSelected(object sender, string selectedTitle)
+        {
+            try
+            {
+                Console.WriteLine($"📍 Position Item 선택: {selectedTitle}");
+
+                // 🚀 선택된 Position 찾기
+                var selectedPositionData = _positionCollection.FindByTitle(selectedTitle);
+                if (selectedPositionData == null)
+                {
+                    Console.WriteLine($"⚠️ Position을 찾을 수 없습니다: {selectedTitle}");
+                    return;
+                }
+
+                // 🚀 PositionProperty 생성
+                _selectedPositionProperty = new PositionProperty(selectedPositionData);
+
+                // 🚀 Editor용 PropertyCollection 생성
+                var editorProperties = PositionEditorUIHelper.CreatePositionEditorProperties(_selectedPositionProperty);
+
+                // 🚀 PropertyCollectionView에 Editor 내용 표시 (사용자 이미지 오른쪽)
+                // this.propertyCollectionView.SetProperties(editorProperties);
+
+                Console.WriteLine($"✅ Editor에 Position 표시: {selectedTitle}");
+                Console.WriteLine($"   값: {_selectedPositionProperty.Value:F3} {_selectedPositionProperty.Unit}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Position Item 선택 처리 오류: {ex.Message}");
+            }
+        }
+        */
+
+        /// <summary>
+        /// 🚀 Position Item & Editor 기능들 (주석 처리)
+        /// 프로젝트 참조 설정 후 사용 가능
+        /// </summary>
+        /*
+        private void OnSaveButtonClick() { ... }
+        private void OnCancelButtonClick() { ... }
+        private void OnMovePositionButtonClick() { ... }
+        private void OnTeachingMoveButtonClick() { ... }
+        private void ShowPositionEditorDialog() { ... }
+        public static void TestPositionItemEditor() { ... }
+        */
+
 //        private void Form1_Load(object sender, EventArgs e)
 //        {
+//            // 🚀 Position Item & Editor 초기화 추가
+//            InitializePositionItemEditor();
+
 //            // WaferMapView 초기화
 //            waferMapView = new WaferMapView
 //            {
@@ -51,26 +155,7 @@ namespace LCP_280
 //            this.ioPropertyCollectionView.GroupName = "Digital I/O Status";
 //            this.listBoxItemsView.GroupName = "Position Item";
 
-//            // PropertyCollectionView 예시 데이터 생성 - 동적 크기 조정 테스트를 위해 다양한 갯수로 설정
-//            var properties = new PropertyCollection();
-//            properties.IsInputParameter = false;
-//            properties.Add(new TitleOnlyProperty("Common"));
-//            properties.Add(new ComboBoxProperty("ROI Visible", "Enable", new List<string> { "Enable", "Disable" }));
-//            properties.Add(new ComboBoxProperty("Cross Visible", "Enable", new List<string> { "Enable", "Disable" }));
-//            properties.Add(new TitleOnlyProperty("Lens Scale"));
-//            properties.Add(new PropertyBase("Lens Scale X", "1.000"));
-//            properties.Add(new PropertyBase("Lens Scale Y", "1.000"));
-//            properties.Add(new TitleOnlyProperty("Gain & Offset"));
-//            properties.Add(new PropertyBase("Gain", "1.000"));
-//            properties.Add(new PropertyBase("Position", "0.000"));
-//            properties.Add(new PropertyBase("Offset", "0.000"));
-//            this.propertyCollectionView.SetProperties(properties);
-//            // PropertyCollectionView에 데이터 바인딩
-//            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-//| System.Windows.Forms.AnchorStyles.Left)
-//| System.Windows.Forms.AnchorStyles.Right)));
-
-//            // IOPropertyCollectionView - 동적 크기 조정 테스트를 위해 다양한 갯수로 설정
+//            // 🚀 Position Item Editor 예제 추가
 //            var ioProperties = new PropertyCollection();
 //            ioProperties.ShowNoColumn = false; // 0열 표시 옵션
 //            ioProperties.Add(new TitleOnlyProperty("No", "Name", "State")); // title 행 표시
@@ -85,79 +170,11 @@ namespace LCP_280
 //| System.Windows.Forms.AnchorStyles.Left)
 //| System.Windows.Forms.AnchorStyles.Right)));
 
-//            visionImageview.ShowLiveGrabButtons = true;
-//            visionImageview.SetImageViewName("Input Camera", "Output Camera");
-//            this.visionImageview.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-//| System.Windows.Forms.AnchorStyles.Left)
-//| System.Windows.Forms.AnchorStyles.Right)));
-
-//            string imagePath = System.IO.Path.Combine(Application.StartupPath, "AI_참고그림", "WaferMap.png");
-//            if (System.IO.File.Exists(imagePath))
-//            {
-//                visionImageview.SetImage(0, new Bitmap(imagePath));
-//            }
-//            else
-//            {
-//                MessageBox.Show("이미지 파일을 찾을 수 없습니다: " + imagePath);
-//            }
-//            string imagePath2 = System.IO.Path.Combine(Application.StartupPath, "AI_참고그림", "Mapping.png");
-//            if (System.IO.File.Exists(imagePath2))
-//            {
-//                visionImageview.SetImage(1, new Bitmap(imagePath2));
-//            }
-//            else
-//            {
-//                MessageBox.Show("이미지 파일을 찾을 수 없습니다: " + imagePath2);
-//            }
-
-//            // ListBoxItemsView 예시 데이터 설정 - 동적 크기 조정 테스트
-//            // ServoPosition은 enum 타입이므로, enum의 값들을 배열로 전달해야 합니다.
-//            this.listBoxItemsView.SetItems(typeof(ServoPosition));
+//            // ListBoxItemsView에 Position Item들 표시 (사용자 이미지와 동일)
+//            this.listBoxItemsView.SetPositionDataCollection(_positionCollection);
 //            this.listBoxItemsView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
 //| System.Windows.Forms.AnchorStyles.Left)
 //| System.Windows.Forms.AnchorStyles.Right)));
-
-//            this.radioButtonView.SetOptions(false, typeof(MoveMode));
-
-//            {
-//                var cassetteList = new List<CassetteData>();
-
-//                // 첫 번째 CassetteData 생성
-//                var cassetteA = new CassetteData
-//                {
-//                    CassetteIndex = 0,
-//                    CassetteId = "A001",
-//                    State = CassetteState.Present
-//                };
-//                cassetteA.GenerateWaferData(20); // 슬롯 개수 예시: 25
-
-//                // 두 번째 CassetteData 생성
-//                var cassetteB = new CassetteData
-//                {
-//                    CassetteIndex = 1,
-//                    CassetteId = "B001",
-//                    State = CassetteState.Present
-//                };
-//                cassetteB.GenerateWaferData(20);
-
-//                cassetteList.Add(cassetteA);
-//                cassetteList.Add(cassetteB);
-
-//                // CassetteMapView에 전달
-//                cassetteMapView.SetCassettes(cassetteList);
-
-//                // 예시: 모든 Wafer의 모든 Slot을 Loaded로 변경
-//                foreach (var cassette in cassetteList)
-//                {
-//                    foreach (var wafer in cassette.WaferList)
-//                    {
-//                        for (int i = 0; i < wafer.SlotStates.Length; i++)
-//                        {
-//                            wafer.SlotStates[i] = WaferCassetteLoadState.Loaded;
-//                        }
-//                    }
-//                }
-//            }
 //        }
 
 //        private List<WaferMapItem> GenerateWaferMapDataForImage()

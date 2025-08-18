@@ -142,14 +142,14 @@ namespace QMC.LCP_280.Process
                     var config = equipment.GetUnitConfig<Component.CassetteElevatorConfig>(unitName);
                     if (config != null)
                     {
-                        Console.WriteLine($"현재 {unitName} Config - Ready Position: {config.ReadyPosition}");
+                        //Console.WriteLine($"현재 {unitName} Config - Ready Position: {config.ReadyPosition}");
                         
                         // Config 수정
-                        config.ReadyPosition = 5.0;
-                        config.LoadingPosition = 15.0;
+                        //config.ReadyPosition = 5.0;
+                        //config.LoadingPosition = 15.0;
                         equipment.SetUnitConfig(unitName, config);
                         
-                        Console.WriteLine($"수정된 {unitName} Config - Ready Position: {config.ReadyPosition}");
+                        //Console.WriteLine($"수정된 {unitName} Config - Ready Position: {config.ReadyPosition}");
                     }
                     
                     // Recipe 가져오기 및 수정
@@ -297,7 +297,7 @@ namespace QMC.LCP_280.Process
                     var config = equipment.GetUnitConfig<Component.CassetteElevatorConfig>(CASSETTE_UNIT_NAME);
                     if (config != null)
                     {
-                        Console.WriteLine($"   Config: Ready Position = {config.ReadyPosition}, Loading Position = {config.LoadingPosition}");
+                        //Console.WriteLine($"   Config: Ready Position = {config.ReadyPosition}, Loading Position = {config.LoadingPosition}");
                     }
                     else
                     {
@@ -395,10 +395,10 @@ namespace QMC.LCP_280.Process
                     var config = equipment.GetUnitConfig<Component.CassetteElevatorConfig>(CASSETTE_UNIT_NAME);
                     if (config != null)
                     {
-                        Console.WriteLine($"   현재 Ready Position: {config.ReadyPosition}");
-                        config.ReadyPosition = 5.0;
+                        //Console.WriteLine($"   현재 Ready Position: {config.ReadyPosition}");
+                        //config.ReadyPosition = 5.0;
                         equipment.SetUnitConfig(CASSETTE_UNIT_NAME, config);
-                        Console.WriteLine($"   수정된 Ready Position: {config.ReadyPosition}");
+                        //Console.WriteLine($"   수정된 Ready Position: {config.ReadyPosition}");
                     }
                     
                     // 4. Recipe 테스트

@@ -432,6 +432,15 @@ namespace QMC.Common
         }
 
         /// <summary>
+        /// 🚀 현재 설정된 PropertyCollection을 반환합니다.
+        /// </summary>
+        /// <returns>현재 PropertyCollection</returns>
+        public PropertyCollection GetCurrentProperties()
+        {
+            return _currentProperties;
+        }
+
+        /// <summary>
         /// 속성 변경 시 UI를 새로고침합니다.
         /// </summary>
         private void RefreshProperties()

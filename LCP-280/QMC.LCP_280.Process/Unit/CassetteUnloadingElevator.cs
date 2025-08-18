@@ -13,10 +13,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             // Config를 직접 생성하거나 외부에서 주입 가능
             var elevatorConfig = new CassetteElevatorConfig();
-            elevatorConfig.ReadyPosition = 5.0;
-            elevatorConfig.LoadingPosition = 15.0;
-            elevatorConfig.UnloadingPosition = 25.0;
-            elevatorConfig.ScanningPosition = 20.0;
+            //elevatorConfig.LoadingPosition = 15.0;
+            //elevatorConfig.UnloadingPosition = 25.0;
+            //elevatorConfig.ScanningPosition = 20.0;
 
             var scannerConfig = new WaferSlotScannerConfig();
             scannerConfig.SlotCount = 25;
@@ -44,10 +43,6 @@ namespace QMC.LCP_280.Process.Unit
         // Unit에서 Component의 Config에 자유롭게 접근하는 예시
         public void ConfigureComponents()
         {
-            // CassetteElevator Config 접근 및 수정
-            double currentReadyPos = CassetteElevator.Config.ReadyPosition;
-            CassetteElevator.Config.ReadyPosition = currentReadyPos + 1.0;
-
             // WaferSlotScanner Config 접근 및 수정
             int slotCount = WaferSlotScanner.Config.SlotCount;
             WaferSlotScanner.Config.ScanSpeed = 5.0;

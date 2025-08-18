@@ -266,5 +266,15 @@ namespace QMC.Common
             
             base.OnFormClosed(e);
         }
+
+        public void SetPanelSize(int width, int height)
+        {
+            this.Size = new Size(width, height);
+            this.ClientSize = new Size(width, height);
+            if (configTabControl != null)
+            {
+                configTabControl.Size = new Size(width, height);
+            }
+        }
     }
 }

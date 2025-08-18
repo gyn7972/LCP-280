@@ -190,15 +190,17 @@ namespace QMC.Common
         {
             if (listBox == null) return;
 
+            // 🚀 Position Item 선택 이벤트 발생
             ItemSelected?.Invoke(this, listBox.SelectedIndex);
 
-            // 선택된 아이템의 이름 추출 및 메시지 박스 표시
+            // 🚀 디버그 모드에서만 선택된 아이템 정보 출력
+#if DEBUG
             if (listBox.SelectedIndex >= 0)
             {
                 var item = listBox.Items[listBox.SelectedIndex];
                 string name = item as string;
 
-                // Name 속성이 있으면 사용자
+                // Name 속성이 있으면 사용
                 if (name == null && item != null)
                 {
                     var prop = item.GetType().GetProperty("Name");
@@ -210,8 +212,9 @@ namespace QMC.Common
                 if (string.IsNullOrEmpty(name) && item != null)
                     name = item.ToString();
 
-                MessageBox.Show($"선택된 항목: {name}", "ListBox 선택", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Console.WriteLine($"📍 Position Item 선택: {name} (인덱스: {listBox.SelectedIndex})");
             }
+#endif
         }
 
         // 선택된 인덱스 접근

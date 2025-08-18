@@ -83,7 +83,26 @@ namespace QMC.Common
                 if (rowHeights.Length > 2)
                 {
                     formTop.SetPanelSize(width, rowHeights[0]);
+                    formConfig.SetPanelSize(width, rowHeights[1]);
                     formBottom.SetPanelSize(width, rowHeights[2]);
+
+                    // MainForm이 현재 표시 중이면 사이즈 적용
+                    if (currentCenterForm != null)
+                    {
+                        // FormConfig 또는 SetPanelSize를 가진 타입에만 적용
+                        if (currentCenterForm is FormConfig fc)
+                        {
+                            fc.SetPanelSize(width, rowHeights[1]);
+                        }
+                        else if (currentCenterForm is FormTop ft)
+                        {
+                            ft.SetPanelSize(width, rowHeights[1]);
+                        }
+                        else if (currentCenterForm is FormBottom fb)
+                        {
+                            fb.SetPanelSize(width, rowHeights[1]);
+                        }
+                    }
                 }
             };
         }

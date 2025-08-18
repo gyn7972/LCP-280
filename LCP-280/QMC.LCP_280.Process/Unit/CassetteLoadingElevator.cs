@@ -3,17 +3,6 @@ using QMC.LCP_280.Process.Component;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    enum PositionItem
-    {
-        CassetteElevator_Loading_Position,
-        CassetteElevator_Unloading_Position,
-        CassetteElevator_Ready_Position,
-        CassetteElevator_Scanning_Position,
-        WaferTransferArm_Loading_Position,
-        WaferTransferArm_Unloading_Position,
-        WaferTransferArm_Ready_Position,
-        WaferSlotScanner_Reading_Position,
-    }
     public class CassetteLoadingElevator : BaseUnit, ICassetteElevatorUnit
     {
         public CassetteElevator CassetteElevator { get; private set; }
@@ -29,10 +18,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             // Config를 직접 생성하거나 외부에서 주입 가능
             var elevatorConfig = new CassetteElevatorConfig();
-            elevatorConfig.ReadyPosition = 0.0;
-            elevatorConfig.LoadingPosition = 10.0;
-            elevatorConfig.UnloadingPosition = 20.0;
-            elevatorConfig.ScanningPosition = 15.0;
+            //elevatorConfig.LoadingPosition = 10.0;
+            //elevatorConfig.UnloadingPosition = 20.0;
+            //elevatorConfig.ScanningPosition = 15.0;
 
             var scannerConfig = new WaferSlotScannerConfig();
             scannerConfig.SlotCount = 25;
@@ -58,10 +46,6 @@ namespace QMC.LCP_280.Process.Unit
         // Unit에서 Component의 Config에 자유롭게 접근하는 예시
         public void ConfigureComponents()
         {
-            // CassetteElevator Config 접근 및 수정
-            double currentReadyPos = CassetteElevator.Config.ReadyPosition;
-            CassetteElevator.Config.ReadyPosition = currentReadyPos + 1.0;
-
             // WaferSlotScanner Config 접근 및 수정
             int slotCount = WaferSlotScanner.Config.SlotCount;
             WaferSlotScanner.Config.ScanSpeed = 5.0;

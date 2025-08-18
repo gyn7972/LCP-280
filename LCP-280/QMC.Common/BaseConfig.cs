@@ -31,6 +31,7 @@ namespace QMC.Common
             return true;
         }
         public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
-        
+        public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
+
     }
 }
