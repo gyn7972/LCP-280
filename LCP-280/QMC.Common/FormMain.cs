@@ -1,322 +1,301 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.Common
 {
     public partial class FormMain : Form
     {
-        #region Field
-        private Size MainSize;
-        private TableLayoutPanel tableLayoutPanelFormMain;
-        private FormTop formTop;
-        private FormBottom formBottom;
-        private Form currentCenterForm;
-        private FormConfig formConfig;
-        #endregion
+        private TabControl configTabControl;
+        private Dictionary<TabPage, Form> _tabFormInstances;
         
+        // Theme fields
+        private int _tabHeight = 28;
+        private Color _tabBorderColor = Color.Black;
+        private int _tabBorderWidth = 2;
+        private Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
+
         public FormMain()
         {
             InitializeComponent();
-            this.StartPosition = FormStartPosition.WindowsDefaultLocation;
-            this.WindowState = FormWindowState.Normal;           // 일반 상태로 시작
-            this.Load += MainForm_Load;
+            
+            // 🔧 FormMain 배경색을 흰색으로 설정
+            this.BackColor = Color.White;
+            
+            _tabFormInstances = new Dictionary<TabPage, Form>();
+            InitializeConfigUI();
         }
-
-        private void MainForm_Load(object sender, EventArgs e)
+        
+        private void InitializeConfigUI()
         {
-            MainSize = new Size(1280, 1024);
-            this.Size = MainSize;
-            this.ClientSize = MainSize;
-
-            // FormManager 시스템 초기화
-            InitializeFormManagers();
-
-            // TableLayoutPanel 생성 및 설정
-            tableLayoutPanelFormMain = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                RowCount = 3,
-                ColumnCount = 1
-            };
-
-            // 각 행을 동일한 비율로 분할
-            tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 80F));
-            tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            tableLayoutPanelFormMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-
-            this.Controls.Add(tableLayoutPanelFormMain);
-
-            // FormTop을 첫번째 행(인덱스 0)에 추가
-            formTop = new FormTop();
-            formTop.TopLevel = false;
-            formTop.FormBorderStyle = FormBorderStyle.None;
-            formTop.Dock = DockStyle.Fill;
-            tableLayoutPanelFormMain.Controls.Add(formTop, 0, 0);
-            formTop.Show();
-
-            // FormConfig 초기화 (숨김 상태)
-            formConfig = new FormConfig();
-            formConfig.TopLevel = false;
-            formConfig.FormBorderStyle = FormBorderStyle.None;
-            formConfig.Dock = DockStyle.Fill;
-            formConfig.Visible = false;
-            tableLayoutPanelFormMain.Controls.Add(formConfig, 0, 1);
-
-            // FormBottom을 세 번째 행(인덱스 2)에 추가
-            formBottom = new FormBottom();
-            formBottom.TopLevel = false;
-            formBottom.FormBorderStyle = FormBorderStyle.None;
-            formBottom.Dock = DockStyle.Fill;
-            tableLayoutPanelFormMain.Controls.Add(formBottom, 0, 2);
-            formBottom.Show();
-
-            // FormBottom의 메뉴 버튼 클릭 이벤트 구독
-            formBottom.MenuButtonClicked += FormBottom_MenuButtonClicked;
-
-            // 폼이 보여진 후 실제 Width, Height 전달
-            this.Shown += (s, args) =>
-            {
-                int[] rowHeights = tableLayoutPanelFormMain.GetRowHeights();
-                int width = tableLayoutPanelFormMain.GetColumnWidths()[0];
-                if (rowHeights.Length > 2)
-                {
-                    formTop.SetPanelSize(width, rowHeights[0]);
-                    formConfig.SetPanelSize(width, rowHeights[1]);
-                    formBottom.SetPanelSize(width, rowHeights[2]);
-
-                    // MainForm이 현재 표시 중이면 사이즈 적용
-                    if (currentCenterForm != null)
-                    {
-                        // FormConfig 또는 SetPanelSize를 가진 타입에만 적용
-                        if (currentCenterForm is FormConfig fc)
-                        {
-                            fc.SetPanelSize(width, rowHeights[1]);
-                        }
-                        else if (currentCenterForm is FormTop ft)
-                        {
-                            ft.SetPanelSize(width, rowHeights[1]);
-                        }
-                        else if (currentCenterForm is FormBottom fb)
-                        {
-                            fb.SetPanelSize(width, rowHeights[1]);
-                        }
-                    }
-                }
-            };
+            // 🔧 FormMain 배경색을 확실히 흰색으로 설정
+            this.BackColor = Color.White;
+            
+            // TabControl 생성 및 테마 적용
+            configTabControl = new TabControl();
+            configTabControl.Dock = DockStyle.Fill;
+            configTabControl.Font = _tabFont;
+            configTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            configTabControl.ItemSize = new Size(120, _tabHeight);
+            configTabControl.SizeMode = TabSizeMode.Fixed;
+            configTabControl.DrawItem += ConfigTabControl_DrawItem;
+            configTabControl.SelectedIndexChanged += ConfigTabControl_SelectedIndexChanged;
+            
+            // 🔧 TabControl 배경색도 흰색으로 설정
+            configTabControl.BackColor = Color.White;
+            
+            this.Controls.Add(configTabControl);
+            
+            // FormManager에서 등록된 Config 폼들을 자동으로 탭으로 추가
+            LoadFormsFromManager();
         }
 
         /// <summary>
-        /// FormManager 시스템 초기화 및 샘플 폼 등록
+        /// FormManager에서 Config 타입으로 등록된 폼들을 탭으로 로드
         /// </summary>
-        private void InitializeFormManagers()
+        private void LoadFormsFromManager()
         {
             try
             {
-                // 모든 FormManager 타입의 자동 등록 실행
-                FormManagerConfig.Instance.AutoRegisterUnitConfigForms();
-                FormManagerMain.Instance.AutoRegisterUnitMainForms();
-                FormManagerWorking.Instance.AutoRegisterUnitWorkingForms();
-                FormManagerRecipe.Instance.AutoRegisterUnitRecipeForms();
-                FormManagerSetup.Instance.AutoRegisterUnitSetupForms();
-                FormManagerLog.Instance.AutoRegisterUnitLogForms();
+                var configForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Main);
                 
-                // 추가적인 수동 등록 예시 (필요시 사용)
-                // FormManagerMain.Instance.RegisterMainForm(typeof(CustomMainForm), "Custom Main", "사용자 정의 메인 화면");
-                // FormManagerWorking.Instance.RegisterWorkingForm(typeof(ProcessMonitorForm), "Process Monitor", "공정 모니터링");
-                // FormManagerRecipe.Instance.RegisterRecipeForm(typeof(RecipeEditorForm), "Recipe Editor", "레시피 편집기");
-                // FormManagerSetup.Instance.RegisterSetupForm(typeof(SystemSetupForm), "System Setup", "시스템 설정");
-                // FormManagerLog.Instance.RegisterLogForm(typeof(SystemLogForm), "System Log", "시스템 로그");
+                foreach (var formInfo in configForms)
+                {
+                    CreateTabFromFormInfo(formInfo);
+                }
                 
+                // 등록된 폼이 없으면 기본 샘플 탭 생성
+                if (configForms.Count == 0)
+                {
+                    CreateSampleTabs();
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"FormManager 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show($"Config 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                CreateSampleTabs(); // 오류 발생시 기본 탭 생성
             }
         }
 
-        private void FormBottom_MenuButtonClicked(MenuButtonType menuType)
+        /// <summary>
+        /// FormInfo를 기반으로 탭 페이지 생성
+        /// </summary>
+        /// <param name="formInfo">폼 정보</param>
+        private void CreateTabFromFormInfo(FormInfo formInfo)
         {
-            SwitchCenterForm(menuType);
+            TabPage tabPage = new TabPage(formInfo.DisplayName);
+            tabPage.Tag = formInfo; // FormInfo를 Tag에 저장
+            
+            // 🔧 TabPage 배경색도 흰색으로 설정
+            tabPage.BackColor = Color.White;
+            
+            configTabControl.TabPages.Add(tabPage);
         }
 
-        private void SwitchCenterForm(MenuButtonType menuType)
+        /// <summary>
+        /// 탭이 선택되었을 때 해당 폼을 로드하여 표시
+        /// </summary>
+        private void ConfigTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // 현재 표시된 폼 숨기기
-            if (currentCenterForm != null)
+            TabPage selectedTab = configTabControl.SelectedTab;
+            if (selectedTab?.Tag is FormInfo formInfo)
             {
-                currentCenterForm.Visible = false;
-            }
-
-            // 메뉴 타입에 따라 적절한 폼 표시
-            switch (menuType)
-            {
-                case MenuButtonType.Main:
-                    ShowMainForm();
-                    break;
-                case MenuButtonType.Config:
-                    currentCenterForm = formConfig;
-                    break;
-                case MenuButtonType.Working:
-                    ShowWorkingForm();
-                    break;
-                case MenuButtonType.Recipe:
-                    ShowRecipeForm();
-                    break;
-                case MenuButtonType.Setup:
-                    ShowSetupForm();
-                    break;
-                case MenuButtonType.Log:
-                    ShowLogForm();
-                    break;
-                default:
-                    // 기본값으로 Config 표시
-                    currentCenterForm = formConfig;
-                    break;
-            }
-
-            // 선택된 폼 표시
-            if (currentCenterForm != null)
-            {
-                currentCenterForm.Visible = true;
-                currentCenterForm.BringToFront();
+                LoadFormIntoTab(selectedTab, formInfo);
             }
         }
 
-        private void ShowMainForm()
+        /// <summary>
+        /// 탭에 폼을 로드하여 표시
+        /// </summary>
+        /// <param name="tabPage">대상 탭 페이지</param>
+        /// <param name="formInfo">로드할 폼 정보</param>
+        private void LoadFormIntoTab(TabPage tabPage, FormInfo formInfo)
         {
             try
             {
-                // 기존 Main 폼이 있으면 제거
-                if (currentCenterForm != null && currentCenterForm.Name == "MainForm")
+                // 이미 로드된 폼이 있는지 확인
+                if (!_tabFormInstances.ContainsKey(tabPage))
                 {
-                    currentCenterForm = null;
+                    // 폼 인스턴스 생성
+                    Form formInstance = FormManager.Instance.CreateFormInstance(formInfo);
+                    
+                    // 폼을 탭에 임베드하기 위한 설정
+                    formInstance.TopLevel = false;
+                    formInstance.FormBorderStyle = FormBorderStyle.None;
+                    formInstance.Dock = DockStyle.Fill;
+                    
+                    // 탭에 폼 추가
+                    tabPage.Controls.Clear();
+                    tabPage.Controls.Add(formInstance);
+                    
+                    // 폼 표시
+                    formInstance.Show();
+                    
+                    // 인스턴스 저장
+                    _tabFormInstances[tabPage] = formInstance;
                 }
-
-                // FormManagerMain에서 Main 폼 생성
-                Form mainForm = FormManagerMain.Instance.CreateMainForm();
-                mainForm.TopLevel = false;
-                mainForm.FormBorderStyle = FormBorderStyle.None;
-                mainForm.Dock = DockStyle.Fill;
-                mainForm.Name = "MainForm";
-                
-                tableLayoutPanelFormMain.Controls.Add(mainForm, 0, 1);
-                currentCenterForm = mainForm;
+                else
+                {
+                    // 이미 로드된 폼이 있으면 다시 표시
+                    _tabFormInstances[tabPage].Show();
+                }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Main 폼 로드 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                currentCenterForm = formConfig; // fallback
+                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                
+                // 오류시 기본 메시지 표시
+                Label errorLabel = new Label
+                {
+                    Text = $"폼 로드 실패: {formInfo.DisplayName}",
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Font = new Font("맑은 고딕", 12, FontStyle.Bold),
+                    ForeColor = Color.Red
+                };
+                
+                tabPage.Controls.Clear();
+                tabPage.Controls.Add(errorLabel);
             }
         }
 
-        private void ShowWorkingForm()
+        /// <summary>
+        /// FormManager에 새로운 폼이 등록되었을 때 탭을 새로고침
+        /// </summary>
+        public void RefreshConfigTabs()
         {
-            var workingForms = FormManagerWorking.Instance.GetWorkingForms();
-            if (workingForms.Count > 0)
+            // 기존 탭과 폼 인스턴스 정리
+            foreach (var formInstance in _tabFormInstances.Values)
             {
-                try
-                {
-                    Form workingForm = FormManagerWorking.Instance.CreateWorkingForm();
-                    SetupCenterForm(workingForm, "WorkingForm");
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Working", ex.Message);
-                }
+                formInstance?.Dispose();
             }
-            else
-            {
-                ShowNotImplementedMessage("Working", "등록된 Working 폼이 없습니다.");
-            }
-        }
-
-        private void ShowRecipeForm()
-        {
-            var recipeForms = FormManagerRecipe.Instance.GetRecipeForms();
-            if (recipeForms.Count > 0)
-            {
-                try
-                {
-                    Form recipeForm = FormManagerRecipe.Instance.CreateRecipeForm();
-                    SetupCenterForm(recipeForm, "RecipeForm");
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Recipe", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Recipe", "등록된 Recipe 폼이 없습니다.");
-            }
-        }
-
-        private void ShowSetupForm()
-        {
-            var setupForms = FormManagerSetup.Instance.GetSetupForms();
-            if (setupForms.Count > 0)
-            {
-                try
-                {
-                    Form setupForm = FormManagerSetup.Instance.CreateSetupForm();
-                    SetupCenterForm(setupForm, "SetupForm");
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Setup", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Setup", "등록된 Setup 폼이 없습니다.");
-            }
-        }
-
-        private void ShowLogForm()
-        {
-            var logForms = FormManagerLog.Instance.GetLogForms();
-            if (logForms.Count > 0)
-            {
-                try
-                {
-                    Form logForm = FormManagerLog.Instance.CreateLogForm();
-                    SetupCenterForm(logForm, "LogForm");
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Log", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Log", "등록된 Log 폼이 없습니다.");
-            }
-        }
-
-        private void SetupCenterForm(Form form, string formName)
-        {
-            form.TopLevel = false;
-            form.FormBorderStyle = FormBorderStyle.None;
-            form.Dock = DockStyle.Fill;
-            form.Name = formName;
+            _tabFormInstances.Clear();
+            configTabControl.TabPages.Clear();
             
-            tableLayoutPanelFormMain.Controls.Add(form, 0, 1);
-            currentCenterForm = form;
+            // 새로 로드
+            LoadFormsFromManager();
         }
 
-        private void ShowNotImplementedMessage(string menuName, string additionalInfo = null)
+        private void ConfigTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
-            string message = $"'{menuName}' 메뉴는 아직 구현되지 않았습니다.";
-            if (!string.IsNullOrEmpty(additionalInfo))
+            TabPage page = configTabControl.TabPages[e.Index];
+            Rectangle tabRect = configTabControl.GetTabRect(e.Index);
+
+            // 선택된 탭은 하얀색, 아닌 탭은 회색
+            Color backColor = (e.Index == configTabControl.SelectedIndex) ? Color.White : Color.Gainsboro;
+            using (Brush backBrush = new SolidBrush(backColor))
             {
-                message += $"\n\n{additionalInfo}";
+                e.Graphics.FillRectangle(backBrush, tabRect);
             }
-            message += $"\n\nFormManager{menuName}.Instance.Register{menuName}Form()을 사용하여 폼을 등록하세요.";
+
+            // 테두리 그리기 (사용자 지정 색상과 두께)
+            using (Pen borderPen = new Pen(_tabBorderColor, _tabBorderWidth))
+            {
+                Rectangle borderRect = tabRect;
+                if (_tabBorderWidth > 1)
+                {
+                    borderRect.Inflate(-_tabBorderWidth / 2, -_tabBorderWidth / 2);
+                }
+                e.Graphics.DrawRectangle(borderPen, borderRect);
+            }
+
+            // 텍스트 그리기 (두 줄 처리)
+            string text = page.Text;
+            Size tabSize = tabRect.Size;
+            StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+            SizeF textSize = e.Graphics.MeasureString(text, _tabFont);
+
+            if (textSize.Width > tabSize.Width - 8) // 8px padding
+            {
+                // 두 줄로 분할
+                string[] words = text.Split(' ');
+                string line1 = words[0];
+                string line2 = string.Join(" ", words.Skip(1));
+                // 만약 단어가 2개 이상이면, 첫 단어와 나머지로 분리
+                if (words.Length > 1)
+                {
+                    // line1에 단어를 추가하면서 width 체크
+                    for (int i = 1; i < words.Length; i++)
+                    {
+                        string testLine = line1 + " " + words[i];
+                        if (e.Graphics.MeasureString(testLine, _tabFont).Width < tabSize.Width - 8)
+                        {
+                            line1 = testLine;
+                            line2 = string.Join(" ", words.Skip(i + 1));
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+                // 두 줄로 그리기
+                RectangleF line1Rect = new RectangleF(tabRect.X, tabRect.Y + 2, tabRect.Width, tabRect.Height / 2 - 2);
+                RectangleF line2Rect = new RectangleF(tabRect.X, tabRect.Y + tabRect.Height / 2, tabRect.Width, tabRect.Height / 2 - 2);
+                e.Graphics.DrawString(line1, _tabFont, Brushes.Black, line1Rect, sf);
+                e.Graphics.DrawString(line2, _tabFont, Brushes.Black, line2Rect, sf);
+            }
+            else
+            {
+                // 한 줄로 그리기
+                TextRenderer.DrawText(
+                    e.Graphics,
+                    text,
+                    _tabFont,
+                    tabRect,
+                    Color.Black,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
+                );
+            }
+        }
+        
+        private void CreateSampleTabs()
+        {
+            // System Config 탭
+            TabPage systemTab = new TabPage("Sample Config");
             
-            MessageBox.Show(message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            currentCenterForm = formConfig; // fallback to config
+            // 🔧 샘플 탭의 배경색도 흰색으로 설정
+            systemTab.BackColor = Color.White;
+            
+            Label systemLabel = new Label();
+            systemLabel.Text = "No Config Forms Registered\n\nUse FormManager.Instance.RegisterForm() to add config forms.";
+            systemLabel.Font = new Font("맑은 고딕", 12, FontStyle.Regular);
+            systemLabel.TextAlign = ContentAlignment.MiddleCenter;
+            systemLabel.Dock = DockStyle.Fill;
+            
+            // 🔧 라벨의 배경색도 흰색으로 설정
+            systemLabel.BackColor = Color.White;
+            
+            systemTab.Controls.Add(systemLabel);
+            configTabControl.TabPages.Add(systemTab);
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            // 폼 종료시 리소스 정리
+            foreach (var formInstance in _tabFormInstances.Values)
+            {
+                formInstance?.Dispose();
+            }
+            _tabFormInstances.Clear();
+            
+            base.OnFormClosed(e);
+        }
+
+        public void SetPanelSize(int width, int height)
+        {
+            this.Size = new Size(width, height);
+            this.ClientSize = new Size(width, height);
+            if (configTabControl != null)
+            {
+                configTabControl.Size = new Size(width, height);
+            }
         }
     }
 }

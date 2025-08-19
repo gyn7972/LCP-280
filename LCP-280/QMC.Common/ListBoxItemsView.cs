@@ -14,8 +14,50 @@ namespace QMC.Common
         private string _fontFamily = "맑은 고딕";
         private float _fontSize = 10f;
         private string _groupName = "Group Title";
+        
+        // 자동/수동 크기 조정 옵션
+        private bool _autoSizeGroupBox = true;
+        private Size _manualGroupBoxSize = new Size(200, 150);
 
         public event EventHandler<int> ItemSelected;
+
+        // GroupBox 자동 크기 조정 옵션
+        [Browsable(true)]
+        [Category("Layout")]
+        [Description("GroupBox 크기를 자동으로 조정할지 여부")]
+        [DefaultValue(true)]
+        public bool AutoSizeGroupBox
+        {
+            get => _autoSizeGroupBox;
+            set
+            {
+                if (_autoSizeGroupBox != value)
+                {
+                    _autoSizeGroupBox = value;
+                    UpdateGroupBoxSizeMode();
+                }
+            }
+        }
+
+        // 수동 GroupBox 크기 설정
+        [Browsable(true)]
+        [Category("Layout")]
+        [Description("수동 모드일 때 GroupBox의 크기")]
+        public Size ManualGroupBoxSize
+        {
+            get => _manualGroupBoxSize;
+            set
+            {
+                if (_manualGroupBoxSize != value)
+                {
+                    _manualGroupBoxSize = value;
+                    if (!_autoSizeGroupBox)
+                    {
+                        UpdateGroupBoxSizeMode();
+                    }
+                }
+            }
+        }
 
         // GroupBox 이름 프로퍼티
         [Browsable(true)]
@@ -70,7 +112,6 @@ namespace QMC.Common
             groupBox = new GroupBox
             {
                 Text = groupName,
-                Dock = DockStyle.Fill,
                 Font = new Font("맑은 고딕", 10f, FontStyle.Regular),
                 ForeColor = Color.Black,
                 BackColor = Color.White,
@@ -80,8 +121,39 @@ namespace QMC.Common
             // UserControl에 GroupBox 추가
             this.Controls.Add(groupBox);
 
+            // 초기 크기 모드 설정
+            UpdateGroupBoxSizeMode();
+
             // ListBox 초기화
             InitializeListBox();
+        }
+
+        // GroupBox 크기 모드 업데이트
+        private void UpdateGroupBoxSizeMode()
+        {
+            if (groupBox == null) return;
+
+            if (_autoSizeGroupBox)
+            {
+                // 자동 크기 조정 모드 - Designer에서 설정한 UserControl 크기를 GroupBox에 고정 적용
+                groupBox.Dock = DockStyle.None; // Dock을 None으로 설정하여 고정 크기 사용
+                groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left; // Anchor를 Top, Left만 설정하여 크기 고정
+                groupBox.Location = Point.Empty; // (0, 0)에 위치
+                groupBox.Size = this.Size; // UserControl의 전체 크기와 동일하게 고정 설정
+            }
+            else
+            {
+                // 수동 크기 조정 모드
+                groupBox.Dock = DockStyle.None;
+                groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+                groupBox.Size = _manualGroupBoxSize;
+                groupBox.Location = Point.Empty;
+                // UserControl 크기도 수동 크기에 맞춤
+                this.Size = _manualGroupBoxSize;
+            }
+            
+            groupBox.Invalidate();
+            this.Invalidate();
         }
 
         private void InitializeListBox()
@@ -114,13 +186,18 @@ namespace QMC.Common
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            
-            // GroupBox는 Dock = Fill로 설정되어 있어 자동으로 리사이즈되지만,
-            // 추가적인 레이아웃 갱신이 필요한 경우를 위해
-            if (groupBox != null)
+            // 자동 크기 조정 모드일 때는 Designer에서 설정한 크기 유지
+            if (_autoSizeGroupBox && groupBox != null)
             {
-                groupBox.Size = this.ClientSize;
+                // UserControl의 전체 크기를 GroupBox에 고정 적용
+                groupBox.Size = this.Size;
+                groupBox.Location = Point.Empty; // 항상 (0, 0)에 위치
                 groupBox.Invalidate();
+                // ListBox도 함께 업데이트
+                if (listBox != null)
+                {
+                    listBox.Invalidate();
+                }
             }
         }
 
@@ -128,11 +205,13 @@ namespace QMC.Common
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
             base.SetBoundsCore(x, y, width, height, specified);
-            
-            // GroupBox 크기 동기화
-            if (groupBox != null && (specified & BoundsSpecified.Size) != 0)
+            // 자동 크기 조정 모드일 때 Designer에서 설정한 크기를 GroupBox에 고정 적용
+            if (_autoSizeGroupBox && groupBox != null && (specified & BoundsSpecified.Size) != 0)
             {
+                // UserControl의 전체 크기를 GroupBox에 적용
                 groupBox.Size = new Size(width, height);
+                groupBox.Location = Point.Empty; // GroupBox를 UserControl의 왼쪽 상단에 위치
+                groupBox.Invalidate();
             }
         }
 

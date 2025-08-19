@@ -20,7 +20,7 @@ namespace QMC.Common
         private const int MinVisibleRows = 3; // 최소 보이는 행 수 줄임
         private const int MaxVisibleRows = 15; // 최대 보이는 행 수 설정
         private const int GroupBoxHeaderHeight = 20; // GroupBox 헤더 높이
-        private const int GroupBoxPadding = 16; // GroupBox 패딩
+        private const int GroupBoxPadding = 20; // GroupBox 패딩
 
         // GroupBox 이름 프로퍼티
         [Browsable(true)]
@@ -100,82 +100,77 @@ namespace QMC.Common
 
         private void InitializeComponentUser(string groupName)
         {
-            // GroupBox 생성 및 스타일 적용 (ListBoxItemsView와 동일한 스타일)
-            groupBox = new GroupBox();
-            groupBox.Dock = DockStyle.Fill;
-            groupBox.Font = new Font("맑은 고딕", 10f, FontStyle.Regular);
-            groupBox.ForeColor = Color.Black;
-            groupBox.BackColor = Color.White; // 배경색을 하얀색으로 설정
-            groupBox.Text = groupName;
-            groupBox.Padding = new Padding(8, 8, 8, 8); // 제목과 내용 간격 조정
-            groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            // GroupBox 생성 및 설정 - UserControl 전체 크기에 맞춤
+            groupBox = new GroupBox
+            {
+                Text = groupName,
+                Font = new Font("맑은 고딕", 10f, FontStyle.Regular),
+                ForeColor = Color.Black,
+                BackColor = Color.White,
+                Padding = new Padding(8, 8, 8, 12),
+                Dock = DockStyle.Fill // Designer 크기에 완전히 맞춤
+            };
+
+            // UserControl에 GroupBox 추가
             this.Controls.Add(groupBox);
 
             scrollPanel = new Panel
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true,
-                BackColor = Color.White
+                BackColor = Color.White,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
 
             tableLayoutPanel = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill, // Top에서 Fill로 변경하여 빈 공간 제거
-                AutoSize = false, // AutoSize를 false로 변경
+                Dock = DockStyle.Top,
+                AutoSize = true,
                 ColumnCount = 2,
                 RowCount = 0,
-                AutoSizeMode = AutoSizeMode.GrowOnly, // GrowAndShrink에서 GrowOnly로 변경
-                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single // 외곽선 유지
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
 
             scrollPanel.Controls.Add(tableLayoutPanel);
-            groupBox.Controls.Add(scrollPanel);
+            if (groupBox != null)
+                groupBox.Controls.Add(scrollPanel);
+
+            Console.WriteLine($"🔧 PropertyCollectionView 초기화: UserControl={this.Size}, GroupBox=Fill");
         }
 
-        // Override OnResize to ensure GroupBox resizes properly
+        // Designer에서 크기 조정시 로그 출력
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
             
-            // GroupBox와 내부 컨트롤들이 정확히 맞춰지도록 조정
+            Console.WriteLine($"🔧 PropertyCollectionView OnResize: UserControl={this.Size}, DesignMode={this.DesignMode}");
+            
+            // 내부 컨트롤들 갱신
+            if (scrollPanel != null)
+            {
+                scrollPanel.Invalidate();
+            }
+            if (tableLayoutPanel != null)
+            {
+                tableLayoutPanel.Invalidate();
+            }
             if (groupBox != null)
             {
-                groupBox.Size = this.ClientSize;
                 groupBox.Invalidate();
-                
-                // ScrollPanel과 TableLayoutPanel도 동기화
-                if (scrollPanel != null)
-                {
-                    scrollPanel.Invalidate();
-                }
-                if (tableLayoutPanel != null)
-                {
-                    tableLayoutPanel.Invalidate();
-                }
             }
         }
 
-        // Override SetBoundsCore to ensure proper sizing behavior
+        // Designer에서 크기 설정시 로그 출력
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
             base.SetBoundsCore(x, y, width, height, specified);
             
-            // GroupBox 크기 동기화 (PropertyCollection 배열 크기에 따른 동적 조정 반영)
-            if (groupBox != null && (specified & BoundsSpecified.Size) != 0)
+            if ((specified & BoundsSpecified.Size) != 0)
             {
-                groupBox.Size = new Size(width, height);
-                
-                // 내부 컨트롤들도 함께 업데이트
-                if (scrollPanel != null)
-                {
-                    scrollPanel.Invalidate();
-                }
-                if (tableLayoutPanel != null)
-                {
-                    tableLayoutPanel.Invalidate();
-                }
+                Console.WriteLine($"🔧 PropertyCollectionView SetBoundsCore: Size=({width}, {height}), DesignMode={this.DesignMode}");
             }
         }
 
@@ -186,9 +181,12 @@ namespace QMC.Common
         {
             // 전체 컨트롤 화면 업데이트 중단
             this.SuspendLayout();
-            groupBox.SuspendLayout();
-            scrollPanel.SuspendLayout();
-            tableLayoutPanel.SuspendLayout();
+            if (groupBox != null)
+            {
+                groupBox.SuspendLayout();
+                scrollPanel.SuspendLayout();
+                tableLayoutPanel.SuspendLayout();
+            }
             
             // 컨트롤이 생성되는 동안 화면 표시 비활성화
             this.Visible = false;
@@ -199,20 +197,20 @@ namespace QMC.Common
             _textBoxPropertyMap.Clear();
             _currentProperties = properties;
 
-            if (properties == null)
+            if (properties == null || properties.Count == 0)
             {
-                // 속성이 없을 때 최소 크기로 설정
-                int minHeight = GroupBoxHeaderHeight + groupBox.Padding.Top + GroupBoxPadding;
-                this.Height = minHeight;
-                this.MinimumSize = new Size(this.Width, minHeight);
-                this.MaximumSize = new Size(this.Width, minHeight);
+                // 속성이 없을 때도 Designer 크기 유지 (GroupBox는 Fill로 자동 맞춤)
                 
                 // 레이아웃 재개 및 화면 표시 복원
-                tableLayoutPanel.ResumeLayout(false);
-                scrollPanel.ResumeLayout(false);
-                groupBox.ResumeLayout(false);
+                if (groupBox != null)
+                {
+                    tableLayoutPanel.ResumeLayout(false);
+                    scrollPanel.ResumeLayout(false);
+                    groupBox.ResumeLayout(false);
+                }
                 this.ResumeLayout(true);
                 this.Visible = true;
+                Console.WriteLine($"🔧 SetProperties (빈 데이터): UserControl={this.Size}");
                 return;
             }
 
@@ -239,7 +237,7 @@ namespace QMC.Common
                             TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                             AutoSize = false,
                             Margin = new Padding(0),
-                            Padding = new Padding(0),
+                            Padding = new Padding(2),
                             Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
                             BackColor = Color.LightGray,
                             Visible = false // 임시로 숨김
@@ -267,7 +265,7 @@ namespace QMC.Common
                                 TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                                 AutoSize = false,
                                 Margin = new Padding(0),
-                                Padding = new Padding(0),
+                                Padding = new Padding(2),
                                 Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
                                 BackColor = Color.LightGray,
                                 Visible = false // 임시로 숨김
@@ -285,7 +283,7 @@ namespace QMC.Common
                         TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                         AutoSize = false,
                         Margin = new Padding(2),
-                        Padding = new Padding(0),
+                        Padding = new Padding(2),
                         Visible = false // 임시로 숨김
                     };
 
@@ -317,7 +315,7 @@ namespace QMC.Common
                         TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
                         AutoSize = false,
                         Margin = new Padding(2),
-                        Padding = new Padding(0),
+                        Padding = new Padding(2),
                         Visible = false // 임시로 숨김
                     };
 
@@ -369,38 +367,29 @@ namespace QMC.Common
                 tableLayoutPanel.SetColumnSpan(spanInfo.Item1, spanInfo.Item2);
             }
 
-            int totalRows = properties.Count;
-            int calculatedHeight = (totalRows * textBoxHeight) + GroupBoxHeaderHeight + groupBox.Padding.Top + GroupBoxPadding;
-            int maxHeight = (MaxVisibleRows * textBoxHeight) + GroupBoxHeaderHeight + groupBox.Padding.Top + GroupBoxPadding;
-
-            // TableLayoutPanel 크기를 항상 모든 행을 포함하도록 설정
-            tableLayoutPanel.Height = totalRows * textBoxHeight;
-
-            // PropertyCollection.Count가 MaxVisibleRows 이하이면 실제 row 개수만큼 크기, 초과면 MaxVisibleRows 크기+스크롤
-            if (totalRows > MaxVisibleRows)
+            // 아이템이 많을 경우 스크롤 활성화 (Designer 크기는 유지)
+            int totalContentHeight = properties.Count * textBoxHeight;
+            int availableHeight = groupBox.ClientSize.Height - groupBox.Padding.Top - groupBox.Padding.Bottom;
+            
+            if (totalContentHeight > availableHeight)
             {
-                this.Height = maxHeight;
-                this.MinimumSize = new Size(this.Width, maxHeight);
-                this.MaximumSize = new Size(this.Width, maxHeight);
                 scrollPanel.AutoScroll = true;
                 scrollPanel.VerticalScroll.Visible = true;
-
-                // 마지막 행이 스크롤 영역에 포함되도록 보장
-                scrollPanel.VerticalScroll.Value = scrollPanel.VerticalScroll.Maximum;
+                Console.WriteLine($"🔧 스크롤 활성화: 콘텐츠={totalContentHeight}px, 가용공간={availableHeight}px");
             }
             else
             {
-                this.Height = calculatedHeight;
-                this.MinimumSize = new Size(this.Width, calculatedHeight);
-                this.MaximumSize = new Size(this.Width, calculatedHeight);
                 scrollPanel.AutoScroll = false;
                 scrollPanel.VerticalScroll.Visible = false;
             }
 
             // 레이아웃 재개 (아직 화면 업데이트는 하지 않음)
-            tableLayoutPanel.ResumeLayout(false);
-            scrollPanel.ResumeLayout(false);
-            groupBox.ResumeLayout(false);
+            if (groupBox != null)
+            {
+                tableLayoutPanel.ResumeLayout(false);
+                scrollPanel.ResumeLayout(false);
+                groupBox.ResumeLayout(false);
+            }
             this.ResumeLayout(false);
             
             // 모든 컨트롤을 한번에 표시
@@ -413,9 +402,19 @@ namespace QMC.Common
             this.Visible = true;
             this.PerformLayout();
 
-            // 부모 컨트롤에게 크기 변경 알림
-            this.Invalidate();
-            this.Parent?.PerformLayout();
+            // 스크롤이 활성화된 경우 맨 위부터 시작
+            if (scrollPanel.AutoScroll && properties.Count > 0)
+            {
+                this.BeginInvoke(new Action(() =>
+                {
+                    if (scrollPanel.VerticalScroll.Maximum > 0)
+                    {
+                        scrollPanel.VerticalScroll.Value = 0; // 항상 맨 위부터 시작
+                    }
+                }));
+            }
+
+            Console.WriteLine($"🔧 SetProperties 완료: UserControl={this.Size}, Items={properties.Count}");
         }
 
         /// <summary>

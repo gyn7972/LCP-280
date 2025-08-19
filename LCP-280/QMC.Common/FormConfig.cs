@@ -24,51 +24,148 @@ namespace QMC.Common
         public FormConfig()
         {
             InitializeComponent();
+            
+            // 🔧 배경색을 흰색으로 설정
+            this.BackColor = Color.White;
+            
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializeConfigUI();
+            
+            // 🔧 Visible 상태 변경 이벤트 추가
+            this.VisibleChanged += FormConfig_VisibleChanged;
+        }
+        
+        /// <summary>
+        /// 🔧 FormConfig가 보여질 때마다 크기 재조정
+        /// </summary>
+        private void FormConfig_VisibleChanged(object sender, EventArgs e)
+        {
+            if (this.Visible && this.Parent != null)
+            {
+                Console.WriteLine($"👁️ FormConfig Visible 변경: {this.Visible}");
+                Console.WriteLine($"   Parent: {this.Parent.GetType().Name}, Parent.Size: {this.Parent.Size}");
+                
+                // 🔧 TableLayoutPanel인 경우 정확한 행 크기를 계산하여 전달
+                if (this.Parent is TableLayoutPanel tableLayoutPanel)
+                {
+                    try
+                    {
+                        int[] rowHeights = tableLayoutPanel.GetRowHeights();
+                        int[] columnWidths = tableLayoutPanel.GetColumnWidths();
+                        
+                        // FormConfig는 1번 행(인덱스 1, 80% 영역)에 위치
+                        if (rowHeights.Length > 1 && columnWidths.Length > 0)
+                        {
+                            int width = columnWidths[0];
+                            int height = rowHeights[1]; // 1번 행 (80% 영역)
+                            
+                            Console.WriteLine($"   계산된 FormConfig 크기: width={width}, height={height}");
+                            SetPanelSize(width, height);
+                        }
+                        else
+                        {
+                            Console.WriteLine("   ⚠️ TableLayoutPanel 행/열 정보가 부족함");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"   ❌ TableLayoutPanel 크기 계산 오류: {ex.Message}");
+                        // fallback: 전체 크기 사용
+                        if (this.Parent.Size.Width > 0 && this.Parent.Size.Height > 0)
+                        {
+                            SetPanelSize(this.Parent.Size.Width, this.Parent.Size.Height);
+                        }
+                    }
+                }
+                else
+                {
+                    // TableLayoutPanel이 아닌 경우 기존 방식 사용
+                    if (this.Parent.Size.Width > 0 && this.Parent.Size.Height > 0)
+                    {
+                        Console.WriteLine($"   일반 Parent 크기 사용: {this.Parent.Size}");
+                        SetPanelSize(this.Parent.Size.Width, this.Parent.Size.Height);
+                    }
+                }
+            }
         }
         
         private void InitializeConfigUI()
         {
+            Console.WriteLine("🚀 FormConfig.InitializeConfigUI() 시작");
+            
+            // 🔧 FormConfig 배경색을 확실히 흰색으로 설정
             this.BackColor = Color.White;
             
             // TabControl 생성 및 테마 적용
             configTabControl = new TabControl();
-            configTabControl.Dock = DockStyle.Fill;
+            configTabControl.Dock = DockStyle.None;
             configTabControl.Font = _tabFont;
             configTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
             configTabControl.ItemSize = new Size(120, _tabHeight);
             configTabControl.SizeMode = TabSizeMode.Fixed;
             configTabControl.DrawItem += ConfigTabControl_DrawItem;
             configTabControl.SelectedIndexChanged += ConfigTabControl_SelectedIndexChanged;
+            
+            // 🔧 TabControl 배경색도 흰색으로 설정
+            configTabControl.BackColor = Color.White;
+            
+            Console.WriteLine($"   TabControl 생성 완료: Size={configTabControl.Size}, Visible={configTabControl.Visible}");
+            
             this.Controls.Add(configTabControl);
             
+            Console.WriteLine($"   TabControl을 FormConfig에 추가 완료");
+            Console.WriteLine($"   FormConfig.Controls.Count: {this.Controls.Count}");
+            
             // FormManager에서 등록된 Config 폼들을 자동으로 탭으로 추가
-            LoadConfigFormsFromManager();
+            LoadFormsFromManager();
+            
+            // 강제로 TabControl을 보이게 설정
+            configTabControl.Visible = true;
+            configTabControl.BringToFront();
+            
+            Console.WriteLine($"✅ InitializeConfigUI 완료");
+            Console.WriteLine($"   최종 TabControl 상태: Visible={configTabControl.Visible}, TabCount={configTabControl.TabPages.Count}");
         }
 
         /// <summary>
         /// FormManager에서 Config 타입으로 등록된 폼들을 탭으로 로드
         /// </summary>
-        private void LoadConfigFormsFromManager()
+        private void LoadFormsFromManager()
         {
             try
             {
+                Console.WriteLine("🔍 FormConfig.LoadFormsFromManager() 시작");
+                
                 var configForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Config);
+                Console.WriteLine($"   등록된 Config 폼 개수: {configForms.Count}");
                 
                 foreach (var formInfo in configForms)
                 {
+                    Console.WriteLine($"   Config 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
                     CreateTabFromFormInfo(formInfo);
                 }
                 
                 // 등록된 폼이 없으면 기본 샘플 탭 생성
                 if (configForms.Count == 0)
                 {
+                    Console.WriteLine("⚠️ 등록된 Config 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
+                
+                Console.WriteLine($"✅ 최종 탭 개수: {configTabControl.TabPages.Count}");
+                
+                // 탭 컨트롤 상태 확인
+                Console.WriteLine($"   configTabControl.Visible: {configTabControl.Visible}");
+                Console.WriteLine($"   configTabControl.Size: {configTabControl.Size}");
+                Console.WriteLine($"   configTabControl.Dock: {configTabControl.Dock}");
+                
+                // FormConfig 자체 상태도 확인
+                Console.WriteLine($"   FormConfig.Visible: {this.Visible}");
+                Console.WriteLine($"   FormConfig.Size: {this.Size}");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"❌ Config 폼 로드 중 오류: {ex.Message}");
                 MessageBox.Show($"Config 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 CreateSampleTabs(); // 오류 발생시 기본 탭 생성
             }
@@ -80,9 +177,17 @@ namespace QMC.Common
         /// <param name="formInfo">폼 정보</param>
         private void CreateTabFromFormInfo(FormInfo formInfo)
         {
+            Console.WriteLine($"🔧 탭 생성: {formInfo.DisplayName}");
+            
             TabPage tabPage = new TabPage(formInfo.DisplayName);
             tabPage.Tag = formInfo; // FormInfo를 Tag에 저장
+            
+            // 🔧 TabPage 배경색도 흰색으로 설정
+            tabPage.BackColor = Color.White;
+            
             configTabControl.TabPages.Add(tabPage);
+            
+            Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {configTabControl.TabPages.Count}");
         }
 
         /// <summary>
@@ -117,6 +222,29 @@ namespace QMC.Common
                     formInstance.FormBorderStyle = FormBorderStyle.None;
                     formInstance.Dock = DockStyle.Fill;
                     
+                    // 🔧 폼에 SetPanelSize 메서드가 있으면 탭 높이를 제외한 크기 전달
+                    if (configTabControl != null)
+                    {
+                        int availableWidth = configTabControl.Width;
+                        int availableHeight = configTabControl.Height - _tabHeight; // 탭 높이 제외
+                        
+                        // 리플렉션을 사용하여 SetPanelSize 메서드 확인 및 호출
+                        var setPanelSizeMethod = formInstance.GetType().GetMethod("SetPanelSize", 
+                            new Type[] { typeof(int), typeof(int) });
+                        
+                        if (setPanelSizeMethod != null)
+                        {
+                            Console.WriteLine($"🔧 {formInstance.GetType().Name}에 SetPanelSize 메서드 발견");
+                            Console.WriteLine($"   전달할 크기: width={availableWidth}, height={availableHeight} (탭 높이 {_tabHeight} 제외)");
+                            
+                            setPanelSizeMethod.Invoke(formInstance, new object[] { availableWidth, availableHeight });
+                        }
+                        else
+                        {
+                            Console.WriteLine($"   {formInstance.GetType().Name}에 SetPanelSize 메서드가 없음");
+                        }
+                    }
+                    
                     // 탭에 폼 추가
                     tabPage.Controls.Clear();
                     tabPage.Controls.Add(formInstance);
@@ -130,7 +258,27 @@ namespace QMC.Common
                 else
                 {
                     // 이미 로드된 폼이 있으면 다시 표시
-                    _tabFormInstances[tabPage].Show();
+                    var existingForm = _tabFormInstances[tabPage];
+                    
+                    // 🔧 기존 폼에도 탭 높이를 제외한 크기 재적용
+                    if (configTabControl != null)
+                    {
+                        int availableWidth = configTabControl.Width;
+                        int availableHeight = configTabControl.Height - _tabHeight; // 탭 높이 제외
+                        
+                        var setPanelSizeMethod = existingForm.GetType().GetMethod("SetPanelSize", 
+                            new Type[] { typeof(int), typeof(int) });
+                        
+                        if (setPanelSizeMethod != null)
+                        {
+                            Console.WriteLine($"🔧 기존 {existingForm.GetType().Name}에 크기 재적용");
+                            Console.WriteLine($"   전달할 크기: width={availableWidth}, height={availableHeight} (탭 높이 {_tabHeight} 제외)");
+                            
+                            setPanelSizeMethod.Invoke(existingForm, new object[] { availableWidth, availableHeight });
+                        }
+                    }
+                    
+                    existingForm.Show();
                 }
             }
             catch (Exception ex)
@@ -166,7 +314,7 @@ namespace QMC.Common
             configTabControl.TabPages.Clear();
             
             // 새로 로드
-            LoadConfigFormsFromManager();
+            LoadFormsFromManager();
         }
 
         private void ConfigTabControl_DrawItem(object sender, DrawItemEventArgs e)
@@ -246,11 +394,19 @@ namespace QMC.Common
         {
             // System Config 탭
             TabPage systemTab = new TabPage("Sample Config");
+            
+            // 🔧 샘플 탭의 배경색도 흰색으로 설정
+            systemTab.BackColor = Color.White;
+            
             Label systemLabel = new Label();
             systemLabel.Text = "No Config Forms Registered\n\nUse FormManager.Instance.RegisterForm() to add config forms.";
             systemLabel.Font = new Font("맑은 고딕", 12, FontStyle.Regular);
             systemLabel.TextAlign = ContentAlignment.MiddleCenter;
             systemLabel.Dock = DockStyle.Fill;
+            
+            // 🔧 라벨의 배경색도 흰색으로 설정
+            systemLabel.BackColor = Color.White;
+            
             systemTab.Controls.Add(systemLabel);
             configTabControl.TabPages.Add(systemTab);
         }
@@ -269,12 +425,48 @@ namespace QMC.Common
 
         public void SetPanelSize(int width, int height)
         {
+            Console.WriteLine($"🔧 FormConfig.SetPanelSize() 호출: width={width}, height={height}");
+            Console.WriteLine($"   현재 FormConfig 크기: Size={this.Size}, ClientSize={this.ClientSize}");
+            
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
+            
             if (configTabControl != null)
             {
+                Console.WriteLine($"   TabControl 크기 조정: {configTabControl.Size} → {new Size(width, height)}");
                 configTabControl.Size = new Size(width, height);
+                
+                // 🔧 현재 활성화된 탭의 폼에 탭 높이를 제외한 크기 전달
+                var selectedTab = configTabControl.SelectedTab;
+                if (selectedTab != null && _tabFormInstances.ContainsKey(selectedTab))
+                {
+                    var activeForm = _tabFormInstances[selectedTab];
+                    
+                    int availableWidth = width;
+                    int availableHeight = height - _tabHeight; // 탭 높이 제외
+                    
+                    var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", 
+                        new Type[] { typeof(int), typeof(int) });
+                    
+                    if (setPanelSizeMethod != null)
+                    {
+                        Console.WriteLine($"   활성 폼 {activeForm.GetType().Name}에 크기 업데이트");
+                        Console.WriteLine($"   전달할 크기: width={availableWidth}, height={availableHeight} (탭 높이 {_tabHeight} 제외)");
+                        
+                        setPanelSizeMethod.Invoke(activeForm, new object[] { availableWidth, availableHeight });
+                    }
+                }
+                
+                // TabControl을 강제로 다시 그리기
+                configTabControl.Invalidate();
+                configTabControl.Update();
             }
+            
+            // 폼 전체를 다시 그리기
+            this.Invalidate();
+            this.Update();
+            
+            Console.WriteLine($"✅ FormConfig.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
     }
 }

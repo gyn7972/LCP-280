@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -37,8 +38,8 @@ namespace QMC.Common
         /// </summary>
         /// <param name="menuType">메뉴 타입</param>
         /// <param name="formType">폼의 Type</param>
-        /// <param name="displayName">탭에 표시될 이름</param>
-        /// <param name="description">폼 설명 (선택사항)</param>
+        /// <param name="displayName">UI에 표시될 이름</param>
+        /// <param name="description">폼 설명 (옵션사항)</param>
         public void RegisterForm(MenuButtonType menuType, Type formType, string displayName, string description = null)
         {
             if (!typeof(Form).IsAssignableFrom(formType))
@@ -75,7 +76,12 @@ namespace QMC.Common
         {
             try
             {
-                return (Form)Activator.CreateInstance(formInfo.FormType);
+                Form formInstance = (Form)Activator.CreateInstance(formInfo.FormType);
+                
+                // 자동으로 배경색을 흰색으로 설정
+                formInstance.BackColor = Color.White;
+                
+                return formInstance;
             }
             catch (Exception ex)
             {

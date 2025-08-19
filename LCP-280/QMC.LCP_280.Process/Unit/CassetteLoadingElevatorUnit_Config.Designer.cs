@@ -16,7 +16,6 @@ namespace QMC.LCP_280.Process.Unit
         /// Required designer variable.
         /// </summary>
         private PropertyCollectionView propertyCollectionView;
-        private IOPropertyCollectionView IOPropertyCollectionView;
         private ListBoxItemsView listBoxItemsView;
         
         // 🚀 Position Editor 버튼들 추가
@@ -38,6 +37,28 @@ namespace QMC.LCP_280.Process.Unit
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// 🔧 FormConfig에서 tab height를 제외한 크기를 받아서 설정
+        /// </summary>
+        /// <param name="width">폼의 너비</param>
+        /// <param name="height">FormConfig에서 tab height를 제외한 높이</param>
+        public void SetPanelSize(int width, int height)
+        {
+            Console.WriteLine($"🔧 CassetteLoadingElevatorUnit_Config.SetPanelSize() 호출: width={width}, height={height}");
+            Console.WriteLine($"   현재 Config 폼 크기: Size={this.Size}, ClientSize={this.ClientSize}");
+
+            // 폼 크기 설정
+            this.Size = new Size(width, height);
+            this.ClientSize = new Size(width, height);
+
+            // 폼 전체를 다시 그리기
+            this.Invalidate();
+            this.Update();
+
+            Console.WriteLine($"✅ CassetteLoadingElevatorUnit_Config.SetPanelSize() 완료: 최종 크기={this.Size}");
+        }
+
+
         #region Windows Form Designer generated code
 
         /// <summary>
@@ -46,50 +67,15 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private void InitializeComponent()
         {
-            this.propertyCollectionView = new QMC.Common.PropertyCollectionView();
-            this.IOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
-            this.listBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.propertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.listBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.SuspendLayout();
-            // 
-            // propertyCollectionView
-            // 
-            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.propertyCollectionView.GroupName = "Editor";
-            this.propertyCollectionView.Location = new System.Drawing.Point(257, 22);
-            this.propertyCollectionView.Name = "propertyCollectionView";
-            this.propertyCollectionView.Size = new System.Drawing.Size(266, 200);
-            this.propertyCollectionView.TabIndex = 0;
-            this.propertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            // 
-            // IOPropertyCollectionView
-            // 
-            this.IOPropertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.IOPropertyCollectionView.GroupName = "Recipe Settings";
-            this.IOPropertyCollectionView.Location = new System.Drawing.Point(899, 99);
-            this.IOPropertyCollectionView.Name = "IOPropertyCollectionView";
-            this.IOPropertyCollectionView.Size = new System.Drawing.Size(280, 610);
-            this.IOPropertyCollectionView.TabIndex = 1;
-            this.IOPropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            // 
-            // listBoxItemsView
-            // 
-            this.listBoxItemsView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.listBoxItemsView.BorderWidth = 2;
-            this.listBoxItemsView.GroupName = "Position Items";
-            this.listBoxItemsView.Location = new System.Drawing.Point(12, 22);
-            this.listBoxItemsView.Name = "listBoxItemsView";
-            this.listBoxItemsView.SelectedIndex = -1;
-            this.listBoxItemsView.Size = new System.Drawing.Size(200, 610);
-            this.listBoxItemsView.TabIndex = 2;
             // 
             // btnSave
             // 
-            this.btnSave.Location = new System.Drawing.Point(257, 240);
+            this.btnSave.Location = new System.Drawing.Point(221, 444);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(75, 30);
             this.btnSave.TabIndex = 3;
@@ -99,7 +85,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(437, 240);
+            this.btnCancel.Location = new System.Drawing.Point(308, 444);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 30);
             this.btnCancel.TabIndex = 4;
@@ -107,16 +93,42 @@ namespace QMC.LCP_280.Process.Unit
             this.btnCancel.UseVisualStyleBackColor = true;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
+            // propertyCollectionView
+            // 
+            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.propertyCollectionView.GroupName = "Editor";
+            this.propertyCollectionView.Location = new System.Drawing.Point(221, 12);
+            this.propertyCollectionView.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.propertyCollectionView.Name = "propertyCollectionView";
+            this.propertyCollectionView.Size = new System.Drawing.Size(589, 288);
+            this.propertyCollectionView.TabIndex = 0;
+            this.propertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            // 
+            // listBoxItemsView
+            // 
+            this.listBoxItemsView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
+            this.listBoxItemsView.BorderWidth = 2;
+            this.listBoxItemsView.GroupName = "Position Items";
+            this.listBoxItemsView.Location = new System.Drawing.Point(12, 12);
+            this.listBoxItemsView.ManualGroupBoxSize = new System.Drawing.Size(200, 150);
+            this.listBoxItemsView.Name = "listBoxItemsView";
+            this.listBoxItemsView.SelectedIndex = -1;
+            this.listBoxItemsView.Size = new System.Drawing.Size(203, 595);
+            this.listBoxItemsView.TabIndex = 2;
+            // 
             // CassetteLoadingElevatorUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1191, 740);
+            this.ClientSize = new System.Drawing.Size(1264, 785);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnSave);
             this.Controls.Add(this.propertyCollectionView);
-            this.Controls.Add(this.IOPropertyCollectionView);
             this.Controls.Add(this.listBoxItemsView);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "CassetteLoadingElevatorUnit_Config";
             this.Text = "CassetteLoadingElevator Unit Configuration";
             this.ResumeLayout(false);
@@ -136,6 +148,9 @@ namespace QMC.LCP_280.Process.Unit
                 
                 // 🚀 Position Item 선택 이벤트 연결
                 SetupPositionItemSelectionEvent();
+                
+                // 🚀 PropertyCollectionView에 기본 메시지 표시
+                InitializePropertyCollectionView();
             }
             catch (Exception ex)
             {
@@ -143,6 +158,29 @@ namespace QMC.LCP_280.Process.Unit
 #if DEBUG
                 MessageBox.Show($"커스텀 컴포넌트 초기화 오류: {ex.Message}");
 #endif
+            }
+        }
+
+        /// <summary>
+        /// 🚀 PropertyCollectionView 초기화 - 기본 안내 메시지 표시
+        /// </summary>
+        private void InitializePropertyCollectionView()
+        {
+            try
+            {
+                // 기본 안내 메시지 표시
+                var defaultProperties = new PropertyCollection();
+                defaultProperties.Add(new TitleOnlyProperty("Position Editor"));
+                defaultProperties.Add(new DoubleProperty("안내", 0.0) { Value = 0.0 });
+                defaultProperties.Add(new DoubleProperty("안내", 0.0) { Value = 0.0 });
+
+                //propertyCollectionView1?.SetProperties(defaultProperties);
+                
+                Console.WriteLine("✅ PropertyCollectionView 기본 메시지 설정 완료");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ PropertyCollectionView 초기화 중 오류: {ex.Message}");
             }
         }
 
