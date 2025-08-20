@@ -27,8 +27,6 @@ namespace QMC.LCP_280.Process.Unit
             scannerConfig.ScanSpeed = 3.0;
 
             var armConfig = new WaferTransferArmConfig();
-            armConfig.ExtendPosition = 100.0;
-            armConfig.RetractPosition = 0.0;
 
             CassetteElevator = new CassetteElevator(elevatorConfig);
             WaferSlotScanner = new WaferSlotScanner(scannerConfig);
@@ -49,10 +47,6 @@ namespace QMC.LCP_280.Process.Unit
             // WaferSlotScanner Config 접근 및 수정
             int slotCount = WaferSlotScanner.Config.SlotCount;
             WaferSlotScanner.Config.ScanSpeed = 5.0;
-
-            // WaferTransferArm Config 접근 및 수정
-            bool useVacuum = WaferTransferArm.Config.UseVacuum;
-            WaferTransferArm.Config.MoveSpeed = 15.0;
         }
 
         public override void OnRun()

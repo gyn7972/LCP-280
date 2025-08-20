@@ -7,25 +7,18 @@ namespace QMC.LCP_280.Process.Component
     public class CassetteElevatorConfig : BaseConfig
     {
         // Z축 위치 설정
-        public double LifterZLoadingPosition { get; set; } = 100.0;
-        public double LifterZUnloadingPosition { get; set; } = 10.0;
+        public double CassetteElevatorLoadingPosition { get; set; } = 100.0;
+        public double CassetteElevatorUnloadingPosition { get; set; } = 10.0;
         public double CassetteSlotPitch { get; set; } = 20.0;
-        public double FeederReadyPosition { get; set; } = 15.0;
-        public double FeederAvoidPosition { get; set; } = 25.0;
-        public double FeederStagePosition { get; set; } = 30.0;
-        public double FeederCassettePosition { get; set; } = 35.0;
+      
 
 
         public CassetteElevatorConfig() : base("CassetteElevatorConfig")
         {
             // 🚀 각 Position들을 PropertyPosition에 DoubleProperty로 추가
-            PropertyPosition.AddDoubleProperty(nameof(LifterZLoadingPosition), LifterZLoadingPosition);
-            PropertyPosition.AddDoubleProperty(nameof(LifterZUnloadingPosition), LifterZUnloadingPosition);
+            PropertyPosition.AddDoubleProperty(nameof(CassetteElevatorLoadingPosition), CassetteElevatorLoadingPosition);
+            PropertyPosition.AddDoubleProperty(nameof(CassetteElevatorUnloadingPosition), CassetteElevatorUnloadingPosition);
             PropertyPosition.AddDoubleProperty(nameof(CassetteSlotPitch), CassetteSlotPitch);
-            PropertyPosition.AddDoubleProperty(nameof(FeederReadyPosition), FeederReadyPosition);
-            PropertyPosition.AddDoubleProperty(nameof(FeederAvoidPosition), FeederAvoidPosition);
-            PropertyPosition.AddDoubleProperty(nameof(FeederStagePosition), FeederStagePosition);
-            PropertyPosition.AddDoubleProperty(nameof(FeederCassettePosition), FeederCassettePosition);
         }
 
         /// <summary>
@@ -35,26 +28,14 @@ namespace QMC.LCP_280.Process.Component
         {
             if (PropertyPosition != null)
             {
-                var lifterZLoadingPos = PropertyPosition.GetPropertyByTitle(nameof(LifterZLoadingPosition)) as DoubleProperty;
-                if (lifterZLoadingPos != null) LifterZLoadingPosition = lifterZLoadingPos.Value;
+                var CassetteElevatorLoadingPos = PropertyPosition.GetPropertyByTitle(nameof(CassetteElevatorLoadingPosition)) as DoubleProperty;
+                if (CassetteElevatorLoadingPos != null) CassetteElevatorLoadingPosition = CassetteElevatorLoadingPos.Value;
 
-                var lifterZUnloadingPos = PropertyPosition.GetPropertyByTitle(nameof(LifterZUnloadingPosition)) as DoubleProperty;
-                if (lifterZUnloadingPos != null) LifterZUnloadingPosition = lifterZUnloadingPos.Value;
+                var CassetteElevatorUnloadingPos = PropertyPosition.GetPropertyByTitle(nameof(CassetteElevatorUnloadingPosition)) as DoubleProperty;
+                if (CassetteElevatorUnloadingPos != null) CassetteElevatorUnloadingPosition = CassetteElevatorUnloadingPos.Value;
 
                 var cassetteSlotPitch = PropertyPosition.GetPropertyByTitle(nameof(CassetteSlotPitch)) as DoubleProperty;
                 if (cassetteSlotPitch != null) CassetteSlotPitch = cassetteSlotPitch.Value;
-
-                var feederReadyPos = PropertyPosition.GetPropertyByTitle(nameof(FeederReadyPosition)) as DoubleProperty;
-                if (feederReadyPos != null) FeederReadyPosition = feederReadyPos.Value;
-
-                var feederAvoidPos = PropertyPosition.GetPropertyByTitle(nameof(FeederAvoidPosition)) as DoubleProperty;
-                if (feederAvoidPos != null) FeederAvoidPosition = feederAvoidPos.Value;
-
-                var feederStagePos = PropertyPosition.GetPropertyByTitle(nameof(FeederStagePosition)) as DoubleProperty;
-                if (feederStagePos != null) FeederStagePosition = feederStagePos.Value;
-
-                var feederCassettePos = PropertyPosition.GetPropertyByTitle(nameof(FeederCassettePosition)) as DoubleProperty;
-                if (feederCassettePos != null) FeederCassettePosition = feederCassettePos.Value;
             }
         }
 
@@ -65,26 +46,14 @@ namespace QMC.LCP_280.Process.Component
         {
             if (PropertyPosition != null)
             {
-                var lifterZLoadingPos = PropertyPosition.GetPropertyByTitle(nameof(LifterZLoadingPosition)) as DoubleProperty;
-                if (lifterZLoadingPos != null) lifterZLoadingPos.Value = LifterZLoadingPosition;
+                var CassetteElevatorLoadingPos = PropertyPosition.GetPropertyByTitle(nameof(CassetteElevatorLoadingPosition)) as DoubleProperty;
+                if (CassetteElevatorLoadingPos != null) CassetteElevatorLoadingPos.Value = CassetteElevatorLoadingPosition;
 
-                var lifterZUnloadingPos = PropertyPosition.GetPropertyByTitle(nameof(LifterZUnloadingPosition)) as DoubleProperty;
-                if (lifterZUnloadingPos != null) lifterZUnloadingPos.Value = LifterZUnloadingPosition;
+                var CassetteElevatorUnloadingPos = PropertyPosition.GetPropertyByTitle(nameof(CassetteElevatorUnloadingPosition)) as DoubleProperty;
+                if (CassetteElevatorUnloadingPos != null) CassetteElevatorUnloadingPos.Value = CassetteElevatorUnloadingPosition;
 
                 var cassetteSlotPitch = PropertyPosition.GetPropertyByTitle(nameof(CassetteSlotPitch)) as DoubleProperty;
                 if (cassetteSlotPitch != null) cassetteSlotPitch.Value = CassetteSlotPitch;
-
-                var feederReadyPos = PropertyPosition.GetPropertyByTitle(nameof(FeederReadyPosition)) as DoubleProperty;
-                if (feederReadyPos != null) feederReadyPos.Value = FeederReadyPosition;
-
-                var feederAvoidPos = PropertyPosition.GetPropertyByTitle(nameof(FeederAvoidPosition)) as DoubleProperty;
-                if (feederAvoidPos != null) feederAvoidPos.Value = FeederAvoidPosition;
-
-                var feederStagePos = PropertyPosition.GetPropertyByTitle(nameof(FeederStagePosition)) as DoubleProperty;
-                if (feederStagePos != null) feederStagePos.Value = FeederStagePosition;
-
-                var feederCassettePos = PropertyPosition.GetPropertyByTitle(nameof(FeederCassettePosition)) as DoubleProperty;
-                if (feederCassettePos != null) feederCassettePos.Value = FeederCassettePosition;
             }
         }
 

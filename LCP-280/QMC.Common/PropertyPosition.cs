@@ -32,7 +32,7 @@ namespace QMC.Common
         public string Unit { get; set; }
 
         /// <summary>
-        /// Position 그룹의 카테고리 (예: "Lifter", "Feeder", "Scanner")
+        /// Position 그룹의 카테고리 (예: "Lifter", "WaferTransferArm", "Scanner")
         /// </summary>
         public string Category { get; set; }
 
@@ -362,19 +362,19 @@ namespace QMC.Common
         }
 
         /// <summary>
-        /// ?? Feeder용 기본 PropertyPosition 생성
+        /// ?? WaferTransferArm용 기본 PropertyPosition 생성
         /// </summary>
-        /// <returns>Feeder용 PropertyPosition</returns>
-        public static PropertyPosition CreateFeederPositions()
+        /// <returns>WaferTransferArm용 PropertyPosition</returns>
+        public static PropertyPosition CreateWaferTransferArmPositions()
         {
-            var feederPositions = new PropertyPosition("Feeder Positions", "피더 관련 Position들", "Feeder");
+            var WaferTransferArmPositions = new PropertyPosition("WaferTransferArm Positions", "피더 관련 Position들", "WaferTransferArm");
             
-            feederPositions.AddDoubleProperty("Ready Position", 0.0);
-            feederPositions.AddDoubleProperty("Avoid Position", 100.0);
-            feederPositions.AddDoubleProperty("Stage Position", 200.0);
-            feederPositions.AddDoubleProperty("Cassette Position", 300.0);
+            WaferTransferArmPositions.AddDoubleProperty("Ready Position", 0.0);
+            WaferTransferArmPositions.AddDoubleProperty("Avoid Position", 100.0);
+            WaferTransferArmPositions.AddDoubleProperty("Stage Position", 200.0);
+            WaferTransferArmPositions.AddDoubleProperty("Cassette Position", 300.0);
 
-            return feederPositions;
+            return WaferTransferArmPositions;
         }
 
         /// <summary>

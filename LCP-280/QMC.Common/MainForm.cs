@@ -182,6 +182,7 @@ namespace QMC.Common
                         {
                             Console.WriteLine($"   FormConfig에 크기 적용: width={width}, height={rowHeights[1]}");
                             formConfig.SetPanelSize(width, rowHeights[1]);
+                            formConfig.SetBorderStyle(Color.Black, 2);
                         }
                     }
                     

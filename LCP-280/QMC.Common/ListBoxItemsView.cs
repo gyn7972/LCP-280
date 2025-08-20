@@ -14,50 +14,8 @@ namespace QMC.Common
         private string _fontFamily = "맑은 고딕";
         private float _fontSize = 10f;
         private string _groupName = "Group Title";
-        
-        // 자동/수동 크기 조정 옵션
-        private bool _autoSizeGroupBox = true;
-        private Size _manualGroupBoxSize = new Size(200, 150);
 
         public event EventHandler<int> ItemSelected;
-
-        // GroupBox 자동 크기 조정 옵션
-        [Browsable(true)]
-        [Category("Layout")]
-        [Description("GroupBox 크기를 자동으로 조정할지 여부")]
-        [DefaultValue(true)]
-        public bool AutoSizeGroupBox
-        {
-            get => _autoSizeGroupBox;
-            set
-            {
-                if (_autoSizeGroupBox != value)
-                {
-                    _autoSizeGroupBox = value;
-                    UpdateGroupBoxSizeMode();
-                }
-            }
-        }
-
-        // 수동 GroupBox 크기 설정
-        [Browsable(true)]
-        [Category("Layout")]
-        [Description("수동 모드일 때 GroupBox의 크기")]
-        public Size ManualGroupBoxSize
-        {
-            get => _manualGroupBoxSize;
-            set
-            {
-                if (_manualGroupBoxSize != value)
-                {
-                    _manualGroupBoxSize = value;
-                    if (!_autoSizeGroupBox)
-                    {
-                        UpdateGroupBoxSizeMode();
-                    }
-                }
-            }
-        }
 
         // GroupBox 이름 프로퍼티
         [Browsable(true)]
@@ -103,10 +61,43 @@ namespace QMC.Common
             InitializeUserControl(groupName);
         }
 
-        // PropertyCollectionView의 InitializeComponentUser와 유사한 초기화 메서드
+        // 🔧 새로운 생성자: 그룹 이름과 크기를 함께 지정
+        public ListBoxItemsView(string groupName, Size size)
+        {
+            InitializeComponent();
+            InitializeUserControl(groupName, size);
+        }
+
+        // 🔧 새로운 생성자: 크기만 지정 (기본 그룹 이름 사용)
+        public ListBoxItemsView(Size size)
+        {
+            InitializeComponent();
+            InitializeUserControl("Group Title", size);
+        }
+
+        // PropertyCollectionView의 InitializeComponentUser와 동일한 초기화 메서드
         private void InitializeUserControl(string groupName)
         {
+            InitializeUserControl(groupName, Size.Empty);
+        }
+
+        // 🔧 크기를 받는 InitializeUserControl 오버로드
+        private void InitializeUserControl(string groupName, Size controlSize)
+        {
             _groupName = groupName;
+
+            // 🔧 Designer에서 설정된 크기가 있는지 확인 (Size.Empty가 아닌 경우)
+            if (!controlSize.IsEmpty)
+            {
+                this.Size = controlSize;
+                Console.WriteLine($"🔧 ListBoxItemsView 생성자에서 크기 설정: {controlSize}");
+            }
+            else if (this.Size != Size.Empty && this.Size != new Size(150, 150)) // 기본 크기가 아닌 경우
+            {
+                // Designer에서 이미 크기가 설정되어 있는 경우 그 크기 사용
+                controlSize = this.Size;
+                Console.WriteLine($"🔧 Designer에서 설정된 크기 감지: {controlSize}");
+            }
 
             // GroupBox 생성 및 설정
             groupBox = new GroupBox
@@ -118,42 +109,18 @@ namespace QMC.Common
                 Padding = new Padding(8, 8, 8, 8)
             };
 
+            // 🔧 항상 Dock.Fill을 사용하여 UserControl 크기에 자동으로 맞춤
+            groupBox.Dock = DockStyle.Fill;
+            Console.WriteLine($"🔧 GroupBox를 Dock.Fill로 설정하여 UserControl 크기에 자동 맞춤");
+
             // UserControl에 GroupBox 추가
             this.Controls.Add(groupBox);
 
-            // 초기 크기 모드 설정
-            UpdateGroupBoxSizeMode();
-
             // ListBox 초기화
             InitializeListBox();
-        }
 
-        // GroupBox 크기 모드 업데이트
-        private void UpdateGroupBoxSizeMode()
-        {
-            if (groupBox == null) return;
-
-            if (_autoSizeGroupBox)
-            {
-                // 자동 크기 조정 모드 - Designer에서 설정한 UserControl 크기를 GroupBox에 고정 적용
-                groupBox.Dock = DockStyle.None; // Dock을 None으로 설정하여 고정 크기 사용
-                groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left; // Anchor를 Top, Left만 설정하여 크기 고정
-                groupBox.Location = Point.Empty; // (0, 0)에 위치
-                groupBox.Size = this.Size; // UserControl의 전체 크기와 동일하게 고정 설정
-            }
-            else
-            {
-                // 수동 크기 조정 모드
-                groupBox.Dock = DockStyle.None;
-                groupBox.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-                groupBox.Size = _manualGroupBoxSize;
-                groupBox.Location = Point.Empty;
-                // UserControl 크기도 수동 크기에 맞춤
-                this.Size = _manualGroupBoxSize;
-            }
-            
-            groupBox.Invalidate();
-            this.Invalidate();
+            Console.WriteLine($"🔧 ListBoxItemsView 초기화: UserControl={this.Size}, GroupBox={groupBox.Size}");
+            Console.WriteLine($"   Parent: {this.Parent?.GetType().Name ?? "null"}");
         }
 
         private void InitializeListBox()
@@ -182,36 +149,51 @@ namespace QMC.Common
             }
         }
 
-        // Override OnResize to ensure GroupBox resizes properly
+        // Designer에서 크기 조정시 로그 출력 (PropertyCollectionView와 동일)
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            // 자동 크기 조정 모드일 때는 Designer에서 설정한 크기 유지
-            if (_autoSizeGroupBox && groupBox != null)
+            
+            Console.WriteLine($"🔧 ListBoxItemsView OnResize: UserControl={this.Size}, DesignMode={this.DesignMode}");
+            if (groupBox != null)
             {
-                // UserControl의 전체 크기를 GroupBox에 고정 적용
-                groupBox.Size = this.Size;
-                groupBox.Location = Point.Empty; // 항상 (0, 0)에 위치
-                groupBox.Invalidate();
-                // ListBox도 함께 업데이트
-                if (listBox != null)
+                Console.WriteLine($"   GroupBox 크기={groupBox.Size}, Dock={groupBox.Dock}");
+                Console.WriteLine($"   GroupBox Location={groupBox.Location}");
+                
+                // 🔧 GroupBox가 Dock.Fill이 아닌 경우 수동으로 크기 동기화
+                if (groupBox.Dock != DockStyle.Fill)
                 {
-                    listBox.Invalidate();
+                    groupBox.Size = this.ClientSize;
+                    groupBox.Location = new Point(0, 0);
+                    Console.WriteLine($"   📐 GroupBox 크기를 UserControl.ClientSize로 수동 동기화: {this.ClientSize}");
                 }
+            }
+            if (listBox != null)
+            {
+                Console.WriteLine($"   ListBox 크기={listBox.Size}, Dock={listBox.Dock}");
+            }
+            Console.WriteLine($"   Parent: {this.Parent?.GetType().Name ?? "null"}");
+            Console.WriteLine($"   Parent Size: {this.Parent?.Size.ToString() ?? "null"}");
+            
+            // 내부 컨트롤들 갱신
+            if (listBox != null)
+            {
+                listBox.Invalidate();
+            }
+            if (groupBox != null)
+            {
+                groupBox.Invalidate();
             }
         }
 
-        // Override SetBoundsCore to ensure proper sizing behavior
+        // Designer에서 크기 설정시 로그 출력 (PropertyCollectionView와 동일)
         protected override void SetBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
         {
             base.SetBoundsCore(x, y, width, height, specified);
-            // 자동 크기 조정 모드일 때 Designer에서 설정한 크기를 GroupBox에 고정 적용
-            if (_autoSizeGroupBox && groupBox != null && (specified & BoundsSpecified.Size) != 0)
+            
+            if ((specified & BoundsSpecified.Size) != 0)
             {
-                // UserControl의 전체 크기를 GroupBox에 적용
-                groupBox.Size = new Size(width, height);
-                groupBox.Location = Point.Empty; // GroupBox를 UserControl의 왼쪽 상단에 위치
-                groupBox.Invalidate();
+                Console.WriteLine($"🔧 ListBoxItemsView SetBoundsCore: Size=({width}, {height}), DesignMode={this.DesignMode}");
             }
         }
 
@@ -307,6 +289,13 @@ namespace QMC.Common
             }
         }
 
+        // GroupBox 크기 정보 확인용 프로퍼티 추가
+        [Browsable(false)]
+        public Size GroupBoxSize => groupBox?.Size ?? Size.Empty;
+
+        [Browsable(false)]
+        public Size UserControlSize => this.Size;
+
         // 폰트 갱신 메서드
         private void UpdateListBoxFont()
         {
@@ -316,6 +305,53 @@ namespace QMC.Common
                 listBox.ItemHeight = (int)Math.Ceiling(_fontSize * 1.8f); // 폰트 크기에 따라 조정
             }
             this.Invalidate();
+        }
+
+        // GroupBox Size를 외부에서 설정할 수 있도록 public 메서드 추가
+        public void SetGroupBoxSize(Size size)
+        {
+            Console.WriteLine($"🔧 ListBoxItemsView.SetGroupBoxSize 호출: 요청된 크기={size}");
+            Console.WriteLine($"   현재 UserControl 크기={this.Size}");
+            Console.WriteLine($"   현재 GroupBox 크기={(groupBox?.Size.ToString() ?? "null")}");
+            Console.WriteLine($"   현재 GroupBox Dock={groupBox?.Dock}");
+            
+            if (groupBox != null)
+            {
+                // 🔧 UserControl 크기 변경 - GroupBox는 Dock.Fill이므로 자동으로 따라옴
+                this.Size = size;
+                
+                // 🔧 GroupBox가 Dock.Fill이 아닌 경우 수동으로 크기 설정
+                if (groupBox.Dock != DockStyle.Fill)
+                {
+                    groupBox.Size = size;
+                    groupBox.Location = new Point(0, 0);
+                    Console.WriteLine($"🔧 GroupBox Dock이 Fill이 아니므로 수동으로 크기 설정");
+                }
+                
+                // 강제 레이아웃 업데이트
+                this.SuspendLayout();
+                groupBox.SuspendLayout();
+                
+                // 레이아웃 강제 업데이트
+                groupBox.PerformLayout();
+                this.PerformLayout();
+                
+                this.ResumeLayout(true);
+                groupBox.ResumeLayout(true);
+                
+                // 화면 갱신
+                groupBox.Invalidate();
+                this.Invalidate();
+                
+                Console.WriteLine($"✅ SetGroupBoxSize 완료:");
+                Console.WriteLine($"   UserControl 최종 크기={this.Size}");
+                Console.WriteLine($"   GroupBox 최종 크기={groupBox.Size}");
+                Console.WriteLine($"   GroupBox Dock={groupBox.Dock}");
+            }
+            else
+            {
+                Console.WriteLine($"❌ GroupBox가 null입니다.");
+            }
         }
     }
 }

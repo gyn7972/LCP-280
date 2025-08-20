@@ -52,16 +52,16 @@ namespace LCP_280
                 Console.WriteLine("=== Position Item & Editor 초기화 시작 ===");
 
                 // 🚀 1. PositionDataCollection 생성 (사용자 이미지와 동일)
-                _positionCollection = new PositionDataCollection("Lifter & Feeder Unit");
+                _positionCollection = new PositionDataCollection("Lifter & WaferTransferArm Unit");
                 
                 // 사용자 이미지의 Position Item들 추가
                 _positionCollection.Add(new BasePositionData("Lifter Loading Position", 0.0, "mm", "리프터 로딩 위치"));
                 _positionCollection.Add(new BasePositionData("Lifter Unloading Position", 50.0, "mm", "리프터 언로딩 위치"));
                 _positionCollection.Add(new BasePositionData("Cassette Slot Pitch", 10.0, "mm", "카세트 슬롯 간격"));
-                _positionCollection.Add(new BasePositionData("Feeder Ready Position", 100.0, "mm", "피더 준비 위치"));
-                _positionCollection.Add(new BasePositionData("Feeder Avoid Position", 150.0, "mm", "피더 회피 위치"));
-                _positionCollection.Add(new BasePositionData("Feeder Stage Position", 200.0, "mm", "피더 스테이지 위치"));
-                _positionCollection.Add(new BasePositionData("Feeder Cassette Position", 250.0, "mm", "피더 카세트 위치"));
+                _positionCollection.Add(new BasePositionData("WaferTransferArm Ready Position", 100.0, "mm", "피더 준비 위치"));
+                _positionCollection.Add(new BasePositionData("WaferTransferArm Avoid Position", 150.0, "mm", "피더 회피 위치"));
+                _positionCollection.Add(new BasePositionData("WaferTransferArm Stage Position", 200.0, "mm", "피더 스테이지 위치"));
+                _positionCollection.Add(new BasePositionData("WaferTransferArm Cassette Position", 250.0, "mm", "피더 카세트 위치"));
 
                 // 🚀 2. ListBoxItemsView에 Position Item들 표시 (사용자 이미지 왼쪽)
                 // this.listBoxItemsView.GroupName = "Position Item";

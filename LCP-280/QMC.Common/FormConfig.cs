@@ -226,7 +226,7 @@ namespace QMC.Common
                     if (configTabControl != null)
                     {
                         int availableWidth = configTabControl.Width;
-                        int availableHeight = configTabControl.Height - _tabHeight; // 탭 높이 제외
+                        int availableHeight = configTabControl.Height - _tabHeight - 20; // 탭 높이 제외
                         
                         // 리플렉션을 사용하여 SetPanelSize 메서드 확인 및 호출
                         var setPanelSizeMethod = formInstance.GetType().GetMethod("SetPanelSize", 
@@ -468,5 +468,68 @@ namespace QMC.Common
             
             Console.WriteLine($"✅ FormConfig.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
+        
+        #region Form Border Drawing
+
+        /// <summary>
+        /// 폼 테두리 그리기
+        /// </summary>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            
+            // 폼 전체 테두리 그리기
+            using (Pen borderPen = new Pen(FormBorderColor, FormBorderWidth))
+            {
+                Rectangle borderRect = new Rectangle(0, 0, this.ClientSize.Width - 1, this.ClientSize.Height - 1);
+                e.Graphics.DrawRectangle(borderPen, borderRect);
+            }
+            
+            Console.WriteLine($"🖌️ FormConfig 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
+        }
+
+        /// <summary>
+        /// 크기 변경 시 다시 그리기
+        /// </summary>
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            // 크기가 변경되면 다시 그리기
+            this.Invalidate();
+        }
+
+        #endregion
+        
+        #region Border Customization Methods
+
+        /// <summary>
+        /// 테두리 스타일을 설정하는 헬퍼 메서드
+        /// </summary>
+        /// <param name="color">테두리 색상</param>
+        /// <param name="width">테두리 두께</param>
+        public void SetBorderStyle(Color color, int width)
+        {
+            FormBorderColor = color;
+            FormBorderWidth = width;
+            Console.WriteLine($"🎨 FormConfig 테두리 스타일 변경: Color={color}, Width={width}");
+        }
+
+        /// <summary>
+        /// 기본 테두리 스타일로 복원
+        /// </summary>
+        public void ResetBorderStyle()
+        {
+            SetBorderStyle(Color.Black, 2);
+        }
+
+        /// <summary>
+        /// 테두리 강조 (빨간색, 두꺼운 선)
+        /// </summary>
+        public void HighlightBorder()
+        {
+            SetBorderStyle(Color.Red, 4);
+        }
+
+        #endregion
     }
 }

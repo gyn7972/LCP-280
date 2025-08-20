@@ -61,9 +61,9 @@ namespace QMC.Common.Examples
                 var lifterPositions = PropertyPosition.CreateLifterPositions();
                 Console.WriteLine($"Lifter Positions: {lifterPositions.PropertyCount}개");
 
-                // 2. 미리 정의된 Feeder Position들 생성
-                var feederPositions = PropertyPosition.CreateFeederPositions();
-                Console.WriteLine($"Feeder Positions: {feederPositions.PropertyCount}개");
+                // 2. 미리 정의된 WaferTransferArm Position들 생성
+                var WaferTransferArmPositions = PropertyPosition.CreateWaferTransferArmPositions();
+                Console.WriteLine($"WaferTransferArm Positions: {WaferTransferArmPositions.PropertyCount}개");
 
                 // 3. 사용자 정의 Position들 생성
                 var scannerPositions = PropertyPosition.CreateCustomPositions("Scanner",
@@ -74,7 +74,7 @@ namespace QMC.Common.Examples
                 Console.WriteLine($"Scanner Positions: {scannerPositions.PropertyCount}개");
 
                 // 4. 모든 Position 정보 출력
-                var allPositionGroups = new[] { lifterPositions, feederPositions, scannerPositions };
+                var allPositionGroups = new[] { lifterPositions, WaferTransferArmPositions, scannerPositions };
                 foreach (var group in allPositionGroups)
                 {
                     Console.WriteLine($"  {group.Title}: {string.Join(", ", group.GetPropertyTitles())}");
@@ -244,7 +244,7 @@ namespace QMC.Common.Examples
 
                 // 1. 장비별 PropertyPosition들 생성
                 var lifterPositions = PropertyPosition.CreateLifterPositions();
-                var feederPositions = PropertyPosition.CreateFeederPositions();
+                var WaferTransferArmPositions = PropertyPosition.CreateWaferTransferArmPositions();
 
                 Console.WriteLine("장비별 PropertyPosition 생성 완료");
 

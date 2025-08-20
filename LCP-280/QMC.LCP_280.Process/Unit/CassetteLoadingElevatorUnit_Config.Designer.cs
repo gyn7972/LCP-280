@@ -16,12 +16,16 @@ namespace QMC.LCP_280.Process.Unit
         /// Required designer variable.
         /// </summary>
         private PropertyCollectionView propertyCollectionView;
-        private ListBoxItemsView listBoxItemsView;
-        
+        private IOPropertyCollectionView inputPropertyCollectionView;
+        private IOPropertyCollectionView outputPropertyCollectionView;
+        private ListBoxItemsView positionlistBoxItemsView;
+
         // 🚀 Position Editor 버튼들 추가
-        private Button btnSave;
-        private Button btnCancel;
-        
+        private IndividualMenuButton btnSave;
+        private IndividualMenuButton btnCancel;
+
+        private RadioButtonView radioButtonView;
+
         private System.ComponentModel.IContainer components = null;
 
         /// <summary>
@@ -36,29 +40,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             base.Dispose(disposing);
         }
-
-        /// <summary>
-        /// 🔧 FormConfig에서 tab height를 제외한 크기를 받아서 설정
-        /// </summary>
-        /// <param name="width">폼의 너비</param>
-        /// <param name="height">FormConfig에서 tab height를 제외한 높이</param>
-        public void SetPanelSize(int width, int height)
-        {
-            Console.WriteLine($"🔧 CassetteLoadingElevatorUnit_Config.SetPanelSize() 호출: width={width}, height={height}");
-            Console.WriteLine($"   현재 Config 폼 크기: Size={this.Size}, ClientSize={this.ClientSize}");
-
-            // 폼 크기 설정
-            this.Size = new Size(width, height);
-            this.ClientSize = new Size(width, height);
-
-            // 폼 전체를 다시 그리기
-            this.Invalidate();
-            this.Update();
-
-            Console.WriteLine($"✅ CassetteLoadingElevatorUnit_Config.SetPanelSize() 완료: 최종 크기={this.Size}");
-        }
-
-
         #region Windows Form Designer generated code
 
         /// <summary>
@@ -67,70 +48,186 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private void InitializeComponent()
         {
-            this.btnSave = new System.Windows.Forms.Button();
-            this.btnCancel = new System.Windows.Forms.Button();
+            this.gbTeachingMove = new System.Windows.Forms.GroupBox();
+            this.btnMovePosition = new QMC.Common.IndividualMenuButton();
+            this.radioButtonView = new QMC.Common.RadioButtonView();
+            this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
+            this.positionlistBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.propertyCollectionView = new QMC.Common.PropertyCollectionView();
-            this.listBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.btnSave = new QMC.Common.IndividualMenuButton();
+            this.btnCancel = new QMC.Common.IndividualMenuButton();
+            this.gbDigitalIO = new System.Windows.Forms.GroupBox();
+            this.inputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
+            this.outputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
+            this.gbTeachingMove.SuspendLayout();
+            this.gbPositionTeaching.SuspendLayout();
+            this.gbDigitalIO.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // gbTeachingMove
+            // 
+            this.gbTeachingMove.BackColor = System.Drawing.Color.White;
+            this.gbTeachingMove.Controls.Add(this.btnMovePosition);
+            this.gbTeachingMove.Controls.Add(this.radioButtonView);
+            this.gbTeachingMove.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbTeachingMove.Location = new System.Drawing.Point(279, 209);
+            this.gbTeachingMove.Name = "gbTeachingMove";
+            this.gbTeachingMove.Size = new System.Drawing.Size(326, 138);
+            this.gbTeachingMove.TabIndex = 7;
+            this.gbTeachingMove.TabStop = false;
+            this.gbTeachingMove.Text = "Teaching Move";
+            this.gbTeachingMove.Controls.Add(this.btnMovePosition);
+            this.gbTeachingMove.Controls.Add(this.radioButtonView);
+            // 
+            // btnMovePosition
+            // 
+            this.btnMovePosition.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMovePosition.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnMovePosition.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMovePosition.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMovePosition.CustomForeColor = System.Drawing.Color.Black;
+            this.btnMovePosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMovePosition.ForeColor = System.Drawing.Color.Black;
+            this.btnMovePosition.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnMovePosition.Location = new System.Drawing.Point(200, 31);
+            this.btnMovePosition.Name = "btnMovePosition";
+            this.btnMovePosition.Size = new System.Drawing.Size(117, 95);
+            this.btnMovePosition.TabIndex = 6;
+            this.btnMovePosition.TabStop = false;
+            this.btnMovePosition.Text = "Move\r\nPosition";
+            this.btnMovePosition.UseVisualStyleBackColor = false;
+            // 
+            // radioButtonView
+            // 
+            this.radioButtonView.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.radioButtonView.GroupName = "Move Mode";
+            this.radioButtonView.Location = new System.Drawing.Point(13, 20);
+            this.radioButtonView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.radioButtonView.Name = "radioButtonView";
+            this.radioButtonView.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.radioButtonView.SelectedIndex = -1;
+            this.radioButtonView.Size = new System.Drawing.Size(171, 106);
+            this.radioButtonView.TabIndex = 5;
+            // 
+            // gbPositionTeaching
+            // 
+            this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
+            this.gbPositionTeaching.Controls.Add(this.positionlistBoxItemsView);
+            this.gbPositionTeaching.Controls.Add(this.btnSave);
+            this.gbPositionTeaching.Controls.Add(this.btnCancel);
+            this.gbPositionTeaching.Controls.Add(this.gbTeachingMove);
+            this.gbPositionTeaching.Controls.Add(this.propertyCollectionView);
+            this.gbPositionTeaching.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbPositionTeaching.Location = new System.Drawing.Point(9, 12);
+            this.gbPositionTeaching.Name = "gbPositionTeaching";
+            this.gbPositionTeaching.Size = new System.Drawing.Size(613, 361);
+            this.gbPositionTeaching.TabIndex = 8;
+            this.gbPositionTeaching.TabStop = false;
+            this.gbPositionTeaching.Text = "Position Teaching";
+            // 
+            // positionlistBoxItemsView
+            // 
+            this.positionlistBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.positionlistBoxItemsView.BorderWidth = 2;
+            this.positionlistBoxItemsView.GroupName = "Position Items";
+            this.positionlistBoxItemsView.Location = new System.Drawing.Point(9, 24);
+            this.positionlistBoxItemsView.Name = "positionlistBoxItemsView";
+            this.positionlistBoxItemsView.SelectedIndex = -1;
+            this.positionlistBoxItemsView.Size = new System.Drawing.Size(257, 323);
+            this.positionlistBoxItemsView.TabIndex = 2;
+            // 
+            // propertyCollectionView
+            // 
+            this.propertyCollectionView.GroupName = "Editor";
+            this.propertyCollectionView.Location = new System.Drawing.Point(279, 24);
+            this.propertyCollectionView.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.propertyCollectionView.Name = "propertyCollectionView";
+            this.propertyCollectionView.Size = new System.Drawing.Size(326, 169);
+            this.propertyCollectionView.TabIndex = 0;
+            this.propertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             // 
             // btnSave
             // 
-            this.btnSave.Location = new System.Drawing.Point(221, 444);
+            this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSave.CustomForeColor = System.Drawing.Color.Black;
+            this.btnSave.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSave.ForeColor = System.Drawing.Color.Black;
+            this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnSave.Location = new System.Drawing.Point(290, 143);
             this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(75, 30);
+            this.btnSave.Size = new System.Drawing.Size(100, 40);
             this.btnSave.TabIndex = 3;
+            this.btnSave.TabStop = false;
             this.btnSave.Text = "Save";
-            this.btnSave.UseVisualStyleBackColor = true;
+            this.btnSave.UseVisualStyleBackColor = false;
             this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(308, 444);
+            this.btnCancel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnCancel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnCancel.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnCancel.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCancel.CustomForeColor = System.Drawing.Color.Black;
+            this.btnCancel.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnCancel.ForeColor = System.Drawing.Color.Black;
+            this.btnCancel.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnCancel.Location = new System.Drawing.Point(496, 143);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(75, 30);
+            this.btnCancel.Size = new System.Drawing.Size(100, 40);
             this.btnCancel.TabIndex = 4;
+            this.btnCancel.TabStop = false;
             this.btnCancel.Text = "Cancel";
-            this.btnCancel.UseVisualStyleBackColor = true;
+            this.btnCancel.UseVisualStyleBackColor = false;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
-            // propertyCollectionView
+            // gbDigitalIO
             // 
-            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.propertyCollectionView.GroupName = "Editor";
-            this.propertyCollectionView.Location = new System.Drawing.Point(221, 12);
-            this.propertyCollectionView.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.propertyCollectionView.Name = "propertyCollectionView";
-            this.propertyCollectionView.Size = new System.Drawing.Size(589, 288);
-            this.propertyCollectionView.TabIndex = 0;
-            this.propertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbDigitalIO.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.gbDigitalIO.BackColor = System.Drawing.Color.White;
+            this.gbDigitalIO.Controls.Add(this.inputPropertyCollectionView);
+            this.gbDigitalIO.Controls.Add(this.outputPropertyCollectionView);
+            this.gbDigitalIO.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbDigitalIO.Location = new System.Drawing.Point(21, 434);
+            this.gbDigitalIO.Name = "gbDigitalIO";
+            this.gbDigitalIO.Size = new System.Drawing.Size(608, 290);
+            this.gbDigitalIO.TabIndex = 9;
+            this.gbDigitalIO.TabStop = false;
+            this.gbDigitalIO.Text = "Digital I/O";
             // 
-            // listBoxItemsView
+            // inputPropertyCollectionView
             // 
-            this.listBoxItemsView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.listBoxItemsView.BorderWidth = 2;
-            this.listBoxItemsView.GroupName = "Position Items";
-            this.listBoxItemsView.Location = new System.Drawing.Point(12, 12);
-            this.listBoxItemsView.ManualGroupBoxSize = new System.Drawing.Size(200, 150);
-            this.listBoxItemsView.Name = "listBoxItemsView";
-            this.listBoxItemsView.SelectedIndex = -1;
-            this.listBoxItemsView.Size = new System.Drawing.Size(203, 595);
-            this.listBoxItemsView.TabIndex = 2;
+            this.inputPropertyCollectionView.GroupName = "Input";
+            this.inputPropertyCollectionView.Location = new System.Drawing.Point(10, 25);
+            this.inputPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4);
+            this.inputPropertyCollectionView.Name = "inputPropertyCollectionView";
+            this.inputPropertyCollectionView.Size = new System.Drawing.Size(290, 254);
+            this.inputPropertyCollectionView.TabIndex = 1;
+            // 
+            // outputPropertyCollectionView
+            // 
+            this.outputPropertyCollectionView.GroupName = "Output";
+            this.outputPropertyCollectionView.Location = new System.Drawing.Point(308, 25);
+            this.outputPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4);
+            this.outputPropertyCollectionView.Name = "outputPropertyCollectionView";
+            this.outputPropertyCollectionView.Size = new System.Drawing.Size(290, 254);
+            this.outputPropertyCollectionView.TabIndex = 1;
             // 
             // CassetteLoadingElevatorUnit_Config
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1264, 785);
-            this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnSave);
-            this.Controls.Add(this.propertyCollectionView);
-            this.Controls.Add(this.listBoxItemsView);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1264, 746);
+            this.Controls.Add(this.gbDigitalIO);
+            this.Controls.Add(this.gbPositionTeaching);
             this.Name = "CassetteLoadingElevatorUnit_Config";
             this.Text = "CassetteLoadingElevator Unit Configuration";
+            this.gbTeachingMove.ResumeLayout(false);
+            this.gbPositionTeaching.ResumeLayout(false);
+            this.gbDigitalIO.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -145,12 +242,12 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // 🚀 PropertyPosition을 사용하여 Position Item들을 listBoxItemsView에 설정
                 SetPropertyPositionToListBox();
-                
+
                 // 🚀 Position Item 선택 이벤트 연결
                 SetupPositionItemSelectionEvent();
-                
-                // 🚀 PropertyCollectionView에 기본 메시지 표시
-                InitializePropertyCollectionView();
+
+                // 🚀 RadioButtonView 초기화 - Move Mode 옵션 설정
+                InitializeRadioButtonView();
             }
             catch (Exception ex)
             {
@@ -161,28 +258,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        /// <summary>
-        /// 🚀 PropertyCollectionView 초기화 - 기본 안내 메시지 표시
-        /// </summary>
-        private void InitializePropertyCollectionView()
-        {
-            try
-            {
-                // 기본 안내 메시지 표시
-                var defaultProperties = new PropertyCollection();
-                defaultProperties.Add(new TitleOnlyProperty("Position Editor"));
-                defaultProperties.Add(new DoubleProperty("안내", 0.0) { Value = 0.0 });
-                defaultProperties.Add(new DoubleProperty("안내", 0.0) { Value = 0.0 });
-
-                //propertyCollectionView1?.SetProperties(defaultProperties);
-                
-                Console.WriteLine("✅ PropertyCollectionView 기본 메시지 설정 완료");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ PropertyCollectionView 초기화 중 오류: {ex.Message}");
-            }
-        }
 
         /// <summary>
         /// 🚀 PropertyPosition을 사용하여 Position Item들을 listBoxItemsView에 설정
@@ -201,22 +276,21 @@ namespace QMC.LCP_280.Process.Unit
                     if (cassetteUnit?.CassetteElevator?.Config?.PropertyPosition != null)
                     {
                         var propertyPosition = cassetteUnit.CassetteElevator.Config.PropertyPosition;
-                        
+
                         // PropertyPosition에서 Position Title들을 추출하여 ListBox에 설정
                         var positionTitles = propertyPosition.GetPropertyTitles();
-                        
+
                         if (positionTitles.Length > 0)
                         {
                             // listBoxItemsView에 Position Title들 설정
-                            listBoxItemsView?.SetItems(positionTitles);
-                            
+                            positionlistBoxItemsView?.SetItems(positionTitles);
                             Console.WriteLine($"✅ PropertyPosition을 listBoxItemsView에 설정 완료: {positionTitles.Length}개 항목");
                             Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionTitles)}");
                         }
                         else
                         {
                             Console.WriteLine("⚠️ PropertyPosition에 Position 항목이 없습니다.");
-                            listBoxItemsView?.SetItems();
+                            positionlistBoxItemsView?.SetItems();
                         }
                     }
                     else
@@ -240,20 +314,38 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private void SetupPositionItemSelectionEvent()
         {
-            if (listBoxItemsView != null)
+            if (positionlistBoxItemsView != null)
             {
                 // 기존 이벤트 핸들러 제거 (중복 방지)
-                listBoxItemsView.ItemSelected -= OnPositionItemSelected;
-                
+                positionlistBoxItemsView.ItemSelected -= OnPositionItemSelected;
+
                 // 새 이벤트 핸들러 등록
-                listBoxItemsView.ItemSelected += OnPositionItemSelected;
-                
+                positionlistBoxItemsView.ItemSelected += OnPositionItemSelected;
+
                 Console.WriteLine("✅ Position Item 선택 이벤트 설정 완료");
             }
         }
 
         /// <summary>
-        /// 🚀 Position Item 선택 이벤트 처리
+        /// 🚀 RadioButtonView 초기화 - Move Mode 옵션 설정
+        /// </summary>
+        private void InitializeRadioButtonView()
+        {
+            try
+            {
+                // RadioButtonView에 Move Mode 옵션들 설정
+                radioButtonView?.SetOptions(true, "Fine", "Coarse");
+
+                Console.WriteLine("✅ RadioButtonView 초기화 완료");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ RadioButtonView 초기화 중 오류: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 🚀 Position Item 선정 이벤트 처리
         /// </summary>
         private void OnPositionItemSelected(object sender, int selectedIndex)
         {
@@ -270,20 +362,20 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         var propertyPosition = cassetteUnit.CassetteElevator.Config.PropertyPosition;
                         var positionTitles = propertyPosition.GetPropertyTitles();
-                        
+
                         if (selectedIndex >= 0 && selectedIndex < positionTitles.Length)
                         {
                             var selectedTitle = positionTitles[selectedIndex];
                             var selectedProperty = propertyPosition.GetPropertyByTitle(selectedTitle);
-                            
+
                             if (selectedProperty != null)
                             {
                                 // 🚀 선택된 Position Property를 Editor(PropertyCollectionView)에 표시
                                 var editorProperties = new PropertyCollection();
-                                
+
                                 // Position (Abs, mm) 타이틀 추가
                                 editorProperties.Add(new TitleOnlyProperty("Position (Abs, mm)"));
-                                
+
                                 // 선택된 Position Property를 Editor용으로 복사
                                 if (selectedProperty is DoubleProperty doubleProp)
                                 {
@@ -294,10 +386,10 @@ namespace QMC.LCP_280.Process.Unit
                                 {
                                     editorProperties.Add(selectedProperty);
                                 }
-                                
+
                                 // PropertyCollectionView에 Editor 내용 설정
                                 propertyCollectionView?.SetProperties(editorProperties);
-                                
+
                                 Console.WriteLine($"📍 Position Item 선택: {selectedTitle}");
                                 if (selectedProperty is DoubleProperty dp)
                                 {
@@ -343,9 +435,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // PropertyCollectionView의 변경사항을 적용
                 propertyCollectionView?.Apply();
-                
+
                 // 현재 선택된 Position Item의 값을 PropertyPosition에 저장
-                if (listBoxItemsView.SelectedIndex >= 0)
+                if (positionlistBoxItemsView.SelectedIndex >= 0)
                 {
                     var equipment = Equipment.Instance;
                     const string UNIT_NAME = "CassetteLoadingElevator";
@@ -357,38 +449,38 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             var propertyPosition = cassetteUnit.CassetteElevator.Config.PropertyPosition;
                             var positionTitles = propertyPosition.GetPropertyTitles();
-                            
-                            if (listBoxItemsView.SelectedIndex < positionTitles.Length)
+
+                            if (positionlistBoxItemsView.SelectedIndex < positionTitles.Length)
                             {
-                                var selectedTitle = positionTitles[listBoxItemsView.SelectedIndex];
-                                
+                                var selectedTitle = positionTitles[positionlistBoxItemsView.SelectedIndex];
+
                                 // 🚀 Editor에서 편집된 값을 가져오기
                                 var editorProperties = propertyCollectionView?.GetCurrentProperties();
                                 var editedProperty = editorProperties?.Where(p => p.Title == selectedTitle)?.FirstOrDefault();
-                                
+
                                 if (editedProperty is DoubleProperty editedDoubleProp)
                                 {
-                                    // 🚀 PropertyPosition의 원본 Property에 편집된 값 적용
+                                    // 🚀 PropertyPosition의 원본 Property에 편edit된 값 적용
                                     var originalProperty = propertyPosition.GetPropertyByTitle(selectedTitle) as DoubleProperty;
                                     if (originalProperty != null)
                                     {
                                         // Editor → PropertyPosition (올바른 방향)
-                                        editedDoubleProp.Value = originalProperty.Value; 
+                                        editedDoubleProp.Value = originalProperty.Value;
 
                                         // PropertyPosition → Config 동기화
                                         cassetteUnit.CassetteElevator.Config.SyncFromPropertyPosition();
-                                        
+
                                         Console.WriteLine($"✅ Position 값 저장: {selectedTitle} = {editedDoubleProp.Value:F3} mm");
                                         Console.WriteLine($"   PropertyPosition 업데이트: {originalProperty.Value:F3}");
-                                        
+
                                         // Config 값 확인
                                         var config = cassetteUnit.CassetteElevator.Config;
-                                        if (selectedTitle == nameof(config.LifterZLoadingPosition))
+                                        if (selectedTitle == nameof(config.CassetteElevatorLoadingPosition))
                                         {
-                                            Console.WriteLine($"   Config.LifterZLoadingPosition: {config.LifterZLoadingPosition:F3}");
+                                            Console.WriteLine($"   Config.CassetteElevatorLoadingPosition: {config.CassetteElevatorLoadingPosition:F3}");
                                         }
-                                        
-                                        MessageBox.Show($"Position 값이 저장되었습니다.\n{selectedTitle}: {editedDoubleProp.Value:F3} mm", 
+
+                                        MessageBox.Show($"Position 값이 저장되었습니다.\n{selectedTitle}: {editedDoubleProp.Value:F3} mm",
                                                       "저장 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                     }
                                     else
@@ -398,7 +490,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"⚠️ Editor에서 편집된 Property를 찾을 수 없습니다: {selectedTitle}");
+                                    Console.WriteLine($"⚠️ Editor에서 편edit된 Property를 찾을 수 없습니다: {selectedTitle}");
                                 }
                             }
                         }
@@ -412,7 +504,7 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Position 저장 중 오류: {ex.Message}");
-                MessageBox.Show($"Position 저장 중 오류가 발생했습니다:\n{ex.Message}", 
+                MessageBox.Show($"Position 저장 중 오류가 발생했습니다:\n{ex.Message}",
                               "저장 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -425,12 +517,12 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 // 현재 선택된 Position Item을 다시 로드하여 원래 값으로 복원
-                if (listBoxItemsView.SelectedIndex >= 0)
+                if (positionlistBoxItemsView.SelectedIndex >= 0)
                 {
-                    OnPositionItemSelected(listBoxItemsView, listBoxItemsView.SelectedIndex);
-                    
+                    OnPositionItemSelected(positionlistBoxItemsView, positionlistBoxItemsView.SelectedIndex);
+
                     Console.WriteLine("✅ Position 편집 취소 - 원래 값으로 복원");
-                    MessageBox.Show("편집 내용이 취소되었습니다.", "취소 완료", 
+                    MessageBox.Show("편집 내용이 취소되었습니다.", "취소 완료",
                                   MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
@@ -443,11 +535,49 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Position 취소 중 오류: {ex.Message}");
-                MessageBox.Show($"편집 취소 중 오류가 발생했습니다:\n{ex.Message}", 
+                MessageBox.Show($"편집 취소 중 오류가 발생했습니다:\n{ex.Message}",
                               "취소 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         #endregion
+
+        #region Form Paint Override - 중앙 검은색 선 그리기
+
+        /// <summary>
+        /// 폼 중앙에 검은색 세로선 그리기
+        /// </summary>
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            // 폼의 중앙 X 좌표 계산
+            int centerX = this.ClientSize.Width / 2;
+
+            // 검은색 펜으로 세로선 그리기 (폼 전체 높이)
+            using (Pen blackPen = new Pen(Color.Black, 2))
+            {
+                e.Graphics.DrawLine(blackPen, centerX, 0, centerX, this.ClientSize.Height);
+            }
+
+            Console.WriteLine($"🖌️ 중앙 검은색 선 그리기: X={centerX}, Height={this.ClientSize.Height}");
+        }
+
+        /// <summary>
+        /// 크기 변경 시 다시 그리기
+        /// </summary>
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            // 크기가 변경되면 다시 그리기
+            this.Invalidate();
+        }
+
+        #endregion
+
+        private IndividualMenuButton btnMovePosition;
+        private GroupBox gbTeachingMove;
+        private GroupBox gbPositionTeaching;
+        private GroupBox gbDigitalIO;
     }
 }
