@@ -24,34 +24,35 @@ namespace QMC.LCP_280.Process.Unit
         // Axis 목록 (추가)
         private ListBoxItemsView axisListBoxItemsView;
 
-        // Position / Editor 버튼
         private IndividualMenuButton btnSave;
         private IndividualMenuButton btnCancel;
         private IndividualMenuButton btnMovePosition;
         private IndividualMenuButton btnZeroPosition;
-        private IndividualMenuButton individualMenuButton1;
+        private IndividualMenuButton btnDestinationMove;
+        private IndividualMenuButton btnNegativeJog;
+        private IndividualMenuButton btnPositiveJog;
 
         private RadioButtonView rbTeachingMoveMode;
         private RadioButtonView rbCommandMoveMode;
+        private RadioButtonView rbJogMoveMode;
+
         private CustomBorderLabel lblAxisPositionValue;
         private CustomBorderLabel lblAxisPositionCaption;
         private CustomBorderLabel lblAxisMovePositionCaption;
+        private CustomBorderLabel lblAxisMoveStepSizeCaption;
         
         private TextBox tbAxisMovePositionValue;
+        private TextBox tbAxisMoveStepSizeValue;
 
-        // 원시 값 등 추가표시(선택) - 예시
-
-        // 그룹박스들
         private GroupBox gbTeachingMove;
         private GroupBox gbPositionTeaching;
         private GroupBox gbDigitalIO;
         private GroupBox gbCommandMove;
-
-
-        // Move Axis 외곽 그룹박스 (추가)
+        private GroupBox gbJogMove;
         private GroupBox gbMoveAxis;
         private GroupBox gbSelectAxis;
         private GroupBox gbDestinationMoveMode;
+        private GroupBox gbAxisPositions;
 
         private System.ComponentModel.IContainer components = null;
 
@@ -91,14 +92,14 @@ namespace QMC.LCP_280.Process.Unit
             this.outputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.gbMoveAxis = new System.Windows.Forms.GroupBox();
             this.gbJogMove = new System.Windows.Forms.GroupBox();
-            this.individualMenuButton3 = new QMC.Common.IndividualMenuButton();
-            this.individualMenuButton2 = new QMC.Common.IndividualMenuButton();
+            this.btnNegativeJog = new QMC.Common.IndividualMenuButton();
+            this.btnPositiveJog = new QMC.Common.IndividualMenuButton();
             this.tbAxisMoveStepSizeValue = new System.Windows.Forms.TextBox();
             this.lblAxisMoveStepSizeCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.rbJogMoveMode = new QMC.Common.RadioButtonView();
             this.gbCommandMove = new System.Windows.Forms.GroupBox();
             this.gbDestinationMoveMode = new System.Windows.Forms.GroupBox();
-            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.btnDestinationMove = new QMC.Common.IndividualMenuButton();
             this.lblAxisMovePositionCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.tbAxisMovePositionValue = new System.Windows.Forms.TextBox();
             this.rbCommandMoveMode = new QMC.Common.RadioButtonView();
@@ -106,8 +107,8 @@ namespace QMC.LCP_280.Process.Unit
             this.gbSelectAxis = new System.Windows.Forms.GroupBox();
             this.lblAxisPositionCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lblAxisPositionValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.gbAxisPositions = new System.Windows.Forms.GroupBox();
+            this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.gbTeachingMove.SuspendLayout();
             this.gbPositionTeaching.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
@@ -272,7 +273,6 @@ namespace QMC.LCP_280.Process.Unit
             // gbMoveAxis
             // 
             this.gbMoveAxis.BackColor = System.Drawing.Color.White;
-            this.gbMoveAxis.Controls.Add(this.gbAxisPositions);
             this.gbMoveAxis.Controls.Add(this.gbJogMove);
             this.gbMoveAxis.Controls.Add(this.gbCommandMove);
             this.gbMoveAxis.Controls.Add(this.btnZeroPosition);
@@ -280,9 +280,9 @@ namespace QMC.LCP_280.Process.Unit
             this.gbMoveAxis.Controls.Add(this.lblAxisPositionCaption);
             this.gbMoveAxis.Controls.Add(this.lblAxisPositionValue);
             this.gbMoveAxis.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.gbMoveAxis.Location = new System.Drawing.Point(635, 12);
+            this.gbMoveAxis.Location = new System.Drawing.Point(643, 12);
             this.gbMoveAxis.Name = "gbMoveAxis";
-            this.gbMoveAxis.Size = new System.Drawing.Size(613, 724);
+            this.gbMoveAxis.Size = new System.Drawing.Size(300, 724);
             this.gbMoveAxis.TabIndex = 10;
             this.gbMoveAxis.TabStop = false;
             this.gbMoveAxis.Text = "Move Axis";
@@ -290,63 +290,63 @@ namespace QMC.LCP_280.Process.Unit
             // gbJogMove
             // 
             this.gbJogMove.BackColor = System.Drawing.Color.White;
-            this.gbJogMove.Controls.Add(this.individualMenuButton3);
-            this.gbJogMove.Controls.Add(this.individualMenuButton2);
+            this.gbJogMove.Controls.Add(this.btnNegativeJog);
+            this.gbJogMove.Controls.Add(this.btnPositiveJog);
             this.gbJogMove.Controls.Add(this.tbAxisMoveStepSizeValue);
             this.gbJogMove.Controls.Add(this.lblAxisMoveStepSizeCaption);
             this.gbJogMove.Controls.Add(this.rbJogMoveMode);
             this.gbJogMove.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.gbJogMove.Location = new System.Drawing.Point(11, 420);
             this.gbJogMove.Name = "gbJogMove";
-            this.gbJogMove.Size = new System.Drawing.Size(288, 296);
+            this.gbJogMove.Size = new System.Drawing.Size(281, 296);
             this.gbJogMove.TabIndex = 10;
             this.gbJogMove.TabStop = false;
             this.gbJogMove.Text = "Jog Move";
             // 
-            // individualMenuButton3
+            // btnNegativeJog
             // 
-            this.individualMenuButton3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton3.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton3.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton3.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton3.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton3.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton3.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton3.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton3.Location = new System.Drawing.Point(6, 201);
-            this.individualMenuButton3.Name = "individualMenuButton3";
-            this.individualMenuButton3.Size = new System.Drawing.Size(111, 50);
-            this.individualMenuButton3.TabIndex = 12;
-            this.individualMenuButton3.TabStop = false;
-            this.individualMenuButton3.Text = "- Jog";
-            this.individualMenuButton3.UseVisualStyleBackColor = false;
+            this.btnNegativeJog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnNegativeJog.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnNegativeJog.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnNegativeJog.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnNegativeJog.CustomForeColor = System.Drawing.Color.Black;
+            this.btnNegativeJog.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnNegativeJog.ForeColor = System.Drawing.Color.Black;
+            this.btnNegativeJog.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnNegativeJog.Location = new System.Drawing.Point(6, 201);
+            this.btnNegativeJog.Name = "btnNegativeJog";
+            this.btnNegativeJog.Size = new System.Drawing.Size(111, 50);
+            this.btnNegativeJog.TabIndex = 12;
+            this.btnNegativeJog.TabStop = false;
+            this.btnNegativeJog.Text = "- Jog";
+            this.btnNegativeJog.UseVisualStyleBackColor = false;
             // 
-            // individualMenuButton2
+            // btnPositiveJog
             // 
-            this.individualMenuButton2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton2.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton2.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton2.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton2.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton2.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton2.Location = new System.Drawing.Point(171, 201);
-            this.individualMenuButton2.Name = "individualMenuButton2";
-            this.individualMenuButton2.Size = new System.Drawing.Size(111, 50);
-            this.individualMenuButton2.TabIndex = 11;
-            this.individualMenuButton2.TabStop = false;
-            this.individualMenuButton2.Text = "+ Jog";
-            this.individualMenuButton2.UseVisualStyleBackColor = false;
+            this.btnPositiveJog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPositiveJog.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnPositiveJog.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPositiveJog.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnPositiveJog.CustomForeColor = System.Drawing.Color.Black;
+            this.btnPositiveJog.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnPositiveJog.ForeColor = System.Drawing.Color.Black;
+            this.btnPositiveJog.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnPositiveJog.Location = new System.Drawing.Point(164, 201);
+            this.btnPositiveJog.Name = "btnPositiveJog";
+            this.btnPositiveJog.Size = new System.Drawing.Size(111, 50);
+            this.btnPositiveJog.TabIndex = 11;
+            this.btnPositiveJog.TabStop = false;
+            this.btnPositiveJog.Text = "+ Jog";
+            this.btnPositiveJog.UseVisualStyleBackColor = false;
             // 
             // tbAxisMoveStepSizeValue
             // 
             this.tbAxisMoveStepSizeValue.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.tbAxisMoveStepSizeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.tbAxisMoveStepSizeValue.Location = new System.Drawing.Point(146, 120);
+            this.tbAxisMoveStepSizeValue.Location = new System.Drawing.Point(185, 120);
             this.tbAxisMoveStepSizeValue.Multiline = true;
             this.tbAxisMoveStepSizeValue.Name = "tbAxisMoveStepSizeValue";
-            this.tbAxisMoveStepSizeValue.Size = new System.Drawing.Size(135, 35);
+            this.tbAxisMoveStepSizeValue.Size = new System.Drawing.Size(90, 35);
             this.tbAxisMoveStepSizeValue.TabIndex = 10;
             this.tbAxisMoveStepSizeValue.Text = "000.000";
             this.tbAxisMoveStepSizeValue.WordWrap = false;
@@ -356,9 +356,9 @@ namespace QMC.LCP_280.Process.Unit
             this.lblAxisMoveStepSizeCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
             this.lblAxisMoveStepSizeCaption.BorderWidth = 1;
             this.lblAxisMoveStepSizeCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lblAxisMoveStepSizeCaption.Location = new System.Drawing.Point(56, 120);
+            this.lblAxisMoveStepSizeCaption.Location = new System.Drawing.Point(90, 120);
             this.lblAxisMoveStepSizeCaption.Name = "lblAxisMoveStepSizeCaption";
-            this.lblAxisMoveStepSizeCaption.Size = new System.Drawing.Size(84, 35);
+            this.lblAxisMoveStepSizeCaption.Size = new System.Drawing.Size(90, 35);
             this.lblAxisMoveStepSizeCaption.TabIndex = 9;
             this.lblAxisMoveStepSizeCaption.Text = "Step Size";
             this.lblAxisMoveStepSizeCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -372,7 +372,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rbJogMoveMode.Name = "rbJogMoveMode";
             this.rbJogMoveMode.Orientation = System.Windows.Forms.Orientation.Vertical;
             this.rbJogMoveMode.SelectedIndex = -1;
-            this.rbJogMoveMode.Size = new System.Drawing.Size(276, 87);
+            this.rbJogMoveMode.Size = new System.Drawing.Size(269, 87);
             this.rbJogMoveMode.TabIndex = 7;
             // 
             // gbCommandMove
@@ -383,7 +383,7 @@ namespace QMC.LCP_280.Process.Unit
             this.gbCommandMove.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.gbCommandMove.Location = new System.Drawing.Point(9, 223);
             this.gbCommandMove.Name = "gbCommandMove";
-            this.gbCommandMove.Size = new System.Drawing.Size(290, 191);
+            this.gbCommandMove.Size = new System.Drawing.Size(283, 191);
             this.gbCommandMove.TabIndex = 8;
             this.gbCommandMove.TabStop = false;
             this.gbCommandMove.Text = "Command Move";
@@ -391,34 +391,34 @@ namespace QMC.LCP_280.Process.Unit
             // gbDestinationMoveMode
             // 
             this.gbDestinationMoveMode.BackColor = System.Drawing.Color.White;
-            this.gbDestinationMoveMode.Controls.Add(this.individualMenuButton1);
+            this.gbDestinationMoveMode.Controls.Add(this.btnDestinationMove);
             this.gbDestinationMoveMode.Controls.Add(this.lblAxisMovePositionCaption);
             this.gbDestinationMoveMode.Controls.Add(this.tbAxisMovePositionValue);
             this.gbDestinationMoveMode.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.gbDestinationMoveMode.Location = new System.Drawing.Point(6, 115);
             this.gbDestinationMoveMode.Name = "gbDestinationMoveMode";
-            this.gbDestinationMoveMode.Size = new System.Drawing.Size(278, 70);
+            this.gbDestinationMoveMode.Size = new System.Drawing.Size(271, 70);
             this.gbDestinationMoveMode.TabIndex = 9;
             this.gbDestinationMoveMode.TabStop = false;
             this.gbDestinationMoveMode.Text = "Destination Position";
             // 
             // individualMenuButton1
             // 
-            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton1.Location = new System.Drawing.Point(195, 25);
-            this.individualMenuButton1.Name = "individualMenuButton1";
-            this.individualMenuButton1.Size = new System.Drawing.Size(78, 35);
-            this.individualMenuButton1.TabIndex = 11;
-            this.individualMenuButton1.TabStop = false;
-            this.individualMenuButton1.Text = "Move";
-            this.individualMenuButton1.UseVisualStyleBackColor = false;
+            this.btnDestinationMove.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDestinationMove.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnDestinationMove.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDestinationMove.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnDestinationMove.CustomForeColor = System.Drawing.Color.Black;
+            this.btnDestinationMove.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnDestinationMove.ForeColor = System.Drawing.Color.Black;
+            this.btnDestinationMove.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnDestinationMove.Location = new System.Drawing.Point(183, 25);
+            this.btnDestinationMove.Name = "btnDestinationMove";
+            this.btnDestinationMove.Size = new System.Drawing.Size(84, 35);
+            this.btnDestinationMove.TabIndex = 11;
+            this.btnDestinationMove.TabStop = false;
+            this.btnDestinationMove.Text = "Move";
+            this.btnDestinationMove.UseVisualStyleBackColor = false;
             // 
             // lblAxisMovePositionCaption
             // 
@@ -427,7 +427,7 @@ namespace QMC.LCP_280.Process.Unit
             this.lblAxisMovePositionCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
             this.lblAxisMovePositionCaption.Location = new System.Drawing.Point(4, 24);
             this.lblAxisMovePositionCaption.Name = "lblAxisMovePositionCaption";
-            this.lblAxisMovePositionCaption.Size = new System.Drawing.Size(81, 35);
+            this.lblAxisMovePositionCaption.Size = new System.Drawing.Size(80, 35);
             this.lblAxisMovePositionCaption.TabIndex = 9;
             this.lblAxisMovePositionCaption.Text = "Move Pos.";
             this.lblAxisMovePositionCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -436,10 +436,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.tbAxisMovePositionValue.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.tbAxisMovePositionValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.tbAxisMovePositionValue.Location = new System.Drawing.Point(90, 25);
+            this.tbAxisMovePositionValue.Location = new System.Drawing.Point(89, 25);
             this.tbAxisMovePositionValue.Multiline = true;
             this.tbAxisMovePositionValue.Name = "tbAxisMovePositionValue";
-            this.tbAxisMovePositionValue.Size = new System.Drawing.Size(99, 35);
+            this.tbAxisMovePositionValue.Size = new System.Drawing.Size(90, 35);
             this.tbAxisMovePositionValue.TabIndex = 10;
             this.tbAxisMovePositionValue.Text = "000.000";
             this.tbAxisMovePositionValue.WordWrap = false;
@@ -453,7 +453,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rbCommandMoveMode.Name = "rbCommandMoveMode";
             this.rbCommandMoveMode.Orientation = System.Windows.Forms.Orientation.Vertical;
             this.rbCommandMoveMode.SelectedIndex = -1;
-            this.rbCommandMoveMode.Size = new System.Drawing.Size(278, 87);
+            this.rbCommandMoveMode.Size = new System.Drawing.Size(271, 87);
             this.rbCommandMoveMode.TabIndex = 7;
             // 
             // btnZeroPosition
@@ -466,9 +466,9 @@ namespace QMC.LCP_280.Process.Unit
             this.btnZeroPosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnZeroPosition.ForeColor = System.Drawing.Color.Black;
             this.btnZeroPosition.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnZeroPosition.Location = new System.Drawing.Point(241, 179);
+            this.btnZeroPosition.Location = new System.Drawing.Point(237, 179);
             this.btnZeroPosition.Name = "btnZeroPosition";
-            this.btnZeroPosition.Size = new System.Drawing.Size(58, 35);
+            this.btnZeroPosition.Size = new System.Drawing.Size(55, 35);
             this.btnZeroPosition.TabIndex = 8;
             this.btnZeroPosition.TabStop = false;
             this.btnZeroPosition.Text = "\"0";
@@ -480,7 +480,7 @@ namespace QMC.LCP_280.Process.Unit
             this.gbSelectAxis.Font = new System.Drawing.Font("맑은 고딕", 9F);
             this.gbSelectAxis.Location = new System.Drawing.Point(9, 25);
             this.gbSelectAxis.Name = "gbSelectAxis";
-            this.gbSelectAxis.Size = new System.Drawing.Size(290, 150);
+            this.gbSelectAxis.Size = new System.Drawing.Size(283, 150);
             this.gbSelectAxis.TabIndex = 0;
             this.gbSelectAxis.TabStop = false;
             this.gbSelectAxis.Text = "Select Axis";
@@ -502,14 +502,25 @@ namespace QMC.LCP_280.Process.Unit
             this.lblAxisPositionValue.BackColor = System.Drawing.Color.Black;
             this.lblAxisPositionValue.BorderColor = System.Drawing.Color.Black;
             this.lblAxisPositionValue.BorderWidth = 1;
-            this.lblAxisPositionValue.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lblAxisPositionValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
             this.lblAxisPositionValue.ForeColor = System.Drawing.Color.Lime;
             this.lblAxisPositionValue.Location = new System.Drawing.Point(103, 179);
             this.lblAxisPositionValue.Name = "lblAxisPositionValue";
-            this.lblAxisPositionValue.Size = new System.Drawing.Size(136, 35);
+            this.lblAxisPositionValue.Size = new System.Drawing.Size(130, 35);
             this.lblAxisPositionValue.TabIndex = 2;
             this.lblAxisPositionValue.Text = "000.000";
             this.lblAxisPositionValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // gbAxisPositions
+            // 
+            this.gbAxisPositions.BackColor = System.Drawing.Color.White;
+            this.gbAxisPositions.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbAxisPositions.Location = new System.Drawing.Point(959, 12);
+            this.gbAxisPositions.Name = "gbAxisPositions";
+            this.gbAxisPositions.Size = new System.Drawing.Size(300, 722);
+            this.gbAxisPositions.TabIndex = 13;
+            this.gbAxisPositions.TabStop = false;
+            this.gbAxisPositions.Text = "Axis Positions";
             // 
             // axisListBoxItemsView
             // 
@@ -522,22 +533,12 @@ namespace QMC.LCP_280.Process.Unit
             this.axisListBoxItemsView.TabIndex = 0;
             this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
             // 
-            // gbAxisPositions
-            // 
-            this.gbAxisPositions.BackColor = System.Drawing.Color.White;
-            this.gbAxisPositions.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbAxisPositions.Location = new System.Drawing.Point(314, 25);
-            this.gbAxisPositions.Name = "gbAxisPositions";
-            this.gbAxisPositions.Size = new System.Drawing.Size(290, 691);
-            this.gbAxisPositions.TabIndex = 13;
-            this.gbAxisPositions.TabStop = false;
-            this.gbAxisPositions.Text = "Axis Positions";
-            // 
             // CassetteLoadingElevatorUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 746);
+            this.Controls.Add(this.gbAxisPositions);
             this.Controls.Add(this.gbMoveAxis);
             this.Controls.Add(this.gbDigitalIO);
             this.Controls.Add(this.gbPositionTeaching);
@@ -783,21 +784,7 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
-
-
-
-
-
-
-
         #endregion
 
-        private GroupBox gbJogMove;
-        private IndividualMenuButton individualMenuButton3;
-        private IndividualMenuButton individualMenuButton2;
-        private TextBox tbAxisMoveStepSizeValue;
-        private CustomBorderLabel lblAxisMoveStepSizeCaption;
-        private RadioButtonView rbJogMoveMode;
-        private GroupBox gbAxisPositions;
     }
 }

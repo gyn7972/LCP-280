@@ -13,6 +13,11 @@ namespace QMC.Common
         private Orientation _orientation = Orientation.Horizontal;
         private string _groupName = "Radio Options"; // GroupBox 이름 저장용
 
+        // 자동 간격 분배 옵션
+        private bool _autoDistributeSpacing = true;
+        private int _minGap = 8; // 최소 간격(px)
+        private bool _centerSingleOption = true; // 옵션이 하나일 때 가운데 정렬 시도
+
         public event EventHandler<int> OptionSelected;
 
         // GroupBox 이름 프로퍼티 (ListBoxItemsView와 동일한 패턴)
@@ -40,6 +45,52 @@ namespace QMC.Common
             {
                 _orientation = value;
                 UpdateFlowDirection();
+                UpdateDynamicSpacing();
+            }
+        }
+
+        [Browsable(true)]
+        [Category("Layout")]
+        [Description("그룹박스/패널 크기에 맞춰 버튼 간격을 자동으로 분배합니다.")]
+        [DefaultValue(true)]
+        public bool AutoDistributeSpacing
+        {
+            get => _autoDistributeSpacing;
+            set
+            {
+                if (_autoDistributeSpacing != value)
+                {
+                    _autoDistributeSpacing = value;
+                    UpdateDynamicSpacing();
+                }
+            }
+        }
+
+        [Browsable(true)]
+        [Category("Layout")]
+        [Description("자동 간격 분배 시 보장할 최소 간격(px)")]
+        [DefaultValue(8)]
+        public int MinGap
+        {
+            get => _minGap;
+            set
+            {
+                _minGap = Math.Max(0, value);
+                UpdateDynamicSpacing();
+            }
+        }
+
+        [Browsable(true)]
+        [Category("Layout")]
+        [Description("옵션이 하나일 때 가운데 정렬 시도")]
+        [DefaultValue(true)]
+        public bool CenterSingleOption
+        {
+            get => _centerSingleOption;
+            set
+            {
+                _centerSingleOption = value;
+                UpdateDynamicSpacing();
             }
         }
 
@@ -127,6 +178,9 @@ namespace QMC.Common
                 BackColor = Color.White // 배경색 설정
             };
 
+            // 크기 변경 시 간격 재계산
+            panel.SizeChanged += (s, e) => UpdateDynamicSpacing();
+
             // UserControl 자동 크기 조정 비활성화 (Designer 크기 사용)
             this.AutoSize = false;
             this.AutoSizeMode = AutoSizeMode.GrowOnly;
@@ -161,6 +215,8 @@ namespace QMC.Common
             {
                 groupBox.Invalidate();
             }
+
+            UpdateDynamicSpacing();
         }
 
         // ListBoxItemsView와 동일한 크기 설정 이벤트
@@ -171,6 +227,7 @@ namespace QMC.Common
             if ((specified & BoundsSpecified.Size) != 0)
             {
                 Console.WriteLine($"🔧 RadioButtonView SetBoundsCore: Size=({width}, {height}), DesignMode={this.DesignMode}");
+                UpdateDynamicSpacing();
             }
         }
 
@@ -180,7 +237,11 @@ namespace QMC.Common
             
             panel.Controls.Clear();
             if (options == null || options.Length == 0)
+            {
+                radioButtons = Array.Empty<System.Windows.Forms.RadioButton>();
+                UpdateDynamicSpacing();
                 return;
+            }
 
             // enum 타입이 단일로 들어온 경우 처리
             if (options.Length == 1 && options[0] is Type enumType && enumType.IsEnum)
@@ -194,7 +255,7 @@ namespace QMC.Common
                     {
                         Text = text,
                         AutoSize = true,
-                        Margin = new Padding(8, 4, 8, 4),
+                        Margin = new Padding(_minGap, 4, _minGap, 4),
                         Font = new Font("맑은 고딕", 9f),
                         TabStop = true,
                         BackColor = Color.White, // 배경색 추가
@@ -219,6 +280,8 @@ namespace QMC.Common
                     panel.Invalidate();
                     panel.Update();
                 }
+
+                UpdateDynamicSpacing();
                 return;
             }
 
@@ -231,7 +294,7 @@ namespace QMC.Common
                 {
                     Text = text,
                     AutoSize = true,
-                    Margin = new Padding(8, 4, 8, 4),
+                    Margin = new Padding(_minGap, 4, _minGap, 4),
                     Font = new Font("맑은 고딕", 9f),
                     TabStop = true,
                     BackColor = Color.White,
@@ -257,6 +320,8 @@ namespace QMC.Common
                 panel.Invalidate();
                 panel.Update();
             }
+
+            UpdateDynamicSpacing();
         }
 
         // 선택된 인덱스 접근
@@ -300,10 +365,106 @@ namespace QMC.Common
                 this.Invalidate();
                 this.Update();
                 this.PerformLayout();
+
+                UpdateDynamicSpacing();
             }
             else
             {
                 Console.WriteLine($"❌ GroupBox가 null입니다.");
+            }
+        }
+
+        /// <summary>
+        /// 그룹박스/패널 크기와 라디오 버튼 폭(혹은 높이)에 맞춰 Margin을 재계산하여 간격을 분배
+        /// </summary>
+        private void UpdateDynamicSpacing()
+        {
+            try
+            {
+                if (!_autoDistributeSpacing || panel == null || radioButtons == null || radioButtons.Length == 0)
+                    return;
+
+                // 클라이언트 영역 크기
+                var client = panel.ClientSize;
+                int n = radioButtons.Length;
+
+                if (_orientation == Orientation.Horizontal)
+                {
+                    int innerWidth = Math.Max(0, client.Width - panel.Padding.Left - panel.Padding.Right);
+                    if (innerWidth <= 0) return;
+
+                    // 버튼 가로 길이 합산
+                    int sumBtn = 0;
+                    for (int i = 0; i < n; i++)
+                    {
+                        // AutoSize 시 PreferredSize 사용
+                        var w = radioButtons[i].PreferredSize.Width;
+                        sumBtn += w;
+                    }
+
+                    int gaps = n + 1; // 좌/우 여백 포함
+                    int s = (innerWidth - sumBtn) / Math.Max(1, gaps);
+                    s = Math.Max(_minGap, s);
+
+                    if (n == 1 && _centerSingleOption)
+                    {
+                        int left = Math.Max(_minGap, (innerWidth - radioButtons[0].PreferredSize.Width) / 2);
+                        int right = left;
+                        radioButtons[0].Margin = new Padding(left, radioButtons[0].Margin.Top, right, radioButtons[0].Margin.Bottom);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < n; i++)
+                        {
+                            int left = (i == 0) ? s : s / 2;
+                            int right = (i == n - 1) ? s : s / 2;
+                            var rb = radioButtons[i];
+                            rb.Margin = new Padding(left, rb.Margin.Top, right, rb.Margin.Bottom);
+                        }
+                    }
+                }
+                else // Vertical
+                {
+                    int innerHeight = Math.Max(0, client.Height - panel.Padding.Top - panel.Padding.Bottom);
+                    if (innerHeight <= 0) return;
+
+                    int sumBtn = 0;
+                    for (int i = 0; i < n; i++)
+                    {
+                        var h = Math.Max(radioButtons[i].PreferredSize.Height, radioButtons[i].MinimumSize.Height);
+                        sumBtn += h;
+                    }
+
+                    int gaps = n + 1;
+                    int s = (innerHeight - sumBtn) / Math.Max(1, gaps);
+                    s = Math.Max(_minGap / 2, s); // 세로는 조금 더 촘촘하게
+
+                    if (n == 1 && _centerSingleOption)
+                    {
+                        int top = Math.Max(_minGap, (innerHeight - radioButtons[0].PreferredSize.Height) / 2);
+                        int bottom = top;
+                        radioButtons[0].Margin = new Padding(radioButtons[0].Margin.Left, top, radioButtons[0].Margin.Right, bottom);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < n; i++)
+                        {
+                            int top = (i == 0) ? s : s / 2;
+                            int bottom = (i == n - 1) ? s : s / 2;
+                            var rb = radioButtons[i];
+                            rb.Margin = new Padding(rb.Margin.Left, top, rb.Margin.Right, bottom);
+                        }
+                    }
+                }
+
+                // 레이아웃/그리기 갱신
+                panel.PerformLayout();
+                panel.Invalidate();
+                panel.Update();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"RadioButtonView.UpdateDynamicSpacing 오류: {ex.Message}");
             }
         }
 
