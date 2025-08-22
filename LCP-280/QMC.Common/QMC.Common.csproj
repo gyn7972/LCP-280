@@ -51,6 +51,9 @@
   <ItemGroup>
     <Compile Include="AlarmInfo.cs" />
     <Compile Include="AlarmManager.cs" />
+    <Compile Include="AxisComponent.cs" />
+    <Compile Include="AxisDefinition.cs" />
+    <Compile Include="AxisResolver.cs" />
     <Compile Include="BottomMenuButtonControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -70,7 +73,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="DoubleProperty.cs" />
-    <Compile Include="Examples\PropertyPositionUsageExample.cs" />
     <Compile Include="FormBottom.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -89,6 +91,8 @@
     <Compile Include="FormConfig.Designer.cs">
       <DependentUpon>FormConfig.cs</DependentUpon>
     </Compile>
+    <Compile Include="IMotionAxis.cs" />
+    <Compile Include="IMotionAxisProvider.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

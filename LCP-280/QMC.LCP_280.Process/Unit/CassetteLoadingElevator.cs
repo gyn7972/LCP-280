@@ -1,5 +1,6 @@
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using QMC.Common;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -41,6 +42,26 @@ namespace QMC.LCP_280.Process.Unit
             Components.Add(WaferTransferArm);
         }
 
+        /// <summary>
+        /// Motion 연결 직후 호출되어 CassetteElevator 및 WaferTransferArm 축을 초기화.
+        /// </summary>
+        public override void InitializeUnitAxes(IMotionAxisProvider provider)
+        {
+            if (provider == null) return;
+            // 예시: 축 이름 규칙에 따라 조회
+            var z = provider.GetAxis("CassetteElevatorZ") ?? provider.GetAxis("CassetteZ") ?? provider.GetAxis("Z");
+            if (z != null)
+            {
+                CassetteElevator?.InitializeAxes(z);
+            }
+
+            var y = provider.GetAxis("WaferTransferArmY") ?? provider.GetAxis("ArmY") ?? provider.GetAxis("Y");
+            if (y != null)
+            {
+                WaferTransferArm?.InitializeAxes(y);
+            }
+        }
+
         // Unit에서 Component의 Config에 자유롭게 접근하는 예시
         public void ConfigureComponents()
         {
@@ -52,7 +73,6 @@ namespace QMC.LCP_280.Process.Unit
         public override void OnRun()
         {
             base.OnRun();
-
         }
 
         public override void OnStop()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -352,6 +353,15 @@ namespace QMC.Common
             {
                 Console.WriteLine($"❌ GroupBox가 null입니다.");
             }
+        }
+
+        // ▼ 추가: 현재 ListBox 항목 문자열 배열 반환
+        public string[] GetItems()
+        {
+            if (listBox == null) return Array.Empty<string>();
+            return listBox.Items.Cast<object>()
+                         .Select(o => o?.ToString() ?? string.Empty)
+                         .ToArray();
         }
     }
 }

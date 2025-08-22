@@ -777,6 +777,23 @@ namespace QMC.LCP_280.Process
         }
 
         #endregion
+
+        #region Motion Axis Initialization
+
+        /// <summary>
+        /// 외부에서 Motion 연결이 완료된 후 호출하여 모든 Unit 의 축을 초기화.
+        /// IMotionAxisProvider 는 호출자가 구현/전달.
+        /// </summary>
+        public void InitializeAllUnitAxes(IMotionAxisProvider provider)
+        {
+            if (provider == null) return;
+            foreach (var unit in Units.Values)
+            {
+                unit.InitializeUnitAxes(provider);
+            }
+        }
+
+        #endregion
     }
 
     #region Supporting Classes and Enums

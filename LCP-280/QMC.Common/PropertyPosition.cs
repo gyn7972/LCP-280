@@ -344,39 +344,6 @@ namespace QMC.Common
         #endregion
 
         #region 사용 예시를 위한 팩토리 메서드들
-
-        /// <summary>
-        /// ?? Lifter용 기본 PropertyPosition 생성
-        /// </summary>
-        /// <returns>Lifter용 PropertyPosition</returns>
-        public static PropertyPosition CreateLifterPositions()
-        {
-            var lifterPositions = new PropertyPosition("Lifter Positions", "리프터 관련 Position들", "Lifter");
-            
-            lifterPositions.AddDoubleProperty("Loading Position", 0.0);
-            lifterPositions.AddDoubleProperty("Unloading Position", 50.0);
-            lifterPositions.AddDoubleProperty("Ready Position", 25.0);
-            lifterPositions.AddDoubleProperty("Maintenance Position", 100.0);
-
-            return lifterPositions;
-        }
-
-        /// <summary>
-        /// ?? WaferTransferArm용 기본 PropertyPosition 생성
-        /// </summary>
-        /// <returns>WaferTransferArm용 PropertyPosition</returns>
-        public static PropertyPosition CreateWaferTransferArmPositions()
-        {
-            var WaferTransferArmPositions = new PropertyPosition("WaferTransferArm Positions", "피더 관련 Position들", "WaferTransferArm");
-            
-            WaferTransferArmPositions.AddDoubleProperty("Ready Position", 0.0);
-            WaferTransferArmPositions.AddDoubleProperty("Avoid Position", 100.0);
-            WaferTransferArmPositions.AddDoubleProperty("Stage Position", 200.0);
-            WaferTransferArmPositions.AddDoubleProperty("Cassette Position", 300.0);
-
-            return WaferTransferArmPositions;
-        }
-
         /// <summary>
         /// ?? 사용자 정의 PropertyPosition 생성
         /// </summary>

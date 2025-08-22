@@ -1,38 +1,90 @@
+using QMC.Common;
 using QMC.Common.Component;
+using System;
 
 namespace QMC.LCP_280.Process.Component
 {
     public class WaferTransferArm : BaseComponent
     {
-        public WaferTransferArmConfig Config { get; private set; }
+        private readonly AxisManager _axisManager = new AxisManager();
+        public System.Collections.Generic.IReadOnlyList<AxisDefinition> Axes { get { return _axisManager.Axes; } }
 
-        public WaferTransferArm(WaferTransferArmConfig config = null) : base("WaferTransferArm")
+        public AxisDefinition WaferTransferArmY { get; private set; }
+        public WaferTransferArmConfig WaferTransferArmConfig { get; private set; }
+
+        public WaferTransferArm(WaferTransferArmConfig config = null)
+            : base("WaferTransferArm")
         {
-            Config = config ?? new WaferTransferArmConfig();
+            WaferTransferArmConfig = config ?? new WaferTransferArmConfig();
         }
 
-        public void ExtendArm()
+        public override void InitializeAxes(params IMotionAxis[] axes)
         {
-            // Config의 ExtendPosition을 사용하여 암 확장
-            // 실제 하드웨어 제어: Config.ExtendPosition 사용
+            _axisManager.Clear();
+            WaferTransferArmY = null;
+
+            var yAxis = AxisResolver.Resolve("Y", axes,
+                "WaferTransferArmY", "ArmY", "Y1");
+
+            if (yAxis == null)
+            {
+                LogAxisError("Y 축을 찾지 못했습니다. 이름 규칙(Y / WaferTransferArmY / ArmY / Y1) 확인.");
+                return;
+            }
+
+            WaferTransferArmY = _axisManager.Register("Y", "WaferTransferArm Y Axis", yAxis);
+            BuildPositionItemsFromConfig();
         }
 
-        public void RetractArm()
+        protected override void BuildPositionItemsFromConfig()
         {
-            // Config의 RetractPosition을 사용하여 암 후퇴
-            // 실제 하드웨어 제어: Config.RetractPosition 사용
+            if (WaferTransferArmY == null) return;
+            WaferTransferArmY.PositionItems.Clear();
+
+            WaferTransferArmY.CreatePositionItem("WaferTransferArm Ready Position",
+                WaferTransferArmConfig.ReadyY);
+            WaferTransferArmY.CreatePositionItem("WaferTransferArm Avoid Position",
+                WaferTransferArmConfig.AvoidY);
+            WaferTransferArmY.CreatePositionItem("WaferTransferArm Stage Position",
+                WaferTransferArmConfig.StageY);
+            WaferTransferArmY.CreatePositionItem("WaferTransferArm Cassette Position",
+                WaferTransferArmConfig.CassetteY);
         }
 
-        public void PickWafer()
+        public override void SyncToConfig()
         {
-            // Config의 PickPosition, VacuumOnDelayMs 등을 사용
-            // 실제 하드웨어 제어: Config 설정값들 사용
+            if (WaferTransferArmY == null) return;
+            foreach (var item in WaferTransferArmY.PositionItems)
+            {
+                var posProp = item.GetDoubleProperties()
+                                  .Find(p => p.Title == WaferTransferArmY.MotionAxis.Name);
+                if (posProp == null) continue;
+
+                var t = item.Title;
+                if (t.IndexOf("Ready", StringComparison.OrdinalIgnoreCase) >= 0)
+                    WaferTransferArmConfig.ReadyY = posProp.Value;
+                else if (t.IndexOf("Avoid", StringComparison.OrdinalIgnoreCase) >= 0)
+                    WaferTransferArmConfig.AvoidY = posProp.Value;
+                else if (t.IndexOf("Stage", StringComparison.OrdinalIgnoreCase) >= 0)
+                    WaferTransferArmConfig.StageY = posProp.Value;
+                else if (t.IndexOf("Cassette", StringComparison.OrdinalIgnoreCase) >= 0)
+                    WaferTransferArmConfig.CassetteY = posProp.Value;
+            }
         }
 
-        public void PlaceWafer()
+        public override void ReloadFromConfig()
         {
-            // Config의 PlacePosition, VacuumOffDelayMs 등을 사용
-            // 실제 하드웨어 제어: Config 설정값들 사용
+            BuildPositionItemsFromConfig();
+        }
+
+        private void LogAxisError(string msg)
+        {
+            Console.WriteLine("[WaferTransferArm][AxisInit] " + msg);
+        }
+
+        public AxisDefinition FindAxis(string axisKeyOrName)
+        {
+            return _axisManager.Find(axisKeyOrName);
         }
     }
 }
