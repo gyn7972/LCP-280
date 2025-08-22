@@ -51,9 +51,12 @@
   <ItemGroup>
     <Compile Include="AlarmInfo.cs" />
     <Compile Include="AlarmManager.cs" />
-    <Compile Include="AxisComponent.cs" />
-    <Compile Include="AxisDefinition.cs" />
-    <Compile Include="AxisResolver.cs" />
+    <Compile Include="CustomControl\VerticalAlignTextBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Motion\AxisComponent.cs" />
+    <Compile Include="Motion\AxisDefinition.cs" />
+    <Compile Include="Motion\AxisResolver.cs" />
     <Compile Include="BottomMenuButtonControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -93,6 +96,8 @@
     </Compile>
     <Compile Include="IMotionAxis.cs" />
     <Compile Include="IMotionAxisProvider.cs" />
+    <Compile Include="Logging\ConsoleLogger.cs" />
+    <Compile Include="Logging\ILogger.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -127,6 +132,13 @@
     <Compile Include="ListBoxItemsView.Designer.cs">
       <DependentUpon>ListBoxItemsView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Motion\AxisNameRegistry.cs" />
+    <Compile Include="Motion\AxisRegistryMotionService.cs" />
+    <Compile Include="Motion\IMotionService.cs" />
+    <Compile Include="Motion\Position.cs" />
+    <Compile Include="Motion\PositionUiAdapter.cs" />
+    <Compile Include="Motion\SafeMotionService.cs" />
+    <Compile Include="Motion\SafetyPolicy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />
     <Compile Include="PropertyCollection.cs" />

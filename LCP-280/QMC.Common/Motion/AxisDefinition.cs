@@ -21,6 +21,9 @@ namespace QMC.Common
             MotionAxis = motionAxis;
         }
 
+        /// <summary>
+        /// PositionItem 생성 (UI 표시용 논리 이름 기반)
+        /// </summary>
         public PropertyPosition CreatePositionItem(string logicalName,
                                                    double positionValue = 0,
                                                    double velocity = 50,
@@ -44,9 +47,30 @@ namespace QMC.Common
             return pp;
         }
 
+        /// <summary>
+        /// PositionItem 생성 (강한 키 + UI 표시용 논리 이름)
+        /// </summary>
+        public PropertyPosition CreatePositionItem(string key,
+                                                   string logicalName,
+                                                   double positionValue,
+                                                   double velocity,
+                                                   double acc,
+                                                   double dec,
+                                                   int timeoutMs)
+        {
+            var pp = CreatePositionItem(logicalName, positionValue, velocity, acc, dec, timeoutMs);
+            pp.Key = key;
+            return pp;
+        }
+
         public PropertyPosition GetPositionItem(string title)
         {
             return PositionItems.FirstOrDefault(p => p.Title == title);
+        }
+
+        public PropertyPosition GetPositionItemByKey(string key)
+        {
+            return PositionItems.FirstOrDefault(p => string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

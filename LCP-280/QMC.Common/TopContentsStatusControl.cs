@@ -73,10 +73,6 @@ namespace QMC.Common
                 _mesMessageTitleLabel = new CustomBorderLabel
                 {
                     Text = "MES MSG.",
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                    BorderColor = Color.FromArgb(208, 206, 206)
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_mesMessageTitleLabel, 0, 0);
                 _mesMessageTitleLabel.Margin = new Padding(_labelMargin);
@@ -84,10 +80,6 @@ namespace QMC.Common
                 _systemMessageTitleLabel = new CustomBorderLabel
                 {
                     Text = "SYSTEM",
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                    BorderColor = Color.FromArgb(208, 206, 206)
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_systemMessageTitleLabel, 0, 1);
                 _systemMessageTitleLabel.Margin = new Padding(_labelMargin);
@@ -95,10 +87,6 @@ namespace QMC.Common
                 _operationRecipeTitleLabel = new CustomBorderLabel
                 {
                     Text = "OP Recipe",
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Fill,
-                    Font = new Font("Arial", _labelSize, FontStyle.Bold),
-                    BorderColor = Color.FromArgb(208, 206, 206)
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_operationRecipeTitleLabel, 0, 2);
                 _operationRecipeTitleLabel.Margin = new Padding(_labelMargin);

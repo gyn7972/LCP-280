@@ -12,6 +12,12 @@ namespace QMC.Common
     public class PropertyPosition : PropertyBase
     {
         /// <summary>
+        /// Position의 논리적 식별 키. 예) "Loading", "Unloading", "Ready" 등
+        /// UI 표시용 Title과 분리된 강한 식별자 사용을 권장.
+        /// </summary>
+        public string Key { get; set; }
+
+        /// <summary>
         /// Property들을 담고 있는 PropertyCollection
         /// </summary>
         public PropertyCollection PositionCollection { get; private set; }
@@ -47,6 +53,7 @@ namespace QMC.Common
             IsEditable = true;
             Unit = "mm";
             Category = string.Empty;
+            Key = string.Empty;
         }
 
         /// <summary>
@@ -61,6 +68,7 @@ namespace QMC.Common
             IsEditable = true;
             Unit = "mm";
             Category = title ?? string.Empty;
+            Key = string.Empty; // 기본은 비워두고, 필요 시 외부에서 설정
         }
 
         /// <summary>
@@ -80,6 +88,7 @@ namespace QMC.Common
             IsEditable = isEditable;
             Unit = unit ?? "mm";
             Category = category ?? title ?? string.Empty;
+            Key = string.Empty;
         }
 
         /// <summary>
@@ -94,6 +103,7 @@ namespace QMC.Common
             IsEditable = PositionCollection.IsInputParameter;
             Unit = "mm";
             Category = title ?? string.Empty;
+            Key = string.Empty;
         }
 
         #region PropertyBase 관리 메서드들
@@ -137,6 +147,34 @@ namespace QMC.Common
             var doubleProperty = new DoubleProperty(title, value);
             PositionCollection.Add(doubleProperty);
             Console.WriteLine($"? DoubleProperty 추가: {title} = {value:F3}");
+        }
+
+        /// <summary>
+        /// 제목으로 DoubleProperty를 반환합니다. 없으면 null.
+        /// </summary>
+        public DoubleProperty GetDoubleProperty(string title)
+        {
+            foreach (var prop in PositionCollection)
+            {
+                if (prop is DoubleProperty dp && dp.Title == title)
+                    return dp;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 제목으로 DoubleProperty 값을 시도하여 가져옵니다.
+        /// </summary>
+        public bool TryGetDouble(string title, out double value)
+        {
+            var dp = GetDoubleProperty(title);
+            if (dp != null)
+            {
+                value = dp.Value;
+                return true;
+            }
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -321,7 +359,10 @@ namespace QMC.Common
         /// <returns>복사된 PropertyPosition</returns>
         public PropertyPosition Clone()
         {
-            var cloned = new PropertyPosition(Title, Description, Category, Unit, IsEditable);
+            var cloned = new PropertyPosition(Title, Description, Category, Unit, IsEditable)
+            {
+                Key = this.Key
+            };
             
             var properties = GetAllProperties();
             foreach (var property in properties)

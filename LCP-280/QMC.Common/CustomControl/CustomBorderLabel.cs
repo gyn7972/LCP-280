@@ -15,6 +15,7 @@ namespace QMC.Common.CustomControl
             set { borderColor = value; Invalidate(); }
         }
 
+        private int _labelSize = 8;
         private int borderWidth = 1;
         [Category("Appearance")]
         public int BorderWidth
@@ -23,6 +24,13 @@ namespace QMC.Common.CustomControl
             set { borderWidth = value; Invalidate(); }
         }
 
+        public CustomBorderLabel()
+        {
+            TextAlign = ContentAlignment.MiddleCenter;
+            //Dock = DockStyle.Fill;
+            Font = new Font("Arial", _labelSize, FontStyle.Bold);
+            BorderColor = Color.FromArgb(208, 206, 206);
+        }
         /// <summary>
         /// 라벨의 크기를 직접 설정합니다.
         /// </summary>
