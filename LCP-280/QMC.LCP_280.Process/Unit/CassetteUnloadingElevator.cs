@@ -36,6 +36,8 @@ namespace QMC.LCP_280.Process.Unit
             Components.Add(CassetteElevator);
             Components.Add(WaferSlotScanner);
             Components.Add(WaferTransferArm);
+
+           
         }
 
         // Unit에서 Component의 Config에 자유롭게 접근하는 예시

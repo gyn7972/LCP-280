@@ -8,6 +8,13 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
+using QMC.Common.Motions;
+using System.IO;
+using QMC.Common.DIO;
+using QMC.Common.IO;
+using QMC.Common.Motion.Ajin.HW;
+using QMC.Common.Motion.Ajin.IO;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process
 {
@@ -87,6 +94,21 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public event EventHandler<EquipmentErrorEventArgs> ErrorOccurred;
 
+
+        private AjinAxlBoardHost _axlHost;                 // Ajin 보드 수명 관리(AXL.Open/Close + MOT 로드)
+        // ==== Motion 관리 ====
+        private readonly MotionAxisManager _axisManager = new MotionAxisManager();
+        private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Axes");
+
+        private IDIODriver _dio;                     // AjinDioDriver (실기)
+        private DioScanService _dioScan;                 // 주기 스캔(캐시)
+        // I/O 설정 파일 루트 (원하는 경로로)
+        private readonly string _dioRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DIO");
+
+        // (선택) 외부에서 축 매니저에 접근하고 싶으면 프로퍼티 제공
+        public MotionAxisManager AxisManager => _axisManager;
+        public DioScanService DioScan => _dioScan;
+
         #endregion
 
         #region Constructor & Initialization
@@ -114,6 +136,10 @@ namespace QMC.LCP_280.Process
 
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
+
+                // ★ 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
+                BootstrapAxesDirect();
+                BootstrapIODirect();
 
                 OnStateChanged(EquipmentState.Ready);
                 Console.WriteLine("Equipment 초기화 완료");
@@ -792,8 +818,254 @@ namespace QMC.LCP_280.Process
                 unit.InitializeUnitAxes(provider);
             }
         }
-
         #endregion
+
+        // === 프로그램 시작시에 1회 호출: 유닛별 필요한 축을 생성/등록/부착 ===
+        private void BootstrapAxesDirect()
+        {
+            // 1) Ajin 보드 오픈 + MOT 로드 (한 번만)
+            if (_axlHost == null)
+            {
+                var motPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LCP-280.mot");
+                _axlHost = new AjinAxlBoardHost(motPath);
+                _axlHost.Open(); // AXL.Open + AxmMotLoadParaAll
+            }
+
+            Directory.CreateDirectory(_axisRoot);
+            CreateAxes();
+
+            // 예) CassetteLoadingElevator 유닛의 Z축 하나 생성/등록/부착
+            //    필요에 맞게 더 추가(Y, X 등)
+            //var axisZ = CreateOrLoadAxis("CassetteLoadingElevator", "ElevatorZ", axisNo: 0, boardNo: 0);
+            // 매니저에 등록 (이름 중복 시 예외 방지 위해 TryRegister 사용도 가능)
+            //_axisManager.Register(axisZ);
+            // 유닛 인스턴스에 붙이기 (AxisZ 프로퍼티/필드 or Axes 딕셔너리 등으로 자동 주입 시도)
+            //AttachAxisToUnit("CassetteLoadingElevator", "AxisZ", axisZ);
+
+            // === 필요시 다른 유닛/축도 동일 방식으로 추가 ===
+            // var axisX = CreateOrLoadAxis("Prober", "StageX", 1, 0);
+            // _axisManager.Register(axisX;
+            // AttachAxisToUnit("Prober", "AxisX", axisX);
+        }
+
+        private void BootstrapIODirect()
+        {
+            // 2) I/O 드라이버 (AjinDioDriver)
+            if (_dio == null)
+            {
+                // (board, port) -> moduleNo 매핑: 현장 EtherCAT 구성에 맞게 수정
+                AjinDioDriver.ModuleMapper map = delegate (int b, int p) { return b * 8 + p; };
+                _dio = new AjinDioDriver(map);
+            }
+
+            // 3) I/O 스캔 서비스 시작 (Setup JSON 사용)
+            if (_dioScan == null)
+            {
+                Directory.CreateDirectory(_dioRoot);
+                var setupPath = Path.Combine(_dioRoot, "Unit.dio.setup.json"); // CassetteLoadingElevator 등 유닛별로 나눠도 OK
+
+                // 유닛 DIO 맵 로드/없으면 생성
+                var dioSetup = DIOUnit.LoadOrCreateDefault(
+                    setupPath,
+                    unitName: "Unit",   // 네가 축을 "Unit"으로 묶었으니 동일 명칭 사용. 필요하면 유닛별 파일로 분리.
+                    32,
+                    32,
+                    "DB64R"
+                );
+
+                _dioScan = new DioScanService(dioSetup, _dio);
+                _dioScan.Start(10); // 10ms 주기 스캔
+            }
+
+            if(!_axlHost.IsOpen)
+            {
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "MOTION, I/O INIT FAIL.");
+            }
+        }
+
+        private void CreateAxes()
+        {
+            try
+            {
+                const string unitName = "Unit";
+                var names = new[]
+                {
+                "Input Lifter Z Axis",
+                "Input Feeder Y Axis",
+                "Input Stage X Axis",
+                "Input Stage Y Axis",
+                "Input Stage T Axis",
+                "Needle Z Axis",
+                "Tool#1 T Axis",
+                "Tool#1 Z Axis",
+                "Tool#2 T Axis",
+                "Tool#2 Z Axis",
+                "Tool#3 T Axis",
+                "Tool#3 Pick Z Axis",
+                "Tool#3 Place Z Axis",
+                "Align Stage X Axis",
+                "Align Stage Y Axis",
+                "Align Stage T Axis",
+                "Index T Axis",
+                "Contact Z Axis",
+                "Sphere Z Axis",
+                "Output Stage X Axis",
+                "Output Stage Y Axis",
+                "Output Stage T Axis",
+                "Output Lifter Z Axis",
+                "Output Feeder Y Axis"
+            };
+
+                var boardNo = 0; // 필요시 보드별로 바꾸세요.
+
+                for (int i = 0; i < names.Length; i++)
+                {
+                    var axis = CreateOrLoadAxis(unitName, names[i], axisNo: i, boardNo: boardNo);
+                    _axisManager.Register(unitName, axis);
+                    AttachAxisToUnit(unitName, "Axis_" + i, axis); // 프로퍼티가 없어도 Axes 딕셔너리에 자동 추가됨
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        // === 축 1개 생성/로드 ===
+        // 저장 경로: Axes/<UnitName>/<AxisName>.setup.json(.config.json)
+        private MotionAxis CreateOrLoadAxis(string unitName, string axisName, int axisNo, int boardNo)
+        {
+            var dir = Path.Combine(_axisRoot, unitName);
+            Directory.CreateDirectory(dir);
+
+            var setupPath = Path.Combine(dir, axisName + ".setup.json");
+            var configPath = Path.Combine(dir, axisName + ".config.json");
+
+            MotionAxisSetup setup;
+            MotionAxisConfig config;
+
+            // Setup
+            if (File.Exists(setupPath))
+            {
+                setup = MotionAxisSetup.Load(setupPath);
+            }
+            else
+            {
+                setup = new MotionAxisSetup
+                {
+                    Name = axisName,
+                    AxisNo = axisNo,
+                    BoardNo = boardNo,
+                    PulsesPerUnit = 1000,
+                    SoftLimitEnable = true,
+                    SoftLimitMin = -10,
+                    SoftLimitMax = 310
+                };
+                string err;
+                setup.TrySave(setupPath, out err);
+            }
+
+            // Config
+            if (File.Exists(configPath))
+            {
+                config = MotionAxisConfig.Load(configPath);
+            }
+            else
+            {
+                config = new MotionAxisConfig
+                {
+                    MaxVelocity = 200,
+                    RunAcc = 800,
+                    RunDec = 800,
+                    InposTolerance = 0.002,
+                    ProfileMode = ProfileMode.SCurve,
+                    AccJerkPercent = 50,
+                    DecJerkPercent = 50
+                };
+                string err;
+                config.TrySave(configPath, out err);
+            }
+
+            // 드라이버: 실제 보드 준비되면 AjinDriver로 교체
+            IMotionDriver driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
+            //IMotionDriver driver = new SimDriver(setup.PulsesPerUnit);
+
+            return new MotionAxis(setup, config, driver);
+        }
+
+        // === 생성된 축을 유닛 인스턴스에 주입 ===
+        // 1) 같은 이름의 MotionAxis 타입 프로퍼티/필드가 있으면 거기에 세팅 (예: public MotionAxis AxisZ {get;set;})
+        // 2) 없으면 'Axes'라는 IDictionary<string, MotionAxis> 프로퍼티/필드를 찾아 추가
+        // 3) 둘 다 없으면 장비의 _axisManager 만에 등록된 상태로 유지(필요시 여기서 매핑표 저장 가능)
+        private void AttachAxisToUnit(string unitName, string targetMemberName, MotionAxis axis)
+        {
+            BaseUnit unit;
+            if (!Units.TryGetValue(unitName, out unit))
+            {
+                OnErrorOccurred("AttachAxisToUnit: Unit '" + unitName + "' not found.");
+                return;
+            }
+
+            var t = unit.GetType();
+
+            // 1) 같은 이름의 프로퍼티 먼저 시도
+            var p = t.GetProperty(targetMemberName,
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (p != null && p.CanWrite && p.PropertyType == typeof(MotionAxis))
+            {
+                p.SetValue(unit, axis, null);
+                return;
+            }
+
+            // 1-2) 같은 이름의 필드
+            var f = t.GetField(targetMemberName,
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (f != null && f.FieldType == typeof(MotionAxis))
+            {
+                f.SetValue(unit, axis);
+                return;
+            }
+
+            // 2) Axes 딕셔너리 찾기
+            //    public Dictionary<string, MotionAxis> Axes {get;} 또는 IDictionary<string, MotionAxis>
+            var axesProp = t.GetProperty("Axes",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (axesProp != null && typeof(System.Collections.IDictionary).IsAssignableFrom(axesProp.PropertyType))
+            {
+                var dict = axesProp.GetValue(unit, null) as System.Collections.IDictionary;
+                if (dict != null)
+                {
+                    dict[axis.Name] = axis; // axis.Name == axisName (예: ElevatorZ)
+                    return;
+                }
+            }
+
+            var axesField = t.GetField("Axes",
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (axesField != null && typeof(System.Collections.IDictionary).IsAssignableFrom(axesField.FieldType))
+            {
+                var dict = axesField.GetValue(unit) as System.Collections.IDictionary;
+                if (dict != null)
+                {
+                    dict[axis.Name] = axis;
+                    return;
+                }
+            }
+
+            // 3) 주입할 곳이 없으면 로그만
+            Console.WriteLine("AttachAxisToUnit: '" + unitName + "'에 '" + targetMemberName + "' 또는 Axes 딕셔너리가 없어 축을 직접 주입하지 못했습니다.");
+        }
+
+
     }
 
     #region Supporting Classes and Enums
@@ -905,6 +1177,6 @@ namespace QMC.LCP_280.Process
             Timestamp = DateTime.Now;
         }
     }
-
     #endregion
+
 }

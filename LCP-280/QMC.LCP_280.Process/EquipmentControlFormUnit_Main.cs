@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Linq;
+using QMC.Common;
 
 namespace QMC.LCP_280.Process
 {
@@ -30,9 +31,9 @@ namespace QMC.LCP_280.Process
 
         public EquipmentControlFormUnit_Main()
         {
+            InitializeEquipment();
             InitializeComponent();
             InitializeUI();
-            InitializeEquipment();
             InitializeTimer();
         }
 
@@ -54,12 +55,12 @@ namespace QMC.LCP_280.Process
                 equipment.StateChanged += Equipment_StateChanged;
                 equipment.UnitStateChanged += Equipment_UnitStateChanged;
                 equipment.ErrorOccurred += Equipment_ErrorOccurred;
-                
-                LogMessage("Equipment 초기화 완료");
+
+                Log.Write("LCP-280", "Equipment 초기화 완료");
             }
             catch (Exception ex)
             {
-                LogMessage($"Equipment 초기화 오류: {ex.Message}");
+                Log.Write(ex);
                 MessageBox.Show($"Equipment 초기화 중 오류가 발생했습니다: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }

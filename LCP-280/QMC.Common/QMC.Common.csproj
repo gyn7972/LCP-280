@@ -18,7 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\..\..\..\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -36,6 +36,9 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -49,11 +52,64 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Ajin\AXA.cs" />
+    <Compile Include="Ajin\AXD.cs" />
+    <Compile Include="Ajin\AXDEV.cs" />
+    <Compile Include="Ajin\AXHD.cs" />
+    <Compile Include="Ajin\AXHS.cs" />
+    <Compile Include="Ajin\AXL.cs" />
+    <Compile Include="Ajin\AXM.cs" />
+    <Compile Include="Ajin\IODefine.cs" />
+    <Compile Include="Ajin\MotionDefine.cs" />
     <Compile Include="AlarmInfo.cs" />
     <Compile Include="AlarmManager.cs" />
     <Compile Include="CustomControl\VerticalAlignTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="FormMessageBox\MessageBoxOk.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxOk.Designer.cs">
+      <DependentUpon>MessageBoxOk.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxRetrySkip.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxRetrySkip.Designer.cs">
+      <DependentUpon>MessageBoxRetrySkip.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNo.Designer.cs">
+      <DependentUpon>MessageBoxYesNo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNoRetry.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNoRetry.Designer.cs">
+      <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IO\AjinDioDriver.cs" />
+    <Compile Include="IO\DIOChannel.cs" />
+    <Compile Include="IO\DIOModuleSetup.cs" />
+    <Compile Include="IO\DioScanService.cs" />
+    <Compile Include="IO\DIOUnit.cs" />
+    <Compile Include="IO\IDIODriver.cs" />
+    <Compile Include="IO\SimDioDriver.cs" />
+    <Compile Include="Logging\Log.cs" />
+    <Compile Include="Logging\LogInfo.cs" />
+    <Compile Include="Logging\LogManager.cs" />
+    <Compile Include="Motions\AjinApi.cs" />
+    <Compile Include="Motions\AjinAxlBoardHost.cs" />
+    <Compile Include="Motions\AjinDriver.cs" />
+    <Compile Include="Motions\IMotionDriver.cs" />
+    <Compile Include="Motions\IPropertyCorrection.cs" />
+    <Compile Include="Motions\MotionAxis.cs" />
+    <Compile Include="Motions\MotionAxisConfig.cs" />
+    <Compile Include="Motions\MotionAxisManager.cs" />
+    <Compile Include="Motions\MotionAxisSetup.cs" />
+    <Compile Include="Motions\MotionAxisStatus.cs" />
     <Compile Include="Motion\AxisComponent.cs" />
     <Compile Include="Motion\AxisDefinition.cs" />
     <Compile Include="Motion\AxisResolver.cs" />
@@ -190,6 +246,18 @@
     <EmbeddedResource Include="FormConfig.resx">
       <DependentUpon>FormConfig.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxOk.resx">
+      <DependentUpon>MessageBoxOk.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxRetrySkip.resx">
+      <DependentUpon>MessageBoxRetrySkip.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxYesNo.resx">
+      <DependentUpon>MessageBoxYesNo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxYesNoRetry.resx">
+      <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -207,6 +275,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <EmbeddedResource Include="PropertyCollectionView.resx">
       <DependentUpon>PropertyCollectionView.cs</DependentUpon>
@@ -221,6 +290,7 @@
       <DependentUpon>TopContentsStatusControl.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="FormManagerGuide.md" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -235,7 +305,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Ajin\Library\Axl.dll" />
+    <Content Include="Ajin\Library\AxlEncoderLib.dll" />
+    <Content Include="Ajin\Library\AxtWaferScanLib.dll" />
+    <Content Include="Ajin\Library\EzbasicAxl.dll" />
     <Content Include="Resources\Logo.png" />
+    <Content Include="Resources\megaphone_80px.png" />
+    <Content Include="Resources\megaphone_80px_q.png" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

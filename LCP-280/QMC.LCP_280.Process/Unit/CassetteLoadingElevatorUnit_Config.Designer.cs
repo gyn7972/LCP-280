@@ -90,6 +90,7 @@ namespace QMC.LCP_280.Process.Unit
             this.inputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.outputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.gbMoveAxis = new System.Windows.Forms.GroupBox();
+            this.gbAxisPositions = new System.Windows.Forms.GroupBox();
             this.gbJogMove = new System.Windows.Forms.GroupBox();
             this.individualMenuButton3 = new QMC.Common.IndividualMenuButton();
             this.individualMenuButton2 = new QMC.Common.IndividualMenuButton();
@@ -107,7 +108,7 @@ namespace QMC.LCP_280.Process.Unit
             this.lblAxisPositionCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lblAxisPositionValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.gbAxisPositions = new System.Windows.Forms.GroupBox();
+            this.button_Test = new System.Windows.Forms.Button();
             this.gbTeachingMove.SuspendLayout();
             this.gbPositionTeaching.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
@@ -164,6 +165,7 @@ namespace QMC.LCP_280.Process.Unit
             // gbPositionTeaching
             // 
             this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
+            this.gbPositionTeaching.Controls.Add(this.button_Test);
             this.gbPositionTeaching.Controls.Add(this.positionlistBoxItemsView);
             this.gbPositionTeaching.Controls.Add(this.btnSave);
             this.gbPositionTeaching.Controls.Add(this.btnCancel);
@@ -286,6 +288,17 @@ namespace QMC.LCP_280.Process.Unit
             this.gbMoveAxis.TabIndex = 10;
             this.gbMoveAxis.TabStop = false;
             this.gbMoveAxis.Text = "Move Axis";
+            // 
+            // gbAxisPositions
+            // 
+            this.gbAxisPositions.BackColor = System.Drawing.Color.White;
+            this.gbAxisPositions.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbAxisPositions.Location = new System.Drawing.Point(314, 25);
+            this.gbAxisPositions.Name = "gbAxisPositions";
+            this.gbAxisPositions.Size = new System.Drawing.Size(290, 691);
+            this.gbAxisPositions.TabIndex = 13;
+            this.gbAxisPositions.TabStop = false;
+            this.gbAxisPositions.Text = "Axis Positions";
             // 
             // gbJogMove
             // 
@@ -522,16 +535,15 @@ namespace QMC.LCP_280.Process.Unit
             this.axisListBoxItemsView.TabIndex = 0;
             this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
             // 
-            // gbAxisPositions
+            // button_Test
             // 
-            this.gbAxisPositions.BackColor = System.Drawing.Color.White;
-            this.gbAxisPositions.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbAxisPositions.Location = new System.Drawing.Point(314, 25);
-            this.gbAxisPositions.Name = "gbAxisPositions";
-            this.gbAxisPositions.Size = new System.Drawing.Size(290, 691);
-            this.gbAxisPositions.TabIndex = 13;
-            this.gbAxisPositions.TabStop = false;
-            this.gbAxisPositions.Text = "Axis Positions";
+            this.button_Test.Location = new System.Drawing.Point(530, 13);
+            this.button_Test.Name = "button_Test";
+            this.button_Test.Size = new System.Drawing.Size(75, 23);
+            this.button_Test.TabIndex = 8;
+            this.button_Test.Text = "Test";
+            this.button_Test.UseVisualStyleBackColor = true;
+            this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
             // 
             // CassetteLoadingElevatorUnit_Config
             // 
@@ -569,6 +581,8 @@ namespace QMC.LCP_280.Process.Unit
                 SetupPositionItemSelectionEvent();
 
                 InitializeRadioButtonView();
+
+                Log.Write("LCP_280", "Program Start--------------------.");
             }
             catch (Exception ex)
             {
@@ -799,5 +813,6 @@ namespace QMC.LCP_280.Process.Unit
         private CustomBorderLabel lblAxisMoveStepSizeCaption;
         private RadioButtonView rbJogMoveMode;
         private GroupBox gbAxisPositions;
+        private Button button_Test;
     }
 }
