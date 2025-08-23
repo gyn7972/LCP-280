@@ -10,7 +10,7 @@ namespace QMC.LCP_280.Process
     /// <summary>
     /// Equipment 제어 및 모니터링 폼
     /// </summary>
-    public partial class EquipmentControlFormUnit_Main : Form
+    public partial class SequenceProcess : Form
     {
         private Equipment equipment;
         private Timer statusUpdateTimer;
@@ -29,7 +29,7 @@ namespace QMC.LCP_280.Process
         private Button btnStartUnit;
         private Button btnStopUnit;
 
-        public EquipmentControlFormUnit_Main()
+        public SequenceProcess()
         {
             InitializeEquipment();
             InitializeComponent();
@@ -449,8 +449,8 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                var result = equipment.SaveAllConfigs();
-                LogMessage(result ? "모든 Config 저장 완료" : "Config 저장 실패");
+                //var result = equipment.SaveAllConfigs();
+                //LogMessage(result ? "모든 Config 저장 완료" : "Config 저장 실패");
             }
             catch (Exception ex)
             {
@@ -462,8 +462,8 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                var result = equipment.LoadAllConfigs();
-                LogMessage(result ? "모든 Config 로드 완료" : "Config 로드 실패");
+                ////var result = equipment.LoadAllConfigs();
+                //LogMessage(result ? "모든 Config 로드 완료" : "Config 로드 실패");
             }
             catch (Exception ex)
             {
@@ -475,8 +475,8 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                var result = equipment.SaveAllRecipes();
-                LogMessage(result ? "모든 Recipe 저장 완료" : "Recipe 저장 실패");
+                //var result = equipment.SaveAllRecipes();
+                //LogMessage(result ? "모든 Recipe 저장 완료" : "Recipe 저장 실패");
             }
             catch (Exception ex)
             {
@@ -488,8 +488,8 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                var result = equipment.LoadAllRecipes();
-                LogMessage(result ? "모든 Recipe 로드 완료" : "Recipe 로드 실패");
+                //var result = equipment.LoadAllRecipes();
+                //LogMessage(result ? "모든 Recipe 로드 완료" : "Recipe 로드 실패");
             }
             catch (Exception ex)
             {

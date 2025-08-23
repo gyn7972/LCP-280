@@ -65,16 +65,6 @@ namespace QMC.LCP_280.Process
         public EquipmentState State { get; private set; }
 
         /// <summary>
-        /// 설비 전체 Config 관리
-        /// </summary>
-        public EquipmentConfigManager ConfigManager { get; private set; }
-
-        /// <summary>
-        /// 설비 전체 Recipe 관리
-        /// </summary>
-        public EquipmentRecipeManager RecipeManager { get; private set; }
-
-        /// <summary>
         /// 설비 전체 실행 취소 토큰
         /// </summary>
         private CancellationTokenSource _equipmentCancellationTokenSource;
@@ -119,9 +109,6 @@ namespace QMC.LCP_280.Process
             _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
             State = EquipmentState.Stopped;
 
-            ConfigManager = new EquipmentConfigManager();
-            RecipeManager = new EquipmentRecipeManager();
-
             InitializeEquipment();
         }
 
@@ -159,13 +146,6 @@ namespace QMC.LCP_280.Process
         {
             // 개발자가 필요한 Unit들을 여기에 추가
             RegisterUnit(new CassetteLoadingElevator(), "CassetteLoadingElevator");
-            RegisterUnit(new WaferInputStage(), "WaferInputStage");
-            RegisterUnit(new WaferAlignmentSystem(), "WaferAlignmentSystem");
-            RegisterUnit(new DieLoaderIndexer(), "DieLoaderIndexer");
-            RegisterUnit(new Prober(), "Prober");
-            RegisterUnit(new DieUnloaderIndexer(), "DieUnloaderIndexer");
-            RegisterUnit(new WaferOutputStage(), "WaferOutputStage");
-            RegisterUnit(new CassetteUnloadingElevator(), "CassetteUnloadingElevator");
 
             // 추가 Unit들 예시:
             // RegisterUnit(new WaferAlignmentUnit(), "WaferAlignment");
@@ -196,12 +176,6 @@ namespace QMC.LCP_280.Process
                 {
                     // Unit 실행 정보 초기화
                     _unitExecutions[unitName] = new UnitExecutionInfo(unitName, description);
-
-                    // Config 및 Recipe 등록
-                    ConfigManager.RegisterUnitConfig(unitName, unit.Config);
-                    RecipeManager.RegisterUnitRecipe(unitName, CreateUnitRecipe(unit));
-
-                    Console.WriteLine($"Unit '{unitName}' 등록 완료");
                 }
                 else
                 {
@@ -234,8 +208,6 @@ namespace QMC.LCP_280.Process
                 if (removed)
                 {
                     _unitExecutions.TryRemove(unitName, out _);
-                    ConfigManager.UnregisterUnitConfig(unitName);
-                    RecipeManager.UnregisterUnitRecipe(unitName);
 
                     // Unit 리소스 정리
                     if (unit is IDisposable disposableUnit)
@@ -252,21 +224,6 @@ namespace QMC.LCP_280.Process
             {
                 OnErrorOccurred($"Unit '{unitName}' 등록 해제 중 오류: {ex.Message}");
                 return false;
-            }
-        }
-
-        /// <summary>
-        /// Unit별 기본 Recipe 생성
-        /// </summary>
-        private BaseRecipe CreateUnitRecipe(BaseUnit unit)
-        {
-            // Unit 타입에 따라 적절한 Recipe 생성
-            switch (unit)
-            {
-                case CassetteLoadingElevator cassetteUnit:
-                    return new CassetteElevatorRecipe();
-                default:
-                    return new DefaultUnitRecipe(unit.UnitName);
             }
         }
 
@@ -606,77 +563,6 @@ namespace QMC.LCP_280.Process
                 OnErrorOccurred($"Unit '{unitName}' 정지 중 오류: {ex.Message}");
                 return false;
             }
-        }
-
-        #endregion
-
-        #region Config & Recipe Management
-
-        /// <summary>
-        /// 특정 Unit의 Config 가져오기
-        /// </summary>
-        public T GetUnitConfig<T>(string unitName) where T : class
-        {
-            return ConfigManager.GetUnitConfig<T>(unitName);
-        }
-
-        /// <summary>
-        /// 특정 Unit의 Recipe 가져오기
-        /// </summary>
-        public T GetUnitRecipe<T>(string unitName) where T : BaseRecipe
-        {
-            return RecipeManager.GetUnitRecipe<T>(unitName);
-        }
-
-        /// <summary>
-        /// 특정 Unit의 Config 설정
-        /// </summary>
-        public void SetUnitConfig(string unitName, object config)
-        {
-            if (config is BaseConfig baseConfig)
-            {
-                ConfigManager.SetUnitConfig(unitName, baseConfig);
-            }
-        }
-
-        /// <summary>
-        /// 특정 Unit의 Recipe 설정
-        /// </summary>
-        public void SetUnitRecipe(string unitName, BaseRecipe recipe)
-        {
-            RecipeManager.SetUnitRecipe(unitName, recipe);
-        }
-
-        /// <summary>
-        /// 모든 Config 저장
-        /// </summary>
-        public bool SaveAllConfigs(string directoryPath = null)
-        {
-            return ConfigManager.SaveAllConfigs(directoryPath);
-        }
-
-        /// <summary>
-        /// 모든 Config 로드
-        /// </summary>
-        public bool LoadAllConfigs(string directoryPath = null)
-        {
-            return ConfigManager.LoadAllConfigs(directoryPath);
-        }
-
-        /// <summary>
-        /// 모든 Recipe 저장
-        /// </summary>
-        public bool SaveAllRecipes(string directoryPath = null)
-        {
-            return RecipeManager.SaveAllRecipes(directoryPath);
-        }
-
-        /// <summary>
-        /// 모든 Recipe 로드
-        /// </summary>
-        public bool LoadAllRecipes(string directoryPath = null)
-        {
-            return RecipeManager.LoadAllRecipes(directoryPath);
         }
 
         #endregion
