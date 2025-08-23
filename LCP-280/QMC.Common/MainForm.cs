@@ -11,8 +11,8 @@ namespace QMC.Common
         private TableLayoutPanel tableLayoutPanelFormMain;
         private FormTop formTop;
         private FormBottom formBottom;
-        private FormMain formMain;
         private Form currentCenterForm;
+        private FormConfig formConfig;
         #endregion
         
         public MainForm()
@@ -65,13 +65,13 @@ namespace QMC.Common
             tableLayoutPanelFormMain.Controls.Add(formTop, 0, 0);
             formTop.Show();
 
-            // FormMain 초기화 (숨김 상태)
-            formMain = new FormMain();
-            formMain.TopLevel = false;
-            formMain.FormBorderStyle = FormBorderStyle.None;
-            formMain.Dock = DockStyle.Fill;
-            formMain.Visible = false;
-            tableLayoutPanelFormMain.Controls.Add(formMain, 0, 1);
+            // FormConfig 초기화 (숨김 상태)
+            formConfig = new FormConfig();
+            formConfig.TopLevel = false;
+            formConfig.FormBorderStyle = FormBorderStyle.None;
+            formConfig.Dock = DockStyle.Fill;
+            formConfig.Visible = false;
+            tableLayoutPanelFormMain.Controls.Add(formConfig, 0, 1);
 
             // FormBottom을 세 번째 행(인덱스 2에 추가
             formBottom = new FormBottom();
@@ -92,16 +92,16 @@ namespace QMC.Common
                 if (rowHeights.Length > 2)
                 {
                     formTop.SetPanelSize(width, rowHeights[0]);
-                    formMain.SetPanelSize(width, rowHeights[1]);
+                    formConfig.SetPanelSize(width, rowHeights[1]);
                     formBottom.SetPanelSize(width, rowHeights[2]);
 
                     // MainForm이 현재 표시 중이면 사이즈 적용
                     if (currentCenterForm != null)
                     {
                         // FormConfig 또는 SetPanelSize를 가진 타입에만 적용
-                        if (currentCenterForm is FormMain fc)
+                        if (currentCenterForm is FormConfig fc)
                         {
-                            fc.SetPanelSize(width, rowHeights[0]);
+                            fc.SetPanelSize(width, rowHeights[1]);
                         }
                         else if (currentCenterForm is FormTop ft)
                         {
@@ -109,7 +109,7 @@ namespace QMC.Common
                         }
                         else if (currentCenterForm is FormBottom fb)
                         {
-                            fb.SetPanelSize(width, rowHeights[2]);
+                            fb.SetPanelSize(width, rowHeights[1]);
                         }
                     }
                 }
@@ -170,7 +170,23 @@ namespace QMC.Common
                     ShowMainForm();
                     break;
                 case MenuButtonType.Config:
-                    ShowConfigForm();
+                    Console.WriteLine("🔘 Config 메뉴 버튼 클릭됨");
+                    currentCenterForm = formConfig;
+                    
+                    // 🔧 FormConfig에 현재 크기 적용
+                    if (tableLayoutPanelFormMain != null)
+                    {
+                        int[] rowHeights = tableLayoutPanelFormMain.GetRowHeights();
+                        int width = tableLayoutPanelFormMain.GetColumnWidths()[0];
+                        if (rowHeights.Length > 1)
+                        {
+                            Console.WriteLine($"   FormConfig에 크기 적용: width={width}, height={rowHeights[1]}");
+                            formConfig.SetPanelSize(width, rowHeights[1]);
+                            formConfig.SetBorderStyle(Color.Black, 2);
+                        }
+                    }
+                    
+                    Console.WriteLine($"   FormConfig 설정 완료: Visible={formConfig.Visible}, Size={formConfig.Size}");
                     break;
                 case MenuButtonType.Working:
                     ShowWorkingForm();
@@ -186,7 +202,7 @@ namespace QMC.Common
                     break;
                 default:
                     // 기본값으로 Config 표시
-                    currentCenterForm = formMain;
+                    currentCenterForm = formConfig;
                     break;
             }
 
@@ -203,22 +219,28 @@ namespace QMC.Common
 
         private void ShowMainForm()
         {
-            var mainForms = FormManagerMain.Instance.GetMainForms();
-            if (mainForms.Count > 0)
+            try
             {
-                try
+                // 기존 Main 폼이 있으면 제거
+                if (currentCenterForm != null && currentCenterForm.Name == "MainForm")
                 {
-                    Form mainForm = FormManagerMain.Instance.CreateMainForm();
-                    SetupCenterForm(mainForm, "FormMain");
+                    currentCenterForm = null;
                 }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Main", ex.Message);
-                }
+
+                // FormManagerMain에서 Main 폼 생성
+                Form mainForm = FormManagerMain.Instance.CreateMainForm();
+                mainForm.TopLevel = false;
+                mainForm.FormBorderStyle = FormBorderStyle.None;
+                mainForm.Dock = DockStyle.Fill;
+                mainForm.Name = "MainForm";
+                
+                tableLayoutPanelFormMain.Controls.Add(mainForm, 0, 1);
+                currentCenterForm = mainForm;
             }
-            else
+            catch (Exception ex)
             {
-                ShowNotImplementedMessage("Main", "등록된 Main 폼이 없습니다.");
+                MessageBox.Show($"Main 폼 로드 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                currentCenterForm = formConfig; // fallback
             }
         }
 
@@ -348,7 +370,7 @@ namespace QMC.Common
             message += $"\n\nFormManager{menuName}.Instance.Register{menuName}Form()을 사용하여 폼을 등록하세요.";
             
             MessageBox.Show(message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            currentCenterForm = formMain;
+            currentCenterForm = formConfig; // fallback to config
         }
     }
 }

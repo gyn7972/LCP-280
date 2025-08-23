@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace QMC.Common
 {
-    public class PropertyCollection :  IEnumerable<PropertyBase>  
+    public class PropertyCollection : IEnumerable<PropertyBase>
     {
         private readonly List<PropertyBase> _properties = new List<PropertyBase>();
         public bool ShowNoColumn { get; set; } = true; 
