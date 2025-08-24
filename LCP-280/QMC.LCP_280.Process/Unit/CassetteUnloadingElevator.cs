@@ -23,17 +23,17 @@ namespace QMC.LCP_280.Process.Unit
 
             var armConfig = new WaferTransferArmConfig();
 
-            CassetteElevator = new CassetteElevator(elevatorConfig);
+            //CassetteElevator = new CassetteElevator(elevatorConfig);
             WaferSlotScanner = new WaferSlotScanner(scannerConfig);
             WaferTransferArm = new WaferTransferArm(armConfig);
 
             // ParentUnit 설정
-            CassetteElevator.ParentUnit = this;
+            //CassetteElevator.ParentUnit = this;
             WaferSlotScanner.ParentUnit = this;
             WaferTransferArm.ParentUnit = this;
 
             // Components에 추가
-            Components.Add(CassetteElevator);
+            //Components.Add(CassetteElevator);
             Components.Add(WaferSlotScanner);
             Components.Add(WaferTransferArm);
 

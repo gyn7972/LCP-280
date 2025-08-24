@@ -1,5 +1,6 @@
 using QMC.Common;
 using QMC.Common.Component;
+using QMC.Common.Motion;
 using System;
 
 namespace QMC.LCP_280.Process.Component

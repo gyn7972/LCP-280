@@ -402,17 +402,17 @@ namespace QMC.LCP_280.Process.Unit
                 var loadUnit = unitObj as CassetteLoadingElevator;
 
                 var ce = loadUnit?.CassetteElevator;
-                if (ce?.Axes != null)
-                {
-                    foreach (var a in ce.Axes)
-                    {
-                        if (!_axisMap.ContainsKey(a.DisplayName))
-                        {
-                            _axisMap.Add(a.DisplayName, a);
-                            list.Add(a.DisplayName);
-                        }
-                    }
-                }
+                //if (ce?.Axes != null)
+                //{
+                //    foreach (var a in ce.Axes)
+                //    {
+                //        if (!_axisMap.ContainsKey(a.DisplayName))
+                //        {
+                //            _axisMap.Add(a.DisplayName, a);
+                //            list.Add(a.DisplayName);
+                //        }
+                //    }
+                //}
 
                 var wta = loadUnit?.WaferTransferArm;
                 if (wta?.Axes != null)
@@ -476,9 +476,9 @@ namespace QMC.LCP_280.Process.Unit
 
             try
             {
-                double act = _currentAxis.MotionAxis.GetActualPosition();
-                lblAxisPositionValue.Text = act.ToString("0.000");
-                lblAxisPositionUnit.Text = _currentAxis.MotionAxis.Unit ?? "mm";
+                //double act = _currentAxis.MotionAxis.GetActualPosition();
+                //lblAxisPositionValue.Text = act.ToString("0.000");
+                //lblAxisPositionUnit.Text = _currentAxis.MotionAxis.Unit ?? "mm";
             }
             catch (Exception ex)
             {
@@ -495,8 +495,8 @@ namespace QMC.LCP_280.Process.Unit
             if (posProp == null) return;
 
             string err;
-            if (!_currentAxis.MotionAxis.MoveAbs(posProp.Value, 50, 500, 500, 5000, out err))
-                MessageBox.Show("Move 실패: " + err);
+            //if (!_currentAxis.MotionAxis.MoveAbs(posProp.Value, 50, 500, 500, 5000, out err))
+            //    MessageBox.Show("Move 실패: " + err);
         }
 
         #endregion

@@ -1,3 +1,4 @@
+using QMC.Common.Motion;
 using System;
 using System.Collections.Generic;
 using System.Linq;

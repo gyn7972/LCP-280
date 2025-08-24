@@ -185,6 +185,7 @@
       <DependentUpon>ListBoxItemsView.cs</DependentUpon>
     </Compile>
     <Compile Include="Motion\IMotionAxis.cs" />
+    <Compile Include="Motion\IMotionAxisProvider.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />
     <Compile Include="PropertyCollection.cs" />

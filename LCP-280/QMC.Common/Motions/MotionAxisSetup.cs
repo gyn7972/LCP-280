@@ -17,7 +17,7 @@ namespace QMC.Common.Motions
     public enum HomeMode { NegativeLimit, PositiveLimit, HomeSensor }
 
     [Serializable]
-    public sealed class MotionAxisSetup
+    public sealed class MotionAxisSetup : BaseConfig
     {
         // Common
         [Category("Common"), DisplayName("Axis Name")]

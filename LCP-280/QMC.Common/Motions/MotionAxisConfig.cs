@@ -16,7 +16,7 @@ namespace QMC.Common.Motions
     }
 
     [Serializable]
-    public sealed class MotionAxisConfig
+    public sealed class MotionAxisConfig : BaseConfig
     {
         // ===== Home Speed =====
         [Category("Speed.Home")]

@@ -1,4 +1,5 @@
 using QMC.Common.Component;
+using QMC.Common.Motion;
 using System.Collections.Generic;
 
 namespace QMC.Common.Unit

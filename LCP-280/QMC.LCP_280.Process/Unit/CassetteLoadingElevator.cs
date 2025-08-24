@@ -1,6 +1,7 @@
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using QMC.Common;
+using QMC.Common.Motion;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -40,16 +41,16 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (provider == null) return;
             // 예시: 축 이름 규칙에 따라 조회
-            var z = provider.GetAxis("CassetteElevatorZ") ?? provider.GetAxis("CassetteZ") ?? provider.GetAxis("Z");
-            if (z != null)
+            //var z = provider.GetAxis("CassetteElevatorZ") ?? provider.GetAxis("CassetteZ") ?? provider.GetAxis("Z");
+            //if (z != null)
             {
-                CassetteElevator?.InitializeAxes(z);
+                //CassetteElevator?.InitializeAxes(z);
             }
 
-            var y = provider.GetAxis("WaferTransferArmY") ?? provider.GetAxis("ArmY") ?? provider.GetAxis("Y");
-            if (y != null)
+            //var y = provider.GetAxis("WaferTransferArmY") ?? provider.GetAxis("ArmY") ?? provider.GetAxis("Y");
+            //if (y != null)
             {
-                WaferTransferArm?.InitializeAxes(y);
+                //WaferTransferArm?.InitializeAxes(y);
             }
         }   
 

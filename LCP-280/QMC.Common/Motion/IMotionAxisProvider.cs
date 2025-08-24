@@ -6,9 +6,7 @@ using System.Threading.Tasks;
 
 namespace QMC.Common.Motion
 {
-    public interface IMotionAxis
+    public interface IMotionAxisProvider
     {
-        string Name { get; set; }
-        string Unit { get; set; }
     }
 }
