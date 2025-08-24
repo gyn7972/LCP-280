@@ -19,6 +19,9 @@ namespace QMC.LCP_280.Process
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+             Equipment.Instance.InitializeEquipment();
+
             Application.Run(new QMC.Common.MainForm()); // 정확한 네임스페이스 지정
         }
     }

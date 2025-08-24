@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
 using QMC.Common;
-using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -15,7 +13,7 @@ namespace QMC.LCP_280.Process.Unit
     public partial class CassetteLoadingElevatorUnit_Config : Form
     {
         private const string UNIT_NAME = "CassetteLoadingElevator";
-
+        
         /// <summary>
         /// Equipment 인스턴스 참조
         /// </summary>
@@ -28,13 +26,13 @@ namespace QMC.LCP_280.Process.Unit
 
         public CassetteLoadingElevatorUnit_Config()
         {
-            //InitializeComponent();
-            //// 폼 로딩 중에는 화면 업데이트 중단
-            //this.SuspendLayout();
-            //InitializeUI();
+            InitializeComponent();
+            // 폼 로딩 중에는 화면 업데이트 중단
+            this.SuspendLayout();
+            InitializeUI();
             // 모든 초기화가 완료된 후 화면 업데이트 재개
             this.ResumeLayout(true);
-
+            
             Console.WriteLine($"✅ CassetteLoadingElevatorUnit_Config 생성자 완료");
         }
 
@@ -64,12 +62,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 MessageBox.Show($"Unit 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void button_Test_Click(object sender, EventArgs e)
-        {
-            MotionAxisManager _mgr = new MotionAxisManager();
-            string _axisFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Axes");
         }
     }
 }

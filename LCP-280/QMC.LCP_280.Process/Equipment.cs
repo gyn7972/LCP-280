@@ -116,23 +116,31 @@ namespace QMC.LCP_280.Process
 
         private Equipment()
         {
-            Units = new ConcurrentDictionary<string, BaseUnit>();
-            _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
-            State = EquipmentState.Stopped;
+            //Units = new ConcurrentDictionary<string, BaseUnit>();
+            //_unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
+            //State = EquipmentState.Stopped;
 
-            ConfigManager = new EquipmentConfigManager();
-            RecipeManager = new EquipmentRecipeManager();
+            //ConfigManager = new EquipmentConfigManager();
+            //RecipeManager = new EquipmentRecipeManager();
 
-            InitializeEquipment();
+            //InitializeEquipment();
         }
 
         /// <summary>
         /// 설비 초기화
         /// </summary>
-        private void InitializeEquipment()
+        public void InitializeEquipment()
         {
             try
             {
+                Units = new ConcurrentDictionary<string, BaseUnit>();
+                _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
+                State = EquipmentState.Stopped;
+
+                ConfigManager = new EquipmentConfigManager();
+                RecipeManager = new EquipmentRecipeManager();
+
+
                 OnStateChanged(EquipmentState.Initializing);
 
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
@@ -160,13 +168,6 @@ namespace QMC.LCP_280.Process
         {
             // 개발자가 필요한 Unit들을 여기에 추가
             RegisterUnit(new CassetteLoadingElevator(), "CassetteLoadingElevator");
-            RegisterUnit(new WaferInputStage(), "WaferInputStage");
-            RegisterUnit(new WaferAlignmentSystem(), "WaferAlignmentSystem");
-            RegisterUnit(new DieLoaderIndexer(), "DieLoaderIndexer");
-            RegisterUnit(new Prober(), "Prober");
-            RegisterUnit(new DieUnloaderIndexer(), "DieUnloaderIndexer");
-            RegisterUnit(new WaferOutputStage(), "WaferOutputStage");
-            RegisterUnit(new CassetteUnloadingElevator(), "CassetteUnloadingElevator");
 
             // 추가 Unit들 예시:
             // RegisterUnit(new WaferAlignmentUnit(), "WaferAlignment");
@@ -803,22 +804,6 @@ namespace QMC.LCP_280.Process
             }
         }
 
-        #endregion
-
-        #region Motion Axis Initialization
-
-        /// <summary>
-        /// 외부에서 Motion 연결이 완료된 후 호출하여 모든 Unit 의 축을 초기화.
-        /// IMotionAxisProvider 는 호출자가 구현/전달.
-        /// </summary>
-        public void InitializeAllUnitAxes(IMotionAxisProvider provider)
-        {
-            if (provider == null) return;
-            foreach (var unit in Units.Values)
-            {
-                unit.InitializeUnitAxes(provider);
-            }
-        }
         #endregion
 
         // === 프로그램 시작시에 1회 호출: 유닛별 필요한 축을 생성/등록/부착 ===

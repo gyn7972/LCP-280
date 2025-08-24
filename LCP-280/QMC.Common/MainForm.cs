@@ -22,12 +22,18 @@ namespace QMC.Common
         // Prewarm
         private Queue<MenuButtonType> _prewarmQueue;
         private Timer _prewarmTimer;
+
+
+
         #endregion
-        
+
         public MainForm()
         {
             InitializeComponent();
             
+            //Data나.. 통신 연결이나..
+
+
             // 🔧 MainForm 배경색을 흰색으로 설정
             this.BackColor = Color.White;
             this.DoubleBuffered = true;
