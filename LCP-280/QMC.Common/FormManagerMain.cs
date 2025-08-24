@@ -127,8 +127,14 @@ namespace QMC.Common
                 throw new ArgumentException($"{unitName}에 대한 Main 폼을 찾을 수 없습니다.");
             }
             
-            // 첫 번째 등록된 폼 반환
-            if (mainForms.Count > 0)
+            // 2개 이상의 메인 폼이 등록된 경우, 탭 형식의 폼(FormMain) 반환
+            if (mainForms.Count >= 2)
+            {
+                return new FormMain();
+            }
+            
+            // 1개인 경우 해당 폼 반환
+            if (mainForms.Count == 1)
             {
                 return FormManager.Instance.CreateFormInstance(mainForms[0]);
             }

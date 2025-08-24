@@ -2,7 +2,7 @@
 
 namespace QMC.Common
 {
-    partial class FormMain
+    partial class FormSetup
     {
         /// <summary>
         /// Required designer variable.
@@ -38,26 +38,26 @@ namespace QMC.Common
             this.Size = new System.Drawing.Size(800, 450); // 기본 크기 (SetPanelSize 호출 전까지 임시)
             this.ClientSize = new System.Drawing.Size(800, 450);
             
-            this.Text = "FormMain";
+            this.Text = "FormConfig";
             this.BackColor = System.Drawing.Color.White;
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             
             // 🔧 크기 변경 이벤트 추가 (디버깅용)
-            this.Resize += FormMain_Resize;
+            this.Resize += FormConfig_Resize;
         }
         
         /// <summary>
         /// 🔧 폼 크기 변경 이벤트 (디버깅용)
         /// </summary>
-        private void FormMain_Resize(object sender, System.EventArgs e)
+        private void FormConfig_Resize(object sender, System.EventArgs e)
         {
-            Console.WriteLine($"📏 FormMain 크기 변경됨: Size={this.Size}, ClientSize={this.ClientSize}");
+            Console.WriteLine($"📏 FormConfig 크기 변경됨: Size={this.Size}, ClientSize={this.ClientSize}");
             
             // TabControl이 존재하고 Dock이 Fill이 아닌 경우 크기 동기화
-            if (mainTabControl != null && mainTabControl.Dock != System.Windows.Forms.DockStyle.Fill)
+            if (setupTabControl != null && setupTabControl.Dock != System.Windows.Forms.DockStyle.Fill)
             {
-                mainTabControl.Size = this.ClientSize;
-                Console.WriteLine($"   TabControl 크기 동기화: {mainTabControl.Size}");
+                setupTabControl.Size = this.ClientSize;
+                Console.WriteLine($"   TabControl 크기 동기화: {setupTabControl.Size}");
             }
             
             // 테두리 다시 그리기

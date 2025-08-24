@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -9,10 +11,13 @@ namespace QMC.Common
         #region Field
         private Size MainSize;
         private TableLayoutPanel tableLayoutPanelFormMain;
+        private Panel centerPanel; // 중앙 컨텐츠 전용 컨테이너
         private FormTop formTop;
         private FormBottom formBottom;
-        private FormMain formMain;
         private Form currentCenterForm;
+
+        // 메뉴별 중앙 폼 캐시
+        private readonly Dictionary<MenuButtonType, Form> _centerFormCache = new Dictionary<MenuButtonType, Form>();
         #endregion
         
         public MainForm()
@@ -30,7 +35,7 @@ namespace QMC.Common
         private void MainForm_Load(object sender, EventArgs e)
         {
             MainSize = new Size(1280, 1024);
-            this.Size = MainSize;
+            // 권장: 클라이언트 영역 기준으로 설정
             this.ClientSize = MainSize;
 
             // 🔧 MainForm 배경색을 다시 한 번 확실히 흰색으로 설정
@@ -65,13 +70,13 @@ namespace QMC.Common
             tableLayoutPanelFormMain.Controls.Add(formTop, 0, 0);
             formTop.Show();
 
-            // FormMain 초기화 (숨김 상태)
-            formMain = new FormMain();
-            formMain.TopLevel = false;
-            formMain.FormBorderStyle = FormBorderStyle.None;
-            formMain.Dock = DockStyle.Fill;
-            formMain.Visible = false;
-            tableLayoutPanelFormMain.Controls.Add(formMain, 0, 1);
+            // Center 전용 Panel 생성 및 추가
+            centerPanel = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.White
+            };
+            tableLayoutPanelFormMain.Controls.Add(centerPanel, 0, 1);
 
             // FormBottom을 세 번째 행(인덱스 2에 추가
             formBottom = new FormBottom();
@@ -84,39 +89,12 @@ namespace QMC.Common
             // FormBottom의 메뉴 버튼 클릭 이벤트 구독
             formBottom.MenuButtonClicked += FormBottom_MenuButtonClicked;
 
-            // 폼이 보여진 후 실제 Width, Height 전달
-            this.Shown += (s, args) =>
-            {
-                int[] rowHeights = tableLayoutPanelFormMain.GetRowHeights();
-                int width = tableLayoutPanelFormMain.GetColumnWidths()[0];
-                if (rowHeights.Length > 2)
-                {
-                    formTop.SetPanelSize(width, rowHeights[0]);
-                    formMain.SetPanelSize(width, rowHeights[1]);
-                    formBottom.SetPanelSize(width, rowHeights[2]);
-
-                    // MainForm이 현재 표시 중이면 사이즈 적용
-                    if (currentCenterForm != null)
-                    {
-                        // FormConfig 또는 SetPanelSize를 가진 타입에만 적용
-                        if (currentCenterForm is FormMain fc)
-                        {
-                            fc.SetPanelSize(width, rowHeights[0]);
-                        }
-                        else if (currentCenterForm is FormTop ft)
-                        {
-                            ft.SetPanelSize(width, rowHeights[1]);
-                        }
-                        else if (currentCenterForm is FormBottom fb)
-                        {
-                            fb.SetPanelSize(width, rowHeights[2]);
-                        }
-                    }
-                }
-            };
+            // 폼이 보여진 후 실제 Width, Height 전달 및 리사이즈 연동
+            this.Shown += (s, args) => ApplySizes();
+            this.SizeChanged += (s, args) => ApplySizes();
 
             // 🚀 폼이 처음 로드될 때 기본으로 Main 폼을 중앙에 표시
-            ShowMainForm();
+            SwitchCenterForm(MenuButtonType.Main);
         }
 
         /// <summary>
@@ -157,45 +135,62 @@ namespace QMC.Common
 
         private void SwitchCenterForm(MenuButtonType menuType)
         {
-            // 현재 표시된 폼 숨기기
+            // 현재 표시된 폼 숨기기 및 컨테이너에서 제거
             if (currentCenterForm != null)
             {
-                currentCenterForm.Visible = false;
+                currentCenterForm.Hide();
+                if (centerPanel != null && centerPanel.Controls.Contains(currentCenterForm))
+                {
+                    centerPanel.Controls.Remove(currentCenterForm);
+                }
             }
 
             // 메뉴 타입에 따라 적절한 폼 표시
-            switch (menuType)
+            try
             {
-                case MenuButtonType.Main:
-                    ShowMainForm();
-                    break;
-                case MenuButtonType.Config:
-                    ShowConfigForm();
-                    break;
-                case MenuButtonType.Working:
-                    ShowWorkingForm();
-                    break;
-                case MenuButtonType.Recipe:
-                    ShowRecipeForm();
-                    break;
-                case MenuButtonType.Setup:
-                    ShowSetupForm();
-                    break;
-                case MenuButtonType.Log:
-                    ShowLogForm();
-                    break;
-                default:
-                    // 기본값으로 Config 표시
-                    currentCenterForm = formMain;
-                    break;
+                switch (menuType)
+                {
+                    case MenuButtonType.Main:
+                        ShowMainForm();
+                        break;
+                    case MenuButtonType.Config:
+                        ShowConfigForm();
+                        break;
+                    case MenuButtonType.Working:
+                        ShowWorkingForm();
+                        break;
+                    case MenuButtonType.Recipe:
+                        ShowRecipeForm();
+                        break;
+                    case MenuButtonType.Setup:
+                        ShowSetupForm();
+                        break;
+                    case MenuButtonType.Log:
+                        ShowLogForm();
+                        break;
+                    default:
+                        ShowMainForm();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                ShowNotImplementedMessage(menuType.ToString(), ex.Message);
             }
 
             // 선택된 폼 표시
             if (currentCenterForm != null)
             {
+                if (!centerPanel.Controls.Contains(currentCenterForm))
+                {
+                    centerPanel.Controls.Add(currentCenterForm);
+                }
                 currentCenterForm.Visible = true;
                 currentCenterForm.BringToFront();
                 
+                // 사이즈 적용
+                ApplySizes();
+
                 // 🔧 폼이 표시된 후 추가로 크기 확인
                 Console.WriteLine($"📏 최종 표시된 폼: {currentCenterForm.GetType().Name}, Size={currentCenterForm.Size}, Visible={currentCenterForm.Visible}");
             }
@@ -208,8 +203,8 @@ namespace QMC.Common
             {
                 try
                 {
-                    Form mainForm = FormManagerMain.Instance.CreateMainForm();
-                    SetupCenterForm(mainForm, "FormMain");
+                    Form mainForm = GetOrCreateForm(MenuButtonType.Main, () => FormManagerMain.Instance.CreateMainForm(), "FormMain");
+                    SetupCenterForm(mainForm);
                 }
                 catch (Exception ex)
                 {
@@ -229,8 +224,8 @@ namespace QMC.Common
             {
                 try
                 {
-                    Form configForm = FormManagerConfig.Instance.CreateConfigForm();
-                    SetupCenterForm(configForm, "ConfigForm");
+                    Form configForm = GetOrCreateForm(MenuButtonType.Config, () => FormManagerConfig.Instance.CreateConfigForm(), "ConfigForm");
+                    SetupCenterForm(configForm);
                 }
                 catch (Exception ex)
                 {
@@ -250,8 +245,8 @@ namespace QMC.Common
             {
                 try
                 {
-                    Form workingForm = FormManagerWorking.Instance.CreateWorkingForm();
-                    SetupCenterForm(workingForm, "WorkingForm");
+                    Form workingForm = GetOrCreateForm(MenuButtonType.Working, () => FormManagerWorking.Instance.CreateWorkingForm(), "WorkingForm");
+                    SetupCenterForm(workingForm);
                 }
                 catch (Exception ex)
                 {
@@ -271,8 +266,8 @@ namespace QMC.Common
             {
                 try
                 {
-                    Form recipeForm = FormManagerRecipe.Instance.CreateRecipeForm();
-                    SetupCenterForm(recipeForm, "RecipeForm");
+                    Form recipeForm = GetOrCreateForm(MenuButtonType.Recipe, () => FormManagerRecipe.Instance.CreateRecipeForm(), "RecipeForm");
+                    SetupCenterForm(recipeForm);
                 }
                 catch (Exception ex)
                 {
@@ -292,8 +287,8 @@ namespace QMC.Common
             {
                 try
                 {
-                    Form setupForm = FormManagerSetup.Instance.CreateSetupForm();
-                    SetupCenterForm(setupForm, "SetupForm");
+                    Form setupForm = GetOrCreateForm(MenuButtonType.Setup, () => FormManagerSetup.Instance.CreateSetupForm(), "SetupForm");
+                    SetupCenterForm(setupForm);
                 }
                 catch (Exception ex)
                 {
@@ -313,8 +308,8 @@ namespace QMC.Common
             {
                 try
                 {
-                    Form logForm = FormManagerLog.Instance.CreateLogForm();
-                    SetupCenterForm(logForm, "LogForm");
+                    Form logForm = GetOrCreateForm(MenuButtonType.Log, () => FormManagerLog.Instance.CreateLogForm(), "LogForm");
+                    SetupCenterForm(logForm);
                 }
                 catch (Exception ex)
                 {
@@ -327,15 +322,77 @@ namespace QMC.Common
             }
         }
 
-        private void SetupCenterForm(Form form, string formName)
+        private Form GetOrCreateForm(MenuButtonType type, Func<Form> factory, string formName)
         {
-            form.TopLevel = false;
-            form.FormBorderStyle = FormBorderStyle.None;
-            form.Dock = DockStyle.Fill;
-            form.Name = formName;
-            
-            tableLayoutPanelFormMain.Controls.Add(form, 0, 1);
+            Form form;
+            if (!_centerFormCache.TryGetValue(type, out form) || form == null || form.IsDisposed)
+            {
+                form = factory();
+                form.TopLevel = false;
+                form.FormBorderStyle = FormBorderStyle.None;
+                form.Dock = DockStyle.Fill;
+                form.Name = formName;
+                _centerFormCache[type] = form;
+            }
+            return form;
+        }
+
+        private void SetupCenterForm(Form form)
+        {
+            // 컨테이너 비우고 폼 추가
+            centerPanel.Controls.Clear();
+            centerPanel.Controls.Add(form);
             currentCenterForm = form;
+            if (!form.Visible) form.Show();
+        }
+
+        private void ApplySizes()
+        {
+            if (tableLayoutPanelFormMain == null) return;
+
+            int[] rowHeights = tableLayoutPanelFormMain.GetRowHeights();
+            int[] colWidths = tableLayoutPanelFormMain.GetColumnWidths();
+            if (rowHeights.Length < 3 || colWidths.Length < 1) return;
+
+            int width = colWidths[0];
+            try
+            {
+                // Top/Bottom 고정 반영
+                formTop?.SetPanelSize(width, rowHeights[0]);
+                formBottom?.SetPanelSize(width, rowHeights[2]);
+
+                // Center 컨텐츠 반영 (SetPanelSize가 있는 경우만)
+                if (currentCenterForm != null)
+                {
+                    TrySetPanelSize(currentCenterForm, width, rowHeights[1]);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Size apply failed: {ex.Message}");
+            }
+        }
+
+        private static void TrySetPanelSize(Form form, int width, int height)
+        {
+            try
+            {
+                MethodInfo mi = form.GetType().GetMethod(
+                    "SetPanelSize",
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    null,
+                    new Type[] { typeof(int), typeof(int) },
+                    null);
+
+                if (mi != null)
+                {
+                    mi.Invoke(form, new object[] { width, height });
+                }
+            }
+            catch
+            {
+                // 무시
+            }
         }
 
         private void ShowNotImplementedMessage(string menuName, string additionalInfo = null)
@@ -348,7 +405,10 @@ namespace QMC.Common
             message += $"\n\nFormManager{menuName}.Instance.Register{menuName}Form()을 사용하여 폼을 등록하세요.";
             
             MessageBox.Show(message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            currentCenterForm = formMain;
+
+            // 기본 동작: 중앙 컨텐츠 비우기
+            centerPanel.Controls.Clear();
+            currentCenterForm = null;
         }
     }
 }

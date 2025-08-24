@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -40,25 +42,50 @@ namespace QMC.Common
         /// (XXUnit_Config 패턴의 폼들을 자동으로 찾아서 등록)
         /// </summary>
         /// <param name="assemblyToSearch">검색할 어셈블리 (null이면 현재 어셈블리)</param>
-        public void AutoRegisterUnitConfigForms(System.Reflection.Assembly assemblyToSearch = null)
+        public void AutoRegisterUnitConfigForms(Assembly assemblyToSearch = null)
         {
             try
             {
                 if (assemblyToSearch == null)
                 {
-                    // QMC.LCP_280.Process 어셈블리에서 검색
-                    try
+                    // 1) 이미 로드된 어셈블리 중에서 검색
+                    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
                     {
-                        var processAssembly = System.Reflection.Assembly.LoadFrom("QMC.LCP_280.Process.exe");
-                        if (processAssembly != null)
-                            assemblyToSearch = processAssembly;
-                        else
-                            assemblyToSearch = System.Reflection.Assembly.GetExecutingAssembly();
+                        try
+                        {
+                            if (string.Equals(asm.GetName().Name, "QMC.LCP_280.Process", StringComparison.OrdinalIgnoreCase))
+                            {
+                                assemblyToSearch = asm;
+                                break;
+                            }
+                        }
+                        catch { }
                     }
-                    catch (Exception ex)
+
+                    // 2) 베이스 디렉터리에서 DLL 로드 시도
+                    if (assemblyToSearch == null)
                     {
-                        Console.WriteLine($"⚠️ QMC.LCP_280.Process.exe 로드 실패: {ex.Message}");
-                        assemblyToSearch = System.Reflection.Assembly.GetExecutingAssembly();
+                        var processDll = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "QMC.LCP_280.Process.dll");
+                        if (File.Exists(processDll))
+                        {
+                            try { assemblyToSearch = Assembly.LoadFrom(processDll); } catch (Exception ex) { Console.WriteLine($"⚠️ DLL 로드 실패: {ex.Message}"); }
+                        }
+                    }
+
+                    // 3) 베이스 디렉터리에서 EXE 로드 시도 (예전 호환)
+                    if (assemblyToSearch == null)
+                    {
+                        var processExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "QMC.LCP_280.Process.exe");
+                        if (File.Exists(processExe))
+                        {
+                            try { assemblyToSearch = Assembly.LoadFrom(processExe); } catch (Exception ex) { Console.WriteLine($"⚠️ EXE 로드 실패: {ex.Message}"); }
+                        }
+                    }
+
+                    // 4) 모두 실패하면 현재 어셈블리 사용
+                    if (assemblyToSearch == null)
+                    {
+                        assemblyToSearch = Assembly.GetExecutingAssembly();
                         Console.WriteLine("   현재 어셈블리 사용");
                     }
                 }
@@ -66,10 +93,10 @@ namespace QMC.Common
                 var types = assemblyToSearch.GetTypes();
                 foreach (var type in types)
                 {
-                    // Form을 상속받고 이름이 "Config"로 끝나는 클래스 찾기
+                    // Form을 상속받고 이름이 Config 패턴에 해당하는 클래스 찾기
                     if (typeof(Form).IsAssignableFrom(type) && 
                         !type.IsAbstract && 
-                        (type.Name.Contains("Unit_Config") || type.Name.Contains("UnitConfig")))
+                        (type.Name.Contains("Unit_Config") || type.Name.Contains("UnitConfig") || type.Name.EndsWith("Config")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);
@@ -95,27 +122,27 @@ namespace QMC.Common
             // XXUnit_Config, XXUnitConfig 패턴에서 XX 부분 추출
             if (typeName.Contains("Unit_Config"))
             {
-                return typeName.Replace("Unit_Config", "").Replace("_", " ");
+                return typeName.Replace("Unit_Config", string.Empty).Replace("_", " ");
             }
             else if (typeName.Contains("UnitConfig"))
             {
-                return typeName.Replace("UnitConfig", "");
+                return typeName.Replace("UnitConfig", string.Empty);
             }
             else if (typeName.EndsWith("Config"))
             {
-                return typeName.Replace("Config", "");
+                return typeName.Substring(0, typeName.Length - "Config".Length);
             }
             else if (typeName.EndsWith("Configuration"))
             {
-                return typeName.Replace("Configuration", "");
+                return typeName.Substring(0, typeName.Length - "Configuration".Length);
             }
             else if (typeName.EndsWith("Setting"))
             {
-                return typeName.Replace("Setting", "");
+                return typeName.Substring(0, typeName.Length - "Setting".Length);
             }
             else if (typeName.EndsWith("Settings"))
             {
-                return typeName.Replace("Settings", "");
+                return typeName.Substring(0, typeName.Length - "Settings".Length);
             }
             
             return typeName;
@@ -141,7 +168,7 @@ namespace QMC.Common
             
             if (!string.IsNullOrEmpty(unitName))
             {
-                var targetForm = configForms.Find(f => f.DisplayName.Contains(unitName));
+                var targetForm = configForms.Find(f => f.DisplayName != null && f.DisplayName.IndexOf(unitName, StringComparison.OrdinalIgnoreCase) >= 0);
                 if (targetForm != null)
                 {
                     return FormManager.Instance.CreateFormInstance(targetForm);
@@ -149,8 +176,14 @@ namespace QMC.Common
                 throw new ArgumentException($"{unitName}에 대한 Config 폼을 찾을 수 없습니다.");
             }
             
-            // 첫 번째 등록된 폼 반환
-            if (configForms.Count > 0)
+            // 2개 이상이면 탭 호스트(FormConfig)로 표시
+            if (configForms.Count >= 2)
+            {
+                return new FormConfig();
+            }
+
+            // 1개면 해당 폼 단독 표시
+            if (configForms.Count == 1)
             {
                 return FormManager.Instance.CreateFormInstance(configForms[0]);
             }
