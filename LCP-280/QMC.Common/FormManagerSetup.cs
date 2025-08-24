@@ -59,7 +59,7 @@ namespace QMC.Common
                     // Form을 상속받고 이름이 "Setup"로 끝나는 클래스 찾기
                     if (typeof(Form).IsAssignableFrom(type) &&
                         !type.IsAbstract &&
-                        (type.Name.Contains("Unit_Setup") || type.Name.Contains("UnitSetup")))
+                        (type.Name.Contains("Unit_Setup") || type.Name.Contains("UnitSetup") || type.Name.EndsWith("Setup")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);
@@ -139,8 +139,13 @@ namespace QMC.Common
                 throw new ArgumentException($"{unitName}에 대한 Setup 폼을 찾을 수 없습니다.");
             }
 
+            if (setupForms.Count >= 2)
+            {
+                return new FormSetup();
+            }
+
             // 첫 번째 등록된 폼 반환
-            if (setupForms.Count > 0)
+            if (setupForms.Count == 1)
             {
                 return FormManager.Instance.CreateFormInstance(setupForms[0]);
             }

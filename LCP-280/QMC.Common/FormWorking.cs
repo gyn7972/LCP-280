@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.Common
 {
-    public partial class FormMain : Form
+    public partial class FormWorking : Form
     {
-        private TabControl mainTabControl;
+        private TabControl workingTabControl;
         private Dictionary<TabPage, Form> _tabFormInstances;
         
         // Theme fields
@@ -21,7 +17,7 @@ namespace QMC.Common
         private int _tabBorderWidth = 2;
         private Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
 
-        public FormMain()
+        public FormWorking()
         {
             InitializeComponent();
             
@@ -29,20 +25,20 @@ namespace QMC.Common
             this.BackColor = Color.White;
             
             _tabFormInstances = new Dictionary<TabPage, Form>();
-            InitializemainUI();
+            InitializeworkingUI();
             
             // 🔧 Visible 상태 변경 이벤트 추가
-            this.VisibleChanged += Formmain_VisibleChanged;
+            this.VisibleChanged += Formworking_VisibleChanged;
         }
         
         /// <summary>
-        /// 🔧 Formmain가 보여질 때마다 크기 재조정
+        /// 🔧 Formworking가 보여질 때마다 크기 재조정
         /// </summary>
-        private void Formmain_VisibleChanged(object sender, EventArgs e)
+        private void Formworking_VisibleChanged(object sender, EventArgs e)
         {
             if (this.Visible && this.Parent != null)
             {
-                Console.WriteLine($"👁️ Formmain Visible 변경: {this.Visible}");
+                Console.WriteLine($"👁️ Formworking Visible 변경: {this.Visible}");
                 Console.WriteLine($"   Parent: {this.Parent.GetType().Name}, Parent.Size: {this.Parent.Size}");
                 
                 // 🔧 TableLayoutPanel인 경우 정확한 행 크기를 계산하여 전달
@@ -53,13 +49,13 @@ namespace QMC.Common
                         int[] rowHeights = tableLayoutPanel.GetRowHeights();
                         int[] columnWidths = tableLayoutPanel.GetColumnWidths();
                         
-                        // Formmain는 1번 행(인덱스 1, 80% 영역)에 위치
+                        // Formworking는 1번 행(인덱스 1, 80% 영역)에 위치
                         if (rowHeights.Length > 1 && columnWidths.Length > 0)
                         {
                             int width = columnWidths[0];
                             int height = rowHeights[1]; // 1번 행 (80% 영역)
                             
-                            Console.WriteLine($"   계산된 Formmain 크기: width={width}, height={height}");
+                            Console.WriteLine($"   계산된 Formworking 크기: width={width}, height={height}");
                             SetPanelSize(width, height);
                         }
                         else
@@ -89,84 +85,84 @@ namespace QMC.Common
             }
         }
         
-        private void InitializemainUI()
+        private void InitializeworkingUI()
         {
-            Console.WriteLine("🚀 Formmain.InitializemainUI() 시작");
+            Console.WriteLine("🚀 Formworking.InitializeworkingUI() 시작");
             
-            // 🔧 Formmain 배경색을 확실히 흰색으로 설정
+            // 🔧 Formworking 배경색을 확실히 흰색으로 설정
             this.BackColor = Color.White;
             
             // TabControl 생성 및 테마 적용
-            mainTabControl = new TabControl();
-            mainTabControl.Dock = DockStyle.None;
-            mainTabControl.Font = _tabFont;
-            mainTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
-            mainTabControl.ItemSize = new Size(120, _tabHeight);
-            mainTabControl.SizeMode = TabSizeMode.Fixed;
-            mainTabControl.DrawItem += mainTabControl_DrawItem;
-            mainTabControl.SelectedIndexChanged += mainTabControl_SelectedIndexChanged;
+            workingTabControl = new TabControl();
+            workingTabControl.Dock = DockStyle.None;
+            workingTabControl.Font = _tabFont;
+            workingTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
+            workingTabControl.ItemSize = new Size(120, _tabHeight);
+            workingTabControl.SizeMode = TabSizeMode.Fixed;
+            workingTabControl.DrawItem += workingTabControl_DrawItem;
+            workingTabControl.SelectedIndexChanged += workingTabControl_SelectedIndexChanged;
             
             // 🔧 TabControl 배경색도 흰색으로 설정
-            mainTabControl.BackColor = Color.White;
+            workingTabControl.BackColor = Color.White;
             
-            Console.WriteLine($"   TabControl 생성 완료: Size={mainTabControl.Size}, Visible={mainTabControl.Visible}");
+            Console.WriteLine($"   TabControl 생성 완료: Size={workingTabControl.Size}, Visible={workingTabControl.Visible}");
             
-            this.Controls.Add(mainTabControl);
+            this.Controls.Add(workingTabControl);
             
-            Console.WriteLine($"   TabControl을 Formmain에 추가 완료");
-            Console.WriteLine($"   Formmain.Controls.Count: {this.Controls.Count}");
+            Console.WriteLine($"   TabControl을 Formworking에 추가 완료");
+            Console.WriteLine($"   Formworking.Controls.Count: {this.Controls.Count}");
             
-            // FormManager에서 등록된 main 폼들을 자동으로 탭으로 추가
+            // FormManager에서 등록된 working 폼들을 자동으로 탭으로 추가
             LoadFormsFromManager();
             
             // 강제로 TabControl을 보이게 설정
-            mainTabControl.Visible = true;
-            mainTabControl.BringToFront();
+            workingTabControl.Visible = true;
+            workingTabControl.BringToFront();
             
-            Console.WriteLine($"✅ InitializemainUI 완료");
-            Console.WriteLine($"   최종 TabControl 상태: Visible={mainTabControl.Visible}, TabCount={mainTabControl.TabPages.Count}");
+            Console.WriteLine($"✅ InitializeworkingUI 완료");
+            Console.WriteLine($"   최종 TabControl 상태: Visible={workingTabControl.Visible}, TabCount={workingTabControl.TabPages.Count}");
         }
 
         /// <summary>
-        /// FormManager에서 main 타입으로 등록된 폼들을 탭으로 로드
+        /// FormManager에서 working 타입으로 등록된 폼들을 탭으로 로드
         /// </summary>
         private void LoadFormsFromManager()
         {
             try
             {
-                Console.WriteLine("🔍 Formmain.LoadFormsFromManager() 시작");
+                Console.WriteLine("🔍 Formworking.LoadFormsFromManager() 시작");
                 
-                var mainForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Main);
-                Console.WriteLine($"   등록된 main 폼 개수: {mainForms.Count}");
+                var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
+                Console.WriteLine($"   등록된 working 폼 개수: {workingForms.Count}");
                 
-                foreach (var formInfo in mainForms)
+                foreach (var formInfo in workingForms)
                 {
-                    Console.WriteLine($"   main 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
+                    Console.WriteLine($"   working 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
                     CreateTabFromFormInfo(formInfo);
                 }
                 
                 // 등록된 폼이 없으면 기본 샘플 탭 생성
-                if (mainForms.Count == 0)
+                if (workingForms.Count == 0)
                 {
-                    Console.WriteLine("⚠️ 등록된 main 폼이 없어서 기본 샘플 탭 생성");
+                    Console.WriteLine("⚠️ 등록된 working 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
                 
-                Console.WriteLine($"✅ 최종 탭 개수: {mainTabControl.TabPages.Count}");
+                Console.WriteLine($"✅ 최종 탭 개수: {workingTabControl.TabPages.Count}");
                 
                 // 탭 컨트롤 상태 확인
-                Console.WriteLine($"   mainTabControl.Visible: {mainTabControl.Visible}");
-                Console.WriteLine($"   mainTabControl.Size: {mainTabControl.Size}");
-                Console.WriteLine($"   mainTabControl.Dock: {mainTabControl.Dock}");
+                Console.WriteLine($"   workingTabControl.Visible: {workingTabControl.Visible}");
+                Console.WriteLine($"   workingTabControl.Size: {workingTabControl.Size}");
+                Console.WriteLine($"   workingTabControl.Dock: {workingTabControl.Dock}");
                 
-                // Formmain 자체 상태도 확인
-                Console.WriteLine($"   Formmain.Visible: {this.Visible}");
-                Console.WriteLine($"   Formmain.Size: {this.Size}");
+                // Formworking 자체 상태도 확인
+                Console.WriteLine($"   Formworking.Visible: {this.Visible}");
+                Console.WriteLine($"   Formworking.Size: {this.Size}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ main 폼 로드 중 오류: {ex.Message}");
-                MessageBox.Show($"main 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Console.WriteLine($"❌ working 폼 로드 중 오류: {ex.Message}");
+                MessageBox.Show($"working 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 CreateSampleTabs(); // 오류 발생시 기본 탭 생성
             }
         }
@@ -185,17 +181,17 @@ namespace QMC.Common
             // 🔧 TabPage 배경색도 흰색으로 설정
             tabPage.BackColor = Color.White;
             
-            mainTabControl.TabPages.Add(tabPage);
+            workingTabControl.TabPages.Add(tabPage);
             
-            Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {mainTabControl.TabPages.Count}");
+            Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {workingTabControl.TabPages.Count}");
         }
 
         /// <summary>
         /// 탭이 선택되었을 때 해당 폼을 로드하여 표시
         /// </summary>
-        private void mainTabControl_SelectedIndexChanged(object sender, EventArgs e)
+        private void workingTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
-            TabPage selectedTab = mainTabControl.SelectedTab;
+            TabPage selectedTab = workingTabControl.SelectedTab;
             if (selectedTab?.Tag is FormInfo formInfo)
             {
                 LoadFormIntoTab(selectedTab, formInfo);
@@ -223,10 +219,10 @@ namespace QMC.Common
                     formInstance.Dock = DockStyle.Fill;
                     
                     // 🔧 폼에 SetPanelSize 메서드가 있으면 탭 높이를 제외한 크기 전달
-                    if (mainTabControl != null)
+                    if (workingTabControl != null)
                     {
-                        int availableWidth = mainTabControl.Width;
-                        int availableHeight = mainTabControl.Height - _tabHeight - 20; // 탭 높이 제외
+                        int availableWidth = workingTabControl.Width;
+                        int availableHeight = workingTabControl.Height - _tabHeight - 20; // 탭 높이 제외
                         
                         // 리플렉션을 사용하여 SetPanelSize 메서드 확인 및 호출
                         var setPanelSizeMethod = formInstance.GetType().GetMethod("SetPanelSize", 
@@ -261,10 +257,10 @@ namespace QMC.Common
                     var existingForm = _tabFormInstances[tabPage];
                     
                     // 🔧 기존 폼에도 탭 높이를 제외한 크기 재적용
-                    if (mainTabControl != null)
+                    if (workingTabControl != null)
                     {
-                        int availableWidth = mainTabControl.Width;
-                        int availableHeight = mainTabControl.Height - _tabHeight; // 탭 높이 제외
+                        int availableWidth = workingTabControl.Width;
+                        int availableHeight = workingTabControl.Height - _tabHeight; // 탭 높이 제외
                         
                         var setPanelSizeMethod = existingForm.GetType().GetMethod("SetPanelSize", 
                             new Type[] { typeof(int), typeof(int) });
@@ -303,7 +299,7 @@ namespace QMC.Common
         /// <summary>
         /// FormManager에 새로운 폼이 등록되었을 때 탭을 새로고침
         /// </summary>
-        public void RefreshmainTabs()
+        public void RefreshworkingTabs()
         {
             // 기존 탭과 폼 인스턴스 정리
             foreach (var formInstance in _tabFormInstances.Values)
@@ -311,19 +307,19 @@ namespace QMC.Common
                 formInstance?.Dispose();
             }
             _tabFormInstances.Clear();
-            mainTabControl.TabPages.Clear();
+            workingTabControl.TabPages.Clear();
             
             // 새로 로드
             LoadFormsFromManager();
         }
 
-        private void mainTabControl_DrawItem(object sender, DrawItemEventArgs e)
+        private void workingTabControl_DrawItem(object sender, DrawItemEventArgs e)
         {
-            TabPage page = mainTabControl.TabPages[e.Index];
-            Rectangle tabRect = mainTabControl.GetTabRect(e.Index);
+            TabPage page = workingTabControl.TabPages[e.Index];
+            Rectangle tabRect = workingTabControl.GetTabRect(e.Index);
 
             // 선택된 탭은 하얀색, 아닌 탭은 회색
-            Color backColor = (e.Index == mainTabControl.SelectedIndex) ? Color.White : Color.Gainsboro;
+            Color backColor = (e.Index == workingTabControl.SelectedIndex) ? Color.White : Color.Gainsboro;
             using (Brush backBrush = new SolidBrush(backColor))
             {
                 e.Graphics.FillRectangle(backBrush, tabRect);
@@ -392,14 +388,14 @@ namespace QMC.Common
         
         private void CreateSampleTabs()
         {
-            // System main 탭
-            TabPage systemTab = new TabPage("Sample main");
+            // System working 탭
+            TabPage systemTab = new TabPage("Sample working");
             
             // 🔧 샘플 탭의 배경색도 흰색으로 설정
             systemTab.BackColor = Color.White;
             
             Label systemLabel = new Label();
-            systemLabel.Text = "No main Forms Registered\n\nUse FormManager.Instance.RegisterForm() to add main forms.";
+            systemLabel.Text = "No working Forms Registered\n\nUse FormManager.Instance.RegisterForm() to add working forms.";
             systemLabel.Font = new Font("맑은 고딕", 12, FontStyle.Regular);
             systemLabel.TextAlign = ContentAlignment.MiddleCenter;
             systemLabel.Dock = DockStyle.Fill;
@@ -408,7 +404,7 @@ namespace QMC.Common
             systemLabel.BackColor = Color.White;
             
             systemTab.Controls.Add(systemLabel);
-            mainTabControl.TabPages.Add(systemTab);
+            workingTabControl.TabPages.Add(systemTab);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -425,19 +421,19 @@ namespace QMC.Common
 
         public void SetPanelSize(int width, int height)
         {
-            Console.WriteLine($"🔧 Formmain.SetPanelSize() 호출: width={width}, height={height}");
-            Console.WriteLine($"   현재 Formmain 크기: Size={this.Size}, ClientSize={this.ClientSize}");
+            Console.WriteLine($"🔧 Formworking.SetPanelSize() 호출: width={width}, height={height}");
+            Console.WriteLine($"   현재 Formworking 크기: Size={this.Size}, ClientSize={this.ClientSize}");
             
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
             
-            if (mainTabControl != null)
+            if (workingTabControl != null)
             {
-                Console.WriteLine($"   TabControl 크기 조정: {mainTabControl.Size} → {new Size(width, height)}");
-                mainTabControl.Size = new Size(width, height);
+                Console.WriteLine($"   TabControl 크기 조정: {workingTabControl.Size} → {new Size(width, height)}");
+                workingTabControl.Size = new Size(width, height);
                 
                 // 🔧 현재 활성화된 탭의 폼에 탭 높이를 제외한 크기 전달
-                var selectedTab = mainTabControl.SelectedTab;
+                var selectedTab = workingTabControl.SelectedTab;
                 if (selectedTab != null && _tabFormInstances.ContainsKey(selectedTab))
                 {
                     var activeForm = _tabFormInstances[selectedTab];
@@ -458,15 +454,15 @@ namespace QMC.Common
                 }
                 
                 // TabControl을 강제로 다시 그리기
-                mainTabControl.Invalidate();
-                mainTabControl.Update();
+                workingTabControl.Invalidate();
+                workingTabControl.Update();
             }
             
             // 폼 전체를 다시 그리기
             this.Invalidate();
             this.Update();
             
-            Console.WriteLine($"✅ Formmain.SetPanelSize() 완료: 최종 크기={this.Size}");
+            Console.WriteLine($"✅ Formworking.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
         
         #region Form Border Drawing
@@ -485,7 +481,7 @@ namespace QMC.Common
                 e.Graphics.DrawRectangle(borderPen, borderRect);
             }
             
-            Console.WriteLine($"🖌️ Formmain 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
+            Console.WriteLine($"🖌️ Formworking 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
         }
 
         /// <summary>
@@ -511,7 +507,7 @@ namespace QMC.Common
         {
             FormBorderColor = color;
             FormBorderWidth = width;
-            Console.WriteLine($"🎨 Formmain 테두리 스타일 변경: Color={color}, Width={width}");
+            Console.WriteLine($"🎨 Formworking 테두리 스타일 변경: Color={color}, Width={width}");
         }
 
         /// <summary>

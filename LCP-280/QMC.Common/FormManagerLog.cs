@@ -59,7 +59,7 @@ namespace QMC.Common
                     // Form을 상속받고 이름이 "Log"로 끝나는 클래스 찾기
                     if (typeof(Form).IsAssignableFrom(type) && 
                         !type.IsAbstract && 
-                        (type.Name.Contains("Unit_Log") || type.Name.Contains("UnitLog")))
+                        (type.Name.Contains("Unit_Log") || type.Name.Contains("UnitLog") || type.Name.EndsWith("Log")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);
@@ -139,8 +139,14 @@ namespace QMC.Common
                 throw new ArgumentException($"{unitName}에 대한 Log 폼을 찾을 수 없습니다.");
             }
             
-            // 첫 번째 등록된 폼 반환
-            if (logForms.Count > 0)
+            // 등록된 폼이 2개 이상인 경우, FormLog 탭 호스트 반환
+            if (logForms.Count >= 2)
+            {
+                return new FormLog();
+            }
+            
+            // 등록된 폼이 1개인 경우, 해당 폼 반환
+            if (logForms.Count == 1)
             {
                 return FormManager.Instance.CreateFormInstance(logForms[0]);
             }
