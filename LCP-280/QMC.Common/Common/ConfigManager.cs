@@ -25,7 +25,7 @@ namespace QMC.Common
         private static readonly string g_strExtension = "dat";
         private static readonly string g_strProductDataFile = "ProductData";
 
-        private static readonly string g_strMotFile = "SLD-200.mot";    //   "Motor.mot";
+        private static readonly string g_strMotFile = "LCP-280.mot";    //   "Motor.mot";
 
         public static void SetEquipmentName(string strEquipmentName)
         {
@@ -36,7 +36,7 @@ namespace QMC.Common
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.AppendFormat("C:\\Program Files\\QMC");
+            builder.AppendFormat("D:\\LCP-280");
             builder.AppendFormat("\\{0}", g_strEquipmentName); 
             builder.AppendFormat("\\{0}", g_strConfigPath);
             builder.AppendFormat("\\{0}", g_strMotFile);
@@ -48,7 +48,7 @@ namespace QMC.Common
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.AppendFormat("C:\\Program Files\\QMC");
+            builder.AppendFormat("D:\\LCP-280");
             //builder.Append("D:\\Test");
             builder.AppendFormat("\\{0}", g_strEquipmentName);
             builder.AppendFormat("\\{0}", g_strConfigPath);
@@ -60,7 +60,7 @@ namespace QMC.Common
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.AppendFormat("C:\\Program Files\\QMC");
+            builder.AppendFormat("D:\\LCP-280");
             //builder.Append("D:\\Test");
             builder.AppendFormat("\\{0}", g_strEquipmentName);
             builder.AppendFormat("\\{0}", g_strConfigPath);
@@ -72,7 +72,7 @@ namespace QMC.Common
         public static string GetRecipeDataPath()
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendFormat("C:\\Program Files\\QMC");
+            builder.AppendFormat("D:\\LCP-280");
             //builder.Append("D:\\Test");
             builder.AppendFormat("\\{0}", g_strEquipmentName);
             builder.AppendFormat("\\{0}", g_strRecipePath);
@@ -85,7 +85,7 @@ namespace QMC.Common
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.AppendFormat("C:\\Program Files\\QMC");
+            builder.AppendFormat("D:\\LCP-280");
             //builder.Append("D:\\Test");
             builder.AppendFormat("\\{0}", g_strEquipmentName);
             builder.AppendFormat("\\{0}", g_strRecipePath);
@@ -97,7 +97,7 @@ namespace QMC.Common
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.AppendFormat("C:\\Program Files\\QMC");
+            builder.AppendFormat("D:\\LCP-280");
             //builder.Append("D:\\Test");
             builder.AppendFormat("\\{0}", g_strEquipmentName);
             builder.AppendFormat("\\{0}", g_strRecipePath);
