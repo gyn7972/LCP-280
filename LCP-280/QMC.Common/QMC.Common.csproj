@@ -18,7 +18,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>..\..\..\..\..\</OutputPath>
+    <OutputPath>D:\LCP-280\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>5</WarningLevel>
@@ -36,6 +36,10 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MvCameraControl.Net, Version=0.0.0.0, Culture=neutral, PublicKeyToken=52fddfb3f94be800, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Cameras\HIKVISION\Library\MvCameraControl.Net.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -61,8 +65,60 @@
     <Compile Include="Ajin\AXM.cs" />
     <Compile Include="Ajin\IODefine.cs" />
     <Compile Include="Ajin\MotionDefine.cs" />
-    <Compile Include="AlarmInfo.cs" />
-    <Compile Include="AlarmManager.cs" />
+    <Compile Include="Alarm\AlarmInfo.cs" />
+    <Compile Include="Alarm\AlarmManager.cs" />
+    <Compile Include="Alarm\Form_Alarm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Alarm\Form_Alarm.Designer.cs">
+      <DependentUpon>Form_Alarm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BaseRecipe.cs" />
+    <Compile Include="Cameras\Camera.cs" />
+    <Compile Include="Cameras\CameraConfig.cs" />
+    <Compile Include="Cameras\CameraSwitch.cs" />
+    <Compile Include="Cameras\EquipmentEventArgs.cs" />
+    <Compile Include="Cameras\HIKVISION\HIKGigECamera.cs" />
+    <Compile Include="Cameras\HIKVISION\HIKGigECameraConfig.cs" />
+    <Compile Include="Cameras\ICanGrabImage.cs" />
+    <Compile Include="Cameras\IncomparableAttribute.cs" />
+    <Compile Include="Common\CircleD.cs" />
+    <Compile Include="Common\ConfigManager.cs" />
+    <Compile Include="Common\CopyUtility.cs" />
+    <Compile Include="Common\CycleTimer.cs" />
+    <Compile Include="Common\IShape.cs" />
+    <Compile Include="Common\LineD.cs" />
+    <Compile Include="Common\ListParam.cs" />
+    <Compile Include="Common\Param.cs" />
+    <Compile Include="Common\ParamContainer.cs" />
+    <Compile Include="Common\ParamGroup.cs" />
+    <Compile Include="Common\PointD.cs" />
+    <Compile Include="Common\Quadrangle.cs" />
+    <Compile Include="Common\Range.cs" />
+    <Compile Include="Common\RectangleD.cs" />
+    <Compile Include="Common\SaveManager.cs" />
+    <Compile Include="Common\SizeD.cs" />
+    <Compile Include="Common\StopWatch.cs" />
+    <Compile Include="Common\TimeoutChecker.cs" />
+    <Compile Include="Common\TimeoutCheckerStateEnum.cs" />
+    <Compile Include="Common\TimeSpanInfo.cs" />
+    <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
+    <Compile Include="Common\TypeUtility.cs" />
+    <Compile Include="Coordinate\IActor.cs" />
+    <Compile Include="Coordinate\SettingParameter.cs" />
+    <Compile Include="Coordinate\XryztCoordinate.cs" />
+    <Compile Include="Coordinate\XyCoordinate.cs" />
+    <Compile Include="Coordinate\XyOfUvwCoordinate.cs" />
+    <Compile Include="Coordinate\XytCoordinate.cs" />
+    <Compile Include="Coordinate\XytPositionData.cs" />
+    <Compile Include="Coordinate\XyzCoordinate.cs" />
+    <Compile Include="Coordinate\XyzLDzzxzULzzxzCoordinate.cs" />
+    <Compile Include="Coordinate\XyztCoordinate.cs" />
+    <Compile Include="Coordinate\XyzyCoordinate.cs" />
+    <Compile Include="Coordinate\XyzztCoordinate.cs" />
+    <Compile Include="Coordinate\YCoordinate.cs" />
+    <Compile Include="Coordinate\ZzxzCoordinate.cs" />
+    <Compile Include="Coordinate\ZzxzxyCoordinate.cs" />
     <Compile Include="CustomControl\VerticalAlignTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -255,6 +311,23 @@
     <Compile Include="VisionImageView.Designer.cs">
       <DependentUpon>VisionImageView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Vision\ICustomizedVisionImage.cs" />
+    <Compile Include="Vision\qGeometry.cs" />
+    <Compile Include="Vision\qMath.cs" />
+    <Compile Include="Vision\Tools\BlobVisionTool.cs" />
+    <Compile Include="Vision\Tools\LineSearchingVisionTool.cs" />
+    <Compile Include="Vision\Tools\PatternMatchingVisionTool.cs" />
+    <Compile Include="Vision\Tools\RoiVisionTool.cs" />
+    <Compile Include="Vision\Tools\SharpnessVisionTool.cs" />
+    <Compile Include="Vision\Tools\VisionResult.cs" />
+    <Compile Include="Vision\Tools\VisionTool.cs" />
+    <Compile Include="Vision\VisionImage.cs" />
+    <Compile Include="Vision\VisionImageHeader.cs" />
+    <Compile Include="Vision\VisionImageOverlay.cs" />
+    <Compile Include="Vision\VisionScale.cs" />
+    <EmbeddedResource Include="Alarm\Form_Alarm.resx">
+      <DependentUpon>Form_Alarm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="BottomMenuButtonControl.resx">
       <DependentUpon>BottomMenuButtonControl.cs</DependentUpon>
     </EmbeddedResource>
@@ -342,6 +415,7 @@
     <Content Include="Ajin\Library\AxlEncoderLib.dll" />
     <Content Include="Ajin\Library\AxtWaferScanLib.dll" />
     <Content Include="Ajin\Library\EzbasicAxl.dll" />
+    <Content Include="Cameras\HIKVISION\Library\MvCameraControl.Net.dll" />
     <Content Include="Resources\Logo.png" />
     <Content Include="Resources\megaphone_80px.png" />
     <Content Include="Resources\megaphone_80px_q.png" />

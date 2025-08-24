@@ -1,9 +1,18 @@
-﻿using System;
+﻿using QMC.Common.Alarm;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace QMC.Common
 {
+    public enum TopButtons
+    {
+        Alarm,
+        Buzzer,
+        AlarmLog
+    }
+
+    public delegate void ButtonClickHandler(TopButtons sender);
     public partial class FormTop : Form
     {
         private TopContentsEquipmentControl _topContentsEquipmentControl;
@@ -36,6 +45,19 @@ namespace QMC.Common
 
         private void GetTopContentsStatusControl_ClickTopAlarmClearButton()
         {
+            if (true)
+            {
+                var alarms = AlarmManager.Instance.Alarms;
+                if (alarms != null && alarms.Count > 0)
+                {
+                    AlarmManager.Instance.ClearAllAlarms();
+                    //CommonModule.Instance.TowerLamp_BuzzerStop = true;
+
+                    // UI 갱신이나 로그 기록
+                    Log.Write("LCP-280", "Alarm", "모든 알람이 수동으로 해제되었습니다.");
+                }
+            }
+            
             MessageBox.Show("Alarm Clear");
         }
 

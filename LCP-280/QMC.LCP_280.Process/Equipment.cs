@@ -16,6 +16,8 @@ using QMC.Common.Motion.Ajin.HW;
 using QMC.Common.Motion.Ajin.IO;
 using System.Windows.Forms;
 using QMC.Common.Motion;
+using QMC.Common.Cameras.HIKVISION;
+using QMC.Common.Cameras;
 
 namespace QMC.LCP_280.Process
 {
@@ -110,6 +112,9 @@ namespace QMC.LCP_280.Process
         public MotionAxisManager AxisManager => _axisManager;
         public DioScanService DioScan => _dioScan;
 
+        // Camera
+        public HIKGigECamera Camera { get; set; } = null; // HIK 카메라 객체 (null이면 사용 안함)
+
         #endregion
 
         #region Constructor & Initialization
@@ -149,6 +154,17 @@ namespace QMC.LCP_280.Process
                 // 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
                 BootstrapAxesDirect();
                 BootstrapIODirect();
+
+                Camera = new HIKGigECamera("PreAlign");
+                if (Camera != null)
+                {
+                    Camera.Initialize();
+                    Console.WriteLine("HIK 카메라 초기화 완료");
+                }
+                else
+                {
+                    Console.WriteLine("HIK 카메라 초기화 실패");
+                }
 
                 OnStateChanged(EquipmentState.Ready);
                 Console.WriteLine("Equipment 초기화 완료");
@@ -813,8 +829,16 @@ namespace QMC.LCP_280.Process
             if (_axlHost == null)
             {
                 var motPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LCP-280.mot");
-                _axlHost = new AjinAxlBoardHost(motPath);
-                _axlHost.Open(); // AXL.Open + AxmMotLoadParaAll
+                if (File.Exists(motPath))
+                {
+                    _axlHost = new AjinAxlBoardHost(motPath);
+                    _axlHost.Open(); // AXL.Open + AxmMotLoadParaAll
+                }
+                else
+                {
+                    _axlHost = new AjinAxlBoardHost(motPath);
+                    //_axlHost.Open(); // AXL.Open + AxmMotLoadParaAll
+                }
             }
 
             Directory.CreateDirectory(_axisRoot);

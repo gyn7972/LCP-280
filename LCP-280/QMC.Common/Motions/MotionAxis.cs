@@ -1,6 +1,9 @@
-﻿using System;
+﻿using QMC.Common.Alarm;
+using QMC.Common.Component;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -25,10 +28,20 @@ namespace QMC.Common.Motions
     axisX.HomeSync();
     axisX.MoveAbs(100.0);
     axisX.WaitMoveDone(-1);
-     */
+    */
 
-    public sealed class MotionAxis
+    public sealed class MotionAxis : BaseComponent
     {
+        #region Alarm
+        public enum AlarmKey
+        {
+            FirstAlarm = 1000,
+            Axis_XXXXXXXXX1_Fail,
+            Axis_XXXXXXXXX2_Fail,
+            Axis_XXXXXXXXX3_Fail
+        }
+        #endregion
+
         private readonly object _gate = new object();
         private readonly IMotionDriver _driver;
 
@@ -53,6 +66,8 @@ namespace QMC.Common.Motions
             Config.Validate();
 
             _correction = correction ?? new DefaultCorrection(Setup, Config);
+
+            InitAlarm();
         }
 
         /// <summary>보정 레이어 교체(특수 보정 적용 시)</summary>
@@ -61,6 +76,79 @@ namespace QMC.Common.Motions
             if (correction == null) throw new ArgumentNullException(nameof(correction));
             lock (_gate) { _correction = correction; }
         }
+
+        // ===== 장비 내부 알람 =====
+        protected override void InitAlarm()
+        {
+            string strTemp = string.Empty;
+            strTemp = string.Format(Name + "Axis Error");
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX1_Fail;
+            alarm.Title = "strTemp";
+            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX2_Fail;
+            alarm.Title = "strTemp";
+            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX3_Fail;
+            alarm.Title = "strTemp";
+            alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
+
+        public int AlarmPost(AlarmKey AlarmCode)
+        {
+            try
+            {
+                AlarmInfo alarm = GetAlarm((int)AlarmCode);
+                alarm.GeneratedTime = DateTime.Now;
+
+                // 중복 알람 방지 인터락
+                if (AlarmManager.Instance.Alarms.Any(a => a.Code == alarm.Code))
+                {
+                    //Log.Write("AlarmPost", $"[ALARM 무시 - 중복] Code: {(int)AlarmCode}, 이미 발생 중인 알람입니다.");
+                    return (int)AlarmCode;
+                }
+
+                // 알람 정보 로그 기록
+                Log.Write("AlarmPost", $"[ALARM 발생] Code: {(int)AlarmCode}, Grade: {alarm.Grade}, Cause: {alarm.Cause}");
+
+                string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
+                string logFile = Path.Combine(logFolder, $"AlarmLog_{DateTime.Now:yyyyMMdd}.csv");
+                Directory.CreateDirectory(logFolder);
+
+                // UTF-8 with BOM로 저장
+                using (var fs = new FileStream(logFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                using (var writer = new StreamWriter(fs, new UTF8Encoding(true)))
+                {
+                    string logLine = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss},{alarm.Title},{alarm.Grade},{alarm.Source},{alarm.Cause},{(int)AlarmCode}";
+                    writer.WriteLine(logLine);
+                }
+
+                if (alarm.Grade.Equals("Error"))
+                {
+                    //장비 내부 멈춰야 하는 이것저것
+                    //this.m_LoaderWork_Start = false;
+                }
+                AlarmManager.Instance.ShowAlarm(alarm);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+
+            return (int)AlarmCode;
+        }
+
 
         // ===== 상태 =====
         public double GetPosition()  // 논리 단위(mm/deg)

@@ -1,8 +1,11 @@
-﻿using System;
+﻿using QMC.Common.Alarm;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
+using Timer = System.Windows.Forms.Timer;
 
 namespace QMC.Common
 {
@@ -16,6 +19,8 @@ namespace QMC.Common
         private FormBottom formBottom;
         private Control currentCenterView;
 
+        private Form_Alarm formAlarm; // 알람 폼 인스턴스
+
         // 메뉴별 중앙 뷰 캐시
         private readonly Dictionary<MenuButtonType, Control> _centerViewCache = new Dictionary<MenuButtonType, Control>();
 
@@ -23,17 +28,12 @@ namespace QMC.Common
         private Queue<MenuButtonType> _prewarmQueue;
         private Timer _prewarmTimer;
 
-
-
         #endregion
 
         public MainForm()
         {
             InitializeComponent();
             
-            //Data나.. 통신 연결이나..
-
-
             // 🔧 MainForm 배경색을 흰색으로 설정
             this.BackColor = Color.White;
             this.DoubleBuffered = true;
@@ -111,6 +111,49 @@ namespace QMC.Common
 
             // 🚀 폼이 처음 로드될 때 기본으로 Main 폼을 중앙에 표시
             SwitchCenterView(MenuButtonType.Main);
+
+            formAlarm = new Form_Alarm();
+            AlarmManager.Instance.PostAlarm += AlarmManager_PostAlarm;
+        }
+
+        private void AlarmManager_PostAlarm(AlarmInfo alarm)
+        {
+            BeginInvoke(new Action(() =>
+            {
+                // 1. 알람 리스트 갱신
+                this.formAlarm.Alarms = AlarmManager.Instance.Alarms;
+
+                // 2. 내용 강제 갱신
+                this.formAlarm.RefreshAlarmView();
+
+                // 3. 알람 다이얼로그는 열지 않고 알람만 발생 시킨다.
+                this.ShowAlarmForm(formAlarm);
+            }));
+        }
+
+        public void HideShowAlarm()
+        {
+            //  2025. 02. 04.  SCH : 새로운 Alarm Form 추가
+            if (this.formAlarm.Visible)
+            {
+                this.formAlarm.Hide();
+                this.formAlarm.Visible = false;
+            }
+            else
+            {
+                this.ShowAlarmForm(formAlarm);
+            }
+        }
+
+        public void ShowAlarmForm(Form form)
+        {
+            Thread.Sleep(100);                      //  창이 너무 빨리 떠서 알람 코드가 안보이나?
+
+            //form.TopLevel = false;
+            //centerPanel.Controls.Add(form);
+            //form.BringToFront();
+            //form.Show();
+            form.ShowDialog();
         }
 
         private static void EnableDoubleBuffer(Panel panel)

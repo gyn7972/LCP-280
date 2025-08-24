@@ -109,6 +109,7 @@ namespace QMC.LCP_280.Process.Unit
             this.lblAxisPositionValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.gbAxisPositions = new System.Windows.Forms.GroupBox();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.button_Test = new System.Windows.Forms.Button();
             this.gbTeachingMove.SuspendLayout();
             this.gbPositionTeaching.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
@@ -165,6 +166,7 @@ namespace QMC.LCP_280.Process.Unit
             // gbPositionTeaching
             // 
             this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
+            this.gbPositionTeaching.Controls.Add(this.button_Test);
             this.gbPositionTeaching.Controls.Add(this.positionlistBoxItemsView);
             this.gbPositionTeaching.Controls.Add(this.btnSave);
             this.gbPositionTeaching.Controls.Add(this.btnCancel);
@@ -402,7 +404,7 @@ namespace QMC.LCP_280.Process.Unit
             this.gbDestinationMoveMode.TabStop = false;
             this.gbDestinationMoveMode.Text = "Destination Position";
             // 
-            // individualMenuButton1
+            // btnDestinationMove
             // 
             this.btnDestinationMove.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnDestinationMove.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
@@ -533,7 +535,17 @@ namespace QMC.LCP_280.Process.Unit
             this.axisListBoxItemsView.TabIndex = 0;
             this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
             // 
-            // CassetteLoadingElevatorUnit_Config
+            // button_Test
+            // 
+            this.button_Test.Location = new System.Drawing.Point(530, 13);
+            this.button_Test.Name = "button_Test";
+            this.button_Test.Size = new System.Drawing.Size(75, 23);
+            this.button_Test.TabIndex = 8;
+            this.button_Test.Text = "Test";
+            this.button_Test.UseVisualStyleBackColor = true;
+            this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
+            // 
+            // CassetteLoadingUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
@@ -542,7 +554,7 @@ namespace QMC.LCP_280.Process.Unit
             this.Controls.Add(this.gbMoveAxis);
             this.Controls.Add(this.gbDigitalIO);
             this.Controls.Add(this.gbPositionTeaching);
-            this.Name = "CassetteLoadingElevatorUnit_Config";
+            this.Name = "CassetteLoadingUnit_Config";
             this.Text = "CassetteLoadingElevator Unit Configuration";
             this.gbTeachingMove.ResumeLayout(false);
             this.gbPositionTeaching.ResumeLayout(false);
@@ -786,5 +798,6 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
+        private Button button_Test;
     }
 }

@@ -63,5 +63,11 @@ namespace QMC.LCP_280.Process.Unit
                 MessageBox.Show($"Unit 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void button_Test_Click(object sender, EventArgs e)
+        {
+            TestGyn testGyn = new TestGyn();
+            testGyn.ShowDialog();
+        }
     }
 }
