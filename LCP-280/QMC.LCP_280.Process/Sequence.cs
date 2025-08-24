@@ -10,7 +10,7 @@ namespace QMC.LCP_280.Process
     /// <summary>
     /// Equipment 제어 및 모니터링 폼
     /// </summary>
-    public partial class EquipmentControlFormUnit_Main : Form
+    public partial class Sequence : Form
     {
         private Equipment equipment;
         private Timer statusUpdateTimer;
@@ -29,7 +29,7 @@ namespace QMC.LCP_280.Process
         private Button btnStartUnit;
         private Button btnStopUnit;
 
-        public EquipmentControlFormUnit_Main()
+        public Sequence()
         {
             InitializeEquipment();
             InitializeComponent();

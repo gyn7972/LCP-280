@@ -15,7 +15,7 @@ namespace QMC.Common
     #region Define
     #endregion
 
-    public partial class TopContentsLoginModeControl : UserControl
+    public partial class TopContentsLoginModeControl : UserControl, IResizable
     {
         #region Field
         private Label _loginModeTitleLabel;
@@ -31,6 +31,8 @@ namespace QMC.Common
             InitializeComponent();
             _labelSize = 8;
             this.BackColor = Color.White;
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
             InitTableLayoutPanel();
             SetControlValue();
         }
@@ -88,18 +90,28 @@ namespace QMC.Common
 
         public void SetPanelSize(int width, int height)
         {
-            // 비율 적용
-            int panelWidth = (int)(width * 1.0);
-            int panelHeight = (int)(height * 0.9);
+            this.SuspendLayout();
+            tableLayoutContentsLoginModePanel.SuspendLayout();
+            try
+            {
+                // 비율 적용
+                int panelWidth = (int)(width * 1.0);
+                int panelHeight = (int)(height * 0.9);
 
-            // tableLayoutMenuButtonPanel 크기 조정
-            this.Size = new Size(panelWidth, panelHeight);
-            tableLayoutContentsLoginModePanel.Size = new Size(panelWidth, panelHeight);
+                // tableLayoutMenuButtonPanel 크기 조정
+                this.Size = new Size(panelWidth, panelHeight);
+                tableLayoutContentsLoginModePanel.Size = new Size(panelWidth, panelHeight);
 
-            // 좌측 정렬, 위아래 중앙 정렬
-            int x = 0; // 좌측
-            int y = (this.Height - tableLayoutContentsLoginModePanel.Height) / 2; // 위아래 중앙
-            tableLayoutContentsLoginModePanel.Location = new Point(x, y);
+                // 좌측 정렬, 위아래 중앙 정렬
+                int x = 0; // 좌측
+                int y = (this.Height - tableLayoutContentsLoginModePanel.Height) / 2; // 위아래 중앙
+                tableLayoutContentsLoginModePanel.Location = new Point(x, y);
+            }
+            finally
+            {
+                tableLayoutContentsLoginModePanel.ResumeLayout();
+                this.ResumeLayout();
+            }
 
             // 필요시 레이아웃 갱신
             tableLayoutContentsLoginModePanel.Invalidate();

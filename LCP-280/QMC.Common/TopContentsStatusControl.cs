@@ -16,7 +16,7 @@ namespace QMC.Common
     public delegate void TopAlarmClearClickEventHandler();
     #endregion
 
-    public partial class TopContentsStatusControl : UserControl
+    public partial class TopContentsStatusControl : UserControl, IResizable
     {
         #region Field
         private CustomBorderLabel _mesMessageTitleLabel;
@@ -40,6 +40,8 @@ namespace QMC.Common
         {
             InitializeComponent();
             this.BackColor = Color.White;
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
             InitTableLayoutPanel();
             SetControlValue();
             CreateAlarmClearButton();
@@ -69,29 +71,22 @@ namespace QMC.Common
 
         private void SetControlValue()
         {
+            this.SuspendLayout();
+            tableLayoutContentsStatusPanel.SuspendLayout();
+            try
             {
-                _mesMessageTitleLabel = new CustomBorderLabel
-                {
-                    Text = "MES MSG.",
-                };
+                _mesMessageTitleLabel = new CustomBorderLabel { Text = "MES MSG.", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
                 tableLayoutContentsStatusPanel.Controls.Add(_mesMessageTitleLabel, 0, 0);
                 _mesMessageTitleLabel.Margin = new Padding(_labelMargin);
 
-                _systemMessageTitleLabel = new CustomBorderLabel
-                {
-                    Text = "SYSTEM",
-                };
+                _systemMessageTitleLabel = new CustomBorderLabel { Text = "SYSTEM", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
                 tableLayoutContentsStatusPanel.Controls.Add(_systemMessageTitleLabel, 0, 1);
                 _systemMessageTitleLabel.Margin = new Padding(_labelMargin);
 
-                _operationRecipeTitleLabel = new CustomBorderLabel
-                {
-                    Text = "OP Recipe",
-                };
+                _operationRecipeTitleLabel = new CustomBorderLabel { Text = "OP Recipe", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter };
                 tableLayoutContentsStatusPanel.Controls.Add(_operationRecipeTitleLabel, 0, 2);
                 _operationRecipeTitleLabel.Margin = new Padding(_labelMargin);
-            }
-            {
+
                 _mesMessageLabel = new CustomBorderLabel
                 {
                     Text = "MES Message",
@@ -99,7 +94,8 @@ namespace QMC.Common
                     Dock = DockStyle.Fill,
                     Font = new Font("Arial", _labelSize, FontStyle.Bold),
                     ForeColor = Color.Lime,
-                    BackColor = Color.Black
+                    BackColor = Color.Black,
+                    TabStop = false
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_mesMessageLabel, 1, 0);
                 _mesMessageLabel.Margin = new Padding(_labelMargin);
@@ -111,7 +107,8 @@ namespace QMC.Common
                     Dock = DockStyle.Fill,
                     Font = new Font("Arial", _labelSize, FontStyle.Bold),
                     ForeColor = Color.Lime,
-                    BackColor = Color.Black
+                    BackColor = Color.Black,
+                    TabStop = false
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_systemMessageLabel, 1, 1);
                 _systemMessageLabel.Margin = new Padding(_labelMargin);
@@ -123,10 +120,16 @@ namespace QMC.Common
                     Dock = DockStyle.Fill,
                     Font = new Font("Arial", _labelSize, FontStyle.Bold),
                     ForeColor = Color.Lime,
-                    BackColor = Color.Black
+                    BackColor = Color.Black,
+                    TabStop = false
                 };
                 tableLayoutContentsStatusPanel.Controls.Add(_operationRecipeLabel, 1, 2);
                 _operationRecipeLabel.Margin = new Padding(_labelMargin);
+            }
+            finally
+            {
+                tableLayoutContentsStatusPanel.ResumeLayout();
+                this.ResumeLayout();
             }
         }
 
@@ -145,15 +148,15 @@ namespace QMC.Common
 
         public void CreateAlarmClearButton()
         {
+            if (_AlarmClearButton != null) return;
+
             _AlarmClearButton = new IndividualMenuButton();
             _AlarmClearButton.Parent = this;
             _AlarmClearButton.Dock = DockStyle.Fill;
             _AlarmClearButton.Name = "Alarm Clear";
             _AlarmClearButton.Text = "Alarm Clear";
             _AlarmClearButton.Click += Button_Click;
-            //_AlarmClearButton.MouseUp += ButtonUpImageChange;
             _AlarmClearButton.TabStop = false;
-            //_AlarmClearButton.Tag = menuButtonType;
             _AlarmClearButton.SetButtonState(false);
             tableLayoutContentsStatusPanel.Controls.Add(_AlarmClearButton, 2, 0);
             tableLayoutContentsStatusPanel.SetRowSpan(_AlarmClearButton, 3);
@@ -161,25 +164,35 @@ namespace QMC.Common
 
         public void Init()
         {
-            _AlarmClearButton.SetButtonState(false);
+            _AlarmClearButton?.SetButtonState(false);
         }
 
         public void SetPanelSize(int width, int height)
         {
-            // UserControl 전체 크기 조정
-            int panelWidth = (int)(width * 1.0);
-            int panelHeight = (int)(height * 0.9);
+            this.SuspendLayout();
+            tableLayoutContentsStatusPanel.SuspendLayout();
+            try
+            {
+                // UserControl 전체 크기 조정
+                int panelWidth = (int)(width * 1.0);
+                int panelHeight = (int)(height * 0.9);
 
-            // UserControl 크기 설정
-            this.Size = new Size(panelWidth, panelHeight);
+                // UserControl 크기 설정
+                this.Size = new Size(panelWidth, panelHeight);
 
-            // TableLayoutPanel 크기 설정
-            tableLayoutContentsStatusPanel.Size = new Size(panelWidth, panelHeight);
+                // TableLayoutPanel 크기 설정
+                tableLayoutContentsStatusPanel.Size = new Size(panelWidth, panelHeight);
 
-            // 좌측 정렬, 위아래 중앙 정렬
-            int x = 0; // 좌측
-            int y = (this.Height - tableLayoutContentsStatusPanel.Height) / 2; // 위아래 중앙
-            tableLayoutContentsStatusPanel.Location = new Point(x, y);
+                // 좌측 정렬, 위아래 중앙 정렬
+                int x = 0; // 좌측
+                int y = (this.Height - tableLayoutContentsStatusPanel.Height) / 2; // 위아래 중앙
+                tableLayoutContentsStatusPanel.Location = new Point(x, y);
+            }
+            finally
+            {
+                tableLayoutContentsStatusPanel.ResumeLayout();
+                this.ResumeLayout();
+            }
 
             // 필요시 레이아웃 갱신
             tableLayoutContentsStatusPanel.Invalidate();
@@ -206,7 +219,7 @@ namespace QMC.Common
                 _AlarmClearButton.SetButtonState(true);
             }
         }
+        #endregion
     }
-    #endregion
 }
 

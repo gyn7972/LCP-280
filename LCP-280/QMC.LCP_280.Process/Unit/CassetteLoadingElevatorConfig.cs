@@ -13,6 +13,9 @@ namespace QMC.LCP_280.Process.Unit
         public double WaferTransferArmAvoidPosition { get; set; } = 25.0;
         public double WaferTransferArmStagePosition { get; set; } = 30.0;
         public double WaferTransferArmCassettePosition { get; set; } = 35.0;
+
+        
+
         public CassetteLoadingElevatorConfig()
         {
             PropertyPosition.AddDoubleProperty(nameof(CassetteElevatorLoadingPosition), CassetteElevatorLoadingPosition);
