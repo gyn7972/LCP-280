@@ -14,10 +14,14 @@ namespace QMC.Common
         private Panel centerPanel; // 중앙 컨텐츠 전용 컨테이너
         private FormTop formTop;
         private FormBottom formBottom;
-        private Form currentCenterForm;
+        private Control currentCenterView;
 
-        // 메뉴별 중앙 폼 캐시
-        private readonly Dictionary<MenuButtonType, Form> _centerFormCache = new Dictionary<MenuButtonType, Form>();
+        // 메뉴별 중앙 뷰 캐시
+        private readonly Dictionary<MenuButtonType, Control> _centerViewCache = new Dictionary<MenuButtonType, Control>();
+
+        // Prewarm
+        private Queue<MenuButtonType> _prewarmQueue;
+        private Timer _prewarmTimer;
         #endregion
         
         public MainForm()
@@ -26,6 +30,7 @@ namespace QMC.Common
             
             // 🔧 MainForm 배경색을 흰색으로 설정
             this.BackColor = Color.White;
+            this.DoubleBuffered = true;
             
             this.StartPosition = FormStartPosition.WindowsDefaultLocation;
             this.WindowState = FormWindowState.Normal;           // 일반 상태로 시작
@@ -76,6 +81,7 @@ namespace QMC.Common
                 Dock = DockStyle.Fill,
                 BackColor = Color.White
             };
+            EnableDoubleBuffer(centerPanel);
             tableLayoutPanelFormMain.Controls.Add(centerPanel, 0, 1);
 
             // FormBottom을 세 번째 행(인덱스 2에 추가
@@ -90,260 +96,158 @@ namespace QMC.Common
             formBottom.MenuButtonClicked += FormBottom_MenuButtonClicked;
 
             // 폼이 보여진 후 실제 Width, Height 전달 및 리사이즈 연동
-            this.Shown += (s, args) => ApplySizes();
+            this.Shown += (s, args) =>
+            {
+                ApplySizes();
+                StartPrewarm();
+            };
             this.SizeChanged += (s, args) => ApplySizes();
 
             // 🚀 폼이 처음 로드될 때 기본으로 Main 폼을 중앙에 표시
-            SwitchCenterForm(MenuButtonType.Main);
+            SwitchCenterView(MenuButtonType.Main);
         }
 
-        /// <summary>
-        /// FormManager 시스템 초기화 및 샘플 폼 등록
-        /// </summary>
-        private void InitializeFormManagers()
+        private static void EnableDoubleBuffer(Panel panel)
         {
             try
             {
-                Console.WriteLine("🚀 FormManager 시스템 초기화 시작");
-                
-                // 모든 FormManager 타입의 자동 등록 실행
-                FormManagerConfig.Instance.AutoRegisterUnitConfigForms();
-                FormManagerMain.Instance.AutoRegisterUnitMainForms();
-                FormManagerWorking.Instance.AutoRegisterUnitWorkingForms();
-                FormManagerRecipe.Instance.AutoRegisterUnitRecipeForms();
-                FormManagerSetup.Instance.AutoRegisterUnitSetupForms();
-                FormManagerLog.Instance.AutoRegisterUnitLogForms();
-                
-                // 🔧 수동 등록 (자동 등록이 실패할 경우 사용)
-                // FormManagerConfig.Instance.RegisterConfigForm(typeof(QMC.LCP_280.Process.Unit.CassetteLoadingElevatorUnit_Config), "CassetteLoadingElevator", "카세트 로딩 엘리베이터 설정");
-                // FormManagerConfig.Instance.RegisterConfigForm(typeof(QMC.LCP_280.Process.Unit.WaferAlignmentUnit_Config), "WaferAlignment", "웨이퍼 정렬 설정");
-                // FormManagerConfig.Instance.RegisterConfigForm(typeof(QMC.LCP_280.Process.Unit.DieLoaderUnit_Config), "DieLoader", "다이 로더 설정");
-                
-                Console.WriteLine("✅ FormManager 시스템 초기화 완료");
+                var doubleBufferPropertyInfo = panel.GetType().GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (doubleBufferPropertyInfo != null)
+                {
+                    doubleBufferPropertyInfo.SetValue(panel, true, null);
+                }
             }
-            catch (Exception ex)
+            catch { }
+        }
+
+        private void StartPrewarm()
+        {
+            // 미리 로드할 대상 큐 구성 (현재 표시 중인 카테고리 제외)
+            _prewarmQueue = new Queue<MenuButtonType>();
+            foreach (MenuButtonType type in Enum.GetValues(typeof(MenuButtonType)))
             {
-                Console.WriteLine($"❌ FormManager 초기화 오류: {ex.Message}");
-                MessageBox.Show($"FormManager 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // 이미 캐시되어 있으면 스킵
+                if (_centerViewCache.ContainsKey(type)) continue;
+                _prewarmQueue.Enqueue(type);
             }
+
+            if (_prewarmQueue.Count == 0) return;
+
+            _prewarmTimer = new Timer { Interval = 80 }; // 짧은 간격으로 한 개씩 준비
+            _prewarmTimer.Tick += (s, e) =>
+            {
+                if (_prewarmQueue.Count == 0)
+                {
+                    _prewarmTimer.Stop();
+                    _prewarmTimer.Dispose();
+                    _prewarmTimer = null;
+                    return;
+                }
+
+                var next = _prewarmQueue.Dequeue();
+                try
+                {
+                    // 생성 및 캐시 저장
+                    var view = GetOrCreateView(next, () => NavigationService.Instance.CreateCenterControl(next), next + "View");
+
+                    // 탭 호스트면 첫 탭 미리 로드
+                    var tabHost = view as TabbedViewHost;
+                    if (tabHost != null)
+                    {
+                        tabHost.WarmUp();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Prewarm failed for {next}: {ex.Message}");
+                }
+            };
+            _prewarmTimer.Start();
         }
 
         private void FormBottom_MenuButtonClicked(MenuButtonType menuType)
         {
-            SwitchCenterForm(menuType);
+            SwitchCenterView(menuType);
         }
 
-        private void SwitchCenterForm(MenuButtonType menuType)
+        private void SwitchCenterView(MenuButtonType menuType)
         {
-            // 현재 표시된 폼 숨기기 및 컨테이너에서 제거
-            if (currentCenterForm != null)
+            // 현재 표시된 뷰 숨기기 및 컨테이너에서 제거
+            if (currentCenterView != null)
             {
-                currentCenterForm.Hide();
-                if (centerPanel != null && centerPanel.Controls.Contains(currentCenterForm))
+                centerPanel.SuspendLayout();
+                try
                 {
-                    centerPanel.Controls.Remove(currentCenterForm);
+                    currentCenterView.Hide();
+                    if (centerPanel != null && centerPanel.Controls.Contains(currentCenterView))
+                    {
+                        centerPanel.Controls.Remove(currentCenterView);
+                    }
+                }
+                finally
+                {
+                    centerPanel.ResumeLayout();
                 }
             }
 
-            // 메뉴 타입에 따라 적절한 폼 표시
+            // 메뉴 타입에 따라 적절한 뷰 표시
             try
             {
-                switch (menuType)
-                {
-                    case MenuButtonType.Main:
-                        ShowMainForm();
-                        break;
-                    case MenuButtonType.Config:
-                        ShowConfigForm();
-                        break;
-                    case MenuButtonType.Working:
-                        ShowWorkingForm();
-                        break;
-                    case MenuButtonType.Recipe:
-                        ShowRecipeForm();
-                        break;
-                    case MenuButtonType.Setup:
-                        ShowSetupForm();
-                        break;
-                    case MenuButtonType.Log:
-                        ShowLogForm();
-                        break;
-                    default:
-                        ShowMainForm();
-                        break;
-                }
+                // 중앙 뷰 생성 또는 캐시에서 가져오기
+                Control centerView = GetOrCreateView(menuType, () => NavigationService.Instance.CreateCenterControl(menuType), menuType + "View");
+                SetupCenterView(centerView);
             }
             catch (Exception ex)
             {
                 ShowNotImplementedMessage(menuType.ToString(), ex.Message);
             }
 
-            // 선택된 폼 표시
-            if (currentCenterForm != null)
+            // 선택된 뷰 표시
+            if (currentCenterView != null)
             {
-                if (!centerPanel.Controls.Contains(currentCenterForm))
+                centerPanel.SuspendLayout();
+                try
                 {
-                    centerPanel.Controls.Add(currentCenterForm);
+                    if (!centerPanel.Controls.Contains(currentCenterView))
+                    {
+                        centerPanel.Controls.Add(currentCenterView);
+                    }
+                    currentCenterView.Visible = true;
+                    currentCenterView.BringToFront();
                 }
-                currentCenterForm.Visible = true;
-                currentCenterForm.BringToFront();
+                finally
+                {
+                    centerPanel.ResumeLayout();
+                }
                 
                 // 사이즈 적용
                 ApplySizes();
 
-                // 🔧 폼이 표시된 후 추가로 크기 확인
-                Console.WriteLine($"📏 최종 표시된 폼: {currentCenterForm.GetType().Name}, Size={currentCenterForm.Size}, Visible={currentCenterForm.Visible}");
+                // 🔧 뷰가 표시된 후 추가로 크기 확인
+                Console.WriteLine($"📏 최종 표시된 뷰: {currentCenterView.GetType().Name}, Size={currentCenterView.Size}, Visible={currentCenterView.Visible}");
             }
         }
 
-        private void ShowMainForm()
+        private Control GetOrCreateView(MenuButtonType type, Func<Control> factory, string name)
         {
-            var mainForms = FormManagerMain.Instance.GetMainForms();
-            if (mainForms.Count > 0)
+            Control view;
+            if (!_centerViewCache.TryGetValue(type, out view) || view == null || view.IsDisposed)
             {
-                try
-                {
-                    Form mainForm = GetOrCreateForm(MenuButtonType.Main, () => FormManagerMain.Instance.CreateMainForm(), "FormMain");
-                    SetupCenterForm(mainForm);
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Main", ex.Message);
-                }
+                view = factory();
+                view.Dock = DockStyle.Fill;
+                view.Name = name;
+                _centerViewCache[type] = view;
             }
-            else
-            {
-                ShowNotImplementedMessage("Main", "등록된 Main 폼이 없습니다.");
-            }
+            return view;
         }
 
-        private void ShowConfigForm() 
+        private void SetupCenterView(Control view)
         {
-            var configForms = FormManagerConfig.Instance.GetConfigForms();
-            if (configForms.Count > 0)
-            {
-                try
-                {
-                    Form configForm = GetOrCreateForm(MenuButtonType.Config, () => FormManagerConfig.Instance.CreateConfigForm(), "ConfigForm");
-                    SetupCenterForm(configForm);
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Config", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Config", "등록된 Config 폼이 없습니다.");
-            }
-        }
-
-        private void ShowWorkingForm()
-        {
-            var workingForms = FormManagerWorking.Instance.GetWorkingForms();
-            if (workingForms.Count > 0)
-            {
-                try
-                {
-                    Form workingForm = GetOrCreateForm(MenuButtonType.Working, () => FormManagerWorking.Instance.CreateWorkingForm(), "WorkingForm");
-                    SetupCenterForm(workingForm);
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Working", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Working", "등록된 Working 폼이 없습니다.");
-            }
-        }
-
-        private void ShowRecipeForm()
-        {
-            var recipeForms = FormManagerRecipe.Instance.GetRecipeForms();
-            if (recipeForms.Count > 0)
-            {
-                try
-                {
-                    Form recipeForm = GetOrCreateForm(MenuButtonType.Recipe, () => FormManagerRecipe.Instance.CreateRecipeForm(), "RecipeForm");
-                    SetupCenterForm(recipeForm);
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Recipe", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Recipe", "등록된 Recipe 폼이 없습니다.");
-            }
-        }
-
-        private void ShowSetupForm()
-        {
-            var setupForms = FormManagerSetup.Instance.GetSetupForms();
-            if (setupForms.Count > 0)
-            {
-                try
-                {
-                    Form setupForm = GetOrCreateForm(MenuButtonType.Setup, () => FormManagerSetup.Instance.CreateSetupForm(), "SetupForm");
-                    SetupCenterForm(setupForm);
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Setup", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Setup", "등록된 Setup 폼이 없습니다.");
-            }
-        }
-
-        private void ShowLogForm()
-        {
-            var logForms = FormManagerLog.Instance.GetLogForms();
-            if (logForms.Count > 0)
-            {
-                try
-                {
-                    Form logForm = GetOrCreateForm(MenuButtonType.Log, () => FormManagerLog.Instance.CreateLogForm(), "LogForm");
-                    SetupCenterForm(logForm);
-                }
-                catch (Exception ex)
-                {
-                    ShowNotImplementedMessage("Log", ex.Message);
-                }
-            }
-            else
-            {
-                ShowNotImplementedMessage("Log", "등록된 Log 폼이 없습니다.");
-            }
-        }
-
-        private Form GetOrCreateForm(MenuButtonType type, Func<Form> factory, string formName)
-        {
-            Form form;
-            if (!_centerFormCache.TryGetValue(type, out form) || form == null || form.IsDisposed)
-            {
-                form = factory();
-                form.TopLevel = false;
-                form.FormBorderStyle = FormBorderStyle.None;
-                form.Dock = DockStyle.Fill;
-                form.Name = formName;
-                _centerFormCache[type] = form;
-            }
-            return form;
-        }
-
-        private void SetupCenterForm(Form form)
-        {
-            // 컨테이너 비우고 폼 추가
+            // 컨테이너 비우고 뷰 추가
             centerPanel.Controls.Clear();
-            centerPanel.Controls.Add(form);
-            currentCenterForm = form;
-            if (!form.Visible) form.Show();
+            centerPanel.Controls.Add(view);
+            currentCenterView = view;
+            if (!view.Visible) view.Show();
         }
 
         private void ApplySizes()
@@ -361,10 +265,18 @@ namespace QMC.Common
                 formTop?.SetPanelSize(width, rowHeights[0]);
                 formBottom?.SetPanelSize(width, rowHeights[2]);
 
-                // Center 컨텐츠 반영 (SetPanelSize가 있는 경우만)
-                if (currentCenterForm != null)
+                // Center 컨텐츠 반영 (IResizable 우선, 없으면 리플렉션)
+                if (currentCenterView != null)
                 {
-                    TrySetPanelSize(currentCenterForm, width, rowHeights[1]);
+                    var resizable = currentCenterView as IResizable;
+                    if (resizable != null)
+                    {
+                        resizable.SetPanelSize(width, rowHeights[1]);
+                    }
+                    else
+                    {
+                        TrySetPanelSize(currentCenterView, width, rowHeights[1]);
+                    }
                 }
             }
             catch (Exception ex)
@@ -373,11 +285,11 @@ namespace QMC.Common
             }
         }
 
-        private static void TrySetPanelSize(Form form, int width, int height)
+        private static void TrySetPanelSize(Control control, int width, int height)
         {
             try
             {
-                MethodInfo mi = form.GetType().GetMethod(
+                var mi = control.GetType().GetMethod(
                     "SetPanelSize",
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                     null,
@@ -386,7 +298,7 @@ namespace QMC.Common
 
                 if (mi != null)
                 {
-                    mi.Invoke(form, new object[] { width, height });
+                    mi.Invoke(control, new object[] { width, height });
                 }
             }
             catch
@@ -408,7 +320,30 @@ namespace QMC.Common
 
             // 기본 동작: 중앙 컨텐츠 비우기
             centerPanel.Controls.Clear();
-            currentCenterForm = null;
+            currentCenterView = null;
+        }
+
+        private void InitializeFormManagers()
+        {
+            try
+            {
+                Console.WriteLine("🚀 FormManager 시스템 초기화 시작");
+
+                // 모든 FormManager 타입의 자동 등록 실행
+                FormManagerConfig.Instance.AutoRegisterUnitConfigForms();
+                FormManagerMain.Instance.AutoRegisterUnitMainForms();
+                FormManagerWorking.Instance.AutoRegisterUnitWorkingForms();
+                FormManagerRecipe.Instance.AutoRegisterUnitRecipeForms();
+                FormManagerSetup.Instance.AutoRegisterUnitSetupForms();
+                FormManagerLog.Instance.AutoRegisterUnitLogForms();
+
+                Console.WriteLine("✅ FormManager 시스템 초기화 완료");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ FormManager 초기화 오류: {ex.Message}");
+                MessageBox.Show($"FormManager 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
     }
 }

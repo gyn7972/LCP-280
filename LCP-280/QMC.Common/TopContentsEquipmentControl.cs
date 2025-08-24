@@ -16,7 +16,7 @@ namespace QMC.Common
 
     #endregion
 
-    public partial class TopContentsEquipmentControl : UserControl
+    public partial class TopContentsEquipmentControl : UserControl, IResizable
     {
         #region Field
         private CustomBorderLabel _machineName;
@@ -35,6 +35,9 @@ namespace QMC.Common
         {
             InitializeComponent();
             this.BackColor = Color.White;
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+
             InitTableLayoutPanel();
             SetControlValue();
 
@@ -46,6 +49,13 @@ namespace QMC.Common
 
             // 최초 값 갱신
             UpdateDateTime();
+
+            // 수명주기 정리
+            this.Disposed += (s, e) =>
+            {
+                try { _timer?.Stop(); _timer?.Dispose(); } catch { }
+                _timer = null;
+            };
         }
 
         private void InitTableLayoutPanel()
@@ -77,7 +87,8 @@ namespace QMC.Common
                 Image = Properties.Resources.Logo,
                 SizeMode = PictureBoxSizeMode.Zoom,
                 Dock = DockStyle.Fill,
-                BackColor = Color.White
+                BackColor = Color.White,
+                TabStop = false
             };
 
             // (0,0)에 추가하고 2행 병합 (즉, (0,0)~(0,1) 병합)
@@ -92,7 +103,8 @@ namespace QMC.Common
                 Dock = DockStyle.Fill,
                 Font = new Font("Arial", _labelSize, FontStyle.Bold),
                 AutoSize = false,
-                BorderColor = Color.White
+                BorderColor = Color.White,
+                TabStop = false
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_machineName, 0, 2);
             _machineName.Margin = new Padding(_labelMargin);
@@ -105,7 +117,8 @@ namespace QMC.Common
                 Dock = DockStyle.Fill,
                 Font = new Font("Arial", _labelSize, FontStyle.Bold),
                 AutoSize = false,
-                BorderColor = Color.White
+                BorderColor = Color.White,
+                TabStop = false
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_dateLabel, 1, 0);
             _dateLabel.Margin = new Padding(_labelMargin);
@@ -118,7 +131,8 @@ namespace QMC.Common
                 Dock = DockStyle.Fill,
                 Font = new Font("Arial", _labelSize, FontStyle.Bold),
                 AutoSize = false,
-                BorderColor = Color.White
+                BorderColor = Color.White,
+                TabStop = false
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_timeLabel, 1, 1);
             _timeLabel.Margin = new Padding(_labelMargin);
@@ -131,13 +145,14 @@ namespace QMC.Common
                 Dock = DockStyle.Fill,
                 Font = new Font("Arial", _labelSize, FontStyle.Bold),
                 AutoSize = false,
-                BorderColor = Color.White
+                BorderColor = Color.White,
+                TabStop = false
             };
             tableLayoutContentsEquipmentPanel.Controls.Add(_buildVerLabel, 1, 2);
             _buildVerLabel.Margin = new Padding(_labelMargin);
         }
 
-        private void SetTopContentsEquipmentValue(string machineName, string buildVersion)
+        public void SetTopContentsEquipmentValue(string machineName, string buildVersion)
         {
             _machineName.Text = machineName;
             _buildVerLabel.Text = buildVersion;
@@ -157,19 +172,29 @@ namespace QMC.Common
         #region Method
         public void SetPanelSize(int width, int height)
         {
-            // 비율 적용
-            int panelWidth = (int)(width * 1.0);
-            int panelHeight = (int)(height * 0.9);
+            this.SuspendLayout();
+            tableLayoutContentsEquipmentPanel.SuspendLayout();
+            try
+            {
+                // 비율 적용
+                int panelWidth = (int)(width * 1.0);
+                int panelHeight = (int)(height * 0.9);
 
-            // tableLayoutMenuButtonPanel 크기 조정
-            this.Size = new Size(panelWidth, panelHeight);
-            tableLayoutContentsEquipmentPanel.Size = new Size(panelWidth, panelHeight);
-            tableLayoutContentsEquipmentPanel.ClientSize = new Size(panelWidth, panelHeight);
+                // tableLayoutMenuButtonPanel 크기 조정
+                this.Size = new Size(panelWidth, panelHeight);
+                tableLayoutContentsEquipmentPanel.Size = new Size(panelWidth, panelHeight);
+                tableLayoutContentsEquipmentPanel.ClientSize = new Size(panelWidth, panelHeight);
 
-            // 좌측 정렬, 위아래 중앙 정렬
-            int x = 0; // 좌측
-            int y = (this.Height - tableLayoutContentsEquipmentPanel.Height) / 2; // 위아래 중앙
-            tableLayoutContentsEquipmentPanel.Location = new Point(x, y);
+                // 좌측 정렬, 위아래 중앙 정렬
+                int x = 0; // 좌측
+                int y = (this.Height - tableLayoutContentsEquipmentPanel.Height) / 2; // 위아래 중앙
+                tableLayoutContentsEquipmentPanel.Location = new Point(x, y);
+            }
+            finally
+            {
+                tableLayoutContentsEquipmentPanel.ResumeLayout();
+                this.ResumeLayout();
+            }
 
             // 필요시 레이아웃 갱신
             tableLayoutContentsEquipmentPanel.Invalidate();
@@ -180,5 +205,12 @@ namespace QMC.Common
         #region EventHandler
 
         #endregion
+
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            try { _timer?.Stop(); _timer?.Dispose(); } catch { }
+            _timer = null;
+            base.OnHandleDestroyed(e);
+        }
     }
 }
