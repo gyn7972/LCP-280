@@ -33,7 +33,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\..\..\..\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -49,6 +49,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -72,13 +75,38 @@
     </Compile>
     <Compile Include="Component\CassetteElevator.cs" />
     <Compile Include="Component\CassetteElevatorConfig.cs" />
+    <Compile Include="Component\DieLiftPin.cs" />
+    <Compile Include="Component\DieLocator.cs" />
+    <Compile Include="Component\DiePicker.cs" />
+    <Compile Include="Component\DiePlacer.cs" />
+    <Compile Include="Component\ProbeHead.cs" />
+    <Compile Include="Component\ReferenceAligner.cs" />
+    <Compile Include="Component\ThetaAligner.cs" />
+    <Compile Include="Component\WaferHandler.cs" />
+    <Compile Include="Component\WaferIDReader.cs" />
+    <Compile Include="Component\WaferMapLoader.cs" />
+    <Compile Include="Component\WaferSlotScanner.cs" />
+    <Compile Include="Component\WaferSlotScannerConfig.cs" />
+    <Compile Include="Component\WaferTransferArm.cs" />
+    <Compile Include="Component\WaferTransferArmConfig.cs" />
     <Compile Include="Equipment.cs" />
-    <Compile Include="SequenceProcess.cs">
+    <Compile Include="EquipmentConfig.cs" />
+    <Compile Include="EquipmentControlFormUnit_Main.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="EquipmentExample.cs" />
+    <Compile Include="EquipmentManagers.cs" />
+    <Compile Include="EquipmentRecipe.cs" />
+    <Compile Include="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form1.Designer.cs">
+      <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Unit\CassetteLoadingElevatorConfig.cs" />
+    <Compile Include="Unit\CassetteLoadingElevator111.cs" />
     <Compile Include="Unit\CassetteLoadingElevator.cs" />
     <Compile Include="Unit\CassetteUnit_Recipe.cs">
       <SubType>Form</SubType>
@@ -104,6 +132,27 @@
     <Compile Include="Unit\CassetteLoadingElevatorUnit_Config.Designer.cs">
       <DependentUpon>CassetteLoadingElevatorUnit_Config.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\CassetteUnloadingElevator.cs" />
+    <Compile Include="Unit\DieLoaderIndexer.cs" />
+    <Compile Include="Unit\DieLoaderUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\DieLoaderUnit_Config.Designer.cs">
+      <DependentUpon>DieLoaderUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\DieUnloaderIndexer.cs" />
+    <Compile Include="Unit\ICassetteElevatorUnit.cs" />
+    <Compile Include="Unit\IDiePickPlace.cs" />
+    <Compile Include="Unit\Prober.cs" />
+    <Compile Include="Unit\WaferAlignmentSystem.cs" />
+    <Compile Include="Unit\WaferAlignmentUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\WaferAlignmentUnit_Config.Designer.cs">
+      <DependentUpon>WaferAlignmentUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\WaferInputStage.cs" />
+    <Compile Include="Unit\WaferOutputStage.cs" />
     <Compile Include="WaferData.cs" />
     <Compile Include="WaferDataConfig.cs" />
     <Compile Include="WaferMapItem.cs" />
@@ -131,6 +180,7 @@
     <EmbeddedResource Include="Unit\CassetteLoadingElevatorUnit_Config.resx">
       <DependentUpon>CassetteLoadingElevatorUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

@@ -15,6 +15,8 @@ namespace QMC.LCP_280.Process
         [STAThread]
         static void Main()
         {
+            Log.Write("LCP_280", "Program Start--------------------.");
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new QMC.Common.MainForm()); // 정확한 네임스페이스 지정

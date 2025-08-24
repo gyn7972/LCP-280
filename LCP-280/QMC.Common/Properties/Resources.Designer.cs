@@ -69,5 +69,25 @@ namespace QMC.Common.Properties {
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
+        internal static byte[] megaphone_80px {
+            get {
+                object obj = ResourceManager.GetObject("megaphone_80px", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   System.Byte[] 형식의 지역화된 리소스를 찾습니다.
+        /// </summary>
+        internal static byte[] megaphone_80px_q {
+            get {
+                object obj = ResourceManager.GetObject("megaphone_80px_q", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }
