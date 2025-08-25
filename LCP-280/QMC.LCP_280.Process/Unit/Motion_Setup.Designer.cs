@@ -9,66 +9,70 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// Motion_Setup (refactored: minimal-change, safer wiring, clearer structure)
+    /// </summary>
     partial class Motion_Setup
     {
-        Equipment equipment = Equipment.Instance;
+        // -------- Fields
+        private readonly Equipment equipment = Equipment.Instance;
         private MotionAxisManager _axisManager;
 
-        // Axis 목록 (추가)
-        private ListBoxItemsView axisListBoxItemsView;
+        // UI
         private ListBoxItemsView selectAxisListBoxItemsView;
         private IOPropertyCollectionView motorStateIoPropertyCollectionView;
         private IOPropertyCollectionView motorIoPropertyCollectionView;
         private PropertyCollectionView positionVelocityPropertyCollectionView;
-        private ListBoxItemsView speedListBoxItemsView;
-        //private ListBoxItemsView configurationListBoxItemsView;
+        private PropertyCollectionView speedListBoxItemsView;
         private PropertyCollectionView configurationListBoxItemsView;
-
-        // 선택된 축의 속성(편집용) 캐시
-        private PropertyCollection _editorPropertiesConfig;
 
         private GroupBox gbAxisProperty;
         private GroupBox gbAxisPositions;
+        private IndividualMenuButton btn_Save_Setup_Motion_Configuration;
 
         private System.ComponentModel.IContainer components = null;
 
-        // Actual Position 주기 업데이트 타이머
+        // Data
+        private PropertyCollection _editorPropertiesConfig;
+        private PropertyCollection _editorPropertiesSpeed;
+
+        // Timers
         private Timer _axisPosTimer;
 
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        // -------- Dispose
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                if (_axisPosTimer != null)
+                {
+                    _axisPosTimer.Tick -= AxisPosTimer_Tick;
+                    _axisPosTimer.Dispose();
+                    _axisPosTimer = null;
+                }
+
+                if (components != null)
+                    components.Dispose();
             }
             base.Dispose(disposing);
         }
-        #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
+        #region Designer (trimmed & corrected)
         private void InitializeComponent()
         {
             this.gbAxisProperty = new System.Windows.Forms.GroupBox();
-            this.speedListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.btn_Save_Setup_Motion_Configuration = new QMC.Common.IndividualMenuButton();
+            this.speedListBoxItemsView = new QMC.Common.PropertyCollectionView();
             this.configurationListBoxItemsView = new QMC.Common.PropertyCollectionView();
             this.gbAxisPositions = new System.Windows.Forms.GroupBox();
             this.motorStateIoPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.motorIoPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.positionVelocityPropertyCollectionView = new QMC.Common.PropertyCollectionView();
-            this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.selectAxisListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.btn_Save_Setup_Motion_Configuration = new QMC.Common.IndividualMenuButton();
+            this.btn_Save_Setup_Motion_Speed = new QMC.Common.IndividualMenuButton();
             this.gbAxisProperty.SuspendLayout();
             this.gbAxisPositions.SuspendLayout();
             this.SuspendLayout();
@@ -76,6 +80,7 @@ namespace QMC.LCP_280.Process.Unit
             // gbAxisProperty
             // 
             this.gbAxisProperty.BackColor = System.Drawing.Color.White;
+            this.gbAxisProperty.Controls.Add(this.btn_Save_Setup_Motion_Speed);
             this.gbAxisProperty.Controls.Add(this.btn_Save_Setup_Motion_Configuration);
             this.gbAxisProperty.Controls.Add(this.speedListBoxItemsView);
             this.gbAxisProperty.Controls.Add(this.configurationListBoxItemsView);
@@ -87,24 +92,41 @@ namespace QMC.LCP_280.Process.Unit
             this.gbAxisProperty.TabStop = false;
             this.gbAxisProperty.Text = "Axis Property";
             // 
+            // btn_Save_Setup_Motion_Configuration
+            // 
+            this.btn_Save_Setup_Motion_Configuration.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Configuration.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Setup_Motion_Configuration.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Configuration.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Configuration.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Configuration.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Configuration.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Configuration.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Setup_Motion_Configuration.Location = new System.Drawing.Point(196, 675);
+            this.btn_Save_Setup_Motion_Configuration.Name = "btn_Save_Setup_Motion_Configuration";
+            this.btn_Save_Setup_Motion_Configuration.Size = new System.Drawing.Size(100, 40);
+            this.btn_Save_Setup_Motion_Configuration.TabIndex = 4;
+            this.btn_Save_Setup_Motion_Configuration.TabStop = false;
+            this.btn_Save_Setup_Motion_Configuration.Text = "Save";
+            this.btn_Save_Setup_Motion_Configuration.UseVisualStyleBackColor = false;
+            this.btn_Save_Setup_Motion_Configuration.Click += new System.EventHandler(this.btn_Save_Setup_Motion_Configuration_Click);
+            // 
             // speedListBoxItemsView
             // 
-            this.speedListBoxItemsView.BorderWidth = 2;
             this.speedListBoxItemsView.GroupName = "Speed";
             this.speedListBoxItemsView.Location = new System.Drawing.Point(313, 27);
             this.speedListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.speedListBoxItemsView.Name = "speedListBoxItemsView";
-            this.speedListBoxItemsView.SelectedIndex = -1;
-            this.speedListBoxItemsView.Size = new System.Drawing.Size(290, 688);
+            this.speedListBoxItemsView.Size = new System.Drawing.Size(290, 641);
             this.speedListBoxItemsView.TabIndex = 1;
             // 
             // configurationListBoxItemsView
             // 
             this.configurationListBoxItemsView.GroupName = "Configuration";
-            this.configurationListBoxItemsView.Location = new System.Drawing.Point(6, 37);
+            this.configurationListBoxItemsView.Location = new System.Drawing.Point(6, 27);
             this.configurationListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.configurationListBoxItemsView.Name = "configurationListBoxItemsView";
-            this.configurationListBoxItemsView.Size = new System.Drawing.Size(290, 631);
+            this.configurationListBoxItemsView.Size = new System.Drawing.Size(290, 641);
             this.configurationListBoxItemsView.TabIndex = 0;
             // 
             // gbAxisPositions
@@ -148,17 +170,6 @@ namespace QMC.LCP_280.Process.Unit
             this.positionVelocityPropertyCollectionView.Size = new System.Drawing.Size(293, 220);
             this.positionVelocityPropertyCollectionView.TabIndex = 0;
             // 
-            // axisListBoxItemsView
-            // 
-            this.axisListBoxItemsView.BorderWidth = 2;
-            this.axisListBoxItemsView.GroupName = "";
-            this.axisListBoxItemsView.Location = new System.Drawing.Point(8, 18);
-            this.axisListBoxItemsView.Name = "axisListBoxItemsView";
-            this.axisListBoxItemsView.SelectedIndex = -1;
-            this.axisListBoxItemsView.Size = new System.Drawing.Size(234, 124);
-            this.axisListBoxItemsView.TabIndex = 0;
-            this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
-            // 
             // selectAxisListBoxItemsView
             // 
             this.selectAxisListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
@@ -171,24 +182,24 @@ namespace QMC.LCP_280.Process.Unit
             this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(305, 722);
             this.selectAxisListBoxItemsView.TabIndex = 2;
             // 
-            // btn_Save_Setup_Motion_Configuration
+            // btn_Save_Setup_Motion_Speed
             // 
-            this.btn_Save_Setup_Motion_Configuration.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Setup_Motion_Configuration.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Save_Setup_Motion_Configuration.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Setup_Motion_Configuration.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Setup_Motion_Configuration.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Setup_Motion_Configuration.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Setup_Motion_Configuration.ForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Setup_Motion_Configuration.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Setup_Motion_Configuration.Location = new System.Drawing.Point(196, 675);
-            this.btn_Save_Setup_Motion_Configuration.Name = "btn_Save_Setup_Motion_Configuration";
-            this.btn_Save_Setup_Motion_Configuration.Size = new System.Drawing.Size(100, 40);
-            this.btn_Save_Setup_Motion_Configuration.TabIndex = 4;
-            this.btn_Save_Setup_Motion_Configuration.TabStop = false;
-            this.btn_Save_Setup_Motion_Configuration.Text = "Save";
-            this.btn_Save_Setup_Motion_Configuration.UseVisualStyleBackColor = false;
-            this.btn_Save_Setup_Motion_Configuration.Click += new System.EventHandler(this.btn_Save_Setup_Motion_Configuration_Click);
+            this.btn_Save_Setup_Motion_Speed.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Speed.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Setup_Motion_Speed.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Speed.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Speed.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Speed.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Speed.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Speed.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Setup_Motion_Speed.Location = new System.Drawing.Point(503, 675);
+            this.btn_Save_Setup_Motion_Speed.Name = "btn_Save_Setup_Motion_Speed";
+            this.btn_Save_Setup_Motion_Speed.Size = new System.Drawing.Size(100, 40);
+            this.btn_Save_Setup_Motion_Speed.TabIndex = 5;
+            this.btn_Save_Setup_Motion_Speed.TabStop = false;
+            this.btn_Save_Setup_Motion_Speed.Text = "Save";
+            this.btn_Save_Setup_Motion_Speed.UseVisualStyleBackColor = false;
+            this.btn_Save_Setup_Motion_Speed.Click += new System.EventHandler(this.btn_Save_Setup_Motion_Speed_Click);
             // 
             // Motion_Setup
             // 
@@ -205,30 +216,29 @@ namespace QMC.LCP_280.Process.Unit
             this.ResumeLayout(false);
 
         }
-
         #endregion
 
+        // -------- Public/Init
         private void InitializeUI()
         {
             try
             {
-                // 🚀 PropertyPosition을 사용하여 Position Item들을 listBoxItemsView에 설정
-                SetAxisDefinitionsToAxisListBox();
-
-                // 🚀 Position Item 선택 이벤트 연결
-                SetupAxisItemSelectionEvent();
-
+                WireAxisSelectionEvent();
+                BindAxisList();
+                InitializeStatusTimer();     // 실제 위치 주기 갱신 (필요 시)
                 InitializeRadioButtonView();
             }
             catch (Exception ex)
             {
-
+                Log.Write("LCP-280", $"InitializeUI error: {ex}");
             }
         }
-    /// <summary>
-    /// CassetteElevator + WaferTransferArm 의 AxisDefinition DisplayName 을 axisListBoxItemsView 에 설정
-    /// </summary>
-    private void SetAxisDefinitionsToAxisListBox()
+
+        // -------- Binding
+        /// <summary>
+        /// Axis 목록 바인딩 (UNIT_NAME 기준)
+        /// </summary>
+        private void BindAxisList()
         {
             try
             {
@@ -236,168 +246,230 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     MessageBox.Show("AxisManager가 초기화되지 않았습니다.", "알림",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    selectAxisListBoxItemsView?.SetItems();
                     return;
                 }
 
-                const string UNIT_NAME = "unit";
-
-                // 1) 유닛 목록 바인딩: GetKeys() → "Unit||Axis" 에서 Unit만 추출
-                var unitNames = _axisManager
-                    .GetKeys()
-                    .Select(k => {
-                        int idx = k.IndexOf("||", StringComparison.Ordinal);
-                        return (idx >= 0) ? k.Substring(0, idx) : k;
-                    })
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
                 var axisNames = _axisManager.GetAxisNames(UNIT_NAME) ?? Array.Empty<string>();
-
                 if (axisNames.Length > 0)
-                {
                     selectAxisListBoxItemsView?.SetItems(axisNames);
-                }
                 else
                 {
-                    Log.Write("LCP-280", "⚠️ PropertyPosition에 Position 항목이 없습니다.");
+                    Log.Write("LCP-280", "PropertyPosition에 Position 항목이 없습니다.");
                     selectAxisListBoxItemsView?.SetItems();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ PropertyPosition 설정 중 오류: {ex.Message}");
+                Log.Write("LCP-280", $"BindAxisList error: {ex}");
+                selectAxisListBoxItemsView?.SetItems();
             }
         }
 
-        /// <summary>
-        /// 🚀 Position Item 선택 이벤트 설정
-        /// </summary>
-        private void SetupAxisItemSelectionEvent()
+        // -------- Events
+        private void WireAxisSelectionEvent()
         {
-            if (selectAxisListBoxItemsView != null)
-            {
-                // 기존 이벤트 핸들러 제거 (중복 방지)
-                selectAxisListBoxItemsView.ItemSelected -= OnPositionItemSelected;
+            if (selectAxisListBoxItemsView == null) return;
 
-                // 새 이벤트 핸들러 등록
-                selectAxisListBoxItemsView.ItemSelected += OnPositionItemSelected;
-
-                Console.WriteLine("✅ Position Item 선택 이벤트 설정 완료");
-            }
+            // 중복 구독 방지
+            selectAxisListBoxItemsView.ItemSelected -= OnPositionItemSelected;
+            selectAxisListBoxItemsView.ItemSelected += OnPositionItemSelected;
         }
+
         /// <summary>
-        /// 🚀 Position Item 선택 이벤트 처리
+        /// Select Axis 리스트에서 항목 선택 시 속성 에디터 구성
         /// </summary>
         private void OnPositionItemSelected(object sender, int selectedIndex)
         {
             try
             {
-                const string UNIT_NAME = "unit";
-                string selectedAxis = string.Empty;
-                if (selectedIndex >= 0)
+                if (selectedIndex < 0)
                 {
-                    selectedAxis = selectAxisListBoxItemsView.SelectedItemName;
+                    configurationListBoxItemsView?.SetProperties(null);
+                    speedListBoxItemsView?.SetProperties(null);
+                    return;
                 }
+
+                string selectedAxis = selectAxisListBoxItemsView?.SelectedItemName ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(selectedAxis))
+                {
+                    configurationListBoxItemsView?.SetProperties(null);
+                    speedListBoxItemsView?.SetProperties(null);
+                    return;
+                }
+
+                if (_axisManager == null)
+                {
+                    MessageBox.Show("AxisManager가 초기화되지 않았습니다.", "알림",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
                 var axis = _axisManager.Get(UNIT_NAME, selectedAxis);
+                if (axis == null)
+                {
+                    Log.Write("LCP-280", $"Axis not found: {UNIT_NAME} / {selectedAxis}");
+                    configurationListBoxItemsView?.SetProperties(null);
+                    speedListBoxItemsView?.SetProperties(null);
+                    return;
+                }
 
-                // ▶ 편집용 컬렉션을 필드에 유지
-                _editorPropertiesConfig = new PropertyCollection();
-
-                DoubleProperty doubleProperty;
-                BoolProperty boolProperty;
-                _editorPropertiesConfig.Add(new TitleOnlyProperty("Common"));
-                doubleProperty = new DoubleProperty("Axis Scale", axis.Setup.AxisScale);
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Axis Power", axis.Setup.AxisPowerPercent);
-                _editorPropertiesConfig.Add(doubleProperty);
-                _editorPropertiesConfig.Add(new TitleOnlyProperty("Config"));
-                doubleProperty = new DoubleProperty("Output Mode", (double)axis.Setup.OutputMode); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Input Mode", (double)axis.Setup.InputMode); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Input Source", (double)axis.Setup.InputSource); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Z Phase Level", (double)axis.Setup.ZPhaseLevel); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Servo Level", (double)axis.Setup.ServoLevel); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                _editorPropertiesConfig.Add(new TitleOnlyProperty("Emergency Signal"));
-                doubleProperty = new DoubleProperty("Level", (double)axis.Setup.EmergencyLevel); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Stop Mode", (double)axis.Setup.StopMode); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                _editorPropertiesConfig.Add(new TitleOnlyProperty("Inposition"));
-                doubleProperty = new DoubleProperty("Level", (double)axis.Setup.InpositionLevel); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                boolProperty = new BoolProperty("Software", axis.Setup.SoftwareLimitEnable); //임시
-                _editorPropertiesConfig.Add(boolProperty);
-                doubleProperty = new DoubleProperty("Software Length", (double)axis.Setup.SoftwareLength); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                _editorPropertiesConfig.Add(new TitleOnlyProperty("Home"));
-                doubleProperty = new DoubleProperty("Signal", (double)axis.Setup.HomeSignalLevel); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Mode", (double)axis.Setup.HomeMode); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                _editorPropertiesConfig.Add(new TitleOnlyProperty("Alarm"));
-                doubleProperty = new DoubleProperty("Reset Signal", (double)axis.Setup.AlarmResetSignal); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Level", (double)axis.Setup.AlarmLevel); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                _editorPropertiesConfig.Add(new TitleOnlyProperty("Limit"));
-                doubleProperty = new DoubleProperty("Soft Limit -", (double)axis.Setup.SoftLimitMin); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-                doubleProperty = new DoubleProperty("Soft Limit +", (double)axis.Setup.SoftLimitMax); //임시
-                _editorPropertiesConfig.Add(doubleProperty);
-
-                // PropertyCollectionView에 Editor 내용 설정
+                _editorPropertiesConfig = BuildConfigProperties(axis);
+                _editorPropertiesSpeed = BuildSpeedProperties(axis);
                 configurationListBoxItemsView?.SetProperties(_editorPropertiesConfig);
+                speedListBoxItemsView?.SetProperties(_editorPropertiesSpeed);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Position Item 선택 처리 중 오류: {ex.Message}");
+                Log.Write("LCP-280", $"OnPositionItemSelected error: {ex}");
             }
         }
 
-        private void OnAxisSelected(object sender, int index)
+        // -------- Builders
+        private PropertyCollection BuildConfigProperties(MotionAxis axis)
         {
-           
+            // NOTE: 현재 장치 값들이 enum/bit인 곳은 DoubleProperty 임시 사용 유지 (주석 표기)
+            var pc = new PropertyCollection();
+
+            // Common
+            pc.Add(new TitleOnlyProperty("Common"));
+            pc.Add(new DoubleProperty("Axis Scale", axis.Setup.AxisScale));
+            pc.Add(new DoubleProperty("Axis Power", axis.Setup.AxisPowerPercent));
+
+            // Config
+            pc.Add(new TitleOnlyProperty("Config"));
+            pc.Add(new DoubleProperty("Output Mode", (double)axis.Setup.OutputMode));       // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Input Mode", (double)axis.Setup.InputMode));         // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Input Source", (double)axis.Setup.InputSource));     // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Z Phase Level", (double)axis.Setup.ZPhaseLevel));    // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Servo Level", (double)axis.Setup.ServoLevel));       // TODO: Enum Editor
+
+            // Emergency
+            pc.Add(new TitleOnlyProperty("Emergency Signal"));
+            pc.Add(new DoubleProperty("Level", (double)axis.Setup.EmergencyLevel));         // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Stop Mode", (double)axis.Setup.StopMode));           // TODO: Enum Editor
+
+            // Inposition
+            pc.Add(new TitleOnlyProperty("Inposition"));
+            pc.Add(new DoubleProperty("Level", (double)axis.Setup.InpositionLevel));        // TODO: Enum Editor
+            pc.Add(new BoolProperty("Software", axis.Setup.SoftwareLimitEnable));           // bool OK
+            pc.Add(new DoubleProperty("Software Length", (double)axis.Setup.SoftwareLength));
+
+            // Home
+            pc.Add(new TitleOnlyProperty("Home"));
+            pc.Add(new DoubleProperty("Signal", (double)axis.Setup.HomeSignalLevel));       // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Mode", (double)axis.Setup.HomeMode));                // TODO: Enum Editor
+
+            // Alarm
+            pc.Add(new TitleOnlyProperty("Alarm"));
+            pc.Add(new DoubleProperty("Reset Signal", (double)axis.Setup.AlarmResetSignal));// TODO: Enum Editor
+            pc.Add(new DoubleProperty("Level", (double)axis.Setup.AlarmLevel));             // TODO: Enum Editor
+
+            // Limit
+            pc.Add(new TitleOnlyProperty("Limit"));
+            pc.Add(new DoubleProperty("Soft Limit -", (double)axis.Setup.SoftLimitMin));
+            pc.Add(new DoubleProperty("Soft Limit +", (double)axis.Setup.SoftLimitMax));
+
+            return pc;
+        }
+        private PropertyCollection BuildSpeedProperties(MotionAxis axis)
+        {
+            // NOTE: 현재 장치 값들이 enum/bit인 곳은 DoubleProperty 임시 사용 유지 (주석 표기)
+            var pc = new PropertyCollection();
+
+            // Home
+            pc.Add(new TitleOnlyProperty("Home"));
+            pc.Add(new DoubleProperty("Home Speed(mm/s)", axis.Config.HomeSpeed));
+            pc.Add(new DoubleProperty("H-Return Speed(mm/s)", axis.Config.HomeReturnSpeed));
+            pc.Add(new DoubleProperty("H-Recursion Speed(mm/s)", axis.Config.HomeRecursionSpeed));
+            pc.Add(new DoubleProperty("Z-Phase Speed(mm/s)", axis.Config.ZPhaseSpeed));
+            pc.Add(new DoubleProperty("Home Acc(mm/s^2)", axis.Config.HomeAcc));
+            pc.Add(new DoubleProperty("H-Return Acc(mm/s^2)", axis.Config.HomeReturnAcc));
+
+            // Jog
+            pc.Add(new TitleOnlyProperty("Jog"));
+            pc.Add(new DoubleProperty("Fine Velocity(mm/s)", axis.Config.JogFineVelocity));       // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Coarse Velocity(mm/s)", axis.Config.JogCoarseVelocity));         // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Accelerator(mm/s^2)", axis.Config.JogAcc));     // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Decelerator(mm/s^2)", axis.Config.JogDec));    // TODO: Enum Editor
+
+            // Run
+            pc.Add(new TitleOnlyProperty("Run"));
+            pc.Add(new DoubleProperty("Maximum Velocity(mm/s)", axis.Config.MaxVelocity));
+            pc.Add(new DoubleProperty("Accelerator(mm/s^2)", axis.Config.RunAcc));
+            pc.Add(new DoubleProperty("Decelerator(mm/s^2)", axis.Config.RunDec));
+            pc.Add(new DoubleProperty("Profile", (int)axis.Config.ProfileMode));
+            pc.Add(new DoubleProperty("Accelerator Jerk(%)", axis.Config.AccJerkPercent));
+            pc.Add(new DoubleProperty("Decelerator Jerk(%)", axis.Config.DecJerkPercent));
+
+            return pc;
         }
 
+        // -------- Axis status polling (optional)
+        private void InitializeStatusTimer()
+        {
+            // 필요한 경우만 쓰세요. (미사용이면 주석 처리 가능)
+            if (_axisPosTimer != null)
+            {
+                _axisPosTimer.Tick -= AxisPosTimer_Tick;
+                _axisPosTimer.Dispose();
+            }
+
+            _axisPosTimer = new Timer
+            {
+                Interval = 200 // ms
+            };
+            _axisPosTimer.Tick += AxisPosTimer_Tick;
+            _axisPosTimer.Start();
+        }
+
+        private void AxisPosTimer_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                UpdateAxisActualPosition();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("LCP-280", $"AxisPosTimer_Tick error: {ex}");
+            }
+        }
+
+        // -------- Stubs / Overrides
         private void UpdateAxisActualPosition()
         {
-           
+            // TODO: 실제 위치/속도/상태 갱신 바인딩
+            // positionVelocityPropertyCollectionView.SetProperties(...); 등
         }
 
         private void btnMovePosition_Click(object sender, EventArgs e)
         {
-           
-        }  
+            // TODO: 선택 포지션 이동 구현
+        }
 
         private void InitializeRadioButtonView()
         {
             try
             {
+                // TODO: 라디오버튼 초기화/바인딩
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"RadioButtonView 오류: {ex.Message}");
+                Log.Write("LCP-280", $"RadioButtonView 오류: {ex}");
             }
         }
 
-        #region Save / Cancel
-
-
-      #region Save / Cancel
+        //private void btn_Save_Setup_Motion_Configuration_Click(object sender, EventArgs e)
+        //{
+        //    // TODO: _editorPropertiesConfig → axis.Setup 반영 & 저장
+        //}
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            
+            // TODO: 변경 취소 로직
         }
-           
 
-        #endregion  #region Paint / Resize override (기존)
-
+        // --- Paint / Resize (keep)
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -414,9 +486,6 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
-
-        #endregion
-
-        private IndividualMenuButton btn_Save_Setup_Motion_Configuration;
+        private IndividualMenuButton btn_Save_Setup_Motion_Speed;
     }
 }

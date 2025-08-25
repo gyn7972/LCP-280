@@ -101,7 +101,6 @@ namespace QMC.Common
 
         private void InitializeComponentUser(string groupName)
         {
-            // GroupBox 생성 및 설정 - UserControl 전체 크기에 맞춤
             groupBox = new GroupBox
             {
                 Text = groupName,
@@ -109,35 +108,44 @@ namespace QMC.Common
                 ForeColor = Color.Black,
                 BackColor = Color.White,
                 Padding = new Padding(8, 8, 8, 12),
-                Dock = DockStyle.Fill // Designer 크기에 완전히 맞춤
+                Dock = DockStyle.Fill
             };
-
-            // UserControl에 GroupBox 추가
             this.Controls.Add(groupBox);
 
             scrollPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true,
+                AutoScroll = true,                   // ★ 항상 켜두기
+                AutoScrollMargin = new Size(0, 4),
                 BackColor = Color.White,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
 
             tableLayoutPanel = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
-                AutoSize = true,
+                Dock = DockStyle.Top,                // ★ Top으로 두고 세로로 키워지게
+                AutoSize = true,                     // ★ 내용만큼 커짐
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 2,
                 RowCount = 0,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
 
             scrollPanel.Controls.Add(tableLayoutPanel);
-            if (groupBox != null)
-                groupBox.Controls.Add(scrollPanel);
+            groupBox.Controls.Add(scrollPanel);
+
+            // 가로 스크롤 안 나오게(패널 폭에 맞춰 width를 따라가게)
+            scrollPanel.Resize += (s, e) =>
+            {
+                // 세로 스크롤바 폭만큼 여유 주면 H-스크롤 방지
+                var sbw = SystemInformation.VerticalScrollBarWidth;
+                tableLayoutPanel.Width = scrollPanel.ClientSize.Width - sbw;
+            };
+
+            // (옵션) 깜빡임 줄이기
+            this.DoubleBuffered = true;
 
             Console.WriteLine($"🔧 PropertyCollectionView 초기화: UserControl={this.Size}, GroupBox=Fill");
         }
@@ -200,8 +208,6 @@ namespace QMC.Common
 
             if (properties == null || properties.Count == 0)
             {
-                // 속성이 없을 때도 Designer 크기 유지 (GroupBox는 Fill로 자동 맞춤)
-                
                 // 레이아웃 재개 및 화면 표시 복원
                 if (groupBox != null)
                 {
@@ -359,132 +365,6 @@ namespace QMC.Common
                     controlsToAdd.Add(Tuple.Create(editor, 1, row));
                 }
 
-                //if (prop is TitleOnlyProperty titleOnlyProp)
-                //{
-                //    if (titleOnlyProp.Titles.Length == 1)
-                //    {
-                //        var titleLabel = new Label
-                //        {
-                //            Text = titleOnlyProp.Titles[0],
-                //            Dock = DockStyle.Fill,
-                //            TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                //            AutoSize = false,
-                //            Margin = new Padding(0),
-                //            Padding = new Padding(2),
-                //            Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
-                //            BackColor = Color.LightGray,
-                //            Visible = false // 임시로 숨김
-                //        };
-
-                //        controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
-                //        columnSpansToSet.Add(Tuple.Create((Control)titleLabel, tableLayoutPanel.ColumnCount));
-                //    }
-                //    else
-                //    {
-                //        // 열 개수 조정
-                //        tableLayoutPanel.ColumnCount = titleOnlyProp.Titles.Length;
-                //        tableLayoutPanel.ColumnStyles.Clear();
-                //        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
-                //        {
-                //            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / titleOnlyProp.Titles.Length));
-                //        }
-
-                //        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
-                //        {
-                //            var titleLabel = new Label
-                //            {
-                //                Text = titleOnlyProp.Titles[i],
-                //                Dock = DockStyle.Fill,
-                //                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                //                AutoSize = false,
-                //                Margin = new Padding(0),
-                //                Padding = new Padding(2),
-                //                Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
-                //                BackColor = Color.LightGray,
-                //                Visible = false // 임시로 숨김
-                //            };
-                //            controlsToAdd.Add(Tuple.Create((Control)titleLabel, i, row));
-                //        }
-                //    }
-                //}
-                //else if (prop is ComboBoxProperty comboBoxProperty)
-                //{
-                //    var titleLabel = new Label
-                //    {
-                //        Text = prop.Title,
-                //        Dock = DockStyle.Fill,
-                //        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                //        AutoSize = false,
-                //        Margin = new Padding(2),
-                //        Padding = new Padding(2),
-                //        Visible = false // 임시로 숨김
-                //    };
-
-                //    var comboBox = new ComboBox
-                //    {
-                //        Dock = DockStyle.Fill,
-                //        Margin = new Padding(0),
-                //        Font = _textBoxFont,
-                //        DropDownStyle = ComboBoxStyle.DropDownList,
-                //        DataSource = comboBoxProperty.Options,
-                //        SelectedItem = comboBoxProperty.Value?.ToString(),
-                //        Visible = false // 임시로 숨김
-                //    };
-
-                //    comboBox.SelectedIndexChanged += (sender, args) =>
-                //    {
-                //        comboBoxProperty.SetValue(comboBox.SelectedItem.ToString());
-                //    };
-
-                //    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
-                //    controlsToAdd.Add(Tuple.Create((Control)comboBox, 1, row));
-                //}
-                //else
-                //{
-                //    var titleLabel = new Label
-                //    {
-                //        Text = prop.Title,
-                //        Dock = DockStyle.Fill,
-                //        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                //        AutoSize = false,
-                //        Margin = new Padding(2),
-                //        Padding = new Padding(2),
-                //        Visible = false // 임시로 숨김
-                //    };
-
-                //    var valueTextBox = new TextBox
-                //    {
-                //        Text = prop.Value?.ToString() ?? string.Empty,
-                //        Dock = DockStyle.Fill,
-                //        Margin = new Padding(0),
-                //        BorderStyle = BorderStyle.FixedSingle,
-                //        Font = _textBoxFont,
-                //        TextAlign = HorizontalAlignment.Left,
-                //        Visible = false // 임시로 숨김
-                //    };
-
-                //    valueTextBox.MinimumSize = new Size(0, textBoxHeight);
-                //    valueTextBox.Height = textBoxHeight;
-
-                //    // 조건 분기: PropertyCollection.UseValueColor 옵션에 따라 처리
-                //    if (properties.IsInputParameter)
-                //    {
-                //        valueTextBox.ForeColor = Color.Black;
-                //        valueTextBox.BackColor = Color.White;
-                //    }
-                //    else
-                //    {
-                //        valueTextBox.ReadOnly = true;
-                //        valueTextBox.TabStop = false;
-                //        valueTextBox.ForeColor = Color.LimeGreen;
-                //        valueTextBox.BackColor = Color.Black;
-                //    }
-
-                //    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
-                //    controlsToAdd.Add(Tuple.Create((Control)valueTextBox, 1, row));
-                //    _textBoxPropertyMap.Add(Tuple.Create(valueTextBox, prop));
-                //}
-
                 row++;
             }
 
@@ -498,22 +378,6 @@ namespace QMC.Common
             foreach (var spanInfo in columnSpansToSet)
             {
                 tableLayoutPanel.SetColumnSpan(spanInfo.Item1, spanInfo.Item2);
-            }
-
-            // 아이템이 많을 경우 스크롤 활성화 (Designer 크기는 유지)
-            int totalContentHeight = properties.Count * textBoxHeight;
-            int availableHeight = groupBox.ClientSize.Height - groupBox.Padding.Top - groupBox.Padding.Bottom;
-            
-            if (totalContentHeight > availableHeight)
-            {
-                scrollPanel.AutoScroll = true;
-                scrollPanel.VerticalScroll.Visible = true;
-                Console.WriteLine($"🔧 스크롤 활성화: 콘텐츠={totalContentHeight}px, 가용공간={availableHeight}px");
-            }
-            else
-            {
-                scrollPanel.AutoScroll = false;
-                scrollPanel.VerticalScroll.Visible = false;
             }
 
             // 레이아웃 재개 (아직 화면 업데이트는 하지 않음)
@@ -535,17 +399,19 @@ namespace QMC.Common
             this.Visible = true;
             this.PerformLayout();
 
-            // 스크롤이 활성화된 경우 맨 위부터 시작
-            if (scrollPanel.AutoScroll && properties.Count > 0)
-            {
-                this.BeginInvoke(new Action(() =>
-                {
-                    if (scrollPanel.VerticalScroll.Maximum > 0)
-                    {
-                        scrollPanel.VerticalScroll.Value = 0; // 항상 맨 위부터 시작
-                    }
-                }));
-            }
+            // 레이아웃 재계산 후 스크롤 높이 갱신
+            tableLayoutPanel.PerformLayout();
+            scrollPanel.PerformLayout();
+
+            // ★ 컨텐츠 높이를 AutoScrollMinSize에 반영 → 스크롤 확실히 보장
+            scrollPanel.AutoScrollMinSize = new Size(
+                0,
+                tableLayoutPanel.PreferredSize.Height + 2
+            );
+
+            // (선택) 항상 맨 위로
+            if (scrollPanel.VerticalScroll.Maximum > 0)
+                scrollPanel.VerticalScroll.Value = 0;
 
             Console.WriteLine($"🔧 SetProperties 완료: UserControl={this.Size}, Items={properties.Count}");
         }
