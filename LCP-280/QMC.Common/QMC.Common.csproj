@@ -311,6 +311,7 @@
     <Compile Include="VisionImageView.Designer.cs">
       <DependentUpon>VisionImageView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Vision\AbbreviationAttribute.cs" />
     <Compile Include="Vision\ICustomizedVisionImage.cs" />
     <Compile Include="Vision\qGeometry.cs" />
     <Compile Include="Vision\qMath.cs" />
@@ -324,6 +325,9 @@
     <Compile Include="Vision\VisionImage.cs" />
     <Compile Include="Vision\VisionImageHeader.cs" />
     <Compile Include="Vision\VisionImageOverlay.cs" />
+    <Compile Include="Vision\VisionImageViewer.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Vision\VisionScale.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
       <DependentUpon>Form_Alarm.cs</DependentUpon>
