@@ -23,7 +23,7 @@ namespace QMC.Common.LightController
         {
             OwnerController = owner;
             ChannelNo = OwnerController.Channels.Count + 1;
-            Config = new LeesOsLightControllerChannelConfig($"{name}_config", this);
+            Config = new LeesOsLightControllerChannelConfig(name, this);
         }
         #endregion
 

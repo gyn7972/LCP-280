@@ -53,6 +53,79 @@ namespace QMC.Common.LightController
 
             return true;
         }
+
+        public override PropertyCollection GetPropertyCollection()
+        {
+            PropertyCollection pc = new PropertyCollection();
+            PropertyBase p;
+
+            // Title
+            string title = $"LightController [{Name}] - Config";
+            pc.Add(new TitleOnlyProperty(title));
+
+            // Value
+            p = new StringProperty("PortName", PortName);
+            pc.Add(p);
+            p = new IntProperty("BaudRate", BaudRate);
+            pc.Add(p);
+            p = new IntProperty("DataBits", DataBits);
+            pc.Add(p);
+            p = new ComboBoxProperty("Parity", Parity.ToString(), Enum.GetNames(typeof(Parity)).ToList());
+            pc.Add(p);
+            p = new ComboBoxProperty("StopBits", StopBits.ToString(), Enum.GetNames(typeof(StopBits)).ToList());
+            pc.Add(p);
+            p = new ComboBoxProperty("Handshake", Handshake.ToString(), Enum.GetNames(typeof(Handshake)).ToList());
+            pc.Add(p);
+            p = new IntProperty("ReplyTimeout", ReplyTimeout);
+            pc.Add(p);
+            
+            return pc;
+        }
+        public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
+        {
+            if (pc == null)
+                return -1;
+
+            foreach (var prop in pc)
+            {
+                try
+                {
+                    switch (prop.Title)
+                    {
+                        case "PortName":
+                            PortName = prop.Value?.ToString() ?? "";
+                            break;
+                        case "BaudRate":
+                            BaudRate = int.Parse(prop.Value?.ToString());
+                            break;
+                        case "DataBits":
+                            DataBits = int.Parse(prop.Value?.ToString());
+                            break;
+                        case "Parity":
+                            Parity = (Parity)Enum.Parse(typeof(Parity), prop.Value?.ToString());
+                            break;
+                        case "StopBits":
+                            StopBits = (StopBits)Enum.Parse(typeof(StopBits), prop.Value?.ToString());
+                            break;
+                        case "Handshake":
+                            Handshake = (Handshake)Enum.Parse(typeof(Handshake), prop.Value?.ToString());
+                            break;
+                        case "ReplyTimeout":
+                            ReplyTimeout = int.Parse(prop.Value?.ToString());
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return -1;
+                }
+            }
+
+            return 0;
+        }
         #endregion
     }
 }

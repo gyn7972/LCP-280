@@ -136,7 +136,7 @@ namespace QMC.Common.Keithley
             measureItems = new List<MeasurementItem>();
             commands = new List<string>();
 
-            Config = new KeithelySourcemeterConfig($"{name}_config");
+            Config = new KeithelySourcemeterConfig(name);
         }
         #endregion
 
@@ -178,7 +178,7 @@ namespace QMC.Common.Keithley
         #endregion
 
         #region Methods
-        public bool LoadParameterProc()
+        public bool LoadParameter()
         {
             bool result = false;
             do
@@ -189,7 +189,7 @@ namespace QMC.Common.Keithley
             while (false);
             return result;
         }
-        public bool ApplyParameterProc()
+        public bool ApplyParameter()
         {
             bool result = false;
             do
@@ -213,7 +213,7 @@ namespace QMC.Common.Keithley
             while (false);
             return result;
         }
-        public bool MeasureProc()
+        public bool Measure()
         {
             bool result = false;
             do

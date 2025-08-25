@@ -64,11 +64,5 @@ namespace QMC.LCP_280.Process.Unit
                 MessageBox.Show($"Unit 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
-        private void btnNegativeJog_Click(object sender, EventArgs e)
-        {
-            CASSpectrometer test = new CASSpectrometer("test");
-            test.Config.SaveToFile("test_config.json");
-        }
     }
 }

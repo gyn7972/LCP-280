@@ -1,6 +1,7 @@
 ﻿using QMC.Common.Component;
 using System;
 using System.Collections.Generic;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -85,6 +86,90 @@ namespace QMC.Common.Keithley
                 return false;
 
             return true;
+        }
+
+        public override PropertyCollection GetPropertyCollection()
+        {
+            PropertyCollection pc = new PropertyCollection();
+            PropertyBase p;
+
+            // Title
+            string title = $"Sourcemeter [{Name}] - Config";
+            pc.Add(new TitleOnlyProperty(title));
+
+            // Value
+            p = new ComboBoxProperty("Model", Model.ToString(), Enum.GetNames(typeof(KeithleySourcemeter.SMUInstrumentCategory)).ToList()); 
+            pc.Add(p);
+            p = new StringProperty("Resource Name", ResourceName); 
+            pc.Add(p);
+            p = new StringProperty("Script File Name", ScriptFileName); 
+            pc.Add(p);
+            p = new ComboBoxProperty("Sense Mode", SenseMode.ToString(), Enum.GetNames(typeof(SMUSenseMode)).ToList()); 
+            pc.Add(p);
+            p = new ComboBoxProperty("Source Sink", SourceSink.ToString(), Enum.GetNames(typeof(SMUSourceSink)).ToList()); 
+            pc.Add(p);
+            p = new ComboBoxProperty("Source Settling", SourceSettling.ToString(), Enum.GetNames(typeof(SMUSourceSettling)).ToList()); 
+            pc.Add(p);
+            p = new ComboBoxProperty("Source Off mode", SourceOffmode.ToString(), Enum.GetNames(typeof(SMUSourceOffmode)).ToList()); 
+            pc.Add(p);
+            p = new ComboBoxProperty("Measure Auto Zero", MeasureAutoZero.ToString(), Enum.GetNames(typeof(SMUMeasureAutoZero)).ToList()); 
+            pc.Add(p);
+            p = new IntProperty("Measure Timeout", MeasureTimeout); 
+            pc.Add(p);
+
+            return pc;
+        }
+        public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
+        {
+            if (pc == null)
+                return -1;
+
+            foreach (var p in pc)
+            {
+                try
+                {
+                    switch (p.Title)
+                    {
+                        case "Model":
+                            Model = (KeithleySourcemeter.SMUInstrumentCategory)Enum.Parse(typeof(KeithleySourcemeter.SMUInstrumentCategory), p.Value?.ToString());
+                            break;
+                        case "Resource Name":
+                            ResourceName = p.Value?.ToString() ?? "";
+                            break;
+                        case "Script File Name":
+                            ScriptFileName = p.Value?.ToString() ?? "";
+                            break;
+                        case "Sense Mode":
+                            SenseMode = (SMUSenseMode)Enum.Parse(typeof(SMUSenseMode), p.Value?.ToString());
+                            break;
+                        case "Source Sink":
+                            SourceSink = (SMUSourceSink)Enum.Parse(typeof(SMUSourceSink), p.Value?.ToString());
+                            break;
+                        case "Source Settling":
+                            SourceSettling = (SMUSourceSettling)Enum.Parse(typeof(SMUSourceSettling), p.Value?.ToString());
+                            break;
+                        case "Source Off mode":
+                            SourceOffmode = (SMUSourceOffmode)Enum.Parse(typeof(SMUSourceOffmode), p.Value?.ToString());
+                            break;
+                        case "Measure Auto Zero":
+                            MeasureAutoZero = (SMUMeasureAutoZero)Enum.Parse(typeof(SMUMeasureAutoZero), p.Value?.ToString());
+                            break;
+                        case "Measure Timeout":
+                            MeasureTimeout = int.Parse(p.Value?.ToString());
+                            break;
+                        default:
+                            // Unknown property, ignore or handle as needed
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return -1;
+                }
+            }
+
+            return 0;
         }
         #endregion
     }
