@@ -53,7 +53,7 @@
             this.pictureBox_ImageView_Test.IsViewCustomizedImage = false;
             this.pictureBox_ImageView_Test.Location = new System.Drawing.Point(6, 18);
             this.pictureBox_ImageView_Test.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.pictureBox_ImageView_Test.Name = "ImageViewer_Main_highs";
+            this.pictureBox_ImageView_Test.Name = "ImageView_Test";
             this.pictureBox_ImageView_Test.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.pictureBox_ImageView_Test.Simulated = false;
             this.pictureBox_ImageView_Test.Size = new System.Drawing.Size(317, 265);

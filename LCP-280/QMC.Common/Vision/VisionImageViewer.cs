@@ -2049,7 +2049,6 @@ namespace QMC.Common.Vision
             }
             catch (Exception ex)
             {
-
                 Log.Write(ex);
             }
         }

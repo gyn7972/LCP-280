@@ -73,6 +73,8 @@
     <Compile Include="Alarm\Form_Alarm.Designer.cs">
       <DependentUpon>Form_Alarm.cs</DependentUpon>
     </Compile>
+    <Compile Include="BarcodeReader\OpticonBarcodeReader.cs" />
+    <Compile Include="BarcodeReader\OpticonBarcodeReaderConfig.cs" />
     <Compile Include="BaseRecipe.cs" />
     <Compile Include="Cameras\Camera.cs" />
     <Compile Include="Cameras\CameraConfig.cs" />
@@ -93,6 +95,7 @@
     <Compile Include="Common\ParamContainer.cs" />
     <Compile Include="Common\ParamGroup.cs" />
     <Compile Include="Common\PointD.cs" />
+    <Compile Include="Common\PropertyCollectionJsonConverter.cs" />
     <Compile Include="Common\Quadrangle.cs" />
     <Compile Include="Common\Range.cs" />
     <Compile Include="Common\RectangleD.cs" />
@@ -122,6 +125,8 @@
     <Compile Include="CustomControl\VerticalAlignTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Cylinder\Cylinder.cs" />
+    <Compile Include="Cylinder\CylinderConfig.cs" />
     <Compile Include="FormMessageBox\MessageBoxOk.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -151,8 +156,13 @@
     <Compile Include="IO\DIOModuleSetup.cs" />
     <Compile Include="IO\DioScanService.cs" />
     <Compile Include="IO\DIOUnit.cs" />
+    <Compile Include="IO\IDigitalIO.cs" />
     <Compile Include="IO\IDIODriver.cs" />
     <Compile Include="IO\SimDioDriver.cs" />
+    <Compile Include="LightController\LeesOsLightController.cs" />
+    <Compile Include="LightController\LeesOsLightControllerChannel.cs" />
+    <Compile Include="LightController\LeesOsLightControllerChannelConfig.cs" />
+    <Compile Include="LightController\LeesOsLightControllerConfig.cs" />
     <Compile Include="Logging\Log.cs" />
     <Compile Include="Logging\LogInfo.cs" />
     <Compile Include="Logging\LogManager.cs" />

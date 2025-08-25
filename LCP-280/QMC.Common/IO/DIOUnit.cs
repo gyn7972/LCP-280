@@ -27,7 +27,8 @@ namespace QMC.Common.IO
                 {
                     Formatting = Formatting.None,
                     NullValueHandling = NullValueHandling.Ignore,
-                    DefaultValueHandling = DefaultValueHandling.Include
+                    DefaultValueHandling = DefaultValueHandling.Include,
+                    ObjectCreationHandling = ObjectCreationHandling.Replace
                 };
             }
         }

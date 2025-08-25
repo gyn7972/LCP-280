@@ -78,8 +78,8 @@ namespace QMC.Common.Cameras
         protected object m_ImageLock = new object();
         public bool Opened { get; protected set; }
         public bool IsLiveOn { set; get; }
-        public BaseConfig Config { set; get; }
-        public BaseRecipe Recipe { set; get; }
+        //public BaseConfig Config { set; get; }
+        //public BaseRecipe Recipe { set; get; }
         public Size Resolution
         {
             set
