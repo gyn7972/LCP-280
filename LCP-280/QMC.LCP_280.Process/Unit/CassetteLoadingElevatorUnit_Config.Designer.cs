@@ -319,7 +319,6 @@ namespace QMC.LCP_280.Process.Unit
             this.btnNegativeJog.TabStop = false;
             this.btnNegativeJog.Text = "- Jog";
             this.btnNegativeJog.UseVisualStyleBackColor = false;
-            this.btnNegativeJog.Click += new System.EventHandler(this.btnNegativeJog_Click);
             // 
             // btnPositiveJog
             // 
