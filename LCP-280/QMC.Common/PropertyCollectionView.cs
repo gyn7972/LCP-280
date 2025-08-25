@@ -247,7 +247,17 @@ namespace QMC.Common
                 }
                 else if (prop is ComboBoxProperty comboBoxProperty)
                 {
-                    var titleLabel = new Label { /* (생략) 기존 그대로 */ };
+                    //var titleLabel = new Label { /* (생략) 기존 그대로 */ };
+                    var titleLabel = new Label
+                    {
+                        Text = prop.Title,
+                        Dock = DockStyle.Fill,
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(2),
+                        Padding = new Padding(2),
+                        Visible = false
+                    };
                     var comboBox = new ComboBox
                     {
                         Dock = DockStyle.Fill,

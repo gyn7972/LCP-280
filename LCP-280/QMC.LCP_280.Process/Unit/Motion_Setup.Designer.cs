@@ -60,6 +60,7 @@ namespace QMC.LCP_280.Process.Unit
         private void InitializeComponent()
         {
             this.gbAxisProperty = new System.Windows.Forms.GroupBox();
+            this.btn_Save_Setup_Motion_Configuration = new QMC.Common.IndividualMenuButton();
             this.speedListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.configurationListBoxItemsView = new QMC.Common.PropertyCollectionView();
             this.gbAxisPositions = new System.Windows.Forms.GroupBox();
@@ -68,7 +69,6 @@ namespace QMC.LCP_280.Process.Unit
             this.positionVelocityPropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.selectAxisListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.btn_Save_Setup_Motion_Configuration = new QMC.Common.IndividualMenuButton();
             this.gbAxisProperty.SuspendLayout();
             this.gbAxisPositions.SuspendLayout();
             this.SuspendLayout();
@@ -86,6 +86,25 @@ namespace QMC.LCP_280.Process.Unit
             this.gbAxisProperty.TabIndex = 10;
             this.gbAxisProperty.TabStop = false;
             this.gbAxisProperty.Text = "Axis Property";
+            // 
+            // btn_Save_Setup_Motion_Configuration
+            // 
+            this.btn_Save_Setup_Motion_Configuration.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Configuration.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Setup_Motion_Configuration.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Configuration.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Configuration.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Configuration.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Configuration.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Configuration.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Setup_Motion_Configuration.Location = new System.Drawing.Point(196, 675);
+            this.btn_Save_Setup_Motion_Configuration.Name = "btn_Save_Setup_Motion_Configuration";
+            this.btn_Save_Setup_Motion_Configuration.Size = new System.Drawing.Size(100, 40);
+            this.btn_Save_Setup_Motion_Configuration.TabIndex = 4;
+            this.btn_Save_Setup_Motion_Configuration.TabStop = false;
+            this.btn_Save_Setup_Motion_Configuration.Text = "Save";
+            this.btn_Save_Setup_Motion_Configuration.UseVisualStyleBackColor = false;
+            this.btn_Save_Setup_Motion_Configuration.Click += new System.EventHandler(this.btn_Save_Setup_Motion_Configuration_Click);
             // 
             // speedListBoxItemsView
             // 
@@ -171,25 +190,6 @@ namespace QMC.LCP_280.Process.Unit
             this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(305, 722);
             this.selectAxisListBoxItemsView.TabIndex = 2;
             // 
-            // btn_Save_Setup_Motion_Configuration
-            // 
-            this.btn_Save_Setup_Motion_Configuration.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Setup_Motion_Configuration.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Save_Setup_Motion_Configuration.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Setup_Motion_Configuration.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Setup_Motion_Configuration.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Setup_Motion_Configuration.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Setup_Motion_Configuration.ForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Setup_Motion_Configuration.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Setup_Motion_Configuration.Location = new System.Drawing.Point(196, 675);
-            this.btn_Save_Setup_Motion_Configuration.Name = "btn_Save_Setup_Motion_Configuration";
-            this.btn_Save_Setup_Motion_Configuration.Size = new System.Drawing.Size(100, 40);
-            this.btn_Save_Setup_Motion_Configuration.TabIndex = 4;
-            this.btn_Save_Setup_Motion_Configuration.TabStop = false;
-            this.btn_Save_Setup_Motion_Configuration.Text = "Save";
-            this.btn_Save_Setup_Motion_Configuration.UseVisualStyleBackColor = false;
-            this.btn_Save_Setup_Motion_Configuration.Click += new System.EventHandler(this.btn_Save_Setup_Motion_Configuration_Click);
-            // 
             // Motion_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -217,6 +217,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 🚀 Position Item 선택 이벤트 연결
                 SetupAxisItemSelectionEvent();
+
+
 
                 InitializeRadioButtonView();
             }

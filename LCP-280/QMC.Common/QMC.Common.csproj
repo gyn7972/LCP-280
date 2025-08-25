@@ -303,7 +303,6 @@
     <Compile Include="Spectrometer\CASSpectrometerConfig.cs" />
     <Compile Include="Spectrometer\CASSpectrometerInterfaceManager.cs" />
     <Compile Include="Spectrometer\InstrumentSystems.CAS4.CAS4DLL.cs" />
-    <Compile Include="Spectrometer\Spectrometer.cs" />
     <Compile Include="TabbedViewHost.cs">
       <SubType>UserControl</SubType>
     </Compile>

@@ -128,7 +128,7 @@ namespace QMC.Common.Spectrometer
             result = new CASSpectrometerResult();
             spectrum = new CASSpectrometerSpectrum();
 
-            Config = new CASSpectrometerConfig($"{name}_config");
+            Config = new CASSpectrometerConfig(name);
         }
         #endregion
 
@@ -136,7 +136,7 @@ namespace QMC.Common.Spectrometer
         public override int Initialize()
         {
             int ret = 0;
-            if (!InitDevice())
+            if (!OnInitDevice())
             {
                 ret = -1;
             }
@@ -146,7 +146,7 @@ namespace QMC.Common.Spectrometer
         public override int Create()
         {
             int ret = 0;
-            if (!CreateDevice())
+            if (!OnCreateDevice())
             {
                 ret = -1;
             }
@@ -155,12 +155,11 @@ namespace QMC.Common.Spectrometer
 
         public override void Close()
         {
-            TerminateDevice();
+            OnTerminateDevice();
         }
         #endregion
 
-        #region Abstract Methods Implementation
-
+        #region Methods
         public bool LoadParameter()
         {
             if (!IsCreated())
@@ -201,13 +200,13 @@ namespace QMC.Common.Spectrometer
                 if (this.Config.UseExternalTrigger)
                 {
                     // Measure with external trigger
-                    if (!MeasureAndExternalTrigger())
+                    if (!OnMeasureAndExternalTrigger())
                         break;
                 }
                 else
                 {
                     // Normal measurement
-                    if (!MeasureProc())
+                    if (!OnMeasure())
                         break;
                 }
 
@@ -221,7 +220,7 @@ namespace QMC.Common.Spectrometer
             bool result = false;
             do
             {
-                if (!MeasureDarkCurrentProc())
+                if (!OnMeasureDarkCurrent())
                     break;
 
                 result = true;
@@ -229,9 +228,6 @@ namespace QMC.Common.Spectrometer
             while (false);
             return result;
         }
-        #endregion
-
-        #region Methods
 
         // Error Handling
         #region Error Handling Methods
@@ -253,7 +249,7 @@ namespace QMC.Common.Spectrometer
 
         // Device Management
         #region Device Management Methods
-        private bool CreateDevice()
+        private bool OnCreateDevice()
         {
             if (IsCreated())
                 return true;
@@ -262,7 +258,7 @@ namespace QMC.Common.Spectrometer
             try
             {
                 // Create device
-                int deviceId = CAS4DLL.casCreateDeviceEx(this.Config.DeviceInterfaceType, this.Config.DeviceInterfaceOption);
+                int deviceId = CAS4DLL.casCreateDeviceEx((int)this.Config.DeviceInterfaceType, this.Config.DeviceInterfaceOption);
                 CheckCASErrorAndThrow(deviceId);
 
                 // Processing after successful device initialization
@@ -277,7 +273,7 @@ namespace QMC.Common.Spectrometer
             }
             return result;
         }        
-        private bool TerminateDevice()
+        private bool OnTerminateDevice()
         {
             bool result = false;
             try
@@ -295,7 +291,7 @@ namespace QMC.Common.Spectrometer
             }
             return result;
         }
-        private bool InitDevice()
+        private bool OnInitDevice()
         {
             if (!IsCreated())
                 return false;
@@ -344,7 +340,7 @@ namespace QMC.Common.Spectrometer
 
         // Measurement Methods
         #region Measurement Methods
-        private bool MeasureProc()
+        private bool OnMeasure()
         {
             if (!IsCreated())
                 return false;
@@ -375,7 +371,7 @@ namespace QMC.Common.Spectrometer
             }
             return result;
         }
-        private bool MeasureAndExternalTrigger()
+        private bool OnMeasureAndExternalTrigger()
         {
             if (!IsCreated())
                 return false;
@@ -416,7 +412,7 @@ namespace QMC.Common.Spectrometer
             }
             return result;
         }
-        private bool MeasureDarkCurrentProc()
+        private bool OnMeasureDarkCurrent()
         {
             if (!IsCreated())
                 return false;

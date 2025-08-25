@@ -82,7 +82,7 @@ namespace QMC.Common.LightController
                 Channels.Add(channel);
             }
 
-            Config = new LeesOsLightControllerConfig($"{name}_config");
+            Config = new LeesOsLightControllerConfig(name);
         }
         #endregion
 

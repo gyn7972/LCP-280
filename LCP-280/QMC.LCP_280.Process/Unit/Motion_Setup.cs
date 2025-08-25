@@ -34,6 +34,7 @@ namespace QMC.LCP_280.Process.Unit
             _axisManager = Equipment.Instance.AxisManager;
 
             InitializeUI();
+
             // 모든 초기화가 완료된 후 화면 업데이트 재개
             this.ResumeLayout(true);
             

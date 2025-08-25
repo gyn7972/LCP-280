@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,52 +20,60 @@ namespace QMC.Common
         protected BaseConfig(string name = null)
         {
             Name = name ?? GetType().Name;
+            Reset();
         }
 
-        // 공통 메서드
         public virtual void Reset()
         {
             // 기본값으로 리셋하는 로직
-            LastModified = DateTime.Now;
         }
-
         public virtual bool Validate()
         {
             // Config 값의 유효성을 검사하는 로직
             return true;
         }
+        public virtual string GetFilePath()
+        {
+            return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", $"{Name}.json");
+        }
 
         // 파일 로드 & 저장 (JSON)
-        public int SaveToFile(string filePath)
+        public int Save()
         {
-            // Ensure the "config" directory exists
-            string directoryPath = Path.GetDirectoryName(filePath);
-            //if (!Directory.Exists(directoryPath))
-            //{
-            //    Directory.CreateDirectory(directoryPath);
-            //}
-
-            // Combine the file path with the "config" directory
-            filePath = Path.Combine("config", filePath);
-
-            return OnSaveToFile(filePath);
-
+            string filePath = GetFilePath();
+            return SaveToFile(filePath);
         }
-        protected virtual int OnSaveToFile(string filePath)
+        public int Load()
+        {
+            string filePath = GetFilePath();
+            if (File.Exists(filePath))
+            {
+                LoadFromFile(filePath);
+                return 0; // Success
+            }
+            return -1;
+        }
+        protected int SaveToFile(string filePath)
         {
             try
             {
+                string directoryPath = Path.GetDirectoryName(filePath);
+                if (!Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
+
+                // Write the JSON to the file
                 var settings = new JsonSerializerSettings
                 {
                     TypeNameHandling = TypeNameHandling.Auto, // 타입 정보 포함
                     ContractResolver = new DefaultContractResolver(),
                     Formatting = Formatting.Indented
                 };
+
                 string json = JsonConvert.SerializeObject(this, settings);
                 System.IO.File.WriteAllText(filePath, json);
-                // Write the JSON to the file
-
-
+                LastModified = DateTime.Now;
                 return 0; // Success
             }
             catch (System.Exception ex)
@@ -73,14 +82,7 @@ namespace QMC.Common
                 return -1; // General error
             }
         }
-
-        public void LoadFromFile(string filePath)
-        {
-            filePath = Path.Combine("config", filePath);
-            OnLoadConfig(filePath);
-        }
-
-        protected virtual void OnLoadConfig(string filePath)
+        protected void LoadFromFile(string filePath)
         {
             try
             {
@@ -109,13 +111,24 @@ namespace QMC.Common
         }
 
         //public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
-        [JsonProperty("propertyBases")]         
-        [JsonConverter(typeof(PropertyCollectionJsonConverter))]
-        public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
+        //[JsonProperty("propertyBases")]         
+        //[JsonConverter(typeof(PropertyCollectionJsonConverter))]
+        //[JsonIgnore]
+        //public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
+        [JsonIgnore]
         public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
 
-        protected virtual void SetPropertyBases()
+        public virtual PropertyCollection GetPropertyCollection()
         {
+            PropertyCollection pc = new PropertyCollection();
+            PropertyBase prop = new StringProperty("Name", Name);
+            pc.Add(prop);
+            return pc;
+        }
+        public virtual int ApplyValueFromPropertyCollection(PropertyCollection pc)
+        {
+            // Do this
+            return 0;
         }
     }
 }

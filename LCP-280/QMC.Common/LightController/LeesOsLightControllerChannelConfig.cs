@@ -86,7 +86,62 @@ namespace QMC.Common.LightController
             if(Volume < 0 || Volume > ownerChannel.OwnerController.MaximumVolume)
                 return false;
 
-            return base.Validate();
+            return true;
+        }
+
+        public override PropertyCollection GetPropertyCollection()
+        {
+            PropertyCollection pc = new PropertyCollection();
+            PropertyBase p;
+
+            // Title
+            string title = "Channel Config";
+            if (ownerChannel.OwnerController != null)
+                title = $"{ownerChannel.OwnerController.Name} - Channel {ownerChannel.ChannelNo + 1} Config";
+            pc.Add(new TitleOnlyProperty(title));
+
+            // Value
+            p = new BoolProperty("On", On);
+            pc.Add(p);
+            p = new IntProperty("Volume", Volume);
+            pc.Add(p);
+            p = new StringProperty("Descript", Descript);
+            pc.Add(p);
+
+            return pc;
+        }
+        public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
+        {
+            if (pc == null)
+                return -1;
+
+            foreach (var prop in pc)
+            {
+                try
+                {
+                    switch (prop.Title)
+                    {
+                        case "On":
+                            On = bool.Parse(prop.Value?.ToString());
+                            break;
+                        case "Volume":
+                            Volume = int.Parse(prop.Value?.ToString());
+                            break;
+                        case "Descript":
+                            Descript = prop.Value?.ToString() ?? "";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return -1;
+                }
+            }
+
+            return 0;
         }
         #endregion
     }

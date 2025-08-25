@@ -21,7 +21,7 @@ namespace QMC.Common.BarcodeReader
         #region Constructor
         public OpticonBarcodeReader(string name) : base(name)
         {
-            Config = new OpticonBarcodeReaderConfig($"{name}_config");
+            Config = new OpticonBarcodeReaderConfig(name);
         }
         #endregion
 
