@@ -320,6 +320,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btnNegativeJog.TabStop = false;
             this.btnNegativeJog.Text = "- Jog";
             this.btnNegativeJog.UseVisualStyleBackColor = false;
+            this.btnNegativeJog.Click += new System.EventHandler(this.btnNegativeJog_Click);
             // 
             // btnPositiveJog
             // 
@@ -402,7 +403,7 @@ namespace QMC.LCP_280.Process.Unit
             this.gbDestinationMoveMode.TabStop = false;
             this.gbDestinationMoveMode.Text = "Destination Position";
             // 
-            // individualMenuButton1
+            // btnDestinationMove
             // 
             this.btnDestinationMove.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnDestinationMove.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;

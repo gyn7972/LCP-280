@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using QMC.Common;
+using QMC.Common.Spectrometer;
 
 namespace QMC.LCP_280.Process.Unit
 {

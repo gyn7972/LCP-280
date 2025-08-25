@@ -36,10 +36,12 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Ivi.Visa, Version=7.2.0.0, Culture=neutral, PublicKeyToken=a128c98f1d7717c1, processorArchitecture=MSIL" />
     <Reference Include="MvCameraControl.Net, Version=0.0.0.0, Culture=neutral, PublicKeyToken=52fddfb3f94be800, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Cameras\HIKVISION\Library\MvCameraControl.Net.dll</HintPath>
     </Reference>
+    <Reference Include="NationalInstruments.Visa, Version=24.0.0.49398, Culture=neutral, PublicKeyToken=2eaa5af0834e221d, processorArchitecture=MSIL" />
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -159,6 +161,10 @@
     <Compile Include="IO\IDigitalIO.cs" />
     <Compile Include="IO\IDIODriver.cs" />
     <Compile Include="IO\SimDioDriver.cs" />
+    <Compile Include="Keithley\KeithleyInstrumentCommunicator.cs" />
+    <Compile Include="Keithley\KeithleyInstrumentResourceManager.cs" />
+    <Compile Include="Keithley\KeithleySourcemeter.cs" />
+    <Compile Include="Keithley\KeithleySourcemeterConfig.cs" />
     <Compile Include="LightController\LeesOsLightController.cs" />
     <Compile Include="LightController\LeesOsLightControllerChannel.cs" />
     <Compile Include="LightController\LeesOsLightControllerChannelConfig.cs" />
@@ -293,6 +299,11 @@
     <Compile Include="RadioButtonView.Designer.cs">
       <DependentUpon>RadioButtonView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Spectrometer\CASSpectrometer.cs" />
+    <Compile Include="Spectrometer\CASSpectrometerConfig.cs" />
+    <Compile Include="Spectrometer\CASSpectrometerInterfaceManager.cs" />
+    <Compile Include="Spectrometer\InstrumentSystems.CAS4.CAS4DLL.cs" />
+    <Compile Include="Spectrometer\Spectrometer.cs" />
     <Compile Include="TabbedViewHost.cs">
       <SubType>UserControl</SubType>
     </Compile>
