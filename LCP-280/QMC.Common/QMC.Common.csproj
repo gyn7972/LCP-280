@@ -93,6 +93,7 @@
     <Compile Include="Common\ParamContainer.cs" />
     <Compile Include="Common\ParamGroup.cs" />
     <Compile Include="Common\PointD.cs" />
+    <Compile Include="Common\PropertyCollectionJsonConverter.cs" />
     <Compile Include="Common\Quadrangle.cs" />
     <Compile Include="Common\Range.cs" />
     <Compile Include="Common\RectangleD.cs" />

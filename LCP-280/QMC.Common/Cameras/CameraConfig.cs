@@ -227,7 +227,7 @@ namespace QMC.Common.Cameras
             // 파생 타입까지 복원되도록 (HIKGigECameraConfig 포함)
             TypeNameHandling = TypeNameHandling.Auto,
             // 문제가 되는 내부 속성/컬렉션 무시
-            ContractResolver = new IgnoreInternalPropsResolver(),
+            //ContractResolver = new IgnoreInternalPropsResolver(),
             // 컬렉션 재활용 대신 교체 (부분 갱신 시 꼬임 방지)
             ObjectCreationHandling = ObjectCreationHandling.Replace,
             // enum을 문자열로
@@ -719,32 +719,32 @@ namespace QMC.Common.Cameras
 }
 
 // 1) 문제 속성 무시용 리졸버 추가
-internal class IgnoreInternalPropsResolver : DefaultContractResolver
-{
-    protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
-    {
-        var prop = base.CreateProperty(member, memberSerialization);
+//internal class IgnoreInternalPropsResolver : DefaultContractResolver
+//{
+//    protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization)
+//    {
+//        var prop = base.CreateProperty(member, memberSerialization);
 
-        // 이름 기준으로 무시 (propertyBases 등)
-        if (prop.PropertyName != null &&
-            prop.PropertyName.Equals("propertyBases", StringComparison.OrdinalIgnoreCase))
-        {
-            prop.Ignored = true;
-            prop.ShouldSerialize = _ => false;
-            prop.ShouldDeserialize = _ => false;
-        }
+//        // 이름 기준으로 무시 (propertyBases 등)
+//        if (prop.PropertyName != null &&
+//            prop.PropertyName.Equals("propertyBases", StringComparison.OrdinalIgnoreCase))
+//        {
+//            prop.Ignored = true;
+//            prop.ShouldSerialize = _ => false;
+//            prop.ShouldDeserialize = _ => false;
+//        }
 
-        // 타입 기준으로 무시 (QMC.Common.PropertyCollection 등)
-        if (prop.PropertyType != null &&
-            prop.PropertyType.FullName == "QMC.Common.PropertyCollection")
-        {
-            prop.Ignored = true;
-            prop.ShouldSerialize = _ => false;
-            prop.ShouldDeserialize = _ => false;
-        }
+//        // 타입 기준으로 무시 (QMC.Common.PropertyCollection 등)
+//        if (prop.PropertyType != null &&
+//            prop.PropertyType.FullName == "QMC.Common.PropertyCollection")
+//        {
+//            prop.Ignored = true;
+//            prop.ShouldSerialize = _ => false;
+//            prop.ShouldDeserialize = _ => false;
+//        }
 
-        return prop;
-    }
-}
+//        return prop;
+//    }
+//}
 
 #endregion

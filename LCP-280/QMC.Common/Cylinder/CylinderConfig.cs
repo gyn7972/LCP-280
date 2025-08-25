@@ -33,7 +33,9 @@ namespace QMC.Common.Cylinder
         private static readonly JsonSerializerSettings _settings = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented,
-            NullValueHandling = NullValueHandling.Ignore
+            NullValueHandling = NullValueHandling.Ignore,
+            DefaultValueHandling = DefaultValueHandling.Include,
+            ObjectCreationHandling = ObjectCreationHandling.Replace
         };
 
         // ---- 파일 API ----

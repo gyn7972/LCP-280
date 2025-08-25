@@ -125,7 +125,8 @@ namespace QMC.Common.Motions
                 {
                     Formatting = Formatting.None,
                     NullValueHandling = NullValueHandling.Ignore,
-                    DefaultValueHandling = DefaultValueHandling.Include
+                    DefaultValueHandling = DefaultValueHandling.Include,
+                    ObjectCreationHandling = ObjectCreationHandling.Replace
                 };
             }
         }

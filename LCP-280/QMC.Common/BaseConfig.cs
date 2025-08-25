@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,6 +31,13 @@ namespace QMC.Common
             // Config 값의 유효성을 검사하는 로직
             return true;
         }
+        //public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
+        //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
+
+
+        //public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
+        [JsonProperty("propertyBases")]         
+        [JsonConverter(typeof(PropertyCollectionJsonConverter))]
         public PropertyCollection propertyBases { get; set; } = new PropertyCollection();
         public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
 
