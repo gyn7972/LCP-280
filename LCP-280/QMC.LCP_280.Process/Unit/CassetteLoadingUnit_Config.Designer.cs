@@ -83,6 +83,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btnMovePosition = new QMC.Common.IndividualMenuButton();
             this.rbTeachingMoveMode = new QMC.Common.RadioButtonView();
             this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
+            this.button_Test = new System.Windows.Forms.Button();
             this.positionlistBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.btnSave = new QMC.Common.IndividualMenuButton();
             this.btnCancel = new QMC.Common.IndividualMenuButton();
@@ -109,7 +110,6 @@ namespace QMC.LCP_280.Process.Unit
             this.lblAxisPositionValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.gbAxisPositions = new System.Windows.Forms.GroupBox();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.button_Test = new System.Windows.Forms.Button();
             this.gbTeachingMove.SuspendLayout();
             this.gbPositionTeaching.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
@@ -179,6 +179,16 @@ namespace QMC.LCP_280.Process.Unit
             this.gbPositionTeaching.TabIndex = 8;
             this.gbPositionTeaching.TabStop = false;
             this.gbPositionTeaching.Text = "Position Teaching";
+            // 
+            // button_Test
+            // 
+            this.button_Test.Location = new System.Drawing.Point(530, 13);
+            this.button_Test.Name = "button_Test";
+            this.button_Test.Size = new System.Drawing.Size(75, 23);
+            this.button_Test.TabIndex = 8;
+            this.button_Test.Text = "Test";
+            this.button_Test.UseVisualStyleBackColor = true;
+            this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
             // 
             // positionlistBoxItemsView
             // 
@@ -534,16 +544,6 @@ namespace QMC.LCP_280.Process.Unit
             this.axisListBoxItemsView.Size = new System.Drawing.Size(234, 124);
             this.axisListBoxItemsView.TabIndex = 0;
             this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
-            // 
-            // button_Test
-            // 
-            this.button_Test.Location = new System.Drawing.Point(530, 13);
-            this.button_Test.Name = "button_Test";
-            this.button_Test.Size = new System.Drawing.Size(75, 23);
-            this.button_Test.TabIndex = 8;
-            this.button_Test.Text = "Test";
-            this.button_Test.UseVisualStyleBackColor = true;
-            this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
             // 
             // CassetteLoadingUnit_Config
             // 
