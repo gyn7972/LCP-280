@@ -1,6 +1,7 @@
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using QMC.Common;
+using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -21,7 +22,6 @@ namespace QMC.LCP_280.Process.Unit
             CassetteElevator = new CassetteElevator();
 
             CassetteElevator.ParentUnit = this;
-
         }
 
         public override void OnRun()
