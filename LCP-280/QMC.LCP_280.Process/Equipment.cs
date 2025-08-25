@@ -18,6 +18,7 @@ using System.Windows.Forms;
 using QMC.Common.Motion;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Cameras;
+using QMC.Common.Cylinder;
 
 namespace QMC.LCP_280.Process
 {
@@ -101,8 +102,8 @@ namespace QMC.LCP_280.Process
         private AjinAxlBoardHost _axlHost;                 // Ajin 보드 수명 관리(AXL.Open/Close + MOT 로드)
         // ==== Motion 관리 ====
         private readonly MotionAxisManager _axisManager = new MotionAxisManager();
-        private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Axes");
-
+        //private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Axes");
+        private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes");
         private IDIODriver _dio;                     // AjinDioDriver (실기)
         private DioScanService _dioScan;                 // 주기 스캔(캐시)
         // I/O 설정 파일 루트 (원하는 경로로)
@@ -158,6 +159,8 @@ namespace QMC.LCP_280.Process
                 Camera = new HIKGigECamera("PreAlign");
                 if (Camera != null)
                 {
+                    Camera.CameraConfig = CameraConfig.LoadOrCreate("PreAlign");
+
                     Camera.Initialize();
                     Console.WriteLine("HIK 카메라 초기화 완료");
                 }
@@ -872,8 +875,8 @@ namespace QMC.LCP_280.Process
             if (_dioScan == null)
             {
                 Directory.CreateDirectory(_dioRoot);
-                var setupPath = Path.Combine(_dioRoot, "Unit.dio.setup.json"); // CassetteLoadingElevator 등 유닛별로 나눠도 OK
-
+                //var setupPath = Path.Combine(_dioRoot, "Unit.dio.setup.json"); // CassetteLoadingElevator 등 유닛별로 나눠도 OK
+                var setupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Unit.dio.setup.json");
                 // 유닛 DIO 맵 로드/없으면 생성
                 var dioSetup = DIOUnit.LoadOrCreateDefault(
                     setupPath,
@@ -887,7 +890,36 @@ namespace QMC.LCP_280.Process
                 _dioScan.Start(10); // 10ms 주기 스캔
             }
 
-            if(!_axlHost.IsOpen)
+            // Cylinder
+            // 경로
+            //string cylPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cylinders.json");
+            string cylPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "cylinders.json");
+
+            // 기본값(최초 1회용)
+            var defaults = new List<CylinderConfig>
+            {
+                new CylinderConfig {
+                    Name="Input Feeder Up",
+                    ModuleName="DIO Module1",
+                    ForwardIn="X20", BackwardIn="X21",
+                    ForwardOut="Y30", BackwardOut="Y31",
+                    TimeoutMs=5000, SettleMs=50, Monitoring=true
+                }
+            };
+
+            // 로드 또는 생성
+            var all = CylinderConfigs.LoadOrCreate(cylPath, defaults);
+
+            // 조회/수정
+            var feeder = all.Get("Input Feeder Up");
+            feeder.TimeoutMs = 4000;
+            all.Upsert(feeder);
+
+            // 저장
+            all.Save(cylPath);
+            ////////////////////////////////////////////////////////////////
+
+            if (!_axlHost.IsOpen)
             {
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", "MOTION, I/O INIT FAIL.");

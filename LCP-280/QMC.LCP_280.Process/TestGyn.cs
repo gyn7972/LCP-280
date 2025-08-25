@@ -21,6 +21,8 @@ namespace QMC.LCP_280.Process
             InitializeComponent();
 
             _axisManager = Equipment.Instance.AxisManager;
+
+            InitImageViewer();
         }
 
         // 폼 로드시 축 이름 바인딩
@@ -155,6 +157,14 @@ namespace QMC.LCP_280.Process
             }
 
             axis.AlarmPost(MotionAxis.AlarmKey.Axis_XXXXXXXXX1_Fail); // 실제 AlarmKey로 변경
+        }
+
+        private void InitImageViewer()
+        {
+            // 이미지 뷰어 초기화
+            this.pictureBox_ImageView_Test.SizeMode = PictureBoxSizeMode.CenterImage;
+            this.pictureBox_ImageView_Test.SuspendDisplay();
+            this.pictureBox_ImageView_Test.Camera = Equipment.Instance.Camera; // 실제 카메라 객체로 변경
         }
     }
 }

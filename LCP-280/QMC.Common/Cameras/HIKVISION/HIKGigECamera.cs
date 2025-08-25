@@ -78,7 +78,6 @@ namespace QMC.Common.Cameras.HIKVISION
             nRet = new int();
             SerialNumber = "";
             m_CurrentMode = GrabMode.None;
-
         }
         public HIKGigECamera() : this("Camera") { }//?
         #endregion
