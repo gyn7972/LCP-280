@@ -54,7 +54,7 @@ namespace QMC.Common
                     //CommonModule.Instance.TowerLamp_BuzzerStop = true;
 
                     // UI 갱신이나 로그 기록
-                    Log.Write("LCP-280", "Alarm", "모든 알람이 수동으로 해제되었습니다.");
+                    Log.Write("LCP_280", "Alarm", "모든 알람이 수동으로 해제되었습니다.");
                 }
             }
             
