@@ -101,6 +101,18 @@
     <Compile Include="Unit\CassetteLoadingUnit_Config.Designer.cs">
       <DependentUpon>CassetteLoadingUnit_Config.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\Cylinder_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\Cylinder_Setup.Designer.cs">
+      <DependentUpon>Cylinder_Setup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\DigitalIO_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\DigitalIO_Setup.Designer.cs">
+      <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\Motion_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -112,6 +124,12 @@
     </Compile>
     <Compile Include="Unit\CassetteLoadingElevatorUnit_Config.Designer.cs">
       <DependentUpon>CassetteLoadingElevatorUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\Vision_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\Vision_Setup.Designer.cs">
+      <DependentUpon>Vision_Setup.cs</DependentUpon>
     </Compile>
     <Compile Include="WaferData.cs" />
     <Compile Include="WaferDataConfig.cs" />
@@ -135,11 +153,20 @@
     <EmbeddedResource Include="Unit\CassetteLoadingUnit_Config.resx">
       <DependentUpon>CassetteLoadingUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\Cylinder_Setup.resx">
+      <DependentUpon>Cylinder_Setup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\DigitalIO_Setup.resx">
+      <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\Motion_Setup.resx">
       <DependentUpon>Motion_Setup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\CassetteLoadingElevatorUnit_Config.resx">
       <DependentUpon>CassetteLoadingElevatorUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\Vision_Setup.resx">
+      <DependentUpon>Vision_Setup.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
