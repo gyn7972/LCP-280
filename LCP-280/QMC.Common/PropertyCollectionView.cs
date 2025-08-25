@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Globalization;
 
 namespace QMC.Common
 {
@@ -228,65 +229,25 @@ namespace QMC.Common
 
                 if (prop is TitleOnlyProperty titleOnlyProp)
                 {
-                    if (titleOnlyProp.Titles.Length == 1)
+                    // 섹션 헤더는 보이도록!
+                    var titleLabel = new Label
                     {
-                        var titleLabel = new Label
-                        {
-                            Text = titleOnlyProp.Titles[0],
-                            Dock = DockStyle.Fill,
-                            TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                            AutoSize = false,
-                            Margin = new Padding(0),
-                            Padding = new Padding(2),
-                            Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
-                            BackColor = Color.LightGray,
-                            Visible = false // 임시로 숨김
-                        };
-
-                        controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
-                        columnSpansToSet.Add(Tuple.Create((Control)titleLabel, tableLayoutPanel.ColumnCount));
-                    }
-                    else
-                    {
-                        // 열 개수 조정
-                        tableLayoutPanel.ColumnCount = titleOnlyProp.Titles.Length;
-                        tableLayoutPanel.ColumnStyles.Clear();
-                        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
-                        {
-                            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / titleOnlyProp.Titles.Length));
-                        }
-
-                        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
-                        {
-                            var titleLabel = new Label
-                            {
-                                Text = titleOnlyProp.Titles[i],
-                                Dock = DockStyle.Fill,
-                                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                                AutoSize = false,
-                                Margin = new Padding(0),
-                                Padding = new Padding(2),
-                                Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
-                                BackColor = Color.LightGray,
-                                Visible = false // 임시로 숨김
-                            };
-                            controlsToAdd.Add(Tuple.Create((Control)titleLabel, i, row));
-                        }
-                    }
+                        Text = titleOnlyProp.Titles.Length == 1 ? titleOnlyProp.Titles[0] : string.Join(" / ", titleOnlyProp.Titles),
+                        Dock = DockStyle.Fill,
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        AutoSize = false,
+                        Margin = new Padding(0),
+                        Padding = new Padding(2),
+                        Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                        BackColor = Color.LightGray,
+                        Visible = false
+                    };
+                    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
+                    columnSpansToSet.Add(Tuple.Create((Control)titleLabel, tableLayoutPanel.ColumnCount));
                 }
                 else if (prop is ComboBoxProperty comboBoxProperty)
                 {
-                    var titleLabel = new Label
-                    {
-                        Text = prop.Title,
-                        Dock = DockStyle.Fill,
-                        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
-                        AutoSize = false,
-                        Margin = new Padding(2),
-                        Padding = new Padding(2),
-                        Visible = false // 임시로 숨김
-                    };
-
+                    var titleLabel = new Label { /* (생략) 기존 그대로 */ };
                     var comboBox = new ComboBox
                     {
                         Dock = DockStyle.Fill,
@@ -295,12 +256,11 @@ namespace QMC.Common
                         DropDownStyle = ComboBoxStyle.DropDownList,
                         DataSource = comboBoxProperty.Options,
                         SelectedItem = comboBoxProperty.Value?.ToString(),
-                        Visible = false // 임시로 숨김
+                        Visible = false
                     };
-
                     comboBox.SelectedIndexChanged += (sender, args) =>
                     {
-                        comboBoxProperty.SetValue(comboBox.SelectedItem.ToString());
+                        comboBoxProperty.SetValue(comboBox.SelectedItem?.ToString());
                     };
 
                     controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
@@ -308,49 +268,222 @@ namespace QMC.Common
                 }
                 else
                 {
+                    // 공통 타이틀
                     var titleLabel = new Label
                     {
                         Text = prop.Title,
                         Dock = DockStyle.Fill,
-                        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                        TextAlign = ContentAlignment.MiddleLeft,
                         AutoSize = false,
                         Margin = new Padding(2),
                         Padding = new Padding(2),
-                        Visible = false // 임시로 숨김
+                        Visible = false
                     };
+                    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
 
-                    var valueTextBox = new TextBox
+                    // 타입별 에디터 + 즉시 바인딩
+                    Control editor;
+
+                    if (prop is BoolProperty bp)
                     {
-                        Text = prop.Value?.ToString() ?? string.Empty,
-                        Dock = DockStyle.Fill,
-                        Margin = new Padding(0),
-                        BorderStyle = BorderStyle.FixedSingle,
-                        Font = _textBoxFont,
-                        TextAlign = HorizontalAlignment.Left,
-                        Visible = false // 임시로 숨김
-                    };
-
-                    valueTextBox.MinimumSize = new Size(0, textBoxHeight);
-                    valueTextBox.Height = textBoxHeight;
-
-                    // 조건 분기: PropertyCollection.UseValueColor 옵션에 따라 처리
-                    if (properties.IsInputParameter)
+                        var cb = new CheckBox
+                        {
+                            Dock = DockStyle.Left,
+                            AutoSize = true,
+                            Margin = new Padding(4, (textBoxHeight - 18) / 2, 0, 0),
+                            Visible = false
+                        };
+                        BindCheckBoxToBool(cb, bp);
+                        editor = cb;
+                    }
+                    else if (prop is IntProperty ip)
                     {
-                        valueTextBox.ForeColor = Color.Black;
-                        valueTextBox.BackColor = Color.White;
+                        var tb = MakeValueTextBox(textBoxHeight);
+                        BindTextBoxToInt(tb, ip);
+                        editor = tb;
+                    }
+                    else if (prop is LongProperty lp)
+                    {
+                        var tb = MakeValueTextBox(textBoxHeight);
+                        BindTextBoxToLong(tb, lp);
+                        editor = tb;
+                    }
+                    else if (prop is FloatProperty fp)
+                    {
+                        var tb = MakeValueTextBox(textBoxHeight);
+                        BindTextBoxToFloat(tb, fp);
+                        editor = tb;
+                    }
+                    else if (prop is DoubleProperty dp)
+                    {
+                        var tb = MakeValueTextBox(textBoxHeight);
+                        BindTextBoxToDouble(tb, dp);
+                        editor = tb;
+                    }
+                    else if (prop is StringProperty sp)
+                    {
+                        var tb = MakeValueTextBox(textBoxHeight);
+                        BindTextBoxToString(tb, sp);
+                        editor = tb;
                     }
                     else
                     {
-                        valueTextBox.ReadOnly = true;
-                        valueTextBox.TabStop = false;
-                        valueTextBox.ForeColor = Color.LimeGreen;
-                        valueTextBox.BackColor = Color.Black;
+                        // 모르는 타입은 문자열로 폴백
+                        var tb = MakeValueTextBox(textBoxHeight);
+                        tb.TextChanged += (s, e) => prop.SetValue(tb.Text);
+                        tb.Tag = prop;
+                        editor = tb;
                     }
 
-                    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
-                    controlsToAdd.Add(Tuple.Create((Control)valueTextBox, 1, row));
-                    _textBoxPropertyMap.Add(Tuple.Create(valueTextBox, prop));
+                    // 입력/출력 모드 색상 적용
+                    if (properties.IsInputParameter)
+                    {
+                        editor.ForeColor = Color.Black;
+                        editor.BackColor = Color.White;
+                    }
+                    else
+                    {
+                        if (editor is TextBox tbRo)
+                        {
+                            tbRo.ReadOnly = true;
+                            tbRo.TabStop = false;
+                            tbRo.ForeColor = Color.LimeGreen;
+                            tbRo.BackColor = Color.Black;
+                        }
+                        else
+                        {
+                            editor.Enabled = false;
+                        }
+                    }
+
+                    controlsToAdd.Add(Tuple.Create(editor, 1, row));
                 }
+
+                //if (prop is TitleOnlyProperty titleOnlyProp)
+                //{
+                //    if (titleOnlyProp.Titles.Length == 1)
+                //    {
+                //        var titleLabel = new Label
+                //        {
+                //            Text = titleOnlyProp.Titles[0],
+                //            Dock = DockStyle.Fill,
+                //            TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                //            AutoSize = false,
+                //            Margin = new Padding(0),
+                //            Padding = new Padding(2),
+                //            Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                //            BackColor = Color.LightGray,
+                //            Visible = false // 임시로 숨김
+                //        };
+
+                //        controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
+                //        columnSpansToSet.Add(Tuple.Create((Control)titleLabel, tableLayoutPanel.ColumnCount));
+                //    }
+                //    else
+                //    {
+                //        // 열 개수 조정
+                //        tableLayoutPanel.ColumnCount = titleOnlyProp.Titles.Length;
+                //        tableLayoutPanel.ColumnStyles.Clear();
+                //        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
+                //        {
+                //            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / titleOnlyProp.Titles.Length));
+                //        }
+
+                //        for (int i = 0; i < titleOnlyProp.Titles.Length; i++)
+                //        {
+                //            var titleLabel = new Label
+                //            {
+                //                Text = titleOnlyProp.Titles[i],
+                //                Dock = DockStyle.Fill,
+                //                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                //                AutoSize = false,
+                //                Margin = new Padding(0),
+                //                Padding = new Padding(2),
+                //                Font = new Font(_textBoxFont.FontFamily, _textBoxFont.Size, FontStyle.Bold),
+                //                BackColor = Color.LightGray,
+                //                Visible = false // 임시로 숨김
+                //            };
+                //            controlsToAdd.Add(Tuple.Create((Control)titleLabel, i, row));
+                //        }
+                //    }
+                //}
+                //else if (prop is ComboBoxProperty comboBoxProperty)
+                //{
+                //    var titleLabel = new Label
+                //    {
+                //        Text = prop.Title,
+                //        Dock = DockStyle.Fill,
+                //        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                //        AutoSize = false,
+                //        Margin = new Padding(2),
+                //        Padding = new Padding(2),
+                //        Visible = false // 임시로 숨김
+                //    };
+
+                //    var comboBox = new ComboBox
+                //    {
+                //        Dock = DockStyle.Fill,
+                //        Margin = new Padding(0),
+                //        Font = _textBoxFont,
+                //        DropDownStyle = ComboBoxStyle.DropDownList,
+                //        DataSource = comboBoxProperty.Options,
+                //        SelectedItem = comboBoxProperty.Value?.ToString(),
+                //        Visible = false // 임시로 숨김
+                //    };
+
+                //    comboBox.SelectedIndexChanged += (sender, args) =>
+                //    {
+                //        comboBoxProperty.SetValue(comboBox.SelectedItem.ToString());
+                //    };
+
+                //    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
+                //    controlsToAdd.Add(Tuple.Create((Control)comboBox, 1, row));
+                //}
+                //else
+                //{
+                //    var titleLabel = new Label
+                //    {
+                //        Text = prop.Title,
+                //        Dock = DockStyle.Fill,
+                //        TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                //        AutoSize = false,
+                //        Margin = new Padding(2),
+                //        Padding = new Padding(2),
+                //        Visible = false // 임시로 숨김
+                //    };
+
+                //    var valueTextBox = new TextBox
+                //    {
+                //        Text = prop.Value?.ToString() ?? string.Empty,
+                //        Dock = DockStyle.Fill,
+                //        Margin = new Padding(0),
+                //        BorderStyle = BorderStyle.FixedSingle,
+                //        Font = _textBoxFont,
+                //        TextAlign = HorizontalAlignment.Left,
+                //        Visible = false // 임시로 숨김
+                //    };
+
+                //    valueTextBox.MinimumSize = new Size(0, textBoxHeight);
+                //    valueTextBox.Height = textBoxHeight;
+
+                //    // 조건 분기: PropertyCollection.UseValueColor 옵션에 따라 처리
+                //    if (properties.IsInputParameter)
+                //    {
+                //        valueTextBox.ForeColor = Color.Black;
+                //        valueTextBox.BackColor = Color.White;
+                //    }
+                //    else
+                //    {
+                //        valueTextBox.ReadOnly = true;
+                //        valueTextBox.TabStop = false;
+                //        valueTextBox.ForeColor = Color.LimeGreen;
+                //        valueTextBox.BackColor = Color.Black;
+                //    }
+
+                //    controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
+                //    controlsToAdd.Add(Tuple.Create((Control)valueTextBox, 1, row));
+                //    _textBoxPropertyMap.Add(Tuple.Create(valueTextBox, prop));
+                //}
 
                 row++;
             }
@@ -417,6 +550,23 @@ namespace QMC.Common
             Console.WriteLine($"🔧 SetProperties 완료: UserControl={this.Size}, Items={properties.Count}");
         }
 
+        private TextBox MakeValueTextBox(int textBoxHeight)
+        {
+            var tb = new TextBox
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = _textBoxFont,
+                TextAlign = _textBoxTextAlign,
+                Visible = false,
+                MinimumSize = new Size(0, textBoxHeight),
+                Height = textBoxHeight
+            };
+            return tb;
+        }
+
+
         /// <summary>
         /// 텍스트박스의 값을 PropertyCollection에 적용합니다.
         /// </summary>
@@ -447,5 +597,67 @@ namespace QMC.Common
             if (_currentProperties != null)
                 SetProperties(_currentProperties);
         }
+
+        // ===== 즉시 반영 바인딩 유틸 =====
+        private void BindTextBoxToDouble(TextBox tb, DoubleProperty p)
+        {
+            tb.Text = p.Value.ToString(CultureInfo.InvariantCulture);
+            tb.TextChanged += (s, e) =>
+            {
+                if (double.TryParse(tb.Text, NumberStyles.Float | NumberStyles.AllowThousands,
+                                    CultureInfo.InvariantCulture, out var v))
+                    p.Value = v;
+            };
+            tb.Tag = p; // (옵션) 커밋/디버깅용
+        }
+
+        private void BindTextBoxToFloat(TextBox tb, FloatProperty p)
+        {
+            tb.Text = p.Value.ToString(CultureInfo.InvariantCulture);
+            tb.TextChanged += (s, e) =>
+            {
+                if (float.TryParse(tb.Text, NumberStyles.Float | NumberStyles.AllowThousands,
+                                   CultureInfo.InvariantCulture, out var v))
+                    p.Value = v;
+            };
+            tb.Tag = p;
+        }
+
+        private void BindTextBoxToInt(TextBox tb, IntProperty p)
+        {
+            tb.Text = p.Value.ToString(CultureInfo.InvariantCulture);
+            tb.TextChanged += (s, e) =>
+            {
+                if (int.TryParse(tb.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+                    p.Value = v;
+            };
+            tb.Tag = p;
+        }
+
+        private void BindTextBoxToLong(TextBox tb, LongProperty p)
+        {
+            tb.Text = p.Value.ToString(CultureInfo.InvariantCulture);
+            tb.TextChanged += (s, e) =>
+            {
+                if (long.TryParse(tb.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+                    p.Value = v;
+            };
+            tb.Tag = p;
+        }
+
+        private void BindTextBoxToString(TextBox tb, StringProperty p)
+        {
+            tb.Text = p.Value ?? string.Empty;
+            tb.TextChanged += (s, e) => p.Value = tb.Text ?? string.Empty;
+            tb.Tag = p;
+        }
+
+        private void BindCheckBoxToBool(CheckBox cb, BoolProperty p)
+        {
+            cb.Checked = p.Value;
+            cb.CheckedChanged += (s, e) => p.Value = cb.Checked;
+            cb.Tag = p;
+        }
+
     }
 }

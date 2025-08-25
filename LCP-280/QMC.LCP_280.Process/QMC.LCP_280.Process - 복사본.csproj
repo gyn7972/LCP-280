@@ -92,17 +92,11 @@
     </Compile>
     <Compile Include="Unit\CassetteLoadingElevatorConfig.cs" />
     <Compile Include="Unit\CassetteLoadingElevator.cs" />
-    <Compile Include="Unit\CassetteLoadingUnit_Config.cs">
+    <Compile Include="Unit\CassetteLoading.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\CassetteLoadingUnit_Config.Designer.cs">
-      <DependentUpon>CassetteLoadingUnit_Config.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Unit\Motion_Setup.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\Motion_Setup.Designer.cs">
-      <DependentUpon>Motion_Setup.cs</DependentUpon>
+    <Compile Include="Unit\CassetteLoading.Designer.cs">
+      <DependentUpon>CassetteLoading.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\CassetteLoadingElevatorUnit_Config.cs">
       <SubType>Form</SubType>
@@ -129,11 +123,8 @@
     <EmbeddedResource Include="TestGyn.resx">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\CassetteLoadingUnit_Config.resx">
-      <DependentUpon>CassetteLoadingUnit_Config.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Unit\Motion_Setup.resx">
-      <DependentUpon>Motion_Setup.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\CassetteLoading.resx">
+      <DependentUpon>CassetteLoading.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\CassetteLoadingElevatorUnit_Config.resx">
       <DependentUpon>CassetteLoadingElevatorUnit_Config.cs</DependentUpon>
