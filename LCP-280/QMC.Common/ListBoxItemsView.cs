@@ -363,5 +363,30 @@ namespace QMC.Common
                          .Select(o => o?.ToString() ?? string.Empty)
                          .ToArray();
         }
+
+        // 현재 선택된 아이템 이름 가져오기
+        [Browsable(false)]
+        public string SelectedItemName
+        {
+            get
+            {
+                if (listBox == null || listBox.SelectedIndex < 0)
+                    return string.Empty;
+
+                var item = listBox.Items[listBox.SelectedIndex];
+
+                // string이면 그대로 반환
+                if (item is string s)
+                    return s;
+
+                // Name 속성이 있으면 그 값 반환
+                var prop = item.GetType().GetProperty("Name");
+                if (prop != null)
+                    return prop.GetValue(item)?.ToString() ?? string.Empty;
+
+                // fallback: ToString()
+                return item?.ToString() ?? string.Empty;
+            }
+        }
     }
 }

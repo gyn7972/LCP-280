@@ -577,7 +577,7 @@ namespace QMC.LCP_280.Process.Unit
     /// <summary>
     /// CassetteElevator + WaferTransferArm 의 AxisDefinition DisplayName 을 axisListBoxItemsView 에 설정
     /// </summary>
-    private void SetAxisDefinitionsToAxisListBox()
+        private void SetAxisDefinitionsToAxisListBox()
         {
             try
             {

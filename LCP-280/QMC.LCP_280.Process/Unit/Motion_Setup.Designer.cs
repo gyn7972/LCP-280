@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.CustomControl;
+using QMC.Common.Motions;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Unit;
 using System;
@@ -8,14 +9,28 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
 
 namespace QMC.LCP_280.Process.Unit
 {
     partial class Motion_Setup
     {
+        Equipment equipment = Equipment.Instance;
+        private MotionAxisManager _axisManager;
 
         // Axis 목록 (추가)
         private ListBoxItemsView axisListBoxItemsView;
+        private ListBoxItemsView selectAxisListBoxItemsView;
+        private IOPropertyCollectionView motorStateIoPropertyCollectionView;
+        private IOPropertyCollectionView motorIoPropertyCollectionView;
+        private PropertyCollectionView positionVelocityPropertyCollectionView;
+        private ListBoxItemsView speedListBoxItemsView;
+        //private ListBoxItemsView configurationListBoxItemsView;
+        private PropertyCollectionView configurationListBoxItemsView;
+
+        // 선택된 축의 속성(편집용) 캐시
+        private PropertyCollection _editorPropertiesConfig;
+
         private GroupBox gbAxisProperty;
         private GroupBox gbAxisPositions;
 
@@ -46,13 +61,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             this.gbAxisProperty = new System.Windows.Forms.GroupBox();
             this.speedListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.configurationListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.configurationListBoxItemsView = new QMC.Common.PropertyCollectionView();
             this.gbAxisPositions = new System.Windows.Forms.GroupBox();
             this.motorStateIoPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.motorIoPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.positionVelocityPropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.selectAxisListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.btn_Save_Setup_Motion_Configuration = new QMC.Common.IndividualMenuButton();
             this.gbAxisProperty.SuspendLayout();
             this.gbAxisPositions.SuspendLayout();
             this.SuspendLayout();
@@ -60,6 +76,7 @@ namespace QMC.LCP_280.Process.Unit
             // gbAxisProperty
             // 
             this.gbAxisProperty.BackColor = System.Drawing.Color.White;
+            this.gbAxisProperty.Controls.Add(this.btn_Save_Setup_Motion_Configuration);
             this.gbAxisProperty.Controls.Add(this.speedListBoxItemsView);
             this.gbAxisProperty.Controls.Add(this.configurationListBoxItemsView);
             this.gbAxisProperty.Font = new System.Drawing.Font("맑은 고딕", 10F);
@@ -83,13 +100,11 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // configurationListBoxItemsView
             // 
-            this.configurationListBoxItemsView.BorderWidth = 2;
             this.configurationListBoxItemsView.GroupName = "Configuration";
-            this.configurationListBoxItemsView.Location = new System.Drawing.Point(6, 25);
+            this.configurationListBoxItemsView.Location = new System.Drawing.Point(6, 37);
             this.configurationListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.configurationListBoxItemsView.Name = "configurationListBoxItemsView";
-            this.configurationListBoxItemsView.SelectedIndex = -1;
-            this.configurationListBoxItemsView.Size = new System.Drawing.Size(290, 690);
+            this.configurationListBoxItemsView.Size = new System.Drawing.Size(290, 631);
             this.configurationListBoxItemsView.TabIndex = 0;
             // 
             // gbAxisPositions
@@ -156,6 +171,25 @@ namespace QMC.LCP_280.Process.Unit
             this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(305, 722);
             this.selectAxisListBoxItemsView.TabIndex = 2;
             // 
+            // btn_Save_Setup_Motion_Configuration
+            // 
+            this.btn_Save_Setup_Motion_Configuration.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Configuration.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Setup_Motion_Configuration.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Motion_Configuration.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Configuration.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Configuration.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Motion_Configuration.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Motion_Configuration.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Setup_Motion_Configuration.Location = new System.Drawing.Point(196, 675);
+            this.btn_Save_Setup_Motion_Configuration.Name = "btn_Save_Setup_Motion_Configuration";
+            this.btn_Save_Setup_Motion_Configuration.Size = new System.Drawing.Size(100, 40);
+            this.btn_Save_Setup_Motion_Configuration.TabIndex = 4;
+            this.btn_Save_Setup_Motion_Configuration.TabStop = false;
+            this.btn_Save_Setup_Motion_Configuration.Text = "Save";
+            this.btn_Save_Setup_Motion_Configuration.UseVisualStyleBackColor = false;
+            this.btn_Save_Setup_Motion_Configuration.Click += new System.EventHandler(this.btn_Save_Setup_Motion_Configuration_Click);
+            // 
             // Motion_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -182,7 +216,7 @@ namespace QMC.LCP_280.Process.Unit
                 SetAxisDefinitionsToAxisListBox();
 
                 // 🚀 Position Item 선택 이벤트 연결
-                SetupPositionItemSelectionEvent();
+                SetupAxisItemSelectionEvent();
 
                 InitializeRadioButtonView();
             }
@@ -198,42 +232,36 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // Equipment에서 CassetteLoadingElevator Unit 가져오기
-                var equipment = Equipment.Instance;
-                const string UNIT_NAME = "CassetteLoadingElevator";
-
-                if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+                if (_axisManager == null)
                 {
-                    var cassetteUnit = unit as CassetteLoadingElevator;
-                    if (cassetteUnit?.CassetteLoadingElevatorConfig?.PropertyPosition != null)
-                    {
-                        var propertyPosition = cassetteUnit.CassetteLoadingElevatorConfig.PropertyPosition;
+                    MessageBox.Show("AxisManager가 초기화되지 않았습니다.", "알림",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
 
-                        // PropertyPosition에서 Position Title들을 추출하여 ListBox에 설정
-                        var positionTitles = propertyPosition.GetPropertyTitles();
+                const string UNIT_NAME = "unit";
 
-                        if (positionTitles.Length > 0)
-                        {
-                            // listBoxItemsView에 Position Title들 설정
-                            selectAxisListBoxItemsView?.SetItems(positionTitles);
+                // 1) 유닛 목록 바인딩: GetKeys() → "Unit||Axis" 에서 Unit만 추출
+                var unitNames = _axisManager
+                    .GetKeys()
+                    .Select(k => {
+                        int idx = k.IndexOf("||", StringComparison.Ordinal);
+                        return (idx >= 0) ? k.Substring(0, idx) : k;
+                    })
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
 
-                            Console.WriteLine($"✅ PropertyPosition을 listBoxItemsView에 설정 완료: {positionTitles.Length}개 항목");
-                            Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionTitles)}");
-                        }
-                        else
-                        {
-                            Console.WriteLine("⚠️ PropertyPosition에 Position 항목이 없습니다.");
-                            selectAxisListBoxItemsView?.SetItems();
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("⚠️ CassetteElevator Config 또는 PropertyPosition을 찾을 수 없습니다.");
-                    }
+                var axisNames = _axisManager.GetAxisNames(UNIT_NAME) ?? Array.Empty<string>();
+
+                if (axisNames.Length > 0)
+                {
+                    selectAxisListBoxItemsView?.SetItems(axisNames);
                 }
                 else
                 {
-                    Console.WriteLine($"⚠️ '{UNIT_NAME}' Unit을 찾을 수 없습니다.");
+                    Log.Write("LCP-280", "⚠️ PropertyPosition에 Position 항목이 없습니다.");
+                    selectAxisListBoxItemsView?.SetItems();
                 }
             }
             catch (Exception ex)
@@ -245,7 +273,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 🚀 Position Item 선택 이벤트 설정
         /// </summary>
-        private void SetupPositionItemSelectionEvent()
+        private void SetupAxisItemSelectionEvent()
         {
             if (selectAxisListBoxItemsView != null)
             {
@@ -265,70 +293,65 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // Equipment에서 CassetteLoadingElevator Unit 가져오기
-                var equipment = Equipment.Instance;
-                const string UNIT_NAME = "CassetteLoadingElevator";
-
-                if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+                const string UNIT_NAME = "unit";
+                string selectedAxis = string.Empty;
+                if (selectedIndex >= 0)
                 {
-                    var cassetteUnit = unit as CassetteLoadingElevator;
-                    if (cassetteUnit?.CassetteLoadingElevatorConfig?.PropertyPosition != null)
-                    {
-                        var propertyPosition = cassetteUnit.CassetteLoadingElevatorConfig.PropertyPosition;
-                        var positionTitles = propertyPosition.GetPropertyTitles();
-
-                        if (selectedIndex >= 0 && selectedIndex < positionTitles.Length)
-                        {
-                            var selectedTitle = positionTitles[selectedIndex];
-                            var selectedProperty = propertyPosition.GetPropertyByTitle(selectedTitle);
-
-                            if (selectedProperty != null)
-                            {
-                                // 🚀 선택된 Position Property를 Editor(PropertyCollectionView)에 표시
-                                var editorProperties = new PropertyCollection();
-
-                                // Position (Abs, mm) 타이틀 추가
-                                editorProperties.Add(new TitleOnlyProperty("Position (Abs, mm)"));
-
-                                // 선택된 Position Property를 Editor용으로 복사
-                                if (selectedProperty is DoubleProperty doubleProp)
-                                {
-                                    var editableProperty = new DoubleProperty(selectedTitle, doubleProp.Value);
-                                    editorProperties.Add(editableProperty);
-                                }
-                                else
-                                {
-                                    editorProperties.Add(selectedProperty);
-                                }
-
-                                // PropertyCollectionView에 Editor 내용 설정
-                                //selectAxisropertyCollectionView?.SetProperties(editorProperties);
-
-                                Console.WriteLine($"📍 Position Item 선택: {selectedTitle}");
-                                if (selectedProperty is DoubleProperty dp)
-                                {
-                                    Console.WriteLine($"   값: {dp.Value:F3} mm");
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine($"⚠️ 선택된 Position Property를 찾을 수 없습니다: {selectedTitle}");
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine($"⚠️ 잘못된 선택 인덱스: {selectedIndex}");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("⚠️ PropertyPosition을 찾을 수 없습니다.");
-                    }
+                    selectedAxis = selectAxisListBoxItemsView.SelectedItemName;
                 }
-                else
-                {
-                    Console.WriteLine($"⚠️ '{UNIT_NAME}' Unit을 찾을 수 없습니다.");
-                }
+                var axis = _axisManager.Get(UNIT_NAME, selectedAxis);
+
+                // ▶ 편집용 컬렉션을 필드에 유지
+                _editorPropertiesConfig = new PropertyCollection();
+
+                DoubleProperty doubleProperty;
+                BoolProperty boolProperty;
+                _editorPropertiesConfig.Add(new TitleOnlyProperty("Common"));
+                doubleProperty = new DoubleProperty("Axis Scale", axis.Setup.AxisScale);
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Axis Power", axis.Setup.AxisPowerPercent);
+                _editorPropertiesConfig.Add(doubleProperty);
+                _editorPropertiesConfig.Add(new TitleOnlyProperty("Config"));
+                doubleProperty = new DoubleProperty("Output Mode", (double)axis.Setup.OutputMode); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Input Mode", (double)axis.Setup.InputMode); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Input Source", (double)axis.Setup.InputSource); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Z Phase Level", (double)axis.Setup.ZPhaseLevel); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Servo Level", (double)axis.Setup.ServoLevel); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                _editorPropertiesConfig.Add(new TitleOnlyProperty("Emergency Signal"));
+                doubleProperty = new DoubleProperty("Level", (double)axis.Setup.EmergencyLevel); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Stop Mode", (double)axis.Setup.StopMode); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                _editorPropertiesConfig.Add(new TitleOnlyProperty("Inposition"));
+                doubleProperty = new DoubleProperty("Level", (double)axis.Setup.InpositionLevel); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                boolProperty = new BoolProperty("Software", axis.Setup.SoftwareLimitEnable); //임시
+                _editorPropertiesConfig.Add(boolProperty);
+                doubleProperty = new DoubleProperty("Software Length", (double)axis.Setup.SoftwareLength); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                _editorPropertiesConfig.Add(new TitleOnlyProperty("Home"));
+                doubleProperty = new DoubleProperty("Signal", (double)axis.Setup.HomeSignalLevel); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Mode", (double)axis.Setup.HomeMode); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                _editorPropertiesConfig.Add(new TitleOnlyProperty("Alarm"));
+                doubleProperty = new DoubleProperty("Reset Signal", (double)axis.Setup.AlarmResetSignal); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Level", (double)axis.Setup.AlarmLevel); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                _editorPropertiesConfig.Add(new TitleOnlyProperty("Limit"));
+                doubleProperty = new DoubleProperty("Soft Limit -", (double)axis.Setup.SoftLimitMin); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+                doubleProperty = new DoubleProperty("Soft Limit +", (double)axis.Setup.SoftLimitMax); //임시
+                _editorPropertiesConfig.Add(doubleProperty);
+
+                // PropertyCollectionView에 Editor 내용 설정
+                configurationListBoxItemsView?.SetProperties(_editorPropertiesConfig);
             }
             catch (Exception ex)
             {
@@ -367,11 +390,6 @@ namespace QMC.LCP_280.Process.Unit
 
       #region Save / Cancel
 
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            
-        }
-
         private void btnCancel_Click(object sender, EventArgs e)
         {
             
@@ -396,13 +414,9 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
+
         #endregion
 
-        private ListBoxItemsView selectAxisListBoxItemsView;
-        private IOPropertyCollectionView motorStateIoPropertyCollectionView;
-        private IOPropertyCollectionView motorIoPropertyCollectionView;
-        private PropertyCollectionView positionVelocityPropertyCollectionView;
-        private ListBoxItemsView speedListBoxItemsView;
-        private ListBoxItemsView configurationListBoxItemsView;
+        private IndividualMenuButton btn_Save_Setup_Motion_Configuration;
     }
 }
