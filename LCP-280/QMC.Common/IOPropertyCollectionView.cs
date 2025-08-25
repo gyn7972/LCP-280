@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.Linq;
+using System.Reflection;
 
 namespace QMC.Common
 {
@@ -12,13 +13,72 @@ namespace QMC.Common
         private const int IOGroupBoxHeaderHeight = 20;
         private const int IOGroupBoxPadding = 16;
 
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                // 폼 전체 컴포지팅 (깜빡임 크게 줄어듦 / 스크롤 성능 약간 저하 가능)
+                cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED
+                return cp;
+            }
+        }
+
         public IOPropertyCollectionView(string groupName = "IO Property Group") : base(groupName)
         {
             InitializeComponent();
+
+            // 이 컨트롤 자체
+            EnableFlickerFree(this);
+
+            // 비공개 필드 꺼내기
+            var tlp = (TableLayoutPanel)typeof(PropertyCollectionView)
+                .GetField("tableLayoutPanel", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(this);
+            var scroll = (Panel)typeof(PropertyCollectionView)
+                .GetField("scrollPanel", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(this);
+
+            // 내부 컨트롤에도 적용
+            EnableFlickerFree(tlp);
+            EnableFlickerFree(scroll);
+        }
+
+        // 깜빡임 최소화 공통 함수 (리플렉션으로 protected 멤버 호출)
+        private static void EnableFlickerFree(Control c)
+        {
+            if (c == null) return;
+
+            // 1) DoubleBuffered 강제 (protected 속성)
+            var piDB = typeof(Control).GetProperty(
+                "DoubleBuffered",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            piDB?.SetValue(c, true, null);
+
+            // 2) SetStyle(ControlStyles, bool) 호출
+            var miSetStyle = typeof(Control).GetMethod(
+                "SetStyle",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            var styles =
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.UserPaint;
+            miSetStyle?.Invoke(c, new object[] { styles, true });
+
+            // 3) UpdateStyles() 호출
+            var miUpdateStyles = typeof(Control).GetMethod(
+                "UpdateStyles",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            miUpdateStyles?.Invoke(c, null);
         }
 
         public IOPropertyCollectionView() : this("IO Property Group")
         {
+            // (옵션) 깜빡임 줄이기
+            this.DoubleBuffered = true;
         }
 
         public override void SetProperties(PropertyCollection properties)

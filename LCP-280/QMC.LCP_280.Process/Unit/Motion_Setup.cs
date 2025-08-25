@@ -228,7 +228,7 @@ namespace QMC.LCP_280.Process.Unit
                 string axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes", UNIT_NAME);
                 Directory.CreateDirectory(axisRoot);
                 string setupPath = Path.Combine(axisRoot, axisName + ".config.json");
-                axis.Setup.Save(setupPath);
+                axis.Config.Save(setupPath);
 
                 MessageBox.Show($"'{axisName}' 설정을 저장했습니다.", "완료",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
