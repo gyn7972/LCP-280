@@ -190,7 +190,7 @@ namespace QMC.LCP_280.Process
         private void AutoRegisterUnits()
         {
             // 개발자가 필요한 Unit들을 여기에 추가
-            RegisterUnit(new CassetteLoadingElevator(), "CassetteLoadingElevator");
+            RegisterUnit(new InputCassetteLifter(), "InputCassetteLifter");
 
             // 추가 Unit들 예시:
             // RegisterUnit(new WaferAlignmentUnit(), "WaferAlignment");
@@ -288,7 +288,7 @@ namespace QMC.LCP_280.Process
             // Unit 타입에 따라 적절한 Recipe 생성
             switch (unit)
             {
-                case CassetteLoadingElevator cassetteUnit:
+                case InputCassetteLifter cassetteUnit:
                     return new CassetteElevatorRecipe();
                 default:
                     return new DefaultUnitRecipe(unit.UnitName);
@@ -464,7 +464,7 @@ namespace QMC.LCP_280.Process
             // Unit 타입별로 다른 작업 수행
             switch (unit)
             {
-                case CassetteLoadingElevator cassetteUnit:
+                case InputCassetteLifter cassetteUnit:
                     await PerformCassetteElevatorCycle(cassetteUnit, cancellationToken);
                     break;
                 default:
@@ -477,7 +477,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// CassetteLoadingElevator 주기적 작업
         /// </summary>
-        private async Task PerformCassetteElevatorCycle(CassetteLoadingElevator unit, CancellationToken cancellationToken)
+        private async Task PerformCassetteElevatorCycle(InputCassetteLifter unit, CancellationToken cancellationToken)
         {
             // 실제 설비 로직에 맞게 구현
             // 예: 센서 체크, 위치 확인, 에러 체크 등

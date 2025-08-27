@@ -11,15 +11,15 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class CassetteLoadingUnit_Config
+    partial class InputCassetteLifterUnit_Config
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private PropertyCollectionView PositionpropertyCollectionView;
+        private PropertyCollectionView positionPropertyCollectionView;
         private IOPropertyCollectionView inputPropertyCollectionView;
         private IOPropertyCollectionView outputPropertyCollectionView;
-        private ListBoxItemsView positionlistBoxItemsView;
+        private ListBoxItemsView positionListBoxItemsView;
 
         // Axis 목록 (추가)
         private ListBoxItemsView axisListBoxItemsView;
@@ -52,7 +52,6 @@ namespace QMC.LCP_280.Process.Unit
         private GroupBox gbMoveAxis;
         private GroupBox gbSelectAxis;
         private GroupBox gbDestinationMoveMode;
-        private GroupBox gbAxisPositions;
 
         private System.ComponentModel.IContainer components = null;
 
@@ -83,11 +82,10 @@ namespace QMC.LCP_280.Process.Unit
             this.btnMovePosition = new QMC.Common.IndividualMenuButton();
             this.rbTeachingMoveMode = new QMC.Common.RadioButtonView();
             this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
-            this.button_Test = new System.Windows.Forms.Button();
-            this.positionlistBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.positionListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.btnSave = new QMC.Common.IndividualMenuButton();
             this.btnCancel = new QMC.Common.IndividualMenuButton();
-            this.PositionpropertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.positionPropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
             this.inputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.outputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
@@ -108,8 +106,9 @@ namespace QMC.LCP_280.Process.Unit
             this.gbSelectAxis = new System.Windows.Forms.GroupBox();
             this.lblAxisPositionCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lblAxisPositionValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.gbAxisPositions = new System.Windows.Forms.GroupBox();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.AxispositonListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.button_Test = new System.Windows.Forms.Button();
             this.gbTeachingMove.SuspendLayout();
             this.gbPositionTeaching.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
@@ -167,11 +166,11 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
             this.gbPositionTeaching.Controls.Add(this.button_Test);
-            this.gbPositionTeaching.Controls.Add(this.positionlistBoxItemsView);
+            this.gbPositionTeaching.Controls.Add(this.positionListBoxItemsView);
             this.gbPositionTeaching.Controls.Add(this.btnSave);
             this.gbPositionTeaching.Controls.Add(this.btnCancel);
             this.gbPositionTeaching.Controls.Add(this.gbTeachingMove);
-            this.gbPositionTeaching.Controls.Add(this.PositionpropertyCollectionView);
+            this.gbPositionTeaching.Controls.Add(this.positionPropertyCollectionView);
             this.gbPositionTeaching.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.gbPositionTeaching.Location = new System.Drawing.Point(9, 12);
             this.gbPositionTeaching.Name = "gbPositionTeaching";
@@ -180,27 +179,17 @@ namespace QMC.LCP_280.Process.Unit
             this.gbPositionTeaching.TabStop = false;
             this.gbPositionTeaching.Text = "Position Teaching";
             // 
-            // button_Test
+            // positionListBoxItemsView
             // 
-            this.button_Test.Location = new System.Drawing.Point(530, 13);
-            this.button_Test.Name = "button_Test";
-            this.button_Test.Size = new System.Drawing.Size(75, 23);
-            this.button_Test.TabIndex = 8;
-            this.button_Test.Text = "Test";
-            this.button_Test.UseVisualStyleBackColor = true;
-            this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
-            // 
-            // positionlistBoxItemsView
-            // 
-            this.positionlistBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.positionlistBoxItemsView.BorderWidth = 2;
-            this.positionlistBoxItemsView.GroupName = "Position Items";
-            this.positionlistBoxItemsView.Location = new System.Drawing.Point(9, 34);
-            this.positionlistBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.positionlistBoxItemsView.Name = "positionlistBoxItemsView";
-            this.positionlistBoxItemsView.SelectedIndex = -1;
-            this.positionlistBoxItemsView.Size = new System.Drawing.Size(257, 313);
-            this.positionlistBoxItemsView.TabIndex = 2;
+            this.positionListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.positionListBoxItemsView.BorderWidth = 2;
+            this.positionListBoxItemsView.GroupName = "Position Items";
+            this.positionListBoxItemsView.Location = new System.Drawing.Point(9, 34);
+            this.positionListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.positionListBoxItemsView.Name = "positionListBoxItemsView";
+            this.positionListBoxItemsView.SelectedIndex = -1;
+            this.positionListBoxItemsView.Size = new System.Drawing.Size(257, 313);
+            this.positionListBoxItemsView.TabIndex = 2;
             // 
             // btnSave
             // 
@@ -240,15 +229,15 @@ namespace QMC.LCP_280.Process.Unit
             this.btnCancel.UseVisualStyleBackColor = false;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
-            // PositionpropertyCollectionView
+            // positionPropertyCollectionView
             // 
-            this.PositionpropertyCollectionView.GroupName = "Editor";
-            this.PositionpropertyCollectionView.Location = new System.Drawing.Point(279, 34);
-            this.PositionpropertyCollectionView.Margin = new System.Windows.Forms.Padding(4);
-            this.PositionpropertyCollectionView.Name = "PositionpropertyCollectionView";
-            this.PositionpropertyCollectionView.Size = new System.Drawing.Size(326, 168);
-            this.PositionpropertyCollectionView.TabIndex = 0;
-            this.PositionpropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.positionPropertyCollectionView.GroupName = "Editor";
+            this.positionPropertyCollectionView.Location = new System.Drawing.Point(279, 34);
+            this.positionPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4);
+            this.positionPropertyCollectionView.Name = "positionPropertyCollectionView";
+            this.positionPropertyCollectionView.Size = new System.Drawing.Size(326, 168);
+            this.positionPropertyCollectionView.TabIndex = 0;
+            this.positionPropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             // 
             // gbDigitalIO
             // 
@@ -257,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
             this.gbDigitalIO.Controls.Add(this.inputPropertyCollectionView);
             this.gbDigitalIO.Controls.Add(this.outputPropertyCollectionView);
             this.gbDigitalIO.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbDigitalIO.Location = new System.Drawing.Point(9, 379);
+            this.gbDigitalIO.Location = new System.Drawing.Point(9, 382);
             this.gbDigitalIO.Name = "gbDigitalIO";
             this.gbDigitalIO.Size = new System.Drawing.Size(613, 358);
             this.gbDigitalIO.TabIndex = 9;
@@ -523,17 +512,6 @@ namespace QMC.LCP_280.Process.Unit
             this.lblAxisPositionValue.Text = "000.000";
             this.lblAxisPositionValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // gbAxisPositions
-            // 
-            this.gbAxisPositions.BackColor = System.Drawing.Color.White;
-            this.gbAxisPositions.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbAxisPositions.Location = new System.Drawing.Point(959, 12);
-            this.gbAxisPositions.Name = "gbAxisPositions";
-            this.gbAxisPositions.Size = new System.Drawing.Size(300, 722);
-            this.gbAxisPositions.TabIndex = 13;
-            this.gbAxisPositions.TabStop = false;
-            this.gbAxisPositions.Text = "Axis Positions";
-            // 
             // axisListBoxItemsView
             // 
             this.axisListBoxItemsView.BorderWidth = 2;
@@ -545,16 +523,36 @@ namespace QMC.LCP_280.Process.Unit
             this.axisListBoxItemsView.TabIndex = 0;
             this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
             // 
-            // CassetteLoadingUnit_Config
+            // AxispositonListBoxItemsView
+            // 
+            this.AxispositonListBoxItemsView.BorderWidth = 2;
+            this.AxispositonListBoxItemsView.GroupName = "Axis Positions";
+            this.AxispositonListBoxItemsView.Location = new System.Drawing.Point(949, 12);
+            this.AxispositonListBoxItemsView.Name = "AxispositonListBoxItemsView";
+            this.AxispositonListBoxItemsView.SelectedIndex = -1;
+            this.AxispositonListBoxItemsView.Size = new System.Drawing.Size(303, 724);
+            this.AxispositonListBoxItemsView.TabIndex = 11;
+            // 
+            // button_Test
+            // 
+            this.button_Test.Location = new System.Drawing.Point(530, 15);
+            this.button_Test.Name = "button_Test";
+            this.button_Test.Size = new System.Drawing.Size(75, 23);
+            this.button_Test.TabIndex = 12;
+            this.button_Test.Text = "Test";
+            this.button_Test.UseVisualStyleBackColor = true;
+            this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
+            // 
+            // InputCassetteLifterUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1264, 746);
-            this.Controls.Add(this.gbAxisPositions);
+            this.ClientSize = new System.Drawing.Size(1264, 752);
+            this.Controls.Add(this.AxispositonListBoxItemsView);
             this.Controls.Add(this.gbMoveAxis);
             this.Controls.Add(this.gbDigitalIO);
             this.Controls.Add(this.gbPositionTeaching);
-            this.Name = "CassetteLoadingUnit_Config";
+            this.Name = "InputCassetteLifterUnit_Config";
             this.Text = "CassetteLoadingElevator Unit Configuration";
             this.gbTeachingMove.ResumeLayout(false);
             this.gbPositionTeaching.ResumeLayout(false);
@@ -591,7 +589,7 @@ namespace QMC.LCP_280.Process.Unit
     /// <summary>
     /// CassetteElevator + WaferTransferArm 의 AxisDefinition DisplayName 을 axisListBoxItemsView 에 설정
     /// </summary>
-    private void SetAxisDefinitionsToAxisListBox()
+        private void SetAxisDefinitionsToAxisListBox()
         {
             try
             {
@@ -601,10 +599,10 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var cassetteUnit = unit as CassetteLoadingElevator;
-                    if (cassetteUnit?.CassetteLoadingElevatorConfig?.PropertyPosition != null)
+                    var inputCassetteLifter = unit as InputCassetteLifter;
+                    if (inputCassetteLifter?.InputCassetteLifterConfig?.PropertyPosition != null)
                     {
-                        var propertyPosition = cassetteUnit.CassetteLoadingElevatorConfig.PropertyPosition;
+                        var propertyPosition = inputCassetteLifter.InputCassetteLifterConfig.PropertyPosition;
 
                         // PropertyPosition에서 Position Title들을 추출하여 ListBox에 설정
                         var positionTitles = propertyPosition.GetPropertyTitles();
@@ -612,7 +610,7 @@ namespace QMC.LCP_280.Process.Unit
                         if (positionTitles.Length > 0)
                         {
                             // listBoxItemsView에 Position Title들 설정
-                            positionlistBoxItemsView?.SetItems(positionTitles);
+                            positionListBoxItemsView?.SetItems(positionTitles);
 
                             Console.WriteLine($"✅ PropertyPosition을 listBoxItemsView에 설정 완료: {positionTitles.Length}개 항목");
                             Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionTitles)}");
@@ -620,7 +618,7 @@ namespace QMC.LCP_280.Process.Unit
                         else
                         {
                             Console.WriteLine("⚠️ PropertyPosition에 Position 항목이 없습니다.");
-                            positionlistBoxItemsView?.SetItems();
+                            positionListBoxItemsView?.SetItems();
                         }
                     }
                     else
@@ -644,13 +642,13 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private void SetupPositionItemSelectionEvent()
         {
-            if (positionlistBoxItemsView != null)
+            if (positionListBoxItemsView != null)
             {
                 // 기존 이벤트 핸들러 제거 (중복 방지)
-                positionlistBoxItemsView.ItemSelected -= OnPositionItemSelected;
+                positionListBoxItemsView.ItemSelected -= OnPositionItemSelected;
 
                 // 새 이벤트 핸들러 등록
-                positionlistBoxItemsView.ItemSelected += OnPositionItemSelected;
+                positionListBoxItemsView.ItemSelected += OnPositionItemSelected;
 
                 Console.WriteLine("✅ Position Item 선택 이벤트 설정 완료");
             }
@@ -664,14 +662,14 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Equipment에서 CassetteLoadingElevator Unit 가져오기
                 var equipment = Equipment.Instance;
-                const string UNIT_NAME = "CassetteLoadingElevator";
+                const string UNIT_NAME = "InputCassetteLifter";
 
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var cassetteUnit = unit as CassetteLoadingElevator;
-                    if (cassetteUnit?.CassetteLoadingElevatorConfig?.PropertyPosition != null)
+                    var inputCassetteLifter = unit as InputCassetteLifter;
+                    if (inputCassetteLifter?.InputCassetteLifterConfig?.PropertyPosition != null)
                     {
-                        var propertyPosition = cassetteUnit.CassetteLoadingElevatorConfig.PropertyPosition;
+                        var propertyPosition = inputCassetteLifter.InputCassetteLifterConfig.PropertyPosition;
                         var positionTitles = propertyPosition.GetPropertyTitles();
 
                         if (selectedIndex >= 0 && selectedIndex < positionTitles.Length)
@@ -699,7 +697,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
 
                                 // PropertyCollectionView에 Editor 내용 설정
-                                PositionpropertyCollectionView?.SetProperties(editorProperties);
+                                positionPropertyCollectionView?.SetProperties(editorProperties);
 
                                 Console.WriteLine($"📍 Position Item 선택: {selectedTitle}");
                                 if (selectedProperty is DoubleProperty dp)
@@ -798,6 +796,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
+        private ListBoxItemsView AxispositonListBoxItemsView;
         private Button button_Test;
     }
 }
