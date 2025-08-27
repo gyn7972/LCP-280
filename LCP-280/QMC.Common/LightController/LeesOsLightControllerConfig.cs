@@ -57,28 +57,20 @@ namespace QMC.Common.LightController
         public override PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
-            PropertyBase p;
 
             // Title
             string title = $"LightController [{Name}] - Config";
-            pc.Add(new TitleOnlyProperty(title));
+            pc.Add(title);
 
             // Value
-            p = new StringProperty("PortName", PortName);
-            pc.Add(p);
-            p = new IntProperty("BaudRate", BaudRate);
-            pc.Add(p);
-            p = new IntProperty("DataBits", DataBits);
-            pc.Add(p);
-            p = new ComboBoxProperty("Parity", Parity.ToString(), Enum.GetNames(typeof(Parity)).ToList());
-            pc.Add(p);
-            p = new ComboBoxProperty("StopBits", StopBits.ToString(), Enum.GetNames(typeof(StopBits)).ToList());
-            pc.Add(p);
-            p = new ComboBoxProperty("Handshake", Handshake.ToString(), Enum.GetNames(typeof(Handshake)).ToList());
-            pc.Add(p);
-            p = new IntProperty("ReplyTimeout", ReplyTimeout);
-            pc.Add(p);
-            
+            pc.Add("PortName", PortName);
+            pc.Add("BaudRate", BaudRate);
+            pc.Add("DataBits", DataBits);
+            pc.Add("Parity", Parity);
+            pc.Add("StopBits", StopBits);
+            pc.Add("Handshake", Handshake);
+            pc.Add("ReplyTimeout", ReplyTimeout);
+
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -86,42 +78,20 @@ namespace QMC.Common.LightController
             if (pc == null)
                 return -1;
 
-            foreach (var prop in pc)
+            try
             {
-                try
-                {
-                    switch (prop.Title)
-                    {
-                        case "PortName":
-                            PortName = prop.Value?.ToString() ?? "";
-                            break;
-                        case "BaudRate":
-                            BaudRate = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "DataBits":
-                            DataBits = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "Parity":
-                            Parity = (Parity)Enum.Parse(typeof(Parity), prop.Value?.ToString());
-                            break;
-                        case "StopBits":
-                            StopBits = (StopBits)Enum.Parse(typeof(StopBits), prop.Value?.ToString());
-                            break;
-                        case "Handshake":
-                            Handshake = (Handshake)Enum.Parse(typeof(Handshake), prop.Value?.ToString());
-                            break;
-                        case "ReplyTimeout":
-                            ReplyTimeout = int.Parse(prop.Value?.ToString());
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
-                    return -1;
-                }
+                PortName = pc.GetValue<string>("PortName");
+                BaudRate = pc.GetValue<int>("BaudRate");
+                DataBits = pc.GetValue<int>("DataBits");
+                Parity = pc.GetValue<Parity>("Parity");
+                StopBits = pc.GetValue<StopBits>("StopBits");
+                Handshake = pc.GetValue<Handshake>("Handshake");
+                ReplyTimeout = pc.GetValue<int>("ReplyTimeout");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
             }
 
             return 0;

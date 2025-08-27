@@ -1,4 +1,5 @@
-﻿using QMC.Common.Component;
+﻿using QMC.Common.Common;
+using QMC.Common.Component;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -25,7 +26,7 @@ namespace QMC.Common.LightController
     public class LeesOsLightController : BaseComponent
     {
         #region Field
-        private SerialPort communicator;
+        private SerialComm communicator;
         #endregion
 
         #region Property
@@ -83,6 +84,9 @@ namespace QMC.Common.LightController
             }
 
             Config = new LeesOsLightControllerConfig(name);
+
+            communicator = new SerialComm();
+            communicator.ETXString = "\r\n";
         }
         #endregion
 
@@ -94,7 +98,7 @@ namespace QMC.Common.LightController
                 if (communicator.IsOpen)
                 {
                     string command = GetTurnOnOffCommandString(channelNo, state);
-                    communicator.Write(command);
+                    communicator.Send(command);
                 }
             }
         }
@@ -106,7 +110,7 @@ namespace QMC.Common.LightController
                 if (communicator.IsOpen)
                 {
                     string command = GetVolumeCommandString(channelNo, volume);
-                    communicator.Write(command);
+                    communicator.Send(command);
                 }
             }
         }
@@ -130,10 +134,38 @@ namespace QMC.Common.LightController
         #region Method
         private string GetTurnOnOffCommandString(int channelNo, bool state)
         {
+            switch(Model)
+            {
+                // 8Bit Controller
+                case LeesOsLightControllerModel.LPD_3024_1CH:
+                case LeesOsLightControllerModel.LPD_3024_2CH:
+                case LeesOsLightControllerModel.LPD_4024_3CH:
+                case LeesOsLightControllerModel.LPD_4024_4CH:
+                    return $"H{channelNo.ToString("X1")}{(state ? "ON":"OF")}\r\n";
+
+                // 12Bit Controller
+                case LeesOsLightControllerModel.LPD_6524_2CH:
+                case LeesOsLightControllerModel.LPD_6524_4CH:
+                    return $"LH{channelNo.ToString("X1")}{(state ? "ON":"OF")}\r\n";
+            }
             return "";
         }
         private string GetVolumeCommandString(int channelNo, int volume)
         {
+            switch(Model)
+            {
+                // 8Bit Controller
+                case LeesOsLightControllerModel.LPD_3024_1CH:
+                case LeesOsLightControllerModel.LPD_3024_2CH:
+                case LeesOsLightControllerModel.LPD_4024_3CH:
+                case LeesOsLightControllerModel.LPD_4024_4CH:
+                    return $"C{channelNo.ToString("X1")}{volume.ToString("X2")}\r\n";
+
+                // 12Bit Controller
+                case LeesOsLightControllerModel.LPD_6524_2CH:
+                case LeesOsLightControllerModel.LPD_6524_4CH:
+                    return $"C{channelNo.ToString("X1")}{volume.ToString("X3")}\r\n";
+            }
             return "";
         }
         #endregion

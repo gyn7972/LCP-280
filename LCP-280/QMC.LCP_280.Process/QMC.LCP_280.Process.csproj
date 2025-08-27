@@ -76,8 +76,6 @@
     <Compile Include="CassetteMapView.Designer.cs">
       <DependentUpon>CassetteMapView.cs</DependentUpon>
     </Compile>
-    <Compile Include="Component\CassetteElevator.cs" />
-    <Compile Include="Component\CassetteElevatorConfig.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
     <Compile Include="Sequence.cs">
@@ -93,14 +91,18 @@
     <Compile Include="TestGyn.Designer.cs">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\CassetteLoadingElevatorConfig.cs" />
-    <Compile Include="Unit\CassetteLoadingElevator.cs" />
-    <Compile Include="Unit\CassetteLoadingUnit_Config.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\CassetteLoadingUnit_Config.Designer.cs">
-      <DependentUpon>CassetteLoadingUnit_Config.cs</DependentUpon>
-    </Compile>
+    <Compile Include="Unit\GageRnR.cs" />
+    <Compile Include="Unit\GageRnRConfig.cs" />
+    <Compile Include="Unit\IndexChipProber.cs" />
+    <Compile Include="Unit\IndexChipProberConfig.cs" />
+    <Compile Include="Unit\IndexLoadAligner.cs" />
+    <Compile Include="Unit\IndexLoadAlignerConfig.cs" />
+    <Compile Include="Unit\IndexProbeController.cs" />
+    <Compile Include="Unit\IndexProbeControllerConfig.cs" />
+    <Compile Include="Unit\IndexUnloadAligner.cs" />
+    <Compile Include="Unit\IndexUnloadAlignerConfig.cs" />
+    <Compile Include="Unit\InputCassetteLifterConfig.cs" />
+    <Compile Include="Unit\InputCassetteLifter.cs" />
     <Compile Include="Unit\Cylinder_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -113,18 +115,34 @@
     <Compile Include="Unit\DigitalIO_Setup.Designer.cs">
       <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\InputDieTransfer.cs" />
+    <Compile Include="Unit\InputDieTransferConfig.cs" />
+    <Compile Include="Unit\InputRingTransfer.cs" />
+    <Compile Include="Unit\InputRingTransferConfig.cs" />
+    <Compile Include="Unit\InputStage.cs" />
+    <Compile Include="Unit\InputStageConfig.cs" />
     <Compile Include="Unit\Motion_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Unit\Motion_Setup.Designer.cs">
       <DependentUpon>Motion_Setup.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\CassetteLoadingElevatorUnit_Config.cs">
+    <Compile Include="Unit\InputCassetteLifterUnit_Config.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\CassetteLoadingElevatorUnit_Config.Designer.cs">
-      <DependentUpon>CassetteLoadingElevatorUnit_Config.cs</DependentUpon>
+    <Compile Include="Unit\InputCassetteLifterUnit_Config.Designer.cs">
+      <DependentUpon>InputCassetteLifterUnit_Config.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\OutputCassetteLifter.cs" />
+    <Compile Include="Unit\OutputCassetteLifterConfig.cs" />
+    <Compile Include="Unit\OutputDieTransfer.cs" />
+    <Compile Include="Unit\OutputDieTransferConfig.cs" />
+    <Compile Include="Unit\OutputRingTransfer.cs" />
+    <Compile Include="Unit\OutputRingTransferConfig.cs" />
+    <Compile Include="Unit\OutputStage.cs" />
+    <Compile Include="Unit\OutputStageConfig.cs" />
+    <Compile Include="Unit\Rotary.cs" />
+    <Compile Include="Unit\RotaryConfig.cs" />
     <Compile Include="Unit\Vision_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -150,9 +168,6 @@
     <EmbeddedResource Include="TestGyn.resx">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\CassetteLoadingUnit_Config.resx">
-      <DependentUpon>CassetteLoadingUnit_Config.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Unit\Cylinder_Setup.resx">
       <DependentUpon>Cylinder_Setup.cs</DependentUpon>
     </EmbeddedResource>
@@ -162,8 +177,8 @@
     <EmbeddedResource Include="Unit\Motion_Setup.resx">
       <DependentUpon>Motion_Setup.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\CassetteLoadingElevatorUnit_Config.resx">
-      <DependentUpon>CassetteLoadingElevatorUnit_Config.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\InputCassetteLifterUnit_Config.resx">
+      <DependentUpon>InputCassetteLifterUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Vision_Setup.resx">
       <DependentUpon>Vision_Setup.cs</DependentUpon>
@@ -203,6 +218,9 @@
       <Project>{457920bd-bbae-447e-8ab0-a03f4722275c}</Project>
       <Name>QMC.Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Component\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

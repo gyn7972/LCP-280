@@ -113,6 +113,7 @@
     <Compile Include="Common\Range.cs" />
     <Compile Include="Common\RectangleD.cs" />
     <Compile Include="Common\SaveManager.cs" />
+    <Compile Include="Common\SerialComm.cs" />
     <Compile Include="Common\SizeD.cs" />
     <Compile Include="Common\StopWatch.cs" />
     <Compile Include="Common\TimeoutChecker.cs" />

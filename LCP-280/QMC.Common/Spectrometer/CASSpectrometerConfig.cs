@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
+using System.Management.Instrumentation;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,21 +12,14 @@ namespace QMC.Common.Spectrometer
     public class CASSpectrometerConfig : BaseConfig
     {
         #region Defines
-        //public const int InterfacePCI = 1;  ///<PCI interface constant. For use with e.g. <see cref="casCreateDeviceEx"/>. See chapter @ref interfaceTypesAndOptions.
-        //public const int InterfaceTest = 3;  ///<Demo mode interface constant. For use with e.g. <see cref="casCreateDeviceEx"/>. See chapter @ref interfaceTypesAndOptions.
-        //public const int InterfaceUSB = 5;  ///<USB interface constant. For use with e.g. <see cref="casCreateDeviceEx"/>. See chapter @ref interfaceTypesAndOptions.
-        //public const int InterfacePCIe = 10; ///<PCIe interface constant. For use with e.g. <see cref="casCreateDeviceEx"/>. See chapter @ref interfaceTypesAndOptions.
-        //public const int InterfaceEthernet
-
         public enum DeviceInterface
         {
-            PCI = CAS4DLL.InterfacePCI,
-            Test = CAS4DLL.InterfaceTest,
-            USB = CAS4DLL.InterfaceUSB,
-            PCIe = CAS4DLL.InterfacePCIe,
-            Ethernet = CAS4DLL.InterfaceEthernet
+            PCI,
+            Test,
+            USB,
+            PCIe,
+            Ethernet
         };
-
         #endregion
 
         #region Property
@@ -61,7 +55,7 @@ namespace QMC.Common.Spectrometer
             DensityFilter = 0;
             ColormetricStart = 380;
             ColormetricStop = 780;
-            TriggerTimeout = 10000;
+            TriggerTimeout = 5000;
             UseExternalTrigger = false;
         }
         public override bool Validate()
@@ -85,91 +79,48 @@ namespace QMC.Common.Spectrometer
         public override PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
-            PropertyBase p;
 
             // Title
-            string title = $"Spectrometer [{Name}] - Config";
-            pc.Add(new TitleOnlyProperty(title));
+            pc.Add($"Spectrometer [{Name}] - Config");
 
             // Value
-            p = new ComboBoxProperty("DeviceInterfaceType", DeviceInterfaceType.ToString(), Enum.GetNames(typeof(DeviceInterface)).ToList());
-            pc.Add(p);
-            p = new IntProperty("DeviceInterfaceOption", DeviceInterfaceOption);
-            pc.Add(p);
-            p = new StringProperty("ConfigFileName", ConfigFileName);
-            pc.Add(p);
-            p = new StringProperty("CalibFileName", CalibFileName);
-            pc.Add(p);
-            p = new IntProperty("IntegrationTime", IntegrationTime);
-            pc.Add(p);
-            p = new IntProperty("Averages", Averages);
-            pc.Add(p);
-            p = new IntProperty("DensityFilter", DensityFilter);
-            pc.Add(p);
-            p = new IntProperty("ColormetricStart", ColormetricStart);
-            pc.Add(p);
-            p = new IntProperty("ColormetricStop", ColormetricStop);
-            pc.Add(p);
-            p = new IntProperty("TriggerTimeout", TriggerTimeout);
-            pc.Add(p);
-            p = new BoolProperty("UseExternalTrigger", UseExternalTrigger);
-            pc.Add(p);
-
+            pc.Add("DeviceInterfaceType", DeviceInterfaceType);
+            pc.Add("DeviceInterfaceOption", DeviceInterfaceOption);
+            pc.Add("ConfigFileName", ConfigFileName);
+            pc.Add("CalibFileName", CalibFileName);
+            pc.Add("IntegrationTime", IntegrationTime);
+            pc.Add("Averages", Averages);
+            pc.Add("DensityFilter", DensityFilter);
+            pc.Add("ColormetricStart", ColormetricStart);
+            pc.Add("ColormetricStop", ColormetricStop);
+            pc.Add("TriggerTimeout", TriggerTimeout);
+            pc.Add("UseExternalTrigger", UseExternalTrigger);
             return pc;
         }
+
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
         {
             if (pc == null)
                 return -1;
 
-            foreach (var prop in pc)
+            try
             {
-                try
-                {
-                    switch (prop.Title)
-                    {
-                        case "DeviceInterfaceType":
-                            DeviceInterfaceType = (DeviceInterface)Enum.Parse(typeof(DeviceInterface), prop.Value?.ToString());
-                            break;
-                        case "DeviceInterfaceOption":
-                            DeviceInterfaceOption = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "ConfigFileName":
-                            ConfigFileName = prop.Value?.ToString() ?? "";
-                            break;
-                        case "CalibFileName":
-                            CalibFileName = prop.Value?.ToString() ?? "";
-                            break;
-                        case "IntegrationTime":
-                            IntegrationTime = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "Averages":
-                            Averages = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "DensityFilter":
-                            DensityFilter = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "ColormetricStart":
-                            ColormetricStart = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "ColormetricStop":
-                            ColormetricStop = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "TriggerTimeout":
-                            TriggerTimeout = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "UseExternalTrigger":
-                            UseExternalTrigger = bool.Parse(prop.Value?.ToString());
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
-                    return -1;
-                }
+                DeviceInterfaceType = pc.GetValue<DeviceInterface>("DeviceInterfaceType");
+                DeviceInterfaceOption = pc.GetValue<int>("DeviceInterfaceOption");
+                ConfigFileName = pc.GetValue<string>("ConfigFileName");
+                CalibFileName = pc.GetValue<string>("CalibFileName");
+                IntegrationTime = pc.GetValue<int>("IntegrationTime");
+                Averages = pc.GetValue<int>("Averages");
+                DensityFilter = pc.GetValue<int>("DensityFilter");
+                ColormetricStart = pc.GetValue<int>("ColormetricStart");
+                ColormetricStop = pc.GetValue<int>("ColormetricStop");
+                TriggerTimeout = pc.GetValue<int>("TriggerTimeout");
+                UseExternalTrigger = pc.GetValue<bool>("UseExternalTrigger");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
             }
 
             return 0;
