@@ -88,6 +88,7 @@
     <Compile Include="BarcodeReader\OpticonBarcodeReader.cs" />
     <Compile Include="BarcodeReader\OpticonBarcodeReaderConfig.cs" />
     <Compile Include="BaseRecipe.cs" />
+    <Compile Include="BaseSetup.cs" />
     <Compile Include="Cameras\Camera.cs" />
     <Compile Include="Cameras\CameraConfig.cs" />
     <Compile Include="Cameras\CameraSwitch.cs" />
@@ -119,6 +120,7 @@
     <Compile Include="Common\TimeSpanInfo.cs" />
     <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
     <Compile Include="Common\TypeUtility.cs" />
+    <Compile Include="ConfigStore.cs" />
     <Compile Include="Coordinate\IActor.cs" />
     <Compile Include="Coordinate\SettingParameter.cs" />
     <Compile Include="Coordinate\XryztCoordinate.cs" />
@@ -139,6 +141,7 @@
     </Compile>
     <Compile Include="Cylinder\Cylinder.cs" />
     <Compile Include="Cylinder\CylinderConfig.cs" />
+    <Compile Include="DefaultValueApplier.cs" />
     <Compile Include="FormMessageBox\MessageBoxOk.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -354,6 +357,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
+    <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
       <DependentUpon>Form_Alarm.cs</DependentUpon>
     </EmbeddedResource>
@@ -452,5 +456,6 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

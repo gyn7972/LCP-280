@@ -164,7 +164,8 @@ namespace QMC.LCP_280.Process
             // 이미지 뷰어 초기화
             this.pictureBox_ImageView_Test.SizeMode = PictureBoxSizeMode.CenterImage;
             this.pictureBox_ImageView_Test.SuspendDisplay();
-            this.pictureBox_ImageView_Test.Camera = Equipment.Instance.Camera; // 실제 카메라 객체로 변경
+            //this.pictureBox_ImageView_Test.Camera = Equipment.Instance.Camera; // 실제 카메라 객체로 변경
+            this.pictureBox_ImageView_Test.Camera = null;
         }
     }
 }

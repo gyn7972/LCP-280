@@ -20,6 +20,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -45,8 +46,8 @@ namespace QMC.Common.Vision
         private const int HALFTONE = 4;
         [DllImport("gdi32.dll")]
         static extern bool BitBlt(
-    IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight,
-    IntPtr hdcSrc, int nXSrc, int nYSrc, int dwRop);
+        IntPtr hdcDest, int nXDest, int nYDest, int nWidth, int nHeight,
+        IntPtr hdcSrc, int nXSrc, int nYSrc, int dwRop);
         [DllImport("gdi32.dll")]
         static extern bool DeleteDC(IntPtr hdc);
 
@@ -1004,7 +1005,7 @@ namespace QMC.Common.Vision
             set
             {
                 m_bVisibleCrossLine = value;
-                if (this.Camera != null)
+                if (this.CurrentCamera != null) // 기존: this.Camera != null
                     ShowCrossLine(m_bVisibleCrossLine);
             }
             get
@@ -1248,23 +1249,17 @@ namespace QMC.Common.Vision
             }
             else if (item.Name == MenuItems.Live.ToString())
             {
-                if (this.Camera == null)
-                {
-                    MessageBox.Show("Camera is not exist");
-                    return;
-                }
+                var cam = CurrentCamera;
+                if (cam == null) { MessageBox.Show("Camera is not exist"); return; }
                 Simulated = false;
-                Camera.StartLive();
+                cam.StartLive();
             }
             else if (item.Name == MenuItems.Stop.ToString())
             {
-                if (this.Camera == null)
-                {
-                    MessageBox.Show("Camera is not exist");
-                    return;
-                }
+                var cam = CurrentCamera;
+                if (cam == null) { MessageBox.Show("Camera is not exist"); return; }
                 Simulated = false;
-                Camera.StopLive();
+                cam.StopLive();
             }
         }
 
@@ -1305,39 +1300,78 @@ namespace QMC.Common.Vision
         {
             m_FixedByWidth = bIsFixByWidth;
         }
-        private void InitCrossLine()
+        public void InitCrossLine() //private
         {
+            var cam = CurrentCamera;
+            if (cam == null) return;
+
             m_HorizentalLine = new LineFrameVisionImageOverlay();
             m_VerticalLine = new LineFrameVisionImageOverlay();
-            int nX = Camera.Resolution.Width;
-            int nY = Camera.Resolution.Height;
+
+            int nX = cam.Resolution.Width;      // 기존: Camera.Resolution
+            int nY = cam.Resolution.Height;
+
             m_HorizentalLine.StartLocation = new Point(0, nY / 2);
             m_HorizentalLine.EndLocation = new Point(nX, nY / 2);
             m_HorizentalLine.Color = Color.Lime;
-            m_HorizentalLine.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+            m_HorizentalLine.DashStyle = DashStyle.Dot;
             m_HorizentalLine.Thickness = 1;
             m_HorizentalLine.Visible = true;
 
             m_VerticalLine.StartLocation = new Point(nX / 2, 0);
             m_VerticalLine.EndLocation = new Point(nX / 2, nY);
             m_VerticalLine.Color = Color.Lime;
-            m_VerticalLine.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+            m_VerticalLine.DashStyle = DashStyle.Dot;
             m_VerticalLine.Thickness = 1;
             m_VerticalLine.Visible = true;
+
+            //m_HorizentalLine = new LineFrameVisionImageOverlay();
+            //m_VerticalLine = new LineFrameVisionImageOverlay();
+            //int nX = Camera.Resolution.Width;
+            //int nY = Camera.Resolution.Height;
+            //m_HorizentalLine.StartLocation = new Point(0, nY / 2);
+            //m_HorizentalLine.EndLocation = new Point(nX, nY / 2);
+            //m_HorizentalLine.Color = Color.Lime;
+            //m_HorizentalLine.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+            //m_HorizentalLine.Thickness = 1;
+            //m_HorizentalLine.Visible = true;
+
+            //m_VerticalLine.StartLocation = new Point(nX / 2, 0);
+            //m_VerticalLine.EndLocation = new Point(nX / 2, nY);
+            //m_VerticalLine.Color = Color.Lime;
+            //m_VerticalLine.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot;
+            //m_VerticalLine.Thickness = 1;
+            //m_VerticalLine.Visible = true;
         }
         public void ShowCrossLine(bool bVisible)
         {
-            
+            // 라인 객체가 없으면 생성
+            if (m_HorizentalLine == null || m_VerticalLine == null)
+                InitCrossLine();
+
             if (bVisible)
             {
-                this.NormalOverlays.Add(m_HorizentalLine);
-                this.NormalOverlays.Add(m_VerticalLine);
+                if (m_HorizentalLine != null && !NormalOverlays.Contains(m_HorizentalLine))
+                    NormalOverlays.Add(m_HorizentalLine);
+
+                if (m_VerticalLine != null && !NormalOverlays.Contains(m_VerticalLine))
+                    NormalOverlays.Add(m_VerticalLine);
             }
             else
             {
-                this.NormalOverlays.Remove(m_HorizentalLine);
-                this.NormalOverlays.Remove(m_VerticalLine);
+                if (m_HorizentalLine != null) NormalOverlays.Remove(m_HorizentalLine);
+                if (m_VerticalLine != null) NormalOverlays.Remove(m_VerticalLine);
             }
+            //if (bVisible)
+            //{
+            //    this.NormalOverlays.Add(m_HorizentalLine);
+            //    this.NormalOverlays.Add(m_VerticalLine);
+            //}
+            //else
+            //{
+            //    this.NormalOverlays.Remove(m_HorizentalLine);
+            //    this.NormalOverlays.Remove(m_VerticalLine);
+            //}
 
         }
         public static void DisplayAll(Control control)
@@ -1540,7 +1574,6 @@ namespace QMC.Common.Vision
                     m_Graphics.Render(this.m_GraphicsDisplay);
                 }
             }
-            
         }
 
 
@@ -1658,23 +1691,24 @@ namespace QMC.Common.Vision
 
         private void SetTopCaption()
         {
-            BaseComponent component = null;
-            StringBuilder builder = new StringBuilder();
-            bool isLive = false;
-
-            if (this.Camera != null)
-            {
-                component = this.Camera;
-
-                isLive = this.Camera.IsLiveOn;
-            }
-            else if (this.CameraSwitch != null)
-            {
-                component = this.CameraSwitch.Cameras[this.CameraSwitch.SelectCameraIndex] as BaseComponent;
-                isLive = this.CameraSwitch.Cameras[this.CameraSwitch.SelectCameraIndex].IsLiveOn;
-            }
-
+            BaseComponent component = CurrentCamera as BaseComponent;
+            bool isLive = CurrentCamera?.IsLiveOn == true;
             if (component == null) return;
+
+            StringBuilder builder = new StringBuilder();
+            //if (this.Camera != null)
+            //{
+            //    component = this.Camera;
+
+            //    isLive = this.Camera.IsLiveOn;
+            //}
+            //else if (this.CameraSwitch != null)
+            //{
+            //    component = this.CameraSwitch.Cameras[this.CameraSwitch.SelectCameraIndex] as BaseComponent;
+            //    isLive = this.CameraSwitch.Cameras[this.CameraSwitch.SelectCameraIndex].IsLiveOn;
+            //}
+
+            //if (component == null) return;
 
             builder.AppendFormat("Camera : {0}    ", component.Name);
             //builder.AppendFormat("Live Status : {0}", isLive);
@@ -1764,51 +1798,83 @@ namespace QMC.Common.Vision
 
                             lock (bufferedGrphics)
                             {
-                                OwnedOverlayCollection resultNormal = this.NormalOverlays;
-                                try
+                                // Normal overlays
+                                var resultNormal = this.NormalOverlays;
+                                if (resultNormal != null)
                                 {
                                     for (int i = 0; i < resultNormal.Count; i++)
                                     {
-                                        if (resultNormal[i].Visible == true)
-                                            resultNormal[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
+                                        var ov = resultNormal[i];
+                                        if (ov == null) continue;           // ★ null 방어
+                                        if (ov.Visible)
+                                            ov.Draw(this.Scale.GetOffset(), size,
+                                                    new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
                                     }
-
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Write(ex);
                                 }
 
-                                OwnedOverlayCollection resultOverlays = this.ResultOverlays;
+                                // Result overlays
+                                var resultOverlays = this.ResultOverlays;
+                                if (resultOverlays != null)
                                 {
-                                    try
+                                    lock (resultOverlays)
                                     {
-                                        lock(resultOverlays)
+                                        for (int i = 0; i < resultOverlays.Count; i++)
                                         {
-                                            for (int i = 0; i < resultOverlays.Count; i++)
-                                            {
-                                                lock(bufferedGrphics)
-                                                {
-                                                    //Todo: 확인 해봐야함.
-                                                    if (resultOverlays[i].Visible == true)
-                                                    {
-                                                        resultOverlays[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-                                                        //resultOverlays[i].Draw( this.Scale.GetCenterPoint()+ this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-
-                                                    }
-
-                                                }
-
-                                            }
+                                            var ov = resultOverlays[i];
+                                            if (ov == null) continue;       // ★ null 방어
+                                            if (ov.Visible)
+                                                ov.Draw(this.Scale.GetOffset(), size,
+                                                        new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
                                         }
-                                       
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Log.Write(ex);
                                     }
                                 }
                             }
+                            //lock (bufferedGrphics)
+                            //{
+                            //    OwnedOverlayCollection resultNormal = this.NormalOverlays;
+                            //    try
+                            //    {
+                            //        for (int i = 0; i < resultNormal.Count; i++)
+                            //        {
+                            //            if (resultNormal[i].Visible == true)
+                            //                resultNormal[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
+                            //        }
+                            //    }
+                            //    catch (Exception ex)
+                            //    {
+                            //        Log.Write(ex);
+                            //    }
+
+                            //    OwnedOverlayCollection resultOverlays = this.ResultOverlays;
+                            //    {
+                            //        try
+                            //        {
+                            //            lock(resultOverlays)
+                            //            {
+                            //                for (int i = 0; i < resultOverlays.Count; i++)
+                            //                {
+                            //                    lock(bufferedGrphics)
+                            //                    {
+                            //                        //Todo: 확인 해봐야함.
+                            //                        if (resultOverlays[i].Visible == true)
+                            //                        {
+                            //                            resultOverlays[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
+                            //                            //resultOverlays[i].Draw( this.Scale.GetCenterPoint()+ this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
+
+                            //                        }
+
+                            //                    }
+
+                            //                }
+                            //            }
+
+                            //        }
+                            //        catch (Exception ex)
+                            //        {
+                            //            Log.Write(ex);
+                            //        }
+                            //    }
+                            //}
                         }
 
                         this.m_IsChanged = false;
@@ -2005,6 +2071,10 @@ namespace QMC.Common.Vision
                     this.InputImage = image;
                 }
             }
+            else if (CurrentCamera != null)
+            {
+                this.InputImage = CurrentLatestImage;
+            }
             else
             {
                 if (this.Camera != null)
@@ -2037,10 +2107,13 @@ namespace QMC.Common.Vision
                 PointD currentPoint = this.Scale.GetPoint(e.X, e.Y);
                 PointD distance = new PointD();
 
-                if (this.InputImage == null) return;
+                var latest = CurrentLatestImage;
+                if (latest == null || this.InputImage == null) return;
+                //if (this.InputImage == null) return;
 
                 base.OnMouseUp(e);
-                double dScale = this.Camera.LatestImage.Header.Width / this.Width;
+                //double dScale = this.Camera.LatestImage.Header.Width / this.Width;
+                double dScale = latest.Header.Width / (double)this.Width;
                 distance = (this.m_PreviousPoint - currentPoint) * dScale;
 
                 distance += new PointD(this.Scale.HorizontalShift.Offset, this.Scale.VerticalShift.Offset);
@@ -2071,116 +2144,179 @@ namespace QMC.Common.Vision
         private bool m_bStop;
         private CancellationTokenSource cts = null;
         private static int TaskNO = 0;
+        //public void StartUpdateTask()
+        //{
+        //    ResumeDisplay();
+        //    if (m_task != null)
+        //    {
+        //        return;
+        //    }
+        //    m_GraphicsDisplay = this.CreateGraphics();
+
+        //    m_task = Task.Factory.StartNew(() =>
+        //    {
+        //        lock (objLock)
+        //        {
+        //            TaskNO++;
+        //            Thread.CurrentThread.Name = "VisionImageViewer StartUpdateTask" + TaskNO.ToString();
+
+        //        }
+        //        while (true)
+        //        {
+        //            if (m_bStop)
+        //                break;
+        //            if (this.SuspendedDisplay == false)
+        //            {
+        //                if (Camera != null && Camera.Opened)
+        //                {
+        //                    if (Camera.SuspendedImageDisplay == false)
+        //                    {
+        //                        if (this.m_InputImage != Camera.LatestImage)
+        //                        {
+        //                            if (this.m_InputImage != null && Camera.LatestImage != null)
+        //                            {
+        //                                if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
+        //                                {
+
+        //                                    //Scale.Scale.Y = this.Height/ Camera.LatestImage.Header.Height;
+        //                                    Scale.SetMousePoint(new Point(Camera.LatestImage.Header.Width / 2, Camera.LatestImage.Header.Height / 2));
+        //                                }
+        //                            }
+        //                            if (this.m_InputImage != null && Camera.LatestImage != null)
+        //                            {
+        //                                if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
+        //                                {
+        //                                    int nX = Camera.LatestImage.Header.Width;
+        //                                    int nY = Camera.LatestImage.Header.Height;
+
+        //                                    m_HorizentalLine.StartLocation = new Point(0, nY / 2);
+        //                                    m_HorizentalLine.EndLocation = new Point(nX, nY / 2);
+
+        //                                    m_VerticalLine.StartLocation = new Point(nX / 2, 0);
+        //                                    m_VerticalLine.EndLocation = new Point(nX / 2, nY);
+        //                                }
+        //                            }
+        //                            //this.Scale = new ImageScale(this.Width / this.m_InputImage.Header.Width, this.Height / this.m_InputImage.Header.Height);
+        //                        }
+
+        //                        this.m_InputImage = Camera.LatestImage;
+
+        //                        this.m_IsChanged = true;
+        //                        UpdateOverlay(false);
+        //                        this.DrawToBuffer(this.m_Graphics);
+        //                        this.RenderForDisplay(this.m_Graphics);
+        //                        //this.Invalidate();
+        //                        //this.Refresh();
+        //                    }
+        //                }
+        //                else if(Simulated)
+        //                {
+        //                    if (this.m_InputImage != Camera.LatestImage)
+        //                    {
+        //                        if (this.m_InputImage != null && Camera.LatestImage != null)
+        //                        {
+        //                            if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
+        //                            {
+
+        //                                //Scale.Scale.Y = this.Height/ Camera.LatestImage.Header.Height;
+        //                                Scale.SetMousePoint(new Point(Camera.LatestImage.Header.Width / 2, Camera.LatestImage.Header.Height / 2));
+        //                            }
+        //                        }
+        //                        if (this.m_InputImage != null && Camera.LatestImage != null)
+        //                        {
+        //                            if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
+        //                            {
+        //                                int nX = Camera.LatestImage.Header.Width;
+        //                                int nY = Camera.LatestImage.Header.Height;
+
+        //                                m_HorizentalLine.StartLocation = new Point(0, nY / 2);
+        //                                m_HorizentalLine.EndLocation = new Point(nX, nY / 2);
+
+        //                                m_VerticalLine.StartLocation = new Point(nX / 2, 0);
+        //                                m_VerticalLine.EndLocation = new Point(nX / 2, nY);
+        //                            }
+        //                        }
+        //                        //this.Scale = new ImageScale(this.Width / this.m_InputImage.Header.Width, this.Height / this.m_InputImage.Header.Height);
+        //                    }
+
+        //                    //this.m_InputImage = Camera.LatestImage;
+
+        //                    this.m_IsChanged = true;
+        //                    UpdateOverlay(false);
+        //                    this.DrawToBuffer(this.m_Graphics);
+        //                    this.RenderForDisplay(this.m_Graphics);
+        //                }
+        //            }
+
+        //            Thread.Sleep(UpdateDelayTime);
+        //        }
+        //    });
+
+
+        //}
         public void StartUpdateTask()
         {
             ResumeDisplay();
-            if (m_task != null)
-            {
-                return;
-            }
+            if (m_task != null) return;
+
             m_GraphicsDisplay = this.CreateGraphics();
-            
+
             m_task = Task.Factory.StartNew(() =>
             {
-                lock (objLock)
-                {
-                    TaskNO++;
-                    Thread.CurrentThread.Name = "VisionImageViewer StartUpdateTask" + TaskNO.ToString();
+                lock (objLock) { TaskNO++; Thread.CurrentThread.Name = "VisionImageViewer StartUpdateTask" + TaskNO; }
 
-                }
                 while (true)
                 {
-                    if (m_bStop)
-                        break;
-                    if (this.SuspendedDisplay == false)
+                    if (m_bStop) break;
+                    if (this.SuspendedDisplay) { Thread.Sleep(UpdateDelayTime); continue; }
+
+                    if (!Simulated)
                     {
-                        if (Camera != null && Camera.Opened)
+                        var cam = CurrentCamera;
+                        if (cam != null && cam.Opened && !cam.SuspendedImageDisplay)
                         {
-                            if (Camera.SuspendedImageDisplay == false)
+                            var latest = CurrentLatestImage;   // = cam?.LatestImage
+                            if (latest != null)
                             {
-                                if (this.m_InputImage != Camera.LatestImage)
+                                // 해상도 변경 시 크로스라인/스케일 보정
+                                if (m_InputImage != null && m_InputImage.Header.Width != latest.Header.Width)
                                 {
-                                    if (this.m_InputImage != null && Camera.LatestImage != null)
-                                    {
-                                        if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
-                                        {
-                                            
-                                            //Scale.Scale.Y = this.Height/ Camera.LatestImage.Header.Height;
-                                            Scale.SetMousePoint(new Point(Camera.LatestImage.Header.Width / 2, Camera.LatestImage.Header.Height / 2));
-                                        }
-                                    }
-                                    if (this.m_InputImage != null && Camera.LatestImage != null)
-                                    {
-                                        if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
-                                        {
-                                            int nX = Camera.LatestImage.Header.Width;
-                                            int nY = Camera.LatestImage.Header.Height;
+                                    Scale.SetMousePoint(new Point(latest.Header.Width / 2, latest.Header.Height / 2));
 
-                                            m_HorizentalLine.StartLocation = new Point(0, nY / 2);
-                                            m_HorizentalLine.EndLocation = new Point(nX, nY / 2);
-
-                                            m_VerticalLine.StartLocation = new Point(nX / 2, 0);
-                                            m_VerticalLine.EndLocation = new Point(nX / 2, nY);
-                                        }
-                                    }
-                                    //this.Scale = new ImageScale(this.Width / this.m_InputImage.Header.Width, this.Height / this.m_InputImage.Header.Height);
+                                    int nX = latest.Header.Width;
+                                    int nY = latest.Header.Height;
+                                    m_HorizentalLine.StartLocation = new Point(0, nY / 2);
+                                    m_HorizentalLine.EndLocation = new Point(nX, nY / 2);
+                                    m_VerticalLine.StartLocation = new Point(nX / 2, 0);
+                                    m_VerticalLine.EndLocation = new Point(nX / 2, nY);
                                 }
-                                
-                                this.m_InputImage = Camera.LatestImage;
 
-                                this.m_IsChanged = true;
+                                m_InputImage = latest;
+                                m_IsChanged = true;
+
                                 UpdateOverlay(false);
-                                this.DrawToBuffer(this.m_Graphics);
-                                this.RenderForDisplay(this.m_Graphics);
-                                //this.Invalidate();
-                                //this.Refresh();
+                                DrawToBuffer(m_Graphics);
+                                RenderForDisplay(m_Graphics);
                             }
                         }
-                        else if(Simulated)
+                    }
+                    else
+                    {
+                        // 파일 로드(시뮬레이션) 모드: m_InputImage만 그린다
+                        if (m_InputImage != null)
                         {
-                            if (this.m_InputImage != Camera.LatestImage)
-                            {
-                                if (this.m_InputImage != null && Camera.LatestImage != null)
-                                {
-                                    if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
-                                    {
-
-                                        //Scale.Scale.Y = this.Height/ Camera.LatestImage.Header.Height;
-                                        Scale.SetMousePoint(new Point(Camera.LatestImage.Header.Width / 2, Camera.LatestImage.Header.Height / 2));
-                                    }
-                                }
-                                if (this.m_InputImage != null && Camera.LatestImage != null)
-                                {
-                                    if (this.m_InputImage.Header.Width != Camera.LatestImage.Header.Width)
-                                    {
-                                        int nX = Camera.LatestImage.Header.Width;
-                                        int nY = Camera.LatestImage.Header.Height;
-
-                                        m_HorizentalLine.StartLocation = new Point(0, nY / 2);
-                                        m_HorizentalLine.EndLocation = new Point(nX, nY / 2);
-
-                                        m_VerticalLine.StartLocation = new Point(nX / 2, 0);
-                                        m_VerticalLine.EndLocation = new Point(nX / 2, nY);
-                                    }
-                                }
-                                //this.Scale = new ImageScale(this.Width / this.m_InputImage.Header.Width, this.Height / this.m_InputImage.Header.Height);
-                            }
-
-                            //this.m_InputImage = Camera.LatestImage;
-
-                            this.m_IsChanged = true;
+                            m_IsChanged = true;
                             UpdateOverlay(false);
-                            this.DrawToBuffer(this.m_Graphics);
-                            this.RenderForDisplay(this.m_Graphics);
+                            DrawToBuffer(m_Graphics);
+                            RenderForDisplay(m_Graphics);
                         }
                     }
 
                     Thread.Sleep(UpdateDelayTime);
                 }
             });
-
-
         }
+
         public void ClearOveray()
         {
             ResultOverlays.Clear();
@@ -2189,7 +2325,8 @@ namespace QMC.Common.Vision
         private void UpdateOverlay(bool bRedraw = true)
         {
             //this.ResultOverlays.Clear();
-            BaseUnit unit = this.Camera.ParentUnit as BaseUnit;
+            BaseUnit unit = CurrentCamera.ParentUnit as BaseUnit;
+            //BaseUnit unit = this.Camera.ParentUnit as BaseUnit;
             //this.ResultOverlays = module.ResultOverlays;
             //if(this.m_ResultOverlayCollection != module.ResultOverlays)
             {
@@ -2231,5 +2368,13 @@ namespace QMC.Common.Vision
             //if (cts != null)
             //    cts.Cancel();
         }
+
+        public Camera CurrentCamera =>
+                (this.m_CameraSwitch != null && this.m_CameraSwitch.SelectCameraIndex != -1)
+                ? this.m_CameraSwitch.Cameras[this.m_CameraSwitch.SelectCameraIndex]
+                : this.m_Camera;
+
+        private VisionImage CurrentLatestImage => CurrentCamera?.LatestImage;
+
     }
 }

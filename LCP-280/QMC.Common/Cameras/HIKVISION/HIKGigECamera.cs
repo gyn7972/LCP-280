@@ -8,6 +8,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Drawing;
 using System.IO;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
@@ -138,7 +139,7 @@ namespace QMC.Common.Cameras.HIKVISION
         {
             int ret = base.Initialize();
             try
-            {                
+            {
                 //SetInitializeProgress(0);
 
                 //if (m_Status == RunStatus.Stop) return 1;
@@ -725,7 +726,7 @@ namespace QMC.Common.Cameras.HIKVISION
             {
                 m_hReceiveThread.Join();
             }
-            
+
             try
             {
                 int nRet = m_MyCamera.MV_CC_StopGrabbing_NET();
@@ -740,7 +741,7 @@ namespace QMC.Common.Cameras.HIKVISION
                 // DLL 로드 실패 시 로그를 남기고 예외를 처리
                 CamLog += "DLL not found: " + ex.Message;
             }
-            
+
             this.Opened = false;
         }
 
@@ -1255,9 +1256,240 @@ namespace QMC.Common.Cameras.HIKVISION
 
             return 0;
         }
-        #endregion
 
+        #region Discovery / Open helpers
+
+        private static string BytesToString(byte[] bytes)
+        {
+            if (bytes == null) return null;
+            var s = System.Text.Encoding.ASCII.GetString(bytes).TrimEnd('\0', ' ');
+            return string.IsNullOrWhiteSpace(s) ? null : s;
+        }
+        private static string MacFromBytes(byte[] mac)
+        {
+            if (mac == null || mac.Length < 6) return null;
+            return $"{mac[0]:X2}-{mac[1]:X2}-{mac[2]:X2}-{mac[3]:X2}-{mac[4]:X2}-{mac[5]:X2}";
+        }
+        private static string IpFromUInt(uint ip)
+        {
+            if (ip == 0) return null;
+            return new IPAddress(BitConverter.GetBytes(ip)).ToString();
+        }
+
+        /// <summary>
+        /// 현재 PC에 연결된 모든 카메라를 열거하고 내부 stDeviceList를 갱신.
+        /// </summary>
+        private int RefreshDeviceList()
+        {
+            stDeviceList.nDeviceNum = 0;
+            return MyCamera.MV_CC_EnumDevices_NET(
+                MyCamera.MV_GIGE_DEVICE | MyCamera.MV_USB_DEVICE,
+                ref stDeviceList);
+        }
+
+        /// <summary>
+        /// selector(Serial/IP/MAC/UDN)로 장치 index를 찾는다.
+        /// 찾으면 MV_OK와 index 반환, 못 찾으면 -1.
+        /// </summary>
+        private int FindIndexBySelector(string selector, out int index, out MyCamera.MV_CC_DEVICE_INFO foundInfo)
+        {
+            index = -1;
+            foundInfo = new MyCamera.MV_CC_DEVICE_INFO();
+
+            if (string.IsNullOrWhiteSpace(selector))
+                return -1;
+
+            int nRet = RefreshDeviceList();
+            if (nRet != MyCamera.MV_OK || stDeviceList.nDeviceNum == 0)
+                return -1;
+
+            for (int i = 0; i < stDeviceList.nDeviceNum; i++)
+            {
+                var info = (MyCamera.MV_CC_DEVICE_INFO)Marshal.PtrToStructure(
+                    stDeviceList.pDeviceInfo[i], typeof(MyCamera.MV_CC_DEVICE_INFO));
+
+                string serial = null, ip = null, mac = null, udn = null;
+
+                if (info.nTLayerType == MyCamera.MV_GIGE_DEVICE)
+                {
+                    var gige = (MyCamera.MV_GIGE_DEVICE_INFO)MyCamera.ByteToStruct(
+                        info.SpecialInfo.stGigEInfo, typeof(MyCamera.MV_GIGE_DEVICE_INFO));
+
+                    serial = gige.chSerialNumber;
+                    udn = gige.chUserDefinedName;
+                    //serial = BytesToString(gige.chSerialNumber);
+                    //udn = BytesToString(gige.chUserDefinedName);
+                    //mac = MacFromBytes(gige.chMacAddress);
+                    ip = IpFromUInt(gige.nCurrentIp);
+                }
+                else if (info.nTLayerType == MyCamera.MV_USB_DEVICE)
+                {
+                    var usb = (MyCamera.MV_USB3_DEVICE_INFO)MyCamera.ByteToStruct(
+                        info.SpecialInfo.stUsb3VInfo, typeof(MyCamera.MV_USB3_DEVICE_INFO));
+
+                    serial = usb.chSerialNumber;
+                    udn = usb.chUserDefinedName;
+                    //serial = BytesToString(usb.chSerialNumber);
+                    //udn = BytesToString(usb.chUserDefinedName);
+                }
+
+                bool matched =
+                       (!string.IsNullOrEmpty(serial) && serial.Equals(selector, StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrEmpty(ip) && ip.Equals(selector, StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrEmpty(mac) && mac.Equals(selector, StringComparison.OrdinalIgnoreCase))
+                    || (!string.IsNullOrEmpty(udn) && udn.Equals(selector, StringComparison.OrdinalIgnoreCase));
+
+                if (matched)
+                {
+                    index = i;
+                    foundInfo = info;
+                    return MyCamera.MV_OK;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
+        /// selector(Serial/IP/MAC/UDN)로 장치를 찾아 Open()까지 수행.
+        /// 내부에 이미 구현된 Open(int channel)을 그대로 재사용.
+        /// </summary>
+        public int OpenBySelector(string selector)
+        {
+            int idx;
+            MyCamera.MV_CC_DEVICE_INFO devInfo;
+            int ret = FindIndexBySelector(selector, out idx, out devInfo);
+            if (ret != MyCamera.MV_OK || idx < 0) return -1;
+
+            // 기존에 있는 Open(int channel) 재사용
+            return Open(idx);
+        }
+
+        /// <summary>
+        /// selector가 비어 있으면 Config의 SerialNumber로 시도. OpenBySelectorOrConfig
+        /// 성공 시 Config에도 Serial/IP/MAC을 기록(저장 시 참고).
+        /// </summary>
+        public override int OpenBySelectorOrConfig(string selector)
+        {
+            int ret = 0;
+            try
+            {
+                // 1) 목표 시리얼 결정 (selector > Config.SerialNo > MyConfig.SerialNumber)
+                var wanted = string.IsNullOrWhiteSpace(selector)
+                             ? ((this.CameraConfig != null && !string.IsNullOrWhiteSpace(this.CameraConfig.SerialNo))
+                                ? this.CameraConfig.SerialNo
+                                : (this.MyConfig != null ? this.MyConfig.SerialNumber : string.Empty))
+                             : selector;
+                if (wanted == null) wanted = string.Empty;
+                wanted = wanted.Trim();
+
+                // 2) 장치 검색 (네이티브 예외 개별 처리)
+                int idx;
+                MyCamera.MV_CC_DEVICE_INFO devInfo;
+                try
+                {
+                    ret = FindIndexBySelector(wanted, out idx, out devInfo);
+                }
+                catch (DllNotFoundException ex) { Log.Write(ex); return -997; } // MvCameraControl.dll 누락/경로
+                catch (BadImageFormatException ex) { Log.Write(ex); return -998; } // x86/x64 불일치
+                catch (EntryPointNotFoundException ex) { Log.Write(ex); return -999; } // DLL 버전 불일치
+                catch (Exception ex) { Log.Write(ex); return -100; } // 기타
+
+                if (ret != MyCamera.MV_OK || idx < 0)
+                {
+                    Log.Write("Camera", $"Device not found. selector='{wanted}'");
+                    return -1;
+                }
+
+                // 3) 이미 열려있다면 안전하게 닫고 재오픈
+                try
+                {
+                    //if (this.IsOpened)
+                    if (this.Opened)
+                    {
+                        this.Close();
+                        //var closeCode = this.Close();
+                        //if (closeCode != MyCamera.MV_OK)
+                        //    Log.Write("Camera", $"Close-before-reopen failed: 0x{closeCode:X8}");
+                    }
+                }
+                catch (Exception exClose)
+                {
+                    Log.Write(exClose);
+                    // 닫기 실패해도 계속 시도 (장치에 따라 Open이 성공할 수 있음)
+                }
+
+                // 4) 오픈 (네이티브 예외 방어)
+                try
+                {
+                    ret = Open(idx);
+                }
+                catch (DllNotFoundException ex) { Log.Write(ex); return -997; }
+                catch (BadImageFormatException ex) { Log.Write(ex); return -998; }
+                catch (EntryPointNotFoundException ex) { Log.Write(ex); return -999; }
+                catch (Exception ex) { Log.Write(ex); return -101; }
+
+                if (ret != MyCamera.MV_OK)
+                {
+                    Log.Write("Camera", $"Open(idx={idx}) failed: 0x{ret:X8}");
+                    return ret;
+                }
+
+                // 5) DevInfo -> Config 반영 (널 안전)
+                if (this.CameraConfig == null) this.CameraConfig = new CameraConfig();
+
+                try
+                {
+                    if (devInfo.nTLayerType == MyCamera.MV_GIGE_DEVICE)
+                    {
+                        var gige = (MyCamera.MV_GIGE_DEVICE_INFO)MyCamera.ByteToStruct(
+                            devInfo.SpecialInfo.stGigEInfo, typeof(MyCamera.MV_GIGE_DEVICE_INFO));
+
+                        var sn = gige.chSerialNumber;// SafeCString(gige.chSerialNumber);
+                        this.MyConfig.SerialNumber = sn;
+                        this.CameraConfig.SerialNo = sn;
+                        this.CameraConfig.Ip = IpFromUInt(gige.nCurrentIp);
+                        // this.CameraConfig.Mac    = MacFromBytes(gige.chMacAddress);
+                    }
+                    else if (devInfo.nTLayerType == MyCamera.MV_USB_DEVICE)
+                    {
+                        var usb = (MyCamera.MV_USB3_DEVICE_INFO)MyCamera.ByteToStruct(
+                            devInfo.SpecialInfo.stUsb3VInfo, typeof(MyCamera.MV_USB3_DEVICE_INFO));
+
+                        var sn = usb.chSerialNumber;// SafeCString(usb.chSerialNumber);
+                        this.MyConfig.SerialNumber = sn;
+                        this.CameraConfig.SerialNo = sn;
+                    }
+
+                    // 저장은 실패 무시 (로그만)
+                    //try { CameraConfig.Save(this.CameraConfig, this.Name); } catch (Exception exSave) { Log.Write(exSave); }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex); // 정보 반영 중 오류가 앱을 죽이지 않도록
+                }
+
+                return MyCamera.MV_OK;
+            }
+            catch (DllNotFoundException ex) { Log.Write(ex); return -997; }
+            catch (BadImageFormatException ex) { Log.Write(ex); return -998; }
+            catch (EntryPointNotFoundException ex) { Log.Write(ex); return -999; }
+            catch (Exception ex) { Log.Write(ex); return -102; }
+
+        }
+
+        // C 문자열(byte[]) 안전 변환 헬퍼
+        private static string SafeCString(byte[] bytes)
+        {
+            if (bytes == null) return null;
+            var s = System.Text.Encoding.ASCII.GetString(bytes);
+            var n = s.IndexOf('\0');
+            return n >= 0 ? s.Substring(0, n) : s;
+        }
+        #endregion
     }
+
+    #endregion
+
     [Serializable]
     #endregion
     public class DeviceCollection : Collection<DeviceInformation>
@@ -1291,5 +1523,4 @@ namespace QMC.Common.Cameras.HIKVISION
             set { this.m_Number = value; }
         }
     }
-
 }
