@@ -654,19 +654,19 @@ namespace QMC.Common.Cameras.HIKVISION
 
 
 
-            nRet = m_MyCamera.MV_CC_SetWidth_NET((uint)MyConfig.Resolution.Width);
-            if (MyCamera.MV_OK != nRet)
-            {
-                CamLog = string.Format("Set Resolution Width Failed! : {0}", nRet);
-                return nRet;
-            }
+            //nRet = m_MyCamera.MV_CC_SetWidth_NET((uint)MyConfig.Resolution.Width);
+            //if (MyCamera.MV_OK != nRet)
+            //{
+            //    CamLog = string.Format("Set Resolution Width Failed! : {0}", nRet);
+            //    return nRet;
+            //}
 
-            nRet = m_MyCamera.MV_CC_SetHeight_NET((uint)MyConfig.Resolution.Height);
-            if (MyCamera.MV_OK != nRet)
-            {
-                CamLog = string.Format("Set Resolution Height Failed! : {0}", nRet);
-                return nRet;
-            }
+            //nRet = m_MyCamera.MV_CC_SetHeight_NET((uint)MyConfig.Resolution.Height);
+            //if (MyCamera.MV_OK != nRet)
+            //{
+            //    CamLog = string.Format("Set Resolution Height Failed! : {0}", nRet);
+            //    return nRet;
+            //}
 
 
 
@@ -1696,6 +1696,54 @@ namespace QMC.Common.Cameras.HIKVISION
             return GetCameraProperties(out props);
         }
 
+        public int ConnectAndSyncConfig(string selector)
+        {
+            CameraProperties props;
+            var r = ConnectAndGetProperties(selector, out props); // 이미 구현됨
+            if (r != MyCamera.MV_OK) return r;
+
+            var cfg = MyConfig;               // lazy LoadOrCreate 보장되는 게터
+            ApplyPropsToConfig(props, cfg);
+            cfg.Save();                       // JSON으로 저장
+            return 0;
+        }
+
+
+        // HIKGigECamera 내부에 추가
+        private void ApplyPropsToConfig(CameraProperties p, HIKGigECameraConfig cfg)
+        {
+            if (p == null || cfg == null) return;
+
+            // 1) 식별/연결 정보
+            if (!string.IsNullOrEmpty(p.SerialNo))
+                cfg.SerialNumber = p.SerialNo;
+
+            if (!string.IsNullOrEmpty(p.Ip))          // GigE일 때만 들어옴
+                this.CameraConfig.Ip = p.Ip;           // Ip는 기반(CameraConfig)에 있음
+
+            // 2) 해상도/오프셋
+            if (p.Width > 0 && p.Height > 0)
+            {
+                var sz = new Size(p.Width, p.Height);
+                cfg.Resolution = sz;              // CameraConfig.Resolution setter가 CameraResolution에 반영
+                cfg.CameraResolution = sz;             // 명시 반영(보수적)
+            }
+
+            if (p.OffsetX >= 0) cfg.OffsetX = (uint)p.OffsetX;
+            if (p.OffsetY >= 0) cfg.OffsetY = (uint)p.OffsetY;
+
+            // 3) 노출/게인/프레임레이트(있으면 반영)
+            if (p.ExposureTime > 0) cfg.ExposureTime = (float)p.ExposureTime;
+            if (p.Gain >= 0) cfg.Gain = (float)p.Gain;
+
+            // 4) 나머지 기본값(초기 생성/보강)
+            if (cfg.RetryCount <= 0) cfg.RetryCount = 5;     // 장치 오픈 재시도
+            if (cfg.OpenDelayTime < 0) cfg.OpenDelayTime = 1000;  // ms
+            if (this.CameraConfig.GrabRetryCount <= 0) this.CameraConfig.GrabRetryCount = 1;
+            if (this.CameraConfig.SignalWatingTime <= 0) this.CameraConfig.SignalWatingTime = 300;
+
+            // 5) 회전/플립/Scale 등은 장치에서 안 주므로 기존 값 유지
+        }
 
 
 
