@@ -11,9 +11,9 @@ namespace QMC.LCP_280.Process.Unit
     /// CassetteLoadingElevator Unit의 Config 폼
     /// Equipment와 연동하여 Config 및 Recipe 관리
     /// </summary>
-    public partial class CassetteLoadingUnit_Config : Form
+    public partial class InputCassetteLifterUnit_Config : Form
     {
-        private const string UNIT_NAME = "CassetteLoadingElevator";
+        private const string UNIT_NAME = "InputCassetteLifterUnit";
         
         /// <summary>
         /// Equipment 인스턴스 참조
@@ -23,9 +23,9 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 해당 Unit 인스턴스
         /// </summary>
-        private CassetteLoadingElevator CassetteLoadingElevator { get; set; }
+        private InputCassetteLifter InputCassetteLifterUnit { get; set; }
 
-        public CassetteLoadingUnit_Config()
+        public InputCassetteLifterUnit_Config()
         {
             InitializeComponent();
             // 폼 로딩 중에는 화면 업데이트 중단
@@ -33,8 +33,8 @@ namespace QMC.LCP_280.Process.Unit
             InitializeUI();
             // 모든 초기화가 완료된 후 화면 업데이트 재개
             this.ResumeLayout(true);
-
-            Console.WriteLine($"✅ CassetteLoadingUnit_Config 생성자 완료");
+            
+            Console.WriteLine($"✅ InputCassetteLifterUnitUnit_Config 생성자 완료");
         }
 
         ///// <summary>
@@ -47,10 +47,10 @@ namespace QMC.LCP_280.Process.Unit
                 // Equipment에서 CassetteLoadingElevator Unit 가져오기
                 if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    CassetteLoadingElevator = unit as CassetteLoadingElevator;
+                    InputCassetteLifterUnit = unit as InputCassetteLifter;
                 }
 
-                if (CassetteLoadingElevator == null)
+                if (InputCassetteLifterUnit == null)
                 {
                     MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);

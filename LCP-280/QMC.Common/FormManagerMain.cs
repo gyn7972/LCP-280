@@ -81,22 +81,29 @@ namespace QMC.Common
         private string ExtractUnitNameFromType(Type type)
         {
             string typeName = type.Name;
-            
+            string result;
+
             // XXUnit_Main, XXUnitMain 패턴에서 XX 부분 추출
             if (typeName.Contains("Unit_Main"))
             {
-                return typeName.Replace("Unit_Main", "").Replace("_", " ");
+                result = typeName.Replace("Unit_Main", "");
             }
             else if (typeName.Contains("UnitMain"))
             {
-                return typeName.Replace("UnitMain", "");
+                result = typeName.Replace("UnitMain", "");
             }
             else if (typeName.EndsWith("Main"))
             {
-                return typeName.Replace("Main", "");
+                result = typeName.Replace("Main", "");
             }
-            
-            return typeName;
+            else
+            {
+                result = typeName;
+            }
+
+            result = result.Replace('_', ' ');
+            result = System.Text.RegularExpressions.Regex.Replace(result, "\\s+", " ").Trim();
+            return result;
         }
 
         /// <summary>

@@ -81,30 +81,29 @@ namespace QMC.Common
         private string ExtractUnitNameFromType(Type type)
         {
             string typeName = type.Name;
+            string result;
 
             // XXUnit_Working, XXUnitWorking 패턴에서 XX 부분 추출
             if (typeName.Contains("Unit_Working"))
             {
-                return typeName.Replace("Unit_Working", "").Replace("_", " ");
+                result = typeName.Replace("Unit_Working", "");
             }
             else if (typeName.Contains("UnitWorking"))
             {
-                return typeName.Replace("UnitWorking", "");
+                result = typeName.Replace("UnitWorking", "");
             }
             else if (typeName.EndsWith("Working"))
             {
-                return typeName.Replace("Working", "");
+                result = typeName.Replace("Working", "");
             }
-            else if (typeName.EndsWith("Monitor"))
+            else
             {
-                return typeName.Replace("Monitor", "");
-            }
-            else if (typeName.Contains("Process"))
-            {
-                return typeName.Replace("Process", "");
+                result = typeName;
             }
 
-            return typeName;
+            result = result.Replace('_', ' ');
+            result = System.Text.RegularExpressions.Regex.Replace(result, "\\s+", " ").Trim();
+            return result;
         }
 
         /// <summary>

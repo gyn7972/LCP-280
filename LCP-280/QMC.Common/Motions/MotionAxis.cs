@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace QMC.Common.Motions
 {
@@ -45,8 +46,9 @@ namespace QMC.Common.Motions
         private readonly object _gate = new object();
         private readonly IMotionDriver _driver;
 
-        public MotionAxisSetup Setup { get; }
-        public MotionAxisConfig Config { get; private set; }
+        public MotionAxisSetup Setup { get; set;  }
+        public MotionAxisConfig Config { get; set; }
+        public MotionAxisStatus Status { get; }
         private IPropertyCorrection _correction;
 
         public string Name { get { return Setup.Name; } }
@@ -64,6 +66,8 @@ namespace QMC.Common.Motions
 
             Setup.Validate();
             Config.Validate();
+
+            Status = new MotionAxisStatus();
 
             _correction = correction ?? new DefaultCorrection(Setup, Config);
 
@@ -390,7 +394,6 @@ namespace QMC.Common.Motions
         public MotionAxisStatus GetStatusSnapshot()
         {
             // 드라이버는 pulse/초 단위 반환 → 보정계층으로 논리단위로 변환
-            var s = new MotionAxisStatus();
             var pulsesPerUnit = Setup.PulsesPerUnit;
 
             var cmdPulse = _driver.ReadCommandPulse(AxisNo);
@@ -400,27 +403,27 @@ namespace QMC.Common.Motions
             var cmdVelPps = _driver.ReadCommandVelPulsePerSec(AxisNo);
             var actVelPps = _driver.ReadActualVelPulsePerSec(AxisNo);
 
-            s.PV.CommandPosition = _correction.ToLogical(cmdPulse);
-            s.PV.ActualPosition = _correction.ToLogical(actPulse);
-            s.PV.ErrorPosition = _correction.ToLogical(errPulse);
-            s.PV.CommandVelocity = cmdVelPps / pulsesPerUnit;   // pulse/s → unit/s
-            s.PV.ActualVelocity = actVelPps / pulsesPerUnit;
+            Status.PV.CommandPosition = _correction.ToLogical(cmdPulse);
+            Status.PV.ActualPosition = _correction.ToLogical(actPulse);
+            Status.PV.ErrorPosition = _correction.ToLogical(errPulse);
+            Status.PV.CommandVelocity = cmdVelPps / pulsesPerUnit;   // pulse/s → unit/s
+            Status.PV.ActualVelocity = actVelPps / pulsesPerUnit;
 
-            s.IO.ServoOn = _driver.ReadServoOn(AxisNo);
-            s.IO.Alarm = _driver.ReadAlarm(AxisNo);
-            s.IO.NegativeLimitSensor = _driver.ReadNegativeLimit(AxisNo);
-            s.IO.PositiveLimitSensor = _driver.ReadPositiveLimit(AxisNo);
-            s.IO.HomeSensor = _driver.ReadHomeSensor(AxisNo);
+            Status.IO.ServoOn = _driver.ReadServoOn(AxisNo);
+            Status.IO.Alarm = _driver.ReadAlarm(AxisNo);
+            Status.IO.NegativeLimitSensor = _driver.ReadNegativeLimit(AxisNo);
+            Status.IO.PositiveLimitSensor = _driver.ReadPositiveLimit(AxisNo);
+            Status.IO.HomeSensor = _driver.ReadHomeSensor(AxisNo);
 
-            s.State.Done = _driver.ReadDone(AxisNo);
-            s.State.Inposition = _driver.ReadInposition(AxisNo);
-            s.State.InpositionDone = _driver.ReadInpositionDone(AxisNo);
-            s.State.InpositionTimeout = _driver.ReadInpositionTimeout(AxisNo);
-            s.State.HomeEnd = _driver.ReadHomeEnd(AxisNo);
-            s.State.HomeTimeout = _driver.ReadHomeTimeout(AxisNo);
+            Status.State.Done = _driver.ReadDone(AxisNo);
+            Status.State.Inposition = _driver.ReadInposition(AxisNo);
+            Status.State.InpositionDone = _driver.ReadInpositionDone(AxisNo);
+            Status.State.InpositionTimeout = _driver.ReadInpositionTimeout(AxisNo);
+            Status.State.HomeEnd = _driver.ReadHomeEnd(AxisNo);
+            Status.State.HomeTimeout = _driver.ReadHomeTimeout(AxisNo);
 
-            s.TimestampUtc = DateTime.UtcNow;
-            return s;
+            Status.TimestampUtc = DateTime.UtcNow;
+            return Status;
         }
     }
 }

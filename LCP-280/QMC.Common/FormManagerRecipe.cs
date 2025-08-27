@@ -62,29 +62,28 @@ namespace QMC.Common
         private string ExtractUnitNameFromType(Type type)
         {
             string typeName = type.Name;
+            string result;
 
             if (typeName.Contains("Unit_Recipe"))
             {
-                return typeName.Replace("Unit_Recipe", "").Replace("_", " ");
+                result = typeName.Replace("Unit_Recipe", "");
             }
             else if (typeName.Contains("UnitRecipe"))
             {
-                return typeName.Replace("UnitRecipe", "");
+                result = typeName.Replace("UnitRecipe", "");
             }
             else if (typeName.EndsWith("Recipe"))
             {
-                return typeName.Replace("Recipe", "");
+                result = typeName.Replace("Recipe", "");
             }
-            else if (typeName.EndsWith("Parameter"))
+            else
             {
-                return typeName.Replace("Parameter", "");
-            }
-            else if (typeName.Contains("Recipe"))
-            {
-                return typeName.Replace("Recipe", "");
+                result = typeName;
             }
 
-            return typeName;
+            result = result.Replace('_', ' ');
+            result = System.Text.RegularExpressions.Regex.Replace(result, "\\s+", " ").Trim();
+            return result;
         }
 
         public List<FormInfo> GetRecipeForms()

@@ -2,27 +2,98 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.Linq;
+using System.Reflection;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace QMC.Common
 {
     public partial class IOPropertyCollectionView : PropertyCollectionView
     {
+        // 클래스 내부 필드/이벤트 추가
+        private readonly Dictionary<string, PictureBox> _statePicByKey = new Dictionary<string, PictureBox>(StringComparer.OrdinalIgnoreCase);
+        public event EventHandler<string> ItemClicked;
+        public event EventHandler<string> ItemRightClicked;
+
         private Label _selectedNameLabel = null;
-        private const int IOMaxVisibleRows = 10;
+        private int IOMaxVisibleRows = 10;
         private const int IOGroupBoxHeaderHeight = 20;
         private const int IOGroupBoxPadding = 16;
 
-        public IOPropertyCollectionView(string groupName = "IO Property Group") : base(groupName)
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                // 폼 전체 컴포지팅 (깜빡임 크게 줄어듦 / 스크롤 성능 약간 저하 가능)
+                cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED
+                return cp;
+            }
+        }
+
+        public IOPropertyCollectionView(string groupName = "IO Property Group", int nRow = 10) : base(groupName)
         {
             InitializeComponent();
+
+            IOMaxVisibleRows = nRow;
+
+            // 이 컨트롤 자체
+            EnableFlickerFree(this);
+
+            // 비공개 필드 꺼내기
+            var tlp = (TableLayoutPanel)typeof(PropertyCollectionView)
+                .GetField("tableLayoutPanel", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(this);
+            var scroll = (Panel)typeof(PropertyCollectionView)
+                .GetField("scrollPanel", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(this);
+
+            // 내부 컨트롤에도 적용
+            EnableFlickerFree(tlp);
+            EnableFlickerFree(scroll);
+        }
+
+        // 깜빡임 최소화 공통 함수 (리플렉션으로 protected 멤버 호출)
+        private static void EnableFlickerFree(Control c)
+        {
+            if (c == null) return;
+
+            // 1) DoubleBuffered 강제 (protected 속성)
+            var piDB = typeof(Control).GetProperty(
+                "DoubleBuffered",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            piDB?.SetValue(c, true, null);
+
+            // 2) SetStyle(ControlStyles, bool) 호출
+            var miSetStyle = typeof(Control).GetMethod(
+                "SetStyle",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            var styles =
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer |
+                ControlStyles.UserPaint;
+            miSetStyle?.Invoke(c, new object[] { styles, true });
+
+            // 3) UpdateStyles() 호출
+            var miUpdateStyles = typeof(Control).GetMethod(
+                "UpdateStyles",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            );
+            miUpdateStyles?.Invoke(c, null);
         }
 
         public IOPropertyCollectionView() : this("IO Property Group")
         {
+            // (옵션) 깜빡임 줄이기
+            this.DoubleBuffered = true;
         }
 
         public override void SetProperties(PropertyCollection properties)
         {
+            _statePicByKey.Clear();
+
             // base의 필드 참조 (PropertyCollectionView와 동일한 방식)
             var tableLayoutPanelField = typeof(PropertyCollectionView).GetField("tableLayoutPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var scrollPanelField = typeof(PropertyCollectionView).GetField("scrollPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -167,35 +238,75 @@ namespace QMC.Common
                     tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
                 }
 
-                // State 열 (PropertyCollectionView의 TextBox와 유사하게 설정)
+                // Add
+                // 🔹 채널 키 추출 (Name 셀 텍스트에서 "Xnn"/"Ynn")
+                var key = ExtractKey(nameLabel.Text);
+
+                // --- State 셀(PictureBox) ---
                 var statePictureBox = new PictureBox
                 {
                     Dock = DockStyle.Fill,
                     Margin = new Padding(0),
                     SizeMode = PictureBoxSizeMode.StretchImage,
                     BorderStyle = BorderStyle.None,
-                    BackColor = Color.Empty
+                    BackColor = Color.Empty,
+                    MinimumSize = new Size(0, textBoxHeight),
+                    Height = textBoxHeight
                 };
 
+                // 🔹 색상 적용 (기존 titleAlpha 로직 대신 key 기준)
+                ApplyStateColor(statePictureBox, key, prop.State);
+
+                // 🔹 맵 등록 + 이벤트 연결
+                if (!string.IsNullOrEmpty(key))
+                {
+                    _statePicByKey[key] = statePictureBox;
+
+                    statePictureBox.Tag = key;
+                    statePictureBox.Click += (s, e) =>
+                    {
+                        var k = (string)((PictureBox)s).Tag;
+                        ItemClicked?.Invoke(this, k);
+                    };
+                    statePictureBox.MouseUp += (s, e) =>
+                    {
+                        if (e.Button == MouseButtons.Right)
+                        {
+                            var k = (string)((PictureBox)s).Tag;
+                            ItemRightClicked?.Invoke(this, k);
+                        }
+                    };
+                }
+                ///////
+                // State 열 (PropertyCollectionView의 TextBox와 유사하게 설정)
+                //var statePictureBox = new PictureBox
+                //{
+                //    Dock = DockStyle.Fill,
+                //    Margin = new Padding(0),
+                //    SizeMode = PictureBoxSizeMode.StretchImage,
+                //    BorderStyle = BorderStyle.None,
+                //    BackColor = Color.Empty
+                //};
+
                 // PropertyCollectionView의 TextBox와 동일한 크기 제약 적용
-                statePictureBox.MinimumSize = new Size(0, textBoxHeight);
-                statePictureBox.Height = textBoxHeight;
+                //statePictureBox.MinimumSize = new Size(0, textBoxHeight);
+                //statePictureBox.Height = textBoxHeight;
 
-                string title = prop.Title ?? "";
-                string titleAlpha = new string(title.Where(char.IsLetter).ToArray());
+                //string title = prop.Title ?? "";
+                //string titleAlpha = new string(title.Where(char.IsLetter).ToArray());
 
-                if (titleAlpha.Contains("X"))
-                {
-                    statePictureBox.BackColor = prop.State ? Color.FromArgb(0, 176, 240) : Color.White;
-                }
-                else if (titleAlpha.Contains("Y"))
-                {
-                    statePictureBox.BackColor = prop.State ? Color.Red : Color.White;
-                }
-                else
-                {
-                    statePictureBox.BackColor = Color.Black;
-                }
+                //if (titleAlpha.Contains("X"))
+                //{
+                //    statePictureBox.BackColor = prop.State ? Color.FromArgb(0, 176, 240) : Color.White;
+                //}
+                //else if (titleAlpha.Contains("Y"))
+                //{
+                //    statePictureBox.BackColor = prop.State ? Color.Red : Color.White;
+                //}
+                //else
+                //{
+                //    statePictureBox.BackColor = Color.Black;
+                //}
 
                 tableLayoutPanel.Controls.Add(statePictureBox, colIdx, row);
                 row++;
@@ -233,5 +344,39 @@ namespace QMC.Common
             this.Invalidate();
             this.Parent?.PerformLayout();
         }
+
+
+        //키 추출 헬퍼 추가
+        private static string ExtractKey(string nameCellText)
+        {
+            // "X20 Limit Sensor" -> "X20" / "Y30 Lamp" -> "Y30"
+            if (string.IsNullOrEmpty(nameCellText)) return null;
+            var m = Regex.Match(nameCellText.Trim(), @"^(X|Y)\d+");
+            return m.Success ? m.Value : null;
+        }
+
+        //상태 색 적용 헬퍼 추가
+        private static void ApplyStateColor(PictureBox pb, string key, bool on)
+        {
+            if (pb == null) return;
+            // X..(DI): 파랑 / Y..(DO): 빨강
+            if (!string.IsNullOrEmpty(key) && (key[0] == 'X' || key[0] == 'x'))
+                pb.BackColor = on ? Color.FromArgb(0, 176, 240) : Color.White;
+            else if (!string.IsNullOrEmpty(key) && (key[0] == 'Y' || key[0] == 'y'))
+                pb.BackColor = on ? Color.Red : Color.White;
+            else
+                pb.BackColor = on ? Color.LimeGreen : Color.White; // fallback
+        }
+
+        //공개 API: 키로 상태 업데이트
+        public void SetStateByKey(string key, bool on)
+        {
+            if (string.IsNullOrEmpty(key)) return;
+            PictureBox pb;
+            if (_statePicByKey.TryGetValue(key, out pb))
+                ApplyStateColor(pb, key, on);
+        }
+
+
     }
 }

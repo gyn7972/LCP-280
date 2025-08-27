@@ -36,6 +36,7 @@ namespace QMC.LCP_280.Process.Unit
         private System.ComponentModel.IContainer components = null;
 
         // Data
+        private PropertyCollection _editorProrertiesPosition;
         private PropertyCollection _editorPropertiesConfig;
         private PropertyCollection _editorPropertiesSpeed;
 
@@ -209,6 +210,7 @@ namespace QMC.LCP_280.Process.Unit
             this.Controls.Add(this.gbAxisPositions);
             this.Controls.Add(this.gbAxisProperty);
             this.Controls.Add(this.selectAxisListBoxItemsView);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "Motion_Setup";
             this.Text = "Motion Setup";
             this.gbAxisProperty.ResumeLayout(false);
@@ -314,10 +316,35 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
+                _editorProrertiesPosition = BuildPositionProperties(axis);
                 _editorPropertiesConfig = BuildConfigProperties(axis);
                 _editorPropertiesSpeed = BuildSpeedProperties(axis);
+                positionVelocityPropertyCollectionView?.SetProperties(_editorProrertiesPosition);
                 configurationListBoxItemsView?.SetProperties(_editorPropertiesConfig);
                 speedListBoxItemsView?.SetProperties(_editorPropertiesSpeed);
+
+                //motorIoPropertyCollectionView
+                var ioProperties = new PropertyCollection();
+                ioProperties.ShowNoColumn = false; // 0열 표시 옵션
+                //ioProperties.Add(new TitleOnlyProperty("No", "Name", "State")); // title 행 표시
+                ioProperties.Add(new PropertyState("01", "Servo On", axis.Status.IO.ServoOn));
+                ioProperties.Add(new PropertyState("02", "Alarm", axis.Status.IO.Alarm));
+                ioProperties.Add(new PropertyState("03", "Negative Limit Sensor", axis.Status.IO.NegativeLimitSensor));
+                ioProperties.Add(new PropertyState("04", "Positive Limit Sensor", axis.Status.IO.PositiveLimitSensor));
+                ioProperties.Add(new PropertyState("05", "Home Sensor", axis.Status.IO.HomeSensor));
+                motorIoPropertyCollectionView?.SetProperties(ioProperties);
+
+                var state = new PropertyCollection();
+                state.ShowNoColumn = false; // 0열 표시 옵션
+                state.Add(new PropertyState("01", "Done", axis.Status.State.Done));
+                state.Add(new PropertyState("02", "Inposition", axis.Status.State.Inposition));
+                state.Add(new PropertyState("03", "Inposition Done", axis.Status.State.InpositionDone));
+                state.Add(new PropertyState("04", "Inposition Timeout", axis.Status.State.InpositionTimeout));
+                state.Add(new PropertyState("05", "Home End", axis.Status.State.HomeEnd));
+                state.Add(new PropertyState("06", "Home Timeout", axis.Status.State.HomeTimeout));
+                state.IsInputParameter = false;    //출력
+                motorStateIoPropertyCollectionView?.SetProperties(state);
+
             }
             catch (Exception ex)
             {
@@ -326,6 +353,20 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // -------- Builders
+        private PropertyCollection BuildPositionProperties(MotionAxis axis)
+        {
+            // NOTE: 현재 장치 값들이 enum/bit인 곳은 DoubleProperty 임시 사용 유지 (주석 표기)
+            var pc = new PropertyCollection();
+
+            pc.Add(new DoubleProperty("Command Position", axis.Status.PV.CommandPosition));
+            pc.Add(new DoubleProperty("Actual Position", axis.Status.PV.ActualPosition));
+            pc.Add(new DoubleProperty("Error Position", axis.Status.PV.ErrorPosition));
+            pc.Add(new DoubleProperty("Command Velocity", axis.Status.PV.CommandVelocity));
+            pc.Add(new DoubleProperty("Actual Velocity", axis.Status.PV.ActualVelocity));
+            pc.IsInputParameter = false;    //출력
+
+            return pc;
+        }
         private PropertyCollection BuildConfigProperties(MotionAxis axis)
         {
             // NOTE: 현재 장치 값들이 enum/bit인 곳은 DoubleProperty 임시 사용 유지 (주석 표기)
@@ -440,6 +481,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             // TODO: 실제 위치/속도/상태 갱신 바인딩
             // positionVelocityPropertyCollectionView.SetProperties(...); 등
+
+
         }
 
         private void btnMovePosition_Click(object sender, EventArgs e)

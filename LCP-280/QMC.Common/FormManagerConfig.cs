@@ -118,34 +118,29 @@ namespace QMC.Common
         private string ExtractUnitNameFromType(Type type)
         {
             string typeName = type.Name;
-            
+            string result;
+
             // XXUnit_Config, XXUnitConfig 패턴에서 XX 부분 추출
             if (typeName.Contains("Unit_Config"))
             {
-                return typeName.Replace("Unit_Config", string.Empty).Replace("_", " ");
+                result = typeName.Replace("Unit_Config", "");
             }
             else if (typeName.Contains("UnitConfig"))
             {
-                return typeName.Replace("UnitConfig", string.Empty);
+                result = typeName.Replace("UnitConfig", "");
             }
             else if (typeName.EndsWith("Config"))
             {
-                return typeName.Substring(0, typeName.Length - "Config".Length);
+                result = typeName.Replace("Config", "");
             }
-            else if (typeName.EndsWith("Configuration"))
+            else
             {
-                return typeName.Substring(0, typeName.Length - "Configuration".Length);
+                result = typeName;
             }
-            else if (typeName.EndsWith("Setting"))
-            {
-                return typeName.Substring(0, typeName.Length - "Setting".Length);
-            }
-            else if (typeName.EndsWith("Settings"))
-            {
-                return typeName.Substring(0, typeName.Length - "Settings".Length);
-            }
-            
-            return typeName;
+
+            result = result.Replace('_', ' ');
+            result = System.Text.RegularExpressions.Regex.Replace(result, "\\s+", " ").Trim();
+            return result;
         }
 
         /// <summary>
