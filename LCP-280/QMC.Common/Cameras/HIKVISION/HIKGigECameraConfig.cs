@@ -142,6 +142,7 @@ namespace QMC.Common.HIKVISION
         {
             return LoadOrCreate(name);
         }
+
         #endregion
     }
 

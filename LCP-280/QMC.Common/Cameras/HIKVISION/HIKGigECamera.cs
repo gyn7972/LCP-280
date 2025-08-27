@@ -95,7 +95,8 @@ namespace QMC.Common.Cameras.HIKVISION
         {
             CameraName = strName;
 
-            CameraConfig = new HIKGigECameraConfig();
+            this.CameraConfig = new HIKGigECameraConfig();
+            //this.CameraConfig = HIKGigECameraConfig.LoadOrCreate(strName); // 초기 로드
             InitValue();
             this.ViewerHandler = IntPtr.Zero;
             nRet = new int();
@@ -122,12 +123,50 @@ namespace QMC.Common.Cameras.HIKVISION
         public string SerialNumber { get; set; }
         public HIKGigECameraConfig MyConfig
         {
-            get { return CameraConfig as HIKGigECameraConfig; }
+            //get { return CameraConfig as HIKGigECameraConfig; }
+            //get => CameraConfig as HIKGigECameraConfig
+            //        ?? (HIKGigECameraConfig)(CameraConfig = new HIKGigECameraConfig());
+            get
+            {
+                var cfg = this.CameraConfig as HIKGigECameraConfig;
+                if (cfg == null || string.IsNullOrWhiteSpace(cfg.Name))
+                {
+                    // 파일에서 로드(없으면 생성 후 저장)
+                    cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+                    this.CameraConfig = cfg;
+                }
+                return cfg;
+            }
         }
+
+
 
         #endregion
 
         #region Method
+        private HIKGigECameraConfig EnsureConfigLoaded()
+        {
+            var cfg = this.CameraConfig as HIKGigECameraConfig;
+            if (cfg == null)
+            {
+                cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+                this.CameraConfig = cfg;
+                return cfg;
+            }
+
+            // 이름이 바뀌어 파일 경로가 달라질 수 있으므로 필요 시 재로드
+            if (string.IsNullOrWhiteSpace(cfg.Name) || !string.Equals(cfg.Name, this.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+                this.CameraConfig = cfg;
+                return cfg;
+            }
+
+            // 이미 타입/이름 OK면 최신값으로 한 번 더 로드 시도
+            try { cfg.Load(); } catch { /* 실패시 기존값 유지 */ }
+            return cfg;
+        }
+
         public override void Load(FileStream fs)
         {
             base.Load(fs);
@@ -1456,7 +1495,24 @@ namespace QMC.Common.Cameras.HIKVISION
                 }
 
                 // 5) DevInfo -> Config 반영 (널 안전)
-                if (this.CameraConfig == null) this.CameraConfig = new CameraConfig();
+                //if (this.CameraConfig == null || !(this.CameraConfig is HIKGigECameraConfig))
+                //    this.CameraConfig = new HIKGigECameraConfig();
+                if (this.CameraConfig == null || !(this.CameraConfig is HIKGigECameraConfig))
+                {
+                    HIKGigECameraConfig config = null;
+                    try
+                    {
+                        // 예: Json 파일 기준 로드
+                        //config = SaveManager.JsonDeserialize<HIKGigECameraConfig>(
+                        //             Path.Combine(ConfigManager.ConfigPath, $"{this.Name}.json"));
+                    }
+                    catch
+                    {
+                        config = new HIKGigECameraConfig(); // 로드 실패 → 기본 생성
+                        config.Load();
+                    }
+                    this.CameraConfig = config;
+                }
 
                 try
                 {
@@ -1624,8 +1680,8 @@ namespace QMC.Common.Cameras.HIKVISION
         public int ConnectAndGetProperties(string selector, out CameraProperties props)
         {
             props = null;
-            int r = OpenBySelectorOrConfig(selector);
-            if (r != MyCamera.MV_OK) return r;
+            //int r = OpenBySelectorOrConfig(selector);
+            //if (r != MyCamera.MV_OK) return r;
             return GetCameraProperties(out props);
         }
 
