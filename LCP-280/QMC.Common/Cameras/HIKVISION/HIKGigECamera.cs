@@ -95,8 +95,8 @@ namespace QMC.Common.Cameras.HIKVISION
         {
             CameraName = strName;
 
-            this.CameraConfig = new HIKGigECameraConfig();
-            //this.CameraConfig = HIKGigECameraConfig.LoadOrCreate(strName); // 초기 로드
+            //this.CameraConfig = new HIKGigECameraConfig();
+            this.CameraConfig = HIKGigECameraConfig.LoadOrCreate(strName); // 초기 로드
             InitValue();
             this.ViewerHandler = IntPtr.Zero;
             nRet = new int();
@@ -123,20 +123,31 @@ namespace QMC.Common.Cameras.HIKVISION
         public string SerialNumber { get; set; }
         public HIKGigECameraConfig MyConfig
         {
-            //get { return CameraConfig as HIKGigECameraConfig; }
-            //get => CameraConfig as HIKGigECameraConfig
-            //        ?? (HIKGigECameraConfig)(CameraConfig = new HIKGigECameraConfig());
             get
             {
                 var cfg = this.CameraConfig as HIKGigECameraConfig;
                 if (cfg == null || string.IsNullOrWhiteSpace(cfg.Name))
                 {
-                    // 파일에서 로드(없으면 생성 후 저장)
                     cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
                     this.CameraConfig = cfg;
                 }
                 return cfg;
             }
+
+            //get { return CameraConfig as HIKGigECameraConfig; }
+            //get => CameraConfig as HIKGigECameraConfig
+            //        ?? (HIKGigECameraConfig)(CameraConfig = new HIKGigECameraConfig());
+            //get
+            //{
+            //    var cfg = this.CameraConfig as HIKGigECameraConfig;
+            //    if (cfg == null || string.IsNullOrWhiteSpace(cfg.Name))
+            //    {
+            //        // 파일에서 로드(없으면 생성 후 저장)
+            //        cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+            //        this.CameraConfig = cfg;
+            //    }
+            //    return cfg;
+            //}
         }
 
 
@@ -1680,8 +1691,8 @@ namespace QMC.Common.Cameras.HIKVISION
         public int ConnectAndGetProperties(string selector, out CameraProperties props)
         {
             props = null;
-            //int r = OpenBySelectorOrConfig(selector);
-            //if (r != MyCamera.MV_OK) return r;
+            int r = OpenBySelectorOrConfig(selector);
+             if (r != MyCamera.MV_OK) return r;
             return GetCameraProperties(out props);
         }
 
