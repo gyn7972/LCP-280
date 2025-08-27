@@ -258,7 +258,31 @@ namespace QMC.Common.Spectrometer
             try
             {
                 // Create device
-                int deviceId = CAS4DLL.casCreateDeviceEx((int)this.Config.DeviceInterfaceType, this.Config.DeviceInterfaceOption);
+                int deviceInterfaceType = 0;
+                switch(Config.DeviceInterfaceType)
+                {
+                    case CASSpectrometerConfig.DeviceInterface.PCI:
+                        deviceInterfaceType = CAS4DLL.InterfacePCI;
+                        break;
+                    case CASSpectrometerConfig.DeviceInterface.Test:
+                        deviceInterfaceType = CAS4DLL.InterfaceTest;
+                        break;
+                    case CASSpectrometerConfig.DeviceInterface.USB:
+                        deviceInterfaceType = CAS4DLL.InterfaceUSB;
+                        break;
+                    case CASSpectrometerConfig.DeviceInterface.PCIe:
+                        deviceInterfaceType = CAS4DLL.InterfacePCIe;
+                        break;
+                    case CASSpectrometerConfig.DeviceInterface.Ethernet:
+                        deviceInterfaceType = CAS4DLL.InterfaceEthernet;
+                        break;
+                    default:
+                        throw new NotSupportedException("Unsupported Device Interface Type.");
+                }
+
+                int deviceInterfaceOption = Config.DeviceInterfaceOption;
+
+                int deviceId = CAS4DLL.casCreateDeviceEx(deviceInterfaceType, deviceInterfaceOption);
                 CheckCASErrorAndThrow(deviceId);
 
                 // Processing after successful device initialization

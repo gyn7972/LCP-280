@@ -92,21 +92,17 @@ namespace QMC.Common.LightController
         public override PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
-            PropertyBase p;
 
             // Title
             string title = "Channel Config";
             if (ownerChannel.OwnerController != null)
-                title = $"{ownerChannel.OwnerController.Name} - Channel {ownerChannel.ChannelNo + 1} Config";
-            pc.Add(new TitleOnlyProperty(title));
+                title = $"{ownerChannel.OwnerController.Name} - Channel {ownerChannel.ChannelNo} Config";
+            pc.Add(title);
 
             // Value
-            p = new BoolProperty("On", On);
-            pc.Add(p);
-            p = new IntProperty("Volume", Volume);
-            pc.Add(p);
-            p = new StringProperty("Descript", Descript);
-            pc.Add(p);
+            pc.Add("On", On);
+            pc.Add("Volume", Volume);
+            pc.Add("Descript", Descript);
 
             return pc;
         }
@@ -115,30 +111,16 @@ namespace QMC.Common.LightController
             if (pc == null)
                 return -1;
 
-            foreach (var prop in pc)
+            try
             {
-                try
-                {
-                    switch (prop.Title)
-                    {
-                        case "On":
-                            On = bool.Parse(prop.Value?.ToString());
-                            break;
-                        case "Volume":
-                            Volume = int.Parse(prop.Value?.ToString());
-                            break;
-                        case "Descript":
-                            Descript = prop.Value?.ToString() ?? "";
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
-                    return -1;
-                }
+                On = pc.GetValue<bool>("On");
+                Volume = pc.GetValue<int>("Volume");
+                Descript = pc.GetValue<string>("Descript");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
             }
 
             return 0;
