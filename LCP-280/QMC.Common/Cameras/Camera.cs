@@ -1055,6 +1055,12 @@ namespace QMC.Common.Cameras
 
         #region Open()
 
+        /// <summary>
+        /// Serial/IP/MAC/UDN 등 selector로 디바이스를 찾아 Open까지 수행한다.
+        /// 구현은 각 파생 클래스(HIK 등)에서 담당.
+        /// </summary>
+        public abstract int OpenBySelectorOrConfig(string selector);
+
         public int Open()
         {
             return OpenProcedure();

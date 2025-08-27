@@ -1,4 +1,4 @@
-using QMC.Common.Unit;
+ï»¿using QMC.Common.Unit;
 using QMC.Common.Component;
 using QMC.Common;
 using QMC.LCP_280.Process.Unit;
@@ -25,8 +25,8 @@ using QMC.Common.Spectrometer;
 namespace QMC.LCP_280.Process
 {
     /// <summary>
-    /// ¼³ºñ ÀüÃ¼¸¦ °ü¸®ÇÏ´Â Equipment Å¬·¡½º
-    /// ¸ğµç UnitµéÀ» µî·ÏÇÏ°í Start/Stop/Config/Recipe¸¦ Áß¾Ó¿¡¼­ Á¦¾î
+    /// ì„¤ë¹„ ì „ì²´ë¥¼ ê´€ë¦¬í•˜ëŠ” Equipment í´ë˜ìŠ¤
+    /// ëª¨ë“  Unitë“¤ì„ ë“±ë¡í•˜ê³  Start/Stop/Config/Recipeë¥¼ ì¤‘ì•™ì—ì„œ ì œì–´
     /// </summary>
     public class Equipment : IDisposable
     {
@@ -56,69 +56,97 @@ namespace QMC.LCP_280.Process
         #region Fields & Properties
 
         /// <summary>
-        /// ¼³ºñ¿¡ µî·ÏµÈ ¸ğµç Unitµé
+        /// ì„¤ë¹„ì— ë“±ë¡ëœ ëª¨ë“  Unitë“¤
         /// </summary>
         public ConcurrentDictionary<string, BaseUnit> Units { get; private set; }
 
         /// <summary>
-        /// Unitº° ½ÇÇà »óÅÂ °ü¸®
+        /// Unitë³„ ì‹¤í–‰ ìƒíƒœ ê´€ë¦¬
         /// </summary>
         private ConcurrentDictionary<string, UnitExecutionInfo> _unitExecutions;
 
         /// <summary>
-        /// ¼³ºñ ÀüÃ¼ »óÅÂ
+        /// ì„¤ë¹„ ì „ì²´ ìƒíƒœ
         /// </summary>
         public EquipmentState State { get; private set; }
 
         /// <summary>
-        /// ¼³ºñ ÀüÃ¼ Config °ü¸®
+        /// ì„¤ë¹„ ì „ì²´ Config ê´€ë¦¬
         /// </summary>
         public EquipmentConfigManager ConfigManager { get; private set; }
 
         /// <summary>
-        /// ¼³ºñ ÀüÃ¼ Recipe °ü¸®
+        /// ì„¤ë¹„ ì „ì²´ Recipe ê´€ë¦¬
         /// </summary>
         public EquipmentRecipeManager RecipeManager { get; private set; }
 
         /// <summary>
-        /// ¼³ºñ ÀüÃ¼ ½ÇÇà Ãë¼Ò ÅäÅ«
+        /// ì„¤ë¹„ ì „ì²´ ì‹¤í–‰ ì·¨ì†Œ í† í°
         /// </summary>
         private CancellationTokenSource _equipmentCancellationTokenSource;
 
         /// <summary>
-        /// ¼³ºñ »óÅÂ º¯°æ ÀÌº¥Æ®
+        /// ì„¤ë¹„ ìƒíƒœ ë³€ê²½ ì´ë²¤íŠ¸
         /// </summary>
         public event EventHandler<EquipmentStateChangedEventArgs> StateChanged;
 
         /// <summary>
-        /// Unit »óÅÂ º¯°æ ÀÌº¥Æ®
+        /// Unit ìƒíƒœ ë³€ê²½ ì´ë²¤íŠ¸
         /// </summary>
         public event EventHandler<UnitStateChangedEventArgs> UnitStateChanged;
 
         /// <summary>
-        /// ¼³ºñ ¿À·ù ¹ß»ı ÀÌº¥Æ®
+        /// ì„¤ë¹„ ì˜¤ë¥˜ ë°œìƒ ì´ë²¤íŠ¸
         /// </summary>
         public event EventHandler<EquipmentErrorEventArgs> ErrorOccurred;
 
 
-        private AjinAxlBoardHost _axlHost;                 // Ajin º¸µå ¼ö¸í °ü¸®(AXL.Open/Close + MOT ·Îµå)
-        // ==== Motion °ü¸® ====
+        private AjinAxlBoardHost _axlHost;                 // Ajin ë³´ë“œ ìˆ˜ëª… ê´€ë¦¬(AXL.Open/Close + MOT ë¡œë“œ)
+        // ==== Motion ê´€ë¦¬ ====
         private readonly MotionAxisManager _axisManager = new MotionAxisManager();
         //private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Axes");
         private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes");
         
         private DIOUnit _unitIO;
-        private IDIODriver _dio;                     // AjinDioDriver (½Ç±â)
-        private DioScanService _dioScan;                 // ÁÖ±â ½ºÄµ(Ä³½Ã)
-        // I/O ¼³Á¤ ÆÄÀÏ ·çÆ® (¿øÇÏ´Â °æ·Î·Î)
+        private IDIODriver _dio;                     // AjinDioDriver (ì‹¤ê¸°)
+        private DioScanService _dioScan;                 // ì£¼ê¸° ìŠ¤ìº”(ìºì‹œ)
+        // I/O ì„¤ì • íŒŒì¼ ë£¨íŠ¸ (ì›í•˜ëŠ” ê²½ë¡œë¡œ)
         private readonly string _dioRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DIO");
 
-        // (¼±ÅÃ) ¿ÜºÎ¿¡¼­ Ãà ¸Å´ÏÀú¿¡ Á¢±ÙÇÏ°í ½ÍÀ¸¸é ÇÁ·ÎÆÛÆ¼ Á¦°ø
+        // (ì„ íƒ) ì™¸ë¶€ì—ì„œ ì¶• ë§¤ë‹ˆì €ì— ì ‘ê·¼í•˜ê³  ì‹¶ìœ¼ë©´ í”„ë¡œí¼í‹° ì œê³µ
         public MotionAxisManager AxisManager => _axisManager;
         public DioScanService DioScan => _dioScan;
         public DIOUnit UnitIO => _unitIO;
-        // Camera
-        public HIKGigECamera Camera { get; set; } = null; // HIK Ä«¸Ş¶ó °´Ã¼ (nullÀÌ¸é »ç¿ë ¾ÈÇÔ)
+
+
+        // ê¸°ì¡´: public HIKGigECamera Camera { get; set; } = null;
+        public Dictionary<string, Camera> Cameras { get; } = new Dictionary<string, Camera>(StringComparer.OrdinalIgnoreCase);
+        // === í¸ì˜ í”„ë¡œí¼í‹° ì¶”ê°€ ===
+        public HIKGigECamera IndexLoaderCam => GetCamera("Index_Loader");
+        public HIKGigECamera InStageCam => GetCamera("In_Stage");
+        public HIKGigECamera IndexProberCam => GetCamera("Index_Prober");
+        public HIKGigECamera IndexUnloaderCam => GetCamera("Index_Unloader");
+        public HIKGigECamera OutStageCam => GetCamera("Out_Stage");
+
+        private HIKGigECamera GetCamera(string key)
+        {
+            return Cameras.TryGetValue(key, out var cam) ? cam as HIKGigECamera : null;
+        }
+
+        //ì¹´ë©”ë¼ ì‚¬ìš© ì˜ˆ
+        //// ë¼ì´ë¸Œ ì‹œì‘
+        //Equipment.Instance.InStageCam?.StartLive();
+
+        //// ë¼ì´ë¸Œ ì •ì§€
+        //Equipment.Instance.InStageCam?.StopLive();
+
+        //// Grab í•œ ì¥
+        //var ret = Equipment.Instance.InStageCam?.Grab();
+        //if (ret == MyCamera.MV_OK)
+        //{
+        //    var img = Equipment.Instance.InStageCam?.LatestImage;
+        //        Console.WriteLine($"Grabbed {img.Width}x{img.Height}");
+        //}
 
         #endregion
 
@@ -137,7 +165,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// ¼³ºñ ÃÊ±âÈ­
+        /// ì„¤ë¹„ ì´ˆê¸°í™”
         /// </summary>
         public void InitializeEquipment()
         {
@@ -153,46 +181,40 @@ namespace QMC.LCP_280.Process
 
                 OnStateChanged(EquipmentState.Initializing);
 
-                // ±âº» Unitµé ÀÚµ¿ µî·Ï (°³¹ßÀÚ°¡ ÇÊ¿ä¿¡ µû¶ó Ãß°¡)
+                // ê¸°ë³¸ Unitë“¤ ìë™ ë“±ë¡ (ê°œë°œìê°€ í•„ìš”ì— ë”°ë¼ ì¶”ê°€)
                 AutoRegisterUnits();
 
-                // ¿©±â¼­ ¸ğµç À¯´Ö ÃàÀ» Á÷Á¢ »ı¼º/·ÎµåÇÏ¿© ºÙÀÎ´Ù.
+                // ì—¬ê¸°ì„œ ëª¨ë“  ìœ ë‹› ì¶•ì„ ì§ì ‘ ìƒì„±/ë¡œë“œí•˜ì—¬ ë¶™ì¸ë‹¤.
                 BootstrapAxesDirect();
                 BootstrapIODirect();
 
-                Camera = new HIKGigECamera("PreAlign");
-                if (Camera != null)
-                {
-                    Camera.CameraConfig = CameraConfig.LoadOrCreate("PreAlign");
-
-                    Camera.Initialize();
-                    Console.WriteLine("HIK Ä«¸Ş¶ó ÃÊ±âÈ­ ¿Ï·á");
-                }
-                else
-                {
-                    Console.WriteLine("HIK Ä«¸Ş¶ó ÃÊ±âÈ­ ½ÇÆĞ");
-                }
+                // === ì¹´ë©”ë¼ ì´ˆê¸°í™” ===
+                InitializeCameras();
 
                 OnStateChanged(EquipmentState.Ready);
-                Console.WriteLine("Equipment ÃÊ±âÈ­ ¿Ï·á");
+                Console.WriteLine("Equipment ì´ˆê¸°í™” ì™„ë£Œ");
             }
             catch (Exception ex)
             {
                 OnStateChanged(EquipmentState.Error);
-                OnErrorOccurred($"¼³ºñ ÃÊ±âÈ­ Áß ¿À·ù ¹ß»ı: {ex.Message}");
+                OnErrorOccurred($"ì„¤ë¹„ ì´ˆê¸°í™” ì¤‘ ì˜¤ë¥˜ ë°œìƒ: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// ±âº» Unitµé ÀÚµ¿ µî·Ï
+        /// ê¸°ë³¸ Unitë“¤ ìë™ ë“±ë¡
         /// </summary>
         private void AutoRegisterUnits()
         {
-            // °³¹ßÀÚ°¡ ÇÊ¿äÇÑ UnitµéÀ» ¿©±â¿¡ Ãß°¡
+
+            // ê°œë°œìê°€ í•„ìš”í•œ Unitë“¤ì„ ì—¬ê¸°ì— ì¶”ê°€
+            //RegisterUnit(new CassetteLoadingElevator(), "CassetteLoadingElevator");
+
+            // ï¿½ï¿½ï¿½ï¿½ï¿½Ú°ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ Unitï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¿¡ ï¿½ß°ï¿½
             RegisterUnit(new InputCassetteLifter(), "InputCassetteLifter");
 
-            // Ãß°¡ Unitµé ¿¹½Ã:
+            // ì¶”ê°€ Unitë“¤ ì˜ˆì‹œ:
             // RegisterUnit(new WaferAlignmentUnit(), "WaferAlignment");
             // RegisterUnit(new DieLoaderUnit(), "DieLoader");
             // RegisterUnit(new VisionInspectionUnit(), "VisionInspection");
@@ -203,15 +225,15 @@ namespace QMC.LCP_280.Process
         #region Unit Registration
 
         /// <summary>
-        /// UnitÀ» ¼³ºñ¿¡ µî·Ï
+        /// Unitì„ ì„¤ë¹„ì— ë“±ë¡
         /// </summary>
-        /// <param name="unit">µî·ÏÇÒ Unit</param>
-        /// <param name="unitName">Unit ÀÌ¸§</param>
-        /// <param name="description">Unit ¼³¸í</param>
+        /// <param name="unit">ë“±ë¡í•  Unit</param>
+        /// <param name="unitName">Unit ì´ë¦„</param>
+        /// <param name="description">Unit ì„¤ëª…</param>
         public void RegisterUnit(BaseUnit unit, string unitName, string description = null)
         {
             if (unit == null) throw new ArgumentNullException(nameof(unit));
-            if (string.IsNullOrEmpty(unitName)) throw new ArgumentException("Unit ÀÌ¸§ÀÌ ÇÊ¿äÇÕ´Ï´Ù.", nameof(unitName));
+            if (string.IsNullOrEmpty(unitName)) throw new ArgumentException("Unit ì´ë¦„ì´ í•„ìš”í•©ë‹ˆë‹¤.", nameof(unitName));
 
             try
             {
@@ -219,42 +241,42 @@ namespace QMC.LCP_280.Process
 
                 if (Units.TryAdd(unitName, unit))
                 {
-                    // Unit ½ÇÇà Á¤º¸ ÃÊ±âÈ­
+                    // Unit ì‹¤í–‰ ì •ë³´ ì´ˆê¸°í™”
                     _unitExecutions[unitName] = new UnitExecutionInfo(unitName, description);
 
-                    // Config ¹× Recipe µî·Ï
+                    // Config ë° Recipe ë“±ë¡
                     ConfigManager.RegisterUnitConfig(unitName, unit.Config);
                     RecipeManager.RegisterUnitRecipe(unitName, CreateUnitRecipe(unit));
 
-                    Console.WriteLine($"Unit '{unitName}' µî·Ï ¿Ï·á");
+                    Console.WriteLine($"Unit '{unitName}' ë“±ë¡ ì™„ë£Œ");
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Unit '{unitName}'´Â ÀÌ¹Ì µî·ÏµÇ¾î ÀÖ½À´Ï´Ù.");
+                    throw new InvalidOperationException($"Unit '{unitName}'ëŠ” ì´ë¯¸ ë“±ë¡ë˜ì–´ ìˆìŠµë‹ˆë‹¤.");
                 }
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Unit '{unitName}' µî·Ï Áß ¿À·ù: {ex.Message}");
+                OnErrorOccurred($"Unit '{unitName}' ë“±ë¡ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
                 throw;
             }
         }
 
         /// <summary>
-        /// Unit µî·Ï ÇØÁ¦
+        /// Unit ë“±ë¡ í•´ì œ
         /// </summary>
-        /// <param name="unitName">µî·Ï ÇØÁ¦ÇÒ Unit ÀÌ¸§</param>
+        /// <param name="unitName">ë“±ë¡ í•´ì œí•  Unit ì´ë¦„</param>
         public bool UnregisterUnit(string unitName)
         {
             try
             {
-                // UnitÀÌ ½ÇÇà ÁßÀÌ¸é ¸ÕÀú Á¤Áö
+                // Unitì´ ì‹¤í–‰ ì¤‘ì´ë©´ ë¨¼ì € ì •ì§€
                 if (_unitExecutions.TryGetValue(unitName, out var execInfo) && execInfo.IsRunning)
                 {
                     StopUnitAsync(unitName).GetAwaiter().GetResult();
                 }
 
-                // Unit Á¦°Å
+                // Unit ì œê±°
                 bool removed = Units.TryRemove(unitName, out var unit);
                 if (removed)
                 {
@@ -262,30 +284,30 @@ namespace QMC.LCP_280.Process
                     ConfigManager.UnregisterUnitConfig(unitName);
                     RecipeManager.UnregisterUnitRecipe(unitName);
 
-                    // Unit ¸®¼Ò½º Á¤¸®
+                    // Unit ë¦¬ì†ŒìŠ¤ ì •ë¦¬
                     if (unit is IDisposable disposableUnit)
                     {
                         disposableUnit.Dispose();
                     }
 
-                    Console.WriteLine($"Unit '{unitName}' µî·Ï ÇØÁ¦ ¿Ï·á");
+                    Console.WriteLine($"Unit '{unitName}' ë“±ë¡ í•´ì œ ì™„ë£Œ");
                 }
 
                 return removed;
             }
             catch (Exception ex)
             {
-                OnErrorOccurred($"Unit '{unitName}' µî·Ï ÇØÁ¦ Áß ¿À·ù: {ex.Message}");
+                OnErrorOccurred($"Unit '{unitName}' ë“±ë¡ í•´ì œ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Unitº° ±âº» Recipe »ı¼º
+        /// Unitë³„ ê¸°ë³¸ Recipe ìƒì„±
         /// </summary>
         private BaseRecipe CreateUnitRecipe(BaseUnit unit)
         {
-            // Unit Å¸ÀÔ¿¡ µû¶ó ÀûÀıÇÑ Recipe »ı¼º
+            // Unit íƒ€ì…ì— ë”°ë¼ ì ì ˆí•œ Recipe ìƒì„±
             switch (unit)
             {
                 case InputCassetteLifter cassetteUnit:
@@ -300,13 +322,13 @@ namespace QMC.LCP_280.Process
         #region Equipment Control
 
         /// <summary>
-        /// ¼³ºñ ÀüÃ¼ ½ÃÀÛ
+        /// ì„¤ë¹„ ì „ì²´ ì‹œì‘
         /// </summary>
         public async Task<bool> StartAllUnitsAsync()
         {
             if (State == EquipmentState.Running)
             {
-                Console.WriteLine("¼³ºñ°¡ ÀÌ¹Ì ½ÇÇà ÁßÀÔ´Ï´Ù.");
+                Console.WriteLine("ì„¤ë¹„ê°€ ì´ë¯¸ ì‹¤í–‰ ì¤‘ì…ë‹ˆë‹¤.");
                 return true;
             }
 
@@ -314,53 +336,53 @@ namespace QMC.LCP_280.Process
             {
                 OnStateChanged(EquipmentState.Starting);
 
-                // »õ·Î¿î Ãë¼Ò ÅäÅ« »ı¼º
+                // ìƒˆë¡œìš´ ì·¨ì†Œ í† í° ìƒì„±
                 _equipmentCancellationTokenSource?.Dispose();
                 _equipmentCancellationTokenSource = new CancellationTokenSource();
 
-                // ¸ğµç UnitµéÀ» º´·Ä·Î ½ÃÀÛ
+                // ëª¨ë“  Unitë“¤ì„ ë³‘ë ¬ë¡œ ì‹œì‘
                 var startTasks = Units.Keys.Select(unitName => StartUnitAsync(unitName));
                 var results = await Task.WhenAll(startTasks);
 
-                // ¸ğµç UnitÀÌ ¼º°øÀûÀ¸·Î ½ÃÀÛµÇ¾ú´ÂÁö È®ÀÎ
+                // ëª¨ë“  Unitì´ ì„±ê³µì ìœ¼ë¡œ ì‹œì‘ë˜ì—ˆëŠ”ì§€ í™•ì¸
                 if (results.All(r => r))
                 {
                     OnStateChanged(EquipmentState.Running);
-                    Console.WriteLine("¼³ºñ ÀüÃ¼ ½ÃÀÛ ¿Ï·á");
+                    Console.WriteLine("ì„¤ë¹„ ì „ì²´ ì‹œì‘ ì™„ë£Œ");
                     return true;
                 }
                 else
                 {
-                    // ÀÏºÎ Unit ½ÃÀÛ ½ÇÆĞ ½Ã ÀüÃ¼ Á¤Áö
+                    // ì¼ë¶€ Unit ì‹œì‘ ì‹¤íŒ¨ ì‹œ ì „ì²´ ì •ì§€
                     await StopAllUnitsAsync();
                     OnStateChanged(EquipmentState.Error);
-                    OnErrorOccurred("¼³ºñ ½ÃÀÛ Áß ÀÏºÎ Unit ½ÇÆĞ");
+                    OnErrorOccurred("ì„¤ë¹„ ì‹œì‘ ì¤‘ ì¼ë¶€ Unit ì‹¤íŒ¨");
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 OnStateChanged(EquipmentState.Error);
-                OnErrorOccurred($"¼³ºñ ½ÃÀÛ Áß ¿À·ù ¹ß»ı: {ex.Message}");
+                OnErrorOccurred($"ì„¤ë¹„ ì‹œì‘ ì¤‘ ì˜¤ë¥˜ ë°œìƒ: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// °³º° Unit ½ÃÀÛ
+        /// ê°œë³„ Unit ì‹œì‘
         /// </summary>
-        /// <param name="unitName">½ÃÀÛÇÒ Unit ÀÌ¸§</param>
+        /// <param name="unitName">ì‹œì‘í•  Unit ì´ë¦„</param>
         public async Task<bool> StartUnitAsync(string unitName)
         {
             if (!Units.TryGetValue(unitName, out var unit))
             {
-                OnErrorOccurred($"Unit '{unitName}'¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+                OnErrorOccurred($"Unit '{unitName}'ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 return false;
             }
 
             if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
             {
-                OnErrorOccurred($"Unit '{unitName}' ½ÇÇà Á¤º¸¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+                OnErrorOccurred($"Unit '{unitName}' ì‹¤í–‰ ì •ë³´ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 return false;
             }
 
@@ -368,25 +390,25 @@ namespace QMC.LCP_280.Process
             {
                 if (execInfo.IsRunning)
                 {
-                    Console.WriteLine($"Unit '{unitName}'´Â ÀÌ¹Ì ½ÇÇà ÁßÀÔ´Ï´Ù.");
+                    Console.WriteLine($"Unit '{unitName}'ëŠ” ì´ë¯¸ ì‹¤í–‰ ì¤‘ì…ë‹ˆë‹¤.");
                     return true;
                 }
 
                 OnUnitStateChanged(unitName, UnitState.Starting);
 
-                // Equipment Ãë¼Ò ÅäÅ«ÀÌ ¾øÀ¸¸é »ı¼º
+                // Equipment ì·¨ì†Œ í† í°ì´ ì—†ìœ¼ë©´ ìƒì„±
                 if (_equipmentCancellationTokenSource == null)
                 {
                     _equipmentCancellationTokenSource = new CancellationTokenSource();
                 }
 
-                // Unitº° Ãë¼Ò ÅäÅ« »ı¼º
+                // Unitë³„ ì·¨ì†Œ í† í° ìƒì„±
                 execInfo.CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
 
-                // Unit ½ÃÀÛ
+                // Unit ì‹œì‘
                 unit.OnRun();
 
-                // Unit ½ÇÇà Task »ı¼º ¹× ½ÃÀÛ
+                // Unit ì‹¤í–‰ Task ìƒì„± ë° ì‹œì‘
                 execInfo.ExecutionTask = Task.Run(async () =>
                     await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
                     execInfo.CancellationTokenSource.Token);
@@ -395,19 +417,19 @@ namespace QMC.LCP_280.Process
                 execInfo.StartTime = DateTime.Now;
 
                 OnUnitStateChanged(unitName, UnitState.Running);
-                Console.WriteLine($"Unit '{unitName}' ½ÃÀÛµÊ");
+                Console.WriteLine($"Unit '{unitName}' ì‹œì‘ë¨");
                 return true;
             }
             catch (Exception ex)
             {
                 OnUnitStateChanged(unitName, UnitState.Error);
-                OnErrorOccurred($"Unit '{unitName}' ½ÃÀÛ Áß ¿À·ù: {ex.Message}");
+                OnErrorOccurred($"Unit '{unitName}' ì‹œì‘ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Unit ½ÇÇà ·çÇÁ
+        /// Unit ì‹¤í–‰ ë£¨í”„
         /// </summary>
         private async Task RunUnitLoopAsync(string unitName, BaseUnit unit, CancellationToken cancellationToken)
         {
@@ -415,26 +437,26 @@ namespace QMC.LCP_280.Process
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    // Unitº° ÁÖ±âÀû ÀÛ¾÷ ¼öÇà
+                    // Unitë³„ ì£¼ê¸°ì  ì‘ì—… ìˆ˜í–‰
                     await PerformUnitCycle(unit, cancellationToken);
 
-                    // 100ms ´ë±â (Unitº°·Î ´Ù¸£°Ô ¼³Á¤ °¡´É)
+                    // 100ms ëŒ€ê¸° (Unitë³„ë¡œ ë‹¤ë¥´ê²Œ ì„¤ì • ê°€ëŠ¥)
                     await Task.Delay(100, cancellationToken);
                 }
             }
             catch (OperationCanceledException)
             {
-                // Á¤»óÀûÀÎ Ãë¼Ò
-                Console.WriteLine($"Unit '{unitName}' Á¤»ó Á¤ÁöµÊ");
+                // ì •ìƒì ì¸ ì·¨ì†Œ
+                Console.WriteLine($"Unit '{unitName}' ì •ìƒ ì •ì§€ë¨");
             }
             catch (Exception ex)
             {
                 OnUnitStateChanged(unitName, UnitState.Error);
-                OnErrorOccurred($"Unit '{unitName}' ½ÇÇà Áß ¿À·ù: {ex.Message}");
+                OnErrorOccurred($"Unit '{unitName}' ì‹¤í–‰ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
             }
             finally
             {
-                // Unit Á¤¸® ÀÛ¾÷
+                // Unit ì •ë¦¬ ì‘ì—…
                 try
                 {
                     unit.OnStop();
@@ -442,10 +464,10 @@ namespace QMC.LCP_280.Process
                 }
                 catch (Exception ex)
                 {
-                    OnErrorOccurred($"Unit '{unitName}' Á¤Áö Áß ¿À·ù: {ex.Message}");
+                    OnErrorOccurred($"Unit '{unitName}' ì •ì§€ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
                 }
 
-                // ½ÇÇà Á¤º¸ Á¤¸®
+                // ì‹¤í–‰ ì •ë³´ ì •ë¦¬
                 if (_unitExecutions.TryGetValue(unitName, out var execInfo))
                 {
                     execInfo.IsRunning = false;
@@ -457,41 +479,41 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// Unitº° ÁÖ±âÀû ÀÛ¾÷ ¼öÇà
+        /// Unitë³„ ì£¼ê¸°ì  ì‘ì—… ìˆ˜í–‰
         /// </summary>
         private async Task PerformUnitCycle(BaseUnit unit, CancellationToken cancellationToken)
         {
-            // Unit Å¸ÀÔº°·Î ´Ù¸¥ ÀÛ¾÷ ¼öÇà
+            // Unit íƒ€ì…ë³„ë¡œ ë‹¤ë¥¸ ì‘ì—… ìˆ˜í–‰
             switch (unit)
             {
                 case InputCassetteLifter cassetteUnit:
                     await PerformCassetteElevatorCycle(cassetteUnit, cancellationToken);
                     break;
                 default:
-                    // ±âº» Unit ÀÛ¾÷
+                    // ê¸°ë³¸ Unit ì‘ì—…
                     await Task.Delay(1, cancellationToken);
                     break;
             }
         }
 
         /// <summary>
-        /// CassetteLoadingElevator ÁÖ±âÀû ÀÛ¾÷
+        /// CassetteLoadingElevator ì£¼ê¸°ì  ì‘ì—…
         /// </summary>
         private async Task PerformCassetteElevatorCycle(InputCassetteLifter unit, CancellationToken cancellationToken)
         {
-            // ½ÇÁ¦ ¼³ºñ ·ÎÁ÷¿¡ ¸Â°Ô ±¸Çö
-            // ¿¹: ¼¾¼­ Ã¼Å©, À§Ä¡ È®ÀÎ, ¿¡·¯ Ã¼Å© µî
+            // ì‹¤ì œ ì„¤ë¹„ ë¡œì§ì— ë§ê²Œ êµ¬í˜„
+            // ì˜ˆ: ì„¼ì„œ ì²´í¬, ìœ„ì¹˜ í™•ì¸, ì—ëŸ¬ ì²´í¬ ë“±
             await Task.Delay(1, cancellationToken);
         }
 
         /// <summary>
-        /// ¼³ºñ ÀüÃ¼ Á¤Áö
+        /// ì„¤ë¹„ ì „ì²´ ì •ì§€
         /// </summary>
         public async Task<bool> StopAllUnitsAsync()
         {
             if (State == EquipmentState.Stopped)
             {
-                Console.WriteLine("¼³ºñ°¡ ÀÌ¹Ì Á¤ÁöµÇ¾î ÀÖ½À´Ï´Ù.");
+                Console.WriteLine("ì„¤ë¹„ê°€ ì´ë¯¸ ì •ì§€ë˜ì–´ ìˆìŠµë‹ˆë‹¤.");
                 return true;
             }
 
@@ -499,10 +521,10 @@ namespace QMC.LCP_280.Process
             {
                 OnStateChanged(EquipmentState.Stopping);
 
-                // ¸ğµç Unit Á¤Áö ¿äÃ»
+                // ëª¨ë“  Unit ì •ì§€ ìš”ì²­
                 _equipmentCancellationTokenSource?.Cancel();
 
-                // ½ÇÇà ÁßÀÎ UnitµéÀÇ Á¤Áö ÀÛ¾÷À» Á÷Á¢ ¼öÇà
+                // ì‹¤í–‰ ì¤‘ì¸ Unitë“¤ì˜ ì •ì§€ ì‘ì—…ì„ ì§ì ‘ ìˆ˜í–‰
                 var stopTasks = new List<Task<bool>>();
 
                 foreach (var kvp in _unitExecutions)
@@ -512,13 +534,13 @@ namespace QMC.LCP_280.Process
 
                     if (execInfo.IsRunning)
                     {
-                        // »óÅÂ º¯°æ ¹× Ãë¼Ò ¿äÃ»
+                        // ìƒíƒœ ë³€ê²½ ë° ì·¨ì†Œ ìš”ì²­
                         OnUnitStateChanged(unitName, UnitState.Stopping);
                         execInfo.CancellationTokenSource?.Cancel();
                         execInfo.IsRunning = false;
                         execInfo.StopTime = DateTime.Now;
 
-                        // Task ¿Ï·á ´ë±â¸¦ À§ÇÑ ÀÛ¾÷ Ãß°¡
+                        // Task ì™„ë£Œ ëŒ€ê¸°ë¥¼ ìœ„í•œ ì‘ì—… ì¶”ê°€
                         if (execInfo.ExecutionTask != null)
                         {
                             stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
@@ -526,7 +548,7 @@ namespace QMC.LCP_280.Process
                     }
                 }
 
-                // ¸ğµç Á¤Áö ÀÛ¾÷ ¿Ï·á ´ë±â
+                // ëª¨ë“  ì •ì§€ ì‘ì—… ì™„ë£Œ ëŒ€ê¸°
                 if (stopTasks.Count > 0)
                 {
                     var results = await Task.WhenAll(stopTasks);
@@ -534,31 +556,31 @@ namespace QMC.LCP_280.Process
 
                     if (!allStopped)
                     {
-                        OnErrorOccurred("ÀÏºÎ Unit Á¤Áö¿¡ ½ÇÆĞÇß½À´Ï´Ù.");
+                        OnErrorOccurred("ì¼ë¶€ Unit ì •ì§€ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.");
                     }
                 }
 
                 OnStateChanged(EquipmentState.Stopped);
-                Console.WriteLine("¼³ºñ ÀüÃ¼ Á¤Áö ¿Ï·á");
+                Console.WriteLine("ì„¤ë¹„ ì „ì²´ ì •ì§€ ì™„ë£Œ");
                 return true;
             }
             catch (Exception ex)
             {
                 OnStateChanged(EquipmentState.Error);
-                OnErrorOccurred($"¼³ºñ Á¤Áö Áß ¿À·ù ¹ß»ı: {ex.Message}");
+                OnErrorOccurred($"ì„¤ë¹„ ì •ì§€ ì¤‘ ì˜¤ë¥˜ ë°œìƒ: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// °³º° Unit Á¤Áö
+        /// ê°œë³„ Unit ì •ì§€
         /// </summary>
-        /// <param name="unitName">Á¤ÁöÇÒ Unit ÀÌ¸§</param>
+        /// <param name="unitName">ì •ì§€í•  Unit ì´ë¦„</param>
         public async Task<bool> StopUnitAsync(string unitName)
         {
             if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
             {
-                OnErrorOccurred($"Unit '{unitName}'¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+                OnErrorOccurred($"Unit '{unitName}'ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
                 return false;
             }
 
@@ -566,20 +588,20 @@ namespace QMC.LCP_280.Process
             {
                 if (!execInfo.IsRunning)
                 {
-                    Console.WriteLine($"Unit '{unitName}'´Â ÀÌ¹Ì Á¤ÁöµÇ¾î ÀÖ½À´Ï´Ù.");
+                    Console.WriteLine($"Unit '{unitName}'ëŠ” ì´ë¯¸ ì •ì§€ë˜ì–´ ìˆìŠµë‹ˆë‹¤.");
                     return true;
                 }
 
                 OnUnitStateChanged(unitName, UnitState.Stopping);
 
-                // Unit Á¤Áö ¿äÃ»
+                // Unit ì •ì§€ ìš”ì²­
                 execInfo.CancellationTokenSource?.Cancel();
 
-                // Áï½Ã ½ÇÇà »óÅÂ¸¦ false·Î º¯°æ (UI ¾÷µ¥ÀÌÆ®¿ë)
+                // ì¦‰ì‹œ ì‹¤í–‰ ìƒíƒœë¥¼ falseë¡œ ë³€ê²½ (UI ì—…ë°ì´íŠ¸ìš©)
                 execInfo.IsRunning = false;
                 execInfo.StopTime = DateTime.Now;
 
-                // Task ¿Ï·á ´ë±â (ÃÖ´ë 5ÃÊ)
+                // Task ì™„ë£Œ ëŒ€ê¸° (ìµœëŒ€ 5ì´ˆ)
                 if (execInfo.ExecutionTask != null)
                 {
                     var timeoutTask = Task.Delay(5000);
@@ -587,26 +609,26 @@ namespace QMC.LCP_280.Process
 
                     if (completedTask == timeoutTask)
                     {
-                        OnErrorOccurred($"Unit '{unitName}' Á¤Áö Å¸ÀÓ¾Æ¿ô");
+                        OnErrorOccurred($"Unit '{unitName}' ì •ì§€ íƒ€ì„ì•„ì›ƒ");
                         OnUnitStateChanged(unitName, UnitState.Error);
                         return false;
                     }
                 }
 
                 OnUnitStateChanged(unitName, UnitState.Stopped);
-                Console.WriteLine($"Unit '{unitName}' Á¤Áö ¿Ï·á");
+                Console.WriteLine($"Unit '{unitName}' ì •ì§€ ì™„ë£Œ");
                 return true;
             }
             catch (Exception ex)
             {
                 OnUnitStateChanged(unitName, UnitState.Error);
-                OnErrorOccurred($"Unit '{unitName}' Á¤Áö Áß ¿À·ù: {ex.Message}");
+                OnErrorOccurred($"Unit '{unitName}' ì •ì§€ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Unit Á¤Áö ¿Ï·á ´ë±â
+        /// Unit ì •ì§€ ì™„ë£Œ ëŒ€ê¸°
         /// </summary>
         private async Task<bool> WaitForUnitStopAsync(string unitName, Task executionTask)
         {
@@ -617,18 +639,18 @@ namespace QMC.LCP_280.Process
 
                 if (completedTask == timeoutTask)
                 {
-                    OnErrorOccurred($"Unit '{unitName}' Á¤Áö Å¸ÀÓ¾Æ¿ô");
+                    OnErrorOccurred($"Unit '{unitName}' ì •ì§€ íƒ€ì„ì•„ì›ƒ");
                     OnUnitStateChanged(unitName, UnitState.Error);
                     return false;
                 }
 
-                Console.WriteLine($"Unit '{unitName}' Á¤Áö ¿Ï·á");
+                Console.WriteLine($"Unit '{unitName}' ì •ì§€ ì™„ë£Œ");
                 return true;
             }
             catch (Exception ex)
             {
                 OnUnitStateChanged(unitName, UnitState.Error);
-                OnErrorOccurred($"Unit '{unitName}' Á¤Áö Áß ¿À·ù: {ex.Message}");
+                OnErrorOccurred($"Unit '{unitName}' ì •ì§€ ì¤‘ ì˜¤ë¥˜: {ex.Message}");
                 return false;
             }
         }
@@ -638,7 +660,7 @@ namespace QMC.LCP_280.Process
         #region Config & Recipe Management
 
         /// <summary>
-        /// Æ¯Á¤ UnitÀÇ Config °¡Á®¿À±â
+        /// íŠ¹ì • Unitì˜ Config ê°€ì ¸ì˜¤ê¸°
         /// </summary>
         public T GetUnitConfig<T>(string unitName) where T : class
         {
@@ -646,7 +668,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// Æ¯Á¤ UnitÀÇ Recipe °¡Á®¿À±â
+        /// íŠ¹ì • Unitì˜ Recipe ê°€ì ¸ì˜¤ê¸°
         /// </summary>
         public T GetUnitRecipe<T>(string unitName) where T : BaseRecipe
         {
@@ -654,7 +676,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// Æ¯Á¤ UnitÀÇ Config ¼³Á¤
+        /// íŠ¹ì • Unitì˜ Config ì„¤ì •
         /// </summary>
         public void SetUnitConfig(string unitName, object config)
         {
@@ -665,7 +687,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// Æ¯Á¤ UnitÀÇ Recipe ¼³Á¤
+        /// íŠ¹ì • Unitì˜ Recipe ì„¤ì •
         /// </summary>
         public void SetUnitRecipe(string unitName, BaseRecipe recipe)
         {
@@ -673,7 +695,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// ¸ğµç Config ÀúÀå
+        /// ëª¨ë“  Config ì €ì¥
         /// </summary>
         public bool SaveAllConfigs(string directoryPath = null)
         {
@@ -681,7 +703,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// ¸ğµç Config ·Îµå
+        /// ëª¨ë“  Config ë¡œë“œ
         /// </summary>
         public bool LoadAllConfigs(string directoryPath = null)
         {
@@ -689,7 +711,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// ¸ğµç Recipe ÀúÀå
+        /// ëª¨ë“  Recipe ì €ì¥
         /// </summary>
         public bool SaveAllRecipes(string directoryPath = null)
         {
@@ -697,7 +719,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// ¸ğµç Recipe ·Îµå
+        /// ëª¨ë“  Recipe ë¡œë“œ
         /// </summary>
         public bool LoadAllRecipes(string directoryPath = null)
         {
@@ -709,7 +731,7 @@ namespace QMC.LCP_280.Process
         #region Status & Information
 
         /// <summary>
-        /// ¸ğµç UnitÀÇ »óÅÂ Á¤º¸ °¡Á®¿À±â
+        /// ëª¨ë“  Unitì˜ ìƒíƒœ ì •ë³´ ê°€ì ¸ì˜¤ê¸°
         /// </summary>
         public Dictionary<string, UnitStatusInfo> GetAllUnitStatus()
         {
@@ -740,7 +762,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// Æ¯Á¤ UnitÀÇ ÇöÀç »óÅÂ °¡Á®¿À±â
+        /// íŠ¹ì • Unitì˜ í˜„ì¬ ìƒíƒœ ê°€ì ¸ì˜¤ê¸°
         /// </summary>
         private UnitState GetUnitCurrentState(string unitName)
         {
@@ -757,7 +779,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// µî·ÏµÈ ¸ğµç Unit ÀÌ¸§ ¸ñ·Ï °¡Á®¿À±â
+        /// ë“±ë¡ëœ ëª¨ë“  Unit ì´ë¦„ ëª©ë¡ ê°€ì ¸ì˜¤ê¸°
         /// </summary>
         public List<string> GetRegisteredUnitNames()
         {
@@ -800,10 +822,10 @@ namespace QMC.LCP_280.Process
         {
             if (disposing)
             {
-                // ¸ğµç Unit Á¤Áö
+                // ëª¨ë“  Unit ì •ì§€
                 StopAllUnitsAsync().GetAwaiter().GetResult();
 
-                // ¸®¼Ò½º Á¤¸®
+                // ë¦¬ì†ŒìŠ¤ ì •ë¦¬
                 _equipmentCancellationTokenSource?.Dispose();
 
                 foreach (var execInfo in _unitExecutions.Values)
@@ -814,7 +836,7 @@ namespace QMC.LCP_280.Process
 
                 _unitExecutions.Clear();
 
-                // Unitµé Á¤¸®
+                // Unitë“¤ ì •ë¦¬
                 foreach (var unit in Units.Values)
                 {
                     if (unit is IDisposable disposableUnit)
@@ -829,10 +851,10 @@ namespace QMC.LCP_280.Process
 
         #endregion
 
-        // === ÇÁ·Î±×·¥ ½ÃÀÛ½Ã¿¡ 1È¸ È£Ãâ: À¯´Öº° ÇÊ¿äÇÑ ÃàÀ» »ı¼º/µî·Ï/ºÎÂø ===
+        // === í”„ë¡œê·¸ë¨ ì‹œì‘ì‹œì— 1íšŒ í˜¸ì¶œ: ìœ ë‹›ë³„ í•„ìš”í•œ ì¶•ì„ ìƒì„±/ë“±ë¡/ë¶€ì°© ===
         private void BootstrapAxesDirect()
         {
-            // 1) Ajin º¸µå ¿ÀÇÂ + MOT ·Îµå (ÇÑ ¹ø¸¸)
+            // 1) Ajin ë³´ë“œ ì˜¤í”ˆ + MOT ë¡œë“œ (í•œ ë²ˆë§Œ)
             if (_axlHost == null)
             {
                 var motPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LCP-280.mot");
@@ -851,15 +873,15 @@ namespace QMC.LCP_280.Process
             Directory.CreateDirectory(_axisRoot);
             CreateAxes();
 
-            // ¿¹) CassetteLoadingElevator À¯´ÖÀÇ ZÃà ÇÏ³ª »ı¼º/µî·Ï/ºÎÂø
-            //    ÇÊ¿ä¿¡ ¸Â°Ô ´õ Ãß°¡(Y, X µî)
+            // ì˜ˆ) CassetteLoadingElevator ìœ ë‹›ì˜ Zì¶• í•˜ë‚˜ ìƒì„±/ë“±ë¡/ë¶€ì°©
+            //    í•„ìš”ì— ë§ê²Œ ë” ì¶”ê°€(Y, X ë“±)
             //var axisZ = CreateOrLoadAxis("CassetteLoadingElevator", "ElevatorZ", axisNo: 0, boardNo: 0);
-            // ¸Å´ÏÀú¿¡ µî·Ï (ÀÌ¸§ Áßº¹ ½Ã ¿¹¿Ü ¹æÁö À§ÇØ TryRegister »ç¿ëµµ °¡´É)
+            // ë§¤ë‹ˆì €ì— ë“±ë¡ (ì´ë¦„ ì¤‘ë³µ ì‹œ ì˜ˆì™¸ ë°©ì§€ ìœ„í•´ TryRegister ì‚¬ìš©ë„ ê°€ëŠ¥)
             //_axisManager.Register(axisZ);
-            // À¯´Ö ÀÎ½ºÅÏ½º¿¡ ºÙÀÌ±â (AxisZ ÇÁ·ÎÆÛÆ¼/ÇÊµå or Axes µñ¼Å³Ê¸® µîÀ¸·Î ÀÚµ¿ ÁÖÀÔ ½Ãµµ)
+            // ìœ ë‹› ì¸ìŠ¤í„´ìŠ¤ì— ë¶™ì´ê¸° (AxisZ í”„ë¡œí¼í‹°/í•„ë“œ or Axes ë”•ì…”ë„ˆë¦¬ ë“±ìœ¼ë¡œ ìë™ ì£¼ì… ì‹œë„)
             //AttachAxisToUnit("CassetteLoadingElevator", "AxisZ", axisZ);
 
-            // === ÇÊ¿ä½Ã ´Ù¸¥ À¯´Ö/Ãàµµ µ¿ÀÏ ¹æ½ÄÀ¸·Î Ãß°¡ ===
+            // === í•„ìš”ì‹œ ë‹¤ë¥¸ ìœ ë‹›/ì¶•ë„ ë™ì¼ ë°©ì‹ìœ¼ë¡œ ì¶”ê°€ ===
             // var axisX = CreateOrLoadAxis("Prober", "StageX", 1, 0);
             // _axisManager.Register(axisX;
             // AttachAxisToUnit("Prober", "AxisX", axisX);
@@ -867,39 +889,39 @@ namespace QMC.LCP_280.Process
 
         private void BootstrapIODirect()
         {
-            // 2) I/O µå¶óÀÌ¹ö (AjinDioDriver)
+            // 2) I/O ë“œë¼ì´ë²„ (AjinDioDriver)
             if (_dio == null)
             {
-                // (board, port) -> moduleNo ¸ÅÇÎ: ÇöÀå EtherCAT ±¸¼º¿¡ ¸Â°Ô ¼öÁ¤
+                // (board, port) -> moduleNo ë§¤í•‘: í˜„ì¥ EtherCAT êµ¬ì„±ì— ë§ê²Œ ìˆ˜ì •
                 AjinDioDriver.ModuleMapper map = delegate (int b, int p) { return b * 8 + p; };
                 _dio = new AjinDioDriver(map);
             }
 
-            // 3) I/O ½ºÄµ ¼­ºñ½º ½ÃÀÛ (Setup JSON »ç¿ë)
+            // 3) I/O ìŠ¤ìº” ì„œë¹„ìŠ¤ ì‹œì‘ (Setup JSON ì‚¬ìš©)
             if (_dioScan == null)
             {
                 Directory.CreateDirectory(_dioRoot);
-                //var setupPath = Path.Combine(_dioRoot, "Unit.dio.setup.json"); // CassetteLoadingElevator µî À¯´Öº°·Î ³ª´²µµ OK
+                //var setupPath = Path.Combine(_dioRoot, "Unit.dio.setup.json"); // CassetteLoadingElevator ë“± ìœ ë‹›ë³„ë¡œ ë‚˜ëˆ ë„ OK
                 var setupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Unit.dio.setup.json");
-                // À¯´Ö DIO ¸Ê ·Îµå/¾øÀ¸¸é »ı¼º
+                // ìœ ë‹› DIO ë§µ ë¡œë“œ/ì—†ìœ¼ë©´ ìƒì„±
                 _unitIO = DIOUnit.LoadOrCreateDefault(
                     setupPath,
-                    unitName: "Unit",   // ³×°¡ ÃàÀ» "Unit"À¸·Î ¹­¾úÀ¸´Ï µ¿ÀÏ ¸íÄª »ç¿ë. ÇÊ¿äÇÏ¸é À¯´Öº° ÆÄÀÏ·Î ºĞ¸®.
+                    unitName: "Unit",   // ë„¤ê°€ ì¶•ì„ "Unit"ìœ¼ë¡œ ë¬¶ì—ˆìœ¼ë‹ˆ ë™ì¼ ëª…ì¹­ ì‚¬ìš©. í•„ìš”í•˜ë©´ ìœ ë‹›ë³„ íŒŒì¼ë¡œ ë¶„ë¦¬.
                     32,
                     32,
                     "DB64R"
                 );
 
                 _dioScan = new DioScanService(_unitIO, _dio);
-                _dioScan.Start(10); // 10ms ÁÖ±â ½ºÄµ
+                _dioScan.Start(10); // 10ms ì£¼ê¸° ìŠ¤ìº”
             }
 
             // Cylinder
-            // °æ·Î
+            // ê²½ë¡œ
             //string cylPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cylinders.json");
             string cylPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "cylinders.json");
 
-            // ±âº»°ª(ÃÖÃÊ 1È¸¿ë)
+            // ê¸°ë³¸ê°’(ìµœì´ˆ 1íšŒìš©)
             var defaults = new List<CylinderConfig>
             {
                 new CylinderConfig {
@@ -911,15 +933,15 @@ namespace QMC.LCP_280.Process
                 }
             };
 
-            // ·Îµå ¶Ç´Â »ı¼º
+            // ë¡œë“œ ë˜ëŠ” ìƒì„±
             var all = CylinderConfigs.LoadOrCreate(cylPath, defaults);
 
-            // Á¶È¸/¼öÁ¤
+            // ì¡°íšŒ/ìˆ˜ì •
             var feeder = all.Get("Input Feeder Up");
             feeder.TimeoutMs = 4000;
             all.Upsert(feeder);
 
-            // ÀúÀå
+            // ì €ì¥
             all.Save(cylPath);
             ////////////////////////////////////////////////////////////////
 
@@ -963,13 +985,13 @@ namespace QMC.LCP_280.Process
                 "Output Feeder Y Axis"
             };
 
-                var boardNo = 0; // ÇÊ¿ä½Ã º¸µåº°·Î ¹Ù²Ù¼¼¿ä.
+                var boardNo = 0; // í•„ìš”ì‹œ ë³´ë“œë³„ë¡œ ë°”ê¾¸ì„¸ìš”.
 
                 for (int i = 0; i < names.Length; i++)
                 {
                     var axis = CreateOrLoadAxis(unitName, names[i], axisNo: i, boardNo: boardNo);
                     _axisManager.Register(unitName, axis);
-                    AttachAxisToUnit(unitName, "Axis_" + i, axis); // ÇÁ·ÎÆÛÆ¼°¡ ¾ø¾îµµ Axes µñ¼Å³Ê¸®¿¡ ÀÚµ¿ Ãß°¡µÊ
+                    AttachAxisToUnit(unitName, "Axis_" + i, axis); // í”„ë¡œí¼í‹°ê°€ ì—†ì–´ë„ Axes ë”•ì…”ë„ˆë¦¬ì— ìë™ ì¶”ê°€ë¨
                 }
             }
             catch (Exception ex)
@@ -978,8 +1000,8 @@ namespace QMC.LCP_280.Process
             }
         }
 
-        // === Ãà 1°³ »ı¼º/·Îµå ===
-        // ÀúÀå °æ·Î: Axes/<UnitName>/<AxisName>.setup.json(.config.json)
+        // === ì¶• 1ê°œ ìƒì„±/ë¡œë“œ ===
+        // ì €ì¥ ê²½ë¡œ: Axes/<UnitName>/<AxisName>.setup.json(.config.json)
         private MotionAxis CreateOrLoadAxis(string unitName, string axisName, int axisNo, int boardNo)
         {
             var dir = Path.Combine(_axisRoot, unitName);
@@ -994,7 +1016,8 @@ namespace QMC.LCP_280.Process
             // Setup
             if (File.Exists(setupPath))
             {
-                setup = MotionAxisSetup.Load(setupPath);
+                //setup = MotionAxisSetup.Load(setupPath);
+                setup = MotionAxisSetup.LoadOrCreate(setupPath, indented: true, backfill: true);
             }
             else
             {
@@ -1015,7 +1038,8 @@ namespace QMC.LCP_280.Process
             // Config
             if (File.Exists(configPath))
             {
-                config = MotionAxisConfig.Load(configPath);
+                //config = MotionAxisConfig.Load(configPath);
+                config = MotionAxisConfig.LoadOrCreate(configPath, indented: true, backfill: true);
             }
             else
             {
@@ -1033,17 +1057,17 @@ namespace QMC.LCP_280.Process
                 config.TrySave(configPath, out err);
             }
 
-            // µå¶óÀÌ¹ö: ½ÇÁ¦ º¸µå ÁØºñµÇ¸é AjinDriver·Î ±³Ã¼
+            // ë“œë¼ì´ë²„: ì‹¤ì œ ë³´ë“œ ì¤€ë¹„ë˜ë©´ AjinDriverë¡œ êµì²´
             IMotionDriver driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
             //IMotionDriver driver = new SimDriver(setup.PulsesPerUnit);
 
             return new MotionAxis(setup, config, driver);
         }
 
-        // === »ı¼ºµÈ ÃàÀ» À¯´Ö ÀÎ½ºÅÏ½º¿¡ ÁÖÀÔ ===
-        // 1) °°Àº ÀÌ¸§ÀÇ MotionAxis Å¸ÀÔ ÇÁ·ÎÆÛÆ¼/ÇÊµå°¡ ÀÖÀ¸¸é °Å±â¿¡ ¼¼ÆÃ (¿¹: public MotionAxis AxisZ {get;set;})
-        // 2) ¾øÀ¸¸é 'Axes'¶ó´Â IDictionary<string, MotionAxis> ÇÁ·ÎÆÛÆ¼/ÇÊµå¸¦ Ã£¾Æ Ãß°¡
-        // 3) µÑ ´Ù ¾øÀ¸¸é ÀåºñÀÇ _axisManager ¸¸¿¡ µî·ÏµÈ »óÅÂ·Î À¯Áö(ÇÊ¿ä½Ã ¿©±â¼­ ¸ÅÇÎÇ¥ ÀúÀå °¡´É)
+        // === ìƒì„±ëœ ì¶•ì„ ìœ ë‹› ì¸ìŠ¤í„´ìŠ¤ì— ì£¼ì… ===
+        // 1) ê°™ì€ ì´ë¦„ì˜ MotionAxis íƒ€ì… í”„ë¡œí¼í‹°/í•„ë“œê°€ ìˆìœ¼ë©´ ê±°ê¸°ì— ì„¸íŒ… (ì˜ˆ: public MotionAxis AxisZ {get;set;})
+        // 2) ì—†ìœ¼ë©´ 'Axes'ë¼ëŠ” IDictionary<string, MotionAxis> í”„ë¡œí¼í‹°/í•„ë“œë¥¼ ì°¾ì•„ ì¶”ê°€
+        // 3) ë‘˜ ë‹¤ ì—†ìœ¼ë©´ ì¥ë¹„ì˜ _axisManager ë§Œì— ë“±ë¡ëœ ìƒíƒœë¡œ ìœ ì§€(í•„ìš”ì‹œ ì—¬ê¸°ì„œ ë§¤í•‘í‘œ ì €ì¥ ê°€ëŠ¥)
         private void AttachAxisToUnit(string unitName, string targetMemberName, MotionAxis axis)
         {
             BaseUnit unit;
@@ -1055,7 +1079,7 @@ namespace QMC.LCP_280.Process
 
             var t = unit.GetType();
 
-            // 1) °°Àº ÀÌ¸§ÀÇ ÇÁ·ÎÆÛÆ¼ ¸ÕÀú ½Ãµµ
+            // 1) ê°™ì€ ì´ë¦„ì˜ í”„ë¡œí¼í‹° ë¨¼ì € ì‹œë„
             var p = t.GetProperty(targetMemberName,
                 System.Reflection.BindingFlags.Instance |
                 System.Reflection.BindingFlags.Public |
@@ -1066,7 +1090,7 @@ namespace QMC.LCP_280.Process
                 return;
             }
 
-            // 1-2) °°Àº ÀÌ¸§ÀÇ ÇÊµå
+            // 1-2) ê°™ì€ ì´ë¦„ì˜ í•„ë“œ
             var f = t.GetField(targetMemberName,
                 System.Reflection.BindingFlags.Instance |
                 System.Reflection.BindingFlags.Public |
@@ -1077,8 +1101,8 @@ namespace QMC.LCP_280.Process
                 return;
             }
 
-            // 2) Axes µñ¼Å³Ê¸® Ã£±â
-            //    public Dictionary<string, MotionAxis> Axes {get;} ¶Ç´Â IDictionary<string, MotionAxis>
+            // 2) Axes ë”•ì…”ë„ˆë¦¬ ì°¾ê¸°
+            //    public Dictionary<string, MotionAxis> Axes {get;} ë˜ëŠ” IDictionary<string, MotionAxis>
             var axesProp = t.GetProperty("Axes",
                 System.Reflection.BindingFlags.Instance |
                 System.Reflection.BindingFlags.Public |
@@ -1088,7 +1112,7 @@ namespace QMC.LCP_280.Process
                 var dict = axesProp.GetValue(unit, null) as System.Collections.IDictionary;
                 if (dict != null)
                 {
-                    dict[axis.Name] = axis; // axis.Name == axisName (¿¹: ElevatorZ)
+                    dict[axis.Name] = axis; // axis.Name == axisName (ì˜ˆ: ElevatorZ)
                     return;
                 }
             }
@@ -1107,9 +1131,130 @@ namespace QMC.LCP_280.Process
                 }
             }
 
-            // 3) ÁÖÀÔÇÒ °÷ÀÌ ¾øÀ¸¸é ·Î±×¸¸
-            Console.WriteLine("AttachAxisToUnit: '" + unitName + "'¿¡ '" + targetMemberName + "' ¶Ç´Â Axes µñ¼Å³Ê¸®°¡ ¾ø¾î ÃàÀ» Á÷Á¢ ÁÖÀÔÇÏÁö ¸øÇß½À´Ï´Ù.");
+            // 3) ì£¼ì…í•  ê³³ì´ ì—†ìœ¼ë©´ ë¡œê·¸ë§Œ
+            Console.WriteLine("AttachAxisToUnit: '" + unitName + "'ì— '" + targetMemberName + "' ë˜ëŠ” Axes ë”•ì…”ë„ˆë¦¬ê°€ ì—†ì–´ ì¶•ì„ ì§ì ‘ ì£¼ì…í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
         }
+
+        //private void InitializeCameras()
+        //{
+        //    try
+        //    {
+        //        // íŒŒì¼ë¡œ ë³€ê²½ í•„ìš”. ( Equipment_Setup.json )
+        //        var map = new Dictionary<string, string>
+        //        {
+        //            { "InputStageCam",       "KV1" },        // Serial
+        //            { "OutputStageCam",      "KV2" },        // Serial
+        //            { "IndexLoadAlignCam",   "KV3" },        // Serial
+        //            { "IndexProcessCam",     "KV4" },        // Serial
+        //            { "IndexUnloadAlignCam", "KV5" }         // Serial
+        //        };
+
+        //        foreach (var kv in map)
+        //        {
+        //            var name = kv.Key;
+        //            var selector = kv.Value;
+
+        //            var cam = new HIKGigECamera(name);
+        //            //cam.CameraConfig = CameraConfig.LoadOrCreate(name);   // JSON ë¡œë“œ (ì—†ìœ¼ë©´ ìƒì„±)
+        //            cam.CameraConfig = CameraConfig.LoadOrCreate(name, indented: true, backfill: true);
+
+        //            int ret = cam.OpenBySelectorOrConfig(selector);       // ì—¬ê¸°ì„œ ì—´ê±°â†’ë§¤ì¹­â†’Open
+        //            if (ret != 0)
+        //            {
+        //                Log.Write("Equipment", $"[Camera] '{name}' open failed ({selector})");
+        //                continue;
+        //            }
+
+        //            // í•„ìš” ì‹œ ë°”ë¡œ ë¼ì´ë¸Œ ì‹œì‘
+        //            cam.StartLive();
+
+        //            Cameras[name] = cam;
+        //            Console.WriteLine($"[Camera] {name} ready");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Log.Write(ex);
+        //    }
+        //}
+
+        // ì‚¬ìš© ì˜ˆ:
+        // 1) í”„ë¡œê·¸ë¨ ì‹œì‘ ì‹œ:  InitializeCameras(connect: false);   // âš¡ configë§Œ ë¯¸ë¦¬ ë¡œë“œ/ìƒì„±
+        // 2) ë‚˜ì¤‘ì— ì—°ê²° ì‹œë„:  InitializeCameras(connect: true);    // ğŸ”Œ ì‹¤ì œ ì—°ê²°
+
+        private void InitializeCameras(bool connect = true)
+        {
+            try
+            {
+                // íŒŒì¼ë¡œ ë³€ê²½ í•„ìš”. ( Equipment_Setup.json )
+                var map = new Dictionary<string, string>
+                {
+                    { "Index_Loader",       "MV-CA013-A0GM" },        // Serial
+                    { "In_Stage",           "MV-CS050-60GM" },        // Serial
+                    { "Index_Prober",       "MV-CA013-A0GM" },         // Serial
+                    { "Index_Unloader",     "MV-CA013-A0GM" },        // Serial
+                    { "Out_Stage",          "MV-CS050-60GM" }        // Serial
+                };
+
+                foreach (var kv in map)
+                {
+                    var name = kv.Key;
+                    var selector = kv.Value;
+
+                    // 1) âš  ë„¤ì´í‹°ë¸Œ ì½”ë“œ ì „í˜€ ì•ˆ ê±´ë“œë¦¬ê³ , Configë§Œ ì•ˆì „í•˜ê²Œ ë¡œë“œ/ìƒì„±
+                    CameraConfig cfg = null;
+                    try
+                    {
+                        //cfg = CameraConfig.LoadOrCreate(name, indented: true, backfill: true);
+                        cfg = CameraConfig.LoadOrCreate(name);
+                    }
+                    catch (Exception exCfg)
+                    {
+                        Log.Write("Equipment", $"[Camera] config load failed for '{name}': {exCfg.Message}");
+                        // config ìì²´ê°€ ì—†ìœ¼ë©´ ì—°ê²°ë„ ì˜ë¯¸ ì—†ìœ¼ë‹ˆ ë‹¤ìŒ ì¹´ë©”ë¼ë¡œ
+                        continue;
+                    }
+
+                    // 2) ì—°ê²° ë¶„ë¦¬: connect=falseë©´ ì—¬ê¸°ì„œ ë
+                    if (!connect)
+                        continue;
+
+                    // 3) ì—°ê²° ë‹¨ê³„ (ì´ë•Œë¶€í„° ë„¤ì´í‹°ë¸Œ DLL í•„ìš”)
+                    try
+                    {
+                        var cam = new HIKGigECamera(name);   // ì´ ì‹œì ê¹Œì§€ë„ íŠˆ ìˆ˜ ìˆìœ¼ë‹ˆ try ë‚´ë¶€ì— ë‘ 
+                        cam.CameraConfig = cfg;
+
+                        int ret = cam.OpenBySelectorOrConfig(selector); // ì—´ê±°â†’ë§¤ì¹­â†’Open
+                        //(ret != 0)
+                        {
+                            Log.Write("Equipment", $"[Camera] '{name}' open failed ({selector}), code=0x{ret:X8}");
+                            //continue;
+                        }
+
+                        // í•„ìš” ì‹œ ë°”ë¡œ ë¼ì´ë¸Œ ì‹œì‘
+                        ret = cam.StartLive();
+                        if (ret != 0)
+                        {
+                            Log.Write("Equipment", $"[Camera] '{name}' StartLive failed, code=0x{ret:X8}");
+                            // ë¼ì´ë¸Œ ì‹¤íŒ¨ëŠ” ì¹˜ëª… ì•„ë‹˜: ì—°ê²°ë§Œ ìœ ì§€í•˜ê³  ë„˜ì–´ê°€ë„ ë¨
+                        }
+
+                        Cameras[name] = cam;
+                        Console.WriteLine($"[Camera] {name} ready");
+                    }
+                    catch (DllNotFoundException ex) { Log.Write(ex); break; } // SDK ë¯¸ë°°í¬/ê²½ë¡œ
+                    catch (BadImageFormatException ex) { Log.Write(ex); break; } // x86/x64 ë¶ˆì¼ì¹˜
+                    catch (EntryPointNotFoundException ex) { Log.Write(ex); break; } // DLL ë²„ì „ ë¯¸ìŠ¤ë§¤ì¹˜
+                    catch (Exception ex) { Log.Write(ex); /* ì´ ì¥ì¹˜ë§Œ ìŠ¤í‚µ */ }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
 
 
     }
@@ -1117,7 +1262,7 @@ namespace QMC.LCP_280.Process
     #region Supporting Classes and Enums
 
     /// <summary>
-    /// ¼³ºñ »óÅÂ
+    /// ì„¤ë¹„ ìƒíƒœ
     /// </summary>
     public enum EquipmentState
     {
@@ -1131,7 +1276,7 @@ namespace QMC.LCP_280.Process
     }
 
     /// <summary>
-    /// Unit »óÅÂ
+    /// Unit ìƒíƒœ
     /// </summary>
     public enum UnitState
     {
@@ -1144,7 +1289,7 @@ namespace QMC.LCP_280.Process
     }
 
     /// <summary>
-    /// Unit ½ÇÇà Á¤º¸
+    /// Unit ì‹¤í–‰ ì •ë³´
     /// </summary>
     internal class UnitExecutionInfo
     {
@@ -1165,7 +1310,7 @@ namespace QMC.LCP_280.Process
     }
 
     /// <summary>
-    /// Unit »óÅÂ Á¤º¸
+    /// Unit ìƒíƒœ ì •ë³´
     /// </summary>
     public class UnitStatusInfo
     {
@@ -1180,7 +1325,7 @@ namespace QMC.LCP_280.Process
     }
 
     /// <summary>
-    /// ¼³ºñ »óÅÂ º¯°æ ÀÌº¥Æ® ÀÎÀÚ
+    /// ì„¤ë¹„ ìƒíƒœ ë³€ê²½ ì´ë²¤íŠ¸ ì¸ì
     /// </summary>
     public class EquipmentStateChangedEventArgs : EventArgs
     {
@@ -1195,7 +1340,7 @@ namespace QMC.LCP_280.Process
     }
 
     /// <summary>
-    /// Unit »óÅÂ º¯°æ ÀÌº¥Æ® ÀÎÀÚ
+    /// Unit ìƒíƒœ ë³€ê²½ ì´ë²¤íŠ¸ ì¸ì
     /// </summary>
     public class UnitStateChangedEventArgs : EventArgs
     {
@@ -1210,7 +1355,7 @@ namespace QMC.LCP_280.Process
     }
 
     /// <summary>
-    /// ¼³ºñ ¿À·ù ÀÌº¥Æ® ÀÎÀÚ
+    /// ì„¤ë¹„ ì˜¤ë¥˜ ì´ë²¤íŠ¸ ì¸ì
     /// </summary>
     public class EquipmentErrorEventArgs : EventArgs
     {

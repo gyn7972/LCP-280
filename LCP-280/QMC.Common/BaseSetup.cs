@@ -8,7 +8,7 @@ using System.Text;
 
 namespace QMC.Common
 {
-    public abstract class BaseRecipe
+    public abstract class BaseSetup
     {
         // ===== 공통 메타 속성 =====
         [DefaultValue(null)]
@@ -24,7 +24,7 @@ namespace QMC.Common
         public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
 
         // ===== 생성/초기화 =====
-        protected BaseRecipe(string name = null)
+        protected BaseSetup(string name = null)
         {
             Name = name ?? GetType().Name;
             Reset();   // 파생에서 기본값 세팅

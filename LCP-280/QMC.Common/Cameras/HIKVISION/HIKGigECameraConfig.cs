@@ -1,16 +1,13 @@
 ﻿using QMC.Common.Cameras;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Drawing;
 
 namespace QMC.Common.HIKVISION
 {
     [Serializable]
+    [Obsolete("Use strongly-typed properties instead of ParamHIKGigECameraConfigKey.")]
     public enum ParamHIKGigECameraConfigKey
     {
         SerialNumber,
@@ -31,201 +28,125 @@ namespace QMC.Common.HIKVISION
     }
 
     [Serializable]
-    [TypeConverter(typeof(HIKGigECameraConfig))]
-    public class HIKGigECameraConfig : CameraConfig       
+    [TypeConverter(typeof(ExpandableObjectConverter))] // PropertyGrid 용
+    public class HIKGigECameraConfig : CameraConfig
     {
-        #region Define
-      
+        #region Ctors
+        public HIKGigECameraConfig() : base() { }
+        public HIKGigECameraConfig(string name) : base(name) { }
         #endregion
 
-        #region Property
+        #region Properties
+        [DefaultValue("")]
         public string SerialNumber { get; set; }
+
+        [DefaultValue(1000.0f)]
         public float ExposureTime { get; set; }
+
+        [DefaultValue(1.0f)]
         public float Gain { get; set; }
+
+        [DefaultValue(1000)]
         public int OpenDelayTime { get; set; }
+
+        [DefaultValue(5)]
         public int RetryCount { get; set; }
 
-        public uint OffsetX { set; get; }
-        public uint OffsetY { set; get; }
+        [DefaultValue(typeof(uint), "0")]
+        public uint OffsetX { get; set; }
 
-        public CameraType CameraType { set; get; }
+        [DefaultValue(typeof(uint), "0")]
+        public uint OffsetY { get; set; }
+
+        [DefaultValue(typeof(CameraType), "Normal")]
+        public CameraType CameraType { get; set; }
         #endregion
 
-        public HIKGigECameraConfig()
-            :base()
+        #region BaseConfig Hooks
+        private static bool IsDefault<T>(T v)
         {
-            this.SerialNumber = "";
-            this.ExposureTime = 1000.0f;
-            this.Gain = 1.0f;
-            this.OpenDelayTime = 1000;
-            this.RetryCount = 5;
-            OffsetX = 0;
-            OffsetY = 0;
-            CameraType = CameraType.Normal;
+            return System.Collections.Generic.EqualityComparer<T>.Default.Equals(v, default(T));
         }
 
-        //public override ListParam ToListParam()
-        //{
-        //    ListParam listParam = new ListParam();
-        //    ParamGroup group = new ParamGroup();
-        //    group.Name = this.GetType().Name;
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(SerialNumber), Param.DisplayTypeKey.Text, SerialNumber, Param.ValueTypeKey.String, group.Name);
+        public override void Reset()
+        {
+            base.Reset();
 
-        //        group.AddParam(param);
-        //    }
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(ExposureTime), Param.DisplayTypeKey.Text, ExposureTime, Param.ValueTypeKey.Double, group.Name);
+            // 문자열/수치 기본값 보강 (C# 7.3: ??= 미사용)
+            if (SerialNumber == null) SerialNumber = "";
+            if (ExposureTime <= 0f) ExposureTime = 1000.0f;
+            if (Gain <= 0f) Gain = 1.0f;
+            if (OpenDelayTime < 0) OpenDelayTime = 0;
+            if (RetryCount < 0) RetryCount = 0;
+            // OffsetX/OffsetY는 기본 0 유지
+            // CameraType 기본 Normal 유지
+        }
 
-        //        group.AddParam(param);
-        //    }
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(Gain), Param.DisplayTypeKey.Text, Gain, Param.ValueTypeKey.Double, group.Name);
+        protected override void OnLoaded()
+        {
+            base.OnLoaded();
 
-        //        group.AddParam(param);
-        //    }
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(OpenDelayTime), Param.DisplayTypeKey.Text, OpenDelayTime, Param.ValueTypeKey.Int, group.Name);
+            if (SerialNumber == null) SerialNumber = "";
+            if (ExposureTime <= 0f) ExposureTime = 1000.0f;
+            if (Gain <= 0f) Gain = 1.0f;
+            if (OpenDelayTime < 0) OpenDelayTime = 0;
+            if (RetryCount < 0) RetryCount = 0;
+        }
 
-        //        group.AddParam(param);
-        //    }
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(RetryCount), Param.DisplayTypeKey.Text, RetryCount, Param.ValueTypeKey.Int, group.Name);
+        public override bool Validate()
+        {
+            if (ExposureTime < 0f) ExposureTime = 0f;
+            if (Gain < 0f) Gain = 0f;
+            if (OpenDelayTime < 0) OpenDelayTime = 0;
+            if (RetryCount < 0) RetryCount = 0;
+            return true;
+        }
 
-        //        group.AddParam(param);
-        //    }
+        public override string GetFilePath()
+        {
+            // 파생 구성 파일은 분리된 폴더에 저장
+            var dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Camera", "HIKGigE");
+            var file = string.IsNullOrWhiteSpace(Name) ? "default.json" : (Name + ".json");
+            return System.IO.Path.Combine(dir, file);
+        }
 
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(OffsetX), Param.DisplayTypeKey.Text, OffsetX, Param.ValueTypeKey.Int, group.Name);
+        protected override void OnSaving()
+        {
+            // Name이 비었으면 SerialNumber로 대체 저장(파일명 구분을 위해)
+            if (string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(SerialNumber))
+                Name = SerialNumber;
 
-        //        group.AddParam(param);
-        //    }
+            base.OnSaving();
+        }
+        #endregion
 
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(OffsetY), Param.DisplayTypeKey.Text, OffsetY, Param.ValueTypeKey.Int, group.Name);
+        #region Static Helper (편의 API)
+        public static HIKGigECameraConfig LoadOrCreate(string name)
+        {
+            var cfg = new HIKGigECameraConfig(name);
+            var ret = cfg.Load();
+            if (ret != 0)
+            {
+                cfg.Reset();
+                cfg.Save();
+            }
+            return cfg;
+        }
 
-        //        group.AddParam(param);
-        //    }
-        //    {
-        //        Param param = new Param();
-        //        param.SetParam(nameof(CameraType), Param.DisplayTypeKey.Combobox, CameraType, Param.ValueTypeKey.Int, group.Name);
-
-        //        param.SelectValues.Clear();
-        //        foreach (CameraType eType in Enum.GetValues(typeof(CameraType)))
-        //        {
-        //            param.SelectValues.Add(eType.ToString());
-        //        }
-        //        group.AddParam(param);
-        //    }
-        //    {
-        //        group.SetGroup(base.ToListParam().GetGroup("Common"));
-        //    }
-
-        //    listParam.SetGroup(group);
-        //    return listParam;
-        //}
-
-        //public override void SetParam(ListParam listParam)
-        //{
-        //    ParamGroup group = listParam.GetGroup(this.GetType().Name);            
-        //    ListParam commonList = new ListParam();
-        //    commonList.SetGroup(group.GetGroup("Common"));
-        //    base.SetParam(commonList);
-        //    if (group != null)
-        //    {
-        //        Param param = null;
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.SerialNumber);
-        //        if (param != null)
-        //        {
-        //            string value = string.Empty;
-        //            if (param.GetStringValue(ref value))
-        //            {
-        //                SerialNumber = (string)value;
-        //            }
-        //        }
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.ExposureTime);
-        //        if (param != null)
-        //        {
-        //            double value = 0;
-        //            if (param.GetDoubleValue(ref value))
-        //            {
-        //                ExposureTime = (float)value;
-        //            }
-        //        }
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.Gain);
-        //        if (param != null)
-        //        {
-        //            double value = 0;
-        //            if (param.GetDoubleValue(ref value))
-        //            {
-        //                Gain = (float)value;
-        //            }
-        //        }
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.OpenDelayTime);
-        //        if (param != null)
-        //        {
-        //            int value = 0;
-        //            if (param.GetIntValue(ref value))
-        //            {
-        //                OpenDelayTime = (int)value;
-        //            }
-        //        }
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.RetryCount);
-        //        if (param != null)
-        //        {
-        //            int value = 0;
-        //            if (param.GetIntValue(ref value))
-        //            {
-        //                RetryCount = (int)value;
-        //            }
-        //        }
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.OffsetX);
-        //        if (param != null)
-        //        {
-        //            int value = 0;
-        //            if (param.GetIntValue(ref value))
-        //            {
-        //                OffsetX = (uint)value;
-        //            }
-        //        }
-
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.OffsetY);
-        //        if (param != null)
-        //        {
-        //            int value = 0;
-        //            if (param.GetIntValue(ref value))
-        //            {
-        //                OffsetY = (uint)value;
-        //            }
-        //        }
-
-        //        param = group.GetParam((int)ParamHIKGigECameraConfigKey.CameraType);
-        //        if (param != null)
-        //        {
-        //            int value = 0;
-        //            if (param.GetIntValue(ref value))
-        //            {
-        //                CameraType = (CameraType)value;
-        //            }
-        //        }
-        //    }
-
-        //}
-
+        // 기존 호출 호환 (indented/backfill 매개변수 버전이 남아있을 수 있음)
+        public static HIKGigECameraConfig LoadOrCreate(string name, bool indented)
+        {
+            return LoadOrCreate(name);
+        }
+        public static HIKGigECameraConfig LoadOrCreate(string name, bool indented, bool backfill)
+        {
+            return LoadOrCreate(name);
+        }
+        #endregion
     }
+
     public class HIKGigECameraConfigCollection : Collection<HIKGigECameraConfig>
     {
-        public HIKGigECameraConfigCollection()
-        {
-
-        }
+        public HIKGigECameraConfigCollection() { }
     }
-   
 }

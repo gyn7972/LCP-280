@@ -1,6 +1,9 @@
 ﻿using QMC.Common;
+using QMC.Common.Cameras;
+using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.CustomControl;
 using QMC.Common.Motions;
+using QMC.Common.Vision;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Unit;
 using System;
@@ -8,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
@@ -38,6 +42,10 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btn_Save_Illuninator_Setup;
 
         private GroupBox gbIlluminatorControl;
+
+        // Vision_Setup 클래스 내부 필드
+        private CameraSwitch _camSwitch;
+        private List<string> _cameraNames;
 
         private PropertyCollection _editorPropertiesConfig;
         private PropertyCollection _editorPropertiesSpeed;
@@ -132,8 +140,6 @@ namespace QMC.LCP_280.Process.Unit
             // visionImageViewer
             // 
             this.visionImageViewer.BackColor = System.Drawing.Color.Black;
-            this.visionImageViewer.Camera = null;
-            this.visionImageViewer.CameraSwitch = null;
             this.visionImageViewer.FrameRate = 1D;
             this.visionImageViewer.InputImage = null;
             this.visionImageViewer.IsViewCustomizedImage = false;
@@ -147,6 +153,11 @@ namespace QMC.LCP_280.Process.Unit
             this.visionImageViewer.TabStop = false;
             this.visionImageViewer.UpdateDelayTime = 80;
             this.visionImageViewer.VisibleCrossLine = true;
+            this.visionImageViewer.Camera = null;
+            this.visionImageViewer.CameraSwitch = null;
+            this.visionImageViewer.SizeMode = PictureBoxSizeMode.CenterImage;
+            this.visionImageViewer.SuspendDisplay();
+
             // 
             // iluminatorListBoxItemsView
             // 
@@ -351,8 +362,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                WireAxisSelectionEvent();
                 BinVisionList();
+                WireAxisSelectionEvent();
                 InitializeStatusTimer();     // 실제 위치 주기 갱신 (필요 시)
                 InitializeRadioButtonView();
             }
@@ -370,7 +381,55 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                // 1) 좌측 리스트 바인딩
+                _cameraNames = Equipment.Instance.Cameras.Keys.ToList();
+                cameraListBoxItemsView.SetItems(_cameraNames.ToArray());
+                //cameraListBoxItemsView.ItemSelected += CameraListBoxItemsView_ItemSelected;
 
+                // 2) CameraSwitch 구성
+                _camSwitch = new CameraSwitch();
+                foreach (var cam in Equipment.Instance.Cameras.Values)
+                    _camSwitch.Cameras.Add(cam);
+
+                // 3) 뷰어에 스위치 연결 (Camera는 비워둬도 OK)
+                visionImageViewer.CameraSwitch = _camSwitch;
+                visionImageViewer.FrameRate = 30;
+
+                // 4) 기본 선택
+                if (_camSwitch.Cameras.Count > 0)
+                {
+                    _camSwitch.Change(0);
+                    cameraListBoxItemsView.SelectedIndex = 0;
+                    ResetViewerForCameraChange(); // 첫 프레임 즉시 표시
+                    visionImageViewer.ResumeDisplay();
+                }
+
+                //// 1) 좌측 리스트 아이템 구성 (Equipment.Cameras: 이름→Camera)
+                //_cameraNames = Equipment.Instance.Cameras.Keys.ToList();
+                //cameraListBoxItemsView.SetItems(_cameraNames.ToArray());
+                ////cameraListBoxItemsView.ItemSelected += CameraListBoxItemsView_ItemSelected;
+
+                //// 2) 스위처 구성
+                //_camSwitch = new CameraSwitch();
+                //foreach (var cam in Equipment.Instance.Cameras.Values)
+                //    _camSwitch.Cameras.Add(cam);
+
+                //// 3) 뷰어에 스위처 연결
+                //visionImageViewer.CameraSwitch = _camSwitch;  // 뷰어가 AfterChange를 구독하고 버퍼/스케일 재설정함
+                //visionImageViewer.FrameRate = 10;
+
+                //// 4) 기본 선택 (0번)
+                //if (_camSwitch.Cameras.Count > 0)
+                //{
+                //    _camSwitch.Change(0);
+                //    cameraListBoxItemsView.SelectedIndex = 0;
+                //}
+
+                //// 교차선은 마지막에 켜기 (아래 2번 수정과 세트)
+                //visionImageViewer.VisibleCrossLine = true;
+
+                //// ※ 디자이너에서 호출한 SuspendDisplay()가 있으면 여기서 해제
+                //visionImageViewer.ResumeDisplay();
             }
             catch (Exception ex)
             {
@@ -385,23 +444,104 @@ namespace QMC.LCP_280.Process.Unit
             if (cameraListBoxItemsView == null) return;
 
             // 중복 구독 방지
-            cameraListBoxItemsView.ItemSelected -= OnPositionItemSelected;
-            cameraListBoxItemsView.ItemSelected += OnPositionItemSelected;
+            cameraListBoxItemsView.ItemSelected -= OnVisionItemSelected;
+            cameraListBoxItemsView.ItemSelected += OnVisionItemSelected;
         }
 
         /// <summary>
         /// Select Axis 리스트에서 항목 선택 시 속성 에디터 구성
         /// </summary>
-        private void OnPositionItemSelected(object sender, int selectedIndex)
+        private void OnVisionItemSelected(object sender, int selectedIndex)
         {
-            try
-            {
+            if (_camSwitch == null) return;
+            if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
 
-            }
-            catch (Exception ex)
+            // 1) 이전 Live stop (있으면)
+            try { visionImageViewer.CurrentCamera?.StopLive(); } catch { }
+
+            // 2) 깜빡임 방지: 잠시 정지
+            visionImageViewer.SuspendDisplay();
+
+            // 3) 카메라 체인지
+            _camSwitch.Change(selectedIndex);
+
+            // 4) 버퍼/스케일/크로스라인 리셋 + 첫 프레임 스냅샷으로 즉시 표시
+            ResetViewerForCameraChange();
+
+            string strTemp = cameraListBoxItemsView.SelectedItemName;
+            if (Equipment.Instance.Cameras.TryGetValue(strTemp, out var cam))
             {
-                Log.Write("LCP-280", $"OnPositionItemSelected error: {ex}");
+                var hikCam = cam as HIKGigECamera;  // 다운캐스팅 (HIK 전용 기능 쓰려면)
+
+                if (hikCam != null)
+                {
+                    int ret = hikCam.ConnectAndGetProperties("", out var props);
+                    if (ret == 0)
+                    {
+                        //lblCamInfo.Text = $"{props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}";
+                        Log.Write("LCP-280", $"Camera connected: {props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}");
+                    }
+                    else
+                    {
+                        //lblCamInfo.Text = "Camera not connected";
+                        Log.Write("LCP-280", $"Camera not connected (ret={ret})");
+                    }
+                }
             }
+            else
+            {
+                Console.WriteLine("Camera not found");
+            }
+
+            // 5) 새 라이브 시작
+            try { visionImageViewer.CurrentCamera?.StartLive(); } catch { }
+
+            // 6) 다시 표시
+            visionImageViewer.ResumeDisplay();
+            visionImageViewer.Display();
+
+            //if (_camSwitch == null) return;
+            //if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
+
+            //// 이전 카메라가 Live 중이면 드라이버에 맞춰 정리(필요 시)
+            //try 
+            //{ 
+            //    _camSwitch.Cameras[_camSwitch.SelectCameraIndex]?.StopLive(); 
+            //} 
+            //catch  (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
+
+            //_camSwitch.Change(selectedIndex); // 뷰어가 AfterChange에서 버퍼/스케일/센터를 다시 맞춤
+        }
+
+        private void ResetViewerForCameraChange()
+        {
+            var cam = visionImageViewer.CurrentCamera;
+            if (cam == null) return;
+
+            // (a) 백버퍼 재생성
+            //var ctx = BufferedGraphicsManager.Current;
+            //ctx.MaximumBuffer = visionImageViewer.Size;
+            //var old = GetViewerBufferedGraphics();           // 내부 필드 접근이 어려우면 생략 가능
+            //var gfx = ctx.Allocate(visionImageViewer.CreateGraphics(),
+            //                       new Rectangle(Point.Empty, visionImageViewer.Size));
+            //SetViewerBufferedGraphics(gfx, old);             // 동일: 접근 어려우면 생략 가능
+
+            // (b) 스케일/센터 리셋
+            visionImageViewer.Scale.Wheel = 1.0;
+            visionImageViewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
+            visionImageViewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
+
+            // (c) 크로스라인 재구성
+            visionImageViewer.InitCrossLine();
+            visionImageViewer.ShowCrossLine(visionImageViewer.VisibleCrossLine);
+
+            // (d) 첫 프레임 스냅샷으로 즉시 표시
+            cam.GrabSync(out var snap);
+            if (snap != null)
+                visionImageViewer.SetImageNDisplay(snap);
         }
 
         // -------- Builders
