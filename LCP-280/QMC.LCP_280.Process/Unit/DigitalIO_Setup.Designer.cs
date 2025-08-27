@@ -1,5 +1,7 @@
 ﻿using QMC.Common;
 using QMC.Common.CustomControl;
+using QMC.Common.DIO;
+using QMC.Common.IO;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Unit;
@@ -7,8 +9,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using static System.Windows.Forms.AxHost;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -17,6 +21,15 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     partial class DigitalIO_Setup
     {
+        private sealed class ModuleListItem
+        {
+            public string Display { get; set; }     // 리스트에 보이는 텍스트
+            public DIOModuleSetup Module { get; set; }
+            public bool? IsDI { get; set; }         // true=DI, false=DO, null=헤더/구분선
+
+            public override string ToString() => Display;
+        }
+
         // -------- Fields
         private readonly Equipment equipment = Equipment.Instance;
 
@@ -36,9 +49,18 @@ namespace QMC.LCP_280.Process.Unit
         private PropertyCollectionView inputpropertyCollectionView;
         private PropertyCollectionView outputpropertyCollectionView;
 
-
         // Timers
         private Timer _axisPosTimer;
+
+        // fields (폼 클래스 내부)
+        private DIOUnit _unit;                 // Equipment에서 만든 _unitIO를 참조
+        private DioScanService _scan;          // Equipment에서 만든 _dioScan를 참조
+        private DIOModuleSetup _selected;      // 현재 선택 모듈
+        private string _setupPath;             // Unit.dio.setup.json 경로
+                                               // 현재 바인딩된 아이템들(인덱스 매핑용)
+        private List<ModuleListItem> _moduleListItems = new List<ModuleListItem>();
+        private DIOModuleSetup _lastDiModule;
+        private DIOModuleSetup _lastDoModule;
 
         // -------- Dispose
         protected override void Dispose(bool disposing)
@@ -47,9 +69,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_axisPosTimer != null)
                 {
-                    _axisPosTimer.Tick -= AxisPosTimer_Tick;
-                    _axisPosTimer.Dispose();
-                    _axisPosTimer = null;
+                    //_axisPosTimer.Tick -= AxisPosTimer_Tick;
+                    //_axisPosTimer.Dispose();
+                    //_axisPosTimer = null;
                 }
 
                 if (components != null)
@@ -64,8 +86,8 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Setup_Input = new QMC.Common.IndividualMenuButton();
             this.btn_Save_Setup_Ouput = new QMC.Common.IndividualMenuButton();
             this.dioModuleListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.inputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
-            this.outputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
+            this.inputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView("IO Property Group", 19);
+            this.outputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView("IO Property Group", 19);
             this.inputpropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.outputpropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.SuspendLayout();
@@ -176,10 +198,26 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                WireAxisSelectionEvent();
-                BindAxisList();
-                InitializeStatusTimer();     // 실제 위치 주기 갱신 (필요 시)
-                InitializeRadioButtonView();
+                // 필요시 폼 로드시 초기 바인딩 추가
+                // 1) Equipment에서 생성해둔 것들을 참조
+                _unit = equipment.UnitIO;   // 이미 LoadOrCreateDefault 한 맵 사용
+                _scan = equipment.DioScan;  // 이미 10ms로 Start된 스캐너 사용
+
+                // 2) JSON 경로도 동일하게
+                _setupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Unit.dio.setup.json");
+
+                // 3) 스캔 이벤트 구독 (중복 방지 위해 한 번만)
+                if (_scan != null)
+                {
+                    _scan.InputChanged += OnInputChanged;
+                    _scan.OutputChanged += OnOutputChanged;
+                }
+
+                WireIOSelectionEvent();
+                BindModuleList();
+
+                //InitializeStatusTimer();     // 실제 위치 주기 갱신 (필요 시)
+                //InitializeRadioButtonView();
             }
             catch (Exception ex)
             {
@@ -189,108 +227,315 @@ namespace QMC.LCP_280.Process.Unit
 
         // -------- Binding
         /// <summary>
-        /// Axis 목록 바인딩 (UNIT_NAME 기준)
+        /// IO 목록 바인딩 (UNIT_NAME 기준)
         /// </summary>
-        private void BindAxisList()
+        private void BindModuleList()
         {
-            try
-            {
+            _moduleListItems.Clear();
+            var items = new List<object>();
 
-            }
-            catch (Exception ex)
+            // 헤더(선택 불가; 선택되면 무시)
+            _moduleListItems.Add(new ModuleListItem { Display = "─ DI Modules ─", IsDI = null, Module = null });
+            items.Add(_moduleListItems[_moduleListItems.Count - 1]);
+
+            // DI가 하나라도 있는 모듈
+            if (_unit?.Modules != null)
             {
-                Log.Write("LCP-280", $"BindAxisList error: {ex}");
-                dioModuleListBoxItemsView?.SetItems();
+                foreach (var m in _unit.Modules)
+                {
+                    if (m != null && m.Inputs != null && m.Inputs.Count > 0)
+                    {
+                        _moduleListItems.Add(new ModuleListItem
+                        {
+                            Display = m.ModuleName,
+                            Module = m,
+                            IsDI = true
+                        });
+                        items.Add(_moduleListItems[_moduleListItems.Count - 1]);
+                    }
+                }
             }
+
+            // 빈 줄(시각 분리용)
+            _moduleListItems.Add(new ModuleListItem { Display = "", IsDI = null, Module = null });
+            items.Add(_moduleListItems[_moduleListItems.Count - 1]);
+
+            // DO 헤더
+            _moduleListItems.Add(new ModuleListItem { Display = "─ DO Modules ─", IsDI = null, Module = null });
+            items.Add(_moduleListItems[_moduleListItems.Count - 1]);
+
+            // DO가 하나라도 있는 모듈
+            if (_unit?.Modules != null)
+            {
+                foreach (var m in _unit.Modules)
+                {
+                    if (m != null && m.Outputs != null && m.Outputs.Count > 0)
+                    {
+                        _moduleListItems.Add(new ModuleListItem
+                        {
+                            Display = m.ModuleName,
+                            Module = m,
+                            IsDI = false
+                        });
+                        items.Add(_moduleListItems[_moduleListItems.Count - 1]);
+                    }
+                }
+            }
+
+            // 리스트에 주입
+            dioModuleListBoxItemsView.SetItems(items.ToArray());
+
+            // 기본 선택: 첫 DI/DO 실제 항목
+            int firstSelectable = _moduleListItems.FindIndex(x => x.IsDI != null);
+            if (firstSelectable >= 0)
+                dioModuleListBoxItemsView.SelectedIndex = firstSelectable;
         }
 
         // -------- Events
-        private void WireAxisSelectionEvent()
+        private void WireIOSelectionEvent()
         {
             if (dioModuleListBoxItemsView == null) return;
 
             // 중복 구독 방지
-            dioModuleListBoxItemsView.ItemSelected -= OnPositionItemSelected;
-            dioModuleListBoxItemsView.ItemSelected += OnPositionItemSelected;
+            dioModuleListBoxItemsView.ItemSelected -= OnIOItemSelected;
+            dioModuleListBoxItemsView.ItemSelected += OnIOItemSelected;
+
+            // 🔹 IO 클릭 이벤트(이제 IOPropertyCollectionView가 제공)
+            //inputIOPropertyCollectionView.ItemClicked += OnInputItemClicked;    // 보통 no-op
+            outputIOPropertyCollectionView.ItemClicked += OnOutputItemClicked;   // 토글
+            //outputIOPropertyCollectionView.ItemRightClicked += OnOutputItemRightClicked; // 펄스
+
         }
 
         /// <summary>
-        /// Select Axis 리스트에서 항목 선택 시 속성 에디터 구성
+        /// Select IO 리스트에서 항목 선택 시 속성 에디터 구성
         /// </summary>
-        private void OnPositionItemSelected(object sender, int selectedIndex)
+        private void OnIOItemSelected(object sender, int selectedIndex)
         {
             try
             {
+                if (selectedIndex < 0 || selectedIndex >= _moduleListItems.Count) return;
+                var item = _moduleListItems[selectedIndex];
+                if (item == null || item.IsDI == null || item.Module == null) return;
 
+                if (item.IsDI == true) BindChannels_DI(item.Module);   // DI만 갱신
+                else BindChannels_DO(item.Module);   // DO만 갱신
             }
             catch (Exception ex)
             {
-                Log.Write("LCP-280", $"OnPositionItemSelected error: {ex}");
+                Log.Write("LCP-280", $"OnIOItemSelected error: {ex}");
             }
+        }
+
+        private void OnInputChanged(string module, string disp, bool value)
+        {
+            if (_lastDiModule != null &&
+                string.Equals(module, _lastDiModule.ModuleName, StringComparison.OrdinalIgnoreCase))
+            {
+                // 부분 업데이트
+                inputIOPropertyCollectionView.SetStateByKey(disp, value);
+                // (또는 전체 바인딩 재호출: BindChannels_DI(_lastDiModule); )
+            }
+        }
+
+        private void OnOutputChanged(string module, string disp, bool value)
+        {
+            if (_lastDoModule != null &&
+                string.Equals(module, _lastDoModule.ModuleName, StringComparison.OrdinalIgnoreCase))
+            {
+                outputIOPropertyCollectionView.SetStateByKey(disp, value);
+                // (또는 BindChannels_DO(_lastDoModule); )
+            }
+        }
+
+        private void OnOutputItemClicked(object sender, string key)
+        {
+            var m = _lastDoModule;
+            if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
+
+            string strMsg = string.Empty;
+            var mbYes = new MessageBoxYesNo();
+            strMsg = string.Format("Singnal 변경하시겠습니까?");
+            if (mbYes.ShowDialog("Info", strMsg) == DialogResult.No)
+                return;
+                    
+            bool now = false; _scan.TryGetOutput(m.ModuleName, key, out now);
+            _scan.WriteOutput(m.ModuleName, key, !now);
+
+            var mb = new MessageBoxOk();
+            strMsg = string.Format("{0}, {1}", key, now);
+            mb.ShowDialog("Info!", strMsg);
+        }
+
+        private void OnOutputItemRightClicked(object sender, string key)
+        {
+            var m = _lastDoModule;
+            if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
+
+            _scan.PulseOutput(m.ModuleName, key, 100);
         }
 
         // -------- Builders
-        private PropertyCollection BuildConfigProperties(MotionAxis axis)
+        private void BindChannels_DI(DIOModuleSetup module)
         {
+            _lastDiModule = module;
+
+            var diProps = new PropertyCollection { ShowNoColumn = false };
+            int no = 1;
+            if (module != null && module.Inputs != null)
+            {
+                foreach (var ch in module.Inputs)
+                {
+                    bool v = false; if (_scan != null) _scan.TryGetInput(module.ModuleName, ch.DisplayNo, out v);
+                    diProps.Add(new PropertyState(no.ToString("00"), $"{ch.DisplayNo} {ch.Name}", v));
+                    no++;
+                }
+            }
+            inputIOPropertyCollectionView?.SetProperties(diProps);
+        }
+
+        private void BindChannels_DO(DIOModuleSetup module)
+        {
+            _lastDoModule = module;
+
+            var doProps = new PropertyCollection { ShowNoColumn = false };
+            int no = 1;
+            if (module != null && module.Outputs != null)
+            {
+                foreach (var ch in module.Outputs)
+                {
+                    bool v = false; if (_scan != null) _scan.TryGetOutput(module.ModuleName, ch.DisplayNo, out v);
+
+                    // 상태 행
+                    var state = new PropertyState(no.ToString("00"), $"{ch.DisplayNo} {ch.Name}", v);
+                    doProps.Add(state);
+
+                    // ▶ Toggle 버튼
+                    //doProps.Add(new PropertyButton(no.ToString("00") + "_Toggle", "Toggle", () =>
+                    //{
+                    //    bool now = false; _scan?.TryGetOutput(module.ModuleName, ch.DisplayNo, out now);
+                    //    _scan?.WriteOutput(module.ModuleName, ch.DisplayNo, !now); // 토글 (Reverse는 ScanService가 처리)  :contentReference[oaicite:0]{index=0}
+                    //                                                               // 최신 상태 재바인딩(가벼운 방법으로 유지하고 싶으면 이 줄만 남겨도 됨)
+                    //    BindChannels_DO(_lastDoModule);
+                    //}));
+
+                    // ▶ Pulse 버튼
+                    //doProps.Add(new PropertyButton(no.ToString("00") + "_Pulse", "Pulse(100ms)", () =>
+                    //{
+                    //    _scan?.PulseOutput(module.ModuleName, ch.DisplayNo, 100);   // 100ms 펄스  :contentReference[oaicite:1]{index=1}
+                    //    BindChannels_DO(_lastDoModule);
+                    //}));
+
+                    no++;
+                }
+            }
+            outputIOPropertyCollectionView?.SetProperties(doProps);
+            //_selected = module;
+            //var doProps = new PropertyCollection { ShowNoColumn = false };
+
+            //int no = 1;
+            //foreach (var ch in module.Outputs ?? new List<DIOChannel>())
+            //{
+            //    bool v = false;
+            //    _scan?.TryGetOutput(module.ModuleName, ch.DisplayNo, out v);
+            //    doProps.Add(new PropertyState(no.ToString("00"), $"{ch.DisplayNo} {ch.Name}", v));
+            //    no++;
+            //}
+            //doProps.IsInputParameter = true;
+            //outputIOPropertyCollectionView?.SetProperties(doProps);
+        }
+
+        private void Clear_DI()
+        {
+            inputIOPropertyCollectionView?.SetProperties(new PropertyCollection { ShowNoColumn = false });
+        }
+
+        private void Clear_DO()
+        {
+            outputIOPropertyCollectionView?.SetProperties(new PropertyCollection { ShowNoColumn = false });
+        }
+
+        private PropertyCollection BindChannels(DIOModuleSetup module)
+        {
+            _selected = module;
+            if (module == null)
+            {
+                inputIOPropertyCollectionView?.SetProperties(new PropertyCollection());
+                outputIOPropertyCollectionView?.SetProperties(new PropertyCollection());
+                return null;
+            }
+
+            // ===== DI: 입력 패널 =====
+            var diProps = new PropertyCollection { ShowNoColumn = false };
+            int no = 1;
+            foreach (var ch in module.Inputs)
+            {
+                bool value = false;
+                _scan?.TryGetInput(module.ModuleName, ch.DisplayNo, out value); // 캐시값 있으면 사용
+                diProps.Add(new PropertyState(
+                    no.ToString("00"),
+                    $"{ch.DisplayNo} {ch.Name}",
+                    value
+                ));
+                no++;
+            }
+            inputIOPropertyCollectionView?.SetProperties(diProps);
+
+            // ===== DO: 출력 패널 =====
+            var doProps = new PropertyCollection { ShowNoColumn = false };
+            no = 1;
+            foreach (var ch in module.Outputs)
+            {
+                bool value = false;
+                _scan?.TryGetOutput(module.ModuleName, ch.DisplayNo, out value);
+                doProps.Add(new PropertyState(
+                    no.ToString("00"),
+                    $"{ch.DisplayNo} {ch.Name}",
+                    value
+                ));
+                no++;
+            }
+            outputIOPropertyCollectionView?.SetProperties(doProps);
+
+            // 선택 직후 1회 값 동기화(스캐너 캐시 기준)
+            RefreshStatesOnce();
+
             return null;
         }
-        private PropertyCollection BuildSpeedProperties(MotionAxis axis)
-        {
-            return null;
-        }
 
-        // -------- Axis status polling (optional)
-        private void InitializeStatusTimer()
+        private void RefreshStatesOnce()
         {
+            if (_selected == null || _scan == null) return;
 
-        }
-
-        private void AxisPosTimer_Tick(object sender, EventArgs e)
-        {
-            try
+            // DI
+            if (_selected.Inputs != null)
             {
-                UpdateAxisActualPosition();
+                int i = 1;
+                foreach (var ch in _selected.Inputs)
+                {
+                    if (_scan.TryGetInput(_selected.ModuleName, ch.DisplayNo, out var v))
+                    {
+                        // 같은 순서(i)로 넣었으니 필요하면 여기서 PropertyCollectionView의 값 업데이트 API 사용
+                        // 예: inputIOPropertyCollectionView.SetValueByRow(i-1, v);  (컨트롤 헬퍼가 있으면 사용)
+                    }
+                    i++;
+                }
             }
-            catch (Exception ex)
-            {
-                Log.Write("LCP-280", $"AxisPosTimer_Tick error: {ex}");
-            }
-        }
 
-        // -------- Stubs / Overrides
-        private void UpdateAxisActualPosition()
-        {
-            // TODO: 실제 위치/속도/상태 갱신 바인딩
-            // positionVelocityPropertyCollectionView.SetProperties(...); 등
-        }
-
-        private void btnMovePosition_Click(object sender, EventArgs e)
-        {
-            // TODO: 선택 포지션 이동 구현
-        }
-
-        private void InitializeRadioButtonView()
-        {
-            try
+            // DO
+            if (_selected.Outputs != null)
             {
-                // TODO: 라디오버튼 초기화/바인딩
-            }
-            catch (Exception ex)
-            {
-                Log.Write("LCP-280", $"RadioButtonView 오류: {ex}");
+                int i = 1;
+                foreach (var ch in _selected.Outputs)
+                {
+                    if (_scan.TryGetOutput(_selected.ModuleName, ch.DisplayNo, out var v))
+                    {
+                        // 예: outputIOPropertyCollectionView.SetValueByRow(i-1, v);
+                    }
+                    i++;
+                }
             }
         }
-
-        //private void btn_Save_Setup_Motion_Configuration_Click(object sender, EventArgs e)
-        //{
-        //    // TODO: _editorPropertiesConfig → axis.Setup 반영 & 저장
-        //}
-
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-            // TODO: 변경 취소 로직
-        }
-
         // --- Paint / Resize (keep)
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -302,5 +547,8 @@ namespace QMC.LCP_280.Process.Unit
             base.OnResize(e);
             this.Invalidate();
         }
+
+        
+
     }
 }

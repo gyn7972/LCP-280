@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using QMC.Common;
+using QMC.Common.IO;
 using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
@@ -42,7 +43,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private void DigitalIO_Setup_Load(object sender, EventArgs e)
         {
-            // 필요시 폼 로드시 초기 바인딩 추가
+            
         }
 
         /// <summary>향후 Unit 초기화가 필요하면 이곳에 작성</summary>

@@ -3,6 +3,11 @@ namespace QMC.Common
     public class PropertyBase
     {
         public string Title { get; set; }
+
+        public string No { get; set; }
+
+        public string Name { get; set; }
+
         public object Value
         {
             get { return _value; }

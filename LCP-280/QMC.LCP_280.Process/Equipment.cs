@@ -106,6 +106,8 @@ namespace QMC.LCP_280.Process
         private readonly MotionAxisManager _axisManager = new MotionAxisManager();
         //private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Axes");
         private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes");
+        
+        private DIOUnit _unitIO;
         private IDIODriver _dio;                     // AjinDioDriver (실기)
         private DioScanService _dioScan;                 // 주기 스캔(캐시)
         // I/O 설정 파일 루트 (원하는 경로로)
@@ -114,7 +116,7 @@ namespace QMC.LCP_280.Process
         // (선택) 외부에서 축 매니저에 접근하고 싶으면 프로퍼티 제공
         public MotionAxisManager AxisManager => _axisManager;
         public DioScanService DioScan => _dioScan;
-
+        public DIOUnit UnitIO => _unitIO;
         // Camera
         public HIKGigECamera Camera { get; set; } = null; // HIK 카메라 객체 (null이면 사용 안함)
 
@@ -880,7 +882,7 @@ namespace QMC.LCP_280.Process
                 //var setupPath = Path.Combine(_dioRoot, "Unit.dio.setup.json"); // CassetteLoadingElevator 등 유닛별로 나눠도 OK
                 var setupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Unit.dio.setup.json");
                 // 유닛 DIO 맵 로드/없으면 생성
-                var dioSetup = DIOUnit.LoadOrCreateDefault(
+                _unitIO = DIOUnit.LoadOrCreateDefault(
                     setupPath,
                     unitName: "Unit",   // 네가 축을 "Unit"으로 묶었으니 동일 명칭 사용. 필요하면 유닛별 파일로 분리.
                     32,
@@ -888,7 +890,7 @@ namespace QMC.LCP_280.Process
                     "DB64R"
                 );
 
-                _dioScan = new DioScanService(dioSetup, _dio);
+                _dioScan = new DioScanService(_unitIO, _dio);
                 _dioScan.Start(10); // 10ms 주기 스캔
             }
 
