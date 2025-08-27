@@ -1,7 +1,9 @@
 ﻿using QMC.Common;
 using QMC.Common.Cameras;
+using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.CustomControl;
 using QMC.Common.Motions;
+using QMC.Common.Vision;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Unit;
 using System;
@@ -465,6 +467,31 @@ namespace QMC.LCP_280.Process.Unit
 
             // 4) 버퍼/스케일/크로스라인 리셋 + 첫 프레임 스냅샷으로 즉시 표시
             ResetViewerForCameraChange();
+
+            string strTemp = cameraListBoxItemsView.SelectedItemName;
+            if (Equipment.Instance.Cameras.TryGetValue(strTemp, out var cam))
+            {
+                var hikCam = cam as HIKGigECamera;  // 다운캐스팅 (HIK 전용 기능 쓰려면)
+
+                if (hikCam != null)
+                {
+                    int ret = hikCam.ConnectAndGetProperties("", out var props);
+                    if (ret == 0)
+                    {
+                        //lblCamInfo.Text = $"{props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}";
+                        Log.Write("LCP-280", $"Camera connected: {props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}");
+                    }
+                    else
+                    {
+                        //lblCamInfo.Text = "Camera not connected";
+                        Log.Write("LCP-280", $"Camera not connected (ret={ret})");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Camera not found");
+            }
 
             // 5) 새 라이브 시작
             try { visionImageViewer.CurrentCamera?.StartLive(); } catch { }

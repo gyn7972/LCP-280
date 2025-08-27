@@ -16,6 +16,27 @@ using System.Windows.Forms;
 namespace QMC.Common.Cameras.HIKVISION
 {
     [Serializable]
+    public class CameraProperties
+    {
+        public string Transport { get; set; }          // "GigE" / "USB"
+        public string SerialNo { get; set; }
+        public string UserDefinedName { get; set; }
+        public string Manufacturer { get; set; }
+        public string ModelName { get; set; }
+        public string DeviceVersion { get; set; }
+        public string Ip { get; set; }                 // GigE인 경우
+        public int Width { get; set; }
+        public int Height { get; set; }
+        public int OffsetX { get; set; }
+        public int OffsetY { get; set; }
+        public double ExposureTime { get; set; }
+        public double Gain { get; set; }
+        public double AcquisitionFrameRate { get; set; }
+        public uint PayloadSize { get; set; }
+        public MyCamera.MvGvspPixelType PixelFormat { get; set; }
+    }
+
+    [Serializable]
     public enum GrabMode
     {
         None,
@@ -23,6 +44,7 @@ namespace QMC.Common.Cameras.HIKVISION
         Grab,
         Exporse
     }
+
     #region HIKGigECamera
     [Serializable]
     public class HIKGigECamera : Camera
@@ -744,7 +766,6 @@ namespace QMC.Common.Cameras.HIKVISION
 
             this.Opened = false;
         }
-
 
         public int OffsetMove(uint m_nOffset_X, uint m_nOffset_Y)
         {
@@ -1485,6 +1506,136 @@ namespace QMC.Common.Cameras.HIKVISION
             var n = s.IndexOf('\0');
             return n >= 0 ? s.Substring(0, n) : s;
         }
+
+
+        // --- HIKGigECamera 내부에 추가 ---
+
+        private bool TryGetString(string node, out string value)
+        {
+            var v = new MyCamera.MVCC_STRINGVALUE();
+            int r = m_MyCamera.MV_CC_GetStringValue_NET(node, ref v);
+            value = (r == MyCamera.MV_OK) ? v.chCurValue : null;
+            return r == MyCamera.MV_OK;
+        }
+
+        private bool TryGetInt(string node, out long value)
+        {
+            var v = new MyCamera.MVCC_INTVALUE();
+            int r = m_MyCamera.MV_CC_GetIntValue_NET(node, ref v);
+            value = (r == MyCamera.MV_OK) ? (long)v.nCurValue : 0;
+            return r == MyCamera.MV_OK;
+        }
+
+        private bool TryGetFloat(string node, out double value)
+        {
+            var v = new MyCamera.MVCC_FLOATVALUE();
+            int r = m_MyCamera.MV_CC_GetFloatValue_NET(node, ref v);
+            value = (r == MyCamera.MV_OK) ? v.fCurValue : 0.0;
+            return r == MyCamera.MV_OK;
+        }
+
+        private bool TryGetEnum(string node, out ulong value)
+        {
+            var v = new MyCamera.MVCC_ENUMVALUE();
+            int r = m_MyCamera.MV_CC_GetEnumValue_NET(node, ref v);
+            value = (r == MyCamera.MV_OK) ? v.nCurValue : 0UL;
+            return r == MyCamera.MV_OK;
+        }
+
+        /// <summary>
+        /// 이미 Open된 카메라에서 주요 속성 값을 수집.
+        /// </summary>
+        public int GetCameraProperties(out CameraProperties props)
+        {
+            props = null;
+            if (!m_MyCamera.MV_CC_IsDeviceConnected_NET())
+                return -1;
+
+            var p = new CameraProperties();
+
+            // 트랜SPORT
+            // 열려있는 디바이스의 타입은 장치 정보로부터 유추 (간단히: GigE 만 IP가 나오면 GigE로 표시)
+            // 정확히 하려면 Open 시 보관한 devInfo.nTLayerType을 필드로 저장해두고 사용해도 됩니다.
+            p.Transport = "Unknown";
+
+            // 기본 정보 (GenICam 노드 이름)
+            TryGetString("DeviceManufacturerName", out var manufacturer);
+            TryGetString("DeviceModelName", out var modelName);
+            TryGetString("DeviceVersion", out var deviceVersion);
+            TryGetString("DeviceUserID", out var userId);
+            TryGetString("DeviceSerialNumber", out var serial);
+
+            p.Manufacturer = manufacturer;
+            p.ModelName = modelName;
+            p.DeviceVersion = string.IsNullOrEmpty(deviceVersion) ? null : deviceVersion;
+            p.UserDefinedName = userId;
+            p.SerialNo = serial;
+
+            // 이미지 크기/오프셋
+            TryGetInt("Width", out var width);
+            TryGetInt("Height", out var height);
+            TryGetInt("OffsetX", out var offx);
+            TryGetInt("OffsetY", out var offy);
+
+            p.Width = (int)width;
+            p.Height = (int)height;
+            p.OffsetX = (int)offx;
+            p.OffsetY = (int)offy;
+
+            // 노출/게인/프레임레이트
+            TryGetFloat("ExposureTime", out var exp);
+            TryGetFloat("Gain", out var gain);
+            // 일부 모델은 AcquisitionFrameRateEnable을 켜야 읽히기도 합니다.
+            TryGetFloat("AcquisitionFrameRate", out var fps);
+
+            p.ExposureTime = exp;
+            p.Gain = gain;
+            p.AcquisitionFrameRate = fps;
+
+            // 페이로드, 픽셀포맷
+            if (TryGetInt("PayloadSize", out var payload))
+                p.PayloadSize = (uint)payload;
+
+            if (TryGetEnum("PixelFormat", out var pf))
+                p.PixelFormat = (MyCamera.MvGvspPixelType)pf;
+
+            // GigE IP (가능한 경우)
+            if (TryGetInt("GevCurrentIPAddress", out var ipRaw))
+            {
+                p.Transport = "GigE";
+                try
+                {
+                    p.Ip = new IPAddress(BitConverter.GetBytes((uint)ipRaw)).ToString();
+                }
+                catch { /* ignore */ }
+            }
+            else
+            {
+                p.Transport = "USB";
+            }
+
+            props = p;
+            return 0;
+        }
+
+        /// <summary>
+        /// selector(시리얼/IP/UDN)로 연결까지 하고, 연결 성공 시 속성도 반환.
+        /// </summary>
+        public int ConnectAndGetProperties(string selector, out CameraProperties props)
+        {
+            props = null;
+            int r = OpenBySelectorOrConfig(selector);
+            if (r != MyCamera.MV_OK) return r;
+            return GetCameraProperties(out props);
+        }
+
+
+
+
+
+
+
+
         #endregion
     }
 

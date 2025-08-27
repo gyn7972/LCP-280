@@ -121,7 +121,32 @@ namespace QMC.LCP_280.Process
 
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, Camera> Cameras { get; } = new Dictionary<string, Camera>(StringComparer.OrdinalIgnoreCase);
+        // === 편의 프로퍼티 추가 ===
+        public HIKGigECamera IndexLoaderCam => GetCamera("Index_Loader");
+        public HIKGigECamera InStageCam => GetCamera("In_Stage");
+        public HIKGigECamera IndexProberCam => GetCamera("Index_Prober");
+        public HIKGigECamera IndexUnloaderCam => GetCamera("Index_Unloader");
+        public HIKGigECamera OutStageCam => GetCamera("Out_Stage");
 
+        private HIKGigECamera GetCamera(string key)
+        {
+            return Cameras.TryGetValue(key, out var cam) ? cam as HIKGigECamera : null;
+        }
+
+        //카메라 사용 예
+        //// 라이브 시작
+        //Equipment.Instance.InStageCam?.StartLive();
+
+        //// 라이브 정지
+        //Equipment.Instance.InStageCam?.StopLive();
+
+        //// Grab 한 장
+        //var ret = Equipment.Instance.InStageCam?.Grab();
+        //if (ret == MyCamera.MV_OK)
+        //{
+        //    var img = Equipment.Instance.InStageCam?.LatestImage;
+        //        Console.WriteLine($"Grabbed {img.Width}x{img.Height}");
+        //}
 
         #endregion
 
@@ -182,7 +207,11 @@ namespace QMC.LCP_280.Process
         /// </summary>
         private void AutoRegisterUnits()
         {
+
             // 개발자가 필요한 Unit들을 여기에 추가
+            //RegisterUnit(new CassetteLoadingElevator(), "CassetteLoadingElevator");
+
+            // �����ڰ� �ʿ��� Unit���� ���⿡ �߰�
             RegisterUnit(new InputCassetteLifter(), "InputCassetteLifter");
 
             // 추가 Unit들 예시:
@@ -1197,7 +1226,7 @@ namespace QMC.LCP_280.Process
                         cam.CameraConfig = cfg;
 
                         int ret = cam.OpenBySelectorOrConfig(selector); // 열거→매칭→Open
-                        if (ret != 0)
+                        //(ret != 0)
                         {
                             Log.Write("Equipment", $"[Camera] '{name}' open failed ({selector}), code=0x{ret:X8}");
                             //continue;
