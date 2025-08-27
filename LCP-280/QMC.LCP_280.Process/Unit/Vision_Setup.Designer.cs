@@ -17,25 +17,34 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     partial class Vision_Setup
     {
-        // -------- Fields
         private readonly Equipment equipment = Equipment.Instance;
 
-        // UI
-        private ListBoxItemsView selectItemListBoxItemsView;
+        private Common.Vision.VisionImageViewer visionImageViewer;
 
-        private System.ComponentModel.IContainer components = null;
+        private ListBoxItemsView cameraListBoxItemsView;
+        private ListBoxItemsView iluminatorListBoxItemsView;
+        private ListBoxItemsView iluminatorChannelListBoxItemsView;
 
-        // Data
+        private PropertyCollectionView cameraPropertyCollectionView;
+        private PropertyCollectionView illuminatorPropertyCollectionView;
+
+        private IndividualMenuButton btn_Save_Setup_Cylinder;
+        private IndividualMenuButton individualMenuButton1;
+        private IndividualMenuButton btn_Camera_Setup;
+        private IndividualMenuButton btn_Illuninator_Setup;
+        private IndividualMenuButton btn_Off_Illuminator;
+        private IndividualMenuButton btn_On_Illuminator;
+        private IndividualMenuButton btn_Save_Camera_Setup;
+        private IndividualMenuButton btn_Save_Illuninator_Setup;
+
+        private GroupBox gbIlluminatorControl;
+
         private PropertyCollection _editorPropertiesConfig;
         private PropertyCollection _editorPropertiesSpeed;
 
-        private PropertyCollectionView propertyCollectionView1;
-        private IndividualMenuButton btn_Save_Setup_Cylinder;
-        private PropertyCollectionView cylinderPropertyCollectionView;
-
-
-        // Timers
         private Timer _axisPosTimer;
+
+        private System.ComponentModel.IContainer components = null;
 
         // -------- Dispose
         protected override void Dispose(bool disposing)
@@ -58,37 +67,48 @@ namespace QMC.LCP_280.Process.Unit
         #region Designer (trimmed & corrected)
         private void InitializeComponent()
         {
-            this.selectItemListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.cylinderPropertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.components = new System.ComponentModel.Container();
+            this.cameraListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.cameraPropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.btn_Save_Setup_Cylinder = new QMC.Common.IndividualMenuButton();
-            this.propertyCollectionView1 = new QMC.Common.PropertyCollectionView();
-            this.gbCylinderControl = new System.Windows.Forms.GroupBox();
-            this.btn_Forward_Move = new QMC.Common.IndividualMenuButton();
-            this.btn_Backward_Move = new QMC.Common.IndividualMenuButton();
-            this.cylinderPropertyCollectionView.SuspendLayout();
-            this.gbCylinderControl.SuspendLayout();
+            this.visionImageViewer = new QMC.Common.Vision.VisionImageViewer();
+            this.iluminatorListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.illuminatorPropertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.iluminatorChannelListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.btn_Camera_Setup = new QMC.Common.IndividualMenuButton();
+            this.btn_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
+            this.btn_Off_Illuminator = new QMC.Common.IndividualMenuButton();
+            this.btn_On_Illuminator = new QMC.Common.IndividualMenuButton();
+            this.gbIlluminatorControl = new System.Windows.Forms.GroupBox();
+            this.btn_Save_Camera_Setup = new QMC.Common.IndividualMenuButton();
+            this.btn_Save_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
+            this.cameraPropertyCollectionView.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).BeginInit();
+            this.illuminatorPropertyCollectionView.SuspendLayout();
+            this.gbIlluminatorControl.SuspendLayout();
             this.SuspendLayout();
             // 
-            // selectItemListBoxItemsView
+            // cameraListBoxItemsView
             // 
-            this.selectItemListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.selectItemListBoxItemsView.BorderWidth = 2;
-            this.selectItemListBoxItemsView.GroupName = "Select Item";
-            this.selectItemListBoxItemsView.Location = new System.Drawing.Point(12, 12);
-            this.selectItemListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
-            this.selectItemListBoxItemsView.Name = "selectItemListBoxItemsView";
-            this.selectItemListBoxItemsView.SelectedIndex = -1;
-            this.selectItemListBoxItemsView.Size = new System.Drawing.Size(305, 722);
-            this.selectItemListBoxItemsView.TabIndex = 2;
+            this.cameraListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.cameraListBoxItemsView.BorderWidth = 2;
+            this.cameraListBoxItemsView.GroupName = "Camera";
+            this.cameraListBoxItemsView.Location = new System.Drawing.Point(12, 12);
+            this.cameraListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
+            this.cameraListBoxItemsView.Name = "cameraListBoxItemsView";
+            this.cameraListBoxItemsView.SelectedIndex = -1;
+            this.cameraListBoxItemsView.Size = new System.Drawing.Size(212, 675);
+            this.cameraListBoxItemsView.TabIndex = 2;
             // 
-            // cylinderPropertyCollectionView
+            // cameraPropertyCollectionView
             // 
-            this.cylinderPropertyCollectionView.Controls.Add(this.btn_Save_Setup_Cylinder);
-            this.cylinderPropertyCollectionView.GroupName = "Property";
-            this.cylinderPropertyCollectionView.Location = new System.Drawing.Point(333, 215);
-            this.cylinderPropertyCollectionView.Name = "cylinderPropertyCollectionView";
-            this.cylinderPropertyCollectionView.Size = new System.Drawing.Size(440, 362);
-            this.cylinderPropertyCollectionView.TabIndex = 13;
+            this.cameraPropertyCollectionView.Controls.Add(this.btn_Save_Setup_Cylinder);
+            this.cameraPropertyCollectionView.GroupName = "Property";
+            this.cameraPropertyCollectionView.Location = new System.Drawing.Point(229, 482);
+            this.cameraPropertyCollectionView.Name = "cameraPropertyCollectionView";
+            this.cameraPropertyCollectionView.Size = new System.Drawing.Size(400, 215);
+            this.cameraPropertyCollectionView.TabIndex = 13;
             // 
             // btn_Save_Setup_Cylinder
             // 
@@ -109,74 +129,218 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Setup_Cylinder.UseVisualStyleBackColor = false;
             this.btn_Save_Setup_Cylinder.Click += new System.EventHandler(this.btn_Save_Setup_Cylinder_Click);
             // 
-            // propertyCollectionView1
+            // visionImageViewer
             // 
-            this.propertyCollectionView1.GroupName = "Property Group";
-            this.propertyCollectionView1.Location = new System.Drawing.Point(333, 12);
-            this.propertyCollectionView1.Name = "propertyCollectionView1";
-            this.propertyCollectionView1.Size = new System.Drawing.Size(440, 183);
-            this.propertyCollectionView1.TabIndex = 14;
+            this.visionImageViewer.BackColor = System.Drawing.Color.Black;
+            this.visionImageViewer.Camera = null;
+            this.visionImageViewer.CameraSwitch = null;
+            this.visionImageViewer.FrameRate = 1D;
+            this.visionImageViewer.InputImage = null;
+            this.visionImageViewer.IsViewCustomizedImage = false;
+            this.visionImageViewer.Location = new System.Drawing.Point(229, 22);
+            this.visionImageViewer.Name = "visionImageViewer";
+            this.visionImageViewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
+            this.visionImageViewer.Simulated = false;
+            this.visionImageViewer.Size = new System.Drawing.Size(400, 445);
+            this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.visionImageViewer.TabIndex = 16;
+            this.visionImageViewer.TabStop = false;
+            this.visionImageViewer.UpdateDelayTime = 80;
+            this.visionImageViewer.VisibleCrossLine = true;
             // 
-            // gbCylinderControl
+            // iluminatorListBoxItemsView
             // 
-            this.gbCylinderControl.Controls.Add(this.btn_Backward_Move);
-            this.gbCylinderControl.Controls.Add(this.btn_Forward_Move);
-            this.gbCylinderControl.Location = new System.Drawing.Point(333, 626);
-            this.gbCylinderControl.Name = "gbCylinderControl";
-            this.gbCylinderControl.Size = new System.Drawing.Size(440, 108);
-            this.gbCylinderControl.TabIndex = 15;
-            this.gbCylinderControl.TabStop = false;
-            this.gbCylinderControl.Text = "Control";
+            this.iluminatorListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.iluminatorListBoxItemsView.BorderWidth = 2;
+            this.iluminatorListBoxItemsView.GroupName = "Illuminator";
+            this.iluminatorListBoxItemsView.Location = new System.Drawing.Point(634, 15);
+            this.iluminatorListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
+            this.iluminatorListBoxItemsView.Name = "iluminatorListBoxItemsView";
+            this.iluminatorListBoxItemsView.SelectedIndex = -1;
+            this.iluminatorListBoxItemsView.Size = new System.Drawing.Size(212, 675);
+            this.iluminatorListBoxItemsView.TabIndex = 17;
             // 
-            // btn_Forward_Move
+            // illuminatorPropertyCollectionView
             // 
-            this.btn_Forward_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Forward_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Forward_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Forward_Move.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Forward_Move.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Forward_Move.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Forward_Move.ForeColor = System.Drawing.Color.Black;
-            this.btn_Forward_Move.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Forward_Move.Location = new System.Drawing.Point(11, 40);
-            this.btn_Forward_Move.Name = "btn_Forward_Move";
-            this.btn_Forward_Move.Size = new System.Drawing.Size(172, 48);
-            this.btn_Forward_Move.TabIndex = 0;
-            this.btn_Forward_Move.TabStop = false;
-            this.btn_Forward_Move.Text = "Forward Move";
-            this.btn_Forward_Move.UseVisualStyleBackColor = false;
+            this.illuminatorPropertyCollectionView.Controls.Add(this.individualMenuButton1);
+            this.illuminatorPropertyCollectionView.GroupName = "Property";
+            this.illuminatorPropertyCollectionView.Location = new System.Drawing.Point(851, 327);
+            this.illuminatorPropertyCollectionView.Name = "illuminatorPropertyCollectionView";
+            this.illuminatorPropertyCollectionView.Size = new System.Drawing.Size(400, 247);
+            this.illuminatorPropertyCollectionView.TabIndex = 18;
             // 
-            // btn_Backward_Move
+            // individualMenuButton1
             // 
-            this.btn_Backward_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Backward_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Backward_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Backward_Move.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Backward_Move.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Backward_Move.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Backward_Move.ForeColor = System.Drawing.Color.Black;
-            this.btn_Backward_Move.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Backward_Move.Location = new System.Drawing.Point(258, 40);
-            this.btn_Backward_Move.Name = "btn_Backward_Move";
-            this.btn_Backward_Move.Size = new System.Drawing.Size(172, 48);
-            this.btn_Backward_Move.TabIndex = 1;
-            this.btn_Backward_Move.TabStop = false;
-            this.btn_Backward_Move.Text = "Backward Move";
-            this.btn_Backward_Move.UseVisualStyleBackColor = false;
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(330, 312);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(100, 40);
+            this.individualMenuButton1.TabIndex = 5;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "Save";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
             // 
-            // Cylinder_Setup
+            // iluminatorChannelListBoxItemsView
+            // 
+            this.iluminatorChannelListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.iluminatorChannelListBoxItemsView.BorderWidth = 2;
+            this.iluminatorChannelListBoxItemsView.GroupName = "Channel";
+            this.iluminatorChannelListBoxItemsView.Location = new System.Drawing.Point(851, 15);
+            this.iluminatorChannelListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
+            this.iluminatorChannelListBoxItemsView.Name = "iluminatorChannelListBoxItemsView";
+            this.iluminatorChannelListBoxItemsView.SelectedIndex = -1;
+            this.iluminatorChannelListBoxItemsView.Size = new System.Drawing.Size(400, 303);
+            this.iluminatorChannelListBoxItemsView.TabIndex = 19;
+            // 
+            // btn_Camera_Setup
+            // 
+            this.btn_Camera_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Camera_Setup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Camera_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Camera_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Camera_Setup.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Camera_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Camera_Setup.ForeColor = System.Drawing.Color.Black;
+            this.btn_Camera_Setup.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Camera_Setup.Location = new System.Drawing.Point(123, 706);
+            this.btn_Camera_Setup.Name = "btn_Camera_Setup";
+            this.btn_Camera_Setup.Size = new System.Drawing.Size(100, 40);
+            this.btn_Camera_Setup.TabIndex = 20;
+            this.btn_Camera_Setup.TabStop = false;
+            this.btn_Camera_Setup.Text = "Set up";
+            this.btn_Camera_Setup.UseVisualStyleBackColor = false;
+            // 
+            // btn_Illuninator_Setup
+            // 
+            this.btn_Illuninator_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Illuninator_Setup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Illuninator_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Illuninator_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Illuninator_Setup.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
+            this.btn_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Illuninator_Setup.Location = new System.Drawing.Point(746, 706);
+            this.btn_Illuninator_Setup.Name = "btn_Illuninator_Setup";
+            this.btn_Illuninator_Setup.Size = new System.Drawing.Size(100, 40);
+            this.btn_Illuninator_Setup.TabIndex = 21;
+            this.btn_Illuninator_Setup.TabStop = false;
+            this.btn_Illuninator_Setup.Text = "Set up";
+            this.btn_Illuninator_Setup.UseVisualStyleBackColor = false;
+            // 
+            // btn_Off_Illuminator
+            // 
+            this.btn_Off_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Off_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Off_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Off_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Off_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Off_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Off_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_Off_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Off_Illuminator.Location = new System.Drawing.Point(229, 40);
+            this.btn_Off_Illuminator.Name = "btn_Off_Illuminator";
+            this.btn_Off_Illuminator.Size = new System.Drawing.Size(150, 50);
+            this.btn_Off_Illuminator.TabIndex = 1;
+            this.btn_Off_Illuminator.TabStop = false;
+            this.btn_Off_Illuminator.Text = "Off";
+            this.btn_Off_Illuminator.UseVisualStyleBackColor = false;
+            // 
+            // btn_On_Illuminator
+            // 
+            this.btn_On_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_On_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_On_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_On_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_On_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_On_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_On_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_On_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_On_Illuminator.Location = new System.Drawing.Point(22, 40);
+            this.btn_On_Illuminator.Name = "btn_On_Illuminator";
+            this.btn_On_Illuminator.Size = new System.Drawing.Size(150, 50);
+            this.btn_On_Illuminator.TabIndex = 0;
+            this.btn_On_Illuminator.TabStop = false;
+            this.btn_On_Illuminator.Text = "On";
+            this.btn_On_Illuminator.UseVisualStyleBackColor = false;
+            // 
+            // gbIlluminatorControl
+            // 
+            this.gbIlluminatorControl.BackColor = System.Drawing.Color.White;
+            this.gbIlluminatorControl.Controls.Add(this.btn_Off_Illuminator);
+            this.gbIlluminatorControl.Controls.Add(this.btn_On_Illuminator);
+            this.gbIlluminatorControl.Location = new System.Drawing.Point(852, 626);
+            this.gbIlluminatorControl.Name = "gbIlluminatorControl";
+            this.gbIlluminatorControl.Size = new System.Drawing.Size(400, 108);
+            this.gbIlluminatorControl.TabIndex = 22;
+            this.gbIlluminatorControl.TabStop = false;
+            this.gbIlluminatorControl.Text = "Control";
+            // 
+            // btn_Save_Camera_Setup
+            // 
+            this.btn_Save_Camera_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Camera_Setup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Camera_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Camera_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Camera_Setup.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Camera_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Camera_Setup.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Camera_Setup.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Camera_Setup.Location = new System.Drawing.Point(529, 704);
+            this.btn_Save_Camera_Setup.Name = "btn_Save_Camera_Setup";
+            this.btn_Save_Camera_Setup.Size = new System.Drawing.Size(100, 40);
+            this.btn_Save_Camera_Setup.TabIndex = 23;
+            this.btn_Save_Camera_Setup.TabStop = false;
+            this.btn_Save_Camera_Setup.Text = "Save";
+            this.btn_Save_Camera_Setup.UseVisualStyleBackColor = false;
+            // 
+            // btn_Save_Illuninator_Setup
+            // 
+            this.btn_Save_Illuninator_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Illuninator_Setup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Illuninator_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Illuninator_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Illuninator_Setup.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Illuninator_Setup.Location = new System.Drawing.Point(1148, 579);
+            this.btn_Save_Illuninator_Setup.Name = "btn_Save_Illuninator_Setup";
+            this.btn_Save_Illuninator_Setup.Size = new System.Drawing.Size(100, 40);
+            this.btn_Save_Illuninator_Setup.TabIndex = 24;
+            this.btn_Save_Illuninator_Setup.TabStop = false;
+            this.btn_Save_Illuninator_Setup.Text = "Save";
+            this.btn_Save_Illuninator_Setup.UseVisualStyleBackColor = false;
+            // 
+            // Vision_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 752);
-            this.Controls.Add(this.gbCylinderControl);
-            this.Controls.Add(this.propertyCollectionView1);
-            this.Controls.Add(this.selectItemListBoxItemsView);
-            this.Controls.Add(this.cylinderPropertyCollectionView);
-            this.Name = "Cylinder_Setup";
+            this.Controls.Add(this.btn_Save_Illuninator_Setup);
+            this.Controls.Add(this.btn_Save_Camera_Setup);
+            this.Controls.Add(this.gbIlluminatorControl);
+            this.Controls.Add(this.btn_Illuninator_Setup);
+            this.Controls.Add(this.btn_Camera_Setup);
+            this.Controls.Add(this.iluminatorChannelListBoxItemsView);
+            this.Controls.Add(this.iluminatorListBoxItemsView);
+            this.Controls.Add(this.illuminatorPropertyCollectionView);
+            this.Controls.Add(this.visionImageViewer);
+            this.Controls.Add(this.cameraListBoxItemsView);
+            this.Controls.Add(this.cameraPropertyCollectionView);
+            this.Name = "Vision_Setup";
             this.Text = "Motion Setup";
-            this.cylinderPropertyCollectionView.ResumeLayout(false);
-            this.gbCylinderControl.ResumeLayout(false);
+            this.cameraPropertyCollectionView.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).EndInit();
+            this.illuminatorPropertyCollectionView.ResumeLayout(false);
+            this.gbIlluminatorControl.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -188,7 +352,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 WireAxisSelectionEvent();
-                BindAxisList();
+                BinVisionList();
                 InitializeStatusTimer();     // 실제 위치 주기 갱신 (필요 시)
                 InitializeRadioButtonView();
             }
@@ -202,7 +366,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// Axis 목록 바인딩 (UNIT_NAME 기준)
         /// </summary>
-        private void BindAxisList()
+        private void BinVisionList()
         {
             try
             {
@@ -210,19 +374,19 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                Log.Write("LCP-280", $"BindAxisList error: {ex}");
-                selectItemListBoxItemsView?.SetItems();
+                Log.Write("LCP-280", $"BindVisionList error: {ex}");
+                cameraListBoxItemsView?.SetItems();
             }
         }
 
         // -------- Events
         private void WireAxisSelectionEvent()
         {
-            if (selectItemListBoxItemsView == null) return;
+            if (cameraListBoxItemsView == null) return;
 
             // 중복 구독 방지
-            selectItemListBoxItemsView.ItemSelected -= OnPositionItemSelected;
-            selectItemListBoxItemsView.ItemSelected += OnPositionItemSelected;
+            cameraListBoxItemsView.ItemSelected -= OnPositionItemSelected;
+            cameraListBoxItemsView.ItemSelected += OnPositionItemSelected;
         }
 
         /// <summary>
@@ -314,8 +478,6 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
-        private GroupBox gbCylinderControl;
-        private IndividualMenuButton btn_Backward_Move;
-        private IndividualMenuButton btn_Forward_Move;
+        
     }
 }

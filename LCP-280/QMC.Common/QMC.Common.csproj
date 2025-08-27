@@ -336,12 +336,6 @@
       <DependentUpon>TopContentsStatusControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\BaseUnit.cs" />
-    <Compile Include="VisionImageView.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="VisionImageView.Designer.cs">
-      <DependentUpon>VisionImageView.cs</DependentUpon>
-    </Compile>
     <Compile Include="Vision\AbbreviationAttribute.cs" />
     <Compile Include="Vision\ICustomizedVisionImage.cs" />
     <Compile Include="Vision\qGeometry.cs" />
