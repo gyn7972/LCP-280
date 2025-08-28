@@ -33,11 +33,11 @@ namespace QMC.Common
         public MainForm()
         {
             InitializeComponent();
-            
+
             // 🔧 MainForm 배경색을 흰색으로 설정
             this.BackColor = Color.White;
             this.DoubleBuffered = true;
-            
+
             this.StartPosition = FormStartPosition.WindowsDefaultLocation;
             this.WindowState = FormWindowState.Normal;           // 일반 상태로 시작
             this.Load += MainForm_Load;
@@ -62,7 +62,8 @@ namespace QMC.Common
                 RowCount = 3,
                 ColumnCount = 1,
                 // 🔧 TableLayoutPanel 배경색도 흰색으로 설정
-                BackColor = Color.White
+                BackColor = Color.White,
+                Margin = new Padding(0)
             };
 
             // 각 행을 동일한 비율로 분할
@@ -74,10 +75,13 @@ namespace QMC.Common
             this.Controls.Add(tableLayoutPanelFormMain);
 
             // FormTop을 첫번째 행(인덱스 0)에 추가
-            formTop = new FormTop();
-            formTop.TopLevel = false;
-            formTop.FormBorderStyle = FormBorderStyle.None;
-            formTop.Dock = DockStyle.Fill;
+            formTop = new FormTop()
+            {
+                TopLevel = false,
+                FormBorderStyle = FormBorderStyle.None,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0)
+            };
             tableLayoutPanelFormMain.Controls.Add(formTop, 0, 0);
             formTop.Show();
 
@@ -85,16 +89,20 @@ namespace QMC.Common
             centerPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.White
+                BackColor = Color.White,
+                Margin = new Padding(0)
             };
             EnableDoubleBuffer(centerPanel);
             tableLayoutPanelFormMain.Controls.Add(centerPanel, 0, 1);
 
             // FormBottom을 세 번째 행(인덱스 2에 추가
-            formBottom = new FormBottom();
-            formBottom.TopLevel = false;
-            formBottom.FormBorderStyle = FormBorderStyle.None;
-            formBottom.Dock = DockStyle.Fill;
+            formBottom = new FormBottom()
+            {
+                TopLevel = false,
+                FormBorderStyle = FormBorderStyle.None,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0)
+            };
             tableLayoutPanelFormMain.Controls.Add(formBottom, 0, 2);
             formBottom.Show();
 
@@ -268,7 +276,7 @@ namespace QMC.Common
                 {
                     centerPanel.ResumeLayout();
                 }
-                
+
                 // 사이즈 적용
                 ApplySizes();
 
@@ -317,14 +325,20 @@ namespace QMC.Common
                 // Center 컨텐츠 반영 (IResizable 우선, 없으면 리플렉션)
                 if (currentCenterView != null)
                 {
+                    // 가능하면 실제 centerPanel의 클라이언트 크기를 사용
+                    int cWidth = (centerPanel != null) ? centerPanel.ClientSize.Width : width;
+                    int cHeight = (centerPanel != null) ? centerPanel.ClientSize.Height : rowHeights[1];
+                    if (cWidth <= 0) cWidth = width;
+                    if (cHeight <= 0) cHeight = rowHeights[1];
+
                     var resizable = currentCenterView as IResizable;
                     if (resizable != null)
                     {
-                        resizable.SetPanelSize(width, rowHeights[1]);
+                        resizable.SetPanelSize(cWidth, cHeight);
                     }
                     else
                     {
-                        TrySetPanelSize(currentCenterView, width, rowHeights[1]);
+                        TrySetPanelSize(currentCenterView, cWidth, cHeight);
                     }
                 }
             }
@@ -364,7 +378,7 @@ namespace QMC.Common
                 message += $"\n\n{additionalInfo}";
             }
             message += $"\n\nFormManager{menuName}.Instance.Register{menuName}Form()을 사용하여 폼을 등록하세요.";
-            
+
             MessageBox.Show(message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             // 기본 동작: 중앙 컨텐츠 비우기

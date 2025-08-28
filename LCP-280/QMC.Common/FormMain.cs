@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -21,6 +17,10 @@ namespace QMC.Common
         private int _tabBorderWidth = 2;
         private Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
 
+        // 방어: 너무 작은 크기 전달 차단
+        private bool _hasAppliedSize;
+        private Size _lastAppliedSize;
+
         public FormMain()
         {
             InitializeComponent();
@@ -31,62 +31,17 @@ namespace QMC.Common
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializemainUI();
             
-            // 🔧 Visible 상태 변경 이벤트 추가
+            // 🔧 Visible 상태 변경 이벤트: 자식 크기만 동기화
             this.VisibleChanged += Formmain_VisibleChanged;
         }
         
         /// <summary>
-        /// 🔧 Formmain가 보여질 때마다 크기 재조정
+        /// 🔧 FormMain이 보여질 때 탭 자식 크기만 갱신(호스트가 최종 크기를 전달)
         /// </summary>
         private void Formmain_VisibleChanged(object sender, EventArgs e)
         {
-            if (this.Visible && this.Parent != null)
-            {
-                Console.WriteLine($"👁️ Formmain Visible 변경: {this.Visible}");
-                Console.WriteLine($"   Parent: {this.Parent.GetType().Name}, Parent.Size: {this.Parent.Size}");
-                
-                // 🔧 TableLayoutPanel인 경우 정확한 행 크기를 계산하여 전달
-                if (this.Parent is TableLayoutPanel tableLayoutPanel)
-                {
-                    try
-                    {
-                        int[] rowHeights = tableLayoutPanel.GetRowHeights();
-                        int[] columnWidths = tableLayoutPanel.GetColumnWidths();
-                        
-                        // Formmain는 1번 행(인덱스 1, 80% 영역)에 위치
-                        if (rowHeights.Length > 1 && columnWidths.Length > 0)
-                        {
-                            int width = columnWidths[0];
-                            int height = rowHeights[1]; // 1번 행 (80% 영역)
-                            
-                            Console.WriteLine($"   계산된 Formmain 크기: width={width}, height={height}");
-                            SetPanelSize(width, height);
-                        }
-                        else
-                        {
-                            Console.WriteLine("   ⚠️ TableLayoutPanel 행/열 정보가 부족함");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"   ❌ TableLayoutPanel 크기 계산 오류: {ex.Message}");
-                        // fallback: 전체 크기 사용
-                        if (this.Parent.Size.Width > 0 && this.Parent.Size.Height > 0)
-                        {
-                            SetPanelSize(this.Parent.Size.Width, this.Parent.Size.Height);
-                        }
-                    }
-                }
-                else
-                {
-                    // TableLayoutPanel이 아닌 경우 기존 방식 사용
-                    if (this.Parent.Size.Width > 0 && this.Parent.Size.Height > 0)
-                    {
-                        Console.WriteLine($"   일반 Parent 크기 사용: {this.Parent.Size}");
-                        SetPanelSize(this.Parent.Size.Width, this.Parent.Size.Height);
-                    }
-                }
-            }
+            if (!this.Visible) return;
+            BeginInvoke(new Action(() => UpdateActiveChildSize()));
         }
         
         private void InitializemainUI()
@@ -98,7 +53,8 @@ namespace QMC.Common
             
             // TabControl 생성 및 테마 적용
             mainTabControl = new TabControl();
-            mainTabControl.Dock = DockStyle.None;
+            // 🔧 Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
+            mainTabControl.Dock = DockStyle.Fill;
             mainTabControl.Font = _tabFont;
             mainTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
             mainTabControl.ItemSize = new Size(120, _tabHeight);
@@ -123,8 +79,35 @@ namespace QMC.Common
             mainTabControl.Visible = true;
             mainTabControl.BringToFront();
             
+            // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
+            EnsureFirstTabLoaded();
+            
             Console.WriteLine($"✅ InitializemainUI 완료");
             Console.WriteLine($"   최종 TabControl 상태: Visible={mainTabControl.Visible}, TabCount={mainTabControl.TabPages.Count}");
+        }
+
+        /// <summary>
+        /// 첫 번째 탭 콘텐츠 보장
+        /// </summary>
+        private void EnsureFirstTabLoaded()
+        {
+            try
+            {
+                if (mainTabControl == null || mainTabControl.TabPages.Count == 0) return;
+                if (mainTabControl.SelectedIndex < 0) mainTabControl.SelectedIndex = 0;
+
+                var first = mainTabControl.TabPages[0];
+                var info = first.Tag as FormInfo;
+                if (info != null && !_tabFormInstances.ContainsKey(first))
+                {
+                    Console.WriteLine("🔹 초기 첫 탭 폼 로드 수행(Main)");
+                    LoadFormIntoTab(first, info);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"EnsureFirstTabLoaded(Main) 실패: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -199,14 +182,14 @@ namespace QMC.Common
             if (selectedTab?.Tag is FormInfo formInfo)
             {
                 LoadFormIntoTab(selectedTab, formInfo);
+                // 선택 변경 시 즉시 크기 반영
+                UpdateActiveChildSize();
             }
         }
 
         /// <summary>
-        /// 탭에 폼을 로드하여 표시
+        /// 탭에 폼을 로드하여 표시 (이 시점에서는 크기 전달을 지연)
         /// </summary>
-        /// <param name="tabPage">대상 탭 페이지</param>
-        /// <param name="formInfo">로드할 폼 정보</param>
         private void LoadFormIntoTab(TabPage tabPage, FormInfo formInfo)
         {
             try
@@ -222,30 +205,7 @@ namespace QMC.Common
                     formInstance.FormBorderStyle = FormBorderStyle.None;
                     formInstance.Dock = DockStyle.Fill;
                     
-                    // 🔧 폼에 SetPanelSize 메서드가 있으면 탭 높이를 제외한 크기 전달
-                    if (mainTabControl != null)
-                    {
-                        int availableWidth = mainTabControl.Width;
-                        int availableHeight = mainTabControl.Height - _tabHeight - 20; // 탭 높이 제외
-                        
-                        // 리플렉션을 사용하여 SetPanelSize 메서드 확인 및 호출
-                        var setPanelSizeMethod = formInstance.GetType().GetMethod("SetPanelSize", 
-                            new Type[] { typeof(int), typeof(int) });
-                        
-                        if (setPanelSizeMethod != null)
-                        {
-                            Console.WriteLine($"🔧 {formInstance.GetType().Name}에 SetPanelSize 메서드 발견");
-                            Console.WriteLine($"   전달할 크기: width={availableWidth}, height={availableHeight} (탭 높이 {_tabHeight} 제외)");
-                            
-                            setPanelSizeMethod.Invoke(formInstance, new object[] { availableWidth, availableHeight });
-                        }
-                        else
-                        {
-                            Console.WriteLine($"   {formInstance.GetType().Name}에 SetPanelSize 메서드가 없음");
-                        }
-                    }
-                    
-                    // 탭에 폼 추가
+                    // 탭에 폼 추가 (크기 전달은 나중에)
                     tabPage.Controls.Clear();
                     tabPage.Controls.Add(formInstance);
                     
@@ -257,27 +217,7 @@ namespace QMC.Common
                 }
                 else
                 {
-                    // 이미 로드된 폼이 있으면 다시 표시
                     var existingForm = _tabFormInstances[tabPage];
-                    
-                    // 🔧 기존 폼에도 탭 높이를 제외한 크기 재적용
-                    if (mainTabControl != null)
-                    {
-                        int availableWidth = mainTabControl.Width;
-                        int availableHeight = mainTabControl.Height - _tabHeight; // 탭 높이 제외
-                        
-                        var setPanelSizeMethod = existingForm.GetType().GetMethod("SetPanelSize", 
-                            new Type[] { typeof(int), typeof(int) });
-                        
-                        if (setPanelSizeMethod != null)
-                        {
-                            Console.WriteLine($"🔧 기존 {existingForm.GetType().Name}에 크기 재적용");
-                            Console.WriteLine($"   전달할 크기: width={availableWidth}, height={availableHeight} (탭 높이 {_tabHeight} 제외)");
-                            
-                            setPanelSizeMethod.Invoke(existingForm, new object[] { availableWidth, availableHeight });
-                        }
-                    }
-                    
                     existingForm.Show();
                 }
             }
@@ -301,6 +241,37 @@ namespace QMC.Common
         }
 
         /// <summary>
+        /// 현재 활성 탭의 폼에 정확한 크기를 전달
+        /// </summary>
+        private void UpdateActiveChildSize()
+        {
+            try
+            {
+                if (mainTabControl == null) return;
+                var selectedTab = mainTabControl.SelectedTab;
+                if (selectedTab == null) return;
+                if (!_tabFormInstances.ContainsKey(selectedTab)) return;
+
+                var activeForm = _tabFormInstances[selectedTab];
+                if (activeForm == null) return;
+
+                int availableWidth = mainTabControl.ClientSize.Width;
+                int availableHeight = mainTabControl.ClientSize.Height - _tabHeight; // 탭 헤더 제외
+
+                var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", new Type[] { typeof(int), typeof(int) });
+                if (setPanelSizeMethod != null)
+                {
+                    Console.WriteLine($"   활성 폼 {activeForm.GetType().Name}에 정확한 크기 전달(Main): {availableWidth}x{availableHeight}");
+                    setPanelSizeMethod.Invoke(activeForm, new object[] { availableWidth, availableHeight });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"UpdateActiveChildSize(Main) 실패: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// FormManager에 새로운 폼이 등록되었을 때 탭을 새로고침
         /// </summary>
         public void RefreshmainTabs()
@@ -315,6 +286,10 @@ namespace QMC.Common
             
             // 새로 로드
             LoadFormsFromManager();
+            
+            // 🔧 탭 초기 콘텐츠 보장 후 크기 반영
+            EnsureFirstTabLoaded();
+            UpdateActiveChildSize();
         }
 
         private void mainTabControl_DrawItem(object sender, DrawItemEventArgs e)
@@ -426,41 +401,21 @@ namespace QMC.Common
         public void SetPanelSize(int width, int height)
         {
             Console.WriteLine($"🔧 Formmain.SetPanelSize() 호출: width={width}, height={height}");
-            Console.WriteLine($"   현재 Formmain 크기: Size={this.Size}, ClientSize={this.ClientSize}");
+
+            // 방어: 이미 적용된 후 너무 작은 값은 무시
+            if (_hasAppliedSize && (width < 400 || height < 200))
+            {
+                Console.WriteLine($"   ⏭️ 무시(Main): 너무 작은 값 전달({width}x{height})");
+                return;
+            }
             
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
+            _hasAppliedSize = true;
+            _lastAppliedSize = new Size(width, height);
             
-            if (mainTabControl != null)
-            {
-                Console.WriteLine($"   TabControl 크기 조정: {mainTabControl.Size} → {new Size(width, height)}");
-                mainTabControl.Size = new Size(width, height);
-                
-                // 🔧 현재 활성화된 탭의 폼에 탭 높이를 제외한 크기 전달
-                var selectedTab = mainTabControl.SelectedTab;
-                if (selectedTab != null && _tabFormInstances.ContainsKey(selectedTab))
-                {
-                    var activeForm = _tabFormInstances[selectedTab];
-                    
-                    int availableWidth = width;
-                    int availableHeight = height - _tabHeight; // 탭 높이 제외
-                    
-                    var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", 
-                        new Type[] { typeof(int), typeof(int) });
-                    
-                    if (setPanelSizeMethod != null)
-                    {
-                        Console.WriteLine($"   활성 폼 {activeForm.GetType().Name}에 크기 업데이트");
-                        Console.WriteLine($"   전달할 크기: width={availableWidth}, height={availableHeight} (탭 높이 {_tabHeight} 제외)");
-                        
-                        setPanelSizeMethod.Invoke(activeForm, new object[] { availableWidth, availableHeight });
-                    }
-                }
-                
-                // TabControl을 강제로 다시 그리기
-                mainTabControl.Invalidate();
-                mainTabControl.Update();
-            }
+            // Dock=Fill이므로 TabControl은 자동 확장됨. 자식에 정확한 크기 전달
+            UpdateActiveChildSize();
             
             // 폼 전체를 다시 그리기
             this.Invalidate();
