@@ -274,34 +274,74 @@ namespace QMC.LCP_280.Process.Unit
             return true;
         }
 
+        //private void StartJogContinuous(MotionAxis axis, JogCommand jc, double velocity)
+        //{
+        //    string letter = jc.Axis.ToString(); // "X","Y","Z","T"
+        //    if (TryCall(axis, "StartJog", new object[] { letter, jc.Sign, velocity })) return;
+        //    if (TryCall(axis, "JogStart", new object[] { letter, jc.Sign, velocity })) return;
+        //    if (TryCall(axis, "Jog", new object[] { letter, jc.Sign, velocity })) return;
+
+        //    // 연속조그 API가 없으면 스텝 이동으로 대체
+        //    DoStepMove(axis, jc, Math.Max(velocity * 0.05, 0.001) * jc.Sign);
+        //}
+
+        //private void StopJog(MotionAxis axis)
+        //{
+        //    if (TryCall(axis, "StopJog")) return;
+        //    if (TryCall(axis, "JogStop")) return;
+        //    if (TryCall(axis, "Stop")) return;
+        //}
+
+        //private void DoStepMove(MotionAxis axis, JogCommand jc, double stepMm)
+        //{
+        //    string letter = jc.Axis.ToString();
+        //    double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity; // :contentReference[oaicite:6]{index=6}
+        //    double acc = axis.Config.JogAcc;
+        //    double dec = axis.Config.JogDec;
+
+        //    if (TryCall(axis, "MoveRelative", new object[] { letter, stepMm, vel, acc, dec })) return;
+        //    if (TryCall(axis, "RelMove", new object[] { letter, stepMm, vel, acc, dec })) return;
+        //    if (TryCall(axis, "MoveRel", new object[] { letter, stepMm, vel, acc, dec })) return;
+        //}
+
+
+        // ★ 연속조그 시작
         private void StartJogContinuous(MotionAxis axis, JogCommand jc, double velocity)
         {
-            string letter = jc.Axis.ToString(); // "X","Y","Z","T"
-            if (TryCall(axis, "StartJog", new object[] { letter, jc.Sign, velocity })) return;
-            if (TryCall(axis, "JogStart", new object[] { letter, jc.Sign, velocity })) return;
-            if (TryCall(axis, "Jog", new object[] { letter, jc.Sign, velocity })) return;
-
-            // 연속조그 API가 없으면 스텝 이동으로 대체
-            DoStepMove(axis, jc, Math.Max(velocity * 0.05, 0.001) * jc.Sign);
-        }
-
-        private void StopJog(MotionAxis axis)
-        {
-            if (TryCall(axis, "StopJog")) return;
-            if (TryCall(axis, "JogStop")) return;
-            if (TryCall(axis, "Stop")) return;
-        }
-
-        private void DoStepMove(MotionAxis axis, JogCommand jc, double stepMm)
-        {
-            string letter = jc.Axis.ToString();
-            double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity; // :contentReference[oaicite:6]{index=6}
             double acc = axis.Config.JogAcc;
             double dec = axis.Config.JogDec;
-
-            if (TryCall(axis, "MoveRelative", new object[] { letter, stepMm, vel, acc, dec })) return;
-            if (TryCall(axis, "RelMove", new object[] { letter, stepMm, vel, acc, dec })) return;
-            if (TryCall(axis, "MoveRel", new object[] { letter, stepMm, vel, acc, dec })) return;
+            double signedVel = velocity * jc.Sign; // 방향 포함
+            axis.JogStart(signedVel, acc, dec);
         }
+
+        // ★ 연속조그 정지
+        private void StopJog(MotionAxis axis)
+        {
+            axis.JogStop();  // 필요 시 급정지 버튼에서는 axis.JogEStop();
+        }
+
+        // ★ 스텝조그(1회 이동) — jerk 포함!
+        private void DoStepMove(MotionAxis axis, JogCommand jc, double stepUnit)
+        {
+            double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity;
+            double acc = axis.Config.JogAcc;
+            double dec = axis.Config.JogDec;
+            double jerk = axis.Config.AccJerkPercent;
+
+            try
+            {
+                axis.MoveRel(stepUnit, vel, acc, dec, jerk);
+                return;
+            }
+            catch (MissingMethodException)
+            {
+                // 프로젝트 구현이 4인자만 있을 수 있으니, 대체로 MoveAbs 사용
+            }
+            catch { /* fallthrough */ }
+
+            double cur = axis.GetPosition();
+            axis.MoveAbs(cur + stepUnit, vel, acc, dec, jerk);
+        }
+
     }
 }
