@@ -36,22 +36,15 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Ivi.Visa, Version=7.2.0.0, Culture=neutral, PublicKeyToken=a128c98f1d7717c1, processorArchitecture=MSIL" />
+    <Reference Include="Ivi.Visa, Version=5.7.0.0, Culture=neutral, PublicKeyToken=a128c98f1d7717c1, processorArchitecture=MSIL" />
     <Reference Include="Microsoft.Bcl.HashCode, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Bcl.HashCode.6.0.0\lib\net462\Microsoft.Bcl.HashCode.dll</HintPath>
-    </Reference>
-    <Reference Include="Ivi.Visa, Version=5.7.0.0, Culture=neutral, PublicKeyToken=a128c98f1d7717c1, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Keithley\Library\Ivi.Visa.dll</HintPath>
     </Reference>
     <Reference Include="MvCameraControl.Net, Version=0.0.0.0, Culture=neutral, PublicKeyToken=52fddfb3f94be800, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Cameras\HIKVISION\Library\MvCameraControl.Net.dll</HintPath>
     </Reference>
-    <Reference Include="NationalInstruments.Visa, Version=15.5.0.49152, Culture=neutral, PublicKeyToken=2eaa5af0834e221d, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>Keithley\Library\NationalInstruments.Visa.dll</HintPath>
-    </Reference>
+    <Reference Include="NationalInstruments.Visa, Version=15.5.0.49152, Culture=neutral, PublicKeyToken=2eaa5af0834e221d, processorArchitecture=MSIL" />
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -175,6 +168,12 @@
     <Compile Include="IO\IDigitalIO.cs" />
     <Compile Include="IO\IDIODriver.cs" />
     <Compile Include="IO\SimDioDriver.cs" />
+    <Compile Include="Keithley\FormSetupKeithleyInstrument.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Keithley\FormSetupKeithleyInstrument.Designer.cs">
+      <DependentUpon>FormSetupKeithleyInstrument.cs</DependentUpon>
+    </Compile>
     <Compile Include="Keithley\KeithleyInstrumentCommunicator.cs" />
     <Compile Include="Keithley\KeithleyInstrumentResourceManager.cs" />
     <Compile Include="Keithley\KeithleySourcemeter.cs" />
@@ -189,7 +188,6 @@
     <Compile Include="Motions\AjinApi.cs" />
     <Compile Include="Motions\AjinAxlBoardHost.cs" />
     <Compile Include="Motions\AjinDriver.cs" />
-    <Compile Include="Motions\IMotionDriver.cs" />
     <Compile Include="Motions\IPropertyCorrection.cs" />
     <Compile Include="Motions\MotionAxis.cs" />
     <Compile Include="Motions\MotionAxisConfig.cs" />
@@ -397,6 +395,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormMessageBox\MessageBoxYesNoRetry.resx">
       <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Keithley\FormSetupKeithleyInstrument.resx">
+      <DependentUpon>FormSetupKeithleyInstrument.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>

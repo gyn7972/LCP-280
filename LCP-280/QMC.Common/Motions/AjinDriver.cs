@@ -9,7 +9,7 @@ namespace QMC.Common.Motions
     /// <summary>
     /// Ajin 보드 어댑터(IMotionDriver 구현). Ajin SDK 호출부를 AjinApi.* 로 위임합니다.
     /// </summary>
-    public sealed class AjinDriver : IMotionDriver
+    public sealed class AjinDriver //: IMotionDriver
     {
         private readonly int _boardNo;
         private readonly bool _useLogicalUnits;
@@ -147,5 +147,39 @@ namespace QMC.Common.Motions
         public bool ReadInpositionTimeout(int axisNo) { return AjinApi.GetInpositionTimeout(axisNo); }
         public bool ReadHomeEnd(int axisNo) { return AjinApi.GetHomeEnd(axisNo); }
         public bool ReadHomeTimeout(int axisNo) { return AjinApi.GetHomeTimeout(axisNo); }
+
+        // AjinDriver.cs
+        public int ConfigureFromSetupAndConfig(int axisNo, MotionAxisSetup setup, MotionAxisConfig cfg)
+        {
+            // 1) 배선/레벨 등 기본 셋업
+            int rc = AjinApi.ApplySetupBasic(axisNo, setup);
+            if (rc != 0) return rc;
+
+            // 2) 홈 파라미터 (속도/가속은 Config(mm기준)→pulse로 변환)
+            double ppu = _pulsesPerUnit; // mm→pulse
+            double h1v = cfg.HomeSpeed * ppu;
+            double h2v = cfg.HomeReturnSpeed * ppu;
+            double hlv = cfg.HomeRecursionSpeed * ppu;
+            double izv = cfg.ZPhaseSpeed * ppu;
+            double h1a = cfg.HomeAcc * ppu;
+            double h2a = cfg.HomeReturnAcc * ppu;
+
+            rc = AjinApi.ApplyHomeFromSetup(axisNo, setup, h1v, h2v, hlv, izv, h1a, h2a);
+            if (rc != 0) return rc;
+
+            // 3) 프로파일(주 운전 파라미터)
+            double v = cfg.MaxVelocity * ppu;
+            double a = cfg.RunAcc * ppu;
+            double d = cfg.RunDec * ppu;
+
+            if (ProfileMode == ProfileMode.SCurve)
+                rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 10.0));
+            else
+                rc = AjinApi.ApplyTrapProfile(axisNo, v, a, d);
+            if (rc != 0) return rc;
+
+            return 0;
+        }
+
     }
 }

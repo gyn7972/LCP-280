@@ -34,17 +34,8 @@ namespace QMC.Common.Keithley
     /// <summary>
     /// Keithley사 계측기 통신 리소스를 제공하는 클래스입니다. (NI-Visa 사용)
     /// </summary>
-    public class KeithleyInstrumentResourceManager
+    public static class KeithleyInstrumentResourceManager
     {
-        #region Field & Property
-        #endregion
-
-        #region Constructor
-        public KeithleyInstrumentResourceManager()
-        {
-        }
-        #endregion
-
         #region Method
         public static List<KeithleyInstrumentResource> FindAllInstrumentResources()
         {

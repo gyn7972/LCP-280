@@ -44,7 +44,7 @@ namespace QMC.Common.Motions
         #endregion
 
         private readonly object _gate = new object();
-        private readonly IMotionDriver _driver;
+        private readonly AjinDriver _driver;
 
         public MotionAxisSetup Setup { get; set;  }
         public MotionAxisConfig Config { get; set; }
@@ -54,7 +54,7 @@ namespace QMC.Common.Motions
         public string Name { get { return Setup.Name; } }
         public int AxisNo { get { return Setup.AxisNo; } }
 
-        public MotionAxis(MotionAxisSetup setup, MotionAxisConfig config, IMotionDriver driver, IPropertyCorrection correction = null)
+        public MotionAxis(MotionAxisSetup setup, MotionAxisConfig config, AjinDriver driver, IPropertyCorrection correction = null)
         {
             if (setup == null) throw new ArgumentNullException(nameof(setup));
             if (config == null) throw new ArgumentNullException(nameof(config));
