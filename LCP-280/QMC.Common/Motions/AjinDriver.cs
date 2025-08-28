@@ -9,7 +9,7 @@ namespace QMC.Common.Motions
     /// <summary>
     /// Ajin 보드 어댑터(IMotionDriver 구현). Ajin SDK 호출부를 AjinApi.* 로 위임합니다.
     /// </summary>
-    public sealed class AjinDriver : IMotionDriver
+    public sealed class AjinDriver //: IMotionDriver
     {
         private readonly int _boardNo;
         private readonly bool _useLogicalUnits;
