@@ -160,6 +160,7 @@
     <Compile Include="FormMessageBox\MessageBoxYesNoRetry.Designer.cs">
       <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
     </Compile>
+    <Compile Include="IEquipment.cs" />
     <Compile Include="IO\AjinDioDriver.cs" />
     <Compile Include="IO\DIOChannel.cs" />
     <Compile Include="IO\DIOModuleSetup.cs" />

@@ -28,7 +28,7 @@ namespace QMC.LCP_280.Process
     /// 설비 전체를 관리하는 Equipment 클래스
     /// 모든 Unit들을 등록하고 Start/Stop/Config/Recipe를 중앙에서 제어
     /// </summary>
-    public class Equipment : IDisposable
+    public class Equipment : IDisposable, IEquipment
     {
         #region Singleton Pattern
 
@@ -572,6 +572,10 @@ namespace QMC.LCP_280.Process
             }
         }
 
+        // 기존 Equipment 구현(이미 public) + IDisposable
+        //public async System.Threading.Tasks.Task<bool> StopAllUnitsAsync() => await StopAllUnitsAsync(); // 기존 메서드 연결
+        // Dispose()는 기존 구현 사용
+
         /// <summary>
         /// 개별 Unit 정지
         /// </summary>
@@ -822,30 +826,60 @@ namespace QMC.LCP_280.Process
         {
             if (disposing)
             {
-                // 모든 Unit 정지
-                StopAllUnitsAsync().GetAwaiter().GetResult();
-
-                // 리소스 정리
-                _equipmentCancellationTokenSource?.Dispose();
-
-                foreach (var execInfo in _unitExecutions.Values)
+                try
                 {
-                    execInfo.CancellationTokenSource?.Dispose();
-                    execInfo.ExecutionTask?.Dispose();
-                }
+                    // 1) 모든 Unit 정지
+                    StopAllUnitsAsync().GetAwaiter().GetResult();
 
-                _unitExecutions.Clear();
+                    // 2) DioScanService 정리
+                    _dioScan?.Stop();
+                    _dioScan?.Dispose();
+                    _dioScan = null;
 
-                // Unit들 정리
-                foreach (var unit in Units.Values)
-                {
-                    if (unit is IDisposable disposableUnit)
+                    // 3) DIO Driver
+                    if (_dio is IDisposable d) d.Dispose();
+                    _dio = null;
+
+                    // 4) Ajin Host (AXL Close)
+                    _axlHost?.Close();
+                    _axlHost = null;
+
+                    // 5) Cameras
+                    foreach (var cam in Cameras.Values)
                     {
-                        disposableUnit.Dispose();
+                        try
+                        {
+                            cam.StopLive();
+                            cam.Close();
+                        }
+                        catch { /* swallow */ }
                     }
-                }
+                    Cameras.Clear();
 
-                Units.Clear();
+                    // 6) Units
+                    foreach (var unit in Units.Values)
+                    {
+                        if (unit is IDisposable disposableUnit)
+                            disposableUnit.Dispose();
+                    }
+                    Units.Clear();
+
+                    // 7) Cancellation 토큰
+                    _equipmentCancellationTokenSource?.Dispose();
+                    _equipmentCancellationTokenSource = null;
+
+                    // 8) Execution 정보 정리
+                    foreach (var execInfo in _unitExecutions.Values)
+                    {
+                        execInfo.CancellationTokenSource?.Dispose();
+                        execInfo.ExecutionTask?.Dispose();
+                    }
+                    _unitExecutions.Clear();
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 
@@ -1274,8 +1308,6 @@ namespace QMC.LCP_280.Process
                 Log.Write(ex);
             }
         }
-
-
 
     }
 
