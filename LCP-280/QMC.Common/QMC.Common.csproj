@@ -160,6 +160,7 @@
     <Compile Include="FormMessageBox\MessageBoxYesNoRetry.Designer.cs">
       <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
     </Compile>
+    <Compile Include="IEquipment.cs" />
     <Compile Include="IO\AjinDioDriver.cs" />
     <Compile Include="IO\DIOChannel.cs" />
     <Compile Include="IO\DIOModuleSetup.cs" />
@@ -188,7 +189,6 @@
     <Compile Include="Motions\AjinApi.cs" />
     <Compile Include="Motions\AjinAxlBoardHost.cs" />
     <Compile Include="Motions\AjinDriver.cs" />
-    <Compile Include="Motions\IMotionDriver.cs" />
     <Compile Include="Motions\IPropertyCorrection.cs" />
     <Compile Include="Motions\MotionAxis.cs" />
     <Compile Include="Motions\MotionAxisConfig.cs" />
@@ -294,6 +294,7 @@
     <Compile Include="ListBoxItemsView.Designer.cs">
       <DependentUpon>ListBoxItemsView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Motions\MotionStatusScanner.cs" />
     <Compile Include="NavigationService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />

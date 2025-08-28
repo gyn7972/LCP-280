@@ -10,7 +10,7 @@ namespace QMC.Common
 {
     public partial class IOPropertyCollectionView : PropertyCollectionView
     {
-        // 클래스 내부 필드/이벤트 추가
+        // === 내부 상태 ===
         private readonly Dictionary<string, PictureBox> _statePicByKey = new Dictionary<string, PictureBox>(StringComparer.OrdinalIgnoreCase);
         public event EventHandler<string> ItemClicked;
         public event EventHandler<string> ItemRightClicked;
@@ -20,12 +20,15 @@ namespace QMC.Common
         private const int IOGroupBoxHeaderHeight = 20;
         private const int IOGroupBoxPadding = 16;
 
+        // 키 숫자부 자릿수 (예: X003 -> 3). UI 구성 시 실제 키들 보고 자동 설정됨.
+        private int _keyPadWidth = 3;
+
         protected override CreateParams CreateParams
         {
             get
             {
                 var cp = base.CreateParams;
-                // 폼 전체 컴포지팅 (깜빡임 크게 줄어듦 / 스크롤 성능 약간 저하 가능)
+                // 폼 전체 컴포지팅 (깜빡임 줄이기)
                 cp.ExStyle |= 0x02000000; // WS_EX_COMPOSITED
                 return cp;
             }
@@ -51,6 +54,12 @@ namespace QMC.Common
             // 내부 컨트롤에도 적용
             EnableFlickerFree(tlp);
             EnableFlickerFree(scroll);
+        }
+
+        public IOPropertyCollectionView() : this("IO Property Group")
+        {
+            // (옵션) 깜빡임 줄이기
+            this.DoubleBuffered = true;
         }
 
         // 깜빡임 최소화 공통 함수 (리플렉션으로 protected 멤버 호출)
@@ -84,28 +93,22 @@ namespace QMC.Common
             miUpdateStyles?.Invoke(c, null);
         }
 
-        public IOPropertyCollectionView() : this("IO Property Group")
-        {
-            // (옵션) 깜빡임 줄이기
-            this.DoubleBuffered = true;
-        }
-
         public override void SetProperties(PropertyCollection properties)
         {
             _statePicByKey.Clear();
 
             // base의 필드 참조 (PropertyCollectionView와 동일한 방식)
-            var tableLayoutPanelField = typeof(PropertyCollectionView).GetField("tableLayoutPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var scrollPanelField = typeof(PropertyCollectionView).GetField("scrollPanel", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var textBoxFontField = typeof(PropertyCollectionView).GetField("_textBoxFont", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var groupBoxField = typeof(PropertyCollectionView).GetField("groupBox", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var tableLayoutPanelField = typeof(PropertyCollectionView).GetField("tableLayoutPanel", BindingFlags.NonPublic | BindingFlags.Instance);
+            var scrollPanelField = typeof(PropertyCollectionView).GetField("scrollPanel", BindingFlags.NonPublic | BindingFlags.Instance);
+            var textBoxFontField = typeof(PropertyCollectionView).GetField("_textBoxFont", BindingFlags.NonPublic | BindingFlags.Instance);
+            var groupBoxField = typeof(PropertyCollectionView).GetField("groupBox", BindingFlags.NonPublic | BindingFlags.Instance);
 
             var tableLayoutPanel = tableLayoutPanelField.GetValue(this) as TableLayoutPanel;
             var scrollPanel = scrollPanelField.GetValue(this) as Panel;
             var textBoxFont = textBoxFontField.GetValue(this) as Font;
             var groupBox = groupBoxField.GetValue(this) as GroupBox;
 
-            // PropertyCollectionView와 완전히 동일한 방식으로 초기화
+            // 초기화
             tableLayoutPanel.SuspendLayout();
             tableLayoutPanel.Controls.Clear();
             tableLayoutPanel.RowStyles.Clear();
@@ -113,7 +116,7 @@ namespace QMC.Common
 
             if (properties == null)
             {
-                // 속성이 없을 때 최소 크기로 설정 (PropertyCollectionView와 동일)
+                // 속성이 없을 때 최소 크기
                 int minHeight = IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
                 this.Height = minHeight;
                 this.MinimumSize = new Size(this.Width, minHeight);
@@ -129,8 +132,8 @@ namespace QMC.Common
             var stateProps = properties.OfType<PropertyState>().ToList();
             bool hasNoColumn = stateProps.Any(p => properties.ShowNoColumn);
             int colCount = hasNoColumn ? 3 : 2;
-            
-            // 열 개수 및 스타일 설정 (IO 전용)
+
+            // 열 개수 및 스타일
             tableLayoutPanel.ColumnCount = colCount;
             tableLayoutPanel.ColumnStyles.Clear();
             if (colCount == 2)
@@ -147,12 +150,34 @@ namespace QMC.Common
 
             int row = 0;
 
-            // 헤더 행 추가 (PropertyCollectionView와 동일한 방식)
+            // === 키 패딩 폭 계산 (UI 표시 문자열 기준) ===
+            try
+            {
+                var widths = new List<int>();
+                foreach (var prop in stateProps)
+                {
+                    var txt = (prop.Value?.ToString() ?? "").Trim().ToUpperInvariant();
+                    // "X003 START" / "Y12 LAMP" 등에서 숫자부 길이 추출
+                    var m = Regex.Match(txt, @"^(X|Y)\s*0*(\d+)\b");
+                    if (m.Success)
+                    {
+                        var digits = m.Groups[2].Value;
+                        widths.Add(Math.Max(1, digits.Length));
+                    }
+                }
+                _keyPadWidth = widths.Count > 0 ? widths.Max() : 3;
+            }
+            catch
+            {
+                _keyPadWidth = 3;
+            }
+
+            // 헤더 행
             if (headerProp != null)
             {
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
-                
+
                 for (int i = 0; i < colCount; i++)
                 {
                     var titleLabel = new Label
@@ -171,18 +196,18 @@ namespace QMC.Common
                 row++;
             }
 
-            // PropertyState 행 추가 (PropertyCollectionView의 foreach 방식과 동일)
+            // 데이터 행
             foreach (var prop in stateProps)
             {
                 tableLayoutPanel.RowCount++;
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
-                
+
                 int colIdx = 0;
                 Label nameLabel = null;
 
                 if (colCount == 3 && prop.ShowNoColumn)
                 {
-                    // 0번 열(No) 표시
+                    // 0번 열(No)
                     var noLabel = new Label
                     {
                         Text = prop.Title,
@@ -202,8 +227,8 @@ namespace QMC.Common
                         Dock = DockStyle.Fill,
                         TextAlign = ContentAlignment.MiddleLeft,
                         AutoSize = false,
-                        Margin = new Padding(0), // 2에서 0으로 변경하여 노란색이 꽉 차게
-                        Padding = new Padding(2), // 텍스트와 경계 사이의 여백은 Padding으로
+                        Margin = new Padding(0),
+                        Padding = new Padding(2),
                         BackColor = Color.White
                     };
                     nameLabel.Click += (s, e) =>
@@ -217,15 +242,15 @@ namespace QMC.Common
                 }
                 else
                 {
-                    // 0번 열(No) 숨김 → 1번 열(Name)부터 시작
+                    // 0번 열(Name)부터
                     nameLabel = new Label
                     {
                         Text = prop.Value?.ToString() ?? "",
                         Dock = DockStyle.Fill,
                         TextAlign = ContentAlignment.MiddleLeft,
                         AutoSize = false,
-                        Margin = new Padding(0), // 2에서 0으로 변경하여 노란색이 꽉 차게
-                        Padding = new Padding(2), // 텍스트와 경계 사이의 여백은 Padding으로
+                        Margin = new Padding(0),
+                        Padding = new Padding(2),
                         BackColor = Color.White
                     };
                     nameLabel.Click += (s, e) =>
@@ -238,9 +263,9 @@ namespace QMC.Common
                     tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
                 }
 
-                // Add
-                // 🔹 채널 키 추출 (Name 셀 텍스트에서 "Xnn"/"Ynn")
-                var key = ExtractKey(nameLabel.Text);
+                // 🔹 채널 키 추출 (Name 셀 텍스트에서 "Xnn"/"Ynn" 또는 비숫자 키)
+                var key = ExtractKey(nameLabel.Text);            // 이미 NormalizeKey 적용됨
+                var normKey = key;                               // 가독성
 
                 // --- State 셀(PictureBox) ---
                 var statePictureBox = new PictureBox
@@ -254,15 +279,15 @@ namespace QMC.Common
                     Height = textBoxHeight
                 };
 
-                // 🔹 색상 적용 (기존 titleAlpha 로직 대신 key 기준)
-                ApplyStateColor(statePictureBox, key, prop.State);
+                // 🔹 색상 적용
+                ApplyStateColor(statePictureBox, normKey, prop.State);
 
-                // 🔹 맵 등록 + 이벤트 연결
-                if (!string.IsNullOrEmpty(key))
+                // 🔹 맵 등록 + 이벤트
+                if (!string.IsNullOrEmpty(normKey))
                 {
-                    _statePicByKey[key] = statePictureBox;
+                    _statePicByKey[normKey] = statePictureBox;
 
-                    statePictureBox.Tag = key;
+                    statePictureBox.Tag = normKey;
                     statePictureBox.Click += (s, e) =>
                     {
                         var k = (string)((PictureBox)s).Tag;
@@ -277,47 +302,16 @@ namespace QMC.Common
                         }
                     };
                 }
-                ///////
-                // State 열 (PropertyCollectionView의 TextBox와 유사하게 설정)
-                //var statePictureBox = new PictureBox
-                //{
-                //    Dock = DockStyle.Fill,
-                //    Margin = new Padding(0),
-                //    SizeMode = PictureBoxSizeMode.StretchImage,
-                //    BorderStyle = BorderStyle.None,
-                //    BackColor = Color.Empty
-                //};
-
-                // PropertyCollectionView의 TextBox와 동일한 크기 제약 적용
-                //statePictureBox.MinimumSize = new Size(0, textBoxHeight);
-                //statePictureBox.Height = textBoxHeight;
-
-                //string title = prop.Title ?? "";
-                //string titleAlpha = new string(title.Where(char.IsLetter).ToArray());
-
-                //if (titleAlpha.Contains("X"))
-                //{
-                //    statePictureBox.BackColor = prop.State ? Color.FromArgb(0, 176, 240) : Color.White;
-                //}
-                //else if (titleAlpha.Contains("Y"))
-                //{
-                //    statePictureBox.BackColor = prop.State ? Color.Red : Color.White;
-                //}
-                //else
-                //{
-                //    statePictureBox.BackColor = Color.Black;
-                //}
 
                 tableLayoutPanel.Controls.Add(statePictureBox, colIdx, row);
                 row++;
             }
 
-            // PropertyCollectionView와 완전히 동일한 동적 크기 계산
+            // 동적 크기 계산
             int totalRows = (headerProp != null ? 1 : 0) + stateProps.Count;
             int calculatedHeight = (totalRows * textBoxHeight) + IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
             int maxHeight = (IOMaxVisibleRows * textBoxHeight) + IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
 
-            // PropertyCollectionView와 동일한 TableLayoutPanel 높이 설정
             tableLayoutPanel.Height = totalRows * textBoxHeight;
 
             if (totalRows > IOMaxVisibleRows)
@@ -340,43 +334,73 @@ namespace QMC.Common
 
             tableLayoutPanel.ResumeLayout();
 
-            // 부모 컨트롤에게 크기 변경 알림 (PropertyCollectionView와 동일)
+            // 부모 컨트롤에게 크기 변경 알림
             this.Invalidate();
             this.Parent?.PerformLayout();
         }
 
+        // === 키/상태 헬퍼 ===
 
-        //키 추출 헬퍼 추가
-        private static string ExtractKey(string nameCellText)
+        // "x3", "X03", " X003 " -> "X003" (자릿수는 _keyPadWidth 기준)
+        // "VAC_SENSOR" / "Z1" 처럼 X/Y 숫자 계열이 아니면 원문(대문자/트림) 그대로 사용
+        private string NormalizeKey(string raw)
         {
-            // "X20 Limit Sensor" -> "X20" / "Y30 Lamp" -> "Y30"
-            if (string.IsNullOrEmpty(nameCellText)) return null;
-            var m = Regex.Match(nameCellText.Trim(), @"^(X|Y)\d+");
-            return m.Success ? m.Value : null;
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+
+            raw = raw.Trim().ToUpperInvariant();
+
+            // 1) X/Y + 숫자
+            var m = Regex.Match(raw, @"^(X|Y)\s*0*(\d+)$");
+            if (!m.Success)
+                m = Regex.Match(raw, @"^(X|Y)\s*0*(\d+)\b");
+            if (m.Success)
+            {
+                string letter = m.Groups[1].Value; // X or Y
+                string digits = m.Groups[2].Value; // 선행 0 제거된 숫자
+                if (string.IsNullOrEmpty(digits)) digits = "0";
+
+                int w = Math.Max(1, _keyPadWidth);
+                if (digits.Length < w) digits = digits.PadLeft(w, '0');
+
+                return letter + digits;            // 예: X003
+            }
+
+            // 2) 그 외: 그대로(대문자/트림) 키로 사용
+            return raw;
         }
 
-        //상태 색 적용 헬퍼 추가
+        // 이름 셀 텍스트의 첫 토큰을 키로 간주하고 정규화
+        private string ExtractKey(string nameCellText)
+        {
+            if (string.IsNullOrWhiteSpace(nameCellText)) return null;
+
+            // "X003 START ..." -> "X003", "VAC_SENSOR something" -> "VAC_SENSOR"
+            string firstToken = nameCellText.Trim().Split(' ')[0];
+            return NormalizeKey(firstToken);
+        }
+
+        // 상태 색 적용
         private static void ApplyStateColor(PictureBox pb, string key, bool on)
         {
             if (pb == null) return;
-            // X..(DI): 파랑 / Y..(DO): 빨강
-            if (!string.IsNullOrEmpty(key) && (key[0] == 'X' || key[0] == 'x'))
+
+            // X..(DI): 파랑 / Y..(DO): 빨강 / 그 외: 초록
+            if (!string.IsNullOrEmpty(key) && (key[0] == 'X'))
                 pb.BackColor = on ? Color.FromArgb(0, 176, 240) : Color.White;
-            else if (!string.IsNullOrEmpty(key) && (key[0] == 'Y' || key[0] == 'y'))
+            else if (!string.IsNullOrEmpty(key) && (key[0] == 'Y'))
                 pb.BackColor = on ? Color.Red : Color.White;
             else
                 pb.BackColor = on ? Color.LimeGreen : Color.White; // fallback
         }
 
-        //공개 API: 키로 상태 업데이트
+        // 공개 API: 키로 상태 업데이트 (정확 일치)
         public void SetStateByKey(string key, bool on)
         {
+            key = NormalizeKey(key);
             if (string.IsNullOrEmpty(key)) return;
-            PictureBox pb;
-            if (_statePicByKey.TryGetValue(key, out pb))
+
+            if (_statePicByKey.TryGetValue(key, out var pb))
                 ApplyStateColor(pb, key, on);
         }
-
-
     }
 }

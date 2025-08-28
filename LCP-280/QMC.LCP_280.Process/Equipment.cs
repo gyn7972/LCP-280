@@ -28,7 +28,7 @@ namespace QMC.LCP_280.Process
     /// 설비 전체를 관리하는 Equipment 클래스
     /// 모든 Unit들을 등록하고 Start/Stop/Config/Recipe를 중앙에서 제어
     /// </summary>
-    public class Equipment : IDisposable
+    public class Equipment : IDisposable, IEquipment
     {
         #region Singleton Pattern
 
@@ -572,6 +572,10 @@ namespace QMC.LCP_280.Process
             }
         }
 
+        // 기존 Equipment 구현(이미 public) + IDisposable
+        //public async System.Threading.Tasks.Task<bool> StopAllUnitsAsync() => await StopAllUnitsAsync(); // 기존 메서드 연결
+        // Dispose()는 기존 구현 사용
+
         /// <summary>
         /// 개별 Unit 정지
         /// </summary>
@@ -822,30 +826,60 @@ namespace QMC.LCP_280.Process
         {
             if (disposing)
             {
-                // 모든 Unit 정지
-                StopAllUnitsAsync().GetAwaiter().GetResult();
-
-                // 리소스 정리
-                _equipmentCancellationTokenSource?.Dispose();
-
-                foreach (var execInfo in _unitExecutions.Values)
+                try
                 {
-                    execInfo.CancellationTokenSource?.Dispose();
-                    execInfo.ExecutionTask?.Dispose();
-                }
+                    // 1) 모든 Unit 정지
+                    StopAllUnitsAsync().GetAwaiter().GetResult();
 
-                _unitExecutions.Clear();
+                    // 2) DioScanService 정리
+                    _dioScan?.Stop();
+                    _dioScan?.Dispose();
+                    _dioScan = null;
 
-                // Unit들 정리
-                foreach (var unit in Units.Values)
-                {
-                    if (unit is IDisposable disposableUnit)
+                    // 3) DIO Driver
+                    if (_dio is IDisposable d) d.Dispose();
+                    _dio = null;
+
+                    // 4) Ajin Host (AXL Close)
+                    _axlHost?.Close();
+                    _axlHost = null;
+
+                    // 5) Cameras
+                    foreach (var cam in Cameras.Values)
                     {
-                        disposableUnit.Dispose();
+                        try
+                        {
+                            cam.StopLive();
+                            cam.Close();
+                        }
+                        catch { /* swallow */ }
                     }
-                }
+                    Cameras.Clear();
 
-                Units.Clear();
+                    // 6) Units
+                    foreach (var unit in Units.Values)
+                    {
+                        if (unit is IDisposable disposableUnit)
+                            disposableUnit.Dispose();
+                    }
+                    Units.Clear();
+
+                    // 7) Cancellation 토큰
+                    _equipmentCancellationTokenSource?.Dispose();
+                    _equipmentCancellationTokenSource = null;
+
+                    // 8) Execution 정보 정리
+                    foreach (var execInfo in _unitExecutions.Values)
+                    {
+                        execInfo.CancellationTokenSource?.Dispose();
+                        execInfo.ExecutionTask?.Dispose();
+                    }
+                    _unitExecutions.Clear();
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 
@@ -872,6 +906,16 @@ namespace QMC.LCP_280.Process
 
             Directory.CreateDirectory(_axisRoot);
             CreateAxes();
+
+            var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+            scanner.AxisStatusUpdated += (axis, status) =>
+            {
+                // UI 바인딩/로그/감시 로직
+                // 예: 라벨 업데이트, 그래프, 알람 인터락, 이동 완료 감지 등
+                // status.State.Done / status.IO.Alarm / status.PV.ActualPosition ...
+            };
+            scanner.Start();
+
 
             // 예) CassetteLoadingElevator 유닛의 Z축 하나 생성/등록/부착
             //    필요에 맞게 더 추가(Y, X 등)
@@ -959,30 +1003,32 @@ namespace QMC.LCP_280.Process
                 const string unitName = "Unit";
                 var names = new[]
                 {
-                "Input Lifter Z Axis",
-                "Input Feeder Y Axis",
-                "Input Stage X Axis",
-                "Input Stage Y Axis",
-                "Input Stage T Axis",
-                "Needle Z Axis",
-                "Tool#1 T Axis",
-                "Tool#1 Z Axis",
-                "Tool#2 T Axis",
-                "Tool#2 Z Axis",
-                "Tool#3 T Axis",
-                "Tool#3 Pick Z Axis",
-                "Tool#3 Place Z Axis",
-                "Align Stage X Axis",
-                "Align Stage Y Axis",
-                "Align Stage T Axis",
-                "Index T Axis",
-                "Contact Z Axis",
-                "Sphere Z Axis",
-                "Output Stage X Axis",
-                "Output Stage Y Axis",
-                "Output Stage T Axis",
-                "Output Lifter Z Axis",
-                "Output Feeder Y Axis"
+                /* 00 */ "Eject Pin Z Axis",
+                /* 01 */ "Left Tool T Axis",
+                /* 02 */ "Right Tool T Axis",
+                /* 03 */ "Wafer Stage X Axis",
+                /* 04 */ "Wafer Stage Y Axis",
+                /* 05 */ "Wafer Stage T Axis",
+                /* 06 */ "Left Pick Z Axis",
+                /* 07 */ "Left Place Z Axis",
+                /* 08 */ "Index Z Axis",
+                /* 09 */ "Align T Axis",
+                /* 10 */ "Sphere Z Axis",
+                /* 11 */ "Probe Z Axis",
+                /* 12 */ "Probe Card X Axis",
+                /* 13 */ "Probe Card Y Axis",
+                /* 14 */ "Probe Card Z Axis",
+                /* 15 */ "Right Pick Z Axis",
+                /* 16 */ "Right Place Z Axis",
+                /* 17 */ "Bin Stage X Axis",
+                /* 18 */ "Bin Stage Y Axis",
+                /* 19 */ "Bin Stage T Axis",
+                /* 20 */ "Wafer Lifter Z Axis",
+                /* 21 */ "Wafer Feeder Y Axis",
+                /* 22 */ "Ejector Z Axis",
+                /* 23 */ "Bin Feeder Y Axis",
+                /* 24 */ "Bin Lifter Z Axis",
+                /* 25 */ //"Index T Axis",
             };
 
                 var boardNo = 0; // 필요시 보드별로 바꾸세요.
@@ -1058,8 +1104,18 @@ namespace QMC.LCP_280.Process
             }
 
             // 드라이버: 실제 보드 준비되면 AjinDriver로 교체
-            IMotionDriver driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
+            //IMotionDriver driver
+            var driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
             //IMotionDriver driver = new SimDriver(setup.PulsesPerUnit);
+
+            // (선택) AXL Open + .mot 로드 : AjinAxlBoardHost 사용
+            // new AjinAxlBoardHost("C:\\Para\\xxx.mot").Open();  // 필요 시
+
+            // 드라이버 설정 Test 진행하고 적용.
+            //driver.ProfileMode = config.ProfileMode;
+            //int rc = driver.ConfigureFromSetupAndConfig(setup.AxisNo, setup, config);
+            //if (rc != 0) throw new InvalidOperationException($"Ajin configure failed rc={rc}");
+
 
             return new MotionAxis(setup, config, driver);
         }
@@ -1254,8 +1310,6 @@ namespace QMC.LCP_280.Process
                 Log.Write(ex);
             }
         }
-
-
 
     }
 

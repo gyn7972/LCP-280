@@ -95,6 +95,7 @@ namespace QMC.Common
         Ccw = 0,
         Cw = 1,
     }
+
     [Serializable]
     public enum HomeSignals : uint
     {
@@ -133,4 +134,19 @@ namespace QMC.Common
         UVW_Horizontal,
         UVW_Vertical, 
     }
+
+    [Serializable]
+    public enum OutputMode { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
+
+    [Serializable]
+    public enum InputMode { Normal, Reverse, Reverse_SQR4 }
+
+    [Serializable]
+    public enum InputSource { Encoder, ServoDriver, External }
+
+    [Serializable]
+    public enum StopMode { Emergency, DecelStop }
+
+    [Serializable]
+    public enum HomeMode { NegativeLimit, PositiveLimit, HomeSensor }
 }

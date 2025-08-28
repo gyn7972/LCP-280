@@ -72,7 +72,8 @@ namespace QMC.Common.DIO
                             item.Key = KeyOf(m.ModuleName, c.DisplayNo);
                             item.BoardNo = c.BoardNo != 0 ? c.BoardNo : m.BoardNo;
                             item.PortNo = c.PortNo;
-                            item.ChannelNo = c.ChannelNo == 0 ? c.Index : c.ChannelNo; // 기본 채널 매핑
+                            //item.ChannelNo = c.ChannelNo == 0 ? c.Index : c.ChannelNo; 
+                            item.ChannelNo = c.ChannelNo == 0 ? c.Index : c.ChannelNo;
                             item.Reverse = c.Reverse;
                             item.Monitoring = c.Monitoring;
                             ins.Add(item);

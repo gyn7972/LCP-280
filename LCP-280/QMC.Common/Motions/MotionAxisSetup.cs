@@ -3,15 +3,16 @@ using System.ComponentModel;
 using System.IO;
 using System.Text;
 using Newtonsoft.Json;
+using QMC.Common;
 
 namespace QMC.Common.Motions
 {
-    public enum ActiveLevel { Low = 0, High = 1 }
-    public enum OutputMode { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
-    public enum InputMode { Normal, Reverse, Reverse_SQR4 }
-    public enum InputSource { Encoder, ServoDriver, External }
-    public enum StopMode { Emergency, DecelStop }
-    public enum HomeMode { NegativeLimit, PositiveLimit, HomeSensor }
+    //public enum ActiveLevel { Low = 0, High = 1 }
+    //public enum OutputMode { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
+    //public enum InputMode { Normal, Reverse, Reverse_SQR4 }
+    //public enum InputSource { Encoder, ServoDriver, External }
+    //public enum StopMode { Emergency, DecelStop }
+    //public enum HomeMode { NegativeLimit, PositiveLimit, HomeSensor }
 
     [Serializable]
     public sealed class MotionAxisSetup : BaseSetup

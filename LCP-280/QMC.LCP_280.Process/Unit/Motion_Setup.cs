@@ -99,25 +99,25 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.OutputMode = (OutputMode)GetInt("Config", "Output Mode", (int)axis.Setup.OutputMode);
                 axis.Setup.InputMode = (InputMode)GetInt("Config", "Input Mode", (int)axis.Setup.InputMode);
                 axis.Setup.InputSource = (InputSource)GetInt("Config", "Input Source", (int)axis.Setup.InputSource);
-                axis.Setup.ZPhaseLevel = (Common.Motions.ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
-                axis.Setup.ServoLevel = (Common.Motions.ActiveLevel)GetInt("Config", "Servo Level", (int)axis.Setup.ServoLevel);
+                axis.Setup.ZPhaseLevel = (ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
+                axis.Setup.ServoLevel = (ActiveLevel)GetInt("Config", "Servo Level", (int)axis.Setup.ServoLevel);
 
                 // --- Emergency Signal
-                axis.Setup.EmergencyLevel = (Common.Motions.ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);
+                axis.Setup.EmergencyLevel = (ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);
                 axis.Setup.StopMode = (StopMode)GetInt("Emergency Signal", "Stop Mode", (int)axis.Setup.StopMode);
 
                 // --- Inposition
-                axis.Setup.InpositionLevel = (Common.Motions.ActiveLevel)GetInt("Inposition", "Level", (int)axis.Setup.InpositionLevel);
+                axis.Setup.InpositionLevel = (ActiveLevel)GetInt("Inposition", "Level", (int)axis.Setup.InpositionLevel);
                 axis.Setup.SoftwareLimitEnable = GetBool("Inposition", "Software", axis.Setup.SoftwareLimitEnable);
                 axis.Setup.SoftwareLength = GetDouble("Inposition", "Software Length", axis.Setup.SoftwareLength);
 
                 // --- Home
-                axis.Setup.HomeSignalLevel = (Common.Motions.ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
+                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
                 axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
 
                 // --- Alarm
-                axis.Setup.AlarmResetSignal = (Common.Motions.ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);
-                axis.Setup.AlarmLevel = (Common.Motions.ActiveLevel)GetInt("Alarm", "Level", (int)axis.Setup.AlarmLevel);
+                axis.Setup.AlarmResetSignal = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);
+                axis.Setup.AlarmLevel = (ActiveLevel)GetInt("Alarm", "Level", (int)axis.Setup.AlarmLevel);
 
                 // --- Limit
                 axis.Setup.SoftLimitMin = GetDouble("Limit", "Soft Limit -", axis.Setup.SoftLimitMin);

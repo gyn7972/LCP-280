@@ -21,6 +21,7 @@ namespace QMC.LCP_280.Process
             Application.SetCompatibleTextRenderingDefault(false);
 
             Equipment.Instance.InitializeEquipment();
+            EquipmentLocator.Initialize(Equipment.Instance); // 주입
 
             Application.Run(new QMC.Common.MainForm()); // 정확한 네임스페이스 지정
         }
