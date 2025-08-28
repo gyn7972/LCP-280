@@ -201,7 +201,7 @@ namespace QMC.Common.Motions
 
         public int MoveRel(double logicalDelta)
         {
-            var target = GetPosition() + logicalDelta;
+            var target = logicalDelta;// GetPosition() + logicalDelta;
             return MoveAbs(target);
         }
 

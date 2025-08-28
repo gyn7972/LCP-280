@@ -40,10 +40,10 @@ namespace QMC.Common.Motions
 
         public double ToLogical(double hardwareValue)
         {
-            //var v = hardwareValue;
-            //return v;
-            var v = hardwareValue / _setup.PulsesPerUnit;
-            return (v - _config.Offset) / _config.LogicalScaleFactor;
+            var v = hardwareValue;
+            return v;
+            //var v = hardwareValue / _setup.PulsesPerUnit;
+            //return (v - _config.Offset) / _config.LogicalScaleFactor;
         }
     }
 }

@@ -470,22 +470,6 @@ namespace QMC.LCP_280.Process.Unit
                     var state = new PropertyState(no.ToString("00"), $"{ch.DisplayNo} {ch.Name}", v);
                     doProps.Add(state);
 
-                    // ▶ Toggle 버튼
-                    //doProps.Add(new PropertyButton(no.ToString("00") + "_Toggle", "Toggle", () =>
-                    //{
-                    //    bool now = false; _scan?.TryGetOutput(module.ModuleName, ch.DisplayNo, out now);
-                    //    _scan?.WriteOutput(module.ModuleName, ch.DisplayNo, !now); // 토글 (Reverse는 ScanService가 처리)  :contentReference[oaicite:0]{index=0}
-                    //                                                               // 최신 상태 재바인딩(가벼운 방법으로 유지하고 싶으면 이 줄만 남겨도 됨)
-                    //    BindChannels_DO(_lastDoModule);
-                    //}));
-
-                    // ▶ Pulse 버튼
-                    //doProps.Add(new PropertyButton(no.ToString("00") + "_Pulse", "Pulse(100ms)", () =>
-                    //{
-                    //    _scan?.PulseOutput(module.ModuleName, ch.DisplayNo, 100);   // 100ms 펄스  :contentReference[oaicite:1]{index=1}
-                    //    BindChannels_DO(_lastDoModule);
-                    //}));
-
                     no++;
                 }
             }

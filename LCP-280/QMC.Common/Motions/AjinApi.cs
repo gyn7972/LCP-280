@@ -159,12 +159,12 @@ namespace QMC.Common.Motions
         public static int MoveAbs(int axisNo, double targetPulse)
         {
             // 가속/감속 시간을 0초로 넘겨 내부 프로파일을 사용하도록 위임
-            return AXM.MovePosition(axisNo, targetPulse, /*velocity*/ 0, TimeSpan.Zero, TimeSpan.Zero);
+            //return AXM.MovePosition(axisNo, targetPulse, /*velocity*/ 0, TimeSpan.Zero, TimeSpan.Zero);
 
-            //double vel = 0; AXM.GetMaxVelocity(axisNo, ref vel);
-            //double acc = Math.Max(vel * 2.0, 1.0);
-            //double dec = acc;
-            //return AXM.MovePosition(axisNo, targetPulse, vel, acc, dec);
+            double vel = 5;// GetCommandVelocityPps(axisNo);
+            double acc = 10;//Math.Max(vel * 2.0, 1.0);
+            double dec = 10;//acc;
+            return AXM.MovePosition(axisNo, targetPulse, vel, acc, dec);
         }
 
         #region ===== Jog / Velocity Mode =====
@@ -179,6 +179,11 @@ namespace QMC.Common.Motions
         {
             // UNIT/PULSE 스케일은 시스템 초기화 단계에서 이미 설정되어 있어야 함.
             return AXM.MoveVelocity(axisNo, dVelUnitPerSec, dAccelUnit, dDecelUnit);
+
+            //double vel = 5;// GetCommandVelocityPps(axisNo);
+            //double acc = 10;//Math.Max(vel * 2.0, 1.0);
+            //double dec = 10;//acc;
+            //return AXM.MoveVelocity(axisNo, -vel, acc, dec);
         }
         #endregion
 

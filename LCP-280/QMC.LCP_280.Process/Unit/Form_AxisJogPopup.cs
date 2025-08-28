@@ -37,6 +37,9 @@ namespace QMC.LCP_280.Process.Unit
                 BindAxisList();            // 축 목록 바인딩 (unit 기준)
                 ApplyMoveModeUI();         // 스텝/연속 UI 스위치
                 InitializePositionTimer(); // 위치표시 타이머
+
+                rdoFine.Checked = true;
+                rdoStep.Checked = true;
             }
             catch (Exception ex)
             {
@@ -218,6 +221,9 @@ namespace QMC.LCP_280.Process.Unit
                 if (rdoContinuous.Checked)
                 {
                     double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity; // :contentReference[oaicite:5]{index=5}
+
+                    //test
+                    vel = 10;
                     StartJogContinuous(axis, jc, vel);
                 }
                 else
@@ -243,7 +249,8 @@ namespace QMC.LCP_280.Process.Unit
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
                 if (axis == null) return;
 
-                StopJog(axis);
+                if(!rdoStep.Checked)
+                    StopJog(axis);
             }
             catch { }
         }
@@ -264,53 +271,15 @@ namespace QMC.LCP_280.Process.Unit
             catch { }
         }
 
-        // ===== 드라이버 메서드 안전 호출 (이름 차이 흡수) =====
-        private static bool TryCall(object target, string method, params object[] args)
-        {
-            if (target == null) return false;
-            MethodInfo mi = target.GetType().GetMethod(method, BindingFlags.Public | BindingFlags.Instance);
-            if (mi == null) return false;
-            mi.Invoke(target, args);
-            return true;
-        }
-
-        //private void StartJogContinuous(MotionAxis axis, JogCommand jc, double velocity)
-        //{
-        //    string letter = jc.Axis.ToString(); // "X","Y","Z","T"
-        //    if (TryCall(axis, "StartJog", new object[] { letter, jc.Sign, velocity })) return;
-        //    if (TryCall(axis, "JogStart", new object[] { letter, jc.Sign, velocity })) return;
-        //    if (TryCall(axis, "Jog", new object[] { letter, jc.Sign, velocity })) return;
-
-        //    // 연속조그 API가 없으면 스텝 이동으로 대체
-        //    DoStepMove(axis, jc, Math.Max(velocity * 0.05, 0.001) * jc.Sign);
-        //}
-
-        //private void StopJog(MotionAxis axis)
-        //{
-        //    if (TryCall(axis, "StopJog")) return;
-        //    if (TryCall(axis, "JogStop")) return;
-        //    if (TryCall(axis, "Stop")) return;
-        //}
-
-        //private void DoStepMove(MotionAxis axis, JogCommand jc, double stepMm)
-        //{
-        //    string letter = jc.Axis.ToString();
-        //    double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity; // :contentReference[oaicite:6]{index=6}
-        //    double acc = axis.Config.JogAcc;
-        //    double dec = axis.Config.JogDec;
-
-        //    if (TryCall(axis, "MoveRelative", new object[] { letter, stepMm, vel, acc, dec })) return;
-        //    if (TryCall(axis, "RelMove", new object[] { letter, stepMm, vel, acc, dec })) return;
-        //    if (TryCall(axis, "MoveRel", new object[] { letter, stepMm, vel, acc, dec })) return;
-        //}
-
-
         // ★ 연속조그 시작
         private void StartJogContinuous(MotionAxis axis, JogCommand jc, double velocity)
         {
-            double acc = axis.Config.JogAcc;
-            double dec = axis.Config.JogDec;
-            double signedVel = velocity * jc.Sign; // 방향 포함
+            int dir = 1;// (axis.Config?.ManualJogDir ?? +1); // +1 또는 -1
+            
+            //Test
+            double acc = 5;// axis.Config.JogAcc;
+            double dec = 5;// axis.Config.JogDec;
+            double signedVel = velocity * jc.Sign * dir; // 방향 포함
             axis.JogStart(signedVel, acc, dec);
         }
 
@@ -323,24 +292,35 @@ namespace QMC.LCP_280.Process.Unit
         // ★ 스텝조그(1회 이동) — jerk 포함!
         private void DoStepMove(MotionAxis axis, JogCommand jc, double stepUnit)
         {
+            // (선택) 장비 설정에 따른 수동조그 방향 반전이 있으면 곱해줌 (없으면 dir = +1)
+            int dir = 1;// (axis.Config?.ManualJogDir ?? +1); // +1 또는 -1
+
             double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity;
             double acc = axis.Config.JogAcc;
             double dec = axis.Config.JogDec;
             double jerk = axis.Config.AccJerkPercent;
 
+            double signedStep = stepUnit;// * jc.Sign * dir;
+
+            // ① 상대이동 우선
             try
             {
-                axis.MoveRel(stepUnit, vel, acc, dec, jerk);
+                axis.MoveRel(signedStep, vel, acc, dec, jerk);
                 return;
             }
-            catch (MissingMethodException)
-            {
-                // 프로젝트 구현이 4인자만 있을 수 있으니, 대체로 MoveAbs 사용
-            }
-            catch { /* fallthrough */ }
+            catch { /* 아래로 폴백 */ }
 
+            // ② 절대이동 폴백
             double cur = axis.GetPosition();
-            axis.MoveAbs(cur + stepUnit, vel, acc, dec, jerk);
+            try
+            {
+                axis.MoveAbs(cur + signedStep, vel, acc, dec, jerk);
+                return;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
 
     }
