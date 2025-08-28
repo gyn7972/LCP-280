@@ -84,17 +84,17 @@ namespace QMC.Common.Spectrometer
             pc.Add($"Spectrometer [{Name}] - Config");
 
             // Value
-            pc.Add("DeviceInterfaceType", DeviceInterfaceType);
-            pc.Add("DeviceInterfaceOption", DeviceInterfaceOption);
-            pc.Add("ConfigFileName", ConfigFileName);
-            pc.Add("CalibFileName", CalibFileName);
-            pc.Add("IntegrationTime", IntegrationTime);
-            pc.Add("Averages", Averages);
-            pc.Add("DensityFilter", DensityFilter);
-            pc.Add("ColormetricStart", ColormetricStart);
-            pc.Add("ColormetricStop", ColormetricStop);
-            pc.Add("TriggerTimeout", TriggerTimeout);
-            pc.Add("UseExternalTrigger", UseExternalTrigger);
+            pc.Add(nameof(DeviceInterfaceType), DeviceInterfaceType);
+            pc.Add(nameof(DeviceInterfaceOption), DeviceInterfaceOption);
+            pc.Add(nameof(ConfigFileName), ConfigFileName);
+            pc.Add(nameof(CalibFileName), CalibFileName);
+            pc.Add(nameof(IntegrationTime), IntegrationTime);
+            pc.Add(nameof(Averages), Averages);
+            pc.Add(nameof(DensityFilter), DensityFilter);
+            pc.Add(nameof(ColormetricStart), ColormetricStart);
+            pc.Add(nameof(ColormetricStop), ColormetricStop);
+            pc.Add(nameof(TriggerTimeout), TriggerTimeout);
+            pc.Add(nameof(UseExternalTrigger), UseExternalTrigger);
             return pc;
         }
 
@@ -105,17 +105,17 @@ namespace QMC.Common.Spectrometer
 
             try
             {
-                DeviceInterfaceType = pc.GetValue<DeviceInterface>("DeviceInterfaceType");
-                DeviceInterfaceOption = pc.GetValue<int>("DeviceInterfaceOption");
-                ConfigFileName = pc.GetValue<string>("ConfigFileName");
-                CalibFileName = pc.GetValue<string>("CalibFileName");
-                IntegrationTime = pc.GetValue<int>("IntegrationTime");
-                Averages = pc.GetValue<int>("Averages");
-                DensityFilter = pc.GetValue<int>("DensityFilter");
-                ColormetricStart = pc.GetValue<int>("ColormetricStart");
-                ColormetricStop = pc.GetValue<int>("ColormetricStop");
-                TriggerTimeout = pc.GetValue<int>("TriggerTimeout");
-                UseExternalTrigger = pc.GetValue<bool>("UseExternalTrigger");
+                DeviceInterfaceType = pc.GetValue<DeviceInterface>(nameof(DeviceInterfaceType));
+                DeviceInterfaceOption = pc.GetValue<int>(nameof(DeviceInterfaceOption));
+                ConfigFileName = pc.GetValue<string>(nameof(ConfigFileName));
+                CalibFileName = pc.GetValue<string>(nameof(CalibFileName));
+                IntegrationTime = pc.GetValue<int>(nameof(IntegrationTime));
+                Averages = pc.GetValue<int>(nameof(Averages));
+                DensityFilter = pc.GetValue<int>(nameof(DensityFilter));
+                ColormetricStart = pc.GetValue<int>(nameof(ColormetricStart));
+                ColormetricStop = pc.GetValue<int>(nameof(ColormetricStop));
+                TriggerTimeout = pc.GetValue<int>(nameof(TriggerTimeout));
+                UseExternalTrigger = pc.GetValue<bool>(nameof(UseExternalTrigger));
             }
             catch (Exception ex)
             {

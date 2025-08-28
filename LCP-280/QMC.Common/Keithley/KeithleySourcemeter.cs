@@ -5,6 +5,7 @@ using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -122,11 +123,14 @@ namespace QMC.Common.Keithley
         private KeithleyInstrumentCommunicator communicator;
         private List<MeasurementItem> measureItems;
         private List<string> commands;
-        private bool isBusy;
         #endregion
 
         #region Property
         public new KeithelySourcemeterConfig Config { get; private set; }
+        public bool IsConnected
+        {
+            get { return communicator.IsConnected; }
+        }
         #endregion
 
         #region Constructor
@@ -218,10 +222,7 @@ namespace QMC.Common.Keithley
             bool result = false;
             do
             {
-                if (this.isBusy)
-                    throw new InvalidOperationException("Measurement is already in progress.");
-
-                result = Task.Run(() => MeasureAsync(10, Config.MeasureTimeout)).Result;
+                result = MeasureSync(10, Config.MeasureTimeout);
             }
             while (false);
             return result;
@@ -287,13 +288,11 @@ namespace QMC.Common.Keithley
             }
             return result;
         }
-        private async Task<bool> MeasureAsync(int intervalDelayMs, int timeoutMs)
+        private bool MeasureSync(int intervalDelayMs, int timeoutMs)
         {
             bool result = false;
             try
             {
-                this.isBusy = true;
-
                 // Send the measure command
                 if (!SendMeasureCommand())
                     return false;
@@ -306,7 +305,7 @@ namespace QMC.Common.Keithley
                     if (stopwatch.ElapsedMilliseconds > timeoutMs)
                         throw new TimeoutException("Measurement command timed out.");
 
-                    await Task.Delay(intervalDelayMs);
+                    Thread.Sleep(intervalDelayMs);
                 }
 
                 // Query the measurement results
@@ -321,7 +320,6 @@ namespace QMC.Common.Keithley
             }
             finally
             {
-                this.isBusy = false;
             }
             return result;
         }

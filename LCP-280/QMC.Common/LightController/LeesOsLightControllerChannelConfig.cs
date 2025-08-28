@@ -92,37 +92,30 @@ namespace QMC.Common.LightController
         public override PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
-
-            // Title
             string title = "Channel Config";
             if (ownerChannel.OwnerController != null)
                 title = $"{ownerChannel.OwnerController.Name} - Channel {ownerChannel.ChannelNo} Config";
             pc.Add(title);
-
-            // Value
-            pc.Add("On", On);
-            pc.Add("Volume", Volume);
-            pc.Add("Descript", Descript);
-
+            pc.Add(nameof(On), On);
+            pc.Add(nameof(Volume), Volume);
+            pc.Add(nameof(Descript), Descript);
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
         {
             if (pc == null)
                 return -1;
-
             try
             {
-                On = pc.GetValue<bool>("On");
-                Volume = pc.GetValue<int>("Volume");
-                Descript = pc.GetValue<string>("Descript");
+                On = pc.GetValue<bool>(nameof(On));
+                Volume = pc.GetValue<int>(nameof(Volume));
+                Descript = pc.GetValue<string>(nameof(Descript));
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
                 return -1;
             }
-
             return 0;
         }
         #endregion

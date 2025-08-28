@@ -168,6 +168,12 @@
     <Compile Include="IO\IDigitalIO.cs" />
     <Compile Include="IO\IDIODriver.cs" />
     <Compile Include="IO\SimDioDriver.cs" />
+    <Compile Include="Keithley\FormSetupKeithleyInstrument.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Keithley\FormSetupKeithleyInstrument.Designer.cs">
+      <DependentUpon>FormSetupKeithleyInstrument.cs</DependentUpon>
+    </Compile>
     <Compile Include="Keithley\KeithleyInstrumentCommunicator.cs" />
     <Compile Include="Keithley\KeithleyInstrumentResourceManager.cs" />
     <Compile Include="Keithley\KeithleySourcemeter.cs" />
@@ -390,6 +396,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormMessageBox\MessageBoxYesNoRetry.resx">
       <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Keithley\FormSetupKeithleyInstrument.resx">
+      <DependentUpon>FormSetupKeithleyInstrument.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
