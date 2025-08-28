@@ -1,4 +1,5 @@
-﻿using QMC.Common;
+﻿using Newtonsoft.Json.Linq;
+using QMC.Common;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;
@@ -330,22 +331,46 @@ namespace QMC.LCP_280.Process.Unit
         private void OnInputChanged(string module, string disp, bool value)
         {
             if (_lastDiModule != null &&
-                string.Equals(module, _lastDiModule.ModuleName, StringComparison.OrdinalIgnoreCase))
+                string.Equals(module, _lastDiModule.ModuleName, StringComparison.OrdinalIgnoreCase) &&
+                inputIOPropertyCollectionView != null)
             {
-                // 부분 업데이트
-                inputIOPropertyCollectionView.SetStateByKey(disp, value);
-                // (또는 전체 바인딩 재호출: BindChannels_DI(_lastDiModule); )
+                void Update() => inputIOPropertyCollectionView.SetStateByKey(disp, value);
+
+                if (inputIOPropertyCollectionView.IsHandleCreated && inputIOPropertyCollectionView.InvokeRequired)
+                    inputIOPropertyCollectionView.BeginInvoke((Action)Update);
+                else
+                    Update();
             }
+
+            //if (_lastDiModule != null &&
+            //    string.Equals(module, _lastDiModule.ModuleName, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    // 부분 업데이트
+            //    inputIOPropertyCollectionView.SetStateByKey(disp, value);
+            //    // (또는 전체 바인딩 재호출: BindChannels_DI(_lastDiModule); )
+            //}
         }
 
         private void OnOutputChanged(string module, string disp, bool value)
         {
             if (_lastDoModule != null &&
-                string.Equals(module, _lastDoModule.ModuleName, StringComparison.OrdinalIgnoreCase))
+                string.Equals(module, _lastDoModule.ModuleName, StringComparison.OrdinalIgnoreCase) &&
+                outputIOPropertyCollectionView != null)
             {
-                outputIOPropertyCollectionView.SetStateByKey(disp, value);
-                // (또는 BindChannels_DO(_lastDoModule); )
+                void Update() => outputIOPropertyCollectionView.SetStateByKey(disp, value);
+
+                if (outputIOPropertyCollectionView.IsHandleCreated && outputIOPropertyCollectionView.InvokeRequired)
+                    outputIOPropertyCollectionView.BeginInvoke((Action)Update);
+                else
+                    Update();
             }
+
+            //if (_lastDoModule != null &&
+            //string.Equals(module, _lastDoModule.ModuleName, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    outputIOPropertyCollectionView.SetStateByKey(disp, value);
+            //    // (또는 BindChannels_DO(_lastDoModule); )
+            //}
         }
 
         private void OnOutputItemClicked(object sender, string key)
@@ -353,19 +378,50 @@ namespace QMC.LCP_280.Process.Unit
             var m = _lastDoModule;
             if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
 
-            string strMsg = string.Empty;
-            var mbYes = new MessageBoxYesNo();
-            strMsg = string.Format("Singnal 변경하시겠습니까?");
-            if (mbYes.ShowDialog("Info", strMsg) == DialogResult.No)
-                return;
-                    
-            bool now = false; 
-            _scan.TryGetOutput(m.ModuleName, key, out now);
-            _scan.WriteOutput(m.ModuleName, key, !now);
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Info", "Signal 변경하시겠습니까?") == DialogResult.No) return;
 
-            var mb = new MessageBoxOk();
-            strMsg = string.Format("{0}, {1}", key, now);
-            mb.ShowDialog("Info!", strMsg);
+            // 1) 지금 캐시값
+            bool before = false;
+            _scan.TryGetOutput(m.ModuleName, key, out before);
+
+            // 2) 쓰기 (Reverse는 DioScanService에서 자동 반영)
+            var rc = _scan.WriteOutput(m.ModuleName, key, !before);
+            if (rc != 0)
+            {
+                // -1: 키 못 찾음(설정/키 불일치), 기타: 드라이버 에러
+                new MessageBoxOk().ShowDialog("Error", $"WriteOutput 실패 (rc={rc})");
+                return;
+            }
+
+            // 3) 보드에서 실제 값 재읽기(출력도 캐시에 반영)
+            _scan.RefreshOnce();
+
+            bool after = before;
+            _scan.TryGetOutput(m.ModuleName, key, out after);
+
+            new MessageBoxOk().ShowDialog("Info!", $"{key}: {before} -> {after}");
+
+
+
+
+
+            //var m = _lastDoModule;
+            //if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
+
+            //string strMsg = string.Empty;
+            //var mbYes = new MessageBoxYesNo();
+            //strMsg = string.Format("Singnal 변경하시겠습니까?");
+            //if (mbYes.ShowDialog("Info", strMsg) == DialogResult.No)
+            //    return;
+
+            //bool now = false; 
+            //_scan.TryGetOutput(m.ModuleName, key, out now);
+            //_scan.WriteOutput(m.ModuleName, key, !now);
+
+            //var mb = new MessageBoxOk();
+            //strMsg = string.Format("{0}, {1}", key, now);
+            //mb.ShowDialog("Info!", strMsg);
         }
 
         private void OnOutputItemRightClicked(object sender, string key)
@@ -393,6 +449,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             inputIOPropertyCollectionView?.SetProperties(diProps);
+
+            // ★ 선택 직후 최신값 한 번 더 반영
+            RefreshStatesOnce();
         }
 
         private void BindChannels_DO(DIOModuleSetup module)
@@ -431,19 +490,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             outputIOPropertyCollectionView?.SetProperties(doProps);
-            //_selected = module;
-            //var doProps = new PropertyCollection { ShowNoColumn = false };
 
-            //int no = 1;
-            //foreach (var ch in module.Outputs ?? new List<DIOChannel>())
-            //{
-            //    bool v = false;
-            //    _scan?.TryGetOutput(module.ModuleName, ch.DisplayNo, out v);
-            //    doProps.Add(new PropertyState(no.ToString("00"), $"{ch.DisplayNo} {ch.Name}", v));
-            //    no++;
-            //}
-            //doProps.IsInputParameter = true;
-            //outputIOPropertyCollectionView?.SetProperties(doProps);
+            // ★ 선택 직후 최신값 한 번 더 반영
+            RefreshStatesOnce();
         }
 
         private void Clear_DI()
@@ -506,36 +555,72 @@ namespace QMC.LCP_280.Process.Unit
 
         private void RefreshStatesOnce()
         {
-            if (_selected == null || _scan == null) return;
+            if (_scan == null) return;
 
             // DI
-            if (_selected.Inputs != null)
+            if (_lastDiModule?.Inputs != null && inputIOPropertyCollectionView != null)
             {
-                int i = 1;
-                foreach (var ch in _selected.Inputs)
+                foreach (var ch in _lastDiModule.Inputs)
                 {
-                    if (_scan.TryGetInput(_selected.ModuleName, ch.DisplayNo, out var v))
+                    if (_scan.TryGetInput(_lastDiModule.ModuleName, ch.DisplayNo, out var v))
                     {
-                        // 같은 순서(i)로 넣었으니 필요하면 여기서 PropertyCollectionView의 값 업데이트 API 사용
-                        // 예: inputIOPropertyCollectionView.SetValueByRow(i-1, v);  (컨트롤 헬퍼가 있으면 사용)
+                        void Update() => inputIOPropertyCollectionView.SetStateByKey(ch.DisplayNo, v);
+
+                        if (inputIOPropertyCollectionView.IsHandleCreated && inputIOPropertyCollectionView.InvokeRequired)
+                            inputIOPropertyCollectionView.BeginInvoke((Action)Update);
+                        else
+                            Update();
                     }
-                    i++;
                 }
             }
 
             // DO
-            if (_selected.Outputs != null)
+            if (_lastDoModule?.Outputs != null && outputIOPropertyCollectionView != null)
             {
-                int i = 1;
-                foreach (var ch in _selected.Outputs)
+                foreach (var ch in _lastDoModule.Outputs)
                 {
-                    if (_scan.TryGetOutput(_selected.ModuleName, ch.DisplayNo, out var v))
+                    if (_scan.TryGetOutput(_lastDoModule.ModuleName, ch.DisplayNo, out var v))
                     {
-                        // 예: outputIOPropertyCollectionView.SetValueByRow(i-1, v);
+                        void Update() => outputIOPropertyCollectionView.SetStateByKey(ch.DisplayNo, v);
+
+                        if (outputIOPropertyCollectionView.IsHandleCreated && outputIOPropertyCollectionView.InvokeRequired)
+                            outputIOPropertyCollectionView.BeginInvoke((Action)Update);
+                        else
+                            Update();
                     }
-                    i++;
                 }
             }
+
+            //if (_selected == null || _scan == null) return;
+
+            //// DI
+            //if (_selected.Inputs != null)
+            //{
+            //    int i = 1;
+            //    foreach (var ch in _selected.Inputs)
+            //    {
+            //        if (_scan.TryGetInput(_selected.ModuleName, ch.DisplayNo, out var v))
+            //        {
+            //            // 같은 순서(i)로 넣었으니 필요하면 여기서 PropertyCollectionView의 값 업데이트 API 사용
+            //            // 예: inputIOPropertyCollectionView.SetValueByRow(i-1, v);  (컨트롤 헬퍼가 있으면 사용)
+            //        }
+            //        i++;
+            //    }
+            //}
+
+            //// DO
+            //if (_selected.Outputs != null)
+            //{
+            //    int i = 1;
+            //    foreach (var ch in _selected.Outputs)
+            //    {
+            //        if (_scan.TryGetOutput(_selected.ModuleName, ch.DisplayNo, out var v))
+            //        {
+            //            // 예: outputIOPropertyCollectionView.SetValueByRow(i-1, v);
+            //        }
+            //        i++;
+            //    }
+            //}
         }
         // --- Paint / Resize (keep)
         protected override void OnPaint(PaintEventArgs e)
