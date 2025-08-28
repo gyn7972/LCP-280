@@ -49,30 +49,29 @@ namespace QMC.Common.Motions
         {
             // 속도/가감속 단위 변환 (필요 시)
             double v = vel, a = acc, d = dec;
-
-            if (_useLogicalUnits)
-            {
-                // vel: unit/s → pulse/s
-                v = vel * _pulsesPerUnit;
-                // acc/dec: unit/s^2 → pulse/s^2
-                a = acc * _pulsesPerUnit;
-                d = dec * _pulsesPerUnit;
-            }
+            //if (_useLogicalUnits)
+            //{
+            //    // vel: unit/s → pulse/s
+            //    v = vel * _pulsesPerUnit;
+            //    // acc/dec: unit/s^2 → pulse/s^2
+            //    a = acc * _pulsesPerUnit;
+            //    d = dec * _pulsesPerUnit;
+            //}
 
             // 프로파일 설정 (Trapezoid / S-Curve)
-            int rc = 0;
-            switch (ProfileMode)
-            {
-                case ProfileMode.Trapezoid:
-                    rc = AjinApi.SetTrapezoidProfile(axisNo, v, a, d);
-                    break;
-                case ProfileMode.SCurve:
-                    // jerk(0~1.0) → Ajin 보드 스케일로 매핑 (예: 0~1000 가정)
-                    int jerk0to1000 = MapJerk01ToDriver(jerk);
-                    rc = AjinApi.SetSCurveProfile(axisNo, v, a, d, jerk0to1000);
-                    break;
-            }
-            if (rc != 0) return rc;
+            //int rc = 0;
+            //switch (ProfileMode)
+            //{
+            //    case ProfileMode.Trapezoid:
+            //        rc = AjinApi.SetTrapezoidProfile(axisNo, v, a, d);
+            //        break;
+            //    case ProfileMode.SCurve:
+            //        // jerk(0~1.0) → Ajin 보드 스케일로 매핑 (예: 0~1000 가정)
+            //        int jerk0to1000 = MapJerk01ToDriver(jerk);
+            //        rc = AjinApi.SetSCurveProfile(axisNo, v, a, d, jerk0to1000);
+            //        break;
+            //}
+            //if (rc != 0) return rc;
 
             // 절대 위치 이동 시작
             return AjinApi.MoveAbs(axisNo, targetPulse);
@@ -119,6 +118,39 @@ namespace QMC.Common.Motions
         {
             return AjinApi.SetCommandPositionPulse(axisNo, pulse);
         }
+
+        // AjinDriver.cs (클래스 내부에 아래 메서드 추가)
+        public int JogVelStart(int axisNo, double velUnitPerSec, double accUnit, double decUnit)
+        {
+            // AjinApi 래퍼 경유(AXM.MoveVelocity 호출)
+            return AjinApi.MoveVel(axisNo, velUnitPerSec, accUnit, decUnit);
+        }
+
+        public int JogStop(int axisNo)
+        {
+            // 감속 정지(프리셋)
+            return AjinApi.SStop(axisNo);
+        }
+
+        public int JogEStop(int axisNo)
+        {
+            return AjinApi.EStop(axisNo);
+        }
+
+        // (선택) 감속값 지정 정지가 꼭 필요하면 Stop 전에 Decel 프로파일만 일시 적용 후 SStop
+        public int JogSlowStop(int axisNo, double decUnit)
+        {
+            // 예: AXM.SetDeceleration(axisNo, decUnit); return AjinApi.SStop(axisNo);
+            // 래퍼에 SetDeceleration 있으면 위처럼 적용. 없다면 프로젝트 표준대로 SStop 사용.
+            return AjinApi.SStop(axisNo);
+        }
+
+
+
+
+
+
+
 
         // ===== 내부 유틸 =====
 

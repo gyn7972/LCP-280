@@ -167,6 +167,21 @@ namespace QMC.Common.Motions
             //return AXM.MovePosition(axisNo, targetPulse, vel, acc, dec);
         }
 
+        #region ===== Jog / Velocity Mode =====
+        /// <summary>
+        /// 속도 모드로 지속 구동 시작. dVel 부호로 방향(+ CW / - CCW).
+        /// </summary>
+        /// <remarks>
+        /// 실제 매핑: <see cref="AXM.MoveVelocity(int,double,double,double)"/>
+        /// (Ajin 원함수: AxmMoveVel)
+        /// </remarks>
+        public static int MoveVel(int axisNo, double dVelUnitPerSec, double dAccelUnit, double dDecelUnit)
+        {
+            // UNIT/PULSE 스케일은 시스템 초기화 단계에서 이미 설정되어 있어야 함.
+            return AXM.MoveVelocity(axisNo, dVelUnitPerSec, dAccelUnit, dDecelUnit);
+        }
+        #endregion
+
         /// <summary>
         /// 모션 완료 여부(= InMotion이 아님).
         /// </summary>
@@ -185,6 +200,7 @@ namespace QMC.Common.Motions
             //AXM.GetInMotion(axisNo, ref inMotion);
             //return !inMotion;
         }
+
 
         /// <summary>감속 정지(S-Stop)</summary>
         /// <remarks>실제 매핑: <see cref="AXM.StopSlowly(int)"/> (Ajin: AxmMoveSStop)</remarks>
