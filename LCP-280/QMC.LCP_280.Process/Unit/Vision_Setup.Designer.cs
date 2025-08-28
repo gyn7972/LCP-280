@@ -525,6 +525,8 @@ namespace QMC.LCP_280.Process.Unit
             visionImageViewer.ResumeDisplay();
             visionImageViewer.Display();
 
+            visionImageViewer.StartUpdateTask();
+
             //if (_camSwitch == null) return;
             //if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
 
