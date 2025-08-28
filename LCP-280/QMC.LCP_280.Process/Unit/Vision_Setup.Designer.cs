@@ -91,6 +91,7 @@ namespace QMC.LCP_280.Process.Unit
             this.gbIlluminatorControl = new System.Windows.Forms.GroupBox();
             this.btn_Save_Camera_Setup = new QMC.Common.IndividualMenuButton();
             this.btn_Save_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
+            this.btn_JogPopup = new QMC.Common.IndividualMenuButton();
             this.cameraPropertyCollectionView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).BeginInit();
             this.illuminatorPropertyCollectionView.SuspendLayout();
@@ -140,6 +141,8 @@ namespace QMC.LCP_280.Process.Unit
             // visionImageViewer
             // 
             this.visionImageViewer.BackColor = System.Drawing.Color.Black;
+            this.visionImageViewer.Camera = null;
+            this.visionImageViewer.CameraSwitch = null;
             this.visionImageViewer.FrameRate = 1D;
             this.visionImageViewer.InputImage = null;
             this.visionImageViewer.IsViewCustomizedImage = false;
@@ -148,16 +151,11 @@ namespace QMC.LCP_280.Process.Unit
             this.visionImageViewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.visionImageViewer.Simulated = false;
             this.visionImageViewer.Size = new System.Drawing.Size(400, 445);
-            this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
+            this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.visionImageViewer.TabIndex = 16;
             this.visionImageViewer.TabStop = false;
             this.visionImageViewer.UpdateDelayTime = 80;
             this.visionImageViewer.VisibleCrossLine = true;
-            this.visionImageViewer.Camera = null;
-            this.visionImageViewer.CameraSwitch = null;
-            this.visionImageViewer.SizeMode = PictureBoxSizeMode.CenterImage;
-            this.visionImageViewer.SuspendDisplay();
-
             // 
             // iluminatorListBoxItemsView
             // 
@@ -330,11 +328,31 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Illuninator_Setup.Text = "Save";
             this.btn_Save_Illuninator_Setup.UseVisualStyleBackColor = false;
             // 
+            // btn_JogPopup
+            // 
+            this.btn_JogPopup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_JogPopup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_JogPopup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_JogPopup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_JogPopup.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_JogPopup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_JogPopup.ForeColor = System.Drawing.Color.Black;
+            this.btn_JogPopup.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_JogPopup.Location = new System.Drawing.Point(12, 706);
+            this.btn_JogPopup.Name = "btn_JogPopup";
+            this.btn_JogPopup.Size = new System.Drawing.Size(100, 40);
+            this.btn_JogPopup.TabIndex = 25;
+            this.btn_JogPopup.TabStop = false;
+            this.btn_JogPopup.Text = "Axis Jog";
+            this.btn_JogPopup.UseVisualStyleBackColor = false;
+            this.btn_JogPopup.Click += new System.EventHandler(this.btn_JogPopup_Click);
+            // 
             // Vision_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 752);
+            this.Controls.Add(this.btn_JogPopup);
             this.Controls.Add(this.btn_Save_Illuninator_Setup);
             this.Controls.Add(this.btn_Save_Camera_Setup);
             this.Controls.Add(this.gbIlluminatorControl);
@@ -619,6 +637,6 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
-        
+        private IndividualMenuButton btn_JogPopup;
     }
 }

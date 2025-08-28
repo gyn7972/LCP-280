@@ -1058,8 +1058,18 @@ namespace QMC.LCP_280.Process
             }
 
             // 드라이버: 실제 보드 준비되면 AjinDriver로 교체
-            IMotionDriver driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
+            //IMotionDriver driver
+            var driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
             //IMotionDriver driver = new SimDriver(setup.PulsesPerUnit);
+
+            // (선택) AXL Open + .mot 로드 : AjinAxlBoardHost 사용
+            // new AjinAxlBoardHost("C:\\Para\\xxx.mot").Open();  // 필요 시
+
+            // 드라이버 설정 Test 진행하고 적용.
+            //driver.ProfileMode = config.ProfileMode;
+            //int rc = driver.ConfigureFromSetupAndConfig(setup.AxisNo, setup, config);
+            //if (rc != 0) throw new InvalidOperationException($"Ajin configure failed rc={rc}");
+
 
             return new MotionAxis(setup, config, driver);
         }
