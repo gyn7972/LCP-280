@@ -276,5 +276,85 @@ namespace QMC.Common.Motions
                 }
             }
         }
+
+        public IReadOnlyList<MotionAxis> GetAllAxes()
+        {
+            lock (_gate)
+            {
+                // 등록 순서를 보장하려면 _order를 기준으로 재구성
+                var list = new List<MotionAxis>(_order.Count);
+                for (int i = 0; i < _order.Count; i++)
+                    list.Add(_byKey[_order[i]]);
+                return list; // List<MotionAxis>는 IReadOnlyList<MotionAxis>로 반환 가능
+            }
+        }
+
+        //유닛 기준으로 가져오기
+        public IReadOnlyList<MotionAxis> GetAxesByUnit(string unitName)
+        {
+            if (string.IsNullOrEmpty(unitName)) return Array.Empty<MotionAxis>();
+            lock (_gate)
+            {
+                if (!_unitToKeys.TryGetValue(unitName, out var keys) || keys.Count == 0)
+                    return Array.Empty<MotionAxis>();
+
+                var list = new List<MotionAxis>(keys.Count);
+                for (int i = 0; i < keys.Count; i++)
+                    list.Add(_byKey[keys[i]]);
+                return list;
+            }
+        }
+
+        //축 이름 배열로 원하는 것만 가져오기 (유닛 범위 내)
+        public IReadOnlyList<MotionAxis> GetAxes(string unitName, IEnumerable<string> axisNames)
+        {
+            if (string.IsNullOrEmpty(unitName) || axisNames == null) return Array.Empty<MotionAxis>();
+            var set = new HashSet<string>(axisNames, StringComparer.OrdinalIgnoreCase);
+
+            lock (_gate)
+            {
+                if (!_unitToKeys.TryGetValue(unitName, out var keys) || keys.Count == 0)
+                    return Array.Empty<MotionAxis>();
+
+                var list = new List<MotionAxis>();
+                foreach (var key in keys)
+                {
+                    // "Unit||Axis"에서 Axis 추출
+                    var idx = key.IndexOf("||", StringComparison.Ordinal);
+                    var axisName = idx >= 0 ? key.Substring(idx + 2) : key;
+                    if (set.Contains(axisName))
+                        list.Add(_byKey[key]);
+                }
+                return list;
+            }
+        }
+
+        //유닛+축명으로 안전하게 꺼내기 (예외 대신 false 반환)
+        public bool TryGet(string unitName, string axisName, out MotionAxis axis)
+        {
+            axis = null;
+            if (string.IsNullOrEmpty(unitName) || string.IsNullOrEmpty(axisName)) return false;
+            var key = unitName + "||" + axisName;
+            lock (_gate) { return _byKey.TryGetValue(key, out axis); }
+        }
+
+        /*
+            // 사용 예시:
+            // 유닛 "Loader"의 모든 축
+            var loaderAxes = manager.GetAxesByUnit("Loader");
+
+            // 유닛 "Arm"에서 원하는 축만
+            var pickPlace = manager.GetAxes("Arm", new[] { "X", "Z" });
+
+            // 조건으로 (예: 소프트리밋 켠 축만)
+            var safeAxes = manager.GetAxes(a => a.Setup.SoftLimitEnable);
+
+            // 안전 접근
+            if (manager.TryGet("Conveyor", "Y", out var convY))
+            {
+                convY.MoveAbs(120);
+            }
+         */
+
     }
 }

@@ -873,6 +873,16 @@ namespace QMC.LCP_280.Process
             Directory.CreateDirectory(_axisRoot);
             CreateAxes();
 
+            var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+            scanner.AxisStatusUpdated += (axis, status) =>
+            {
+                // UI 바인딩/로그/감시 로직
+                // 예: 라벨 업데이트, 그래프, 알람 인터락, 이동 완료 감지 등
+                // status.State.Done / status.IO.Alarm / status.PV.ActualPosition ...
+            };
+            scanner.Start();
+
+
             // 예) CassetteLoadingElevator 유닛의 Z축 하나 생성/등록/부착
             //    필요에 맞게 더 추가(Y, X 등)
             //var axisZ = CreateOrLoadAxis("CassetteLoadingElevator", "ElevatorZ", axisNo: 0, boardNo: 0);
