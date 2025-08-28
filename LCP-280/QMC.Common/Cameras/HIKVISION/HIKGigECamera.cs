@@ -95,7 +95,8 @@ namespace QMC.Common.Cameras.HIKVISION
         {
             CameraName = strName;
 
-            CameraConfig = new HIKGigECameraConfig();
+            //this.CameraConfig = new HIKGigECameraConfig();
+            this.CameraConfig = HIKGigECameraConfig.LoadOrCreate(strName); // 초기 로드
             InitValue();
             this.ViewerHandler = IntPtr.Zero;
             nRet = new int();
@@ -122,12 +123,61 @@ namespace QMC.Common.Cameras.HIKVISION
         public string SerialNumber { get; set; }
         public HIKGigECameraConfig MyConfig
         {
-            get { return CameraConfig as HIKGigECameraConfig; }
+            get
+            {
+                var cfg = this.CameraConfig as HIKGigECameraConfig;
+                if (cfg == null || string.IsNullOrWhiteSpace(cfg.Name))
+                {
+                    cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+                    this.CameraConfig = cfg;
+                }
+                return cfg;
+            }
+
+            //get { return CameraConfig as HIKGigECameraConfig; }
+            //get => CameraConfig as HIKGigECameraConfig
+            //        ?? (HIKGigECameraConfig)(CameraConfig = new HIKGigECameraConfig());
+            //get
+            //{
+            //    var cfg = this.CameraConfig as HIKGigECameraConfig;
+            //    if (cfg == null || string.IsNullOrWhiteSpace(cfg.Name))
+            //    {
+            //        // 파일에서 로드(없으면 생성 후 저장)
+            //        cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+            //        this.CameraConfig = cfg;
+            //    }
+            //    return cfg;
+            //}
         }
+
+
 
         #endregion
 
         #region Method
+        private HIKGigECameraConfig EnsureConfigLoaded()
+        {
+            var cfg = this.CameraConfig as HIKGigECameraConfig;
+            if (cfg == null)
+            {
+                cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+                this.CameraConfig = cfg;
+                return cfg;
+            }
+
+            // 이름이 바뀌어 파일 경로가 달라질 수 있으므로 필요 시 재로드
+            if (string.IsNullOrWhiteSpace(cfg.Name) || !string.Equals(cfg.Name, this.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                cfg = HIKGigECameraConfig.LoadOrCreate(this.Name);
+                this.CameraConfig = cfg;
+                return cfg;
+            }
+
+            // 이미 타입/이름 OK면 최신값으로 한 번 더 로드 시도
+            try { cfg.Load(); } catch { /* 실패시 기존값 유지 */ }
+            return cfg;
+        }
+
         public override void Load(FileStream fs)
         {
             base.Load(fs);
@@ -604,19 +654,19 @@ namespace QMC.Common.Cameras.HIKVISION
 
 
 
-            nRet = m_MyCamera.MV_CC_SetWidth_NET((uint)MyConfig.Resolution.Width);
-            if (MyCamera.MV_OK != nRet)
-            {
-                CamLog = string.Format("Set Resolution Width Failed! : {0}", nRet);
-                return nRet;
-            }
+            //nRet = m_MyCamera.MV_CC_SetWidth_NET((uint)MyConfig.Resolution.Width);
+            //if (MyCamera.MV_OK != nRet)
+            //{
+            //    CamLog = string.Format("Set Resolution Width Failed! : {0}", nRet);
+            //    return nRet;
+            //}
 
-            nRet = m_MyCamera.MV_CC_SetHeight_NET((uint)MyConfig.Resolution.Height);
-            if (MyCamera.MV_OK != nRet)
-            {
-                CamLog = string.Format("Set Resolution Height Failed! : {0}", nRet);
-                return nRet;
-            }
+            //nRet = m_MyCamera.MV_CC_SetHeight_NET((uint)MyConfig.Resolution.Height);
+            //if (MyCamera.MV_OK != nRet)
+            //{
+            //    CamLog = string.Format("Set Resolution Height Failed! : {0}", nRet);
+            //    return nRet;
+            //}
 
 
 
@@ -1456,7 +1506,24 @@ namespace QMC.Common.Cameras.HIKVISION
                 }
 
                 // 5) DevInfo -> Config 반영 (널 안전)
-                if (this.CameraConfig == null) this.CameraConfig = new CameraConfig();
+                //if (this.CameraConfig == null || !(this.CameraConfig is HIKGigECameraConfig))
+                //    this.CameraConfig = new HIKGigECameraConfig();
+                if (this.CameraConfig == null || !(this.CameraConfig is HIKGigECameraConfig))
+                {
+                    HIKGigECameraConfig config = null;
+                    try
+                    {
+                        // 예: Json 파일 기준 로드
+                        //config = SaveManager.JsonDeserialize<HIKGigECameraConfig>(
+                        //             Path.Combine(ConfigManager.ConfigPath, $"{this.Name}.json"));
+                    }
+                    catch
+                    {
+                        config = new HIKGigECameraConfig(); // 로드 실패 → 기본 생성
+                        config.Load();
+                    }
+                    this.CameraConfig = config;
+                }
 
                 try
                 {
@@ -1625,10 +1692,58 @@ namespace QMC.Common.Cameras.HIKVISION
         {
             props = null;
             int r = OpenBySelectorOrConfig(selector);
-            if (r != MyCamera.MV_OK) return r;
+             if (r != MyCamera.MV_OK) return r;
             return GetCameraProperties(out props);
         }
 
+        public int ConnectAndSyncConfig(string selector)
+        {
+            CameraProperties props;
+            var r = ConnectAndGetProperties(selector, out props); // 이미 구현됨
+            if (r != MyCamera.MV_OK) return r;
+
+            var cfg = MyConfig;               // lazy LoadOrCreate 보장되는 게터
+            ApplyPropsToConfig(props, cfg);
+            cfg.Save();                       // JSON으로 저장
+            return 0;
+        }
+
+
+        // HIKGigECamera 내부에 추가
+        private void ApplyPropsToConfig(CameraProperties p, HIKGigECameraConfig cfg)
+        {
+            if (p == null || cfg == null) return;
+
+            // 1) 식별/연결 정보
+            if (!string.IsNullOrEmpty(p.SerialNo))
+                cfg.SerialNumber = p.SerialNo;
+
+            if (!string.IsNullOrEmpty(p.Ip))          // GigE일 때만 들어옴
+                this.CameraConfig.Ip = p.Ip;           // Ip는 기반(CameraConfig)에 있음
+
+            // 2) 해상도/오프셋
+            if (p.Width > 0 && p.Height > 0)
+            {
+                var sz = new Size(p.Width, p.Height);
+                cfg.Resolution = sz;              // CameraConfig.Resolution setter가 CameraResolution에 반영
+                cfg.CameraResolution = sz;             // 명시 반영(보수적)
+            }
+
+            if (p.OffsetX >= 0) cfg.OffsetX = (uint)p.OffsetX;
+            if (p.OffsetY >= 0) cfg.OffsetY = (uint)p.OffsetY;
+
+            // 3) 노출/게인/프레임레이트(있으면 반영)
+            if (p.ExposureTime > 0) cfg.ExposureTime = (float)p.ExposureTime;
+            if (p.Gain >= 0) cfg.Gain = (float)p.Gain;
+
+            // 4) 나머지 기본값(초기 생성/보강)
+            if (cfg.RetryCount <= 0) cfg.RetryCount = 5;     // 장치 오픈 재시도
+            if (cfg.OpenDelayTime < 0) cfg.OpenDelayTime = 1000;  // ms
+            if (this.CameraConfig.GrabRetryCount <= 0) this.CameraConfig.GrabRetryCount = 1;
+            if (this.CameraConfig.SignalWatingTime <= 0) this.CameraConfig.SignalWatingTime = 300;
+
+            // 5) 회전/플립/Scale 등은 장치에서 안 주므로 기존 값 유지
+        }
 
 
 

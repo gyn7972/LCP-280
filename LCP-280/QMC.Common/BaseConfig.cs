@@ -109,6 +109,16 @@ namespace QMC.Common
             var json = JsonConvert.SerializeObject(this, settings);
             File.WriteAllText(filePath, json, Encoding.UTF8);
             LastModified = DateTime.Now;
+
+            // 저장물 검증: 타입 문자열로 저장됐는지 확인
+            var verify = File.ReadAllText(filePath).Trim();
+            if (verify.Length > 0 && verify[0] == '"' && verify.IndexOf('{') == -1)
+            {
+                // 잘못된 저장 → 정상 객체로 다시 저장
+                File.Copy(filePath, filePath + ".typeString", true);
+                json = JsonConvert.SerializeObject(this /* 인스턴스 */, Formatting.Indented);
+                File.WriteAllText(filePath, json, Encoding.UTF8);
+            }
         }
 
         protected void LoadFromFile(string filePath)

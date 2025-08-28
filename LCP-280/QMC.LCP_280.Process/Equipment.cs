@@ -1189,11 +1189,11 @@ namespace QMC.LCP_280.Process
                 // 파일로 변경 필요. ( Equipment_Setup.json )
                 var map = new Dictionary<string, string>
                 {
-                    { "Index_Loader",       "MV-CA013-A0GM" },        // Serial
-                    { "In_Stage",           "MV-CS050-60GM" },        // Serial
-                    { "Index_Prober",       "MV-CA013-A0GM" },         // Serial
-                    { "Index_Unloader",     "MV-CA013-A0GM" },        // Serial
-                    { "Out_Stage",          "MV-CS050-60GM" }        // Serial
+                    { "Index_Loader",       "DA7484884" },        // Serial
+                    { "In_Stage",           "DA7500464" },        // Serial
+                    { "Index_Prober",       "DA7484883" },         // Serial
+                    { "Index_Unloader",     "DA7484882" },        // Serial
+                    { "Out_Stage",          "DA7500465" }        // Serial
                 };
 
                 foreach (var kv in map)

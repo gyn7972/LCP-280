@@ -28,7 +28,7 @@ namespace QMC.Common.HIKVISION
     }
 
     [Serializable]
-    [TypeConverter(typeof(ExpandableObjectConverter))] // PropertyGrid 용
+    //[TypeConverter(typeof(ExpandableObjectConverter))] // PropertyGrid 용
     public class HIKGigECameraConfig : CameraConfig
     {
         #region Ctors
@@ -72,33 +72,46 @@ namespace QMC.Common.HIKVISION
         {
             base.Reset();
 
-            // 문자열/수치 기본값 보강 (C# 7.3: ??= 미사용)
             if (SerialNumber == null) SerialNumber = "";
             if (ExposureTime <= 0f) ExposureTime = 1000.0f;
             if (Gain <= 0f) Gain = 1.0f;
-            if (OpenDelayTime < 0) OpenDelayTime = 0;
-            if (RetryCount < 0) RetryCount = 0;
+
+            if (OpenDelayTime < 0) OpenDelayTime = 1000;
+            if (RetryCount <= 0) RetryCount = 5;
+
             // OffsetX/OffsetY는 기본 0 유지
-            // CameraType 기본 Normal 유지
+            if (!Enum.IsDefined(typeof(CameraType), CameraType))
+                CameraType = CameraType.Normal;
         }
 
         protected override void OnLoaded()
         {
             base.OnLoaded();
 
+            // 파일에서 누락/잘못 저장된 값 보정
             if (SerialNumber == null) SerialNumber = "";
             if (ExposureTime <= 0f) ExposureTime = 1000.0f;
             if (Gain <= 0f) Gain = 1.0f;
-            if (OpenDelayTime < 0) OpenDelayTime = 0;
-            if (RetryCount < 0) RetryCount = 0;
+
+            if (OpenDelayTime < 0) OpenDelayTime = 1000;
+            if (RetryCount <= 0) RetryCount = 5;
+
+            if (!Enum.IsDefined(typeof(CameraType), CameraType))
+                CameraType = CameraType.Normal;
         }
 
         public override bool Validate()
         {
-            if (ExposureTime < 0f) ExposureTime = 0f;
-            if (Gain < 0f) Gain = 0f;
-            if (OpenDelayTime < 0) OpenDelayTime = 0;
-            if (RetryCount < 0) RetryCount = 0;
+            // 파일에서 누락/잘못 저장된 값 보정
+            if (SerialNumber == null) SerialNumber = "";
+            if (ExposureTime <= 0f) ExposureTime = 1000.0f;
+            if (Gain <= 0f) Gain = 1.0f;
+
+            if (OpenDelayTime < 0) OpenDelayTime = 1000;
+            if (RetryCount <= 0) RetryCount = 5;
+
+            if (!Enum.IsDefined(typeof(CameraType), CameraType))
+                CameraType = CameraType.Normal;
             return true;
         }
 
@@ -123,6 +136,29 @@ namespace QMC.Common.HIKVISION
         #region Static Helper (편의 API)
         public static HIKGigECameraConfig LoadOrCreate(string name)
         {
+            //var cfg = new HIKGigECameraConfig(name);
+            //var ret = cfg.Load();
+            //if (ret != 0)
+            //{
+            //    cfg.Reset();
+            //    cfg.Save();
+            //}
+            //return cfg;
+
+            var temp = new HIKGigECameraConfig(name);
+            var path = temp.GetFilePath();
+
+            // 레거시(문자열 한 줄) 포맷이면 백업 후 삭제
+            if (System.IO.File.Exists(path))
+            {
+                var text = System.IO.File.ReadAllText(path).Trim();
+                if (text.Length > 0 && text[0] == '"' && text.IndexOf('{') == -1)
+                {
+                    try { System.IO.File.Copy(path, path + ".legacy", true); } catch { }
+                    try { System.IO.File.Delete(path); } catch { }
+                }
+            }
+
             var cfg = new HIKGigECameraConfig(name);
             var ret = cfg.Load();
             if (ret != 0)
@@ -142,6 +178,7 @@ namespace QMC.Common.HIKVISION
         {
             return LoadOrCreate(name);
         }
+
         #endregion
     }
 

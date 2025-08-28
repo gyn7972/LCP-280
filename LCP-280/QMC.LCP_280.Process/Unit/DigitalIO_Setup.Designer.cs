@@ -359,7 +359,8 @@ namespace QMC.LCP_280.Process.Unit
             if (mbYes.ShowDialog("Info", strMsg) == DialogResult.No)
                 return;
                     
-            bool now = false; _scan.TryGetOutput(m.ModuleName, key, out now);
+            bool now = false; 
+            _scan.TryGetOutput(m.ModuleName, key, out now);
             _scan.WriteOutput(m.ModuleName, key, !now);
 
             var mb = new MessageBoxOk();

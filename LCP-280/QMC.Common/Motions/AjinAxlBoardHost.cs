@@ -77,12 +77,12 @@ namespace QMC.Common.Motion.Ajin.HW
                 }
                 else
                 {
-                    IsOpen = false;
+                    IsOpen = true;
                 }
             }
             else
             {
-                IsOpen = true;
+                IsOpen = false;
             }
 
             return 0;

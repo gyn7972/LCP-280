@@ -478,6 +478,7 @@ namespace QMC.LCP_280.Process.Unit
                     int ret = hikCam.ConnectAndGetProperties("", out var props);
                     if (ret == 0)
                     {
+                        //hikCam.ConnectAndSyncConfig(strTemp);
                         //lblCamInfo.Text = $"{props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}";
                         Log.Write("LCP-280", $"Camera connected: {props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}");
                     }

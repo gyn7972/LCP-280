@@ -195,7 +195,7 @@ namespace QMC.Common.DIO
             while (_running)
             {
                 ScanInputs();
-                ScanOutputs();
+                //ScanOutputs();
                 Thread.Sleep(_periodMs);
             }
         }
