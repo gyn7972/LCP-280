@@ -134,7 +134,6 @@ namespace QMC.Common
                 throw new ArgumentException($"{unitName}에 대한 Working 폼을 찾을 수 없습니다.");
             }
 
-            // 등록된 폼이 2개 이상이면 FormWorking 탭 호스트 반환
             if (workingForms.Count >= 2)
             {
                 return new FormWorking();

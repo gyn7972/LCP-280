@@ -86,9 +86,6 @@ namespace QMC.Common
             Console.WriteLine($"   최종 TabControl 상태: Visible={mainTabControl.Visible}, TabCount={mainTabControl.TabPages.Count}");
         }
 
-        /// <summary>
-        /// 첫 번째 탭 콘텐츠 보장
-        /// </summary>
         private void EnsureFirstTabLoaded()
         {
             try
@@ -110,9 +107,6 @@ namespace QMC.Common
             }
         }
 
-        /// <summary>
-        /// FormManager에서 main 타입으로 등록된 폼들을 탭으로 로드
-        /// </summary>
         private void LoadFormsFromManager()
         {
             try
@@ -128,7 +122,6 @@ namespace QMC.Common
                     CreateTabFromFormInfo(formInfo);
                 }
                 
-                // 등록된 폼이 없으면 기본 샘플 탭 생성
                 if (mainForms.Count == 0)
                 {
                     Console.WriteLine("⚠️ 등록된 main 폼이 없어서 기본 샘플 탭 생성");
@@ -136,13 +129,9 @@ namespace QMC.Common
                 }
                 
                 Console.WriteLine($"✅ 최종 탭 개수: {mainTabControl.TabPages.Count}");
-                
-                // 탭 컨트롤 상태 확인
                 Console.WriteLine($"   mainTabControl.Visible: {mainTabControl.Visible}");
                 Console.WriteLine($"   mainTabControl.Size: {mainTabControl.Size}");
                 Console.WriteLine($"   mainTabControl.Dock: {mainTabControl.Dock}");
-                
-                // Formmain 자체 상태도 확인
                 Console.WriteLine($"   Formmain.Visible: {this.Visible}");
                 Console.WriteLine($"   Formmain.Size: {this.Size}");
             }
@@ -150,69 +139,43 @@ namespace QMC.Common
             {
                 Console.WriteLine($"❌ main 폼 로드 중 오류: {ex.Message}");
                 MessageBox.Show($"main 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                CreateSampleTabs(); // 오류 발생시 기본 탭 생성
+                CreateSampleTabs();
             }
         }
 
-        /// <summary>
-        /// FormInfo를 기반으로 탭 페이지 생성
-        /// </summary>
-        /// <param name="formInfo">폼 정보</param>
         private void CreateTabFromFormInfo(FormInfo formInfo)
         {
             Console.WriteLine($"🔧 탭 생성: {formInfo.DisplayName}");
-            
             TabPage tabPage = new TabPage(formInfo.DisplayName);
-            tabPage.Tag = formInfo; // FormInfo를 Tag에 저장
-            
-            // 🔧 TabPage 배경색도 흰색으로 설정
+            tabPage.Tag = formInfo; 
             tabPage.BackColor = Color.White;
-            
             mainTabControl.TabPages.Add(tabPage);
-            
             Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {mainTabControl.TabPages.Count}");
         }
 
-        /// <summary>
-        /// 탭이 선택되었을 때 해당 폼을 로드하여 표시
-        /// </summary>
         private void mainTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
             TabPage selectedTab = mainTabControl.SelectedTab;
             if (selectedTab?.Tag is FormInfo formInfo)
             {
                 LoadFormIntoTab(selectedTab, formInfo);
-                // 선택 변경 시 즉시 크기 반영
                 UpdateActiveChildSize();
             }
         }
 
-        /// <summary>
-        /// 탭에 폼을 로드하여 표시 (이 시점에서는 크기 전달을 지연)
-        /// </summary>
         private void LoadFormIntoTab(TabPage tabPage, FormInfo formInfo)
         {
             try
             {
-                // 이미 로드된 폼이 있는지 확인
                 if (!_tabFormInstances.ContainsKey(tabPage))
                 {
-                    // 폼 인스턴스 생성
                     Form formInstance = FormManager.Instance.CreateFormInstance(formInfo);
-                    
-                    // 폼을 탭에 임베드하기 위한 설정
                     formInstance.TopLevel = false;
                     formInstance.FormBorderStyle = FormBorderStyle.None;
                     formInstance.Dock = DockStyle.Fill;
-                    
-                    // 탭에 폼 추가 (크기 전달은 나중에)
                     tabPage.Controls.Clear();
                     tabPage.Controls.Add(formInstance);
-                    
-                    // 폼 표시
                     formInstance.Show();
-                    
-                    // 인스턴스 저장
                     _tabFormInstances[tabPage] = formInstance;
                 }
                 else
@@ -224,8 +187,6 @@ namespace QMC.Common
             catch (Exception ex)
             {
                 MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                
-                // 오류시 기본 메시지 표시
                 Label errorLabel = new Label
                 {
                     Text = $"폼 로드 실패: {formInfo.DisplayName}",
@@ -234,15 +195,11 @@ namespace QMC.Common
                     Font = new Font("맑은 고딕", 12, FontStyle.Bold),
                     ForeColor = Color.Red
                 };
-                
                 tabPage.Controls.Clear();
                 tabPage.Controls.Add(errorLabel);
             }
         }
 
-        /// <summary>
-        /// 현재 활성 탭의 폼에 정확한 크기를 전달
-        /// </summary>
         private void UpdateActiveChildSize()
         {
             try
@@ -251,13 +208,11 @@ namespace QMC.Common
                 var selectedTab = mainTabControl.SelectedTab;
                 if (selectedTab == null) return;
                 if (!_tabFormInstances.ContainsKey(selectedTab)) return;
-
                 var activeForm = _tabFormInstances[selectedTab];
                 if (activeForm == null) return;
 
                 int availableWidth = mainTabControl.ClientSize.Width;
-                int availableHeight = mainTabControl.ClientSize.Height - _tabHeight; // 탭 헤더 제외
-
+                int availableHeight = mainTabControl.ClientSize.Height - _tabHeight; 
                 var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", new Type[] { typeof(int), typeof(int) });
                 if (setPanelSizeMethod != null)
                 {
@@ -271,23 +226,15 @@ namespace QMC.Common
             }
         }
 
-        /// <summary>
-        /// FormManager에 새로운 폼이 등록되었을 때 탭을 새로고침
-        /// </summary>
         public void RefreshmainTabs()
         {
-            // 기존 탭과 폼 인스턴스 정리
             foreach (var formInstance in _tabFormInstances.Values)
             {
                 formInstance?.Dispose();
             }
             _tabFormInstances.Clear();
             mainTabControl.TabPages.Clear();
-            
-            // 새로 로드
             LoadFormsFromManager();
-            
-            // 🔧 탭 초기 콘텐츠 보장 후 크기 반영
             EnsureFirstTabLoaded();
             UpdateActiveChildSize();
         }
@@ -296,15 +243,11 @@ namespace QMC.Common
         {
             TabPage page = mainTabControl.TabPages[e.Index];
             Rectangle tabRect = mainTabControl.GetTabRect(e.Index);
-
-            // 선택된 탭은 하얀색, 아닌 탭은 회색
             Color backColor = (e.Index == mainTabControl.SelectedIndex) ? Color.White : Color.Gainsboro;
             using (Brush backBrush = new SolidBrush(backColor))
             {
                 e.Graphics.FillRectangle(backBrush, tabRect);
             }
-
-            // 테두리 그리기 (사용자 지정 색상과 두께)
             using (Pen borderPen = new Pen(_tabBorderColor, _tabBorderWidth))
             {
                 Rectangle borderRect = tabRect;
@@ -314,23 +257,18 @@ namespace QMC.Common
                 }
                 e.Graphics.DrawRectangle(borderPen, borderRect);
             }
-
-            // 텍스트 그리기 (두 줄 처리)
             string text = page.Text;
             Size tabSize = tabRect.Size;
             StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
             SizeF textSize = e.Graphics.MeasureString(text, _tabFont);
 
-            if (textSize.Width > tabSize.Width - 8) // 8px padding
+            if (textSize.Width > tabSize.Width - 8)
             {
-                // 두 줄로 분할
                 string[] words = text.Split(' ');
                 string line1 = words[0];
                 string line2 = string.Join(" ", words.Skip(1));
-                // 만약 단어가 2개 이상이면, 첫 단어와 나머지로 분리
                 if (words.Length > 1)
                 {
-                    // line1에 단어를 추가하면서 width 체크
                     for (int i = 1; i < words.Length; i++)
                     {
                         string testLine = line1 + " " + words[i];
@@ -345,7 +283,6 @@ namespace QMC.Common
                         }
                     }
                 }
-                // 두 줄로 그리기
                 RectangleF line1Rect = new RectangleF(tabRect.X, tabRect.Y + 2, tabRect.Width, tabRect.Height / 2 - 2);
                 RectangleF line2Rect = new RectangleF(tabRect.X, tabRect.Y + tabRect.Height / 2, tabRect.Width, tabRect.Height / 2 - 2);
                 e.Graphics.DrawString(line1, _tabFont, Brushes.Black, line1Rect, sf);
@@ -353,7 +290,6 @@ namespace QMC.Common
             }
             else
             {
-                // 한 줄로 그리기
                 TextRenderer.DrawText(
                     e.Graphics,
                     text,
@@ -367,119 +303,75 @@ namespace QMC.Common
         
         private void CreateSampleTabs()
         {
-            // System main 탭
             TabPage systemTab = new TabPage("Sample main");
-            
-            // 🔧 샘플 탭의 배경색도 흰색으로 설정
             systemTab.BackColor = Color.White;
-            
             Label systemLabel = new Label();
             systemLabel.Text = "No main Forms Registered\n\nUse FormManager.Instance.RegisterForm() to add main forms.";
             systemLabel.Font = new Font("맑은 고딕", 12, FontStyle.Regular);
             systemLabel.TextAlign = ContentAlignment.MiddleCenter;
             systemLabel.Dock = DockStyle.Fill;
-            
-            // 🔧 라벨의 배경색도 흰색으로 설정
             systemLabel.BackColor = Color.White;
-            
             systemTab.Controls.Add(systemLabel);
             mainTabControl.TabPages.Add(systemTab);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
-            // 폼 종료시 리소스 정리
             foreach (var formInstance in _tabFormInstances.Values)
             {
                 formInstance?.Dispose();
             }
             _tabFormInstances.Clear();
-            
             base.OnFormClosed(e);
         }
 
         public void SetPanelSize(int width, int height)
         {
             Console.WriteLine($"🔧 Formmain.SetPanelSize() 호출: width={width}, height={height}");
-
-            // 방어: 이미 적용된 후 너무 작은 값은 무시
             if (_hasAppliedSize && (width < 400 || height < 200))
             {
                 Console.WriteLine($"   ⏭️ 무시(Main): 너무 작은 값 전달({width}x{height})");
                 return;
             }
-            
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
             _hasAppliedSize = true;
             _lastAppliedSize = new Size(width, height);
-            
-            // Dock=Fill이므로 TabControl은 자동 확장됨. 자식에 정확한 크기 전달
             UpdateActiveChildSize();
-            
-            // 폼 전체를 다시 그리기
             this.Invalidate();
             this.Update();
-            
             Console.WriteLine($"✅ Formmain.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
         
         #region Form Border Drawing
-
-        /// <summary>
-        /// 폼 테두리 그리기
-        /// </summary>
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            
-            // 폼 전체 테두리 그리기
             using (Pen borderPen = new Pen(FormBorderColor, FormBorderWidth))
             {
                 Rectangle borderRect = new Rectangle(0, 0, this.ClientSize.Width - 1, this.ClientSize.Height - 1);
                 e.Graphics.DrawRectangle(borderPen, borderRect);
             }
-            
             Console.WriteLine($"🖌️ Formmain 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
         }
-
-        /// <summary>
-        /// 크기 변경 시 다시 그리기
-        /// </summary>
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            // 크기가 변경되면 다시 그리기
             this.Invalidate();
         }
-
         #endregion
         
         #region Border Customization Methods
-
-        /// <summary>
-        /// 테두리 스타일을 설정하는 헬퍼 메서드
-        /// </summary>
-        /// <param name="color">테두리 색상</param>
-        /// <param name="width">테두리 두께</param>
         public void SetBorderStyle(Color color, int width)
         {
             FormBorderColor = color;
             FormBorderWidth = width;
             Console.WriteLine($"🎨 Formmain 테두리 스타일 변경: Color={color}, Width={width}");
         }
-
-        /// <summary>
-        /// 기본 테두리 스타일로 복원
-        /// </summary>
         public void ResetBorderStyle()
         {
             SetBorderStyle(Color.Black, 2);
         }
-
-        /// <summary>
-        /// 테두리 강조 (빨간색, 두꺼운 선)
-        /// </summary>
         public void HighlightBorder()
         {
             SetBorderStyle(Color.Red, 4);
