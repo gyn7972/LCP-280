@@ -93,7 +93,6 @@
             this.Controls.Add(this.buttonSearch);
             this.Controls.Add(this.comboBoxInterface);
             this.Name = "FormSetupKeithleyInstrument";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.ResumeLayout(false);
 
         }

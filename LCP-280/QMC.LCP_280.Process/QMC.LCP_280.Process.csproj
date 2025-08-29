@@ -98,6 +98,12 @@
     <Compile Include="TestGyn.Designer.cs">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\Form_AxisJogPopup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\Form_AxisJogPopup.Designer.cs">
+      <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\GageRnR.cs" />
     <Compile Include="Unit\GageRnRConfig.cs" />
     <Compile Include="Unit\IndexChipProber.cs" />
@@ -128,12 +134,6 @@
     <Compile Include="Unit\InputRingTransferConfig.cs" />
     <Compile Include="Unit\InputStage.cs" />
     <Compile Include="Unit\InputStageConfig.cs" />
-    <Compile Include="Unit\Instrument_Setup.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\Instrument_Setup.Designer.cs">
-      <DependentUpon>Instrument_Setup.cs</DependentUpon>
-    </Compile>
     <Compile Include="Unit\Motion_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -190,8 +190,8 @@
     <EmbeddedResource Include="Unit\DigitalIO_Setup.resx">
       <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\Instrument_Setup.resx">
-      <DependentUpon>Instrument_Setup.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\Form_AxisJogPopup.resx">
+      <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Motion_Setup.resx">
       <DependentUpon>Motion_Setup.cs</DependentUpon>

@@ -2,11 +2,9 @@
 using NationalInstruments.Visa;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace QMC.Common.Keithley
 {
@@ -15,52 +13,32 @@ namespace QMC.Common.Keithley
     /// </summary>
     public class KeithleyInstrumentCommunicator
     {
-        #region Field
+        #region Field & Property
         private MessageBasedSession session;
         private bool isConnected;
-        #endregion
 
-        #region Property
-        public MessageBasedSession Session { get => session; }
-        public bool IsConnected { get => isConnected; }
+        public MessageBasedSession Session
+        {
+            get { return session; }
+        }
+        public bool IsConnected
+        {
+            get { return isConnected; }
+        }
         #endregion
 
         #region Constructor
         public KeithleyInstrumentCommunicator()
         {
-            session = null;            
-            isConnected = false;
+            this.session = null;
+            this.isConnected = false;
         }
-
-        private void OnServiceRequest(object sender, VisaEventArgs e)
-        {
-            try
-            {
-                var statusByte = session.ReadStatusByte();
-                if ((statusByte & StatusByteFlags.MessageAvailable) != 0)
-                {
-                    OnReceived?.Invoke(this, EventArgs.Empty);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-                Log.Write(ex);
-                OnError?.Invoke(this, ex);
-            }
-        }
-        #endregion
-
-        #region Event
-        public event EventHandler OnReceived;
-        public event EventHandler OnSessionOpened;
-        public event EventHandler OnSessionClosed;
-        public event EventHandler<Exception> OnError;
         #endregion
 
         #region Methods
 
-        #region Open, Close Session
+        // Session Methods
+        #region Session Methods
         public bool OpenSession(string resourceName)
         {
             bool result = false;
@@ -69,108 +47,90 @@ namespace QMC.Common.Keithley
                 CloseSession();
 
                 ResourceManager resourceManager = new ResourceManager();
+                
+                this.session = (MessageBasedSession)resourceManager.Open(resourceName);
+                this.session.SynchronizeCallbacks = true;
+                this.session.TimeoutMilliseconds = 5000; // Set a timeout for operations
+                if (this.session.ReadStatusByte() != StatusByteFlags.MessageAvailable)
+                {
+                    throw new InvalidOperationException("Failed to open session. No message available.");
+                }
 
-                session = (MessageBasedSession)resourceManager.Open(resourceName);
-                session.SynchronizeCallbacks = false;
-                session.TimeoutMilliseconds = 1000;
-
-                // Enable Service Request Event
-                session.EnableEvent(EventType.ServiceRequest);
-                session.ServiceRequest += OnServiceRequest;
-
-                isConnected = true;
-
-                // Open Session Event
-                OnSessionOpened?.Invoke(this, EventArgs.Empty);
+                this.isConnected = true;
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
-                Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }
-
         public bool CloseSession()
         {
             bool result = false;
             try
             {
-                if (session != null)
+                if (this.session != null)
                 {
-                    // Disable Service Request Event
-                    session.DiscardEvents(EventType.AllEnabled);
-                    session.DisableEvent(EventType.AllEnabled);
-                    session.ServiceRequest -= OnServiceRequest;
-
-                    // Close Session
-                    session.Dispose();
-                    OnSessionClosed?.Invoke(this, EventArgs.Empty);
+                    this.session.Dispose();
                 }
-
-                isConnected = false;
+                this.isConnected = false;
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
-                Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }
         #endregion
 
-        #region Query, Write, Read
+        // Communication Methods
+        #region Communication Methods
         public bool Query(string writeText, ref string readText)
         {
             return Write(writeText) && Read(ref readText);
         }
         public bool Write(string writeText)
         {
-            if (session == null || !isConnected)
+            if (this.session == null || !this.isConnected)
                 return false;
 
             bool result = false;
             try
             {
                 string buffer = ReplaceCommonEscapeSequences(writeText);
-                session.RawIO.Write(buffer);
+                this.session.RawIO.Write(buffer);
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
-                Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }
         public bool Read(ref string readText)
         {
-            if (session == null || !isConnected)
+            if (this.session == null || !this.isConnected)
                 return false;
 
             bool result = false;
             try
             {
-                readText = InsertCommonEscapeSequences(session.RawIO.ReadString());
+                readText = InsertCommonEscapeSequences(this.session.RawIO.ReadString());
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
                 readText = "";
-                Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }
         #endregion
 
-        #region Common Escape Sequence
+        // Other Methods
+        #region Other Methods
         private string ReplaceCommonEscapeSequences(string s)
         {
             if (string.IsNullOrEmpty(s))

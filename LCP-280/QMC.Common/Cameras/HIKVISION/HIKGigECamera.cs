@@ -1556,6 +1556,7 @@ namespace QMC.Common.Cameras.HIKVISION
                     Log.Write(ex); // 정보 반영 중 오류가 앱을 죽이지 않도록
                 }
 
+                this.Opened = true;
                 return MyCamera.MV_OK;
             }
             catch (DllNotFoundException ex) { Log.Write(ex); return -997; }

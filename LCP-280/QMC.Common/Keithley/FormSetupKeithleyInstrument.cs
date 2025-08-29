@@ -15,11 +15,13 @@ namespace QMC.Common.Keithley
     public partial class FormSetupKeithleyInstrument : Form
     {
         private KeithleySourcemeter sourcemeter;
+        private KeithelySourcemeterConfig config;
         private string selectResourceName = "";
 
-        public FormSetupKeithleyInstrument(KeithleySourcemeter sourcemeter)
+        public FormSetupKeithleyInstrument(KeithleySourcemeter sourcemeter, KeithelySourcemeterConfig config)
         {
             this.sourcemeter = sourcemeter;
+            this.config = config;
 
             InitializeComponent();
             InitializeUI();
@@ -95,7 +97,7 @@ namespace QMC.Common.Keithley
 
             if (MessageBox.Show($"Apply selected resource?\n\n{selectResourceName}", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
-                //config.ResourceName = selectResourceName;
+                config.ResourceName = selectResourceName;
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
