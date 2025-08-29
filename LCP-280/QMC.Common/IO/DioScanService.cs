@@ -268,13 +268,12 @@ namespace QMC.Common.DIO
                 bool changed = false;
                 lock (_gate)
                 {
-                    //Test 막자.
-                    //bool prev;
-                    //if (!_outputCache.TryGetValue(s.Key, out prev) || prev != logical)
-                    //{
-                    //    _outputCache[s.Key] = logical;
-                    //    changed = true;
-                    //}
+                    bool prev;
+                    if (!_outputCache.TryGetValue(s.Key, out prev) || prev != logical)
+                    {
+                        _outputCache[s.Key] = logical;
+                        changed = true;
+                    }
                 }
                 if (changed)
                 {
