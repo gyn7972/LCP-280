@@ -156,14 +156,16 @@ namespace QMC.Common.Motions
         /// 현재 설정된 최대속도/가감속 시간을 추정하지 않고 <b>가속/감속 시간 0</b>으로 전달합니다
         /// (Ajin 드라이버는 내부 프로파일을 사용하여 실행).
         /// </remarks>
-        public static int MoveAbs(int axisNo, double targetPulse)
+        public static int MoveAbs(int axisNo, double targetPulse, double vel, double acc, double dec, double jerk)
         {
             // 가속/감속 시간을 0초로 넘겨 내부 프로파일을 사용하도록 위임
             //return AXM.MovePosition(axisNo, targetPulse, /*velocity*/ 0, TimeSpan.Zero, TimeSpan.Zero);
 
-            double vel = 5;// GetCommandVelocityPps(axisNo);
-            double acc = 10;//Math.Max(vel * 2.0, 1.0);
-            double dec = 10;//acc;
+            //Test
+            vel = 5;// GetCommandVelocityPps(axisNo);
+            acc = 10;//Math.Max(vel * 2.0, 1.0);
+            dec = 10;//acc;
+
             return AXM.MovePosition(axisNo, targetPulse, vel, acc, dec);
         }
 

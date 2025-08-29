@@ -74,7 +74,7 @@ namespace QMC.Common.Motions
             //if (rc != 0) return rc;
 
             // 절대 위치 이동 시작
-            return AjinApi.MoveAbs(axisNo, targetPulse);
+            return AjinApi.MoveAbs(axisNo, targetPulse, vel, acc, dec, jerk);
         }
 
         public bool IsMoveDone(int axisNo)
