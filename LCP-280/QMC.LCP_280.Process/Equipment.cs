@@ -133,6 +133,17 @@ namespace QMC.LCP_280.Process
             return Cameras.TryGetValue(key, out var cam) ? cam as HIKGigECamera : null;
         }
 
+
+        // Sourcemeter
+        public Dictionary<string, KeithleySourcemeter> Sourcemeters { get; } = new Dictionary<string, KeithleySourcemeter>(StringComparer.OrdinalIgnoreCase);
+        // == 편의 프로퍼티 추가 ==
+        public KeithleySourcemeter Sourcemeter => GetSourcemeter("Sourcemeter");
+
+        private KeithleySourcemeter GetSourcemeter(string key)
+        {
+            return Sourcemeters.TryGetValue(key, out var sm) ? sm : null;
+        }
+
         //카메라 사용 예
         //// 라이브 시작
         //Equipment.Instance.InStageCam?.StartLive();
@@ -190,6 +201,9 @@ namespace QMC.LCP_280.Process
 
                 // === 카메라 초기화 ===
                 InitializeCameras();
+
+                // === Sourcemeter 초기화 ===
+                InitializeSourcemeters();
 
                 OnStateChanged(EquipmentState.Ready);
                 Console.WriteLine("Equipment 초기화 완료");
@@ -1255,7 +1269,28 @@ namespace QMC.LCP_280.Process
             }
         }
 
+        private void InitializeSourcemeters()
+        {
+            // 파일로 변경 필요. ( Equipment_Setup.json )
+            var list = new List<string>()
+            {
+                "Index_Prober_Sourcemeter"
+            };
 
+            foreach (string name in list)
+            {
+                try
+                {
+                    var smu = new KeithleySourcemeter(name);
+                    Sourcemeters[name] = smu;
+                    Console.WriteLine($"[Sourcemeter] {name} ready");
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
+            }
+        }
 
     }
 
