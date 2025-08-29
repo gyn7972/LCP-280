@@ -18,9 +18,9 @@ using System.Windows.Forms;
 using QMC.Common.Motion;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Cameras;
-using QMC.Common.Cylinder;
 using QMC.Common.Keithley;
 using QMC.Common.Spectrometer;
+using QMC.Common.IOUtil;
 
 namespace QMC.LCP_280.Process
 {
@@ -177,7 +177,6 @@ namespace QMC.LCP_280.Process
 
                 ConfigManager = new EquipmentConfigManager();
                 RecipeManager = new EquipmentRecipeManager();
-
 
                 OnStateChanged(EquipmentState.Initializing);
 
@@ -959,35 +958,8 @@ namespace QMC.LCP_280.Process
                 _dioScan = new DioScanService(_unitIO, _dio);
                 _dioScan.Start(10); // 10ms 주기 스캔
             }
-
-            // Cylinder
-            // 경로
-            //string cylPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cylinders.json");
-            string cylPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "cylinders.json");
-
-            // 기본값(최초 1회용)
-            var defaults = new List<CylinderConfig>
-            {
-                new CylinderConfig {
-                    Name="Input Feeder Up",
-                    ModuleName="DIO Module1",
-                    ForwardIn="X20", BackwardIn="X21",
-                    ForwardOut="Y30", BackwardOut="Y31",
-                    TimeoutMs=5000, SettleMs=50, Monitoring=true
-                }
-            };
-
-            // 로드 또는 생성
-            var all = CylinderConfigs.LoadOrCreate(cylPath, defaults);
-
-            // 조회/수정
-            var feeder = all.Get("Input Feeder Up");
-            feeder.TimeoutMs = 4000;
-            all.Upsert(feeder);
-
-            // 저장
-            all.Save(cylPath);
-            ////////////////////////////////////////////////////////////////
+            
+            IoBindings.RegisterAll();
 
             if (!_axlHost.IsOpen)
             {

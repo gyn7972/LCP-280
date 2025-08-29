@@ -1,5 +1,7 @@
 ﻿// QMC.Common (MainForm가 포함된 어셈블리)
 // IEquipment.cs
+using QMC.Common.DIO;
+using QMC.Common.IO;
 using System;
 
 namespace QMC.Common
@@ -7,7 +9,10 @@ namespace QMC.Common
     public interface IEquipment : IDisposable
     {
         System.Threading.Tasks.Task<bool> StopAllUnitsAsync();
-        // 필요한 공개 API만 최소한으로…
+
+        // 최소 공개 API만 신중히 추가:
+        DioScanService DioScan { get; }
+        DIOUnit UnitIO { get; }
     }
 
     public static class EquipmentLocator

@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.CustomControl;
+using QMC.Common.Motion.Ajin;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Unit;
@@ -20,6 +21,7 @@ namespace QMC.LCP_280.Process.Unit
         // -------- Fields
         private readonly Equipment equipment = Equipment.Instance;
         private MotionAxisManager _axisManager;
+        private MotionAxis _axis;
 
         // UI
         private ListBoxItemsView selectAxisListBoxItemsView;
@@ -276,6 +278,9 @@ namespace QMC.LCP_280.Process.Unit
             // 중복 구독 방지
             selectAxisListBoxItemsView.ItemSelected -= OnPositionItemSelected;
             selectAxisListBoxItemsView.ItemSelected += OnPositionItemSelected;
+
+            motorIoPropertyCollectionView.ItemClicked -= OnMotorIOItemClicked;
+            motorIoPropertyCollectionView.ItemClicked += OnMotorIOItemClicked;
         }
 
         /// <summary>
@@ -287,6 +292,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (selectedIndex < 0)
                 {
+                    _axis = null;
                     configurationListBoxItemsView?.SetProperties(null);
                     speedListBoxItemsView?.SetProperties(null);
                     return;
@@ -316,6 +322,8 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
+                _axis = axis;
+
                 _editorProrertiesPosition = BuildPositionProperties(axis);
                 _editorPropertiesConfig = BuildConfigProperties(axis);
                 _editorPropertiesSpeed = BuildSpeedProperties(axis);
@@ -333,6 +341,7 @@ namespace QMC.LCP_280.Process.Unit
                 ioProperties.Add(new PropertyState("04", "Positive Limit Sensor", axis.Status.IO.PositiveLimitSensor));
                 ioProperties.Add(new PropertyState("05", "Home Sensor", axis.Status.IO.HomeSensor));
                 motorIoPropertyCollectionView?.SetProperties(ioProperties);
+                
 
                 var state = new PropertyCollection();
                 state.ShowNoColumn = false; // 0열 표시 옵션
@@ -445,6 +454,70 @@ namespace QMC.LCP_280.Process.Unit
 
             return pc;
         }
+
+
+        private void OnMotorIOItemClicked(object sender, string key)
+        {
+            var k = key?.Trim().ToUpperInvariant();
+            if (string.IsNullOrEmpty(k)) return;
+
+            try
+            {
+                if (k == "SERVO")
+                {
+                    if(_axis.Status.IO.ServoOn)
+                    {
+                        var ask = new MessageBoxYesNo();
+                        if (ask.ShowDialog("Info", "Servo Off 하시겠습니까?") == DialogResult.No) return;
+                    }
+
+                    bool wantOn = !_axis.Status.IO.ServoOn;
+
+                    int rc = _axis.Servo(wantOn);
+                    if (rc != 0) MessageBox.Show($"Servo {(wantOn ? "On" : "Off")} 실패 (rc={rc})");
+                    // 낙관적 UI 업데이트 (즉시 색 반영)
+                    motorIoPropertyCollectionView.SetStateByKey("SERVO", wantOn);
+                }
+                else if (k == "ALARM")
+                {
+                    int rc = _axis.ClearAlarm();
+                    if (rc != 0) MessageBox.Show($"Alarm Reset 실패 (rc={rc})");
+                    // 일반적으로 리셋 후 알람 Off 기대
+                    motorIoPropertyCollectionView.SetStateByKey("ALARM", false);
+                }
+                else
+                {
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            finally
+            {
+                // 실제 상태 재조회 후 다시 그려 정확도 보정
+                RefreshMotorIO();
+            }
+        }
+
+        private void RefreshMotorIO()
+        {
+            // axis.Status.IO 재읽기 → 위와 동일하게 ioProperties 다시 만들고 SetProperties 호출
+            var ioProperties = new PropertyCollection();
+            ioProperties.ShowNoColumn = false; // 0열 표시 옵션
+            //ioProperties.Add(new TitleOnlyProperty("No", "Name", "State")); // title 행 표시
+            ioProperties.Add(new PropertyState("01", "Servo On", _axis.Status.IO.ServoOn));
+            ioProperties.Add(new PropertyState("02", "Alarm", _axis.Status.IO.Alarm));
+            ioProperties.Add(new PropertyState("03", "Negative Limit Sensor", _axis.Status.IO.NegativeLimitSensor));
+            ioProperties.Add(new PropertyState("04", "Positive Limit Sensor", _axis.Status.IO.PositiveLimitSensor));
+            ioProperties.Add(new PropertyState("05", "Home Sensor", _axis.Status.IO.HomeSensor));
+            motorIoPropertyCollectionView?.SetProperties(ioProperties);
+        }
+
+
+
+
 
         // -------- Axis status polling (optional)
         private void InitializeStatusTimer()

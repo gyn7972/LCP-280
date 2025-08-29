@@ -76,6 +76,12 @@
     <Compile Include="CassetteMapView.Designer.cs">
       <DependentUpon>CassetteMapView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\JogControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\JogControl.Designer.cs">
+      <DependentUpon>JogControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
     <Compile Include="Sequence.cs">
@@ -161,6 +167,9 @@
     <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <EmbeddedResource Include="Component\JogControl.resx">
+      <DependentUpon>JogControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -228,8 +237,6 @@
       <Name>QMC.Common</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Component\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
