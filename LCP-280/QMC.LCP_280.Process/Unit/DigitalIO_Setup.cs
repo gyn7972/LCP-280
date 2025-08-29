@@ -46,16 +46,6 @@ namespace QMC.LCP_280.Process.Unit
             
         }
 
-        protected override void OnFormClosed(FormClosedEventArgs e)
-        {
-            base.OnFormClosed(e);
-            if (_scan != null)
-            {
-                _scan.InputChanged -= OnInputChanged;
-                _scan.OutputChanged -= OnOutputChanged;
-            }
-        }
-
         /// <summary>향후 Unit 초기화가 필요하면 이곳에 작성</summary>
         private void InitializeUnit()
         {

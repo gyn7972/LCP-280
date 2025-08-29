@@ -12,8 +12,6 @@ namespace QMC.Common
     public partial class MainForm : Form
     {
         #region Field
-        private bool _isShuttingDown;
-
         private Size MainSize;
         private TableLayoutPanel tableLayoutPanelFormMain;
         private Panel centerPanel; // 중앙 컨텐츠 전용 컨테이너
@@ -35,24 +33,14 @@ namespace QMC.Common
         public MainForm()
         {
             InitializeComponent();
-
+            
             // 🔧 MainForm 배경색을 흰색으로 설정
             this.BackColor = Color.White;
             this.DoubleBuffered = true;
-
+            
             this.StartPosition = FormStartPosition.WindowsDefaultLocation;
             this.WindowState = FormWindowState.Normal;           // 일반 상태로 시작
             this.Load += MainForm_Load;
-
-            // ⬇ 종료 이벤트 연결
-            this.FormClosing += MainForm_FormClosing;
-            this.FormClosed += MainForm_FormClosed;
-
-            // (선택) 프로세스 종료 훅 – 폼이 강제 종료될 때도 안전장치
-            AppDomain.CurrentDomain.ProcessExit += (_, __) =>
-            {
-                try { EquipmentLocator.Instance?.Dispose(); } catch { }
-            };
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -74,8 +62,7 @@ namespace QMC.Common
                 RowCount = 3,
                 ColumnCount = 1,
                 // 🔧 TableLayoutPanel 배경색도 흰색으로 설정
-                BackColor = Color.White,
-                Margin = new Padding(0)
+                BackColor = Color.White
             };
 
             // 각 행을 동일한 비율로 분할
@@ -87,13 +74,10 @@ namespace QMC.Common
             this.Controls.Add(tableLayoutPanelFormMain);
 
             // FormTop을 첫번째 행(인덱스 0)에 추가
-            formTop = new FormTop()
-            {
-                TopLevel = false,
-                FormBorderStyle = FormBorderStyle.None,
-                Dock = DockStyle.Fill,
-                Margin = new Padding(0)
-            };
+            formTop = new FormTop();
+            formTop.TopLevel = false;
+            formTop.FormBorderStyle = FormBorderStyle.None;
+            formTop.Dock = DockStyle.Fill;
             tableLayoutPanelFormMain.Controls.Add(formTop, 0, 0);
             formTop.Show();
 
@@ -101,20 +85,16 @@ namespace QMC.Common
             centerPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                Margin = new Padding(0)
+                BackColor = Color.White
             };
             EnableDoubleBuffer(centerPanel);
             tableLayoutPanelFormMain.Controls.Add(centerPanel, 0, 1);
 
             // FormBottom을 세 번째 행(인덱스 2에 추가
-            formBottom = new FormBottom()
-            {
-                TopLevel = false,
-                FormBorderStyle = FormBorderStyle.None,
-                Dock = DockStyle.Fill,
-                Margin = new Padding(0)
-            };
+            formBottom = new FormBottom();
+            formBottom.TopLevel = false;
+            formBottom.FormBorderStyle = FormBorderStyle.None;
+            formBottom.Dock = DockStyle.Fill;
             tableLayoutPanelFormMain.Controls.Add(formBottom, 0, 2);
             formBottom.Show();
 
@@ -135,77 +115,6 @@ namespace QMC.Common
             formAlarm = new Form_Alarm();
             AlarmManager.Instance.PostAlarm += AlarmManager_PostAlarm;
         }
-
-        // ⬇ 사용자가 창을 닫을 때 호출
-        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            if (_isShuttingDown) return;           // 재진입 방지
-            _isShuttingDown = true;
-
-            try
-            {
-                // UI 입력 차단
-                this.Enabled = false;
-                this.Cursor = Cursors.WaitCursor;
-
-                // 알람 폼이 떠 있으면 닫기
-                try
-                {
-                    if (formAlarm != null && !formAlarm.IsDisposed)
-                    {
-                        formAlarm.Hide();
-                        formAlarm.Close(); // ShowDialog 사용했으므로 Close로 정리
-                        formAlarm.Dispose();
-                        formAlarm = null;
-                    }
-                }
-                catch { /* ignore */ }
-
-                // 프리웜 타이머 정리
-                try
-                {
-                    if (_prewarmTimer != null)
-                    {
-                        _prewarmTimer.Stop();
-                        _prewarmTimer.Dispose();
-                        _prewarmTimer = null;
-                    }
-                    _prewarmQueue = null;
-                }
-                catch { /* ignore */ }
-
-                // 설비 안전 정지 + 자원 해제
-                // StopAllUnitsAsync()는 내부에서 루프를 취소하고 정지 대기함
-                try
-                {
-                    // 가능하면 먼저 정지
-                    var eq = EquipmentLocator.Instance;
-                    // 정지(최대 8초 대기) → 실패해도 Dispose에서 한번 더 강제 정리
-                    try { eq?.StopAllUnitsAsync().Wait(TimeSpan.FromSeconds(8)); } catch { /* ignore */ }
-                    // 완전 해제
-                    eq?.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    // 로그만 남기고 종료 진행
-                    Console.WriteLine("Shutdown error: " + ex.Message);
-                }
-            }
-            finally
-            {
-                this.Cursor = Cursors.Default;
-                // e.Cancel = false;  // 기본값: 계속 닫기
-            }
-        }
-
-        // ⬇ 폼 핸들이 내려간 뒤 최종 마무리
-        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            // 추가로 해제할 핸들/매니저가 있으면 여기에서
-            // 예) 글로벌 싱글톤 로그 Flush 등
-        }
-
-
 
         private void AlarmManager_PostAlarm(AlarmInfo alarm)
         {
@@ -359,7 +268,7 @@ namespace QMC.Common
                 {
                     centerPanel.ResumeLayout();
                 }
-
+                
                 // 사이즈 적용
                 ApplySizes();
 
@@ -408,20 +317,14 @@ namespace QMC.Common
                 // Center 컨텐츠 반영 (IResizable 우선, 없으면 리플렉션)
                 if (currentCenterView != null)
                 {
-                    // 가능하면 실제 centerPanel의 클라이언트 크기를 사용
-                    int cWidth = (centerPanel != null) ? centerPanel.ClientSize.Width : width;
-                    int cHeight = (centerPanel != null) ? centerPanel.ClientSize.Height : rowHeights[1];
-                    if (cWidth <= 0) cWidth = width;
-                    if (cHeight <= 0) cHeight = rowHeights[1];
-
                     var resizable = currentCenterView as IResizable;
                     if (resizable != null)
                     {
-                        resizable.SetPanelSize(cWidth, cHeight);
+                        resizable.SetPanelSize(width, rowHeights[1]);
                     }
                     else
                     {
-                        TrySetPanelSize(currentCenterView, cWidth, cHeight);
+                        TrySetPanelSize(currentCenterView, width, rowHeights[1]);
                     }
                 }
             }
@@ -461,7 +364,7 @@ namespace QMC.Common
                 message += $"\n\n{additionalInfo}";
             }
             message += $"\n\nFormManager{menuName}.Instance.Register{menuName}Form()을 사용하여 폼을 등록하세요.";
-
+            
             MessageBox.Show(message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
             // 기본 동작: 중앙 컨텐츠 비우기

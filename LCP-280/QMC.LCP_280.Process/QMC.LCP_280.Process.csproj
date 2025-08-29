@@ -76,12 +76,6 @@
     <Compile Include="CassetteMapView.Designer.cs">
       <DependentUpon>CassetteMapView.cs</DependentUpon>
     </Compile>
-    <Compile Include="Component\JogControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Component\JogControl.Designer.cs">
-      <DependentUpon>JogControl.cs</DependentUpon>
-    </Compile>
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
     <Compile Include="Sequence.cs">
@@ -96,12 +90,6 @@
     </Compile>
     <Compile Include="TestGyn.Designer.cs">
       <DependentUpon>TestGyn.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Unit\Form_AxisJogPopup.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\Form_AxisJogPopup.Designer.cs">
-      <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\GageRnR.cs" />
     <Compile Include="Unit\GageRnRConfig.cs" />
@@ -126,12 +114,6 @@
     </Compile>
     <Compile Include="Unit\DigitalIO_Setup.Designer.cs">
       <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Unit\InputCassetteLifterUnit_Working.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\InputCassetteLifterUnit_Working.Designer.cs">
-      <DependentUpon>InputCassetteLifterUnit_Working.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\InputDieTransfer.cs" />
     <Compile Include="Unit\InputDieTransferConfig.cs" />
@@ -179,9 +161,6 @@
     <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <EmbeddedResource Include="Component\JogControl.resx">
-      <DependentUpon>JogControl.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -203,12 +182,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Instrument_Setup.resx">
       <DependentUpon>Instrument_Setup.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Unit\Form_AxisJogPopup.resx">
-      <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Unit\InputCassetteLifterUnit_Working.resx">
-      <DependentUpon>InputCassetteLifterUnit_Working.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Motion_Setup.resx">
       <DependentUpon>Motion_Setup.cs</DependentUpon>
@@ -255,6 +228,8 @@
       <Name>QMC.Common</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Component\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
