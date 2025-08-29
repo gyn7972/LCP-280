@@ -180,15 +180,15 @@ namespace QMC.LCP_280.Process
 
                 OnStateChanged(EquipmentState.Initializing);
 
-                // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
-                AutoRegisterUnits();
-
                 // 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
                 BootstrapAxesDirect();
                 BootstrapIODirect();
 
                 // === 카메라 초기화 ===
                 InitializeCameras();
+
+                // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
+                AutoRegisterUnits();
 
                 OnStateChanged(EquipmentState.Ready);
                 Console.WriteLine("Equipment 초기화 완료");

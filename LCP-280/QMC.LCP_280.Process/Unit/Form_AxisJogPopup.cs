@@ -2,6 +2,8 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using QMC.Common;
 using QMC.Common.Motions;
@@ -89,6 +91,9 @@ namespace QMC.LCP_280.Process.Unit
                 string axisName = selectAxisListBoxItemsView.SelectedItemName;
                 UpdateJogEnableByAxisName(axisName);
                 UpdatePositionOnce();
+                UpdateUIByAxisSelection(axisName);
+
+
             }
             catch (Exception ex)
             {
@@ -325,6 +330,33 @@ namespace QMC.LCP_280.Process.Unit
             }
             
         }
+
+        private void UpdateUIByAxisSelection(string axisName)
+        {
+            bool hasAxis = !string.IsNullOrEmpty(axisName);
+            btnXMinus.Enabled = btnXPlus.Enabled = hasAxis && HasAxisLetter(axisName, "X");
+            btnYMinus.Enabled = btnYPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Y");
+            btnZMinus.Enabled = btnZPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Z");
+            btnTMinus.Enabled = btnTPlus.Enabled = hasAxis && HasAxisLetter(axisName, "T");
+            btnStop.Enabled = hasAxis;
+            lblPosition.Text = hasAxis ? "----" : "축 미선택";
+        }
+
+        //private async void DoStepMoveAsync(MotionAxis axis, JogCommand jc, double stepUnit)
+        //{
+        //    lblStatus.Text = "이동 중...";
+        //    try
+        //    {
+        //        axis.MoveRel(stepUnit, vel, acc, dec, jerk);
+        //        await Task.Run(() => axis.WaitMoveDone(-1));
+        //        lblStatus.Text = "정지";
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        ShowError("축 이동 실패", ex);
+        //    }
+        //}
+
 
     }
 }

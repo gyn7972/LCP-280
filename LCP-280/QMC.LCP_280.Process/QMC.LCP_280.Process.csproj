@@ -82,6 +82,7 @@
     <Compile Include="Component\JogControl.Designer.cs">
       <DependentUpon>JogControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
     <Compile Include="Sequence.cs">

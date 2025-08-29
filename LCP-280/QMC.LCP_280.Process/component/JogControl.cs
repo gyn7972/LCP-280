@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using System.Drawing; // Point 사용
 using QMC.Common;
 using QMC.Common.Motions;
 
@@ -38,12 +41,53 @@ namespace QMC.LCP_280.Process.Unit
                 ApplyMoveModeUI();         // 스텝/연속 UI 스위치
                 InitializePositionTimer(); // 위치표시 타이머
 
+                FixMoveModeRadioGrouping(); // ★ 라디오 그룹 강제 수정
+
                 rdoFine.Checked = true;
                 rdoStep.Checked = true;
             }
             catch (Exception ex)
             {
                 Log.Write("LCP-280", "Form_AxisJogPopup.InitializeUI error: " + ex);
+            }
+        }
+
+        // === 그룹박스 내부에 서로 다른 컨테이너(stepLine)에 들어가 있어서 동시에 체크되는 문제 해결 ===
+        private void FixMoveModeRadioGrouping()
+        {
+            try
+            {
+                if (rdoContinuous == null || rdoStep == null || grpMoveMode == null) return;
+
+                // rdoStep이 stepLine(FlowLayoutPanel) 안에 있으면 GroupBox와 다른 논리 그룹이 됨 → 제거 후 GroupBox에 직접 부착
+                if (rdoStep.Parent != grpMoveMode)
+                {
+                    if (rdoStep.Parent != null)
+                        rdoStep.Parent.Controls.Remove(rdoStep);
+
+                    // 위치: Continuous 오른쪽 또는 아래 원하는 좌표 재배치
+                    // 동일 Y 라인에 두고 싶으면 아래처럼.
+                    var baseLoc = rdoContinuous.Location;
+                    rdoStep.Location = new Point(baseLoc.X + 120, baseLoc.Y); // 간격 120px
+                    grpMoveMode.Controls.Add(rdoStep);
+
+                    // stepLine에는 NumericUpDown만 남도록 보장
+                    if (stepLine != null && stepLine.Controls.Contains(rdoStep))
+                        stepLine.Controls.Remove(rdoStep);
+                }
+
+                // 멀티체크가 이미 발생했다면 하나만 남기기
+                if (rdoContinuous.Checked && rdoStep.Checked)
+                {
+                    // 기본은 Continuous 유지
+                    rdoStep.Checked = false;
+                }
+
+                // CheckedChanged 이벤트가 두 컨트롤 모두에서 모드 전환을 반영하도록 필요 시 추가 로직 확장 가능
+            }
+            catch (Exception ex)
+            {
+                Log.Write("LCP-280", "FixMoveModeRadioGrouping error: " + ex);
             }
         }
 
@@ -60,16 +104,41 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                // Motion_Setup 과 동일 흐름
-                var axisNames = _axisManager.GetAxisNames(UNIT_NAME) ?? new string[0]; // :contentReference[oaicite:3]{index=3}
-                if (axisNames.Length > 0)
-                    selectAxisListBoxItemsView.SetItems(axisNames);
-                else
-                    selectAxisListBoxItemsView.SetItems();
+                selectAxisListBoxItemsView.SetItems();
+
+                // Axis를 전부 하고 싶을때 하자.
+                //var axisNames = _axisManager.GetAxisNames(UNIT_NAME) ?? new string[0];
+                //if (axisNames.Length > 0)
+                //    selectAxisListBoxItemsView.SetItems(axisNames);
+                //else
+                //    selectAxisListBoxItemsView.SetItems();
             }
             catch (Exception ex)
             {
                 Log.Write("LCP-280", "BindAxisList error: " + ex);
+                selectAxisListBoxItemsView.SetItems();
+            }
+        }
+
+        // === 외부에서 티칭 포지션 축 목록을 직접 주입해서 리스트 갱신 (Teaching 전용) ===
+        public void SetTeachingAxisList(IEnumerable<string> axisNames)
+        {
+            try
+            {
+                if (axisNames == null)
+                {
+                    selectAxisListBoxItemsView.SetItems();
+                    return;
+                }
+                var arr = axisNames.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().ToArray();
+                if (arr.Length == 0)
+                    selectAxisListBoxItemsView.SetItems();
+                else
+                    selectAxisListBoxItemsView.SetItems(arr);
+            }
+            catch (Exception ex)
+            {
+                Log.Write("LCP-280", "SetTeachingAxisList error: " + ex);
                 selectAxisListBoxItemsView.SetItems();
             }
         }
@@ -89,6 +158,7 @@ namespace QMC.LCP_280.Process.Unit
                 string axisName = selectAxisListBoxItemsView.SelectedItemName;
                 UpdateJogEnableByAxisName(axisName);
                 UpdatePositionOnce();
+                UpdateUIByAxisSelection(axisName);
             }
             catch (Exception ex)
             {
@@ -367,6 +437,16 @@ namespace QMC.LCP_280.Process.Unit
             nudStep.Value = nudStep.Minimum;
         }
 
-        
+        private void UpdateUIByAxisSelection(string axisName)
+        {
+            bool hasAxis = !string.IsNullOrEmpty(axisName);
+            btnXMinus.Enabled = btnXPlus.Enabled = hasAxis && HasAxisLetter(axisName, "X");
+            btnYMinus.Enabled = btnYPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Y");
+            btnZMinus.Enabled = btnZPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Z");
+            btnTMinus.Enabled = btnTPlus.Enabled = hasAxis && HasAxisLetter(axisName, "T");
+            btnStop.Enabled = hasAxis;
+            lblPosition.Text = hasAxis ? "----" : "축 미선택";
+        }
+
     }
 }

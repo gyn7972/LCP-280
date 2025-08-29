@@ -1,6 +1,10 @@
 ﻿using QMC.Common;
 using QMC.Common.CustomControl;
+using QMC.Common.DIO; // 추가
+using QMC.Common.IO;  // DIOUnit, DIOModuleSetup
+using QMC.Common.Motions;
 using QMC.LCP_280.Process;
+using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit;
 using System;
 using System.Collections.Generic;
@@ -41,6 +45,14 @@ namespace QMC.LCP_280.Process.Unit
 
         // Actual Position 주기 업데이트 타이머
         private Timer _axisPosTimer;
+
+        // === Digital IO 표시용 내부 구조 추가 (기존 코드 유지) ===
+        private struct _IoRef { public string Module; public string Disp; public PropertyState Prop; }
+        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
+        // 출력 사용 안함
+        //private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        // 타이머 제거 (실시간 스캔 이벤트 사용)
+        private Timer _ioTimer; // 남겨두되 사용 안함
 
         /// <summary>
         /// Clean up any resources being used.
@@ -316,50 +328,130 @@ namespace QMC.LCP_280.Process.Unit
                 SetupPositionItemSelectionEvent();
 
                 InitializeRadioButtonView();
+                InitializeDigitalIO();            // ★ Digital IO 초기화 추가
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine("InitializeUI error: " + ex.Message);
             }
         }
-    /// <summary>
-    /// CassetteElevator + WaferTransferArm 의 AxisDefinition DisplayName 을 axisListBoxItemsView 에 설정
-    /// </summary>
+
+        // ===== Digital IO 초기화 (Cassette Lifter 관련 IO 자동 필터) =====
+        private void InitializeDigitalIO()
+        {
+            try
+            {
+                if (inputPropertyCollectionView == null)
+                    return;
+
+                var eq = Equipment.Instance;
+                var scan = eq?.DioScan;
+                var unitIO = eq?.UnitIO;
+                if (scan == null || unitIO == null)
+                {
+                    inputPropertyCollectionView.SetProperties(new PropertyCollection());
+                    return;
+                }
+
+                _ioInputs.Clear();
+
+                var hardInputs = new[]
+                {
+                    new { No = 1, Name = "WAFER LIFTER CASSETTE CHECK 0", Disp = "X016" },
+                    new { No = 2, Name = "WAFER LIFTER CASSETTE CHECK 1", Disp = "X017" },
+                    new { No = 3, Name = "WAFER LIFTER RING JUT CHECK",   Disp = "X018" },
+                    new { No = 4, Name = "WAFER MAPPING",                 Disp = "X019" }
+                };
+
+                // 모듈명 매핑
+                Func<string, Tuple<string,string>> resolve = disp =>
+                {
+                    if (unitIO?.Modules == null) return new Tuple<string,string>(null, disp);
+                    foreach (var m in unitIO.Modules)
+                    {
+                        if (m?.Inputs == null) continue;
+                        foreach (var ch in m.Inputs)
+                        {
+                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
+                                return new Tuple<string,string>(m.ModuleName, ch.DisplayNo);
+                        }
+                    }
+                    return new Tuple<string,string>(null, disp);
+                };
+
+                var pc = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
+                pc.Add(new TitleOnlyProperty("No", "Name", "State"));
+
+                foreach (var item in hardInputs)
+                {
+                    var map = resolve(item.Disp);
+                    bool cur = false;
+                    if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur);
+                    // PropertyState(번호, 표시 문자열, 초기 상태)
+                    string nameCell = item.Disp + " " + item.Name; // 첫 토큰이 키(Xnnn)
+                    var ps = new PropertyState(item.No.ToString(), nameCell, cur);
+                    pc.Add(ps);
+                    _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                }
+
+                inputPropertyCollectionView.SetProperties(pc);
+                // 출력 영역 비움
+                outputPropertyCollectionView?.SetProperties(new PropertyCollection());
+
+                // 이벤트 중복 등록 방지 후 등록
+                scan.InputChanged -= OnDioInputChanged;
+                scan.InputChanged += OnDioInputChanged;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("InitializeDigitalIO error: " + ex.Message);
+            }
+        }
+
+        private void OnDioInputChanged(string module, string disp, bool value)
+        {
+            try
+            {
+                for (int i = 0; i < _ioInputs.Count; i++)
+                {
+                    if (_ioInputs[i].Module == module && string.Equals(_ioInputs[i].Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _ioInputs[i].Prop.State = value; // 모델 업데이트
+                        // 색상 갱신
+                        inputPropertyCollectionView.SetStateByKey(disp, value);
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// CassetteElevator + WaferTransferArm 의 AxisDefinition DisplayName 을 axisListBoxItemsView 에 설정
+        /// </summary>
         private void SetAxisDefinitionsToAxisListBox()
         {
             try
             {
                 // Equipment에서 CassetteLoadingElevator Unit 가져오기
                 var equipment = Equipment.Instance;
-                const string UNIT_NAME = "CassetteLoadingElevator";
+                const string UNIT_NAME = "InputCassetteLifter";
 
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
                     var inputCassetteLifter = unit as InputCassetteLifter;
-                    if (inputCassetteLifter?.InputCassetteLifterConfig?.PropertyPosition != null)
+                    // TeachingPositions 멤버를 직접 사용하여 Position 이름 리스트 추출
+                    if (inputCassetteLifter?.TeachingPositions != null && inputCassetteLifter.TeachingPositions.Count > 0)
                     {
-                        var propertyPosition = inputCassetteLifter.InputCassetteLifterConfig.PropertyPosition;
-
-                        // PropertyPosition에서 Position Title들을 추출하여 ListBox에 설정
-                        var positionTitles = propertyPosition.GetPropertyTitles();
-
-                        if (positionTitles.Length > 0)
-                        {
-                            // listBoxItemsView에 Position Title들 설정
-                            positionListBoxItemsView?.SetItems(positionTitles);
-
-                            Console.WriteLine($"✅ PropertyPosition을 listBoxItemsView에 설정 완료: {positionTitles.Length}개 항목");
-                            Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionTitles)}");
-                        }
-                        else
-                        {
-                            Console.WriteLine("⚠️ PropertyPosition에 Position 항목이 없습니다.");
-                            positionListBoxItemsView?.SetItems();
-                        }
+                        var positionNames = inputCassetteLifter.TeachingPositions.Select(tp => tp.Name).ToArray();
+                        positionListBoxItemsView?.SetItems(positionNames);
+                        Console.WriteLine($"✅ TeachingPositions를 listBoxItemsView에 설정 완료: {positionNames.Length}개 항목");
+                        Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionNames)}");
                     }
                     else
                     {
-                        Console.WriteLine("⚠️ CassetteElevator Config 또는 PropertyPosition을 찾을 수 없습니다.");
+                        Console.WriteLine("⚠️ TeachingPositions에 Position 항목이 없습니다.");
+                        positionListBoxItemsView?.SetItems();
                     }
                 }
                 else
@@ -369,7 +461,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ PropertyPosition 설정 중 오류: {ex.Message}");
+                Console.WriteLine($"❌ TeachingPositions 설정 중 오류: {ex.Message}");
             }
         }
 
@@ -396,74 +488,74 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // Equipment에서 CassetteLoadingElevator Unit 가져오기
+                ShowTeachingPositionInPropertyCollectionView(selectedIndex);
+
+                // ★ 선택된 TeachingPosition의 축 이름들을 JogControl에 전달하여 필터링 표시
                 var equipment = Equipment.Instance;
                 const string UNIT_NAME = "InputCassetteLifter";
-
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var inputCassetteLifter = unit as InputCassetteLifter;
-                    if (inputCassetteLifter?.InputCassetteLifterConfig?.PropertyPosition != null)
+                    var lifter = unit as InputCassetteLifter;
+                    if (lifter != null && selectedIndex >= 0 && selectedIndex < lifter.InputCassetteLifterConfig.TeachingPositions.Count)
                     {
-                        var propertyPosition = inputCassetteLifter.InputCassetteLifterConfig.PropertyPosition;
-                        var positionTitles = propertyPosition.GetPropertyTitles();
-
-                        if (selectedIndex >= 0 && selectedIndex < positionTitles.Length)
+                        var tp = lifter.InputCassetteLifterConfig.TeachingPositions[selectedIndex];
+                        if (jogControl != null && tp != null && tp.AxisPositions != null)
                         {
-                            var selectedTitle = positionTitles[selectedIndex];
-                            var selectedProperty = propertyPosition.GetPropertyByTitle(selectedTitle);
-
-                            if (selectedProperty != null)
-                            {
-                                // 🚀 선택된 Position Property를 Editor(PropertyCollectionView)에 표시
-                                var editorProperties = new PropertyCollection();
-
-                                // Position (Abs, mm) 타이틀 추가
-                                editorProperties.Add(new TitleOnlyProperty("Position (Abs, mm)"));
-
-                                // 선택된 Position Property를 Editor용으로 복사
-                                if (selectedProperty is DoubleProperty doubleProp)
-                                {
-                                    var editableProperty = new DoubleProperty(selectedTitle, doubleProp.Value);
-                                    editorProperties.Add(editableProperty);
-                                }
-                                else
-                                {
-                                    editorProperties.Add(selectedProperty);
-                                }
-
-                                // PropertyCollectionView에 Editor 내용 설정
-                                positionPropertyCollectionView?.SetProperties(editorProperties);
-
-                                Console.WriteLine($"📍 Position Item 선택: {selectedTitle}");
-                                if (selectedProperty is DoubleProperty dp)
-                                {
-                                    Console.WriteLine($"   값: {dp.Value:F3} mm");
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine($"⚠️ 선택된 Position Property를 찾을 수 없습니다: {selectedTitle}");
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine($"⚠️ 잘못된 선택 인덱스: {selectedIndex}");
+                            jogControl.SetTeachingAxisList(tp.AxisPositions.Keys);
                         }
                     }
-                    else
-                    {
-                        Console.WriteLine("⚠️ PropertyPosition을 찾을 수 없습니다.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"⚠️ '{UNIT_NAME}' Unit을 찾을 수 없습니다.");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Position Item 선택 처리 중 오류: {ex.Message}");
+            }
+        }
+
+        private void ShowTeachingPositionInPropertyCollectionView(int selectedIndex)
+        {
+            // Equipment에서 InputCassetteLifter Unit 가져오기
+            var equipment = Equipment.Instance;
+            const string UNIT_NAME = "InputCassetteLifter";
+            if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+            {
+                var inputCassetteLifter = unit as InputCassetteLifter;
+                var config = inputCassetteLifter?.InputCassetteLifterConfig;
+                if (config?.TeachingPositions != null && selectedIndex >= 0 && selectedIndex < config.TeachingPositions.Count)
+                {
+                    var tp = config.TeachingPositions[selectedIndex];
+                    var editorProperties = new PropertyCollection();
+                    editorProperties.Add(new TitleOnlyProperty($"Teaching Position: {tp.Name}"));
+                    editorProperties.Add(new StringProperty("Description", tp.Description ?? ""));
+                    // 축별 위치값 표시
+                    foreach (var axis in tp.AxisPositions)
+                    {
+                        editorProperties.Add(new DoubleProperty($"{axis.Key} Position (mm)", axis.Value));
+                    }
+                    // 추가 정보 표시
+                    foreach (var kv in tp.ExtraInfo)
+                    {
+                        editorProperties.Add(new StringProperty($"Extra: {kv.Key}", kv.Value?.ToString() ?? ""));
+                    }
+                    positionPropertyCollectionView?.SetProperties(editorProperties);
+                }
+            }
+        }
+
+        private void InitializeTeachingPositionList()
+        {
+            // Equipment에서 InputCassetteLifter Unit 가져오기
+            var equipment = Equipment.Instance;
+            const string UNIT_NAME = "InputCassetteLifter";
+            if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+            {
+                var inputCassetteLifter = unit as InputCassetteLifter;
+                var config = inputCassetteLifter?.InputCassetteLifterConfig;
+                if (config?.TeachingPositions != null)
+                {
+                    var positionNames = config.TeachingPositions.Select(tp => tp.Name).ToArray();
+                    positionListBoxItemsView.SetItems(positionNames);
+                }
             }
         }
 
@@ -479,7 +571,127 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnMovePosition_Click(object sender, EventArgs e)
         {
-           
+            try
+            {
+                const string UNIT_NAME = "InputCassetteLifter";
+                var equipment = Equipment.Instance;
+                if (!equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+                {
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                var lifter = unit as InputCassetteLifter;
+                if (lifter == null)
+                {
+                    MessageBox.Show("Unit 형식 오류", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 선택된 Teaching Position 인덱스
+                int selIndex = -1;
+                try
+                {
+                    var pi = positionListBoxItemsView.GetType().GetProperty("SelectedIndex");
+                    if (pi != null)
+                    {
+                        object val = pi.GetValue(positionListBoxItemsView, null);
+                        if (val is int) selIndex = (int)val;
+                    }
+                }
+                catch { selIndex = -1; }
+
+                if (selIndex < 0 || selIndex >= lifter.InputCassetteLifterConfig.TeachingPositions.Count)
+                {
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var tp = lifter.InputCassetteLifterConfig.TeachingPositions[selIndex];
+
+                // Fine / Coarse 판단 (RadioButtonView SelectedIndex: 0=Fine, 1=Coarse)
+                bool isFine = true;
+                if (rbTeachingMoveMode != null)
+                {
+                    try
+                    {
+                        var siProp = rbTeachingMoveMode.GetType().GetProperty("SelectedIndex");
+                        if (siProp != null)
+                        {
+                            object v = siProp.GetValue(rbTeachingMoveMode, null);
+                            if (v is int) isFine = ((int)v) == 0; // 0 → Fine
+                        }
+                    }
+                    catch { isFine = true; }
+                }
+
+                // 축 이동 파라미터 수집 및 동시 이동
+                // 기본값 (Config 값 없거나 0일 때 폴백)
+                double defaultFineVel = 5.0;
+                double defaultCoarseVel = 20.0;
+                double defaultAcc = 10.0;
+                double defaultDec = 10.0;
+                double defaultJerk = 50.0;
+
+                var moveResults = new List<Tuple<string, int>>();
+
+                foreach (var kv in tp.AxisPositions)
+                {
+                    string axisKey = kv.Key;
+                    double targetPos = kv.Value;
+
+                    // 축 찾기: TeachingPosition.Axes 사전 우선 → 없으면 Unit.Axes에서 키 또는 Name 으로 재검색
+                    MotionAxis axis = null;
+                    if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
+                    if (axis == null && lifter.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
+                    if (axis == null)
+                    {
+                        // Name 매칭 시도
+                        foreach (var aPair in lifter.Axes)
+                        {
+                            if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                axis = aPair.Value; break;
+                            }
+                        }
+                    }
+                    if (axis == null) continue; // 해당 축 없음 → 스킵
+
+                    // 속도/가감속/jerk 결정
+                    double vel = isFine ? (axis.Config != null && axis.Config.JogFineVelocity > 0 ? axis.Config.JogFineVelocity : defaultFineVel)
+                                        : (axis.Config != null && axis.Config.JogCoarseVelocity > 0 ? axis.Config.JogCoarseVelocity : defaultCoarseVel);
+                    double acc = axis.Config != null && axis.Config.JogAcc > 0 ? axis.Config.JogAcc : defaultAcc;
+                    double dec = axis.Config != null && axis.Config.JogDec > 0 ? axis.Config.JogDec : defaultDec;
+                    double jerk = axis.Config != null ? (axis.Config.AccJerkPercent + axis.Config.DecJerkPercent) / 2.0 : defaultJerk;
+
+                    // 이동 명령 전송 (비동기 실행; 완료는 WaitMoveDone 사용)
+                    int rc = axis.MoveAbs(targetPos, vel, acc, dec, jerk);
+                    moveResults.Add(new Tuple<string, int>(axisKey, rc));
+                }
+
+                // 이동 완료 대기 (모든 축 대상으로 최대 공통 Timeout 사용: 각 axis.Setup.MoveTimeoutMs)
+                int waitErrors = 0;
+                foreach (var kv in tp.AxisPositions)
+                {
+                    MotionAxis axis = null;
+                    if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
+                    if (axis == null && lifter.Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
+                    if (axis == null) continue;
+
+                    int rc = axis.WaitMoveDone(-1); // axis.Setup.MoveTimeoutMs 사용
+                    if (rc != 0) waitErrors++;
+                }
+
+                // 결과 요약
+                bool anyMoveFail = moveResults.Exists(t => t.Item2 != 0) || waitErrors > 0;
+                if (!anyMoveFail)
+                    MessageBox.Show("Teaching Position 이동 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else
+                    MessageBox.Show("일부 축 이동 실패 또는 타임아웃", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Move 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }  
 
         private void InitializeRadioButtonView()
@@ -501,7 +713,109 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            
+            try
+            {
+                const string UNIT_NAME = "InputCassetteLifter";
+                var equipment = Equipment.Instance;
+                if (!equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+                {
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                var lifter = unit as InputCassetteLifter;
+                if (lifter == null)
+                {
+                    MessageBox.Show("Unit 형식이 올바르지 않습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 현재 선택된 Teaching Position 인덱스
+                int selIndex = -1;
+                try
+                {
+                    // ListBoxItemsView에 SelectedIndex 프로퍼티가 있다고 가정
+                    var pi = positionListBoxItemsView.GetType().GetProperty("SelectedIndex");
+                    if (pi != null)
+                    {
+                        object val = pi.GetValue(positionListBoxItemsView, null);
+                        if (val is int) selIndex = (int)val;
+                    }
+                }
+                catch { selIndex = -1; }
+
+                if (selIndex < 0 || selIndex >= lifter.TeachingPositions.Count)
+                {
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 에디터(PropertyCollectionView)에 입력된 값 적용(안전 차원)
+                positionPropertyCollectionView?.Apply();
+
+                var props = positionPropertyCollectionView?.GetCurrentProperties();
+                if (props == null || props.Count == 0)
+                {
+                    MessageBox.Show("편집할 데이터가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var target = lifter.TeachingPositions[selIndex];
+
+                // 기존 AxisPositions 복사 후 수정
+                var newAxisPositions = new Dictionary<string, double>(target.AxisPositions != null ? target.AxisPositions : new Dictionary<string, double>());
+                string newDescription = target.Description;
+                Dictionary<string, object> newExtra = target.ExtraInfo != null ? new Dictionary<string, object>(target.ExtraInfo) : new Dictionary<string, object>();
+
+                foreach (var p in props)
+                {
+                    // Description
+                    if (p is StringProperty && string.Equals(p.Title, "Description", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var sp = (StringProperty)p;
+                        newDescription = sp.Value ?? string.Empty;
+                        continue;
+                    }
+                    // Axis Position (DoubleProperty) → Title 패턴: "{AxisKey} Position (mm)"
+                    if (p is DoubleProperty && p.Title.EndsWith(" Position (mm)", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var dp = (DoubleProperty)p;
+                        var axisKey = p.Title.Substring(0, p.Title.IndexOf(" Position (mm)")).Trim();
+                        newAxisPositions[axisKey] = dp.Value;
+                        continue;
+                    }
+                    // Extra: prefix "Extra: " (StringProperty)
+                    if (p is StringProperty && p.Title.StartsWith("Extra:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var sp = (StringProperty)p;
+                        var extraKey = p.Title.Substring("Extra:".Length).Trim();
+                        newExtra[extraKey] = sp.Value;
+                        continue;
+                    }
+                }
+
+                // 수정 내용 TeachingPosition 객체에 반영
+                target.Description = newDescription;
+                target.AxisPositions = newAxisPositions; // 참조 교체(저장용 딥카피 목적)
+                target.ExtraInfo = newExtra;
+
+                // Config에도 반영 (SetTeachingPosition은 Saveconfig 호출 포함)
+                lifter.InputCassetteLifterConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description) { ExtraInfo = new Dictionary<string, object>(target.ExtraInfo) });
+
+                // 저장 후 재로드 & 재바인딩 (선택적으로 최신 반영)
+                lifter.InputCassetteLifterConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                lifter.TeachingPositions.Clear();
+                foreach (var tp in lifter.InputCassetteLifterConfig.TeachingPositions)
+                    lifter.TeachingPositions.Add(tp);
+
+                // 리스트 갱신
+                SetAxisDefinitionsToAxisListBox();
+
+                MessageBox.Show("변경된 Teaching Position이 저장되었습니다.", "저장 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("저장 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
