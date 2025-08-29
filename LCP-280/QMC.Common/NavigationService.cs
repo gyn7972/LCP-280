@@ -38,29 +38,13 @@ namespace QMC.Common
 
         public Control CreateCenterControl(MenuButtonType menuType)
         {
-            // 각 메뉴는 전용 탭 호스트(FormX)를 항상 사용하여 탭 헤더 높이 제외 로직을 일관 적용
-            switch (menuType)
-            {
-                case MenuButtonType.Main:
-                    return new FormAdapterControl(new FormMain()) { Dock = DockStyle.Fill };
-                case MenuButtonType.Config:
-                    return new FormAdapterControl(new FormConfig()) { Dock = DockStyle.Fill };
-                case MenuButtonType.Working:
-                    return new FormAdapterControl(new FormWorking()) { Dock = DockStyle.Fill };
-                case MenuButtonType.Recipe:
-                    return new FormAdapterControl(new FormRecipe()) { Dock = DockStyle.Fill };
-                case MenuButtonType.Setup:
-                    return new FormAdapterControl(new FormSetup()) { Dock = DockStyle.Fill };
-                case MenuButtonType.Log:
-                    return new FormAdapterControl(new FormLog()) { Dock = DockStyle.Fill };
-            }
-
-            // Fallback: 기존 count 기반 로직
+            // Count how many forms are registered for this category
             List<FormInfo> forms = FormManager.Instance.GetRegisteredForms(menuType);
             int count = forms != null ? forms.Count : 0;
 
             if (count >= 2)
             {
+                // Use generic tabbed host
                 return new TabbedViewHost(menuType);
             }
 
@@ -70,6 +54,7 @@ namespace QMC.Common
                 return new FormAdapterControl(form) { Dock = DockStyle.Fill };
             }
 
+            // 0 registered -> create a default form using the category-specific manager
             Form defaultForm = CreateDefaultForm(menuType);
             return new FormAdapterControl(defaultForm) { Dock = DockStyle.Fill };
         }

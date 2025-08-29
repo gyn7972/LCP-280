@@ -23,9 +23,6 @@ namespace QMC.Common.Motion.Ajin.IO
         private readonly ConcurrentDictionary<Tuple<int, int, int>, Timer> _pulseTimers
             = new ConcurrentDictionary<Tuple<int, int, int>, Timer>();
 
-        private static int PortOf(int bitIndex) => bitIndex / 8; // 0..3 (32점 모듈 가정)
-        private static int BitOf(int bitIndex) => bitIndex % 8; // 0..7
-
         /// <param name="mapper">
         /// (boardNo, portNo) => moduleNo 로 변환하는 함수.
         /// 예) (b,p) => b*8 + p  (현장 구성에 맞게 1회 정의)
@@ -47,44 +44,21 @@ namespace QMC.Common.Motion.Ajin.IO
 
         public int ReadOutput(int boardNo, int portNo, int channelNo, out bool value)
         {
-            var moduleNo = _map(boardNo, portNo);    // (board,port)->모듈번호
-            int port = PortOf(channelNo);            // 바이트 주소
-            int bit = BitOf(channelNo);             // 0..7 비트
-
-            byte portVal = 0;
-            int rc = AXD.ReadOutput(moduleNo, port, ref portVal);
-            value = ((portVal >> bit) & 0x01) != 0;
+            var moduleNo = _map(boardNo, portNo);
+            byte b = 0;
+            // AjinAxlDioModule 참조: AXD.ReadOutput(mod, address, ref byte)
+            int rc = AXD.ReadOutput(moduleNo, channelNo, ref b);
+            value = (b != 0);
             return rc;
-
-            //var moduleNo = _map(boardNo, portNo);
-            //byte b = 0;
-            //// AjinAxlDioModule 참조: AXD.ReadOutput(mod, address, ref byte)
-            //int rc = AXD.ReadOutput(moduleNo, channelNo, ref b);
-            //value = (b != 0);
-            //return rc;
         }
 
         public int WriteOutput(int boardNo, int portNo, int channelNo, bool v)
         {
             var moduleNo = _map(boardNo, portNo);
-            int port = PortOf(channelNo);
-            int bit = BitOf(channelNo);
-
-            // read-modify-write: 해당 비트만 변경
-            byte portVal = 0;
-            int rc = AXD.ReadOutput(moduleNo, port, ref portVal);
-            if (rc != 0) return rc;
-
-            if (v) portVal = (byte)(portVal | (1 << bit));
-            else portVal = (byte)(portVal & ~(1 << bit));
-
-            return AXD.Write(moduleNo, port, portVal);
-
-            //var moduleNo = _map(boardNo, portNo);
-            //// AjinAxlDioModule 참조: AXD.Write(mod, address, byte)
-            //CancelPulseTimerIfAny(boardNo, portNo, channelNo); // 펄스 중복 방지
-            //int rc = AXD.Write(moduleNo, channelNo, v ? (byte)1 : (byte)0);
-            //return rc;
+            // AjinAxlDioModule 참조: AXD.Write(mod, address, byte)
+            CancelPulseTimerIfAny(boardNo, portNo, channelNo); // 펄스 중복 방지
+            int rc = AXD.Write(moduleNo, channelNo, v ? (byte)1 : (byte)0);
+            return rc;
         }
 
         public int PulseOutput(int boardNo, int portNo, int channelNo, int widthMs)

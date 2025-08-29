@@ -99,25 +99,25 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.OutputMode = (OutputMode)GetInt("Config", "Output Mode", (int)axis.Setup.OutputMode);
                 axis.Setup.InputMode = (InputMode)GetInt("Config", "Input Mode", (int)axis.Setup.InputMode);
                 axis.Setup.InputSource = (InputSource)GetInt("Config", "Input Source", (int)axis.Setup.InputSource);
-                axis.Setup.ZPhaseLevel = (ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
-                axis.Setup.ServoLevel = (ActiveLevel)GetInt("Config", "Servo Level", (int)axis.Setup.ServoLevel);
+                axis.Setup.ZPhaseLevel = (Common.Motions.ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
+                axis.Setup.ServoLevel = (Common.Motions.ActiveLevel)GetInt("Config", "Servo Level", (int)axis.Setup.ServoLevel);
 
                 // --- Emergency Signal
-                axis.Setup.EmergencyLevel = (ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);
+                axis.Setup.EmergencyLevel = (Common.Motions.ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);
                 axis.Setup.StopMode = (StopMode)GetInt("Emergency Signal", "Stop Mode", (int)axis.Setup.StopMode);
 
                 // --- Inposition
-                axis.Setup.InpositionLevel = (ActiveLevel)GetInt("Inposition", "Level", (int)axis.Setup.InpositionLevel);
+                axis.Setup.InpositionLevel = (Common.Motions.ActiveLevel)GetInt("Inposition", "Level", (int)axis.Setup.InpositionLevel);
                 axis.Setup.SoftwareLimitEnable = GetBool("Inposition", "Software", axis.Setup.SoftwareLimitEnable);
                 axis.Setup.SoftwareLength = GetDouble("Inposition", "Software Length", axis.Setup.SoftwareLength);
 
                 // --- Home
-                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
+                axis.Setup.HomeSignalLevel = (Common.Motions.ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
                 axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
 
                 // --- Alarm
-                axis.Setup.AlarmResetSignal = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);
-                axis.Setup.AlarmLevel = (ActiveLevel)GetInt("Alarm", "Level", (int)axis.Setup.AlarmLevel);
+                axis.Setup.AlarmResetSignal = (Common.Motions.ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);
+                axis.Setup.AlarmLevel = (Common.Motions.ActiveLevel)GetInt("Alarm", "Level", (int)axis.Setup.AlarmLevel);
 
                 // --- Limit
                 axis.Setup.SoftLimitMin = GetDouble("Limit", "Soft Limit -", axis.Setup.SoftLimitMin);
@@ -405,34 +405,6 @@ namespace QMC.LCP_280.Process.Unit
 
             public int GetHashCode((string section, string title) obj)
                 => HashCode.Combine(_cmp.GetHashCode(obj.section ?? string.Empty), _cmp.GetHashCode(obj.title ?? string.Empty));
-        }
-        /// <summary>
-        /// FormConfig 탭 호스트가 전달하는 가용 크기에 맞춰 자동으로 폼 크기를 조정합니다.
-        /// </summary>
-        /// <param name="width">가용 너비</param>
-        /// <param name="height">가용 높이 (탭 헤더 제외)</param>
-        public void SetPanelSize(int width, int height)
-        {
-            try
-            {
-                this.SuspendLayout();
-
-                // 호스트(TabPage)의 클라이언트 영역을 그대로 사용
-                this.Size = new Size(width, height);
-                this.ClientSize = new Size(width, height);
-
-                // 포함된 컨트롤들이 Dock=Fill 등으로 배치되었다면 자동으로 맞춰짐
-                // 필요 시 내부 루트 컨테이너가 있다면 여기에서 Size/Dock 조정 가능
-
-                this.Invalidate();
-                this.Update();
-            }
-            finally
-            {
-                this.ResumeLayout(true);
-            }
-
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Config)}.SetPanelSize → {width}x{height}");
         }
     }
 }
