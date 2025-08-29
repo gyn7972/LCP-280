@@ -183,15 +183,7 @@ namespace QMC.Common.Motions
             return -1; // timeout
         }
 
-        public int MoveAbs(double logicalTarget)
-        {
-            GuardSoftLimit(logicalTarget);
-            var p = _correction.ToHardware(logicalTarget);
-            var jerk = MapJerkPercentToDriver(Config.AccJerkPercent, Config.DecJerkPercent);
-            return _driver.MoveAbsPulse(AxisNo, p, Config.MaxVelocity, Config.RunAcc, Config.RunDec, jerk);
-        }
-
-        public int MoveAbs(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
+        public int MoveAbs(double logicalTarget, double vel = 5, double acc = 10, double dec = 10, double jerkPercent = 50)
         {
             GuardSoftLimit(logicalTarget);
             var p = _correction.ToHardware(logicalTarget);
@@ -199,16 +191,10 @@ namespace QMC.Common.Motions
             return _driver.MoveAbsPulse(AxisNo, p, vel, acc, dec, jerk);
         }
 
-        public int MoveRel(double logicalDelta)
-        {
-            var target = logicalDelta;// GetPosition() + logicalDelta;
-            return MoveAbs(target);
-        }
-
         public int MoveRel(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
             var target = GetPosition() + logicalTarget;
-            return MoveRel(target);
+            return MoveAbs(target, vel, acc, dec, jerkPercent);
         }
 
         public int WaitMoveDone(int timeoutMs)
@@ -223,11 +209,15 @@ namespace QMC.Common.Motions
             return -1;
         }
 
-        public void JogStart(double signedVel, double acc, double dec)
+        public void JogStart(double signedVel)
         {
-            try { this.Servo(true); } catch { /* ignore */ }
+            try { this.Servo(true); } catch (Exception ex) { Log.Write(ex); }
+
+            double dAcc = 10; // Config.JogAcc;
+            double dDec = 10; // Config.JogDec;
+
             var drv = this._driver as AjinDriver;
-            if (drv != null) drv.JogVelStart(this.AxisNo, signedVel, acc, dec);
+            if (drv != null) drv.JogVelStart(this.AxisNo, signedVel, dAcc, dDec);
         }
 
         public void JogStop()

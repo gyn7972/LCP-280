@@ -232,10 +232,7 @@ namespace QMC.LCP_280.Process.Unit
                     DoStepMove(axis, jc, step);
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Write("LCP-280", "JogButton_MouseDown error: " + ex);
-            }
+            catch (Exception ex) { Log.Write(ex); }
         }
 
         private void JogButton_MouseUp(object sender, MouseEventArgs e)
@@ -252,7 +249,7 @@ namespace QMC.LCP_280.Process.Unit
                 if(!rdoStep.Checked)
                     StopJog(axis);
             }
-            catch { }
+            catch (Exception ex) { Log.Write(ex); }
         }
 
         private void btnStop_Click(object sender, EventArgs e)
@@ -268,19 +265,19 @@ namespace QMC.LCP_280.Process.Unit
 
                 StopJog(axis);
             }
-            catch { }
+            catch (Exception ex)
+            { 
+                Log.Write(ex);
+            }
         }
 
         // ★ 연속조그 시작
-        private void StartJogContinuous(MotionAxis axis, JogCommand jc, double velocity)
+        private void StartJogContinuous(MotionAxis axis, JogCommand jc, double velocity = 5)
         {
             int dir = 1;// (axis.Config?.ManualJogDir ?? +1); // +1 또는 -1
-            
-            //Test
-            double acc = 5;// axis.Config.JogAcc;
-            double dec = 5;// axis.Config.JogDec;
             double signedVel = velocity * jc.Sign * dir; // 방향 포함
-            axis.JogStart(signedVel, acc, dec);
+
+            axis.JogStart(signedVel);
         }
 
         // ★ 연속조그 정지
@@ -308,19 +305,25 @@ namespace QMC.LCP_280.Process.Unit
                 axis.MoveRel(signedStep, vel, acc, dec, jerk);
                 return;
             }
-            catch { /* 아래로 폴백 */ }
-
-            // ② 절대이동 폴백
-            double cur = axis.GetPosition();
-            try
-            {
-                axis.MoveAbs(cur + signedStep, vel, acc, dec, jerk);
-                return;
-            }
             catch (Exception ex)
             {
                 Log.Write(ex);
             }
+
+            // ② 절대이동 폴백
+            {
+                //double cur = axis.GetPosition();
+                //try
+                //{
+                //    axis.MoveAbs(cur + signedStep, vel, acc, dec, jerk);
+                //    return;
+                //}
+                //catch (Exception ex)
+                //{
+                //    Log.Write(ex);
+                //}
+            }
+            
         }
 
     }
