@@ -21,6 +21,9 @@ namespace QMC.Common
         private bool _hasAppliedSize;
         private Size _lastAppliedSize;
 
+        // 초기 탭 로딩 시 SelectedIndexChanged 억제용
+        private bool _tabsReady;
+
         public FormConfig()
         {
             InitializeComponent();
@@ -31,12 +34,13 @@ namespace QMC.Common
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializeConfigUI();
             
-            // 🔧 Visible 상태 변경 이벤트 추가
+            // 🔧 Visible 상태 변경 이벤트 추가 (자식 크기만 동기화, 콘텐츠는 클릭 시 로드)
             this.VisibleChanged += FormConfig_VisibleChanged;
         }
         
         /// <summary>
         /// 🔧 FormConfig가 보여질 때마다 탭 자식 크기만 갱신(호스트가 최종 크기를 전달하도록)
+        /// 실제 폼 로드는 사용자가 탭을 클릭하거나 선택을 변경할 때 수행한다.
         /// </summary>
         private void FormConfig_VisibleChanged(object sender, EventArgs e)
         {
@@ -62,6 +66,8 @@ namespace QMC.Common
             configTabControl.SizeMode = TabSizeMode.Fixed;
             configTabControl.DrawItem += ConfigTabControl_DrawItem;
             configTabControl.SelectedIndexChanged += ConfigTabControl_SelectedIndexChanged;
+            // ✅ 사용자가 현재 선택된 탭을 클릭했을 때만 로드되도록 처리 (초기 자동 로드 방지)
+            configTabControl.MouseUp += ConfigTabControl_MouseUp;
             
             // 🔧 TabControl 배경색도 흰색으로 설정
             configTabControl.BackColor = Color.White;
@@ -74,46 +80,17 @@ namespace QMC.Common
             Console.WriteLine($"   FormConfig.Controls.Count: {this.Controls.Count}");
             
             // FormManager에서 등록된 Config 폼들을 자동으로 탭으로 추가
+            _tabsReady = false; // 초기화 중 이벤트 무시
             LoadFormsFromManager();
+            _tabsReady = true;  // 초기화 완료
             
             // 강제로 TabControl을 보이게 설정
             configTabControl.Visible = true;
             configTabControl.BringToFront();
             
-            // 🔧 첫 번째 탭 즉시 로드 (콘텐츠만 추가하고 크기 전달은 SetPanelSize에서 일괄 처리)
-            EnsureFirstTabLoaded();
-            
+            // ❌ 초기 첫 탭 자동 로드 제거: 사용자가 탭을 클릭하거나 변경할 때만 로드
             Console.WriteLine($"✅ InitializeConfigUI 완료");
             Console.WriteLine($"   최종 TabControl 상태: Visible={configTabControl.Visible}, TabCount={configTabControl.TabPages.Count}");
-        }
-
-        /// <summary>
-        /// 첫 번째 탭의 콘텐츠가 비어 있지 않도록 보장합니다.
-        /// </summary>
-        private void EnsureFirstTabLoaded()
-        {
-            try
-            {
-                if (configTabControl == null || configTabControl.TabPages.Count == 0)
-                    return;
-
-                // SelectedIndex가 -1이면 0으로 설정
-                if (configTabControl.SelectedIndex < 0)
-                    configTabControl.SelectedIndex = 0;
-
-                var first = configTabControl.TabPages[0];
-                var info = first.Tag as FormInfo;
-                if (info != null && !_tabFormInstances.ContainsKey(first))
-                {
-                    Console.WriteLine("🔹 초기 첫 탭 폼 로드 수행");
-                    LoadFormIntoTab(first, info);
-                    // 크기 전달은 SetPanelSize 또는 UpdateActiveChildSize에서 수행
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"EnsureFirstTabLoaded 실패: {ex.Message}");
-            }
         }
 
         /// <summary>
@@ -180,16 +157,47 @@ namespace QMC.Common
         }
 
         /// <summary>
-        /// 탭이 선택되었을 때 해당 폼을 로드하여 표시
+        /// 사용자가 탭 선택을 변경했을 때 해당 폼을 로드하여 표시 (Lazy)
         /// </summary>
         private void ConfigTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (!_tabsReady) return; // 초기 로드 중에는 무시
+
             TabPage selectedTab = configTabControl.SelectedTab;
             if (selectedTab?.Tag is FormInfo formInfo)
             {
                 LoadFormIntoTab(selectedTab, formInfo);
                 // 선택 변경 시 즉시 크기 반영
                 UpdateActiveChildSize();
+            }
+        }
+
+        /// <summary>
+        /// 사용자가 현재 선택된 탭을 클릭했을 때 아직 로드되지 않았으면 로드
+        /// </summary>
+        private void ConfigTabControl_MouseUp(object sender, MouseEventArgs e)
+        {
+            try
+            {
+                if (e.Button != MouseButtons.Left) return;
+                for (int i = 0; i < configTabControl.TabPages.Count; i++)
+                {
+                    Rectangle rect = configTabControl.GetTabRect(i);
+                    if (rect.Contains(e.Location))
+                    {
+                        var tab = configTabControl.TabPages[i];
+                        if (tab != null && tab.Tag is FormInfo info && !_tabFormInstances.ContainsKey(tab))
+                        {
+                            LoadFormIntoTab(tab, info);
+                            UpdateActiveChildSize();
+                        }
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ConfigTabControl_MouseUp 실패: {ex.Message}");
             }
         }
 
@@ -259,7 +267,7 @@ namespace QMC.Common
                 if (configTabControl == null) return;
                 var selectedTab = configTabControl.SelectedTab;
                 if (selectedTab == null) return;
-                if (!_tabFormInstances.ContainsKey(selectedTab)) return;
+                if (!_tabFormInstances.ContainsKey(selectedTab)) return; // 아직 로드 안 되었으면 스킵
 
                 var activeForm = _tabFormInstances[selectedTab];
                 if (activeForm == null) return;
@@ -293,11 +301,12 @@ namespace QMC.Common
             _tabFormInstances.Clear();
             configTabControl.TabPages.Clear();
             
-            // 새로 로드
+            // 새로 로드 (초기에는 콘텐츠 미로딩)
+            _tabsReady = false;
             LoadFormsFromManager();
+            _tabsReady = true;
             
-            // 🔧 탭 초기 콘텐츠 보장 후 크기 반영
-            EnsureFirstTabLoaded();
+            // 선택 변경 시 로드되므로 크기만 반영 시도
             UpdateActiveChildSize();
         }
 
@@ -431,7 +440,7 @@ namespace QMC.Common
                 configTabControl.Invalidate();
                 configTabControl.Update();
 
-                // 🔧 현재 활성화된 탭의 폼에 탭 높이를 제외한 크기 전달
+                // 현재 활성화된 탭에 폼이 이미 로드되어 있다면 탭 높이를 제외한 크기 전달
                 UpdateActiveChildSize();
             }
             

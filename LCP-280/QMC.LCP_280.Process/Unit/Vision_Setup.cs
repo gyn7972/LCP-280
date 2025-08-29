@@ -63,7 +63,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-               
+
             }
             catch (Exception ex)
             {
@@ -274,6 +274,35 @@ namespace QMC.LCP_280.Process.Unit
             _jogPopup.TopMost = false;  // 원복
             _jogPopup.Activate();
             _jogPopup.Focus();
+        }
+
+        /// <summary>
+        /// FormConfig 탭 호스트가 전달하는 가용 크기에 맞춰 자동으로 폼 크기를 조정합니다.
+        /// </summary>
+        /// <param name="width">가용 너비</param>
+        /// <param name="height">가용 높이 (탭 헤더 제외)</param>
+        public void SetPanelSize(int width, int height)
+        {
+            try
+            {
+                this.SuspendLayout();
+
+                // 호스트(TabPage)의 클라이언트 영역을 그대로 사용
+                this.Size = new Size(width, height);
+                this.ClientSize = new Size(width, height);
+
+                // 포함된 컨트롤들이 Dock=Fill 등으로 배치되었다면 자동으로 맞춰짐
+                // 필요 시 내부 루트 컨테이너가 있다면 여기에서 Size/Dock 조정 가능
+
+                this.Invalidate();
+                this.Update();
+            }
+            finally
+            {
+                this.ResumeLayout(true);
+            }
+
+            Console.WriteLine($"📐 {nameof(Vision_Setup)}.SetPanelSize → {width}x{height}");
         }
     }
 }
