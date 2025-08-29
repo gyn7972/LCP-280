@@ -115,6 +115,9 @@
     <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
     <Compile Include="Common\TypeUtility.cs" />
     <Compile Include="ConfigStore.cs" />
+    <Compile Include="ConfigThreePaneLayout.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Coordinate\IActor.cs" />
     <Compile Include="Coordinate\SettingParameter.cs" />
     <Compile Include="Coordinate\XryztCoordinate.cs" />
@@ -133,8 +136,6 @@
     <Compile Include="CustomControl\VerticalAlignTextBox.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Cylinder\Cylinder.cs" />
-    <Compile Include="Cylinder\CylinderConfig.cs" />
     <Compile Include="DefaultValueApplier.cs" />
     <Compile Include="FormMessageBox\MessageBoxOk.cs">
       <SubType>Form</SubType>
@@ -160,6 +161,7 @@
     <Compile Include="FormMessageBox\MessageBoxYesNoRetry.Designer.cs">
       <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
     </Compile>
+    <Compile Include="IEquipment.cs" />
     <Compile Include="IO\AjinDioDriver.cs" />
     <Compile Include="IO\DIOChannel.cs" />
     <Compile Include="IO\DIOModuleSetup.cs" />
@@ -167,6 +169,11 @@
     <Compile Include="IO\DIOUnit.cs" />
     <Compile Include="IO\IDigitalIO.cs" />
     <Compile Include="IO\IDIODriver.cs" />
+    <Compile Include="IO\IOUtil\Cylinder.cs" />
+    <Compile Include="IO\IOUtil\DIO.cs" />
+    <Compile Include="IO\IOUtil\IoAutoBindings.cs.cs" />
+    <Compile Include="IO\IOUtil\IoBindings.cs" />
+    <Compile Include="IO\IOUtil\Vacuum.cs" />
     <Compile Include="IO\SimDioDriver.cs" />
     <Compile Include="Keithley\FormSetupKeithleyInstrument.cs">
       <SubType>Form</SubType>
@@ -295,6 +302,7 @@
     <Compile Include="ListBoxItemsView.Designer.cs">
       <DependentUpon>ListBoxItemsView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Motions\MotionStatusScanner.cs" />
     <Compile Include="NavigationService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />

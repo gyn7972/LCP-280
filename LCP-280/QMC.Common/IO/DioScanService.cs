@@ -46,10 +46,13 @@ namespace QMC.Common.DIO
             BuildScanLists();
         }
 
+        //private static string KeyOf(string moduleName, string displayNo)
+        //{
+        //    //return moduleName + "|" + displayNo;
+        //    return moduleName + "|" + NormalizeDisp(displayNo);
+        //}
         private static string KeyOf(string moduleName, string displayNo)
-        {
-            return moduleName + "|" + displayNo;
-        }
+    => (moduleName ?? "").Trim() + "|" + NormalizeDisp(displayNo);
 
         private void BuildScanLists()
         {
@@ -72,7 +75,8 @@ namespace QMC.Common.DIO
                             item.Key = KeyOf(m.ModuleName, c.DisplayNo);
                             item.BoardNo = c.BoardNo != 0 ? c.BoardNo : m.BoardNo;
                             item.PortNo = c.PortNo;
-                            item.ChannelNo = c.ChannelNo == 0 ? c.Index : c.ChannelNo; // 기본 채널 매핑
+                            //item.ChannelNo = c.ChannelNo == 0 ? c.Index : c.ChannelNo; 
+                            item.ChannelNo = c.ChannelNo == 0 ? j : c.ChannelNo;
                             item.Reverse = c.Reverse;
                             item.Monitoring = c.Monitoring;
                             ins.Add(item);
@@ -89,7 +93,7 @@ namespace QMC.Common.DIO
                             item.Key = KeyOf(m.ModuleName, c.DisplayNo);
                             item.BoardNo = c.BoardNo != 0 ? c.BoardNo : m.BoardNo;
                             item.PortNo = c.PortNo;
-                            item.ChannelNo = c.ChannelNo == 0 ? c.Index : c.ChannelNo;
+                            item.ChannelNo = c.ChannelNo == 0 ? j : c.ChannelNo;
                             item.Reverse = c.Reverse;
                             item.Monitoring = c.Monitoring;
                             outs.Add(item);
@@ -161,6 +165,7 @@ namespace QMC.Common.DIO
             }
             if (!found.HasValue) return -1;
 
+            // 8개씩 띄워져서 커지고 지랄하고 있음
             var s = found.Value;
             var raw = s.Reverse ? !logicalOn : logicalOn;
             var rc = _drv.WriteOutput(s.BoardNo, s.PortNo, s.ChannelNo, raw);
@@ -248,6 +253,8 @@ namespace QMC.Common.DIO
 
         private void ScanOutputs()
         {
+
+            
             // 출력도 실제 보드 상태를 읽어 캐시에 반영(외부 변경 대응)
             for (int i = 0; i < _outputs.Length; i++)
             {
@@ -281,5 +288,38 @@ namespace QMC.Common.DIO
                 }
             }
         }
+
+        private static string NormalizeDisp(string disp)
+        {
+            if (string.IsNullOrWhiteSpace(disp)) return disp;
+            disp = disp.Trim().ToUpperInvariant();
+
+            var m = System.Text.RegularExpressions.Regex.Match(disp, @"^(X|Y)\s*0*(\d+)$");
+            if (!m.Success) m = System.Text.RegularExpressions.Regex.Match(disp, @"^(X|Y)\s*0*(\d+)\b");
+            if (m.Success)
+            {
+                var letter = m.Groups[1].Value;
+                var digits = m.Groups[2].Value;
+                if (string.IsNullOrEmpty(digits)) digits = "0";
+                return letter + digits; // 예: "Y00","Y003","y3" 모두 "Y3"로 통일
+            }
+            return disp;
+
+            //if (string.IsNullOrWhiteSpace(disp)) return disp;
+            //disp = disp.Trim().ToUpperInvariant();
+
+            //// X/Y + 숫자 → 선행0 제거
+            //var m = System.Text.RegularExpressions.Regex.Match(disp, @"^(X|Y)\s*0*(\d+)$");
+            //if (!m.Success) m = System.Text.RegularExpressions.Regex.Match(disp, @"^(X|Y)\s*0*(\d+)\b");
+            //if (m.Success)
+            //{
+            //    var letter = m.Groups[1].Value;     // X or Y
+            //    var digits = m.Groups[2].Value;     // "0" 또는 "3" 등
+            //    if (string.IsNullOrEmpty(digits)) digits = "0";
+            //    return letter + digits;             // "Y3" (패딩 없음)
+            //}
+            //return disp; // 그 외 키는 원문(대문자/트림) 사용
+        }
+
     }
 }

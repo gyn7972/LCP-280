@@ -31,14 +31,19 @@ namespace QMC.Common.Motions
 
         public double ToHardware(double logicalValue)
         {
-            var v = logicalValue * _config.LogicalScaleFactor + _config.Offset;
-            return v * _setup.PulsesPerUnit;
+            var v = logicalValue;
+            return v;
+
+            //var v = logicalValue * _config.LogicalScaleFactor + _config.Offset;
+            //return v * _setup.PulsesPerUnit;
         }
 
         public double ToLogical(double hardwareValue)
         {
-            var v = hardwareValue / _setup.PulsesPerUnit;
-            return (v - _config.Offset) / _config.LogicalScaleFactor;
+            var v = hardwareValue;
+            return v;
+            //var v = hardwareValue / _setup.PulsesPerUnit;
+            //return (v - _config.Offset) / _config.LogicalScaleFactor;
         }
     }
 }

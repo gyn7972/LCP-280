@@ -11,7 +11,7 @@ namespace QMC.LCP_280.Process.Unit
     /// CassetteLoadingElevator Unit의 Config 폼
     /// Equipment와 연동하여 Config 및 Recipe 관리
     /// </summary>
-    public partial class InputCassetteLifterUnit_Config : Form
+    public partial class InputCassetteLifterUnit_Working : Form
     {
         private const string UNIT_NAME = "InputCassetteLifterUnit";
         
@@ -25,7 +25,7 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private InputCassetteLifter InputCassetteLifterUnit { get; set; }
 
-        public InputCassetteLifterUnit_Config()
+        public InputCassetteLifterUnit_Working()
         {
             InitializeComponent();
             // 폼 로딩 중에는 화면 업데이트 중단
