@@ -196,7 +196,6 @@
     <Compile Include="Motions\AjinAxlBoardHost.cs" />
     <Compile Include="Motions\AjinDriver.cs" />
     <Compile Include="Motions\CKD\CKDMotorDriver.cs" />
-    <Compile Include="Motions\IMotionDriver.cs" />
     <Compile Include="Motions\IPropertyCorrection.cs" />
     <Compile Include="Motions\MotionAxis.cs" />
     <Compile Include="Motions\MotionAxisConfig.cs" />
