@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,7 +45,7 @@ namespace QMC.Common.Motions
         #endregion
 
         private readonly object _gate = new object();
-        private readonly IMotionDriver _driver;
+        private readonly AjinDriver _driver;
 
         public MotionAxisSetup Setup { get; set;  }
         public MotionAxisConfig Config { get; set; }
@@ -54,7 +55,7 @@ namespace QMC.Common.Motions
         public string Name { get { return Setup.Name; } }
         public int AxisNo { get { return Setup.AxisNo; } }
 
-        public MotionAxis(MotionAxisSetup setup, MotionAxisConfig config, IMotionDriver driver, IPropertyCorrection correction = null)
+        public MotionAxis(MotionAxisSetup setup, MotionAxisConfig config, AjinDriver driver, IPropertyCorrection correction = null)
         {
             if (setup == null) throw new ArgumentNullException(nameof(setup));
             if (config == null) throw new ArgumentNullException(nameof(config));
@@ -182,15 +183,7 @@ namespace QMC.Common.Motions
             return -1; // timeout
         }
 
-        public int MoveAbs(double logicalTarget)
-        {
-            GuardSoftLimit(logicalTarget);
-            var p = _correction.ToHardware(logicalTarget);
-            var jerk = MapJerkPercentToDriver(Config.AccJerkPercent, Config.DecJerkPercent);
-            return _driver.MoveAbsPulse(AxisNo, p, Config.MaxVelocity, Config.RunAcc, Config.RunDec, jerk);
-        }
-
-        public int MoveAbs(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
+        public int MoveAbs(double logicalTarget, double vel = 5, double acc = 10, double dec = 10, double jerkPercent = 50)
         {
             GuardSoftLimit(logicalTarget);
             var p = _correction.ToHardware(logicalTarget);
@@ -198,10 +191,10 @@ namespace QMC.Common.Motions
             return _driver.MoveAbsPulse(AxisNo, p, vel, acc, dec, jerk);
         }
 
-        public int MoveRel(double logicalDelta)
+        public int MoveRel(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
-            var target = GetPosition() + logicalDelta;
-            return MoveAbs(target);
+            var target = GetPosition() + logicalTarget;
+            return MoveAbs(target, vel, acc, dec, jerkPercent);
         }
 
         public int WaitMoveDone(int timeoutMs)
@@ -215,6 +208,30 @@ namespace QMC.Common.Motions
             }
             return -1;
         }
+
+        public void JogStart(double signedVel)
+        {
+            try { this.Servo(true); } catch (Exception ex) { Log.Write(ex); }
+
+            double dAcc = 10; // Config.JogAcc;
+            double dDec = 10; // Config.JogDec;
+
+            var drv = this._driver as AjinDriver;
+            if (drv != null) drv.JogVelStart(this.AxisNo, signedVel, dAcc, dDec);
+        }
+
+        public void JogStop()
+        {
+            var drv = this._driver as AjinDriver;
+            if (drv != null) drv.JogStop(this.AxisNo);
+        }
+
+        public void JogEStop()
+        {
+            var drv = this._driver as AjinDriver;
+            if (drv != null) drv.JogEStop(this.AxisNo);
+        }
+
 
         public int Stop() { return _driver.Stop(AxisNo); }
         public int EmgStop() { return _driver.EmgStop(AxisNo); }
@@ -425,5 +442,10 @@ namespace QMC.Common.Motions
             Status.TimestampUtc = DateTime.UtcNow;
             return Status;
         }
+
+
+        
+
+
     }
 }

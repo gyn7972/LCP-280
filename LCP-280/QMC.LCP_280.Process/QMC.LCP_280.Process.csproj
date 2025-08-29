@@ -168,6 +168,9 @@
     <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <EmbeddedResource Include="Component\JogControl.resx">
+      <DependentUpon>JogControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -235,8 +238,6 @@
       <Name>QMC.Common</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Component\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

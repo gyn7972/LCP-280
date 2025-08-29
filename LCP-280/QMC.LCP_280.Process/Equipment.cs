@@ -18,7 +18,6 @@ using System.Windows.Forms;
 using QMC.Common.Motion;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Cameras;
-using QMC.Common.Cylinder;
 using QMC.Common.Keithley;
 using QMC.Common.Spectrometer;
 
