@@ -134,6 +134,7 @@ namespace QMC.Common
                 throw new ArgumentException($"{unitName}에 대한 Log 폼을 찾을 수 없습니다.");
             }
             
+            // 등록된 폼이 2개 이상인 경우, FormLog 탭 호스트 반환
             if (logForms.Count >= 2)
             {
                 return new FormLog();

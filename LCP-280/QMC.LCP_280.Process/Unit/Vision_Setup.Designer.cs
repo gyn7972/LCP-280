@@ -91,7 +91,6 @@ namespace QMC.LCP_280.Process.Unit
             this.gbIlluminatorControl = new System.Windows.Forms.GroupBox();
             this.btn_Save_Camera_Setup = new QMC.Common.IndividualMenuButton();
             this.btn_Save_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
-            this.btn_JogPopup = new QMC.Common.IndividualMenuButton();
             this.cameraPropertyCollectionView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).BeginInit();
             this.illuminatorPropertyCollectionView.SuspendLayout();
@@ -141,8 +140,6 @@ namespace QMC.LCP_280.Process.Unit
             // visionImageViewer
             // 
             this.visionImageViewer.BackColor = System.Drawing.Color.Black;
-            this.visionImageViewer.Camera = null;
-            this.visionImageViewer.CameraSwitch = null;
             this.visionImageViewer.FrameRate = 1D;
             this.visionImageViewer.InputImage = null;
             this.visionImageViewer.IsViewCustomizedImage = false;
@@ -151,11 +148,16 @@ namespace QMC.LCP_280.Process.Unit
             this.visionImageViewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.visionImageViewer.Simulated = false;
             this.visionImageViewer.Size = new System.Drawing.Size(400, 445);
-            this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.visionImageViewer.TabIndex = 16;
             this.visionImageViewer.TabStop = false;
             this.visionImageViewer.UpdateDelayTime = 80;
             this.visionImageViewer.VisibleCrossLine = true;
+            this.visionImageViewer.Camera = null;
+            this.visionImageViewer.CameraSwitch = null;
+            this.visionImageViewer.SizeMode = PictureBoxSizeMode.CenterImage;
+            this.visionImageViewer.SuspendDisplay();
+
             // 
             // iluminatorListBoxItemsView
             // 
@@ -328,31 +330,11 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Illuninator_Setup.Text = "Save";
             this.btn_Save_Illuninator_Setup.UseVisualStyleBackColor = false;
             // 
-            // btn_JogPopup
-            // 
-            this.btn_JogPopup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_JogPopup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_JogPopup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_JogPopup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_JogPopup.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_JogPopup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_JogPopup.ForeColor = System.Drawing.Color.Black;
-            this.btn_JogPopup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_JogPopup.Location = new System.Drawing.Point(12, 706);
-            this.btn_JogPopup.Name = "btn_JogPopup";
-            this.btn_JogPopup.Size = new System.Drawing.Size(100, 40);
-            this.btn_JogPopup.TabIndex = 25;
-            this.btn_JogPopup.TabStop = false;
-            this.btn_JogPopup.Text = "Axis Jog";
-            this.btn_JogPopup.UseVisualStyleBackColor = false;
-            this.btn_JogPopup.Click += new System.EventHandler(this.btn_JogPopup_Click);
-            // 
             // Vision_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 752);
-            this.Controls.Add(this.btn_JogPopup);
             this.Controls.Add(this.btn_Save_Illuninator_Setup);
             this.Controls.Add(this.btn_Save_Camera_Setup);
             this.Controls.Add(this.gbIlluminatorControl);
@@ -486,46 +468,38 @@ namespace QMC.LCP_280.Process.Unit
             // 4) 버퍼/스케일/크로스라인 리셋 + 첫 프레임 스냅샷으로 즉시 표시
             ResetViewerForCameraChange();
 
-            //선택해서 읽자. 너무 느리다.
-            //string strTemp = cameraListBoxItemsView.SelectedItemName;
-            //if (Equipment.Instance.Cameras.TryGetValue(strTemp, out var cam))
-            //{
-            //    var hikCam = cam as HIKGigECamera;  // 다운캐스팅 (HIK 전용 기능 쓰려면)
-
-            //    if (hikCam != null)
-            //    {
-            //        int ret = hikCam.ConnectAndGetProperties("", out var props);
-            //        if (ret == 0)
-            //        {
-            //            //hikCam.ConnectAndSyncConfig(strTemp);
-            //            //lblCamInfo.Text = $"{props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}";
-            //            Log.Write("LCP-280", $"Camera connected: {props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}");
-            //        }
-            //        else
-            //        {
-            //            //lblCamInfo.Text = "Camera not connected";
-            //            Log.Write("LCP-280", $"Camera not connected (ret={ret})");
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    Console.WriteLine("Camera not found");
-            //}
-
-            // 5) 새 라이브 시작
-            try { visionImageViewer.CurrentCamera?.StartLive(); } 
-            catch (Exception ex)
+            string strTemp = cameraListBoxItemsView.SelectedItemName;
+            if (Equipment.Instance.Cameras.TryGetValue(strTemp, out var cam))
             {
-                Log.Write(ex);
+                var hikCam = cam as HIKGigECamera;  // 다운캐스팅 (HIK 전용 기능 쓰려면)
+
+                if (hikCam != null)
+                {
+                    int ret = hikCam.ConnectAndGetProperties("", out var props);
+                    if (ret == 0)
+                    {
+                        //hikCam.ConnectAndSyncConfig(strTemp);
+                        //lblCamInfo.Text = $"{props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}";
+                        Log.Write("LCP-280", $"Camera connected: {props.ModelName} ({props.SerialNo}) {props.Width}x{props.Height}");
+                    }
+                    else
+                    {
+                        //lblCamInfo.Text = "Camera not connected";
+                        Log.Write("LCP-280", $"Camera not connected (ret={ret})");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("Camera not found");
             }
 
+            // 5) 새 라이브 시작
+            try { visionImageViewer.CurrentCamera?.StartLive(); } catch { }
 
             // 6) 다시 표시
             visionImageViewer.ResumeDisplay();
             visionImageViewer.Display();
-
-            visionImageViewer.StartUpdateTask();
 
             //if (_camSwitch == null) return;
             //if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
@@ -645,6 +619,6 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
-        private IndividualMenuButton btn_JogPopup;
+        
     }
 }
