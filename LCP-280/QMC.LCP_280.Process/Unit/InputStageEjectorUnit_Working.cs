@@ -9,17 +9,17 @@ using QMC.Common.Spectrometer;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// CassetteLoadingElevator Unit의 Config 폼
+    /// Input Stage Ejector Unit의 Working 폼
     /// </summary>
-    public partial class InputCassetteLifterUnit_Working : Form
+    public partial class InputStageEjectorUnit_Working : Form
     {
-        private const string UNIT_NAME = "InputCassetteLifterUnit";
+        private const string UNIT_NAME = "Input Stage Ejector";
         private Equipment Equipment => Equipment.Instance;
-        private InputCassetteLifter InputCassetteLifterUnit { get; set; }
+        private InputStageEjector InputStageEjectorUnit { get; set; }
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        public InputCassetteLifterUnit_Working()
+        public InputStageEjectorUnit_Working()
         {
             InitializeComponent();
             _designerSize = this.Size;
@@ -27,7 +27,7 @@ namespace QMC.LCP_280.Process.Unit
             InitializeUI();
             this.ResumeLayout(true);
 
-            Console.WriteLine("✅ InputCassetteLifterUnit_Working 생성자 완료");
+            Console.WriteLine("✅ InputStageEjectorUnit_Working 생성자 완료");
         }
 
         private void InitializeUnit()
@@ -35,9 +35,9 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
-                    InputCassetteLifterUnit = unit as InputCassetteLifter;
+                    InputStageEjectorUnit = unit as InputStageEjector;
 
-                if (InputCassetteLifterUnit == null)
+                if (InputStageEjectorUnit == null)
                 {
                     MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -52,6 +52,18 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        private void InitializeUI()
+        {
+            try
+            {
+                // 필요한 추가 UI 초기화 로직이 있으면 여기에 작성
+            }
+            catch (Exception)
+            {
+                // 무시 또는 로깅
+            }
+        }
+
         private void button_Test_Click(object sender, EventArgs e)
         {
             TestGyn testGyn = new TestGyn();
@@ -60,7 +72,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public void SetPanelSize(int width, int height)
         {
-            // 디자이너 값과 다른 경우 경고(1회)
             if (!_sizeMismatchWarned && (width != _designerSize.Width || height != _designerSize.Height))
             {
                 string formName = this.GetType().Name;
@@ -72,7 +83,7 @@ namespace QMC.LCP_280.Process.Unit
 #if DEBUG
                 Debug.WriteLine($"[SizeMismatch] {msg}");
 #endif
-                try { MessageBox.Show(this, msg, "크기 불일치", MessageBoxButtons.OK, MessageBoxIcon.Warning); } catch { /* ignore */ }
+                try { MessageBox.Show(this, msg, "크기 불일치", MessageBoxButtons.OK, MessageBoxIcon.Warning); } catch { }
                 _sizeMismatchWarned = true;
             }
 
@@ -88,21 +99,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.ResumeLayout(true);
             }
 
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Working)}.SetPanelSize → {width}x{height}");
-        }
-
-        private void AxispositonListBoxItemsView_Load(object sender, EventArgs e)
-        {
-        }
-
-        // (옵션) 저장 시 텍스트박스 → PropertyBase에 커밋하고 사용
-        private void ApplyProperties()
-        {
-            // 텍스트 변경을 즉시 반영하도록 바인딩되어 있지만,
-            // 명시 커밋이 필요할 때 호출
-
-            // _lifterPropView.GetCurrentProperties()로 현재 컬렉션을 얻어
-            // 모델/설비에 반영하는 로직을 추가 가능
+            Console.WriteLine($"📐 {nameof(InputStageEjectorUnit_Working)}.SetPanelSize → {width}x{height}");
         }
     }
 }

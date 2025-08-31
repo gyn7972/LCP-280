@@ -9,17 +9,17 @@ using QMC.Common.Spectrometer;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// CassetteLoadingElevator Unit의 Config 폼
+    /// Equipment와 연동하여 화면 동작 구성
     /// </summary>
-    public partial class InputCassetteLifterUnit_Working : Form
+    public partial class InputStageUnit_Working : Form
     {
-        private const string UNIT_NAME = "InputCassetteLifterUnit";
+        private const string UNIT_NAME = "InputStage";
         private Equipment Equipment => Equipment.Instance;
-        private InputCassetteLifter InputCassetteLifterUnit { get; set; }
+        private InputStage InputStageUnit { get; set; }
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        public InputCassetteLifterUnit_Working()
+        public InputStageUnit_Working()
         {
             InitializeComponent();
             _designerSize = this.Size;
@@ -27,7 +27,7 @@ namespace QMC.LCP_280.Process.Unit
             InitializeUI();
             this.ResumeLayout(true);
 
-            Console.WriteLine("✅ InputCassetteLifterUnit_Working 생성자 완료");
+            Console.WriteLine("✅ InputStageUnit_Working 생성자 완료");
         }
 
         private void InitializeUnit()
@@ -35,9 +35,9 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
-                    InputCassetteLifterUnit = unit as InputCassetteLifter;
+                    InputStageUnit = unit as InputStage;
 
-                if (InputCassetteLifterUnit == null)
+                if (InputStageUnit == null)
                 {
                     MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -49,6 +49,18 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 MessageBox.Show($"Unit 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void InitializeUI()
+        {
+            try
+            {
+                // 필요한 추가 UI 초기화 로직이 있으면 여기에 작성
+            }
+            catch (Exception)
+            {
+                // 무시 또는 로깅
             }
         }
 
@@ -88,7 +100,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.ResumeLayout(true);
             }
 
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Working)}.SetPanelSize → {width}x{height}");
+            Console.WriteLine($"📐 {nameof(InputStageUnit_Working)}.SetPanelSize → {width}x{height}");
         }
 
         private void AxispositonListBoxItemsView_Load(object sender, EventArgs e)
@@ -100,9 +112,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             // 텍스트 변경을 즉시 반영하도록 바인딩되어 있지만,
             // 명시 커밋이 필요할 때 호출
-
-            // _lifterPropView.GetCurrentProperties()로 현재 컬렉션을 얻어
-            // 모델/설비에 반영하는 로직을 추가 가능
         }
     }
 }
