@@ -10,47 +10,48 @@ namespace QMC.Common
     {
         private TabControl workingTabControl;
         private Dictionary<TabPage, Form> _tabFormInstances;
-        
+
         // Theme fields
         private int _tabHeight = 28;
         private Color _tabBorderColor = Color.Black;
         private int _tabBorderWidth = 2;
         private Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
 
-        // 방어: 너무 작은 크기 전달 차단
-        private bool _hasAppliedSize;
-        private Size _lastAppliedSize;
+        // 호스트에서 유효 크기를 한 번이라도 전달받았는지
+        private bool _hostSized;
 
         public FormWorking()
         {
             InitializeComponent();
-            
+
             // 🔧 배경색을 흰색으로 설정
             this.BackColor = Color.White;
-            
+
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializeworkingUI();
-            
+
             // 🔧 Visible 상태 변경 이벤트 추가(자식 크기만 동기화)
             this.VisibleChanged += Formworking_VisibleChanged;
         }
-        
+
         /// <summary>
         /// 🔧 FormWorking이 보여질 때 탭 자식 크기만 갱신
         /// </summary>
         private void Formworking_VisibleChanged(object sender, EventArgs e)
         {
             if (!this.Visible) return;
+            // 호스트에서 최종 사이즈를 전달받기 전이면 무시
+            if (!_hostSized) return;
             BeginInvoke(new Action(() => UpdateActiveChildSize()));
         }
-        
+
         private void InitializeworkingUI()
         {
             Console.WriteLine("🚀 Formworking.InitializeworkingUI() 시작");
-            
+
             // 🔧 Formworking 배경색을 확실히 흰색으로 설정
             this.BackColor = Color.White;
-            
+
             // TabControl 생성 및 테마 적용
             workingTabControl = new TabControl();
             // 🔧 Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
@@ -61,27 +62,27 @@ namespace QMC.Common
             workingTabControl.SizeMode = TabSizeMode.Fixed;
             workingTabControl.DrawItem += workingTabControl_DrawItem;
             workingTabControl.SelectedIndexChanged += workingTabControl_SelectedIndexChanged;
-            
+
             // 🔧 TabControl 배경색도 흰색으로 설정
             workingTabControl.BackColor = Color.White;
-            
+
             Console.WriteLine($"   TabControl 생성 완료: Size={workingTabControl.Size}, Visible={workingTabControl.Visible}");
-            
+
             this.Controls.Add(workingTabControl);
-            
+
             Console.WriteLine($"   TabControl을 Formworking에 추가 완료");
             Console.WriteLine($"   Formworking.Controls.Count: {this.Controls.Count}");
-            
+
             // FormManager에서 등록된 working 폼들을 자동으로 탭으로 추가
             LoadFormsFromManager();
-            
+
             // 강제로 TabControl을 보이게 설정
             workingTabControl.Visible = true;
             workingTabControl.BringToFront();
-            
+
             // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
             EnsureFirstTabLoaded();
-            
+
             Console.WriteLine($"✅ InitializeworkingUI 완료");
             Console.WriteLine($"   최종 TabControl 상태: Visible={workingTabControl.Visible}, TabCount={workingTabControl.TabPages.Count}");
         }
@@ -112,22 +113,22 @@ namespace QMC.Common
             try
             {
                 Console.WriteLine("🔍 Formworking.LoadFormsFromManager() 시작");
-                
+
                 var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
                 Console.WriteLine($"   등록된 working 폼 개수: {workingForms.Count}");
-                
+
                 foreach (var formInfo in workingForms)
                 {
                     Console.WriteLine($"   working 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
                     CreateTabFromFormInfo(formInfo);
                 }
-                
+
                 if (workingForms.Count == 0)
                 {
                     Console.WriteLine("⚠️ 등록된 working 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
-                
+
                 Console.WriteLine($"✅ 최종 탭 개수: {workingTabControl.TabPages.Count}");
                 Console.WriteLine($"   workingTabControl.Visible: {workingTabControl.Visible}");
                 Console.WriteLine($"   workingTabControl.Size: {workingTabControl.Size}");
@@ -159,7 +160,9 @@ namespace QMC.Common
             if (selectedTab?.Tag is FormInfo formInfo)
             {
                 LoadFormIntoTab(selectedTab, formInfo);
-                UpdateActiveChildSize();
+                // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
+                if (_hostSized)
+                    UpdateActiveChildSize();
             }
         }
 
@@ -212,7 +215,13 @@ namespace QMC.Common
                 if (activeForm == null) return;
 
                 int availableWidth = workingTabControl.ClientSize.Width;
-                int availableHeight = workingTabControl.ClientSize.Height - _tabHeight;
+                int availableHeight = workingTabControl.ClientSize.Height;
+                // 너무 작은 초기값(예: 600x400) 필터링
+                if (availableWidth < 800 || availableHeight < 450)
+                {
+                    Console.WriteLine($"   ⏭️ 크기 전달 보류(Working): {availableWidth}x{availableHeight}");
+                    return;
+                }
                 var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", new Type[] { typeof(int), typeof(int) });
                 if (setPanelSizeMethod != null)
                 {
@@ -300,7 +309,7 @@ namespace QMC.Common
                 );
             }
         }
-        
+
         private void CreateSampleTabs()
         {
             TabPage systemTab = new TabPage("Sample working");
@@ -328,21 +337,15 @@ namespace QMC.Common
         public void SetPanelSize(int width, int height)
         {
             Console.WriteLine($"🔧 Formworking.SetPanelSize() 호출: width={width}, height={height}");
-            if (_hasAppliedSize && (width < 400 || height < 200))
-            {
-                Console.WriteLine($"   ⏭️ 무시(Working): 너무 작은 값 전달({width}x{height})");
-                return;
-            }
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
-            _hasAppliedSize = true;
-            _lastAppliedSize = new Size(width, height);
+            _hostSized = true; // 호스트에서 유효 사이즈 전달 받음
             UpdateActiveChildSize();
             this.Invalidate();
             this.Update();
             Console.WriteLine($"✅ Formworking.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
-        
+
         #region Form Border Drawing
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -360,7 +363,7 @@ namespace QMC.Common
             this.Invalidate();
         }
         #endregion
-        
+
         #region Border Customization Methods
         public void SetBorderStyle(Color color, int width)
         {

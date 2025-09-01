@@ -10,11 +10,11 @@ using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class IndexLoadAlignerConfig : BaseConfig
+    public class InputStageEjectorConfig : BaseConfig
     {
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        public IndexLoadAlignerConfig() : base("IndexLoadAlignerConfig")
+        public InputStageEjectorConfig() : base("InputStageEjectorConfig")
         {
             //InitializeDefaultTeachingPositions();
         }
@@ -32,8 +32,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Index Z Axis", 0.0 },
-                        { "Align T Axis", 100.0 }
+                        { "Eject Pin Z Axis", 0.0 },
+                        { "Ejector Z Axis", 100.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

@@ -10,47 +10,48 @@ namespace QMC.Common
     {
         private TabControl recipeTabControl;
         private Dictionary<TabPage, Form> _tabFormInstances;
-        
+
         // Theme fields
         private int _tabHeight = 28;
         private Color _tabBorderColor = Color.Black;
         private int _tabBorderWidth = 2;
         private Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
 
-        // 방어: 너무 작은 크기 전달 차단
-        private bool _hasAppliedSize;
-        private Size _lastAppliedSize;
+        // 호스트에서 유효 크기를 한 번이라도 전달받았는지
+        private bool _hostSized;
 
         public FormRecipe()
         {
             InitializeComponent();
-            
+
             // 🔧 배경색을 흰색으로 설정
             this.BackColor = Color.White;
-            
+
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializerecipeUI();
-            
+
             // 🔧 Visible 상태 변경 이벤트: 자식 크기만 동기화
             this.VisibleChanged += Formrecipe_VisibleChanged;
         }
-        
+
         /// <summary>
         /// 🔧 FormRecipe가 보여질 때 탭 자식 크기만 갱신
         /// </summary>
         private void Formrecipe_VisibleChanged(object sender, EventArgs e)
         {
             if (!this.Visible) return;
+            // 호스트에서 최종 사이즈를 전달받기 전이면 무시
+            if (!_hostSized) return;
             BeginInvoke(new Action(() => UpdateActiveChildSize()));
         }
-        
+
         private void InitializerecipeUI()
         {
             Console.WriteLine("🚀 Formrecipe.InitializerecipeUI() 시작");
-            
+
             // 🔧 Formrecipe 배경색을 확실히 흰색으로 설정
             this.BackColor = Color.White;
-            
+
             // TabControl 생성 및 테마 적용
             recipeTabControl = new TabControl();
             // 🔧 Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
@@ -61,34 +62,31 @@ namespace QMC.Common
             recipeTabControl.SizeMode = TabSizeMode.Fixed;
             recipeTabControl.DrawItem += recipeTabControl_DrawItem;
             recipeTabControl.SelectedIndexChanged += recipeTabControl_SelectedIndexChanged;
-            
+
             // 🔧 TabControl 배경색도 흰색으로 설정
             recipeTabControl.BackColor = Color.White;
-            
+
             Console.WriteLine($"   TabControl 생성 완료: Size={recipeTabControl.Size}, Visible={recipeTabControl.Visible}");
-            
+
             this.Controls.Add(recipeTabControl);
-            
+
             Console.WriteLine($"   TabControl을 Formrecipe에 추가 완료");
             Console.WriteLine($"   Formrecipe.Controls.Count: {this.Controls.Count}");
-            
+
             // FormManager에서 등록된 recipe 폼들을 자동으로 탭으로 추가
             LoadFormsFromManager();
-            
+
             // 강제로 TabControl을 보이게 설정
             recipeTabControl.Visible = true;
             recipeTabControl.BringToFront();
-            
+
             // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
             EnsureFirstTabLoaded();
-            
+
             Console.WriteLine($"✅ InitializerecipeUI 완료");
             Console.WriteLine($"   최종 TabControl 상태: Visible={recipeTabControl.Visible}, TabCount={recipeTabControl.TabPages.Count}");
         }
 
-        /// <summary>
-        /// 첫 번째 탭 콘텐츠 보장
-        /// </summary>
         private void EnsureFirstTabLoaded()
         {
             try
@@ -110,39 +108,31 @@ namespace QMC.Common
             }
         }
 
-        /// <summary>
-        /// FormManager에서 recipe 타입으로 등록된 폼들을 탭으로 로드
-        /// </summary>
         private void LoadFormsFromManager()
         {
             try
             {
                 Console.WriteLine("🔍 Formrecipe.LoadFormsFromManager() 시작");
-                
+
                 var recipeForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Recipe);
                 Console.WriteLine($"   등록된 recipe 폼 개수: {recipeForms.Count}");
-                
+
                 foreach (var formInfo in recipeForms)
                 {
                     Console.WriteLine($"   recipe 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
                     CreateTabFromFormInfo(formInfo);
                 }
-                
-                // 등록된 폼이 없으면 기본 샘플 탭 생성
+
                 if (recipeForms.Count == 0)
                 {
                     Console.WriteLine("⚠️ 등록된 recipe 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
-                
+
                 Console.WriteLine($"✅ 최종 탭 개수: {recipeTabControl.TabPages.Count}");
-                
-                // 탭 컨트롤 상태 확인
                 Console.WriteLine($"   recipeTabControl.Visible: {recipeTabControl.Visible}");
                 Console.WriteLine($"   recipeTabControl.Size: {recipeTabControl.Size}");
                 Console.WriteLine($"   recipeTabControl.Dock: {recipeTabControl.Dock}");
-                
-                // Formrecipe 자체 상태도 확인
                 Console.WriteLine($"   Formrecipe.Visible: {this.Visible}");
                 Console.WriteLine($"   Formrecipe.Size: {this.Size}");
             }
@@ -150,22 +140,17 @@ namespace QMC.Common
             {
                 Console.WriteLine($"❌ recipe 폼 로드 중 오류: {ex.Message}");
                 MessageBox.Show($"recipe 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                CreateSampleTabs(); // 오류 발생시 기본 탭 생성
+                CreateSampleTabs();
             }
         }
 
         private void CreateTabFromFormInfo(FormInfo formInfo)
         {
             Console.WriteLine($"🔧 탭 생성: {formInfo.DisplayName}");
-            
             TabPage tabPage = new TabPage(formInfo.DisplayName);
-            tabPage.Tag = formInfo; // FormInfo를 Tag에 저장
-            
-            // 🔧 TabPage 배경색도 흰색으로 설정
+            tabPage.Tag = formInfo;
             tabPage.BackColor = Color.White;
-            
             recipeTabControl.TabPages.Add(tabPage);
-            
             Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {recipeTabControl.TabPages.Count}");
         }
 
@@ -175,13 +160,12 @@ namespace QMC.Common
             if (selectedTab?.Tag is FormInfo formInfo)
             {
                 LoadFormIntoTab(selectedTab, formInfo);
-                UpdateActiveChildSize();
+                // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
+                if (_hostSized)
+                    UpdateActiveChildSize();
             }
         }
 
-        /// <summary>
-        /// 탭에 폼을 로드하여 표시 (이 시점에서는 크기 전달을 지연)
-        /// </summary>
         private void LoadFormIntoTab(TabPage tabPage, FormInfo formInfo)
         {
             try
@@ -219,9 +203,6 @@ namespace QMC.Common
             }
         }
 
-        /// <summary>
-        /// 현재 활성 탭의 폼에 정확한 크기를 전달
-        /// </summary>
         private void UpdateActiveChildSize()
         {
             try
@@ -230,13 +211,17 @@ namespace QMC.Common
                 var selectedTab = recipeTabControl.SelectedTab;
                 if (selectedTab == null) return;
                 if (!_tabFormInstances.ContainsKey(selectedTab)) return;
-
                 var activeForm = _tabFormInstances[selectedTab];
                 if (activeForm == null) return;
 
                 int availableWidth = recipeTabControl.ClientSize.Width;
-                int availableHeight = recipeTabControl.ClientSize.Height - _tabHeight; // 탭 헤더 제외
-
+                int availableHeight = recipeTabControl.ClientSize.Height;
+                // 너무 작은 초기값(예: 600x400) 필터링
+                if (availableWidth < 800 || availableHeight < 450)
+                {
+                    Console.WriteLine($"   ?? 크기 전달 보류(Working): {availableWidth}x{availableHeight}");
+                    return;
+                }
                 var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", new Type[] { typeof(int), typeof(int) });
                 if (setPanelSizeMethod != null)
                 {
@@ -324,7 +309,7 @@ namespace QMC.Common
                 );
             }
         }
-        
+
         private void CreateSampleTabs()
         {
             TabPage systemTab = new TabPage("Sample recipe");
@@ -352,21 +337,15 @@ namespace QMC.Common
         public void SetPanelSize(int width, int height)
         {
             Console.WriteLine($"🔧 Formrecipe.SetPanelSize() 호출: width={width}, height={height}");
-            if (_hasAppliedSize && (width < 400 || height < 200))
-            {
-                Console.WriteLine($"   ⏭️ 무시(Recipe): 너무 작은 값 전달({width}x{height})");
-                return;
-            }
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
-            _hasAppliedSize = true;
-            _lastAppliedSize = new Size(width, height);
+            _hostSized = true; // 호스트에서 유효 사이즈 전달 받음
             UpdateActiveChildSize();
             this.Invalidate();
             this.Update();
             Console.WriteLine($"✅ Formrecipe.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
-        
+
         #region Form Border Drawing
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -384,7 +363,7 @@ namespace QMC.Common
             this.Invalidate();
         }
         #endregion
-        
+
         #region Border Customization Methods
         public void SetBorderStyle(Color color, int width)
         {

@@ -1,18 +1,17 @@
-﻿using QMC.Common;
-using QMC.Common.Spectrometer;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
+using QMC.Common;
+using QMC.Common.Spectrometer;
 
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
     /// CassetteLoadingElevator Unit의 Config 폼
-    /// Equipment와 연동하여 Config 및 Recipe 관리
     /// </summary>
-    public partial class InputCassetteLifterUnit_Config : Form
+    public partial class InputCassetteLifterUnit_Working : Form
     {
         private const string UNIT_NAME = "InputCassetteLifterUnit";
         private Equipment Equipment => Equipment.Instance;
@@ -20,26 +19,23 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        public InputCassetteLifterUnit_Config()
+        public InputCassetteLifterUnit_Working()
         {
             InitializeComponent();
             this.SuspendLayout();
             _designerSize = this.Size;
             InitializeUI();
             this.ResumeLayout(true);
-            
-            Console.WriteLine($"✅ InputCassetteLifterUnitUnit_Config 생성자 완료");
+
+            Console.WriteLine("✅ InputCassetteLifterUnit_Working 생성자 완료");
         }
 
         private void InitializeUnit()
         {
             try
             {
-                // Equipment에서 CassetteLoadingElevator Unit 가져오기
                 if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
-                {
                     InputCassetteLifterUnit = unit as InputCassetteLifter;
-                }
 
                 if (InputCassetteLifterUnit == null)
                 {
@@ -93,6 +89,20 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Working)}.SetPanelSize → {width}x{height}");
+        }
+
+        private void AxispositonListBoxItemsView_Load(object sender, EventArgs e)
+        {
+        }
+
+        // (옵션) 저장 시 텍스트박스 → PropertyBase에 커밋하고 사용
+        private void ApplyProperties()
+        {
+            // 텍스트 변경을 즉시 반영하도록 바인딩되어 있지만,
+            // 명시 커밋이 필요할 때 호출
+
+            // _lifterPropView.GetCurrentProperties()로 현재 컬렉션을 얻어
+            // 모델/설비에 반영하는 로직을 추가 가능
         }
     }
 }

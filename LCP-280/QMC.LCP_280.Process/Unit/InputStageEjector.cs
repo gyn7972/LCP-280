@@ -9,25 +9,27 @@ using System.Collections.Generic;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class InputRingTransfer : BaseUnit
+    public class InputStageEjector : BaseUnit
     {
-        public InputRingTransferConfig InputRingTransferConfig { get; private set; }
+        public InputStageEjectorConfig InputStageEjectorConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
 
-        public InputRingTransfer(InputRingTransferConfig config = null)
-            : base("InputRingTransferConfig")
+        public InputStageEjector(InputStageEjectorConfig config = null)
+            : base("InputStageEjectorConfig")
         {
-            InputRingTransferConfig = config ?? new InputRingTransferConfig();
+            InputStageEjectorConfig = config ?? new InputStageEjectorConfig();
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            InputRingTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            InputRingTransferConfig.InitializeDefaultTeachingPositions();
+            // 축 바인딩까지 포함해서 불러오기
+            InputStageEjectorConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            InputStageEjectorConfig.InitializeDefaultTeachingPositions();
 
+            // TeachingPosition에 Axis 바인딩
             TeachingPositions.Clear();
-            foreach (var tp in InputRingTransferConfig.TeachingPositions)
+            foreach (var tp in InputStageEjectorConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
         }
 
@@ -49,12 +51,12 @@ namespace QMC.LCP_280.Process.Unit
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             }
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            InputRingTransferConfig.SetTeachingPosition(tp);
+            InputStageEjectorConfig.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = InputRingTransferConfig.GetTeachingPosition(positionName);
+            var tp = InputStageEjectorConfig.GetTeachingPosition(positionName);
             if (tp == null) return -1;
 
             int result = 0;
@@ -64,7 +66,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     double pos = tp.AxisPositions[axisKey];
                     int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
+                    if (r != 0) result = r; // 마지막 에러 반환
                 }
             }
             return result;
