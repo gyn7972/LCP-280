@@ -126,10 +126,5 @@ namespace QMC.Common
         {
             return GetEnumerator();
         }
-
-        public string[] GetPropertyTitles()
-        {
-            return this.Select(p => p.Title).ToArray();
-        }
     }
 }

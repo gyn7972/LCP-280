@@ -1,14 +1,10 @@
-﻿using QMC.Common.Component;
-using QMC.Common.Motion.Ajin;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms.VisualStyles;
+using QMC.Common.Motion.Ajin;
 
 namespace QMC.Common.Motions.CKD
 {
@@ -24,7 +20,11 @@ namespace QMC.Common.Motions.CKD
         Degree_315,
     }
 
-    public class CKDMotorDriver : BaseComponent, IDisposable
+    /// <summary>
+    /// CKD DD Motor Driver를 제어하기 위한 클래스입니다.
+    /// Ajin EtherCAT Master Board에서 PDO I/O 통신으로 제어합니다.
+    /// </summary>
+    public class CKDMotorDriver
     {
         #region Define
         public enum PDOProcessImage
@@ -233,20 +233,6 @@ namespace QMC.Common.Motions.CKD
                 InputCommand2 = new byte[byteSize];
                 InputCommand3 = new byte[byteSize];
             }
-
-            public void Clear()
-            {
-                Array.Clear(InputSignal1, 0, InputSignal1.Length);
-                Array.Clear(InputSignal2, 0, InputSignal2.Length);
-                Array.Clear(InputData1, 0, InputData1.Length);
-                Array.Clear(InputData2, 0, InputData2.Length);
-                Array.Clear(InputData3, 0, InputData3.Length);
-                Array.Clear(InputData4, 0, InputData4.Length);
-                Array.Clear(InputData5, 0, InputData5.Length);
-                Array.Clear(InputCommand1, 0, InputCommand1.Length);
-                Array.Clear(InputCommand2, 0, InputCommand2.Length);
-                Array.Clear(InputCommand3, 0, InputCommand3.Length);
-            }
         }
 
         public struct RxPdoOutputData
@@ -275,24 +261,17 @@ namespace QMC.Common.Motions.CKD
                 OutputCommand2 = new byte[byteSize];
                 OutputCommand3 = new byte[byteSize];
             }
-
-            public void Clear()
-            {
-                Array.Clear(OutputSignal1, 0, OutputSignal1.Length);
-                Array.Clear(OutputSignal2, 0, OutputSignal2.Length);
-                Array.Clear(OutputData1, 0, OutputData1.Length);
-                Array.Clear(OutputData2, 0, OutputData2.Length);
-                Array.Clear(OutputData3, 0, OutputData3.Length);
-                Array.Clear(OutputData4, 0, OutputData4.Length);
-                Array.Clear(OutputData5, 0, OutputData5.Length);
-                Array.Clear(OutputCommand1, 0, OutputCommand1.Length);
-                Array.Clear(OutputCommand2, 0, OutputCommand2.Length);
-                Array.Clear(OutputCommand3, 0, OutputCommand3.Length);
-            }
         }
+        #endregion
 
-        // PDO Mapping
-        private Dictionary<PDOProcessImage, uint> bitOffset = new Dictionary<PDOProcessImage, uint>
+        private const int BoardNo = 0;
+        private const uint StartBitOffset = 1320;
+        private const int PdoWriteDelay = 25; // ms
+
+        #region Field
+        private TxPdoInputData txPdoData;
+        private RxPdoOutputData rxPdoData;
+        private Dictionary<PDOProcessImage, uint> bitOffset = new Dictionary<PDOProcessImage, uint> 
         {
             // TxPDO (Input) : Master <- Driver
             { PDOProcessImage.TxPdoInputSignal1,    StartBitOffset + 32 * 0 },
@@ -460,288 +439,116 @@ namespace QMC.Common.Motions.CKD
         };
         #endregion
 
-        private const int BoardNo = 0;
-        private const uint StartBitOffset = 1320;
-        private const int PdoWriteDelay = 25; // ms
-        private const int ReadPeriod = 20; // ms
-
-        #region Field
-        private TxPdoInputData txPdoData;
-        private RxPdoOutputData rxPdoData;
-
-        private CancellationTokenSource cts;
-        private Task readInputTask;
-        private readonly object gate = new object();
-        #endregion
-
         #region Property
-        public TxPdoInputData TxPdoData
-        {
-            get { return txPdoData; }
-        }
-        public RxPdoOutputData RxPdoData
-        {
-            get { return rxPdoData; }
-        }
         #endregion
 
         #region Constructor
-        public CKDMotorDriver(string name) : base(name)
+        public CKDMotorDriver()
         {
             txPdoData = new TxPdoInputData(4);
             rxPdoData = new RxPdoOutputData(4);
-
-            // Scanner Start
-            StartReadInputDataMonitoring();
-        }
-        public void Dispose()
-        {
-            StopReadInputDataMonitoring();
         }
         #endregion
 
-        #region Event
-        public event EventHandler OnMotorStateUpdated;
-        #endregion
+        public int Home()
+        {
+            return HomeSearch();
+        }
 
-        #region Base Component Method
-        protected override void InitAlarm()
+        public bool IsHomeDone()
         {
-            base.InitAlarm();
+            bool isHomeDone = false;
+            if (GetHomeState(ref isHomeDone) == 0)
+                return isHomeDone;
+            else
+                return false;
         }
-        public override int Initialize()
-        {
-            int ret = 0;
-            if ((ret = ReadAllRxPdoOutputData()) != 0)
-                return ret;
-  
-            return ret;
-        }
-        #endregion
 
-        #region DD Motor Control
-        public int RunProgram(int programNo)
-        {
-            int ret = 0;
-            if ((ret = SendSetProgramNoCommand(programNo)) != 0)
-                return ret;
-            if ((ret = SendProgramStartCommand()) != 0)
-                return ret;
-            return ret;
-        }
         public int MoveAbs(RotaryPosition position)
         {
             // 1) 프로그램 번호 설정
             int programNo = 0;
 
             int ret = 0;
-            if ((ret = RunProgram(programNo)) != 0)
+            if ((ret = SelectProgramNo(programNo)) != 0)
                 return ret;
+            if ((ret = ApplyProgramNo()) != 0)
+                return ret;
+            if ((ret = ProgramStart()) != 0)
+                return ret;
+
             return ret;
         }
+
         public int MovePitchCW()
         {
             // 1) 프로그램 번호 설정
             int programNo = 0;
-
             int ret = 0;
-            if ((ret = RunProgram(programNo)) != 0)
+            if ((ret = SelectProgramNo(programNo)) != 0)
+                return ret;
+            if ((ret = ApplyProgramNo()) != 0)
+                return ret;
+            if ((ret = ProgramStart()) != 0)
                 return ret;
             return ret;
         }
+
         public int MovePitchCCW()
         {
             // 1) 프로그램 번호 설정
             int programNo = 0;
+            int ret = 0;
+            if ((ret = SelectProgramNo(programNo)) != 0)
+                return ret;
+            if ((ret = ApplyProgramNo()) != 0)
+                return ret;
+            if ((ret = ProgramStart()) != 0)
+                return ret;
+            return ret;
+        }
 
-            int ret = 0;
-            if ((ret = RunProgram(programNo)) != 0)
-                return ret;
-            return ret;
-        }
-        public int Servo(bool on)
+        public bool IsMoveDone()
         {
-            int ret = 0;
-            if ((ret = SendServoOnOffCommand(on)) != 0)
-                return ret;
-            return ret;
+            bool isMoveDone = false;
+            if (GetPositionCompletion(ref isMoveDone) == 0)
+                return isMoveDone;
+            else
+                return false;
         }
-        public int Home()
-        {
-            int ret = 0;
-            if ((ret = SendHomeSearchCommand()) != 0)
-                return ret;
-            return ret;
-        }
-        public int AlarmReset()
-        {
-            int ret = 0;
-            if ((ret = SendAlarmResetCommand()) != 0)
-                return ret;
-            return ret;
-        }
+
         public int EmergencyStop()
         {
             int ret = 0;
-            if ((ret = SendForcedStopCommand(true)) != 0)
+            if ((ret = ForcedStop(true)) != 0)
                 return ret;
+
             return ret;
         }
+
         public int ClearEmergency()
         {
             int ret = 0;
-            if ((ret = SendForcedStopCommand(false)) != 0)
-                return ret;
-            if ((ret = SendAlarmResetCommand()) != 0)
+            if ((ret = ForcedStop(false)) != 0)
                 return ret;
             return ret;
         }
-        public int BrakeRelease(bool release)
+
+        public int Servo(bool on)
         {
             int ret = 0;
-            if ((ret = SendBrakeReleaseCommand(release)) != 0)
+            if ((ret = ServoOnOff(on)) != 0)
                 return ret;
             return ret;
         }
-        #endregion
 
-        #region DD Motor Get Stautus
-        public int GetMCode()
+        public int ClearAlarm()
         {
-            SignalMappingPos[] mappingPos = new SignalMappingPos[8]
-            {
-                inputSignal1MappingPos[InputSignal1Mapping.MCode0],
-                inputSignal1MappingPos[InputSignal1Mapping.MCode1],
-                inputSignal1MappingPos[InputSignal1Mapping.MCode2],
-                inputSignal1MappingPos[InputSignal1Mapping.MCode3],
-                inputSignal1MappingPos[InputSignal1Mapping.MCode4],
-                inputSignal1MappingPos[InputSignal1Mapping.MCode5],
-                inputSignal1MappingPos[InputSignal1Mapping.MCode6],
-                inputSignal1MappingPos[InputSignal1Mapping.MCode7],
-            };
-
-            int mcode = 0;
-            for (int i = 0; i < mappingPos.Length; i++)
-            {
-                if (GetBit(txPdoData.InputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex))
-                    mcode |= (1 << i);
-            }
-            return mcode;
+            int ret = 0;
+            if ((ret = ResetDriver()) != 0)
+                return ret;
+            return ret;
         }
-        public bool IsInPosition()
-        {
-            SignalMappingPos mappingPos = inputSignal1MappingPos[InputSignal1Mapping.InPosition];
-            return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
-        }
-        public bool IsPositionComplete()
-        {
-            SignalMappingPos mappingPos = inputSignal1MappingPos[InputSignal1Mapping.PositionCompletion];
-            return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
-        }
-        public bool IsRunWait()
-        {
-            SignalMappingPos mappingPos = inputSignal1MappingPos[InputSignal1Mapping.StartInputWait];
-            return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
-        }
-        public bool IsAlarm()
-        {
-            SignalMappingPos[] mappingPos = new SignalMappingPos[2]
-            {
-                inputSignal1MappingPos[InputSignal1Mapping.Alarm1],
-                inputSignal1MappingPos[InputSignal1Mapping.Alarm2],
-            };
-
-            // 두 알람 비트 중 하나라도 1이면 알람 상태
-            for (int i = 0; i < mappingPos.Length; i++)
-            {
-                if (GetBit(txPdoData.InputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        public bool IsHomePosition()
-        {
-            SignalMappingPos mappingPos = inputSignal1MappingPos[InputSignal1Mapping.HomePosition];
-            return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
-        }
-        public bool IsServoOn()
-        {
-            SignalMappingPos mappingPos = inputSignal1MappingPos[InputSignal1Mapping.ServoState];
-            return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
-        }
-        public bool IsReady()
-        {
-            SignalMappingPos mappingPos = inputSignal1MappingPos[InputSignal1Mapping.Ready];
-            return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
-        }
-        public int GetPositionDegree()
-        {
-            int value = BitConverter.ToInt32(txPdoData.InputData1, 0);
-            return value;
-        }
-        public int GetPositionPulse()
-        {
-            int value = BitConverter.ToInt32(txPdoData.InputData2, 0);
-            return value;
-        }
-        public int GetErrorPulse()
-        {
-            int value = BitConverter.ToInt32(txPdoData.InputData3, 0);
-            return value;
-        }
-        public int GetVelocity()
-        {
-            int value = BitConverter.ToInt32(txPdoData.InputData4, 0);
-            return value;
-        }
-        public int GetProgramNo()
-        {
-            int value = BitConverter.ToInt32(txPdoData.InputData5, 0);
-            return value;
-        }
-        #endregion
-
-        #region Read RxPdo Input Data
-        private void StartReadInputDataMonitoring()
-        {
-            lock (gate)
-            {
-                if (readInputTask != null && !readInputTask.IsCompleted)
-                    return;
-                cts = new CancellationTokenSource();
-                readInputTask = Task.Run(() => RunReadInputDataMonitoring(cts.Token), cts.Token);
-            }
-        }
-        private void StopReadInputDataMonitoring()
-        {
-            lock (gate)
-            {
-                cts?.Cancel();
-            }
-            try { readInputTask?.Wait(); } catch { /* ignore */ }
-        }
-        private async Task RunReadInputDataMonitoring(CancellationToken ct)
-        {
-            var sw = new StopWatch();
-            while (!ct.IsCancellationRequested)
-            {
-                sw.Restart();
-                try
-                {
-                    ReadAllTxPdoInputData();
-                    OnMotorStateUpdated?.Invoke(this, EventArgs.Empty);
-                }
-                catch (Exception ex)
-                {
-                }
-
-                var wait = ReadPeriod;
-                try { await Task.Delay(wait, ct); } catch { /* canceled */ }
-            }
-        }
-        #endregion
 
         #region Bit Operation
         private void SetBit(ref byte data, int index, bool value)
@@ -760,114 +567,96 @@ namespace QMC.Common.Motions.CKD
         #region PDO Mapping (Output) [Master > Driver]
 
         #region Output Signal 1
-
-        private int SendOutputSignal1SetBit(OutputSignal1Mapping signal, bool bit)
+        /// <summary>
+        /// 실행할 프로그램 번호를 입력합니다. (0~15)
+        /// </summary>
+        private int SelectProgramNo(int programNo)
         {
-            int ret = 0;
-            try
-            {
-                SignalMappingPos mappingPos = outputSignal1MappingPos[signal];
-                SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, bit);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
-                    return ret;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                ret = -1;
-            }
-            return ret;
-        }
-        private int SendOutputSignal1BitArray(OutputSignal1Mapping[] signals, bool[] bits)
-        {
-            if (signals.Length != bits.Length)
-                return -1;
-            int ret = 0;
-            try
-            {
-                for (int i = 0; i < signals.Length; i++)
-                {
-                    SignalMappingPos mappingPos = outputSignal1MappingPos[signals[i]];
-                    SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, bits[i]);
-                }
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
-                    return ret;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                ret = -1;
-            }
-            return ret;
-        }
-        private int SendOutputSignal1RisingEdge(OutputSignal1Mapping signal)
-        {
-            int ret = 0;
-            try
-            {
-                SignalMappingPos mappingPos = outputSignal1MappingPos[signal];
-                // Set 0
-                SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, false);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
-                    return ret;
-                Thread.Sleep(PdoWriteDelay);
-                // Set 1
-                SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, true);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
-                    return ret;
-                Thread.Sleep(PdoWriteDelay);
-                // Bit Reset
-                SetBit(ref rxPdoData.OutputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex, false);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1)) != 0)
-                    return ret;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                ret = -1;
-            }
-            return ret;
-        }
-
-        private int SendSetProgramNoCommand(int programNo)
-        {
-            if (programNo < 0 || programNo > 99)
+            if (programNo < 0 || programNo > 16)
                 return -1;
 
             int ret = 0;
             try
             {
-                int secondDigit = programNo / 10;
-                int firstDigit = programNo % 10;
-                bool[] bits = new bool[4];
-
-                OutputSignal1Mapping[] programNoSetPos = new OutputSignal1Mapping[4]
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[4]
                 {
-                    OutputSignal1Mapping.ProgramNo1,
-                    OutputSignal1Mapping.programNo2,
-                    OutputSignal1Mapping.ProgramNo3,
-                    OutputSignal1Mapping.ProgramNo4,
+                    outputSignal1MappingPos[OutputSignal1Mapping.ProgramNo1],
+                    outputSignal1MappingPos[OutputSignal1Mapping.programNo2],
+                    outputSignal1MappingPos[OutputSignal1Mapping.ProgramNo3],
+                    outputSignal1MappingPos[OutputSignal1Mapping.ProgramNo4],
                 };
 
-                // 2번째 자릿수 데이터 비트를 먼저 설정한다.
-                for (int i = 0; i < programNoSetPos.Length; i++)
-                    bits[i] = GetBit((byte)secondDigit, i);
-                if ((ret = SendOutputSignal1BitArray(programNoSetPos, bits)) != 0)
-                    return ret;
+                // Set Program Number Bit
+                byte data = (byte)(programNo & 0x0f);
+                for (int i = 0; i < mappingPos.Length; i ++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, GetBit(data, i));
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputData1], 32, rxPdoData.OutputSignal1);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        /// <summary>
+        /// 설정한 프로그램 번호를 적용합니다.
+        /// </summary>
+        private int ApplyProgramNo()
+        {
+            int ret = 0;
+            try
+            {
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[2]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.ProgramNoSetting2ndDigit],
+                    outputSignal1MappingPos[OutputSignal1Mapping.ProgramNoSetting1stDigit],
+                };
 
-                // 2번째 자릿수 설정 신호를 보낸다.
-                if ((ret = SendOutputSignal1RisingEdge(OutputSignal1Mapping.ProgramNoSetting2ndDigit)) != 0)
-                    return ret;
+                // Set 0
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, false);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+                Thread.Sleep(PdoWriteDelay);
 
-                // 1번째 자릿수 데이터 비트를 설정한다.
-                for (int i = 0; i < programNoSetPos.Length; i++)
-                    bits[i] = GetBit((byte)firstDigit, i);
-                if ((ret = SendOutputSignal1BitArray(programNoSetPos, bits)) != 0)
-                    return ret;
+                // Set 1 (Rising Edge)
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, true);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        /// <summary>
+        /// 드라이버에 리셋을 입력합니다.
+        /// </summary>
+        private int ResetDriver()
+        {
+            int ret = 0;
+            try
+            {
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.Reset],
+                };
 
-                // 1번째 자릿수 설정 신호를 보낸다.
-                if ((ret = SendOutputSignal1RisingEdge(OutputSignal1Mapping.ProgramNoSetting1stDigit)) != 0)
-                    return ret;
+                // Set 0
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, false);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+                Thread.Sleep(PdoWriteDelay);
+
+                // Set 1 (Rising Edge)
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, true);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
             }
             catch (Exception ex)
             {
@@ -876,13 +665,30 @@ namespace QMC.Common.Motions.CKD
             }
             return ret;
         }
-        private int SendAlarmResetCommand()
+        /// <summary>
+        /// 드라이버에 원점 복귀 지령을 입력합니다.
+        /// </summary>
+        private int HomeSearch()
         {
             int ret = 0;
             try
             {
-                if ((ret = SendOutputSignal1RisingEdge(OutputSignal1Mapping.Reset)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.HomePositionInstruction],
+                };
+
+                // Set 0
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, false);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+                Thread.Sleep(PdoWriteDelay);
+
+                // Set 1 (Rising Edge)
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, true);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
             }
             catch (Exception ex)
             {
@@ -891,13 +697,30 @@ namespace QMC.Common.Motions.CKD
             }
             return ret;
         }
-        private int SendHomeSearchCommand()
+        /// <summary>
+        /// 드라이버에 설정한 프로그램을 실행하는 기동 지령을 입력합니다.
+        /// </summary>
+        private int ProgramStart()
         {
             int ret = 0;
             try
             {
-                if ((ret = SendOutputSignal1RisingEdge(OutputSignal1Mapping.HomePositionInstruction)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.Start],
+                };
+
+                // Set 0
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, false);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+                Thread.Sleep(PdoWriteDelay);
+
+                // Set 1 (Rising Edge)
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, true);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
             }
             catch (Exception ex)
             {
@@ -906,13 +729,24 @@ namespace QMC.Common.Motions.CKD
             }
             return ret;
         }
-        private int SendProgramStartCommand()
+        /// <summary>
+        /// 드라이버에 서보 온/오프 지령을 입력합니다.
+        /// </summary>
+        private int ServoOnOff(bool on)
         {
             int ret = 0;
             try
             {
-                if ((ret = SendOutputSignal1RisingEdge(OutputSignal1Mapping.Start)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.ServoOn],
+                };
+
+                // Set 0
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, on);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
             }
             catch (Exception ex)
             {
@@ -921,13 +755,24 @@ namespace QMC.Common.Motions.CKD
             }
             return ret;
         }
-        private int SendServoOnOffCommand(bool on)
+        /// <summary>
+        /// 드라이버에 강제 정지 (Software Emergency Stop) 지령을 입력합니다.
+        /// </summary>
+        private int ForcedStop(bool on)
         {
             int ret = 0;
             try
             {
-                if ((ret = SendOutputSignal1SetBit(OutputSignal1Mapping.ServoOn, on)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.ForcedStop],
+                };
+
+                // Set
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, !on);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
             }
             catch (Exception ex)
             {
@@ -936,14 +781,24 @@ namespace QMC.Common.Motions.CKD
             }
             return ret;
         }
-        private int SendForcedStopCommand(bool on)
+        /// <summary>
+        /// 드라이버에 브레이크 해제 지령을 입력합니다.
+        /// </summary>
+        private int BrakeRelease(bool on)
         {
             int ret = 0;
             try
             {
-                // Negative
-                if ((ret = SendOutputSignal1SetBit(OutputSignal1Mapping.ForcedStop, !on)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.BrakeRelease],
+                };
+
+                // Set
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, on);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
             }
             catch (Exception ex)
             {
@@ -952,13 +807,76 @@ namespace QMC.Common.Motions.CKD
             }
             return ret;
         }
-        private int SendBrakeReleaseCommand(bool on)
+        /// <summary>
+        /// 드라이버에 조그 운전 지령을 입력합니다. (CW) [+] 네트워크 운전 모드일 때만 유효
+        /// </summary>
+        private int JogCW()
         {
             int ret = 0;
             try
             {
-                if ((ret = SendOutputSignal1SetBit(OutputSignal1Mapping.BrakeRelease, on)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.JogOperationCW],
+                };
+
+                // Set
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, true);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        /// <summary>
+        /// 드라이버에 조그 운전 지령을 입력합니다. (CCW) [+] 네트워크 운전 모드일 때만 유효
+        /// </summary>
+        private int JogCCW()
+        {
+            int ret = 0;
+            try
+            {
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.JogOperationCCW],
+                };
+
+                // Set
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, true);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        /// <summary>
+        /// 드라이버에 조그 운전 지령을 해제합니다. [+] 네트워크 운전 모드일 때만 유효
+        /// </summary>
+        private int JogStop()
+        {
+            int ret = 0;
+            try
+            {
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[2]
+                {
+                    outputSignal1MappingPos[OutputSignal1Mapping.JogOperationCW],
+                    outputSignal1MappingPos[OutputSignal1Mapping.JogOperationCCW],
+                };
+                // Set
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, false);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
             }
             catch (Exception ex)
             {
@@ -970,81 +888,20 @@ namespace QMC.Common.Motions.CKD
         #endregion
 
         #region Output Signal 2
-        private int SendOutputSignal2SetBit(OutputSignal2Mapping signal, bool bit)
-        {
-            int ret = 0;
-            try
-            {
-                SignalMappingPos mappingPos = outputSignal2MappingPos[signal];
-                SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, bit);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
-                    return ret;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                ret = -1;
-            }
-            return ret;
-        }
-        private int SendOutputSignal2BitArray(OutputSignal2Mapping[] signals, bool[] bits)
-        {
-            if (signals.Length != bits.Length)
-                return -1;
-            int ret = 0;
-            try
-            {
-                for (int i = 0; i < signals.Length; i++)
-                {
-                    SignalMappingPos mappingPos = outputSignal2MappingPos[signals[i]];
-                    SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, bits[i]);
-                }
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
-                    return ret;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                ret = -1;
-            }
-            return ret;
-        }
-        private int SendOutputSignal2RisingEdge(OutputSignal2Mapping signal)
-        {
-            int ret = 0;
-            try
-            {
-                SignalMappingPos mappingPos = outputSignal2MappingPos[signal];
-                // Set 0
-                SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, false);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
-                    return ret;
-                Thread.Sleep(PdoWriteDelay);
-                // Set 1
-                SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, true);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
-                    return ret;
-                Thread.Sleep(PdoWriteDelay);
-                // Bit Reset
-                SetBit(ref rxPdoData.OutputSignal2[mappingPos.ByteIndex], mappingPos.BitIndex, false);
-                if ((ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2)) != 0)
-                    return ret;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                ret = -1;
-            }
-            return ret;
-        }
-
         private int RequestMonitorExecution(bool on)
         {
             int ret = 0;
             try
             {
-                if ((ret = SendOutputSignal2SetBit(OutputSignal2Mapping.MonitorOutputExecutionRequest, on)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal2MappingPos[OutputSignal2Mapping.MonitorOutputExecutionRequest],
+                };
+                // Set
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal2[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, on);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2);
             }
             catch (Exception ex)
             {
@@ -1058,8 +915,20 @@ namespace QMC.Common.Motions.CKD
             int ret = 0;
             try
             {
-                if ((ret = SendOutputSignal2RisingEdge(OutputSignal2Mapping.InstructionCodeExecutionRequest)) != 0)
-                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    outputSignal2MappingPos[OutputSignal2Mapping.InstructionCodeExecutionRequest],
+                };
+                // Set 0
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal2[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, false);
+                ret = AXDEV.ECatWritePdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2);
+                Thread.Sleep(PdoWriteDelay);
+
+                // Set 1 (Rising Edge)
+                for (int i = 0; i < mappingPos.Length; i++)
+                    SetBit(ref rxPdoData.OutputSignal2[mappingPos[i].ByteIndex], mappingPos[i].BitIndex, true);
             }
             catch (Exception ex)
             {
@@ -1190,34 +1059,254 @@ namespace QMC.Common.Motions.CKD
         }
         #endregion
 
-        private int ReadAllRxPdoOutputData()
+        #endregion
+
+        #region PDO Mapping (Input) [Driver > Master]
+
+        #region Input Signal 1
+        private int GetMCode(ref byte code)
         {
             int ret = 0;
             try
             {
-                // Read All PDO
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal1], 32, rxPdoData.OutputSignal1);
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputSignal2], 32, rxPdoData.OutputSignal2);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[8]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode0],
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode1],
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode2],
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode3],
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode4],
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode5],
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode6],
+                    inputSignal1MappingPos[InputSignal1Mapping.MCode7],
+                };
+                // Get M-Code
+                code = 0;
+                for (int i = 0; i < mappingPos.Length; i++)
+                    code |= (byte)((GetBit(txPdoData.InputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex) ? 1 : 0) << i);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetInPosition(ref bool inPosition)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputData1], 32, rxPdoData.OutputData1);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.InPosition],
+                };
+                // Get In Position
+                inPosition = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetPositionCompletion(ref bool positionCompletion)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputData2], 32, rxPdoData.OutputData2);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.PositionCompletion],
+                };
+                // Get Position Completion
+                positionCompletion = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetStartInputWait(ref bool startInputWait)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputData3], 32, rxPdoData.OutputData3);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.StartInputWait],
+                };
+                // Get Start Input Wait
+                startInputWait = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetAlarm(ref bool alarm1, ref bool alarm2)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputData4], 32, rxPdoData.OutputData4);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[2]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.Alarm1],
+                    inputSignal1MappingPos[InputSignal1Mapping.Alarm2],
+                };
+                // Get Alarm
+                alarm1 = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+                alarm2 = GetBit(txPdoData.InputSignal1[mappingPos[1].ByteIndex], mappingPos[1].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetHomeState(ref bool homeState)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputData5], 32, rxPdoData.OutputData5);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.HomePosition],
+                };
+                // Get Home Position
+                homeState = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetServoState(ref bool servoState)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoOutputEx(BoardNo, bitOffset[PDOProcessImage.RxPdoOutputCommand1], 32, rxPdoData.OutputCommand1);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.ServoState],
+                };
+                // Get Servo State
+                servoState = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetReady(ref bool ready)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
+                if (ret != 0)
+                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.Ready],
+                };
+                // Get Ready
+                ready = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetSegmentPositionStrobe(ref bool segmentPositionStrobe)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
+                if (ret != 0)
+                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.SegmentPositionStrobe],
+                };
+                // Get Segment Position Strobe
+                segmentPositionStrobe = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetMCodeStrobe(ref bool mCodeStrobe)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
+                if (ret != 0)
+                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal1MappingPos[InputSignal1Mapping.MCodeStrobe],
+                };
+                // Get M-Code Strobe
+                mCodeStrobe = GetBit(txPdoData.InputSignal1[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
             }
             catch (Exception ex)
             {
@@ -1228,35 +1317,23 @@ namespace QMC.Common.Motions.CKD
         }
         #endregion
 
-        #region PDO Mapping (Input) [Driver > Master]
-        private int ReadAllTxPdoInputData()
+        #region Input Signal 2
+        private int GetMonitoringState(ref bool isMonitoring)
         {
             int ret = 0;
             try
             {
-                // Read All PDO
-                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal1], 32, txPdoData.InputSignal1);
-                if (ret != 0)
-                    return ret;
+                // Read PDO
                 ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal2], 32, txPdoData.InputSignal2);
                 if (ret != 0)
                     return ret;
-                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData1], 32, txPdoData.InputData1);
-                if (ret != 0)
-                    return ret;
-                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData2], 32, txPdoData.InputData2);
-                if (ret != 0)
-                    return ret;
-                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData3], 32, txPdoData.InputData3);
-                if (ret != 0)
-                    return ret;
-                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData4], 32, txPdoData.InputData4);
-                if (ret != 0)
-                    return ret;
-                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData5], 32, txPdoData.InputData5);
-                if (ret != 0)
-                    return ret;
-                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputCommand1], 32, txPdoData.InputCommand1);
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal2MappingPos[InputSignal2Mapping.Monitoring],
+                };
+                // Get Monitoring State
+                isMonitoring = GetBit(txPdoData.InputSignal2[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
             }
             catch (Exception ex)
             {
@@ -1265,6 +1342,152 @@ namespace QMC.Common.Motions.CKD
             }
             return ret;
         }
+        private int GetInstructionCodeExecutionComplete(ref bool excutionComplete)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputSignal2], 32, txPdoData.InputSignal2);
+                if (ret != 0)
+                    return ret;
+                // Index
+                SignalMappingPos[] mappingPos = new SignalMappingPos[1]
+                {
+                    inputSignal2MappingPos[InputSignal2Mapping.InstructionCodeExecutionCompletion],
+                };
+                // Get Instruction Code Execution State
+                excutionComplete = GetBit(txPdoData.InputSignal2[mappingPos[0].ByteIndex], mappingPos[0].BitIndex);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        #endregion
+
+        #region Input Data
+        private int GetInputMonitorCode1(ref uint code)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData1], 32, txPdoData.InputData1);
+                if (ret != 0)
+                    return ret;
+                // Get Monitor Code
+                code = BitConverter.ToUInt32(txPdoData.InputData1, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetInputMonitorCode2(ref uint code)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData2], 32, txPdoData.InputData2);
+                if (ret != 0)
+                    return ret;
+                // Get Monitor Code
+                code = BitConverter.ToUInt32(txPdoData.InputData2, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetInputMonitorCode3(ref uint code)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData3], 32, txPdoData.InputData3);
+                if (ret != 0)
+                    return ret;
+                // Get Monitor Code
+                code = BitConverter.ToUInt32(txPdoData.InputData3, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetInputMonitorCode4(ref uint code)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData4], 32, txPdoData.InputData4);
+                if (ret != 0)
+                    return ret;
+                // Get Monitor Code
+                code = BitConverter.ToUInt32(txPdoData.InputData4, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        private int GetInputMonitorCode5(ref uint code)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputData5], 32, txPdoData.InputData5);
+                if (ret != 0)
+                    return ret;
+                // Get Monitor Code
+                code = BitConverter.ToUInt32(txPdoData.InputData5, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        #endregion
+
+        #region Input Command
+        private int GetResponseCommandCode(ref uint commandCode)
+        {
+            int ret = 0;
+            try
+            {
+                // Read PDO
+                ret = AXDEV.ECatReadPdoInputEx(BoardNo, bitOffset[PDOProcessImage.TxPdoInputCommand1], 32, txPdoData.InputCommand1);
+                if (ret != 0)
+                    return ret;
+                // Get Command Code
+                commandCode = BitConverter.ToUInt32(txPdoData.InputCommand1, 0);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+            return ret;
+        }
+        #endregion
+
         #endregion
     }
 }

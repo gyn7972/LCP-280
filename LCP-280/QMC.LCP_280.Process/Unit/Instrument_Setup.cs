@@ -1,6 +1,5 @@
 ﻿using QMC.Common;
 using QMC.Common.Keithley;
-using QMC.Common.Motions.CKD;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -18,8 +17,6 @@ namespace QMC.LCP_280.Process.Unit
         private KeithleySourcemeter selectSourcemeter;
         private PropertyCollection propertyCollection;
         private string selectSourcemeterName;
-
-        private CKDMotorDriver motorDriver = new CKDMotorDriver("Test");
 
         public Instrument_Setup()
         {

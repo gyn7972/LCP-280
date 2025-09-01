@@ -30,12 +30,12 @@ namespace QMC.Common.Motion.Ajin
         [DllImport(LibraryFileName)]
         private static extern uint AxmSetScriptCaptionQueueClear(int lAxisNo, uint uSelect);
 
-        // 지정 축에 스크립트를 설정한다. - QI
-        // sc    : 스크립트 번호 (1 - 4)
-        // event : 발생할 이벤트 SCRCON 을 정의한다.
-        //         이벤트 설정 축갯수설정, 이벤트 발생할 축, 이벤트 내용 1,2 속성 설정한다.
-        // cmd   : 어떤 내용을 바꿀것인지 선택 SCRCMD를 정의한다.
-        // data  : 어떤 Data를 바꿀것인지 선택
+	    // 지정 축에 스크립트를 설정한다. - QI
+	    // sc    : 스크립트 번호 (1 - 4)
+	    // event : 발생할 이벤트 SCRCON 을 정의한다.
+	    //         이벤트 설정 축갯수설정, 이벤트 발생할 축, 이벤트 내용 1,2 속성 설정한다.
+	    // cmd   : 어떤 내용을 바꿀것인지 선택 SCRCMD를 정의한다.
+	    // data  : 어떤 Data를 바꿀것인지 선택
         [DllImport(LibraryFileName)]
         private static extern uint AxmSetScriptCaptionQi(int lAxisNo, int sc, uint occurredEvent, uint cmd, uint data);
 
@@ -193,37 +193,37 @@ namespace QMC.Common.Motion.Ajin
         public static int ECatReadPdoInput(uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInput", AxlECatReadPdoInput(bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInput", AxlECatReadPdoInput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoInputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInputEx", AxlECatReadPdoInputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInputEx", AxlECatReadPdoInputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoOutput(uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutput", AxlECatReadPdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutput", AxlECatReadPdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoOutputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutputEx", AxlECatReadPdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutputEx", AxlECatReadPdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatWritePdoOutput(uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutput", AxlECatWritePdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutput", AxlECatWritePdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatWritePdoOutputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutputEx", AxlECatWritePdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutputEx", AxlECatWritePdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         #endregion

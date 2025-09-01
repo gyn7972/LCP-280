@@ -4,14 +4,14 @@ using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputDieTransfer : BaseUnit
+    public class GageRnR : BaseUnit
     {
-        public OutputDieTransferConfig OutputDieTransferConfig { get; private set; }
+        public GageRnRConfig GageRnRConfig { get; private set; }
 
-        public OutputDieTransfer(OutputDieTransferConfig config = null)
-            : base("OutputDieTransfer")
+        public GageRnR(GageRnRConfig config = null)
+            : base("GageRnR")
         {
-            OutputDieTransferConfig = config ?? new OutputDieTransferConfig();
+            GageRnRConfig = config ?? new GageRnRConfig();
             AddComponents();
         }
 

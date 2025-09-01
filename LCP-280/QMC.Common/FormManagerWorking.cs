@@ -24,7 +24,7 @@ namespace QMC.Common
         private FormManagerWorking() { }
 
         /// <summary>
-        /// Working용 폼을 등록
+        /// Working 화면용 폼을 등록
         /// </summary>
         /// <param name="formType">Working 폼 타입</param>
         /// <param name="displayName">표시명</param>
@@ -59,7 +59,7 @@ namespace QMC.Common
                     // Form을 상속받고 이름이 "Working"로 끝나는 클래스 찾기
                     if (typeof(Form).IsAssignableFrom(type) &&
                         !type.IsAbstract &&
-                        (type.Name.Contains("Unit_Working") || type.Name.Contains("UnitWorking") || type.Name.EndsWith("Working")))
+                        (type.Name.Contains("Unit_Working") || type.Name.Contains("UnitWorking")))
                     {
                         // Unit 이름 추출
                         string unitName = ExtractUnitNameFromType(type);
@@ -134,12 +134,13 @@ namespace QMC.Common
                 throw new ArgumentException($"{unitName}에 대한 Working 폼을 찾을 수 없습니다.");
             }
 
+            // 등록된 폼이 2개 이상이면 FormWorking 탭 호스트 반환
             if (workingForms.Count >= 2)
             {
                 return new FormWorking();
             }
 
-            // 첫 번째 등록된 폼 반환
+            // 등록된 폼이 1개이면 해당 폼 반환
             if (workingForms.Count == 1)
             {
                 return FormManager.Instance.CreateFormInstance(workingForms[0]);

@@ -10,7 +10,7 @@ namespace QMC.Common
     public class FormManagerLog
     {
         private static FormManagerLog _instance;
-
+        
         public static FormManagerLog Instance
         {
             get
@@ -24,7 +24,7 @@ namespace QMC.Common
         private FormManagerLog() { }
 
         /// <summary>
-        /// Log용 폼을 등록
+        /// Log 화면용 폼을 등록
         /// </summary>
         /// <param name="formType">Log 폼 타입</param>
         /// <param name="displayName">표시명</param>
@@ -57,8 +57,8 @@ namespace QMC.Common
                 foreach (var type in types)
                 {
                     // Form을 상속받고 이름이 "Log"로 끝나는 클래스 찾기
-                    if (typeof(Form).IsAssignableFrom(type) &&
-                        !type.IsAbstract &&
+                    if (typeof(Form).IsAssignableFrom(type) && 
+                        !type.IsAbstract && 
                         (type.Name.Contains("Unit_Log") || type.Name.Contains("UnitLog") || type.Name.EndsWith("Log")))
                     {
                         // Unit 이름 추출
@@ -123,7 +123,7 @@ namespace QMC.Common
         public Form CreateLogForm(string unitName = null)
         {
             var logForms = GetLogForms();
-
+            
             if (!string.IsNullOrEmpty(unitName))
             {
                 var targetForm = logForms.Find(f => f.DisplayName.Contains(unitName));
@@ -133,18 +133,19 @@ namespace QMC.Common
                 }
                 throw new ArgumentException($"{unitName}에 대한 Log 폼을 찾을 수 없습니다.");
             }
-
+            
+            // 등록된 폼이 2개 이상인 경우, FormLog 탭 호스트 반환
             if (logForms.Count >= 2)
             {
                 return new FormLog();
             }
-
-            // 첫 번째 등록된 폼 반환
+            
+            // 등록된 폼이 1개인 경우, 해당 폼 반환
             if (logForms.Count == 1)
             {
                 return FormManager.Instance.CreateFormInstance(logForms[0]);
             }
-
+            
             // 등록된 폼이 없으면 기본 폼 반환
             return CreateDefaultLogForm();
         }

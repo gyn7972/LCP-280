@@ -4,14 +4,14 @@ using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputDieTransfer : BaseUnit
+    public class OutputRingTransfer : BaseUnit
     {
-        public OutputDieTransferConfig OutputDieTransferConfig { get; private set; }
+        public OutputRingTransferConfig OutputRingTransferConfig { get; private set; }
 
-        public OutputDieTransfer(OutputDieTransferConfig config = null)
-            : base("OutputDieTransfer")
+        public OutputRingTransfer(OutputRingTransferConfig config = null)
+            : base("OutputRingTransfer")
         {
-            OutputDieTransferConfig = config ?? new OutputDieTransferConfig();
+            OutputRingTransferConfig = config ?? new OutputRingTransferConfig();
             AddComponents();
         }
 

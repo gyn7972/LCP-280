@@ -4,14 +4,14 @@ using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputDieTransfer : BaseUnit
+    public class IndexProbeController : BaseUnit
     {
-        public OutputDieTransferConfig OutputDieTransferConfig { get; private set; }
+        public IndexProbeControllerConfig IndexProbeControllerConfig { get; private set; }
 
-        public OutputDieTransfer(OutputDieTransferConfig config = null)
-            : base("OutputDieTransfer")
+        public IndexProbeController(IndexProbeControllerConfig config = null)
+            : base("IndexProbeController")
         {
-            OutputDieTransferConfig = config ?? new OutputDieTransferConfig();
+            IndexProbeControllerConfig = config ?? new IndexProbeControllerConfig();
             AddComponents();
         }
 

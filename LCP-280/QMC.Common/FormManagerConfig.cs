@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -10,7 +12,7 @@ namespace QMC.Common
     public class FormManagerConfig
     {
         private static FormManagerConfig _instance;
-
+        
         public static FormManagerConfig Instance
         {
             get
@@ -24,41 +26,76 @@ namespace QMC.Common
         private FormManagerConfig() { }
 
         /// <summary>
-        /// Config용 폼을 등록
+        /// Config 폼을 등록 (Unit 이름 기반 자동 등록)
         /// </summary>
         /// <param name="formType">Config 폼 타입</param>
-        /// <param name="displayName">표시명</param>
+        /// <param name="unitName">Unit 이름 (예: "DieLoader", "WaferAlign" 등)</param>
         /// <param name="description">설명</param>
-        public void RegisterConfigForm(Type formType, string displayName, string description = null)
+        public void RegisterConfigForm(Type formType, string unitName, string description = null)
         {
+            string displayName = $"{unitName}";
             FormManager.Instance.RegisterForm(MenuButtonType.Config, formType, displayName, description ?? displayName);
         }
 
         /// <summary>
-        /// Config 폼을 자동으로 검색하여 등록
+        /// Unit Config 폼을 자동으로 검색하여 등록
         /// (XXUnit_Config 패턴의 폼들을 자동으로 찾아서 등록)
         /// </summary>
         /// <param name="assemblyToSearch">검색할 어셈블리 (null이면 현재 어셈블리)</param>
-        public void AutoRegisterUnitConfigForms(System.Reflection.Assembly assemblyToSearch = null)
+        public void AutoRegisterUnitConfigForms(Assembly assemblyToSearch = null)
         {
             try
             {
                 if (assemblyToSearch == null)
                 {
-                    // QMC.LCP_280.Process 어셈블리에서 검색
-                    var processAssembly = System.Reflection.Assembly.LoadFrom("QMC.LCP_280.Process.exe");
-                    if (processAssembly != null)
-                        assemblyToSearch = processAssembly;
-                    else
-                        assemblyToSearch = System.Reflection.Assembly.GetExecutingAssembly();
+                    // 1) 이미 로드된 어셈블리 중에서 검색
+                    foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        try
+                        {
+                            if (string.Equals(asm.GetName().Name, "QMC.LCP_280.Process", StringComparison.OrdinalIgnoreCase))
+                            {
+                                assemblyToSearch = asm;
+                                break;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    // 2) 베이스 디렉터리에서 DLL 로드 시도
+                    if (assemblyToSearch == null)
+                    {
+                        var processDll = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "QMC.LCP_280.Process.dll");
+                        if (File.Exists(processDll))
+                        {
+                            try { assemblyToSearch = Assembly.LoadFrom(processDll); } catch (Exception ex) { Console.WriteLine($"⚠️ DLL 로드 실패: {ex.Message}"); }
+                        }
+                    }
+
+                    // 3) 베이스 디렉터리에서 EXE 로드 시도 (예전 호환)
+                    if (assemblyToSearch == null)
+                    {
+                        var processExe = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "QMC.LCP_280.Process.exe");
+                        if (File.Exists(processExe))
+                        {
+                            try { assemblyToSearch = Assembly.LoadFrom(processExe); } catch (Exception ex) { Console.WriteLine($"⚠️ EXE 로드 실패: {ex.Message}"); }
+                        }
+                    }
+
+                    // 4) 모두 실패하면 현재 어셈블리 사용
+                    if (assemblyToSearch == null)
+                    {
+                        assemblyToSearch = Assembly.GetExecutingAssembly();
+                        Console.WriteLine("   현재 어셈블리 사용");
+                    }
                 }
 
                 var types = assemblyToSearch.GetTypes();
                 foreach (var type in types)
                 {
-                    // Form을 상속받고 이름이 "Config"로 끝나는 클래스 찾기
-                    if (typeof(Form).IsAssignableFrom(type) &&
-                        !type.IsAbstract &&
+                    // Form을 상속받고 이름이 Config 패턴에 해당하는 클래스 찾기
+                    if (typeof(Form).IsAssignableFrom(type) && 
+                        !type.IsAbstract && 
                         (type.Name.Contains("Unit_Config") || type.Name.Contains("UnitConfig") || type.Name.EndsWith("Config")))
                     {
                         // Unit 이름 추출
@@ -123,28 +160,29 @@ namespace QMC.Common
         public Form CreateConfigForm(string unitName = null)
         {
             var configForms = GetConfigForms();
-
+            
             if (!string.IsNullOrEmpty(unitName))
             {
-                var targetForm = configForms.Find(f => f.DisplayName.Contains(unitName));
+                var targetForm = configForms.Find(f => f.DisplayName != null && f.DisplayName.IndexOf(unitName, StringComparison.OrdinalIgnoreCase) >= 0);
                 if (targetForm != null)
                 {
                     return FormManager.Instance.CreateFormInstance(targetForm);
                 }
                 throw new ArgumentException($"{unitName}에 대한 Config 폼을 찾을 수 없습니다.");
             }
-
+            
+            // 2개 이상이면 탭 호스트(FormConfig)로 표시
             if (configForms.Count >= 2)
             {
                 return new FormConfig();
             }
 
-            // 첫 번째 등록된 폼 반환
+            // 1개면 해당 폼 단독 표시
             if (configForms.Count == 1)
             {
                 return FormManager.Instance.CreateFormInstance(configForms[0]);
             }
-
+            
             // 등록된 폼이 없으면 기본 폼 반환
             return CreateDefaultConfigForm();
         }

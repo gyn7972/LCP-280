@@ -29,17 +29,12 @@ namespace QMC.LCP_280.Process.Unit
         private Dictionary<(string section, string title), PropertyBase> _configIndex;
         private Dictionary<(string section, string title), PropertyBase> _speedIndex;
 
-        Form_AxisJogPopup _jogPopup = null;
-
         public Vision_Setup()
         {
             InitializeComponent();
             SuspendLayout();
 
             InitializeUI();
-
-            _jogPopup = new Form_AxisJogPopup();
-            //popupAxisJog.Owner = this;
 
             ResumeLayout(true);
             Console.WriteLine("DigitalIO_Setup 생성자 완료");
@@ -63,7 +58,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-
+               
             }
             catch (Exception ex)
             {
@@ -237,72 +232,6 @@ namespace QMC.LCP_280.Process.Unit
 
             public int GetHashCode((string section, string title) obj)
                 => HashCode.Combine(_cmp.GetHashCode(obj.section ?? string.Empty), _cmp.GetHashCode(obj.title ?? string.Empty));
-        }
-
-        private void btn_JogPopup_Click(object sender, EventArgs e)
-        {
-            ShowOrRestoreJogPopup(this);
-        }
-
-        private void ShowOrRestoreJogPopup(IWin32Window owner)
-        {
-            if (_jogPopup == null || _jogPopup.IsDisposed)
-            {
-                _jogPopup = new Form_AxisJogPopup();
-                _jogPopup.StartPosition = FormStartPosition.CenterParent;
-                _jogPopup.ShowInTaskbar = false;
-                _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
-
-                // [선택] 닫기(X)를 눌러도 종료하지 말고 숨기기만 하고 싶으면:
-                _jogPopup.FormClosing += (s, ev) =>
-                {
-                    if (ev.CloseReason == CloseReason.UserClosing) { ev.Cancel = true; _jogPopup.Hide(); }
-                };
-            }
-
-            // 숨겨져 있으면 다시 보여주기 (Hide() 상태 등)
-            if (!_jogPopup.Visible)
-                _jogPopup.Show(owner);
-
-            // ★ 최소화되어 있으면 복구
-            if (_jogPopup.WindowState == FormWindowState.Minimized)
-                _jogPopup.WindowState = FormWindowState.Normal;
-
-            // 맨 앞으로 / 포커스 가져오기 (신뢰도 높이기용 토글 트릭 포함)
-            _jogPopup.BringToFront();
-            _jogPopup.TopMost = true;   // 잠깐 TopMost로
-            _jogPopup.TopMost = false;  // 원복
-            _jogPopup.Activate();
-            _jogPopup.Focus();
-        }
-
-        /// <summary>
-        /// FormConfig 탭 호스트가 전달하는 가용 크기에 맞춰 자동으로 폼 크기를 조정합니다.
-        /// </summary>
-        /// <param name="width">가용 너비</param>
-        /// <param name="height">가용 높이 (탭 헤더 제외)</param>
-        public void SetPanelSize(int width, int height)
-        {
-            try
-            {
-                this.SuspendLayout();
-
-                // 호스트(TabPage)의 클라이언트 영역을 그대로 사용
-                this.Size = new Size(width, height);
-                this.ClientSize = new Size(width, height);
-
-                // 포함된 컨트롤들이 Dock=Fill 등으로 배치되었다면 자동으로 맞춰짐
-                // 필요 시 내부 루트 컨테이너가 있다면 여기에서 Size/Dock 조정 가능
-
-                this.Invalidate();
-                this.Update();
-            }
-            finally
-            {
-                this.ResumeLayout(true);
-            }
-
-            Console.WriteLine($"📐 {nameof(Vision_Setup)}.SetPanelSize → {width}x{height}");
         }
     }
 }
