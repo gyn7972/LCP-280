@@ -31,6 +31,7 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.lbInSig1 = new System.Windows.Forms.Label();
             this.lbOutCmd3 = new System.Windows.Forms.Label();
             this.lbInCmd3 = new System.Windows.Forms.Label();
             this.lbOutCmd2 = new System.Windows.Forms.Label();
@@ -50,8 +51,17 @@
             this.lbOutSig2 = new System.Windows.Forms.Label();
             this.lbInSig2 = new System.Windows.Forms.Label();
             this.lbOutSig1 = new System.Windows.Forms.Label();
-            this.lbInSig1 = new System.Windows.Forms.Label();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.groupBox6 = new System.Windows.Forms.GroupBox();
+            this.groupBox5 = new System.Windows.Forms.GroupBox();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
+            this.cbMovePos = new System.Windows.Forms.ComboBox();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.cbProgramNo = new System.Windows.Forms.ComboBox();
             this.lbProgramNoValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbProgramNoCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbVelocityValue = new QMC.Common.CustomControl.CustomBorderLabel();
@@ -62,56 +72,50 @@
             this.lbPosPulseCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbPosDegreeValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbPosDegreeCaption = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.cbProgramNo = new System.Windows.Forms.ComboBox();
-            this.btnRunProgram = new QMC.Common.IndividualMenuButton();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.individualMenuButton2 = new QMC.Common.IndividualMenuButton();
-            this.individualMenuButton3 = new QMC.Common.IndividualMenuButton();
-            this.individualMenuButton4 = new QMC.Common.IndividualMenuButton();
-            this.individualMenuButton5 = new QMC.Common.IndividualMenuButton();
-            this.individualMenuButton6 = new QMC.Common.IndividualMenuButton();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
-            this.cbMovePos = new System.Windows.Forms.ComboBox();
-            this.individualMenuButton7 = new QMC.Common.IndividualMenuButton();
-            this.groupBox5 = new System.Windows.Forms.GroupBox();
-            this.individualMenuButton8 = new QMC.Common.IndividualMenuButton();
-            this.groupBox6 = new System.Windows.Forms.GroupBox();
-            this.individualMenuButton9 = new QMC.Common.IndividualMenuButton();
-            this.individualMenuButton10 = new QMC.Common.IndividualMenuButton();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.lbResponseCodeValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel17 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbMCodeValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel15 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbReadyStateValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel13 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbInHomePosValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel11 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbAlarmCodeValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel9 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbRunningWaitValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel7 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbPositionCompleteValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel5 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbInPositionValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.customBorderLabel3 = new QMC.Common.CustomControl.CustomBorderLabel();
             this.customBorderLabel1 = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbServoStateValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel3 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbInPositionValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel5 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbPositionCompleteValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel7 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbRunningWaitValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel9 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbAlarmCodeValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel11 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbInHomePosValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel13 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbReadyStateValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel15 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbMCodeValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.customBorderLabel17 = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbResponseCodeValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.individualMenuButton10 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton9 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton8 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton7 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton6 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton5 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton4 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton3 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton2 = new QMC.Common.IndividualMenuButton();
+            this.btnRunProgram = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton11 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton12 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton13 = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             this.tableLayoutPanel3.SuspendLayout();
-            this.panel1.SuspendLayout();
-            this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
-            this.groupBox3.SuspendLayout();
-            this.groupBox4.SuspendLayout();
-            this.groupBox5.SuspendLayout();
-            this.groupBox6.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
+            this.panel1.SuspendLayout();
+            this.groupBox3.SuspendLayout();
+            this.groupBox6.SuspendLayout();
+            this.groupBox5.SuspendLayout();
+            this.groupBox4.SuspendLayout();
+            this.groupBox2.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -188,6 +192,18 @@
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
             this.tableLayoutPanel4.Size = new System.Drawing.Size(398, 243);
             this.tableLayoutPanel4.TabIndex = 1;
+            // 
+            // lbInSig1
+            // 
+            this.lbInSig1.BackColor = System.Drawing.SystemColors.ControlLight;
+            this.lbInSig1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbInSig1.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lbInSig1.Location = new System.Drawing.Point(3, 3);
+            this.lbInSig1.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.lbInSig1.Name = "lbInSig1";
+            this.lbInSig1.Size = new System.Drawing.Size(193, 21);
+            this.lbInSig1.TabIndex = 20;
+            this.lbInSig1.Text = " - ";
             // 
             // lbOutCmd3
             // 
@@ -417,18 +433,6 @@
             this.lbOutSig1.TabIndex = 1;
             this.lbOutSig1.Text = " - ";
             // 
-            // lbInSig1
-            // 
-            this.lbInSig1.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.lbInSig1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbInSig1.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lbInSig1.Location = new System.Drawing.Point(3, 3);
-            this.lbInSig1.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.lbInSig1.Name = "lbInSig1";
-            this.lbInSig1.Size = new System.Drawing.Size(193, 21);
-            this.lbInSig1.TabIndex = 20;
-            this.lbInSig1.Text = " - ";
-            // 
             // tableLayoutPanel3
             // 
             this.tableLayoutPanel3.ColumnCount = 2;
@@ -455,430 +459,6 @@
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel3.Size = new System.Drawing.Size(398, 178);
             this.tableLayoutPanel3.TabIndex = 2;
-            // 
-            // lbProgramNoValue
-            // 
-            this.lbProgramNoValue.BackColor = System.Drawing.Color.Black;
-            this.lbProgramNoValue.BorderColor = System.Drawing.Color.Black;
-            this.lbProgramNoValue.BorderWidth = 1;
-            this.lbProgramNoValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbProgramNoValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbProgramNoValue.Location = new System.Drawing.Point(117, 143);
-            this.lbProgramNoValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbProgramNoValue.Name = "lbProgramNoValue";
-            this.lbProgramNoValue.Size = new System.Drawing.Size(281, 33);
-            this.lbProgramNoValue.TabIndex = 29;
-            this.lbProgramNoValue.Text = " - ";
-            this.lbProgramNoValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lbProgramNoCaption
-            // 
-            this.lbProgramNoCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.lbProgramNoCaption.BorderWidth = 1;
-            this.lbProgramNoCaption.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbProgramNoCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbProgramNoCaption.Location = new System.Drawing.Point(3, 143);
-            this.lbProgramNoCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.lbProgramNoCaption.Name = "lbProgramNoCaption";
-            this.lbProgramNoCaption.Size = new System.Drawing.Size(111, 35);
-            this.lbProgramNoCaption.TabIndex = 28;
-            this.lbProgramNoCaption.Text = "Program No";
-            this.lbProgramNoCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lbVelocityValue
-            // 
-            this.lbVelocityValue.BackColor = System.Drawing.Color.Black;
-            this.lbVelocityValue.BorderColor = System.Drawing.Color.Black;
-            this.lbVelocityValue.BorderWidth = 1;
-            this.lbVelocityValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbVelocityValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbVelocityValue.Location = new System.Drawing.Point(117, 108);
-            this.lbVelocityValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbVelocityValue.Name = "lbVelocityValue";
-            this.lbVelocityValue.Size = new System.Drawing.Size(281, 29);
-            this.lbVelocityValue.TabIndex = 27;
-            this.lbVelocityValue.Text = " - ";
-            this.lbVelocityValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lbVelocityCaption
-            // 
-            this.lbVelocityCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.lbVelocityCaption.BorderWidth = 1;
-            this.lbVelocityCaption.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbVelocityCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbVelocityCaption.Location = new System.Drawing.Point(3, 108);
-            this.lbVelocityCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.lbVelocityCaption.Name = "lbVelocityCaption";
-            this.lbVelocityCaption.Size = new System.Drawing.Size(111, 32);
-            this.lbVelocityCaption.TabIndex = 26;
-            this.lbVelocityCaption.Text = "Velocity";
-            this.lbVelocityCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lbPosErrorPulseValue
-            // 
-            this.lbPosErrorPulseValue.BackColor = System.Drawing.Color.Black;
-            this.lbPosErrorPulseValue.BorderColor = System.Drawing.Color.Black;
-            this.lbPosErrorPulseValue.BorderWidth = 1;
-            this.lbPosErrorPulseValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbPosErrorPulseValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbPosErrorPulseValue.Location = new System.Drawing.Point(117, 73);
-            this.lbPosErrorPulseValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbPosErrorPulseValue.Name = "lbPosErrorPulseValue";
-            this.lbPosErrorPulseValue.Size = new System.Drawing.Size(281, 29);
-            this.lbPosErrorPulseValue.TabIndex = 25;
-            this.lbPosErrorPulseValue.Text = " - ";
-            this.lbPosErrorPulseValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lbPosErrorPulseCaption
-            // 
-            this.lbPosErrorPulseCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.lbPosErrorPulseCaption.BorderWidth = 1;
-            this.lbPosErrorPulseCaption.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbPosErrorPulseCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbPosErrorPulseCaption.Location = new System.Drawing.Point(3, 73);
-            this.lbPosErrorPulseCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.lbPosErrorPulseCaption.Name = "lbPosErrorPulseCaption";
-            this.lbPosErrorPulseCaption.Size = new System.Drawing.Size(111, 32);
-            this.lbPosErrorPulseCaption.TabIndex = 24;
-            this.lbPosErrorPulseCaption.Text = "Error (Pulse)";
-            this.lbPosErrorPulseCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lbPosPulseValue
-            // 
-            this.lbPosPulseValue.BackColor = System.Drawing.Color.Black;
-            this.lbPosPulseValue.BorderColor = System.Drawing.Color.Black;
-            this.lbPosPulseValue.BorderWidth = 1;
-            this.lbPosPulseValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbPosPulseValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbPosPulseValue.Location = new System.Drawing.Point(117, 38);
-            this.lbPosPulseValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbPosPulseValue.Name = "lbPosPulseValue";
-            this.lbPosPulseValue.Size = new System.Drawing.Size(281, 29);
-            this.lbPosPulseValue.TabIndex = 23;
-            this.lbPosPulseValue.Text = " - ";
-            this.lbPosPulseValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lbPosPulseCaption
-            // 
-            this.lbPosPulseCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.lbPosPulseCaption.BorderWidth = 1;
-            this.lbPosPulseCaption.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbPosPulseCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbPosPulseCaption.Location = new System.Drawing.Point(3, 38);
-            this.lbPosPulseCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.lbPosPulseCaption.Name = "lbPosPulseCaption";
-            this.lbPosPulseCaption.Size = new System.Drawing.Size(111, 32);
-            this.lbPosPulseCaption.TabIndex = 22;
-            this.lbPosPulseCaption.Text = "Position (Pulse)";
-            this.lbPosPulseCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lbPosDegreeValue
-            // 
-            this.lbPosDegreeValue.BackColor = System.Drawing.Color.Black;
-            this.lbPosDegreeValue.BorderColor = System.Drawing.Color.Black;
-            this.lbPosDegreeValue.BorderWidth = 1;
-            this.lbPosDegreeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbPosDegreeValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbPosDegreeValue.Location = new System.Drawing.Point(117, 3);
-            this.lbPosDegreeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbPosDegreeValue.Name = "lbPosDegreeValue";
-            this.lbPosDegreeValue.Size = new System.Drawing.Size(281, 29);
-            this.lbPosDegreeValue.TabIndex = 21;
-            this.lbPosDegreeValue.Text = " - ";
-            this.lbPosDegreeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // lbPosDegreeCaption
-            // 
-            this.lbPosDegreeCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.lbPosDegreeCaption.BorderWidth = 1;
-            this.lbPosDegreeCaption.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbPosDegreeCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbPosDegreeCaption.Location = new System.Drawing.Point(3, 3);
-            this.lbPosDegreeCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.lbPosDegreeCaption.Name = "lbPosDegreeCaption";
-            this.lbPosDegreeCaption.Size = new System.Drawing.Size(111, 32);
-            this.lbPosDegreeCaption.TabIndex = 20;
-            this.lbPosDegreeCaption.Text = "Position (Deg)";
-            this.lbPosDegreeCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.groupBox3);
-            this.panel1.Controls.Add(this.groupBox2);
-            this.panel1.Controls.Add(this.groupBox1);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(413, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(848, 746);
-            this.panel1.TabIndex = 1;
-            // 
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.btnRunProgram);
-            this.groupBox1.Controls.Add(this.cbProgramNo);
-            this.groupBox1.Location = new System.Drawing.Point(12, 9);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(231, 126);
-            this.groupBox1.TabIndex = 0;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Program Tester";
-            // 
-            // cbProgramNo
-            // 
-            this.cbProgramNo.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.cbProgramNo.FormattingEnabled = true;
-            this.cbProgramNo.Location = new System.Drawing.Point(16, 39);
-            this.cbProgramNo.Name = "cbProgramNo";
-            this.cbProgramNo.Size = new System.Drawing.Size(196, 25);
-            this.cbProgramNo.TabIndex = 0;
-            // 
-            // btnRunProgram
-            // 
-            this.btnRunProgram.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnRunProgram.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnRunProgram.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnRunProgram.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnRunProgram.CustomForeColor = System.Drawing.Color.Black;
-            this.btnRunProgram.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnRunProgram.ForeColor = System.Drawing.Color.Black;
-            this.btnRunProgram.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnRunProgram.Location = new System.Drawing.Point(97, 77);
-            this.btnRunProgram.Name = "btnRunProgram";
-            this.btnRunProgram.Size = new System.Drawing.Size(115, 27);
-            this.btnRunProgram.TabIndex = 1;
-            this.btnRunProgram.TabStop = false;
-            this.btnRunProgram.Text = "Run";
-            this.btnRunProgram.UseVisualStyleBackColor = false;
-            this.btnRunProgram.Click += new System.EventHandler(this.btnRunProgram_Click);
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.individualMenuButton6);
-            this.groupBox2.Controls.Add(this.individualMenuButton5);
-            this.groupBox2.Controls.Add(this.individualMenuButton4);
-            this.groupBox2.Controls.Add(this.individualMenuButton3);
-            this.groupBox2.Controls.Add(this.individualMenuButton2);
-            this.groupBox2.Location = new System.Drawing.Point(12, 143);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(231, 285);
-            this.groupBox2.TabIndex = 1;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Driver Control";
-            // 
-            // individualMenuButton2
-            // 
-            this.individualMenuButton2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton2.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton2.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton2.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton2.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton2.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton2.Location = new System.Drawing.Point(30, 35);
-            this.individualMenuButton2.Name = "individualMenuButton2";
-            this.individualMenuButton2.Size = new System.Drawing.Size(169, 38);
-            this.individualMenuButton2.TabIndex = 2;
-            this.individualMenuButton2.TabStop = false;
-            this.individualMenuButton2.Text = "Servo On";
-            this.individualMenuButton2.UseVisualStyleBackColor = false;
-            // 
-            // individualMenuButton3
-            // 
-            this.individualMenuButton3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton3.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton3.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton3.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton3.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton3.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton3.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton3.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton3.Location = new System.Drawing.Point(30, 137);
-            this.individualMenuButton3.Name = "individualMenuButton3";
-            this.individualMenuButton3.Size = new System.Drawing.Size(169, 38);
-            this.individualMenuButton3.TabIndex = 3;
-            this.individualMenuButton3.TabStop = false;
-            this.individualMenuButton3.Text = "EMG Stop";
-            this.individualMenuButton3.UseVisualStyleBackColor = false;
-            // 
-            // individualMenuButton4
-            // 
-            this.individualMenuButton4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton4.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton4.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton4.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton4.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton4.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton4.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton4.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton4.Location = new System.Drawing.Point(30, 79);
-            this.individualMenuButton4.Name = "individualMenuButton4";
-            this.individualMenuButton4.Size = new System.Drawing.Size(169, 38);
-            this.individualMenuButton4.TabIndex = 4;
-            this.individualMenuButton4.TabStop = false;
-            this.individualMenuButton4.Text = "Servo Off";
-            this.individualMenuButton4.UseVisualStyleBackColor = false;
-            // 
-            // individualMenuButton5
-            // 
-            this.individualMenuButton5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton5.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton5.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton5.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton5.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton5.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton5.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton5.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton5.Location = new System.Drawing.Point(30, 181);
-            this.individualMenuButton5.Name = "individualMenuButton5";
-            this.individualMenuButton5.Size = new System.Drawing.Size(169, 38);
-            this.individualMenuButton5.TabIndex = 5;
-            this.individualMenuButton5.TabStop = false;
-            this.individualMenuButton5.Text = "EMG Stop Release";
-            this.individualMenuButton5.UseVisualStyleBackColor = false;
-            // 
-            // individualMenuButton6
-            // 
-            this.individualMenuButton6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton6.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton6.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton6.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton6.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton6.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton6.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton6.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton6.Location = new System.Drawing.Point(30, 225);
-            this.individualMenuButton6.Name = "individualMenuButton6";
-            this.individualMenuButton6.Size = new System.Drawing.Size(169, 38);
-            this.individualMenuButton6.TabIndex = 6;
-            this.individualMenuButton6.TabStop = false;
-            this.individualMenuButton6.Text = "Breake Release";
-            this.individualMenuButton6.UseVisualStyleBackColor = false;
-            // 
-            // groupBox3
-            // 
-            this.groupBox3.Controls.Add(this.groupBox6);
-            this.groupBox3.Controls.Add(this.groupBox5);
-            this.groupBox3.Controls.Add(this.groupBox4);
-            this.groupBox3.Location = new System.Drawing.Point(260, 143);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(571, 283);
-            this.groupBox3.TabIndex = 2;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Motion Control";
-            // 
-            // groupBox4
-            // 
-            this.groupBox4.Controls.Add(this.individualMenuButton7);
-            this.groupBox4.Controls.Add(this.cbMovePos);
-            this.groupBox4.Location = new System.Drawing.Point(16, 31);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Size = new System.Drawing.Size(225, 120);
-            this.groupBox4.TabIndex = 3;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Absolute Move";
-            // 
-            // cbMovePos
-            // 
-            this.cbMovePos.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.cbMovePos.FormattingEnabled = true;
-            this.cbMovePos.Location = new System.Drawing.Point(14, 34);
-            this.cbMovePos.Name = "cbMovePos";
-            this.cbMovePos.Size = new System.Drawing.Size(196, 25);
-            this.cbMovePos.TabIndex = 1;
-            // 
-            // individualMenuButton7
-            // 
-            this.individualMenuButton7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton7.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton7.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton7.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton7.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton7.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton7.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton7.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton7.Location = new System.Drawing.Point(95, 72);
-            this.individualMenuButton7.Name = "individualMenuButton7";
-            this.individualMenuButton7.Size = new System.Drawing.Size(115, 27);
-            this.individualMenuButton7.TabIndex = 2;
-            this.individualMenuButton7.TabStop = false;
-            this.individualMenuButton7.Text = "Run";
-            this.individualMenuButton7.UseVisualStyleBackColor = false;
-            // 
-            // groupBox5
-            // 
-            this.groupBox5.Controls.Add(this.individualMenuButton8);
-            this.groupBox5.Location = new System.Drawing.Point(16, 168);
-            this.groupBox5.Name = "groupBox5";
-            this.groupBox5.Size = new System.Drawing.Size(225, 95);
-            this.groupBox5.TabIndex = 3;
-            this.groupBox5.TabStop = false;
-            this.groupBox5.Text = "Home Move";
-            // 
-            // individualMenuButton8
-            // 
-            this.individualMenuButton8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton8.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton8.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton8.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton8.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton8.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton8.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton8.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton8.Location = new System.Drawing.Point(37, 34);
-            this.individualMenuButton8.Name = "individualMenuButton8";
-            this.individualMenuButton8.Size = new System.Drawing.Size(145, 41);
-            this.individualMenuButton8.TabIndex = 3;
-            this.individualMenuButton8.TabStop = false;
-            this.individualMenuButton8.Text = "Home Search";
-            this.individualMenuButton8.UseVisualStyleBackColor = false;
-            // 
-            // groupBox6
-            // 
-            this.groupBox6.Controls.Add(this.individualMenuButton10);
-            this.groupBox6.Controls.Add(this.individualMenuButton9);
-            this.groupBox6.Location = new System.Drawing.Point(258, 31);
-            this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(294, 232);
-            this.groupBox6.TabIndex = 3;
-            this.groupBox6.TabStop = false;
-            this.groupBox6.Text = "Incremental Move";
-            // 
-            // individualMenuButton9
-            // 
-            this.individualMenuButton9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton9.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton9.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton9.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton9.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton9.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton9.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton9.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton9.Location = new System.Drawing.Point(29, 48);
-            this.individualMenuButton9.Name = "individualMenuButton9";
-            this.individualMenuButton9.Size = new System.Drawing.Size(101, 48);
-            this.individualMenuButton9.TabIndex = 4;
-            this.individualMenuButton9.TabStop = false;
-            this.individualMenuButton9.Text = "- 45°";
-            this.individualMenuButton9.UseVisualStyleBackColor = false;
-            // 
-            // individualMenuButton10
-            // 
-            this.individualMenuButton10.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton10.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton10.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton10.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton10.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton10.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton10.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton10.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton10.Location = new System.Drawing.Point(161, 48);
-            this.individualMenuButton10.Name = "individualMenuButton10";
-            this.individualMenuButton10.Size = new System.Drawing.Size(101, 48);
-            this.individualMenuButton10.TabIndex = 5;
-            this.individualMenuButton10.TabStop = false;
-            this.individualMenuButton10.Text = "+ 45°";
-            this.individualMenuButton10.UseVisualStyleBackColor = false;
             // 
             // tableLayoutPanel5
             // 
@@ -919,6 +499,485 @@
             this.tableLayoutPanel5.Size = new System.Drawing.Size(398, 287);
             this.tableLayoutPanel5.TabIndex = 3;
             // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.groupBox3);
+            this.panel1.Controls.Add(this.groupBox2);
+            this.panel1.Controls.Add(this.groupBox1);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(413, 3);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(848, 746);
+            this.panel1.TabIndex = 1;
+            // 
+            // groupBox3
+            // 
+            this.groupBox3.Controls.Add(this.groupBox6);
+            this.groupBox3.Controls.Add(this.groupBox5);
+            this.groupBox3.Controls.Add(this.groupBox4);
+            this.groupBox3.Location = new System.Drawing.Point(260, 143);
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.Size = new System.Drawing.Size(571, 283);
+            this.groupBox3.TabIndex = 2;
+            this.groupBox3.TabStop = false;
+            this.groupBox3.Text = "Motion Control";
+            // 
+            // groupBox6
+            // 
+            this.groupBox6.Controls.Add(this.individualMenuButton12);
+            this.groupBox6.Controls.Add(this.individualMenuButton13);
+            this.groupBox6.Controls.Add(this.individualMenuButton1);
+            this.groupBox6.Controls.Add(this.individualMenuButton11);
+            this.groupBox6.Controls.Add(this.individualMenuButton10);
+            this.groupBox6.Controls.Add(this.individualMenuButton9);
+            this.groupBox6.Location = new System.Drawing.Point(258, 31);
+            this.groupBox6.Name = "groupBox6";
+            this.groupBox6.Size = new System.Drawing.Size(294, 232);
+            this.groupBox6.TabIndex = 3;
+            this.groupBox6.TabStop = false;
+            this.groupBox6.Text = "Incremental Move";
+            // 
+            // groupBox5
+            // 
+            this.groupBox5.Controls.Add(this.individualMenuButton8);
+            this.groupBox5.Location = new System.Drawing.Point(16, 168);
+            this.groupBox5.Name = "groupBox5";
+            this.groupBox5.Size = new System.Drawing.Size(225, 95);
+            this.groupBox5.TabIndex = 3;
+            this.groupBox5.TabStop = false;
+            this.groupBox5.Text = "Home Move";
+            // 
+            // groupBox4
+            // 
+            this.groupBox4.Controls.Add(this.individualMenuButton7);
+            this.groupBox4.Controls.Add(this.cbMovePos);
+            this.groupBox4.Location = new System.Drawing.Point(16, 31);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Size = new System.Drawing.Size(225, 120);
+            this.groupBox4.TabIndex = 3;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Absolute Move";
+            // 
+            // cbMovePos
+            // 
+            this.cbMovePos.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.cbMovePos.FormattingEnabled = true;
+            this.cbMovePos.Location = new System.Drawing.Point(14, 34);
+            this.cbMovePos.Name = "cbMovePos";
+            this.cbMovePos.Size = new System.Drawing.Size(196, 25);
+            this.cbMovePos.TabIndex = 1;
+            // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.individualMenuButton6);
+            this.groupBox2.Controls.Add(this.individualMenuButton5);
+            this.groupBox2.Controls.Add(this.individualMenuButton4);
+            this.groupBox2.Controls.Add(this.individualMenuButton3);
+            this.groupBox2.Controls.Add(this.individualMenuButton2);
+            this.groupBox2.Location = new System.Drawing.Point(12, 143);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Size = new System.Drawing.Size(231, 285);
+            this.groupBox2.TabIndex = 1;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Driver Control";
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.btnRunProgram);
+            this.groupBox1.Controls.Add(this.cbProgramNo);
+            this.groupBox1.Location = new System.Drawing.Point(12, 9);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(231, 126);
+            this.groupBox1.TabIndex = 0;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Program Tester";
+            // 
+            // cbProgramNo
+            // 
+            this.cbProgramNo.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.cbProgramNo.FormattingEnabled = true;
+            this.cbProgramNo.Location = new System.Drawing.Point(16, 39);
+            this.cbProgramNo.Name = "cbProgramNo";
+            this.cbProgramNo.Size = new System.Drawing.Size(196, 25);
+            this.cbProgramNo.TabIndex = 0;
+            // 
+            // lbProgramNoValue
+            // 
+            this.lbProgramNoValue.BackColor = System.Drawing.Color.Black;
+            this.lbProgramNoValue.BorderColor = System.Drawing.Color.Black;
+            this.lbProgramNoValue.BorderWidth = 1;
+            this.lbProgramNoValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbProgramNoValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbProgramNoValue.Location = new System.Drawing.Point(116, 143);
+            this.lbProgramNoValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbProgramNoValue.Name = "lbProgramNoValue";
+            this.lbProgramNoValue.Size = new System.Drawing.Size(281, 33);
+            this.lbProgramNoValue.TabIndex = 29;
+            this.lbProgramNoValue.Text = " - ";
+            this.lbProgramNoValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lbProgramNoCaption
+            // 
+            this.lbProgramNoCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.lbProgramNoCaption.BorderWidth = 1;
+            this.lbProgramNoCaption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbProgramNoCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lbProgramNoCaption.Location = new System.Drawing.Point(3, 143);
+            this.lbProgramNoCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.lbProgramNoCaption.Name = "lbProgramNoCaption";
+            this.lbProgramNoCaption.Size = new System.Drawing.Size(110, 35);
+            this.lbProgramNoCaption.TabIndex = 28;
+            this.lbProgramNoCaption.Text = "Program No";
+            this.lbProgramNoCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbVelocityValue
+            // 
+            this.lbVelocityValue.BackColor = System.Drawing.Color.Black;
+            this.lbVelocityValue.BorderColor = System.Drawing.Color.Black;
+            this.lbVelocityValue.BorderWidth = 1;
+            this.lbVelocityValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbVelocityValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbVelocityValue.Location = new System.Drawing.Point(116, 108);
+            this.lbVelocityValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbVelocityValue.Name = "lbVelocityValue";
+            this.lbVelocityValue.Size = new System.Drawing.Size(281, 29);
+            this.lbVelocityValue.TabIndex = 27;
+            this.lbVelocityValue.Text = " - ";
+            this.lbVelocityValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lbVelocityCaption
+            // 
+            this.lbVelocityCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.lbVelocityCaption.BorderWidth = 1;
+            this.lbVelocityCaption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbVelocityCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lbVelocityCaption.Location = new System.Drawing.Point(3, 108);
+            this.lbVelocityCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.lbVelocityCaption.Name = "lbVelocityCaption";
+            this.lbVelocityCaption.Size = new System.Drawing.Size(110, 32);
+            this.lbVelocityCaption.TabIndex = 26;
+            this.lbVelocityCaption.Text = "Velocity";
+            this.lbVelocityCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbPosErrorPulseValue
+            // 
+            this.lbPosErrorPulseValue.BackColor = System.Drawing.Color.Black;
+            this.lbPosErrorPulseValue.BorderColor = System.Drawing.Color.Black;
+            this.lbPosErrorPulseValue.BorderWidth = 1;
+            this.lbPosErrorPulseValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbPosErrorPulseValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbPosErrorPulseValue.Location = new System.Drawing.Point(116, 73);
+            this.lbPosErrorPulseValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbPosErrorPulseValue.Name = "lbPosErrorPulseValue";
+            this.lbPosErrorPulseValue.Size = new System.Drawing.Size(281, 29);
+            this.lbPosErrorPulseValue.TabIndex = 25;
+            this.lbPosErrorPulseValue.Text = " - ";
+            this.lbPosErrorPulseValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lbPosErrorPulseCaption
+            // 
+            this.lbPosErrorPulseCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.lbPosErrorPulseCaption.BorderWidth = 1;
+            this.lbPosErrorPulseCaption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbPosErrorPulseCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lbPosErrorPulseCaption.Location = new System.Drawing.Point(3, 73);
+            this.lbPosErrorPulseCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.lbPosErrorPulseCaption.Name = "lbPosErrorPulseCaption";
+            this.lbPosErrorPulseCaption.Size = new System.Drawing.Size(110, 32);
+            this.lbPosErrorPulseCaption.TabIndex = 24;
+            this.lbPosErrorPulseCaption.Text = "Error (Pulse)";
+            this.lbPosErrorPulseCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbPosPulseValue
+            // 
+            this.lbPosPulseValue.BackColor = System.Drawing.Color.Black;
+            this.lbPosPulseValue.BorderColor = System.Drawing.Color.Black;
+            this.lbPosPulseValue.BorderWidth = 1;
+            this.lbPosPulseValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbPosPulseValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbPosPulseValue.Location = new System.Drawing.Point(116, 38);
+            this.lbPosPulseValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbPosPulseValue.Name = "lbPosPulseValue";
+            this.lbPosPulseValue.Size = new System.Drawing.Size(281, 29);
+            this.lbPosPulseValue.TabIndex = 23;
+            this.lbPosPulseValue.Text = " - ";
+            this.lbPosPulseValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lbPosPulseCaption
+            // 
+            this.lbPosPulseCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.lbPosPulseCaption.BorderWidth = 1;
+            this.lbPosPulseCaption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbPosPulseCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lbPosPulseCaption.Location = new System.Drawing.Point(3, 38);
+            this.lbPosPulseCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.lbPosPulseCaption.Name = "lbPosPulseCaption";
+            this.lbPosPulseCaption.Size = new System.Drawing.Size(110, 32);
+            this.lbPosPulseCaption.TabIndex = 22;
+            this.lbPosPulseCaption.Text = "Position (Pulse)";
+            this.lbPosPulseCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbPosDegreeValue
+            // 
+            this.lbPosDegreeValue.BackColor = System.Drawing.Color.Black;
+            this.lbPosDegreeValue.BorderColor = System.Drawing.Color.Black;
+            this.lbPosDegreeValue.BorderWidth = 1;
+            this.lbPosDegreeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbPosDegreeValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbPosDegreeValue.Location = new System.Drawing.Point(116, 3);
+            this.lbPosDegreeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbPosDegreeValue.Name = "lbPosDegreeValue";
+            this.lbPosDegreeValue.Size = new System.Drawing.Size(281, 29);
+            this.lbPosDegreeValue.TabIndex = 21;
+            this.lbPosDegreeValue.Text = " - ";
+            this.lbPosDegreeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lbPosDegreeCaption
+            // 
+            this.lbPosDegreeCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.lbPosDegreeCaption.BorderWidth = 1;
+            this.lbPosDegreeCaption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbPosDegreeCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lbPosDegreeCaption.Location = new System.Drawing.Point(3, 3);
+            this.lbPosDegreeCaption.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.lbPosDegreeCaption.Name = "lbPosDegreeCaption";
+            this.lbPosDegreeCaption.Size = new System.Drawing.Size(110, 32);
+            this.lbPosDegreeCaption.TabIndex = 20;
+            this.lbPosDegreeCaption.Text = "Position (Deg)";
+            this.lbPosDegreeCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbResponseCodeValue
+            // 
+            this.lbResponseCodeValue.BackColor = System.Drawing.Color.Black;
+            this.lbResponseCodeValue.BorderColor = System.Drawing.Color.Black;
+            this.lbResponseCodeValue.BorderWidth = 1;
+            this.lbResponseCodeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbResponseCodeValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbResponseCodeValue.Location = new System.Drawing.Point(185, 251);
+            this.lbResponseCodeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbResponseCodeValue.Name = "lbResponseCodeValue";
+            this.lbResponseCodeValue.Size = new System.Drawing.Size(213, 28);
+            this.lbResponseCodeValue.TabIndex = 38;
+            this.lbResponseCodeValue.Text = " - ";
+            this.lbResponseCodeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel17
+            // 
+            this.customBorderLabel17.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel17.BorderWidth = 1;
+            this.customBorderLabel17.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel17.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel17.Location = new System.Drawing.Point(3, 251);
+            this.customBorderLabel17.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel17.Name = "customBorderLabel17";
+            this.customBorderLabel17.Size = new System.Drawing.Size(179, 36);
+            this.customBorderLabel17.TabIndex = 37;
+            this.customBorderLabel17.Text = "Response Code";
+            this.customBorderLabel17.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbMCodeValue
+            // 
+            this.lbMCodeValue.BackColor = System.Drawing.Color.Black;
+            this.lbMCodeValue.BorderColor = System.Drawing.Color.Black;
+            this.lbMCodeValue.BorderWidth = 1;
+            this.lbMCodeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbMCodeValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbMCodeValue.Location = new System.Drawing.Point(185, 220);
+            this.lbMCodeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbMCodeValue.Name = "lbMCodeValue";
+            this.lbMCodeValue.Size = new System.Drawing.Size(213, 28);
+            this.lbMCodeValue.TabIndex = 36;
+            this.lbMCodeValue.Text = " - ";
+            this.lbMCodeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel15
+            // 
+            this.customBorderLabel15.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel15.BorderWidth = 1;
+            this.customBorderLabel15.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel15.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel15.Location = new System.Drawing.Point(3, 220);
+            this.customBorderLabel15.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel15.Name = "customBorderLabel15";
+            this.customBorderLabel15.Size = new System.Drawing.Size(179, 28);
+            this.customBorderLabel15.TabIndex = 35;
+            this.customBorderLabel15.Text = "M Code";
+            this.customBorderLabel15.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbReadyStateValue
+            // 
+            this.lbReadyStateValue.BackColor = System.Drawing.Color.Black;
+            this.lbReadyStateValue.BorderColor = System.Drawing.Color.Black;
+            this.lbReadyStateValue.BorderWidth = 1;
+            this.lbReadyStateValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbReadyStateValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbReadyStateValue.Location = new System.Drawing.Point(185, 189);
+            this.lbReadyStateValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbReadyStateValue.Name = "lbReadyStateValue";
+            this.lbReadyStateValue.Size = new System.Drawing.Size(213, 28);
+            this.lbReadyStateValue.TabIndex = 34;
+            this.lbReadyStateValue.Text = " - ";
+            this.lbReadyStateValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel13
+            // 
+            this.customBorderLabel13.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel13.BorderWidth = 1;
+            this.customBorderLabel13.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel13.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel13.Location = new System.Drawing.Point(3, 189);
+            this.customBorderLabel13.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel13.Name = "customBorderLabel13";
+            this.customBorderLabel13.Size = new System.Drawing.Size(179, 28);
+            this.customBorderLabel13.TabIndex = 33;
+            this.customBorderLabel13.Text = "Ready";
+            this.customBorderLabel13.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbInHomePosValue
+            // 
+            this.lbInHomePosValue.BackColor = System.Drawing.Color.Black;
+            this.lbInHomePosValue.BorderColor = System.Drawing.Color.Black;
+            this.lbInHomePosValue.BorderWidth = 1;
+            this.lbInHomePosValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbInHomePosValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbInHomePosValue.Location = new System.Drawing.Point(185, 158);
+            this.lbInHomePosValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbInHomePosValue.Name = "lbInHomePosValue";
+            this.lbInHomePosValue.Size = new System.Drawing.Size(213, 28);
+            this.lbInHomePosValue.TabIndex = 32;
+            this.lbInHomePosValue.Text = " - ";
+            this.lbInHomePosValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel11
+            // 
+            this.customBorderLabel11.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel11.BorderWidth = 1;
+            this.customBorderLabel11.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel11.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel11.Location = new System.Drawing.Point(3, 158);
+            this.customBorderLabel11.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel11.Name = "customBorderLabel11";
+            this.customBorderLabel11.Size = new System.Drawing.Size(179, 28);
+            this.customBorderLabel11.TabIndex = 31;
+            this.customBorderLabel11.Text = "In HomePos";
+            this.customBorderLabel11.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbAlarmCodeValue
+            // 
+            this.lbAlarmCodeValue.BackColor = System.Drawing.Color.Black;
+            this.lbAlarmCodeValue.BorderColor = System.Drawing.Color.Black;
+            this.lbAlarmCodeValue.BorderWidth = 1;
+            this.lbAlarmCodeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbAlarmCodeValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbAlarmCodeValue.Location = new System.Drawing.Point(185, 127);
+            this.lbAlarmCodeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbAlarmCodeValue.Name = "lbAlarmCodeValue";
+            this.lbAlarmCodeValue.Size = new System.Drawing.Size(213, 28);
+            this.lbAlarmCodeValue.TabIndex = 30;
+            this.lbAlarmCodeValue.Text = " - ";
+            this.lbAlarmCodeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel9
+            // 
+            this.customBorderLabel9.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel9.BorderWidth = 1;
+            this.customBorderLabel9.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel9.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel9.Location = new System.Drawing.Point(3, 127);
+            this.customBorderLabel9.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel9.Name = "customBorderLabel9";
+            this.customBorderLabel9.Size = new System.Drawing.Size(179, 28);
+            this.customBorderLabel9.TabIndex = 29;
+            this.customBorderLabel9.Text = "Alarm Code";
+            this.customBorderLabel9.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbRunningWaitValue
+            // 
+            this.lbRunningWaitValue.BackColor = System.Drawing.Color.Black;
+            this.lbRunningWaitValue.BorderColor = System.Drawing.Color.Black;
+            this.lbRunningWaitValue.BorderWidth = 1;
+            this.lbRunningWaitValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbRunningWaitValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbRunningWaitValue.Location = new System.Drawing.Point(185, 96);
+            this.lbRunningWaitValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbRunningWaitValue.Name = "lbRunningWaitValue";
+            this.lbRunningWaitValue.Size = new System.Drawing.Size(213, 28);
+            this.lbRunningWaitValue.TabIndex = 28;
+            this.lbRunningWaitValue.Text = " - ";
+            this.lbRunningWaitValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel7
+            // 
+            this.customBorderLabel7.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel7.BorderWidth = 1;
+            this.customBorderLabel7.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel7.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel7.Location = new System.Drawing.Point(3, 96);
+            this.customBorderLabel7.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel7.Name = "customBorderLabel7";
+            this.customBorderLabel7.Size = new System.Drawing.Size(179, 28);
+            this.customBorderLabel7.TabIndex = 27;
+            this.customBorderLabel7.Text = "Running Wait";
+            this.customBorderLabel7.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbPositionCompleteValue
+            // 
+            this.lbPositionCompleteValue.BackColor = System.Drawing.Color.Black;
+            this.lbPositionCompleteValue.BorderColor = System.Drawing.Color.Black;
+            this.lbPositionCompleteValue.BorderWidth = 1;
+            this.lbPositionCompleteValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbPositionCompleteValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbPositionCompleteValue.Location = new System.Drawing.Point(185, 65);
+            this.lbPositionCompleteValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbPositionCompleteValue.Name = "lbPositionCompleteValue";
+            this.lbPositionCompleteValue.Size = new System.Drawing.Size(213, 28);
+            this.lbPositionCompleteValue.TabIndex = 26;
+            this.lbPositionCompleteValue.Text = " - ";
+            this.lbPositionCompleteValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel5
+            // 
+            this.customBorderLabel5.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel5.BorderWidth = 1;
+            this.customBorderLabel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel5.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel5.Location = new System.Drawing.Point(3, 65);
+            this.customBorderLabel5.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel5.Name = "customBorderLabel5";
+            this.customBorderLabel5.Size = new System.Drawing.Size(179, 28);
+            this.customBorderLabel5.TabIndex = 25;
+            this.customBorderLabel5.Text = "Position Complete";
+            this.customBorderLabel5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbInPositionValue
+            // 
+            this.lbInPositionValue.BackColor = System.Drawing.Color.Black;
+            this.lbInPositionValue.BorderColor = System.Drawing.Color.Black;
+            this.lbInPositionValue.BorderWidth = 1;
+            this.lbInPositionValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbInPositionValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbInPositionValue.Location = new System.Drawing.Point(185, 34);
+            this.lbInPositionValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
+            this.lbInPositionValue.Name = "lbInPositionValue";
+            this.lbInPositionValue.Size = new System.Drawing.Size(213, 28);
+            this.lbInPositionValue.TabIndex = 24;
+            this.lbInPositionValue.Text = " - ";
+            this.lbInPositionValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // customBorderLabel3
+            // 
+            this.customBorderLabel3.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel3.BorderWidth = 1;
+            this.customBorderLabel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel3.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel3.Location = new System.Drawing.Point(3, 34);
+            this.customBorderLabel3.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
+            this.customBorderLabel3.Name = "customBorderLabel3";
+            this.customBorderLabel3.Size = new System.Drawing.Size(179, 28);
+            this.customBorderLabel3.TabIndex = 23;
+            this.customBorderLabel3.Text = "In Position";
+            this.customBorderLabel3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // customBorderLabel1
             // 
             this.customBorderLabel1.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
@@ -948,237 +1007,267 @@
             this.lbServoStateValue.Text = " - ";
             this.lbServoStateValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // customBorderLabel3
+            // individualMenuButton10
             // 
-            this.customBorderLabel3.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel3.BorderWidth = 1;
-            this.customBorderLabel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel3.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel3.Location = new System.Drawing.Point(3, 34);
-            this.customBorderLabel3.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel3.Name = "customBorderLabel3";
-            this.customBorderLabel3.Size = new System.Drawing.Size(179, 28);
-            this.customBorderLabel3.TabIndex = 23;
-            this.customBorderLabel3.Text = "In Position";
-            this.customBorderLabel3.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.individualMenuButton10.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton10.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton10.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton10.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton10.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton10.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton10.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton10.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton10.Location = new System.Drawing.Point(161, 34);
+            this.individualMenuButton10.Name = "individualMenuButton10";
+            this.individualMenuButton10.Size = new System.Drawing.Size(101, 48);
+            this.individualMenuButton10.TabIndex = 5;
+            this.individualMenuButton10.TabStop = false;
+            this.individualMenuButton10.Text = "+ 45°";
+            this.individualMenuButton10.UseVisualStyleBackColor = false;
+            this.individualMenuButton10.Click += new System.EventHandler(this.individualMenuButton10_Click);
             // 
-            // lbInPositionValue
+            // individualMenuButton9
             // 
-            this.lbInPositionValue.BackColor = System.Drawing.Color.Black;
-            this.lbInPositionValue.BorderColor = System.Drawing.Color.Black;
-            this.lbInPositionValue.BorderWidth = 1;
-            this.lbInPositionValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbInPositionValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbInPositionValue.Location = new System.Drawing.Point(185, 34);
-            this.lbInPositionValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbInPositionValue.Name = "lbInPositionValue";
-            this.lbInPositionValue.Size = new System.Drawing.Size(213, 28);
-            this.lbInPositionValue.TabIndex = 24;
-            this.lbInPositionValue.Text = " - ";
-            this.lbInPositionValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.individualMenuButton9.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton9.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton9.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton9.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton9.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton9.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton9.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton9.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton9.Location = new System.Drawing.Point(29, 34);
+            this.individualMenuButton9.Name = "individualMenuButton9";
+            this.individualMenuButton9.Size = new System.Drawing.Size(101, 48);
+            this.individualMenuButton9.TabIndex = 4;
+            this.individualMenuButton9.TabStop = false;
+            this.individualMenuButton9.Text = "- 45°";
+            this.individualMenuButton9.UseVisualStyleBackColor = false;
+            this.individualMenuButton9.Click += new System.EventHandler(this.individualMenuButton9_Click);
             // 
-            // customBorderLabel5
+            // individualMenuButton8
             // 
-            this.customBorderLabel5.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel5.BorderWidth = 1;
-            this.customBorderLabel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel5.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel5.Location = new System.Drawing.Point(3, 65);
-            this.customBorderLabel5.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel5.Name = "customBorderLabel5";
-            this.customBorderLabel5.Size = new System.Drawing.Size(179, 28);
-            this.customBorderLabel5.TabIndex = 25;
-            this.customBorderLabel5.Text = "Position Complete";
-            this.customBorderLabel5.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.individualMenuButton8.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton8.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton8.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton8.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton8.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton8.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton8.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton8.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton8.Location = new System.Drawing.Point(37, 34);
+            this.individualMenuButton8.Name = "individualMenuButton8";
+            this.individualMenuButton8.Size = new System.Drawing.Size(145, 41);
+            this.individualMenuButton8.TabIndex = 3;
+            this.individualMenuButton8.TabStop = false;
+            this.individualMenuButton8.Text = "Home Search";
+            this.individualMenuButton8.UseVisualStyleBackColor = false;
+            this.individualMenuButton8.Click += new System.EventHandler(this.individualMenuButton8_Click);
             // 
-            // lbPositionCompleteValue
+            // individualMenuButton7
             // 
-            this.lbPositionCompleteValue.BackColor = System.Drawing.Color.Black;
-            this.lbPositionCompleteValue.BorderColor = System.Drawing.Color.Black;
-            this.lbPositionCompleteValue.BorderWidth = 1;
-            this.lbPositionCompleteValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbPositionCompleteValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbPositionCompleteValue.Location = new System.Drawing.Point(185, 65);
-            this.lbPositionCompleteValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbPositionCompleteValue.Name = "lbPositionCompleteValue";
-            this.lbPositionCompleteValue.Size = new System.Drawing.Size(213, 28);
-            this.lbPositionCompleteValue.TabIndex = 26;
-            this.lbPositionCompleteValue.Text = " - ";
-            this.lbPositionCompleteValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.individualMenuButton7.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton7.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton7.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton7.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton7.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton7.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton7.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton7.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton7.Location = new System.Drawing.Point(95, 72);
+            this.individualMenuButton7.Name = "individualMenuButton7";
+            this.individualMenuButton7.Size = new System.Drawing.Size(115, 27);
+            this.individualMenuButton7.TabIndex = 2;
+            this.individualMenuButton7.TabStop = false;
+            this.individualMenuButton7.Text = "Run";
+            this.individualMenuButton7.UseVisualStyleBackColor = false;
             // 
-            // customBorderLabel7
+            // individualMenuButton6
             // 
-            this.customBorderLabel7.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel7.BorderWidth = 1;
-            this.customBorderLabel7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel7.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel7.Location = new System.Drawing.Point(3, 96);
-            this.customBorderLabel7.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel7.Name = "customBorderLabel7";
-            this.customBorderLabel7.Size = new System.Drawing.Size(179, 28);
-            this.customBorderLabel7.TabIndex = 27;
-            this.customBorderLabel7.Text = "Running Wait";
-            this.customBorderLabel7.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.individualMenuButton6.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton6.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton6.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton6.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton6.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton6.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton6.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton6.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton6.Location = new System.Drawing.Point(30, 225);
+            this.individualMenuButton6.Name = "individualMenuButton6";
+            this.individualMenuButton6.Size = new System.Drawing.Size(169, 38);
+            this.individualMenuButton6.TabIndex = 6;
+            this.individualMenuButton6.TabStop = false;
+            this.individualMenuButton6.Text = "Breake Release";
+            this.individualMenuButton6.UseVisualStyleBackColor = false;
             // 
-            // lbRunningWaitValue
+            // individualMenuButton5
             // 
-            this.lbRunningWaitValue.BackColor = System.Drawing.Color.Black;
-            this.lbRunningWaitValue.BorderColor = System.Drawing.Color.Black;
-            this.lbRunningWaitValue.BorderWidth = 1;
-            this.lbRunningWaitValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbRunningWaitValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbRunningWaitValue.Location = new System.Drawing.Point(185, 96);
-            this.lbRunningWaitValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbRunningWaitValue.Name = "lbRunningWaitValue";
-            this.lbRunningWaitValue.Size = new System.Drawing.Size(213, 28);
-            this.lbRunningWaitValue.TabIndex = 28;
-            this.lbRunningWaitValue.Text = " - ";
-            this.lbRunningWaitValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.individualMenuButton5.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton5.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton5.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton5.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton5.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton5.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton5.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton5.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton5.Location = new System.Drawing.Point(30, 181);
+            this.individualMenuButton5.Name = "individualMenuButton5";
+            this.individualMenuButton5.Size = new System.Drawing.Size(169, 38);
+            this.individualMenuButton5.TabIndex = 5;
+            this.individualMenuButton5.TabStop = false;
+            this.individualMenuButton5.Text = "EMG Stop Release";
+            this.individualMenuButton5.UseVisualStyleBackColor = false;
             // 
-            // customBorderLabel9
+            // individualMenuButton4
             // 
-            this.customBorderLabel9.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel9.BorderWidth = 1;
-            this.customBorderLabel9.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel9.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel9.Location = new System.Drawing.Point(3, 127);
-            this.customBorderLabel9.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel9.Name = "customBorderLabel9";
-            this.customBorderLabel9.Size = new System.Drawing.Size(179, 28);
-            this.customBorderLabel9.TabIndex = 29;
-            this.customBorderLabel9.Text = "Alarm Code";
-            this.customBorderLabel9.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.individualMenuButton4.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton4.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton4.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton4.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton4.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton4.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton4.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton4.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton4.Location = new System.Drawing.Point(30, 79);
+            this.individualMenuButton4.Name = "individualMenuButton4";
+            this.individualMenuButton4.Size = new System.Drawing.Size(169, 38);
+            this.individualMenuButton4.TabIndex = 4;
+            this.individualMenuButton4.TabStop = false;
+            this.individualMenuButton4.Text = "Servo Off";
+            this.individualMenuButton4.UseVisualStyleBackColor = false;
+            this.individualMenuButton4.Click += new System.EventHandler(this.individualMenuButton4_Click);
             // 
-            // lbAlarmCodeValue
+            // individualMenuButton3
             // 
-            this.lbAlarmCodeValue.BackColor = System.Drawing.Color.Black;
-            this.lbAlarmCodeValue.BorderColor = System.Drawing.Color.Black;
-            this.lbAlarmCodeValue.BorderWidth = 1;
-            this.lbAlarmCodeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbAlarmCodeValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbAlarmCodeValue.Location = new System.Drawing.Point(185, 127);
-            this.lbAlarmCodeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbAlarmCodeValue.Name = "lbAlarmCodeValue";
-            this.lbAlarmCodeValue.Size = new System.Drawing.Size(213, 28);
-            this.lbAlarmCodeValue.TabIndex = 30;
-            this.lbAlarmCodeValue.Text = " - ";
-            this.lbAlarmCodeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.individualMenuButton3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton3.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton3.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton3.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton3.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton3.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton3.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton3.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton3.Location = new System.Drawing.Point(30, 137);
+            this.individualMenuButton3.Name = "individualMenuButton3";
+            this.individualMenuButton3.Size = new System.Drawing.Size(169, 38);
+            this.individualMenuButton3.TabIndex = 3;
+            this.individualMenuButton3.TabStop = false;
+            this.individualMenuButton3.Text = "EMG Stop";
+            this.individualMenuButton3.UseVisualStyleBackColor = false;
             // 
-            // customBorderLabel11
+            // individualMenuButton2
             // 
-            this.customBorderLabel11.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel11.BorderWidth = 1;
-            this.customBorderLabel11.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel11.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel11.Location = new System.Drawing.Point(3, 158);
-            this.customBorderLabel11.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel11.Name = "customBorderLabel11";
-            this.customBorderLabel11.Size = new System.Drawing.Size(179, 28);
-            this.customBorderLabel11.TabIndex = 31;
-            this.customBorderLabel11.Text = "In HomePos";
-            this.customBorderLabel11.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.individualMenuButton2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton2.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton2.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton2.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton2.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton2.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton2.Location = new System.Drawing.Point(30, 35);
+            this.individualMenuButton2.Name = "individualMenuButton2";
+            this.individualMenuButton2.Size = new System.Drawing.Size(169, 38);
+            this.individualMenuButton2.TabIndex = 2;
+            this.individualMenuButton2.TabStop = false;
+            this.individualMenuButton2.Text = "Servo On";
+            this.individualMenuButton2.UseVisualStyleBackColor = false;
+            this.individualMenuButton2.Click += new System.EventHandler(this.individualMenuButton2_Click);
             // 
-            // lbInHomePosValue
+            // btnRunProgram
             // 
-            this.lbInHomePosValue.BackColor = System.Drawing.Color.Black;
-            this.lbInHomePosValue.BorderColor = System.Drawing.Color.Black;
-            this.lbInHomePosValue.BorderWidth = 1;
-            this.lbInHomePosValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbInHomePosValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbInHomePosValue.Location = new System.Drawing.Point(185, 158);
-            this.lbInHomePosValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbInHomePosValue.Name = "lbInHomePosValue";
-            this.lbInHomePosValue.Size = new System.Drawing.Size(213, 28);
-            this.lbInHomePosValue.TabIndex = 32;
-            this.lbInHomePosValue.Text = " - ";
-            this.lbInHomePosValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnRunProgram.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnRunProgram.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnRunProgram.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnRunProgram.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnRunProgram.CustomForeColor = System.Drawing.Color.Black;
+            this.btnRunProgram.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnRunProgram.ForeColor = System.Drawing.Color.Black;
+            this.btnRunProgram.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnRunProgram.Location = new System.Drawing.Point(97, 77);
+            this.btnRunProgram.Name = "btnRunProgram";
+            this.btnRunProgram.Size = new System.Drawing.Size(115, 27);
+            this.btnRunProgram.TabIndex = 1;
+            this.btnRunProgram.TabStop = false;
+            this.btnRunProgram.Text = "Run";
+            this.btnRunProgram.UseVisualStyleBackColor = false;
+            this.btnRunProgram.Click += new System.EventHandler(this.btnRunProgram_Click);
             // 
-            // customBorderLabel13
+            // individualMenuButton1
             // 
-            this.customBorderLabel13.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel13.BorderWidth = 1;
-            this.customBorderLabel13.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel13.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel13.Location = new System.Drawing.Point(3, 189);
-            this.customBorderLabel13.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel13.Name = "customBorderLabel13";
-            this.customBorderLabel13.Size = new System.Drawing.Size(179, 28);
-            this.customBorderLabel13.TabIndex = 33;
-            this.customBorderLabel13.Text = "Ready";
-            this.customBorderLabel13.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(161, 96);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(101, 48);
+            this.individualMenuButton1.TabIndex = 7;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "+ 22.5°";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
+            this.individualMenuButton1.Click += new System.EventHandler(this.individualMenuButton1_Click);
             // 
-            // lbReadyStateValue
+            // individualMenuButton11
             // 
-            this.lbReadyStateValue.BackColor = System.Drawing.Color.Black;
-            this.lbReadyStateValue.BorderColor = System.Drawing.Color.Black;
-            this.lbReadyStateValue.BorderWidth = 1;
-            this.lbReadyStateValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbReadyStateValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbReadyStateValue.Location = new System.Drawing.Point(185, 189);
-            this.lbReadyStateValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbReadyStateValue.Name = "lbReadyStateValue";
-            this.lbReadyStateValue.Size = new System.Drawing.Size(213, 28);
-            this.lbReadyStateValue.TabIndex = 34;
-            this.lbReadyStateValue.Text = " - ";
-            this.lbReadyStateValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.individualMenuButton11.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton11.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton11.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton11.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton11.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton11.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton11.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton11.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton11.Location = new System.Drawing.Point(29, 96);
+            this.individualMenuButton11.Name = "individualMenuButton11";
+            this.individualMenuButton11.Size = new System.Drawing.Size(101, 48);
+            this.individualMenuButton11.TabIndex = 6;
+            this.individualMenuButton11.TabStop = false;
+            this.individualMenuButton11.Text = "- 22.5°";
+            this.individualMenuButton11.UseVisualStyleBackColor = false;
+            this.individualMenuButton11.Click += new System.EventHandler(this.individualMenuButton11_Click);
             // 
-            // customBorderLabel15
+            // individualMenuButton12
             // 
-            this.customBorderLabel15.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel15.BorderWidth = 1;
-            this.customBorderLabel15.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel15.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel15.Location = new System.Drawing.Point(3, 220);
-            this.customBorderLabel15.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel15.Name = "customBorderLabel15";
-            this.customBorderLabel15.Size = new System.Drawing.Size(179, 28);
-            this.customBorderLabel15.TabIndex = 35;
-            this.customBorderLabel15.Text = "M Code";
-            this.customBorderLabel15.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.individualMenuButton12.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton12.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton12.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton12.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton12.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton12.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton12.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton12.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton12.Location = new System.Drawing.Point(161, 159);
+            this.individualMenuButton12.Name = "individualMenuButton12";
+            this.individualMenuButton12.Size = new System.Drawing.Size(101, 48);
+            this.individualMenuButton12.TabIndex = 9;
+            this.individualMenuButton12.TabStop = false;
+            this.individualMenuButton12.Text = "+ 11.25°";
+            this.individualMenuButton12.UseVisualStyleBackColor = false;
+            this.individualMenuButton12.Click += new System.EventHandler(this.individualMenuButton12_Click);
             // 
-            // lbMCodeValue
+            // individualMenuButton13
             // 
-            this.lbMCodeValue.BackColor = System.Drawing.Color.Black;
-            this.lbMCodeValue.BorderColor = System.Drawing.Color.Black;
-            this.lbMCodeValue.BorderWidth = 1;
-            this.lbMCodeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbMCodeValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbMCodeValue.Location = new System.Drawing.Point(185, 220);
-            this.lbMCodeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbMCodeValue.Name = "lbMCodeValue";
-            this.lbMCodeValue.Size = new System.Drawing.Size(213, 28);
-            this.lbMCodeValue.TabIndex = 36;
-            this.lbMCodeValue.Text = " - ";
-            this.lbMCodeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // customBorderLabel17
-            // 
-            this.customBorderLabel17.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.customBorderLabel17.BorderWidth = 1;
-            this.customBorderLabel17.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.customBorderLabel17.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.customBorderLabel17.Location = new System.Drawing.Point(3, 251);
-            this.customBorderLabel17.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
-            this.customBorderLabel17.Name = "customBorderLabel17";
-            this.customBorderLabel17.Size = new System.Drawing.Size(179, 36);
-            this.customBorderLabel17.TabIndex = 37;
-            this.customBorderLabel17.Text = "Response Code";
-            this.customBorderLabel17.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // lbResponseCodeValue
-            // 
-            this.lbResponseCodeValue.BackColor = System.Drawing.Color.Black;
-            this.lbResponseCodeValue.BorderColor = System.Drawing.Color.Black;
-            this.lbResponseCodeValue.BorderWidth = 1;
-            this.lbResponseCodeValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbResponseCodeValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbResponseCodeValue.Location = new System.Drawing.Point(185, 251);
-            this.lbResponseCodeValue.Margin = new System.Windows.Forms.Padding(0, 3, 0, 0);
-            this.lbResponseCodeValue.Name = "lbResponseCodeValue";
-            this.lbResponseCodeValue.Size = new System.Drawing.Size(213, 28);
-            this.lbResponseCodeValue.TabIndex = 38;
-            this.lbResponseCodeValue.Text = " - ";
-            this.lbResponseCodeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.individualMenuButton13.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton13.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton13.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton13.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton13.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton13.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton13.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton13.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton13.Location = new System.Drawing.Point(29, 159);
+            this.individualMenuButton13.Name = "individualMenuButton13";
+            this.individualMenuButton13.Size = new System.Drawing.Size(101, 48);
+            this.individualMenuButton13.TabIndex = 8;
+            this.individualMenuButton13.TabStop = false;
+            this.individualMenuButton13.Text = "- 11.25°";
+            this.individualMenuButton13.UseVisualStyleBackColor = false;
+            this.individualMenuButton13.Click += new System.EventHandler(this.individualMenuButton13_Click);
             // 
             // CKDMotor_Setup
             // 
@@ -1193,14 +1282,14 @@
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel4.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox4.ResumeLayout(false);
-            this.groupBox5.ResumeLayout(false);
-            this.groupBox6.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
+            this.panel1.ResumeLayout(false);
+            this.groupBox3.ResumeLayout(false);
+            this.groupBox6.ResumeLayout(false);
+            this.groupBox5.ResumeLayout(false);
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox2.ResumeLayout(false);
+            this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -1279,5 +1368,9 @@
         private Common.CustomControl.CustomBorderLabel lbServoStateValue;
         private Common.CustomControl.CustomBorderLabel customBorderLabel1;
         private Common.CustomControl.CustomBorderLabel lbResponseCodeValue;
+        private Common.IndividualMenuButton individualMenuButton12;
+        private Common.IndividualMenuButton individualMenuButton13;
+        private Common.IndividualMenuButton individualMenuButton1;
+        private Common.IndividualMenuButton individualMenuButton11;
     }
 }

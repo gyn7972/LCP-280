@@ -12,18 +12,6 @@ using System.Windows.Forms.VisualStyles;
 
 namespace QMC.Common.Motions.CKD
 {
-    public enum RotaryPosition
-    {
-        Degree_0,
-        Degree_45,
-        Degree_90,
-        Degree_135,
-        Degree_180,
-        Degree_225,
-        Degree_270,
-        Degree_315,
-    }
-
     public class CKDMotorDriver : BaseComponent, IDisposable
     {
         #region Define
@@ -490,9 +478,6 @@ namespace QMC.Common.Motions.CKD
         {
             txPdoData = new TxPdoInputData(4);
             rxPdoData = new RxPdoOutputData(4);
-
-            // Scanner Start
-            StartReadInputDataMonitoring();
         }
         public void Dispose()
         {
@@ -529,7 +514,7 @@ namespace QMC.Common.Motions.CKD
                 return ret;
             return ret;
         }
-        public int MoveAbs(RotaryPosition position)
+        public int MovePitchCCW_8Div()
         {
             // 1) 프로그램 번호 설정
             int programNo = 0;
@@ -539,20 +524,50 @@ namespace QMC.Common.Motions.CKD
                 return ret;
             return ret;
         }
-        public int MovePitchCW()
+        public int MovePitchCW_8Div()
         {
             // 1) 프로그램 번호 설정
-            int programNo = 0;
+            int programNo = 1;
 
             int ret = 0;
             if ((ret = RunProgram(programNo)) != 0)
                 return ret;
             return ret;
         }
-        public int MovePitchCCW()
+        public int MovePitchCCW_16Div()
         {
             // 1) 프로그램 번호 설정
-            int programNo = 0;
+            int programNo = 2;
+
+            int ret = 0;
+            if ((ret = RunProgram(programNo)) != 0)
+                return ret;
+            return ret;
+        }
+        public int MovePitchCW_16Div()
+        {
+            // 1) 프로그램 번호 설정
+            int programNo = 3;
+
+            int ret = 0;
+            if ((ret = RunProgram(programNo)) != 0)
+                return ret;
+            return ret;
+        }
+        public int MovePitchCCW_32Div()
+        {
+            // 1) 프로그램 번호 설정
+            int programNo = 4;
+
+            int ret = 0;
+            if ((ret = RunProgram(programNo)) != 0)
+                return ret;
+            return ret;
+        }
+        public int MovePitchCW_32Div()
+        {
+            // 1) 프로그램 번호 설정
+            int programNo = 3;
 
             int ret = 0;
             if ((ret = RunProgram(programNo)) != 0)
@@ -654,7 +669,7 @@ namespace QMC.Common.Motions.CKD
             // 두 알람 비트 중 하나라도 1이면 알람 상태
             for (int i = 0; i < mappingPos.Length; i++)
             {
-                if (GetBit(txPdoData.InputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex))
+                if (!GetBit(txPdoData.InputSignal1[mappingPos[i].ByteIndex], mappingPos[i].BitIndex))
                 {
                     return true;
                 }
@@ -704,7 +719,7 @@ namespace QMC.Common.Motions.CKD
         #endregion
 
         #region Read RxPdo Input Data
-        private void StartReadInputDataMonitoring()
+        public void StartReadInputDataMonitoring()
         {
             lock (gate)
             {
@@ -714,7 +729,7 @@ namespace QMC.Common.Motions.CKD
                 readInputTask = Task.Run(() => RunReadInputDataMonitoring(cts.Token), cts.Token);
             }
         }
-        private void StopReadInputDataMonitoring()
+        public void StopReadInputDataMonitoring()
         {
             lock (gate)
             {
@@ -725,6 +740,7 @@ namespace QMC.Common.Motions.CKD
         private async Task RunReadInputDataMonitoring(CancellationToken ct)
         {
             var sw = new StopWatch();
+            RequestMonitorExecution(true);
             while (!ct.IsCancellationRequested)
             {
                 sw.Restart();
@@ -740,6 +756,7 @@ namespace QMC.Common.Motions.CKD
                 var wait = ReadPeriod;
                 try { await Task.Delay(wait, ct); } catch { /* canceled */ }
             }
+            RequestMonitorExecution(false);
         }
         #endregion
 
@@ -1260,7 +1277,7 @@ namespace QMC.Common.Motions.CKD
             }
             catch (Exception ex)
             {
-                Log.Write(ex);
+                //Log.Write(ex);
                 ret = -1;
             }
             return ret;

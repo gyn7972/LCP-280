@@ -198,6 +198,7 @@ namespace QMC.LCP_280.Process
 
                 // === CKD DD Motor Driver 초기화 ===
                 InitiaiizeCKDMotor();
+                CKDMotor.StartReadInputDataMonitoring();
 
                 // === 카메라 초기화 ===
                 InitializeCameras();
@@ -885,6 +886,9 @@ namespace QMC.LCP_280.Process
                 {
                     // 1) 모든 Unit 정지
                     StopAllUnitsAsync().GetAwaiter().GetResult();
+
+                    // + CKD Dispose
+                    CKDMotor.Dispose();
 
                     // 2) DioScanService 정리
                     _dioScan?.Stop();

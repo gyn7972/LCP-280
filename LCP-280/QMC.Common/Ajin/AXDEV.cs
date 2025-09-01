@@ -193,37 +193,37 @@ namespace QMC.Common.Motion.Ajin
         public static int ECatReadPdoInput(uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInput", AxlECatReadPdoInput(bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInput", AxlECatReadPdoInput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoInputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInputEx", AxlECatReadPdoInputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInputEx", AxlECatReadPdoInputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoOutput(uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutput", AxlECatReadPdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutput", AxlECatReadPdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoOutputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutputEx", AxlECatReadPdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutputEx", AxlECatReadPdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatWritePdoOutput(uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutput", AxlECatWritePdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutput", AxlECatWritePdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatWritePdoOutputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
             int ret = 0;
-            //if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutputEx", AxlECatWritePdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
+            if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutputEx", AxlECatWritePdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         #endregion

@@ -63,6 +63,15 @@ namespace QMC.LCP_280.Process.Unit
             lbPosErrorPulseValue.Text = motorDriver.GetErrorPulse().ToString() + " pulse";
             lbVelocityValue.Text = motorDriver.GetVelocity().ToString() + " rpm";
             lbProgramNoValue.Text = motorDriver.GetProgramNo().ToString();
+
+            lbServoStateValue.Text = motorDriver.IsServoOn() ? "Servo ON" : "Servo OFF";
+            lbInPositionValue.Text = motorDriver.IsInPosition() ? "O" : "X";
+            lbPositionCompleteValue.Text = motorDriver.IsPositionComplete() ? "Complete" : "Driving";
+            lbRunningWaitValue.Text = motorDriver.IsRunWait() ? "Y" : "N";
+            lbAlarmCodeValue.Text = motorDriver.IsAlarm() ? "Y" : "N";
+            lbInHomePosValue.Text = motorDriver.IsHomePosition() ? "Y" : "N";
+            lbReadyStateValue.Text = motorDriver.IsReady() ? "Y" : "N";
+            lbMCodeValue.Text = motorDriver.GetMCode().ToString();
         }
 
         private void UpdateOutputDataUI()
@@ -113,6 +122,51 @@ namespace QMC.LCP_280.Process.Unit
                 motorDriver.RunProgram(selectedProgramNo);
                 UpdateOutputDataUI();
             }
+        }
+
+        private void individualMenuButton2_Click(object sender, EventArgs e)
+        {
+            motorDriver.Servo(true);
+        }
+
+        private void individualMenuButton4_Click(object sender, EventArgs e)
+        {
+            motorDriver.Servo(false);
+        }
+
+        private void individualMenuButton8_Click(object sender, EventArgs e)
+        {
+            motorDriver.Home();
+        }
+
+        private void individualMenuButton9_Click(object sender, EventArgs e)
+        {
+            motorDriver.MovePitchCW_8Div();
+        }
+
+        private void individualMenuButton10_Click(object sender, EventArgs e)
+        {
+            motorDriver.MovePitchCCW_8Div();
+        }
+
+        private void individualMenuButton11_Click(object sender, EventArgs e)
+        {
+            motorDriver.MovePitchCW_16Div();
+        }
+
+        private void individualMenuButton1_Click(object sender, EventArgs e)
+        {
+            motorDriver.MovePitchCCW_16Div();
+        }
+
+        private void individualMenuButton13_Click(object sender, EventArgs e)
+        {
+            motorDriver.MovePitchCW_32Div();
+        }
+
+        private void individualMenuButton12_Click(object sender, EventArgs e)
+        {
+            motorDriver.MovePitchCCW_32Div();
         }
     }
 }
