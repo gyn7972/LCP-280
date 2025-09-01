@@ -1,9 +1,10 @@
-﻿using System;
+﻿using QMC.Common;
+using QMC.Common.Spectrometer;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Spectrometer;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -14,32 +15,22 @@ namespace QMC.LCP_280.Process.Unit
     public partial class InputCassetteLifterUnit_Config : Form
     {
         private const string UNIT_NAME = "InputCassetteLifterUnit";
-        
-        /// <summary>
-        /// Equipment 인스턴스 참조
-        /// </summary>
         private Equipment Equipment => Equipment.Instance;
-
-        /// <summary>
-        /// 해당 Unit 인스턴스
-        /// </summary>
         private InputCassetteLifter InputCassetteLifterUnit { get; set; }
+        private readonly Size _designerSize;
+        private bool _sizeMismatchWarned;
 
         public InputCassetteLifterUnit_Config()
         {
             InitializeComponent();
-            // 폼 로딩 중에는 화면 업데이트 중단
             this.SuspendLayout();
+            _designerSize = this.Size;
             InitializeUI();
-            // 모든 초기화가 완료된 후 화면 업데이트 재개
             this.ResumeLayout(true);
             
             Console.WriteLine($"✅ InputCassetteLifterUnitUnit_Config 생성자 완료");
         }
 
-        ///// <summary>
-        ///// Unit 초기화 및 Equipment에서 Unit 인스턴스 가져오기
-        ///// </summary>
         private void InitializeUnit()
         {
             try
@@ -69,6 +60,39 @@ namespace QMC.LCP_280.Process.Unit
         {
             TestGyn testGyn = new TestGyn();
             testGyn.ShowDialog();
+        }
+
+        public void SetPanelSize(int width, int height)
+        {
+            // 디자이너 값과 다른 경우 경고(1회)
+            if (!_sizeMismatchWarned && (width != _designerSize.Width || height != _designerSize.Height))
+            {
+                string formName = this.GetType().Name;
+                string msg =
+                    $"폼: {formName}\n" +
+                    $"디자이너 크기: {_designerSize.Width} x {_designerSize.Height}\n" +
+                    $"전달 크기(SetPanelSize): {width} x {height}\n\n" +
+                    "크기가 일치하지 않습니다.";
+#if DEBUG
+                Debug.WriteLine($"[SizeMismatch] {msg}");
+#endif
+                try { MessageBox.Show(this, msg, "크기 불일치", MessageBoxButtons.OK, MessageBoxIcon.Warning); } catch { /* ignore */ }
+                _sizeMismatchWarned = true;
+            }
+
+            try
+            {
+                this.SuspendLayout();
+                this.Size = new Size(width, height);
+                this.Invalidate();
+                this.Update();
+            }
+            finally
+            {
+                this.ResumeLayout(true);
+            }
+
+            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Working)}.SetPanelSize → {width}x{height}");
         }
     }
 }

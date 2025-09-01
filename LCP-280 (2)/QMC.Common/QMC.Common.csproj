@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{457920BD-BBAE-447E-8AB0-A03F4722275C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>QMC.Common</RootNamespace>
+    <AssemblyName>QMC.Common</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>D:\LCP-280\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>5</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Ivi.Visa, Version=5.7.0.0, Culture=neutral, PublicKeyToken=a128c98f1d7717c1, processorArchitecture=MSIL" />
+    <Reference Include="Microsoft.Bcl.HashCode, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.HashCode.6.0.0\lib\net462\Microsoft.Bcl.HashCode.dll</HintPath>
+    </Reference>
+    <Reference Include="MvCameraControl.Net, Version=0.0.0.0, Culture=neutral, PublicKeyToken=52fddfb3f94be800, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Cameras\HIKVISION\Library\MvCameraControl.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="NationalInstruments.Visa, Version=15.5.0.49152, Culture=neutral, PublicKeyToken=2eaa5af0834e221d, processorArchitecture=MSIL" />
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Ajin\AXA.cs" />
+    <Compile Include="Ajin\AXD.cs" />
+    <Compile Include="Ajin\AXDEV.cs" />
+    <Compile Include="Ajin\AXHD.cs" />
+    <Compile Include="Ajin\AXHS.cs" />
+    <Compile Include="Ajin\AXL.cs" />
+    <Compile Include="Ajin\AXM.cs" />
+    <Compile Include="Ajin\IODefine.cs" />
+    <Compile Include="Ajin\MotionDefine.cs" />
+    <Compile Include="Alarm\AlarmInfo.cs" />
+    <Compile Include="Alarm\AlarmManager.cs" />
+    <Compile Include="Alarm\Form_Alarm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Alarm\Form_Alarm.Designer.cs">
+      <DependentUpon>Form_Alarm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="BarcodeReader\OpticonBarcodeReader.cs" />
+    <Compile Include="BarcodeReader\OpticonBarcodeReaderConfig.cs" />
+    <Compile Include="BaseRecipe.cs" />
+    <Compile Include="BaseSetup.cs" />
+    <Compile Include="Cameras\Camera.cs" />
+    <Compile Include="Cameras\CameraConfig.cs" />
+    <Compile Include="Cameras\CameraSwitch.cs" />
+    <Compile Include="Cameras\EquipmentEventArgs.cs" />
+    <Compile Include="Cameras\HIKVISION\HIKGigECamera.cs" />
+    <Compile Include="Cameras\HIKVISION\HIKGigECameraConfig.cs" />
+    <Compile Include="Cameras\ICanGrabImage.cs" />
+    <Compile Include="Cameras\IncomparableAttribute.cs" />
+    <Compile Include="Common\CircleD.cs" />
+    <Compile Include="Common\ConfigManager.cs" />
+    <Compile Include="Common\CopyUtility.cs" />
+    <Compile Include="Common\CycleTimer.cs" />
+    <Compile Include="Common\IShape.cs" />
+    <Compile Include="Common\LineD.cs" />
+    <Compile Include="Common\ListParam.cs" />
+    <Compile Include="Common\Param.cs" />
+    <Compile Include="Common\ParamContainer.cs" />
+    <Compile Include="Common\ParamGroup.cs" />
+    <Compile Include="Common\PointD.cs" />
+    <Compile Include="Common\PropertyCollectionJsonConverter.cs" />
+    <Compile Include="Common\Quadrangle.cs" />
+    <Compile Include="Common\Range.cs" />
+    <Compile Include="Common\RectangleD.cs" />
+    <Compile Include="Common\SaveManager.cs" />
+    <Compile Include="Common\SerialComm.cs" />
+    <Compile Include="Common\SizeD.cs" />
+    <Compile Include="Common\StopWatch.cs" />
+    <Compile Include="Common\TimeoutChecker.cs" />
+    <Compile Include="Common\TimeoutCheckerStateEnum.cs" />
+    <Compile Include="Common\TimeSpanInfo.cs" />
+    <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
+    <Compile Include="Common\TypeUtility.cs" />
+    <Compile Include="ConfigStore.cs" />
+    <Compile Include="ConfigThreePaneLayout.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Coordinate\IActor.cs" />
+    <Compile Include="Coordinate\SettingParameter.cs" />
+    <Compile Include="Coordinate\XryztCoordinate.cs" />
+    <Compile Include="Coordinate\XyCoordinate.cs" />
+    <Compile Include="Coordinate\XyOfUvwCoordinate.cs" />
+    <Compile Include="Coordinate\XytCoordinate.cs" />
+    <Compile Include="Coordinate\XytPositionData.cs" />
+    <Compile Include="Coordinate\XyzCoordinate.cs" />
+    <Compile Include="Coordinate\XyzLDzzxzULzzxzCoordinate.cs" />
+    <Compile Include="Coordinate\XyztCoordinate.cs" />
+    <Compile Include="Coordinate\XyzyCoordinate.cs" />
+    <Compile Include="Coordinate\XyzztCoordinate.cs" />
+    <Compile Include="Coordinate\YCoordinate.cs" />
+    <Compile Include="Coordinate\ZzxzCoordinate.cs" />
+    <Compile Include="Coordinate\ZzxzxyCoordinate.cs" />
+    <Compile Include="CustomControl\VerticalAlignTextBox.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="DefaultValueApplier.cs" />
+    <Compile Include="FormMessageBox\MessageBoxOk.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxOk.Designer.cs">
+      <DependentUpon>MessageBoxOk.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxRetrySkip.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxRetrySkip.Designer.cs">
+      <DependentUpon>MessageBoxRetrySkip.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNo.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNo.Designer.cs">
+      <DependentUpon>MessageBoxYesNo.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNoRetry.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMessageBox\MessageBoxYesNoRetry.Designer.cs">
+      <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IEquipment.cs" />
+    <Compile Include="IO\AjinDioDriver.cs" />
+    <Compile Include="IO\DIOChannel.cs" />
+    <Compile Include="IO\DIOModuleSetup.cs" />
+    <Compile Include="IO\DioScanService.cs" />
+    <Compile Include="IO\DIOUnit.cs" />
+    <Compile Include="IO\IDigitalIO.cs" />
+    <Compile Include="IO\IDIODriver.cs" />
+    <Compile Include="IO\IOUtil\Cylinder.cs" />
+    <Compile Include="IO\IOUtil\DIO.cs" />
+    <Compile Include="IO\IOUtil\IoAutoBindings.cs.cs" />
+    <Compile Include="IO\IOUtil\IoBindings.cs" />
+    <Compile Include="IO\IOUtil\Vacuum.cs" />
+    <Compile Include="IO\SimDioDriver.cs" />
+    <Compile Include="Keithley\FormSetupKeithleyInstrument.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Keithley\FormSetupKeithleyInstrument.Designer.cs">
+      <DependentUpon>FormSetupKeithleyInstrument.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Keithley\KeithleyInstrumentCommunicator.cs" />
+    <Compile Include="Keithley\KeithleyInstrumentResourceManager.cs" />
+    <Compile Include="Keithley\KeithleySourcemeter.cs" />
+    <Compile Include="Keithley\KeithleySourcemeterConfig.cs" />
+    <Compile Include="LightController\LeesOsLightController.cs" />
+    <Compile Include="LightController\LeesOsLightControllerChannel.cs" />
+    <Compile Include="LightController\LeesOsLightControllerChannelConfig.cs" />
+    <Compile Include="LightController\LeesOsLightControllerConfig.cs" />
+    <Compile Include="Logging\Log.cs" />
+    <Compile Include="Logging\LogInfo.cs" />
+    <Compile Include="Logging\LogManager.cs" />
+    <Compile Include="Motions\AjinApi.cs" />
+    <Compile Include="Motions\AjinAxlBoardHost.cs" />
+    <Compile Include="Motions\AjinDriver.cs" />
+    <Compile Include="Motions\CKD\CKDMotorDriver.cs" />
+    <Compile Include="Motions\IPropertyCorrection.cs" />
+    <Compile Include="Motions\MotionAxis.cs" />
+    <Compile Include="Motions\MotionAxisConfig.cs" />
+    <Compile Include="Motions\MotionAxisManager.cs" />
+    <Compile Include="Motions\MotionAxisSetup.cs" />
+    <Compile Include="Motions\MotionAxisStatus.cs" />
+    <Compile Include="BottomMenuButtonControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="BottomMenuButtonControl.Designer.cs">
+      <DependentUpon>BottomMenuButtonControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ComboBoxProperty.cs" />
+    <Compile Include="Component\BaseComponent.cs" />
+    <Compile Include="BaseConfig.cs" />
+    <Compile Include="CustomControl\CustomBorderLabel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="CustomControl\DeleteInnerBorderTableLayoutPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="CustomControl\DeleteLogoBorderTableLayoutPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="DoubleProperty.cs" />
+    <Compile Include="FormAdapterControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="FormBottom.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormBottom.Designer.cs">
+      <DependentUpon>FormBottom.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormWorking.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormWorking.Designer.cs">
+      <DependentUpon>FormWorking.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormSetup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormSetup.Designer.cs">
+      <DependentUpon>FormSetup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormLog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormLog.Designer.cs">
+      <DependentUpon>FormLog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormRecipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormRecipe.Designer.cs">
+      <DependentUpon>FormRecipe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormMain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormMain.Designer.cs">
+      <DependentUpon>FormMain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormConfig.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormConfig.Designer.cs">
+      <DependentUpon>FormConfig.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IResizable.cs" />
+    <Compile Include="MainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormManager.cs" />
+    <Compile Include="FormManagerConfig.cs" />
+    <Compile Include="FormManagerLog.cs" />
+    <Compile Include="FormManagerMain.cs" />
+    <Compile Include="FormManagerRecipe.cs" />
+    <Compile Include="FormManagerSetup.cs" />
+    <Compile Include="FormManagerWorking.cs" />
+    <Compile Include="FormTop.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTop.Designer.cs">
+      <DependentUpon>FormTop.cs</DependentUpon>
+    </Compile>
+    <Compile Include="IndividualMenuButton.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="IOPropertyCollectionView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="IOPropertyCollectionView.Designer.cs">
+      <DependentUpon>IOPropertyCollectionView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ListBoxItemsView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="ListBoxItemsView.Designer.cs">
+      <DependentUpon>ListBoxItemsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Motions\MotionStatusScanner.cs" />
+    <Compile Include="NavigationService.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PropertyBase.cs" />
+    <Compile Include="PropertyButton.cs" />
+    <Compile Include="PropertyCollection.cs" />
+    <Compile Include="PropertyCollectionView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="PropertyCollectionView.Designer.cs">
+      <DependentUpon>PropertyCollectionView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PropertyPosition.cs" />
+    <Compile Include="PropertyState.cs" />
+    <Compile Include="RadioButtonView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="RadioButtonView.Designer.cs">
+      <DependentUpon>RadioButtonView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Spectrometer\CASSpectrometer.cs" />
+    <Compile Include="Spectrometer\CASSpectrometerConfig.cs" />
+    <Compile Include="Spectrometer\CASSpectrometerInterfaceManager.cs" />
+    <Compile Include="Spectrometer\InstrumentSystems.CAS4.CAS4DLL.cs" />
+    <Compile Include="TabbedViewHost.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TopContentsEquipmentControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TopContentsEquipmentControl.Designer.cs">
+      <DependentUpon>TopContentsEquipmentControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TopContentsLoginModeControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TopContentsLoginModeControl.Designer.cs">
+      <DependentUpon>TopContentsLoginModeControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TopContentsStatusControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TopContentsStatusControl.Designer.cs">
+      <DependentUpon>TopContentsStatusControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\BaseUnit.cs" />
+    <Compile Include="Vision\AbbreviationAttribute.cs" />
+    <Compile Include="Vision\ICustomizedVisionImage.cs" />
+    <Compile Include="Vision\qGeometry.cs" />
+    <Compile Include="Vision\qMath.cs" />
+    <Compile Include="Vision\Tools\BlobVisionTool.cs" />
+    <Compile Include="Vision\Tools\LineSearchingVisionTool.cs" />
+    <Compile Include="Vision\Tools\PatternMatchingVisionTool.cs" />
+    <Compile Include="Vision\Tools\RoiVisionTool.cs" />
+    <Compile Include="Vision\Tools\SharpnessVisionTool.cs" />
+    <Compile Include="Vision\Tools\VisionResult.cs" />
+    <Compile Include="Vision\Tools\VisionTool.cs" />
+    <Compile Include="Vision\VisionImage.cs" />
+    <Compile Include="Vision\VisionImageHeader.cs" />
+    <Compile Include="Vision\VisionImageOverlay.cs" />
+    <Compile Include="Vision\VisionImageViewer.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Vision\VisionScale.cs" />
+    <None Include="WMX\WmxLib.cs" />
+    <EmbeddedResource Include="Alarm\Form_Alarm.resx">
+      <DependentUpon>Form_Alarm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BottomMenuButtonControl.resx">
+      <DependentUpon>BottomMenuButtonControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormBottom.resx">
+      <DependentUpon>FormBottom.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormWorking.resx">
+      <DependentUpon>FormWorking.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormSetup.resx">
+      <DependentUpon>FormSetup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormLog.resx">
+      <DependentUpon>FormLog.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormRecipe.resx">
+      <DependentUpon>FormRecipe.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMain.resx">
+      <DependentUpon>FormMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormConfig.resx">
+      <DependentUpon>FormConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxOk.resx">
+      <DependentUpon>MessageBoxOk.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxRetrySkip.resx">
+      <DependentUpon>MessageBoxRetrySkip.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxYesNo.resx">
+      <DependentUpon>MessageBoxYesNo.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormMessageBox\MessageBoxYesNoRetry.resx">
+      <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Keithley\FormSetupKeithleyInstrument.resx">
+      <DependentUpon>FormSetupKeithleyInstrument.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTop.resx">
+      <DependentUpon>FormTop.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="IOPropertyCollectionView.resx">
+      <DependentUpon>IOPropertyCollectionView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <EmbeddedResource Include="PropertyCollectionView.resx">
+      <DependentUpon>PropertyCollectionView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TopContentsEquipmentControl.resx">
+      <DependentUpon>TopContentsEquipmentControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TopContentsLoginModeControl.resx">
+      <DependentUpon>TopContentsLoginModeControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TopContentsStatusControl.resx">
+      <DependentUpon>TopContentsStatusControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="FormManagerGuide.md" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Ajin\Library\Axl.dll" />
+    <Content Include="Ajin\Library\AxlEncoderLib.dll" />
+    <Content Include="Ajin\Library\AxtWaferScanLib.dll" />
+    <Content Include="Ajin\Library\EzbasicAxl.dll" />
+    <Content Include="Cameras\HIKVISION\Library\MvCameraControl.Net.dll" />
+    <Content Include="Resources\Logo.png" />
+    <Content Include="Resources\megaphone_80px.png" />
+    <Content Include="Resources\megaphone_80px_q.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
