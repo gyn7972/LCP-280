@@ -206,12 +206,22 @@ namespace QMC.LCP_280.Process
         /// </summary>
         private void AutoRegisterUnits()
         {
-
             // 개발자가 필요한 Unit들을 여기에 추가
-            //RegisterUnit(new CassetteLoadingElevator(), "CassetteLoadingElevator");
-
-            // �����ڰ� �ʿ��� Unit���� ���⿡ �߰�
             RegisterUnit(new InputCassetteLifter(), "InputCassetteLifter");
+            RegisterUnit(new InputRingTransfer(), "InputRingTransfer");
+            RegisterUnit(new InputStage(), "InputStage");
+            RegisterUnit(new InputStageEjector(), "InputStageEjector");
+            RegisterUnit(new InputDieTransfer(), "InputDieTransfer");
+            RegisterUnit(new Rotary(), "Rotary");
+            RegisterUnit(new IndexLoadAligner(), "IndexLoadAligner");
+            RegisterUnit(new IndexChipProbeController(), "IndexChipProbeController");
+            RegisterUnit(new IndexChipProber(), "IndexChipProber");
+            RegisterUnit(new IndexUnloadAligner(), "IndexUnloadAligner");
+            RegisterUnit(new OutputDieTransfer(), "OutputDieTransfer");
+            RegisterUnit(new OutputStage(), "OutputStage");
+            RegisterUnit(new OutputCassetteLifter(), "OutputCassetteLifter");
+            RegisterUnit(new OutputRingTransfer(), "OutputRingTransfer");
+            RegisterUnit(new GageRnR(), "GageRnR");
 
             // 추가 Unit들 예시:
             // RegisterUnit(new WaferAlignmentUnit(), "WaferAlignment");
@@ -311,6 +321,34 @@ namespace QMC.LCP_280.Process
             {
                 case InputCassetteLifter cassetteUnit:
                     return new CassetteElevatorRecipe();
+                case InputRingTransfer inputRingTransferUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case InputStage inputStageUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case InputStageEjector inputStageEjectorUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case InputDieTransfer inputDieTransferUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case Rotary rotaryUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case IndexLoadAligner indexLoadAlignerUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case IndexChipProbeController indexChipProbeControllerUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case IndexChipProber indexChipProberUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case IndexUnloadAligner indexUnloadAlignerUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case OutputDieTransfer outputDieTransferUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case OutputStage outputStageUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case OutputCassetteLifter outputCassetteLifterUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case OutputRingTransfer outputRingTransferUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
+                case GageRnR gageRnRUnit:
+                    return new DefaultUnitRecipe(unit.UnitName);
                 default:
                     return new DefaultUnitRecipe(unit.UnitName);
             }

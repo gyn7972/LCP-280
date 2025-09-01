@@ -12,6 +12,14 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class InputDieTransferConfig : BaseConfig
     {
+        public enum TeachingPositionName
+        {
+            Loading,
+            Unloading,
+            Ready,
+            Home
+            // 필요시 추가
+        }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
         public InputDieTransferConfig() : base("InputDieTransferConfig")

@@ -10,7 +10,7 @@ using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputDieTransferConfig : BaseConfig
+    public class OutputRingTransferConfig : BaseConfig
     {
         public enum TeachingPositionName
         {
@@ -22,7 +22,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        public OutputDieTransferConfig() : base("OutputDieTransferConfig")
+        public OutputRingTransferConfig() : base("OutputRingTransferConfig")
         {
             //InitializeDefaultTeachingPositions();
         }
@@ -40,10 +40,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Right Pick Z Axis", 0.0 },
-                        { "Right Place Z Axis", 100.0 },
-                        { "Bin Stage X Axis", 200.0 },
-                        { "Bin Stage Y Axis", 0.0 }
+                        { "Ring Transfer X Axis", 0.0 },
+                        { "Ring Transfer Y Axis", 100.0 },
+                        { "Ring Transfer Z Axis", 200.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

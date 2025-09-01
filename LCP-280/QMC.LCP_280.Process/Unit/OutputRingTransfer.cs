@@ -9,27 +9,27 @@ using System.Collections.Generic;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class InputCassetteLifter : BaseUnit
+    public class OutputRingTransfer : BaseUnit
     {
-        public InputCassetteLifterConfig InputCassetteLifterConfig { get; private set; }
+        public OutputRingTransferConfig OutputRingTransferConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
 
-        public InputCassetteLifter(InputCassetteLifterConfig config = null)
-            : base("InputCassetteLifterConfig")
+        public OutputRingTransfer(OutputRingTransferConfig config = null)
+            : base("OutputRingTransferConfig")
         {
-            InputCassetteLifterConfig = config ?? new InputCassetteLifterConfig();
+            OutputRingTransferConfig = config ?? new OutputRingTransferConfig();
             AddComponents();
         }
 
         public override void AddComponents()
         {
             // 축 바인딩까지 포함해서 불러오기
-            InputCassetteLifterConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            InputCassetteLifterConfig.InitializeDefaultTeachingPositions();
+            OutputRingTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            OutputRingTransferConfig.InitializeDefaultTeachingPositions();
 
             // TeachingPosition에 Axis 바인딩
             TeachingPositions.Clear();
-            foreach (var tp in InputCassetteLifterConfig.TeachingPositions)
+            foreach (var tp in OutputRingTransferConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
         }
 
@@ -51,12 +51,12 @@ namespace QMC.LCP_280.Process.Unit
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             }
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            InputCassetteLifterConfig.SetTeachingPosition(tp);
+            OutputRingTransferConfig.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = InputCassetteLifterConfig.GetTeachingPosition(positionName);
+            var tp = OutputRingTransferConfig.GetTeachingPosition(positionName);
             if (tp == null) return -1;
 
             int result = 0;

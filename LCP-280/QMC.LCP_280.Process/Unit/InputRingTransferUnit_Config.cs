@@ -12,23 +12,23 @@ namespace QMC.LCP_280.Process.Unit
     /// CassetteLoadingElevator Unit의 Config 폼
     /// Equipment와 연동하여 Config 및 Recipe 관리
     /// </summary>
-    public partial class InputCassetteLifterUnit_Config : Form
+    public partial class InputRingTransferUnit_Config : Form
     {
-        private const string UNIT_NAME = "InputCassetteLifterUnit";
+        private const string UNIT_NAME = "InputRingTransferUnit";
         private Equipment Equipment => Equipment.Instance;
-        private InputCassetteLifter InputCassetteLifterUnit { get; set; }
+        private InputRingTransfer InputRingTransferUnit { get; set; }
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        public InputCassetteLifterUnit_Config()
+        public InputRingTransferUnit_Config()
         {
             InitializeComponent();
             this.SuspendLayout();
             _designerSize = this.Size;
             InitializeUI();
             this.ResumeLayout(true);
-            
-            Console.WriteLine($"✅ InputCassetteLifterUnitUnit_Config 생성자 완료");
+
+            Console.WriteLine($"✅ InputRingTransferUnit_Config 생성자 완료");
         }
 
         private void InitializeUnit()
@@ -37,10 +37,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    InputCassetteLifterUnit = unit as InputCassetteLifter;
+                    InputRingTransferUnit = unit as InputRingTransfer;
                 }
 
-                if (InputCassetteLifterUnit == null)
+                if (InputRingTransferUnit == null)
                 {
                     MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -91,7 +91,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.ResumeLayout(true);
             }
 
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Config)}.SetPanelSize → {width}x{height}");
+            Console.WriteLine($"📐 {nameof(InputRingTransferUnit_Config)}.SetPanelSize → {width}x{height}");
         }
     }
 }

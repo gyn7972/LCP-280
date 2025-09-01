@@ -5,11 +5,20 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
     public class InputRingTransferConfig : BaseConfig
     {
+        public enum TeachingPositionName
+        {
+            Loading,
+            Unloading,
+            Ready,
+            Home
+            // 필요시 추가
+        }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
         public InputRingTransferConfig() : base("InputRingTransferConfig")
@@ -20,8 +29,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
             var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
-            foreach (string posName in new[] { "Loading", "Unloading", "Ready", "Home" })
+            foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
+                string posName = name.ToString();
                 var tp = TeachingPositions.FirstOrDefault(p => p.Name == posName);
                 if (tp == null)
                 {
@@ -72,9 +82,15 @@ namespace QMC.LCP_280.Process.Unit
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int result = base.Load();
+            if (result != 0) return result;
+
+            // 각 TeachingPosition에 축 바인딩
             foreach (var tp in TeachingPositions)
-                tp.BindAxes(axisManager);
-            return result;
+            {
+                tp.BindAxes(axisManager, "Unit"); // unitName = "Unit" (혹은 필요에 맞게)
+            }
+
+            return 0;
         }
     }
 }
