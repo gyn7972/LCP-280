@@ -102,7 +102,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // 각 TeachingPosition에 축 바인딩
             foreach (var tp in TeachingPositions)
-            {
+        {
                 tp.BindAxes(axisManager, "Unit"); // unitName = "Unit" (혹은 필요에 맞게)
             }
 

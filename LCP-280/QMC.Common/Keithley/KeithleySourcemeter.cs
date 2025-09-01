@@ -144,6 +144,31 @@ namespace QMC.Common.Keithley
         }
         #endregion
 
+        #region Event
+        // Communicator Event
+        public event EventHandler OnReceived
+        {
+            add { communicator.OnReceived += value; }
+            remove { communicator.OnReceived -= value; }
+        }
+        public event EventHandler OnSessionOpened
+        {
+            add { communicator.OnSessionOpened += value; }
+            remove { communicator.OnSessionOpened -= value; }
+        }
+        public event EventHandler OnSessionClosed
+        {
+            add { communicator.OnSessionClosed += value; }
+            remove { communicator.OnSessionClosed -= value; }
+        }
+        public event EventHandler<Exception> OnError
+        {
+            add { communicator.OnError += value; }
+            remove { communicator.OnError -= value; }
+        }
+        #endregion
+
+
         #region Override Methods
         public override int Initialize()
         {
@@ -193,6 +218,7 @@ namespace QMC.Common.Keithley
             while (false);
             return result;
         }
+
         public bool ApplyParameter()
         {
             bool result = false;

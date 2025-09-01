@@ -21,6 +21,7 @@ using QMC.Common.Cameras;
 using QMC.Common.Keithley;
 using QMC.Common.Spectrometer;
 using QMC.Common.IOUtil;
+using QMC.Common.Motions.CKD;
 
 namespace QMC.LCP_280.Process
 {
@@ -118,6 +119,8 @@ namespace QMC.LCP_280.Process
         public DioScanService DioScan => _dioScan;
         public DIOUnit UnitIO => _unitIO;
 
+        // [+] CKD DD Motor Driver 추가
+        public CKDMotorDriver CKDMotor;
 
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, Camera> Cameras { get; } = new Dictionary<string, Camera>(StringComparer.OrdinalIgnoreCase);
@@ -148,6 +151,15 @@ namespace QMC.LCP_280.Process
         //        Console.WriteLine($"Grabbed {img.Width}x{img.Height}");
         //}
 
+        // Sourcemeter
+        public Dictionary<string, KeithleySourcemeter> Sourcemeters { get; } = new Dictionary<string, KeithleySourcemeter>(StringComparer.OrdinalIgnoreCase);
+        // == 편의 프로퍼티 추가 ==
+        public KeithleySourcemeter Sourcemeter => GetSourcemeter("Sourcemeter");
+
+        private KeithleySourcemeter GetSourcemeter(string key)
+        {
+            return Sourcemeters.TryGetValue(key, out var sm) ? sm : null;
+        }
         #endregion
 
         #region Constructor & Initialization
@@ -184,8 +196,14 @@ namespace QMC.LCP_280.Process
                 BootstrapAxesDirect();
                 BootstrapIODirect();
 
+                // === CKD DD Motor Driver 초기화 ===
+                InitiaiizeCKDMotor();
+
                 // === 카메라 초기화 ===
                 InitializeCameras();
+
+                // === Sourcemeter 초기화 ===
+                InitializeSourcemeters();
 
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
@@ -1248,6 +1266,21 @@ namespace QMC.LCP_280.Process
         // 1) 프로그램 시작 시:  InitializeCameras(connect: false);   // ⚡ config만 미리 로드/생성
         // 2) 나중에 연결 시도:  InitializeCameras(connect: true);    // 🔌 실제 연결
 
+
+        private void InitiaiizeCKDMotor()
+        {
+            try
+            {
+                var motor = new CKDMotorDriver("Index T Axis");
+                CKDMotor = motor;
+                Console.WriteLine($"[CKD Motor] {motor.Name} ready");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
         private void InitializeCameras(bool connect = true)
         {
             try
@@ -1318,6 +1351,29 @@ namespace QMC.LCP_280.Process
             catch (Exception ex)
             {
                 Log.Write(ex);
+            }
+        }
+
+        private void InitializeSourcemeters()
+        {
+            // 파일로 변경 필요. ( Equipment_Setup.json )
+            var list = new List<string>()
+            {
+                "Index_Prober_Sourcemeter"
+            };
+
+            foreach (string name in list)
+            {
+                try
+                {
+                    var smu = new KeithleySourcemeter(name);
+                    Sourcemeters[name] = smu;
+                    Console.WriteLine($"[Sourcemeter] {name} ready");
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 

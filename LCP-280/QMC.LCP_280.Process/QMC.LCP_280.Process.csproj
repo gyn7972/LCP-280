@@ -98,6 +98,12 @@
     <Compile Include="TestGyn.Designer.cs">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\CKDMotor_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\CKDMotor_Setup.Designer.cs">
+      <DependentUpon>CKDMotor_Setup.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\CommonUnitConfig.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -154,6 +160,12 @@
     <Compile Include="Unit\InputStageConfig.cs" />
     <Compile Include="Unit\InputStageEjector.cs" />
     <Compile Include="Unit\InputStageEjectorConfig.cs" />
+    <Compile Include="Unit\Instrument_Setup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\Instrument_Setup.Designer.cs">
+      <DependentUpon>Instrument_Setup.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\Motion_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -204,6 +216,9 @@
     <EmbeddedResource Include="TestGyn.resx">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\CKDMotor_Setup.resx">
+      <DependentUpon>CKDMotor_Setup.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\CommonUnitConfig.resx">
       <DependentUpon>CommonUnitConfig.cs</DependentUpon>
     </EmbeddedResource>
@@ -221,6 +236,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\InputCassetteLifterUnit_Working.resx">
       <DependentUpon>InputCassetteLifterUnit_Working.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\Instrument_Setup.resx">
+      <DependentUpon>Instrument_Setup.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Motion_Setup.resx">
       <DependentUpon>Motion_Setup.cs</DependentUpon>
