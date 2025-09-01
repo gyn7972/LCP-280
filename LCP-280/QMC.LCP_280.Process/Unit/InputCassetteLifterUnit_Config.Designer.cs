@@ -71,10 +71,10 @@ namespace QMC.LCP_280.Process.Unit
             this.rbTeachingMoveMode = new QMC.Common.RadioButtonView();
             this.editorPanel = new System.Windows.Forms.Panel();
             this.button_Test = new System.Windows.Forms.Button();
-            this.positionPropertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.positionEditorView = new QMC.Common.PropertyCollectionView();
             this.btnCancel = new QMC.Common.IndividualMenuButton();
             this.btnSave = new QMC.Common.IndividualMenuButton();
-            this.positionListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.positionItemView = new QMC.Common.ListBoxItemsView();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
             this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.inputView = new QMC.Common.IOPropertyCollectionView();
@@ -115,7 +115,7 @@ namespace QMC.LCP_280.Process.Unit
             this.positionTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
             this.positionTableLayoutPanel.Controls.Add(this.gbTeachingMove, 1, 1);
             this.positionTableLayoutPanel.Controls.Add(this.editorPanel, 1, 0);
-            this.positionTableLayoutPanel.Controls.Add(this.positionListBoxItemsView, 0, 0);
+            this.positionTableLayoutPanel.Controls.Add(this.positionItemView, 0, 0);
             this.positionTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.positionTableLayoutPanel.Location = new System.Drawing.Point(3, 21);
             this.positionTableLayoutPanel.Name = "positionTableLayoutPanel";
@@ -174,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
             // editorPanel
             // 
             this.editorPanel.Controls.Add(this.button_Test);
-            this.editorPanel.Controls.Add(this.positionPropertyCollectionView);
+            this.editorPanel.Controls.Add(this.positionEditorView);
             this.editorPanel.Controls.Add(this.btnCancel);
             this.editorPanel.Controls.Add(this.btnSave);
             this.editorPanel.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -193,15 +193,15 @@ namespace QMC.LCP_280.Process.Unit
             this.button_Test.UseVisualStyleBackColor = true;
             this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
             // 
-            // positionPropertyCollectionView
+            // positionEditorView
             // 
-            this.positionPropertyCollectionView.GroupName = "Editor";
-            this.positionPropertyCollectionView.Location = new System.Drawing.Point(4, 4);
-            this.positionPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4);
-            this.positionPropertyCollectionView.Name = "positionPropertyCollectionView";
-            this.positionPropertyCollectionView.Size = new System.Drawing.Size(358, 145);
-            this.positionPropertyCollectionView.TabIndex = 0;
-            this.positionPropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.positionEditorView.GroupName = "Editor";
+            this.positionEditorView.Location = new System.Drawing.Point(4, 4);
+            this.positionEditorView.Margin = new System.Windows.Forms.Padding(4);
+            this.positionEditorView.Name = "positionEditorView";
+            this.positionEditorView.Size = new System.Drawing.Size(358, 145);
+            this.positionEditorView.TabIndex = 0;
+            this.positionEditorView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             // 
             // btnCancel
             // 
@@ -241,18 +241,18 @@ namespace QMC.LCP_280.Process.Unit
             this.btnSave.UseVisualStyleBackColor = false;
             this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
-            // positionListBoxItemsView
+            // positionItemView
             // 
-            this.positionListBoxItemsView.BorderWidth = 2;
-            this.positionListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.positionListBoxItemsView.GroupName = "Position Items";
-            this.positionListBoxItemsView.Location = new System.Drawing.Point(3, 8);
-            this.positionListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 8, 3, 8);
-            this.positionListBoxItemsView.Name = "positionListBoxItemsView";
-            this.positionTableLayoutPanel.SetRowSpan(this.positionListBoxItemsView, 2);
-            this.positionListBoxItemsView.SelectedIndex = -1;
-            this.positionListBoxItemsView.Size = new System.Drawing.Size(242, 344);
-            this.positionListBoxItemsView.TabIndex = 2;
+            this.positionItemView.BorderWidth = 2;
+            this.positionItemView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionItemView.GroupName = "Position Item";
+            this.positionItemView.Location = new System.Drawing.Point(3, 8);
+            this.positionItemView.Margin = new System.Windows.Forms.Padding(3, 8, 3, 8);
+            this.positionItemView.Name = "positionItemView";
+            this.positionTableLayoutPanel.SetRowSpan(this.positionItemView, 2);
+            this.positionItemView.SelectedIndex = -1;
+            this.positionItemView.Size = new System.Drawing.Size(242, 344);
+            this.positionItemView.TabIndex = 2;
             // 
             // gbDigitalIO
             // 
@@ -330,11 +330,13 @@ namespace QMC.LCP_280.Process.Unit
             // axisPositionsView
             // 
             this.axisPositionsView.BorderWidth = 2;
+            this.axisPositionsView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.axisPositionsView.GroupName = "Axis Positions";
             this.axisPositionsView.Location = new System.Drawing.Point(951, 3);
             this.axisPositionsView.Name = "axisPositionsView";
+            this.mainTableLayoutPanel.SetRowSpan(this.axisPositionsView, 2);
             this.axisPositionsView.SelectedIndex = -1;
-            this.axisPositionsView.Size = new System.Drawing.Size(138, 384);
+            this.axisPositionsView.Size = new System.Drawing.Size(310, 774);
             this.axisPositionsView.TabIndex = 11;
             // 
             // axisListBoxItemsView
@@ -524,14 +526,14 @@ namespace QMC.LCP_280.Process.Unit
                     if (inputCassetteLifter?.TeachingPositions != null && inputCassetteLifter.TeachingPositions.Count > 0)
                     {
                         var positionNames = inputCassetteLifter.TeachingPositions.Select(tp => tp.Name).ToArray();
-                        positionListBoxItemsView?.SetItems(positionNames);
+                        positionItemView?.SetItems(positionNames);
                         Console.WriteLine($"✅ TeachingPositions를 listBoxItemsView에 설정 완료: {positionNames.Length}개 항목");
                         Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionNames)}");
                     }
                     else
                     {
                         Console.WriteLine("⚠️ TeachingPositions에 Position 항목이 없습니다.");
-                        positionListBoxItemsView?.SetItems();
+                        positionItemView?.SetItems();
                     }
                 }
                 else
@@ -550,13 +552,13 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private void SetupPositionItemSelectionEvent()
         {
-            if (positionListBoxItemsView != null)
+            if (positionItemView != null)
             {
                 // 기존 이벤트 핸들러 제거 (중복 방지)
-                positionListBoxItemsView.ItemSelected -= OnPositionItemSelected;
+                positionItemView.ItemSelected -= OnPositionItemSelected;
 
                 // 새 이벤트 핸들러 등록
-                positionListBoxItemsView.ItemSelected += OnPositionItemSelected;
+                positionItemView.ItemSelected += OnPositionItemSelected;
 
                 Console.WriteLine("✅ Position Item 선택 이벤트 설정 완료");
             }
@@ -617,7 +619,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         editorProperties.Add(new StringProperty($"Extra: {kv.Key}", kv.Value?.ToString() ?? ""));
                     }
-                    positionPropertyCollectionView?.SetProperties(editorProperties);
+                    positionEditorView?.SetProperties(editorProperties);
                 }
             }
         }
@@ -634,7 +636,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (config?.TeachingPositions != null)
                 {
                     var positionNames = config.TeachingPositions.Select(tp => tp.Name).ToArray();
-                    positionListBoxItemsView.SetItems(positionNames);
+                    positionItemView.SetItems(positionNames);
                 }
             }
         }
@@ -671,10 +673,10 @@ namespace QMC.LCP_280.Process.Unit
                 int selIndex = -1;
                 try
                 {
-                    var pi = positionListBoxItemsView.GetType().GetProperty("SelectedIndex");
+                    var pi = positionItemView.GetType().GetProperty("SelectedIndex");
                     if (pi != null)
                     {
-                        object val = pi.GetValue(positionListBoxItemsView, null);
+                        object val = pi.GetValue(positionItemView, null);
                         if (val is int) selIndex = (int)val;
                     }
                 }
@@ -814,10 +816,10 @@ namespace QMC.LCP_280.Process.Unit
                 try
                 {
                     // ListBoxItemsView에 SelectedIndex 프로퍼티가 있다고 가정
-                    var pi = positionListBoxItemsView.GetType().GetProperty("SelectedIndex");
+                    var pi = positionItemView.GetType().GetProperty("SelectedIndex");
                     if (pi != null)
                     {
-                        object val = pi.GetValue(positionListBoxItemsView, null);
+                        object val = pi.GetValue(positionItemView, null);
                         if (val is int) selIndex = (int)val;
                     }
                 }
@@ -830,9 +832,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 에디터(PropertyCollectionView)에 입력된 값 적용(안전 차원)
-                positionPropertyCollectionView?.Apply();
+                positionEditorView?.Apply();
 
-                var props = positionPropertyCollectionView?.GetCurrentProperties();
+                var props = positionEditorView?.GetCurrentProperties();
                 if (props == null || props.Count == 0)
                 {
                     MessageBox.Show("편집할 데이터가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -929,9 +931,9 @@ namespace QMC.LCP_280.Process.Unit
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel ioTableLayoutPanel;
         private Panel positionItemPanel;
-        private ListBoxItemsView positionListBoxItemsView;
+        private ListBoxItemsView positionItemView;
         private TableLayoutPanel positionTableLayoutPanel;
-        private PropertyCollectionView positionPropertyCollectionView;
+        private PropertyCollectionView positionEditorView;
         private GroupBox gbTeachingMove;
         private IndividualMenuButton btnMovePosition;
         private RadioButtonView rbTeachingMoveMode;

@@ -116,11 +116,9 @@ namespace QMC.Common
 
             if (properties == null)
             {
-                // 속성이 없을 때 최소 크기
-                int minHeight = IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
-                this.Height = minHeight;
-                this.MinimumSize = new Size(this.Width, minHeight);
-                this.MaximumSize = new Size(this.Width, minHeight);
+                // 크기 변경하지 않음(디자이너 설정 유지). 스크롤만 초기화
+                scrollPanel.AutoScroll = true;
+                scrollPanel.AutoScrollMinSize = Size.Empty;
                 tableLayoutPanel.ResumeLayout();
                 return;
             }
@@ -307,34 +305,26 @@ namespace QMC.Common
                 row++;
             }
 
-            // 동적 크기 계산
+            // 동적 컨텐츠 높이 계산 (컨트롤 자체 크기는 디자이너 설정 유지)
             int totalRows = (headerProp != null ? 1 : 0) + stateProps.Count;
-            int calculatedHeight = (totalRows * textBoxHeight) + IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
-            int maxHeight = (IOMaxVisibleRows * textBoxHeight) + IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
+            int contentHeight = totalRows * textBoxHeight;
+            tableLayoutPanel.Height = contentHeight;
 
-            tableLayoutPanel.Height = totalRows * textBoxHeight;
+            // 스크롤 사용: 화면보다 컨텐츠가 커지면 자동으로 V-스크롤 노출
+            scrollPanel.AutoScroll = true; // 항상 켜둠
 
-            if (totalRows > IOMaxVisibleRows)
-            {
-                this.Height = maxHeight;
-                this.MinimumSize = new Size(this.Width, maxHeight);
-                this.MaximumSize = new Size(this.Width, maxHeight);
-                scrollPanel.AutoScroll = true;
-                scrollPanel.VerticalScroll.Visible = true;
-                scrollPanel.VerticalScroll.Value = scrollPanel.VerticalScroll.Maximum;
-            }
-            else
-            {
-                this.Height = calculatedHeight;
-                this.MinimumSize = new Size(this.Width, calculatedHeight);
-                this.MaximumSize = new Size(this.Width, calculatedHeight);
-                scrollPanel.AutoScroll = false;
-                scrollPanel.VerticalScroll.Visible = false;
-            }
+            // 그룹박스 패딩 등을 고려한 AutoScrollMinSize 설정
+            int verticalPadding = IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
+            scrollPanel.AutoScrollMinSize = new Size(0, tableLayoutPanel.PreferredSize.Height + verticalPadding);
+
+            // 가로 스크롤 방지(기본 PropertyCollectionView에서 width 보정 처리)
+            // 필요 시 최상단으로 스크롤 이동
+            if (scrollPanel.VerticalScroll.Maximum > 0)
+                scrollPanel.VerticalScroll.Value = 0;
 
             tableLayoutPanel.ResumeLayout();
 
-            // 부모 컨트롤에게 크기 변경 알림
+            // 부모 컨트롤에게 레이아웃 갱신 알림 (크기는 변경하지 않음)
             this.Invalidate();
             this.Parent?.PerformLayout();
         }

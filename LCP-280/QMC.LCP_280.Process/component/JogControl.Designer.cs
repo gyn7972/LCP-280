@@ -258,7 +258,7 @@ namespace QMC.LCP_280.Process.Unit
             this.stepLine.Location = new System.Drawing.Point(8, 46);
             this.stepLine.Margin = new System.Windows.Forms.Padding(0);
             this.stepLine.Name = "stepLine";
-            this.stepLine.Size = new System.Drawing.Size(1277, 28);
+            this.stepLine.Size = new System.Drawing.Size(1195, 28);
             this.stepLine.TabIndex = 1;
             this.stepLine.WrapContents = false;
             // 
@@ -307,10 +307,10 @@ namespace QMC.LCP_280.Process.Unit
             this.presetRow.Controls.Add(this.btnStep100);
             this.presetRow.Controls.Add(this.btnStep1000);
             this.presetRow.Controls.Add(this.btnStepClear);
-            this.presetRow.Location = new System.Drawing.Point(9, 78);
+            this.presetRow.Location = new System.Drawing.Point(8, 78);
             this.presetRow.Margin = new System.Windows.Forms.Padding(0);
             this.presetRow.Name = "presetRow";
-            this.presetRow.Size = new System.Drawing.Size(1277, 28);
+            this.presetRow.Size = new System.Drawing.Size(1195, 28);
             this.presetRow.TabIndex = 2;
             this.presetRow.WrapContents = false;
             // 
@@ -385,7 +385,6 @@ namespace QMC.LCP_280.Process.Unit
             this.tblJog.Controls.Add(this.btnXPlus, 2, 1);
             this.tblJog.Controls.Add(this.btnZMinus, 3, 1);
             this.tblJog.Controls.Add(this.btnYMinus, 1, 2);
-            this.tblJog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tblJog.Location = new System.Drawing.Point(4, 202);
             this.tblJog.Margin = new System.Windows.Forms.Padding(0);
             this.tblJog.Name = "tblJog";

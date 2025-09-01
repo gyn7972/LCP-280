@@ -22,8 +22,8 @@ namespace QMC.LCP_280.Process.Unit
         public InputCassetteLifterUnit_Working()
         {
             InitializeComponent();
-            _designerSize = this.Size;
             this.SuspendLayout();
+            _designerSize = this.Size;
             InitializeUI();
             this.ResumeLayout(true);
 

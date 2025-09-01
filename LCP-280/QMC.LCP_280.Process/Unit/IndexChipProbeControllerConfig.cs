@@ -10,11 +10,11 @@ using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class IndexLoadAlignerConfig : BaseConfig
+    public class IndexChipProbeControllerConfig : BaseConfig
     {
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        public IndexLoadAlignerConfig() : base("IndexLoadAlignerConfig")
+        public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig")
         {
             //InitializeDefaultTeachingPositions();
         }
@@ -32,8 +32,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Index Z Axis", 0.0 },
-                        { "Align T Axis", 100.0 }
+                        { "Sphere Z Axis", 0.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);
