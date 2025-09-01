@@ -17,24 +17,14 @@ namespace QMC.LCP_280.Process.Unit
 {
     partial class InputCassetteLifterUnit_Config
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
-        private PropertyCollectionView positionPropertyCollectionView;
-        private IOPropertyCollectionView inputPropertyCollectionView;
-        private IOPropertyCollectionView outputPropertyCollectionView;
-        private ListBoxItemsView positionListBoxItemsView;
+        private IOPropertyCollectionView inputView;
+        private IOPropertyCollectionView outputView;
 
         // Axis 목록 (추가)
         private ListBoxItemsView axisListBoxItemsView;
 
         private IndividualMenuButton btnSave;
         private IndividualMenuButton btnCancel;
-        private IndividualMenuButton btnMovePosition;
-
-        private RadioButtonView rbTeachingMoveMode;
-
-        private GroupBox gbTeachingMove;
         private GroupBox gbPositionTeaching;
         private GroupBox gbDigitalIO;
         private GroupBox gbMoveAxis;
@@ -74,35 +64,78 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private void InitializeComponent()
         {
+            this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
+            this.positionTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.gbTeachingMove = new System.Windows.Forms.GroupBox();
             this.btnMovePosition = new QMC.Common.IndividualMenuButton();
             this.rbTeachingMoveMode = new QMC.Common.RadioButtonView();
-            this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
+            this.editorPanel = new System.Windows.Forms.Panel();
             this.button_Test = new System.Windows.Forms.Button();
-            this.positionListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.btnSave = new QMC.Common.IndividualMenuButton();
-            this.btnCancel = new QMC.Common.IndividualMenuButton();
             this.positionPropertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.btnCancel = new QMC.Common.IndividualMenuButton();
+            this.btnSave = new QMC.Common.IndividualMenuButton();
+            this.positionListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
-            this.inputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
-            this.outputPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
+            this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.inputView = new QMC.Common.IOPropertyCollectionView();
+            this.outputView = new QMC.Common.IOPropertyCollectionView();
             this.gbMoveAxis = new System.Windows.Forms.GroupBox();
-            this.AxispositonListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.jogControl = new QMC.LCP_280.Process.Unit.JogControl();
+            this.axisPositionsView = new QMC.Common.ListBoxItemsView();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.gbTeachingMove.SuspendLayout();
+            this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.positionItemPanel = new System.Windows.Forms.Panel();
             this.gbPositionTeaching.SuspendLayout();
+            this.positionTableLayoutPanel.SuspendLayout();
+            this.gbTeachingMove.SuspendLayout();
+            this.editorPanel.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
+            this.ioTableLayoutPanel.SuspendLayout();
+            this.gbMoveAxis.SuspendLayout();
+            this.mainTableLayoutPanel.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // gbPositionTeaching
+            // 
+            this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
+            this.mainTableLayoutPanel.SetColumnSpan(this.gbPositionTeaching, 2);
+            this.gbPositionTeaching.Controls.Add(this.positionTableLayoutPanel);
+            this.gbPositionTeaching.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbPositionTeaching.Location = new System.Drawing.Point(3, 3);
+            this.gbPositionTeaching.Name = "gbPositionTeaching";
+            this.gbPositionTeaching.Size = new System.Drawing.Size(626, 384);
+            this.gbPositionTeaching.TabIndex = 8;
+            this.gbPositionTeaching.TabStop = false;
+            this.gbPositionTeaching.Text = "Position Teaching";
+            // 
+            // positionTableLayoutPanel
+            // 
+            this.positionTableLayoutPanel.ColumnCount = 2;
+            this.positionTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
+            this.positionTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
+            this.positionTableLayoutPanel.Controls.Add(this.gbTeachingMove, 1, 1);
+            this.positionTableLayoutPanel.Controls.Add(this.editorPanel, 1, 0);
+            this.positionTableLayoutPanel.Controls.Add(this.positionListBoxItemsView, 0, 0);
+            this.positionTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionTableLayoutPanel.Location = new System.Drawing.Point(3, 21);
+            this.positionTableLayoutPanel.Name = "positionTableLayoutPanel";
+            this.positionTableLayoutPanel.RowCount = 2;
+            this.positionTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 60F));
+            this.positionTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
+            this.positionTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.positionTableLayoutPanel.Size = new System.Drawing.Size(620, 360);
+            this.positionTableLayoutPanel.TabIndex = 13;
             // 
             // gbTeachingMove
             // 
             this.gbTeachingMove.BackColor = System.Drawing.Color.White;
             this.gbTeachingMove.Controls.Add(this.btnMovePosition);
             this.gbTeachingMove.Controls.Add(this.rbTeachingMoveMode);
+            this.gbTeachingMove.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbTeachingMove.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbTeachingMove.Location = new System.Drawing.Point(279, 209);
+            this.gbTeachingMove.Location = new System.Drawing.Point(251, 219);
             this.gbTeachingMove.Name = "gbTeachingMove";
-            this.gbTeachingMove.Size = new System.Drawing.Size(326, 138);
+            this.gbTeachingMove.Size = new System.Drawing.Size(366, 138);
             this.gbTeachingMove.TabIndex = 7;
             this.gbTeachingMove.TabStop = false;
             this.gbTeachingMove.Text = "Teaching Move";
@@ -117,7 +150,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btnMovePosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnMovePosition.ForeColor = System.Drawing.Color.Black;
             this.btnMovePosition.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMovePosition.Location = new System.Drawing.Point(200, 31);
+            this.btnMovePosition.Location = new System.Drawing.Point(242, 34);
             this.btnMovePosition.Name = "btnMovePosition";
             this.btnMovePosition.Size = new System.Drawing.Size(117, 95);
             this.btnMovePosition.TabIndex = 6;
@@ -130,34 +163,29 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.rbTeachingMoveMode.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.rbTeachingMoveMode.GroupName = "Move Mode";
-            this.rbTeachingMoveMode.Location = new System.Drawing.Point(13, 28);
+            this.rbTeachingMoveMode.Location = new System.Drawing.Point(6, 25);
             this.rbTeachingMoveMode.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.rbTeachingMoveMode.Name = "rbTeachingMoveMode";
             this.rbTeachingMoveMode.Orientation = System.Windows.Forms.Orientation.Vertical;
             this.rbTeachingMoveMode.SelectedIndex = -1;
-            this.rbTeachingMoveMode.Size = new System.Drawing.Size(171, 98);
+            this.rbTeachingMoveMode.Size = new System.Drawing.Size(230, 105);
             this.rbTeachingMoveMode.TabIndex = 5;
             // 
-            // gbPositionTeaching
+            // editorPanel
             // 
-            this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
-            this.gbPositionTeaching.Controls.Add(this.button_Test);
-            this.gbPositionTeaching.Controls.Add(this.positionListBoxItemsView);
-            this.gbPositionTeaching.Controls.Add(this.btnSave);
-            this.gbPositionTeaching.Controls.Add(this.btnCancel);
-            this.gbPositionTeaching.Controls.Add(this.gbTeachingMove);
-            this.gbPositionTeaching.Controls.Add(this.positionPropertyCollectionView);
-            this.gbPositionTeaching.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbPositionTeaching.Location = new System.Drawing.Point(9, 12);
-            this.gbPositionTeaching.Name = "gbPositionTeaching";
-            this.gbPositionTeaching.Size = new System.Drawing.Size(613, 361);
-            this.gbPositionTeaching.TabIndex = 8;
-            this.gbPositionTeaching.TabStop = false;
-            this.gbPositionTeaching.Text = "Position Teaching";
+            this.editorPanel.Controls.Add(this.button_Test);
+            this.editorPanel.Controls.Add(this.positionPropertyCollectionView);
+            this.editorPanel.Controls.Add(this.btnCancel);
+            this.editorPanel.Controls.Add(this.btnSave);
+            this.editorPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.editorPanel.Location = new System.Drawing.Point(251, 3);
+            this.editorPanel.Name = "editorPanel";
+            this.editorPanel.Size = new System.Drawing.Size(366, 210);
+            this.editorPanel.TabIndex = 8;
             // 
             // button_Test
             // 
-            this.button_Test.Location = new System.Drawing.Point(530, 15);
+            this.button_Test.Location = new System.Drawing.Point(147, 173);
             this.button_Test.Name = "button_Test";
             this.button_Test.Size = new System.Drawing.Size(75, 23);
             this.button_Test.TabIndex = 12;
@@ -165,36 +193,15 @@ namespace QMC.LCP_280.Process.Unit
             this.button_Test.UseVisualStyleBackColor = true;
             this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
             // 
-            // positionListBoxItemsView
+            // positionPropertyCollectionView
             // 
-            this.positionListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.positionListBoxItemsView.BorderWidth = 2;
-            this.positionListBoxItemsView.GroupName = "Position Items";
-            this.positionListBoxItemsView.Location = new System.Drawing.Point(9, 34);
-            this.positionListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.positionListBoxItemsView.Name = "positionListBoxItemsView";
-            this.positionListBoxItemsView.SelectedIndex = -1;
-            this.positionListBoxItemsView.Size = new System.Drawing.Size(257, 313);
-            this.positionListBoxItemsView.TabIndex = 2;
-            // 
-            // btnSave
-            // 
-            this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSave.CustomForeColor = System.Drawing.Color.Black;
-            this.btnSave.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSave.ForeColor = System.Drawing.Color.Black;
-            this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnSave.Location = new System.Drawing.Point(290, 143);
-            this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(100, 40);
-            this.btnSave.TabIndex = 3;
-            this.btnSave.TabStop = false;
-            this.btnSave.Text = "Save";
-            this.btnSave.UseVisualStyleBackColor = false;
-            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
+            this.positionPropertyCollectionView.GroupName = "Editor";
+            this.positionPropertyCollectionView.Location = new System.Drawing.Point(4, 4);
+            this.positionPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4);
+            this.positionPropertyCollectionView.Name = "positionPropertyCollectionView";
+            this.positionPropertyCollectionView.Size = new System.Drawing.Size(358, 145);
+            this.positionPropertyCollectionView.TabIndex = 0;
+            this.positionPropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             // 
             // btnCancel
             // 
@@ -206,85 +213,129 @@ namespace QMC.LCP_280.Process.Unit
             this.btnCancel.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnCancel.ForeColor = System.Drawing.Color.Black;
             this.btnCancel.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnCancel.Location = new System.Drawing.Point(496, 143);
+            this.btnCancel.Location = new System.Drawing.Point(263, 156);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(100, 40);
+            this.btnCancel.Size = new System.Drawing.Size(100, 45);
             this.btnCancel.TabIndex = 4;
             this.btnCancel.TabStop = false;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = false;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
-            // positionPropertyCollectionView
+            // btnSave
             // 
-            this.positionPropertyCollectionView.GroupName = "Editor";
-            this.positionPropertyCollectionView.Location = new System.Drawing.Point(279, 34);
-            this.positionPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4);
-            this.positionPropertyCollectionView.Name = "positionPropertyCollectionView";
-            this.positionPropertyCollectionView.Size = new System.Drawing.Size(326, 168);
-            this.positionPropertyCollectionView.TabIndex = 0;
-            this.positionPropertyCollectionView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSave.CustomForeColor = System.Drawing.Color.Black;
+            this.btnSave.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSave.ForeColor = System.Drawing.Color.Black;
+            this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnSave.Location = new System.Drawing.Point(4, 156);
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(100, 45);
+            this.btnSave.TabIndex = 3;
+            this.btnSave.TabStop = false;
+            this.btnSave.Text = "Save";
+            this.btnSave.UseVisualStyleBackColor = false;
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
+            // 
+            // positionListBoxItemsView
+            // 
+            this.positionListBoxItemsView.BorderWidth = 2;
+            this.positionListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionListBoxItemsView.GroupName = "Position Items";
+            this.positionListBoxItemsView.Location = new System.Drawing.Point(3, 8);
+            this.positionListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 8, 3, 8);
+            this.positionListBoxItemsView.Name = "positionListBoxItemsView";
+            this.positionTableLayoutPanel.SetRowSpan(this.positionListBoxItemsView, 2);
+            this.positionListBoxItemsView.SelectedIndex = -1;
+            this.positionListBoxItemsView.Size = new System.Drawing.Size(242, 344);
+            this.positionListBoxItemsView.TabIndex = 2;
             // 
             // gbDigitalIO
             // 
-            this.gbDigitalIO.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.gbDigitalIO.BackColor = System.Drawing.Color.White;
-            this.gbDigitalIO.Controls.Add(this.inputPropertyCollectionView);
-            this.gbDigitalIO.Controls.Add(this.outputPropertyCollectionView);
+            this.mainTableLayoutPanel.SetColumnSpan(this.gbDigitalIO, 2);
+            this.gbDigitalIO.Controls.Add(this.ioTableLayoutPanel);
+            this.gbDigitalIO.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbDigitalIO.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbDigitalIO.Location = new System.Drawing.Point(9, 382);
+            this.gbDigitalIO.Location = new System.Drawing.Point(3, 393);
             this.gbDigitalIO.Name = "gbDigitalIO";
-            this.gbDigitalIO.Size = new System.Drawing.Size(613, 358);
+            this.gbDigitalIO.Size = new System.Drawing.Size(626, 384);
             this.gbDigitalIO.TabIndex = 9;
             this.gbDigitalIO.TabStop = false;
             this.gbDigitalIO.Text = "Digital I/O";
             // 
-            // inputPropertyCollectionView
+            // ioTableLayoutPanel
             // 
-            this.inputPropertyCollectionView.GroupName = "Input";
-            this.inputPropertyCollectionView.Location = new System.Drawing.Point(9, 35);
-            this.inputPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            this.inputPropertyCollectionView.Name = "inputPropertyCollectionView";
-            this.inputPropertyCollectionView.Size = new System.Drawing.Size(295, 314);
-            this.inputPropertyCollectionView.TabIndex = 1;
+            this.ioTableLayoutPanel.ColumnCount = 2;
+            this.ioTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.ioTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.ioTableLayoutPanel.Controls.Add(this.inputView, 0, 0);
+            this.ioTableLayoutPanel.Controls.Add(this.outputView, 1, 0);
+            this.ioTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ioTableLayoutPanel.Location = new System.Drawing.Point(3, 21);
+            this.ioTableLayoutPanel.Name = "ioTableLayoutPanel";
+            this.ioTableLayoutPanel.RowCount = 1;
+            this.ioTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.ioTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 360F));
+            this.ioTableLayoutPanel.Size = new System.Drawing.Size(620, 360);
+            this.ioTableLayoutPanel.TabIndex = 2;
             // 
-            // outputPropertyCollectionView
+            // inputView
             // 
-            this.outputPropertyCollectionView.GroupName = "Output";
-            this.outputPropertyCollectionView.Location = new System.Drawing.Point(310, 35);
-            this.outputPropertyCollectionView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            this.outputPropertyCollectionView.Name = "outputPropertyCollectionView";
-            this.outputPropertyCollectionView.Size = new System.Drawing.Size(295, 314);
-            this.outputPropertyCollectionView.TabIndex = 1;
+            this.inputView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.inputView.GroupName = "Input";
+            this.inputView.Location = new System.Drawing.Point(4, 6);
+            this.inputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            this.inputView.Name = "inputView";
+            this.inputView.Size = new System.Drawing.Size(302, 348);
+            this.inputView.TabIndex = 1;
+            // 
+            // outputView
+            // 
+            this.outputView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.outputView.GroupName = "Output";
+            this.outputView.Location = new System.Drawing.Point(314, 6);
+            this.outputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
+            this.outputView.Name = "outputView";
+            this.outputView.Size = new System.Drawing.Size(302, 348);
+            this.outputView.TabIndex = 1;
             // 
             // gbMoveAxis
             // 
             this.gbMoveAxis.BackColor = System.Drawing.Color.White;
+            this.gbMoveAxis.Controls.Add(this.jogControl);
+            this.gbMoveAxis.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbMoveAxis.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.gbMoveAxis.Location = new System.Drawing.Point(643, 12);
+            this.gbMoveAxis.Location = new System.Drawing.Point(635, 3);
             this.gbMoveAxis.Name = "gbMoveAxis";
-            this.gbMoveAxis.Size = new System.Drawing.Size(300, 724);
+            this.mainTableLayoutPanel.SetRowSpan(this.gbMoveAxis, 2);
+            this.gbMoveAxis.Size = new System.Drawing.Size(310, 774);
             this.gbMoveAxis.TabIndex = 10;
             this.gbMoveAxis.TabStop = false;
             this.gbMoveAxis.Text = "Move Axis";
-
-            // ⬇️ [추가 시작] JogControl을 그룹박스 안에 Dock=Fill 로 부착
-            this.jogControl = new QMC.LCP_280.Process.Unit.JogControl();
+            // 
+            // jogControl
+            // 
             this.jogControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.jogControl.Location = new System.Drawing.Point(3, 21);
             this.jogControl.Margin = new System.Windows.Forms.Padding(0);
             this.jogControl.Name = "jogControl";
-            this.gbMoveAxis.Controls.Add(this.jogControl);
-
+            this.jogControl.Size = new System.Drawing.Size(304, 750);
+            this.jogControl.TabIndex = 0;
             // 
-            // AxispositonListBoxItemsView
+            // axisPositionsView
             // 
-            this.AxispositonListBoxItemsView.BorderWidth = 2;
-            this.AxispositonListBoxItemsView.GroupName = "Axis Positions";
-            this.AxispositonListBoxItemsView.Location = new System.Drawing.Point(949, 12);
-            this.AxispositonListBoxItemsView.Name = "AxispositonListBoxItemsView";
-            this.AxispositonListBoxItemsView.SelectedIndex = -1;
-            this.AxispositonListBoxItemsView.Size = new System.Drawing.Size(303, 724);
-            this.AxispositonListBoxItemsView.TabIndex = 11;
+            this.axisPositionsView.BorderWidth = 2;
+            this.axisPositionsView.GroupName = "Axis Positions";
+            this.axisPositionsView.Location = new System.Drawing.Point(951, 3);
+            this.axisPositionsView.Name = "axisPositionsView";
+            this.axisPositionsView.SelectedIndex = -1;
+            this.axisPositionsView.Size = new System.Drawing.Size(138, 384);
+            this.axisPositionsView.TabIndex = 11;
             // 
             // axisListBoxItemsView
             // 
@@ -297,20 +348,49 @@ namespace QMC.LCP_280.Process.Unit
             this.axisListBoxItemsView.TabIndex = 0;
             this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
             // 
+            // mainTableLayoutPanel
+            // 
+            this.mainTableLayoutPanel.ColumnCount = 4;
+            this.mainTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.mainTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.mainTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.mainTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.mainTableLayoutPanel.Controls.Add(this.axisPositionsView, 3, 0);
+            this.mainTableLayoutPanel.Controls.Add(this.gbDigitalIO, 0, 1);
+            this.mainTableLayoutPanel.Controls.Add(this.gbPositionTeaching, 0, 0);
+            this.mainTableLayoutPanel.Controls.Add(this.gbMoveAxis, 2, 0);
+            this.mainTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.mainTableLayoutPanel.Location = new System.Drawing.Point(0, 0);
+            this.mainTableLayoutPanel.Name = "mainTableLayoutPanel";
+            this.mainTableLayoutPanel.RowCount = 2;
+            this.mainTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.mainTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.mainTableLayoutPanel.Size = new System.Drawing.Size(1264, 780);
+            this.mainTableLayoutPanel.TabIndex = 12;
+            // 
+            // positionItemPanel
+            // 
+            this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
+            this.positionItemPanel.Name = "positionItemPanel";
+            this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
+            this.positionItemPanel.TabIndex = 0;
+            // 
             // InputCassetteLifterUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1264, 752);
-            this.Controls.Add(this.AxispositonListBoxItemsView);
-            this.Controls.Add(this.gbMoveAxis);
-            this.Controls.Add(this.gbDigitalIO);
-            this.Controls.Add(this.gbPositionTeaching);
+            this.ClientSize = new System.Drawing.Size(1264, 780);
+            this.Controls.Add(this.mainTableLayoutPanel);
             this.Name = "InputCassetteLifterUnit_Config";
             this.Text = "InputCassetteLifter Unit Configuration";
-            this.gbTeachingMove.ResumeLayout(false);
             this.gbPositionTeaching.ResumeLayout(false);
+            this.positionTableLayoutPanel.ResumeLayout(false);
+            this.gbTeachingMove.ResumeLayout(false);
+            this.editorPanel.ResumeLayout(false);
             this.gbDigitalIO.ResumeLayout(false);
+            this.ioTableLayoutPanel.ResumeLayout(false);
+            this.gbMoveAxis.ResumeLayout(false);
+            this.mainTableLayoutPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -341,7 +421,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (inputPropertyCollectionView == null)
+                if (inputView == null)
                     return;
 
                 var eq = Equipment.Instance;
@@ -349,7 +429,7 @@ namespace QMC.LCP_280.Process.Unit
                 var unitIO = eq?.UnitIO;
                 if (scan == null || unitIO == null)
                 {
-                    inputPropertyCollectionView.SetProperties(new PropertyCollection());
+                    inputView.SetProperties(new PropertyCollection());
                     return;
                 }
 
@@ -394,9 +474,9 @@ namespace QMC.LCP_280.Process.Unit
                     _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
                 }
 
-                inputPropertyCollectionView.SetProperties(pc);
+                inputView.SetProperties(pc);
                 // 출력 영역 비움
-                outputPropertyCollectionView?.SetProperties(new PropertyCollection());
+                outputView?.SetProperties(new PropertyCollection());
 
                 // 이벤트 중복 등록 방지 후 등록
                 scan.InputChanged -= OnDioInputChanged;
@@ -418,7 +498,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         _ioInputs[i].Prop.State = value; // 모델 업데이트
                         // 색상 갱신
-                        inputPropertyCollectionView.SetStateByKey(disp, value);
+                        inputView.SetStateByKey(disp, value);
                         break;
                     }
                 }
@@ -844,7 +924,17 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        private ListBoxItemsView AxispositonListBoxItemsView;
+        private ListBoxItemsView axisPositionsView;
         private Button button_Test;
+        private TableLayoutPanel mainTableLayoutPanel;
+        private TableLayoutPanel ioTableLayoutPanel;
+        private Panel positionItemPanel;
+        private ListBoxItemsView positionListBoxItemsView;
+        private TableLayoutPanel positionTableLayoutPanel;
+        private PropertyCollectionView positionPropertyCollectionView;
+        private GroupBox gbTeachingMove;
+        private IndividualMenuButton btnMovePosition;
+        private RadioButtonView rbTeachingMoveMode;
+        private Panel editorPanel;
     }
 }

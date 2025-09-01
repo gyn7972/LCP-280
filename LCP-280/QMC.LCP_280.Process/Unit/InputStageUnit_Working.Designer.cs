@@ -21,7 +21,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Windows Form Designer generated code
         private void InitializeComponent()
         {
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.gbModuleUnit = new System.Windows.Forms.GroupBox();
             this.axisPositionsPropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.infomationPropertyCollectionView = new QMC.Common.PropertyCollectionView();
@@ -32,36 +32,36 @@ namespace QMC.LCP_280.Process.Unit
             this.panel1 = new System.Windows.Forms.Panel();
             this.btnManualAction = new QMC.Common.IndividualMenuButton();
             this.sequenceListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.tableLayoutPanel1.SuspendLayout();
+            this.tableLayoutPanel.SuspendLayout();
             this.gbModuleUnit.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
             this.ioTableLayoutPanel.SuspendLayout();
             this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
-            // tableLayoutPanel1
+            // tableLayoutPanel
             // 
-            this.tableLayoutPanel1.ColumnCount = 4;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel1.Controls.Add(this.gbModuleUnit, 1, 0);
-            this.tableLayoutPanel1.Controls.Add(this.infomationPropertyCollectionView, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.gbDigitalIO, 1, 1);
-            this.tableLayoutPanel1.Controls.Add(this.panel1, 0, 1);
-            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 2;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 780);
-            this.tableLayoutPanel1.TabIndex = 1;
+            this.tableLayoutPanel.ColumnCount = 4;
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel.Controls.Add(this.gbModuleUnit, 1, 0);
+            this.tableLayoutPanel.Controls.Add(this.infomationPropertyCollectionView, 0, 0);
+            this.tableLayoutPanel.Controls.Add(this.gbDigitalIO, 1, 1);
+            this.tableLayoutPanel.Controls.Add(this.panel1, 0, 1);
+            this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel.Name = "tableLayoutPanel";
+            this.tableLayoutPanel.RowCount = 2;
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel.Size = new System.Drawing.Size(1264, 780);
+            this.tableLayoutPanel.TabIndex = 1;
             // 
             // gbModuleUnit
             // 
-            this.tableLayoutPanel1.SetColumnSpan(this.gbModuleUnit, 2);
+            this.tableLayoutPanel.SetColumnSpan(this.gbModuleUnit, 2);
             this.gbModuleUnit.Controls.Add(this.axisPositionsPropertyCollectionView);
             this.gbModuleUnit.Location = new System.Drawing.Point(319, 3);
             this.gbModuleUnit.Name = "gbModuleUnit";
@@ -90,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // gbDigitalIO
             // 
-            this.tableLayoutPanel1.SetColumnSpan(this.gbDigitalIO, 2);
+            this.tableLayoutPanel.SetColumnSpan(this.gbDigitalIO, 2);
             this.gbDigitalIO.Controls.Add(this.ioTableLayoutPanel);
             this.gbDigitalIO.Location = new System.Drawing.Point(319, 393);
             this.gbDigitalIO.Name = "gbDigitalIO";
@@ -144,6 +144,7 @@ namespace QMC.LCP_280.Process.Unit
             // btnManualAction
             // 
             this.btnManualAction.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnManualAction.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.btnManualAction.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnManualAction.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnManualAction.CustomForeColor = System.Drawing.Color.Black;
@@ -173,19 +174,20 @@ namespace QMC.LCP_280.Process.Unit
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 780);
-            this.Controls.Add(this.tableLayoutPanel1);
+            this.Controls.Add(this.tableLayoutPanel);
             this.Name = "InputStageUnit_Working";
             this.Text = "InputStage Unit Working";
-            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel.ResumeLayout(false);
             this.gbModuleUnit.ResumeLayout(false);
             this.gbDigitalIO.ResumeLayout(false);
             this.ioTableLayoutPanel.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
+
         }
         #endregion
 
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel;
         private System.Windows.Forms.GroupBox gbModuleUnit;
         private QMC.Common.PropertyCollectionView axisPositionsPropertyCollectionView;
         private QMC.Common.PropertyCollectionView infomationPropertyCollectionView;
