@@ -445,6 +445,7 @@
             this.BackColor = System.Drawing.SystemColors.Window;
             this.ClientSize = new System.Drawing.Size(1264, 752);
             this.Controls.Add(this.tabControl1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "Instrument_Setup";
             this.Text = "Instrument_Setup";
             this.tabControl1.ResumeLayout(false);

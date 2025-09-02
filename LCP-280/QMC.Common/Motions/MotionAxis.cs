@@ -248,6 +248,25 @@ namespace QMC.Common.Motions
             return -1; // timeout
         }
 
+        public int HomeAsync()
+        {
+            if (_driver != null)
+            {
+                var rc = _driver.Home(AxisNo);
+                if (rc != 0) return rc;
+            }
+            else if (_ckdDriver != null)
+            {
+                var rc = _ckdDriver.HomeSearch();
+                if (rc != 0) return rc;
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support HomeAsync.");
+            }
+            return -1; // timeout
+        }
+
         public int MoveAbs(double logicalTarget, double vel = 5, double acc = 10, double dec = 10, double jerkPercent = 50)
         {
             if (_driver != null)
