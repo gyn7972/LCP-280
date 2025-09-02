@@ -184,6 +184,10 @@ namespace QMC.LCP_280.Process.Unit
             btnTMinus.MouseDown += JogButton_MouseDown; btnTMinus.MouseUp += JogButton_MouseUp;
             btnTPlus.MouseDown += JogButton_MouseDown; btnTPlus.MouseUp += JogButton_MouseUp;
 
+            // CKD Index Move 이벤트 처리
+            btnPrevIndex.Click += btnPrevIndex_Click;
+            btnNextIndex.Click += btnNextIndex_Click;
+
             btnStop.Click += btnStop_Click;
         }
 
@@ -198,15 +202,28 @@ namespace QMC.LCP_280.Process.Unit
 
         private void UpdateJogEnableByAxisName(string axisName)
         {
-            bool x = HasAxisLetter(axisName, "X");
-            bool y = HasAxisLetter(axisName, "Y");
-            bool z = HasAxisLetter(axisName, "Z");
-            bool t = HasAxisLetter(axisName, "T");
+            if (axisName == "Index T Axis")
+            {
+                // CKD DD Motor
+                btnXMinus.Enabled = btnXPlus.Enabled = false;
+                btnYMinus.Enabled = btnYPlus.Enabled = false;
+                btnZMinus.Enabled = btnZPlus.Enabled = false;
+                btnTMinus.Enabled = btnTPlus.Enabled = false;
+                btnPrevIndex.Enabled = btnNextIndex.Enabled = true;
+            }
+            else
+            {
+                bool x = HasAxisLetter(axisName, "X");
+                bool y = HasAxisLetter(axisName, "Y");
+                bool z = HasAxisLetter(axisName, "Z");
+                bool t = HasAxisLetter(axisName, "T");
 
-            btnXMinus.Enabled = btnXPlus.Enabled = x;
-            btnYMinus.Enabled = btnYPlus.Enabled = y;
-            btnZMinus.Enabled = btnZPlus.Enabled = z;
-            btnTMinus.Enabled = btnTPlus.Enabled = t;
+                btnXMinus.Enabled = btnXPlus.Enabled = x;
+                btnYMinus.Enabled = btnYPlus.Enabled = y;
+                btnZMinus.Enabled = btnZPlus.Enabled = z;
+                btnTMinus.Enabled = btnTPlus.Enabled = t;
+                btnPrevIndex.Enabled = btnNextIndex.Enabled = false;
+            }
             btnStop.Enabled = true;
         }
         private static bool HasAxisLetter(string name, string letter)
@@ -319,6 +336,44 @@ namespace QMC.LCP_280.Process.Unit
                     StopJog(axis);
             }
             catch (Exception ex) { Log.Write(ex); }
+        }
+
+        private void btnPrevIndex_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axisManager == null) return;
+                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                if (string.IsNullOrEmpty(axisName)) return;
+
+                MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
+                if (axis == null) return;
+
+                axis.MovePrevIndex();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        private void btnNextIndex_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axisManager == null) return;
+                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                if (string.IsNullOrEmpty(axisName)) return;
+
+                MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
+                if (axis == null) return;
+
+                axis.MoveNextIndex();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
 
         private void btnStop_Click(object sender, EventArgs e)
@@ -440,10 +495,23 @@ namespace QMC.LCP_280.Process.Unit
         private void UpdateUIByAxisSelection(string axisName)
         {
             bool hasAxis = !string.IsNullOrEmpty(axisName);
-            btnXMinus.Enabled = btnXPlus.Enabled = hasAxis && HasAxisLetter(axisName, "X");
-            btnYMinus.Enabled = btnYPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Y");
-            btnZMinus.Enabled = btnZPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Z");
-            btnTMinus.Enabled = btnTPlus.Enabled = hasAxis && HasAxisLetter(axisName, "T");
+            if (axisName == "Index T Axis")
+            {
+                // CKD DD Motor
+                btnXMinus.Enabled = btnXPlus.Enabled = false;
+                btnYMinus.Enabled = btnYPlus.Enabled = false;
+                btnZMinus.Enabled = btnZPlus.Enabled = false;
+                btnTMinus.Enabled = btnTPlus.Enabled = false;
+                btnPrevIndex.Enabled = btnNextIndex.Enabled = true;
+            }
+            else
+            {
+                btnXMinus.Enabled = btnXPlus.Enabled = hasAxis && HasAxisLetter(axisName, "X");
+                btnYMinus.Enabled = btnYPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Y");
+                btnZMinus.Enabled = btnZPlus.Enabled = hasAxis && HasAxisLetter(axisName, "Z");
+                btnTMinus.Enabled = btnTPlus.Enabled = hasAxis && HasAxisLetter(axisName, "T");
+                btnPrevIndex.Enabled = btnNextIndex.Enabled = false;
+            }
             btnStop.Enabled = hasAxis;
             lblPosition.Text = hasAxis ? "----" : "축 미선택";
         }
