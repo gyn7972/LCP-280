@@ -71,8 +71,8 @@ namespace QMC.LCP_280.Process.Unit
             this.btnXPlus = new System.Windows.Forms.Button();
             this.btnZMinus = new System.Windows.Forms.Button();
             this.btnYMinus = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
+            this.btnPrevIndex = new System.Windows.Forms.Button();
+            this.btnNextIndex = new System.Windows.Forms.Button();
             this.layoutRoot.SuspendLayout();
             this.layoutLeft.SuspendLayout();
             this.grpSelectAxis.SuspendLayout();
@@ -283,8 +283,8 @@ namespace QMC.LCP_280.Process.Unit
             this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.Controls.Add(this.button2, 2, 2);
-            this.tblJog.Controls.Add(this.button1, 0, 2);
+            this.tblJog.Controls.Add(this.btnNextIndex, 2, 2);
+            this.tblJog.Controls.Add(this.btnPrevIndex, 0, 2);
             this.tblJog.Controls.Add(this.btnTMinus, 0, 0);
             this.tblJog.Controls.Add(this.btnYPlus, 1, 0);
             this.tblJog.Controls.Add(this.btnTPlus, 2, 0);
@@ -405,29 +405,27 @@ namespace QMC.LCP_280.Process.Unit
             this.btnYMinus.TabIndex = 8;
             this.btnYMinus.Text = "Y-";
             // 
-            // button1
+            // btnPrevIndex
             // 
-            this.button1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button1.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.button1.Location = new System.Drawing.Point(10, 136);
-            this.button1.Margin = new System.Windows.Forms.Padding(6);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(69, 51);
-            this.button1.TabIndex = 9;
-            this.button1.Text = "45-";
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.btnPrevIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnPrevIndex.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPrevIndex.Location = new System.Drawing.Point(10, 136);
+            this.btnPrevIndex.Margin = new System.Windows.Forms.Padding(6);
+            this.btnPrevIndex.Name = "btnPrevIndex";
+            this.btnPrevIndex.Size = new System.Drawing.Size(69, 51);
+            this.btnPrevIndex.TabIndex = 9;
+            this.btnPrevIndex.Text = "Prev Index";
             // 
-            // button2
+            // btnNextIndex
             // 
-            this.button2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.button2.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.button2.Location = new System.Drawing.Point(172, 136);
-            this.button2.Margin = new System.Windows.Forms.Padding(6);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(69, 51);
-            this.button2.TabIndex = 10;
-            this.button2.Text = "45+";
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.btnNextIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnNextIndex.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnNextIndex.Location = new System.Drawing.Point(172, 136);
+            this.btnNextIndex.Margin = new System.Windows.Forms.Padding(6);
+            this.btnNextIndex.Name = "btnNextIndex";
+            this.btnNextIndex.Size = new System.Drawing.Size(69, 51);
+            this.btnNextIndex.TabIndex = 10;
+            this.btnNextIndex.Text = "Next Index";
             // 
             // Form_AxisJogPopup
             // 
@@ -462,7 +460,7 @@ namespace QMC.LCP_280.Process.Unit
             return b;
         }
 
-        private Button button2;
-        private Button button1;
+        private Button btnNextIndex;
+        private Button btnPrevIndex;
     }
 }

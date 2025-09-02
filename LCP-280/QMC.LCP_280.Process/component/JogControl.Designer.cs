@@ -84,6 +84,8 @@ namespace QMC.LCP_280.Process.Unit
             this.btnXPlus = new System.Windows.Forms.Button();
             this.btnZMinus = new System.Windows.Forms.Button();
             this.btnYMinus = new System.Windows.Forms.Button();
+            this.btnPrevIndex = new System.Windows.Forms.Button();
+            this.btnNextIndex = new System.Windows.Forms.Button();
             this.layoutRoot.SuspendLayout();
             this.layoutLeft.SuspendLayout();
             this.grpSelectAxis.SuspendLayout();
@@ -376,6 +378,8 @@ namespace QMC.LCP_280.Process.Unit
             this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.Controls.Add(this.btnNextIndex, 2, 2);
+            this.tblJog.Controls.Add(this.btnPrevIndex, 0, 2);
             this.tblJog.Controls.Add(this.btnTMinus, 0, 0);
             this.tblJog.Controls.Add(this.btnYPlus, 1, 0);
             this.tblJog.Controls.Add(this.btnTPlus, 2, 0);
@@ -486,6 +490,26 @@ namespace QMC.LCP_280.Process.Unit
             this.btnYMinus.TabIndex = 8;
             this.btnYMinus.Text = "Y-";
             // 
+            // btnPrevIndex
+            // 
+            this.btnPrevIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnPrevIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnPrevIndex.Location = new System.Drawing.Point(6, 126);
+            this.btnPrevIndex.Name = "btnPrevIndex";
+            this.btnPrevIndex.Size = new System.Drawing.Size(294, 51);
+            this.btnPrevIndex.TabIndex = 9;
+            this.btnPrevIndex.Text = "Prev Index";
+            // 
+            // btnNextIndex
+            // 
+            this.btnNextIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnNextIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnNextIndex.Location = new System.Drawing.Point(606, 126);
+            this.btnNextIndex.Name = "btnNextIndex";
+            this.btnNextIndex.Size = new System.Drawing.Size(294, 51);
+            this.btnNextIndex.TabIndex = 10;
+            this.btnNextIndex.Text = "Next Index";
+            // 
             // JogControl
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
@@ -510,11 +534,7 @@ namespace QMC.LCP_280.Process.Unit
 
         }
 
-
-
-
-
-
-
+        private Button btnPrevIndex;
+        private Button btnNextIndex;
     }
 }
