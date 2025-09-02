@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using QMC.Common;
 using QMC.Common.Motions;
+using QMC.Common.Motions.CKD;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -340,6 +341,24 @@ namespace QMC.LCP_280.Process.Unit
             btnTMinus.Enabled = btnTPlus.Enabled = hasAxis && HasAxisLetter(axisName, "T");
             btnStop.Enabled = hasAxis;
             lblPosition.Text = hasAxis ? "----" : "축 미선택";
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            CKDMotorDriver motorDriver = EquipmentInst.CKDMotor;
+            if (motorDriver != null )
+            {
+                motorDriver.MovePitchCW_8Div();
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            CKDMotorDriver motorDriver = EquipmentInst.CKDMotor;
+            if (motorDriver != null)
+            {
+                motorDriver.MovePitchCCW_8Div();
+            }
         }
 
         //private async void DoStepMoveAsync(MotionAxis axis, JogCommand jc, double stepUnit)
