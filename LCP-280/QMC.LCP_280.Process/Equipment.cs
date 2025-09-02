@@ -198,7 +198,10 @@ namespace QMC.LCP_280.Process
 
                 // === CKD DD Motor Driver 초기화 ===
                 InitiaiizeCKDMotor();
-                CKDMotor.StartReadInputDataMonitoring();
+                if (_axlHost.IsOpen)
+                {
+                    CKDMotor.StartReadInputDataMonitoring();
+                }
 
                 // === 카메라 초기화 ===
                 InitializeCameras();
