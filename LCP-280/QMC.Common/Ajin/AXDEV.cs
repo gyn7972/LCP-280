@@ -171,18 +171,27 @@ namespace QMC.Common.Motion.Ajin
         #region EtherCAT Product Info
         public static int ECatGetProductInfo(uint stationAddress, ref uint vendorID, ref uint productCode, ref uint revisionNo)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetProductInfo", AxlECatGetProductInfo(stationAddress, ref vendorID, ref productCode, ref revisionNo))) != 0) return ret;
             return ret;
         }
         public static int ECatGetProductInfoEx(int boardNo, uint stationAddress, ref uint vendorID, ref uint productCode, ref uint revisionNo)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetProductInfoEx", AxlECatGetProductInfoEx(boardNo, stationAddress, ref vendorID, ref productCode, ref revisionNo))) != 0) return ret;
             return ret;
         }
         public static int ECatGetModuleStatus(uint stationAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetModuleStatus", AxlECatGetModuleStatus(stationAddress))) != 0) return ret;
             return ret;
@@ -192,36 +201,54 @@ namespace QMC.Common.Motion.Ajin
         #region EtherCAT PDO
         public static int ECatReadPdoInput(uint bitOffset, uint dataBitLength, byte[] data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInput", AxlECatReadPdoInput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoInputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoInputEx", AxlECatReadPdoInputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoOutput(uint bitOffset, uint dataBitLength, byte[] data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutput", AxlECatReadPdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadPdoOutputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadPdoOutputEx", AxlECatReadPdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatWritePdoOutput(uint bitOffset, uint dataBitLength, byte[] data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutput", AxlECatWritePdoOutput(bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
         }
         public static int ECatWritePdoOutputEx(int boardNo, uint bitOffset, uint dataBitLength, byte[] data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWritePdoOutputEx", AxlECatWritePdoOutputEx(boardNo, bitOffset, dataBitLength, data))) != 0) return ret;
             return ret;
@@ -231,72 +258,108 @@ namespace QMC.Common.Motion.Ajin
         #region EtherCAT SDO
         public static int ECatReadSdo(uint stationAddress, ushort objectIndex, byte objectSubIndex, byte[] data, uint dataLength, ref uint readDataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadSdo", AxlECatReadSdo(stationAddress, objectIndex, objectSubIndex, data, dataLength, ref readDataLength))) != 0) return ret;
             return ret;
         }
         public static int ECatReadSdoEx(int boardNo, uint stationAddress, ushort objectIndex, byte objectSubIndex, byte[] data, uint dataLength, ref uint readDataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadSdoEx", AxlECatReadSdoEx(boardNo, stationAddress, objectIndex, objectSubIndex, data, dataLength, ref readDataLength))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteSdo(uint stationAddress, ushort objectIndex, byte objectSubIndex, byte[] data, uint dataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteSdo", AxlECatWriteSdo(stationAddress, objectIndex, objectSubIndex, data, dataLength))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteSdoEx(int boardNo, uint stationAddress, ushort objectIndex, byte objectSubIndex, byte[] data, uint dataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteSdoEx", AxlECatWriteSdoEx(boardNo, stationAddress, objectIndex, objectSubIndex, data, dataLength))) != 0) return ret;
             return ret;
         }
         public static int ECatReadSdoFromAxisDouble(int axisNo, uint objectIndex, byte objectSubIndex, ref double data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadSdoFromAxisDouble", AxlECatReadSdoFromAxisDouble(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteSdoFromAxisDouble(int axisNo, uint objectIndex, byte objectSubIndex, ref double data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteSdoFromAxisDouble", AxlECatWriteSdoFromAxisDouble(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadSdoFromAxisDword(int axisNo, ushort objectIndex, byte objectSubIndex, ref uint data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadSdoFromAxisDword", AxlECatReadSdoFromAxisDword(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteSdoFromAxisDword(int axisNo, ushort objectIndex, byte objectSubIndex, ref uint data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteSdoFromAxisDword", AxlECatWriteSdoFromAxisDword(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadSdoFromAxisWord(int axisNo, ushort objectIndex, byte objectSubIndex, ref ushort data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadSdoFromAxisWord", AxlECatReadSdoFromAxisWord(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteSdoFromAxisWord(int axisNo, ushort objectIndex, byte objectSubIndex, ref ushort data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteSdoFromAxisWord", AxlECatWriteSdoFromAxisWord(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
         }
         public static int ECatReadSdoFromAxisByte(int axisNo, ushort objectIndex, byte objectSubIndex, ref byte data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadSdoFromAxisByte", AxlECatReadSdoFromAxisByte(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteSdoFromAxisByte(int axisNo, ushort objectIndex, byte objectSubIndex, ref byte data)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteSdoFromAxisByte", AxlECatWriteSdoFromAxisByte(axisNo, objectIndex, objectSubIndex, ref data))) != 0) return ret;
             return ret;
@@ -306,24 +369,36 @@ namespace QMC.Common.Motion.Ajin
         #region EtherCAT EEPROM
         public static int ECatReadEEPRom(uint stationAddress, ushort startOffset, ref ushort data, uint dataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadEEPRom", AxlECatReadEEPRom(stationAddress, startOffset, ref data, dataLength))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteEEPRom(uint stationAddress, ushort startOffset, ref ushort data, uint dataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteEEPRom", AxlECatWriteEEPRom(stationAddress, startOffset, ref data, dataLength))) != 0) return ret;
             return ret;
         }
         public static int ECatReadEEPRomEx(int boardNo, uint stationAddress, uint startOffset, ref uint data, uint dataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadEEPRomEx", AxlECatReadEEPRomEx(boardNo, stationAddress, startOffset, ref data, dataLength))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteEEPRomEx(int boardNo, uint stationAddress, uint startOffset, ref uint data, uint dataLength)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteEEPRomEx", AxlECatWriteEEPRomEx(boardNo, stationAddress, startOffset, ref data, dataLength))) != 0) return ret;
             return ret;
@@ -333,42 +408,63 @@ namespace QMC.Common.Motion.Ajin
         #region EtherCAT Register/HotSwap
         public static int ECatReadRegister(uint stationAddress, ushort registerOffset, object data, ushort len)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReadRegister", AxlECatReadRegister(stationAddress, registerOffset, data, len))) != 0) return ret;
             return ret;
         }
         public static int ECatWriteRegister(uint stationAddress, ushort registerOffset, object data, ushort len)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatWriteRegister", AxlECatWriteRegister(stationAddress, registerOffset, data, len))) != 0) return ret;
             return ret;
         }
         public static int ECatSaveHotSwapData(uint stationAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatSaveHotSwapData", AxlECatSaveHotSwapData(stationAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatLoadHotSwapData(uint stationAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatLoadHotSwapData", AxlECatLoadHotSwapData(stationAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatSetHotSwap(uint stationAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatSetHotSwap", AxlECatSetHotSwap(stationAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatIsSetHotSwap(uint stationAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatIsSetHotSwap", AxlECatIsSetHotSwap(stationAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatReSetHotSwap(uint stationAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatReSetHotSwap", AxlECatReSetHotSwap(stationAddress))) != 0) return ret;
             return ret;
@@ -378,54 +474,81 @@ namespace QMC.Common.Motion.Ajin
         #region EtherCAT Master/Scan/Status
         public static int ECatSetMasterMode(uint masterMode)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatSetMasterMode", AxlECatSetMasterMode(masterMode))) != 0) return ret;
             return ret;
         }
         public static int ECatGetMasterMode(ref uint masterMode)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetMasterMode", AxlECatGetMasterMode(ref masterMode))) != 0) return ret;
             return ret;
         }
         public static int ECatSetMasterOperationMode(uint operationMode)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatSetMasterOperationMode", AxlECatSetMasterOperationMode(operationMode))) != 0) return ret;
             return ret;
         }
         public static int ECatGetMasterOperationMode(ref uint operationMode)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetMasterOperationMode", AxlECatGetMasterOperationMode(ref operationMode))) != 0) return ret;
             return ret;
         }
         public static int ECatRequestScanData()
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatRequestScanData", AxlECatRequestScanData())) != 0) return ret;
             return ret;
         }
         public static int ECatGetSlaveInfoByIndex(int index, ref uint vendorID, ref uint productCode, ref uint revisionNumber, ref uint serialNumber, ref uint physAddress, ref uint aliasAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetSlaveInfoByIndex", AxlECatGetSlaveInfoByIndex(index, ref vendorID, ref productCode, ref revisionNumber, ref serialNumber, ref physAddress, ref aliasAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatGetScanSlaveCount(ref uint slaveCount)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetScanSlaveCount", AxlECatGetScanSlaveCount(ref slaveCount))) != 0) return ret;
             return ret;
         }
         public static int ECatGetStatus(ref int masterStatus, ref int slaveStatus, ref int connectedSlave, ref int configuredSlave, ref int jobTaskCycleCnt, ref uint masterNotification)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetStatus", AxlECatGetStatus(ref masterStatus, ref slaveStatus, ref connectedSlave, ref configuredSlave, ref jobTaskCycleCnt, ref masterNotification))) != 0) return ret;
             return ret;
         }
         public static int ECatReConnect()
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlEcatReConnect", AxlEcatReConnect())) != 0) return ret;
             return ret;
@@ -435,36 +558,54 @@ namespace QMC.Common.Motion.Ajin
         #region EtherCAT Address/Cycle/DC
         public static int ECatReadAddress_Axm(int axisNo, ref uint stationAddress, ref int autoIncAddress, ref uint aliasAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxmECatReadAddress", AxmECatReadAddress(axisNo, ref stationAddress, ref autoIncAddress, ref aliasAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatReadAddress_Axd(int moduleNo, ref uint stationAddress, ref int autoIncAddress, ref uint aliasAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxdECatReadAddress", AxdECatReadAddress(moduleNo, ref stationAddress, ref autoIncAddress, ref aliasAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatReadAddress_Axa(int moduleNo, ref uint stationAddress, ref int autoIncAddress, ref uint aliasAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxaECatReadAddress", AxaECatReadAddress(moduleNo, ref stationAddress, ref autoIncAddress, ref aliasAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatReadAddress_Axs(int portNo, ref uint stationAddress, ref int autoIncAddress, ref uint aliasAddress)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxsECatReadAddress", AxsECatReadAddress(portNo, ref stationAddress, ref autoIncAddress, ref aliasAddress))) != 0) return ret;
             return ret;
         }
         public static int ECatGetCycleTime(int boardNo, ref uint cycleTime)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlECatGetCycleTime", AxlECatGetCycleTime(boardNo, ref cycleTime))) != 0) return ret;
             return ret;
         }
         public static int ECatReadDcCtrlError(int boardNo, int node, ref int dcCtrlError)
         {
+            if (AXL.IsOpened() == false)
+                return -1;
+
             int ret = 0;
             if ((ret = AXL.CheckErrorCode("AXDEV.AxlReadDcCtrlError", AxlReadDcCtrlError(boardNo, node, ref dcCtrlError))) != 0) return ret;
             return ret;

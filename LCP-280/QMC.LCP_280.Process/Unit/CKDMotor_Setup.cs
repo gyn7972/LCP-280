@@ -100,28 +100,28 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnRunProgram_Click(object sender, EventArgs e)
         {
-            int selectedProgramNo = cbProgramNo.SelectedIndex;
-            if (!motorDriver.IsServoOn())
-            {
-                MessageBox.Show("서보가 ON 상태여야 합니다.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (!motorDriver.IsReady())
-            {
-                MessageBox.Show("모터가 준비 상태여야 합니다.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (!motorDriver.IsPositionComplete())
-            {
-                MessageBox.Show("현재 모터가 구동 중입니다.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
+            //int selectedProgramNo = cbProgramNo.SelectedIndex;
+            //if (!motorDriver.IsServoOn())
+            //{
+            //    MessageBox.Show("서보가 ON 상태여야 합니다.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //    return;
+            //}
+            //if (!motorDriver.IsReady())
+            //{
+            //    MessageBox.Show("모터가 준비 상태여야 합니다.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //    return;
+            //}
+            //if (!motorDriver.IsPositionComplete())
+            //{
+            //    MessageBox.Show("현재 모터가 구동 중입니다.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //    return;
+            //}
 
-            if (MessageBox.Show("선택한 프로그램을 실행하시겠습니까?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-            {
-                motorDriver.RunProgram(selectedProgramNo);
-                UpdateOutputDataUI();
-            }
+            //if (MessageBox.Show("선택한 프로그램을 실행하시겠습니까?", "", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            //{
+            //    motorDriver.RunProgram(selectedProgramNo);
+            //    UpdateOutputDataUI();
+            //}
         }
 
         private void individualMenuButton2_Click(object sender, EventArgs e)
@@ -141,32 +141,32 @@ namespace QMC.LCP_280.Process.Unit
 
         private void individualMenuButton9_Click(object sender, EventArgs e)
         {
-            motorDriver.MovePitchCW_8Div();
+            motorDriver.MoveIncremental_Div8_CW();
         }
 
         private void individualMenuButton10_Click(object sender, EventArgs e)
         {
-            motorDriver.MovePitchCCW_8Div();
+            motorDriver.MoveIncremental_Div8_CCW();
         }
 
         private void individualMenuButton11_Click(object sender, EventArgs e)
         {
-            motorDriver.MovePitchCW_16Div();
+            motorDriver.MoveIncremental_Div16_CW();
         }
 
         private void individualMenuButton1_Click(object sender, EventArgs e)
         {
-            motorDriver.MovePitchCCW_16Div();
+            motorDriver.MoveIncremental_Div16_CCW();
         }
 
         private void individualMenuButton13_Click(object sender, EventArgs e)
         {
-            motorDriver.MovePitchCW_32Div();
+            motorDriver.MoveIncremental_Div32_CW();
         }
 
         private void individualMenuButton12_Click(object sender, EventArgs e)
         {
-            motorDriver.MovePitchCCW_32Div();
+            motorDriver.MoveIncremental_Div32_CCW();
         }
     }
 }
