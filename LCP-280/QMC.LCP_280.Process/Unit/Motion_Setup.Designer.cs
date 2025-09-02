@@ -69,18 +69,20 @@ namespace QMC.LCP_280.Process.Unit
             this.gbAxisProperty = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.gbAxisPositions = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.selectAxisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.btn_Save_Setup_Motion_Speed = new QMC.Common.IndividualMenuButton();
             this.speedListBoxItemsView = new QMC.Common.PropertyCollectionView();
             this.configurationListBoxItemsView = new QMC.Common.PropertyCollectionView();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.btn_Save_Setup_Motion_Configuration = new QMC.Common.IndividualMenuButton();
-            this.gbAxisPositions = new System.Windows.Forms.GroupBox();
+            this.btnServoOn = new QMC.Common.IndividualMenuButton();
+            this.btnServoOff = new QMC.Common.IndividualMenuButton();
             this.btnHome = new QMC.Common.IndividualMenuButton();
             this.motorStateIoPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.motorIoPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.positionVelocityPropertyCollectionView = new QMC.Common.PropertyCollectionView();
-            this.selectAxisListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.gbAxisProperty.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.panel2.SuspendLayout();
@@ -129,6 +131,61 @@ namespace QMC.LCP_280.Process.Unit
             this.panel2.Size = new System.Drawing.Size(330, 51);
             this.panel2.TabIndex = 3;
             // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.btn_Save_Setup_Motion_Configuration);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(3, 668);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(329, 51);
+            this.panel1.TabIndex = 2;
+            // 
+            // gbAxisPositions
+            // 
+            this.gbAxisPositions.BackColor = System.Drawing.Color.White;
+            this.gbAxisPositions.Controls.Add(this.btnServoOn);
+            this.gbAxisPositions.Controls.Add(this.btnServoOff);
+            this.gbAxisPositions.Controls.Add(this.btnHome);
+            this.gbAxisPositions.Controls.Add(this.motorStateIoPropertyCollectionView);
+            this.gbAxisPositions.Controls.Add(this.motorIoPropertyCollectionView);
+            this.gbAxisPositions.Controls.Add(this.positionVelocityPropertyCollectionView);
+            this.gbAxisPositions.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gbAxisPositions.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.gbAxisPositions.Location = new System.Drawing.Point(271, 3);
+            this.gbAxisPositions.Name = "gbAxisPositions";
+            this.gbAxisPositions.Size = new System.Drawing.Size(307, 746);
+            this.gbAxisPositions.TabIndex = 13;
+            this.gbAxisPositions.TabStop = false;
+            this.gbAxisPositions.Text = "Axis Status";
+            // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 3;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 21.28164F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 24.76266F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.9557F));
+            this.tableLayoutPanel1.Controls.Add(this.selectAxisListBoxItemsView, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.gbAxisProperty, 2, 0);
+            this.tableLayoutPanel1.Controls.Add(this.gbAxisPositions, 1, 0);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 1;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 752);
+            this.tableLayoutPanel1.TabIndex = 14;
+            // 
+            // selectAxisListBoxItemsView
+            // 
+            this.selectAxisListBoxItemsView.BorderWidth = 2;
+            this.selectAxisListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.selectAxisListBoxItemsView.GroupName = "Select Axis";
+            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(3, 3);
+            this.selectAxisListBoxItemsView.Name = "selectAxisListBoxItemsView";
+            this.selectAxisListBoxItemsView.SelectedIndex = -1;
+            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(262, 746);
+            this.selectAxisListBoxItemsView.TabIndex = 2;
+            // 
             // btn_Save_Setup_Motion_Speed
             // 
             this.btn_Save_Setup_Motion_Speed.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -168,15 +225,6 @@ namespace QMC.LCP_280.Process.Unit
             this.configurationListBoxItemsView.Size = new System.Drawing.Size(329, 657);
             this.configurationListBoxItemsView.TabIndex = 0;
             // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.btn_Save_Setup_Motion_Configuration);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(3, 668);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(329, 51);
-            this.panel1.TabIndex = 2;
-            // 
             // btn_Save_Setup_Motion_Configuration
             // 
             this.btn_Save_Setup_Motion_Configuration.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -196,21 +244,43 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Setup_Motion_Configuration.UseVisualStyleBackColor = false;
             this.btn_Save_Setup_Motion_Configuration.Click += new System.EventHandler(this.btn_Save_Setup_Motion_Configuration_Click);
             // 
-            // gbAxisPositions
+            // btnServoOn
             // 
-            this.gbAxisPositions.BackColor = System.Drawing.Color.White;
-            this.gbAxisPositions.Controls.Add(this.btnHome);
-            this.gbAxisPositions.Controls.Add(this.motorStateIoPropertyCollectionView);
-            this.gbAxisPositions.Controls.Add(this.motorIoPropertyCollectionView);
-            this.gbAxisPositions.Controls.Add(this.positionVelocityPropertyCollectionView);
-            this.gbAxisPositions.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gbAxisPositions.Font = new System.Drawing.Font("맑은 고딕", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbAxisPositions.Location = new System.Drawing.Point(271, 3);
-            this.gbAxisPositions.Name = "gbAxisPositions";
-            this.gbAxisPositions.Size = new System.Drawing.Size(307, 746);
-            this.gbAxisPositions.TabIndex = 13;
-            this.gbAxisPositions.TabStop = false;
-            this.gbAxisPositions.Text = "Axis Status";
+            this.btnServoOn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnServoOn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnServoOn.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnServoOn.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnServoOn.CustomForeColor = System.Drawing.Color.Black;
+            this.btnServoOn.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnServoOn.ForeColor = System.Drawing.Color.Black;
+            this.btnServoOn.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnServoOn.Location = new System.Drawing.Point(102, 677);
+            this.btnServoOn.Name = "btnServoOn";
+            this.btnServoOn.Size = new System.Drawing.Size(93, 33);
+            this.btnServoOn.TabIndex = 7;
+            this.btnServoOn.TabStop = false;
+            this.btnServoOn.Text = "Servo On";
+            this.btnServoOn.UseVisualStyleBackColor = false;
+            this.btnServoOn.Click += new System.EventHandler(this.btnServoOn_Click);
+            // 
+            // btnServoOff
+            // 
+            this.btnServoOff.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnServoOff.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnServoOff.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnServoOff.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnServoOff.CustomForeColor = System.Drawing.Color.Black;
+            this.btnServoOff.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnServoOff.ForeColor = System.Drawing.Color.Black;
+            this.btnServoOff.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnServoOff.Location = new System.Drawing.Point(6, 677);
+            this.btnServoOff.Name = "btnServoOff";
+            this.btnServoOff.Size = new System.Drawing.Size(93, 33);
+            this.btnServoOff.TabIndex = 6;
+            this.btnServoOff.TabStop = false;
+            this.btnServoOff.Text = "Servo Off";
+            this.btnServoOff.UseVisualStyleBackColor = false;
+            this.btnServoOff.Click += new System.EventHandler(this.btnServoOff_Click);
             // 
             // btnHome
             // 
@@ -223,9 +293,9 @@ namespace QMC.LCP_280.Process.Unit
             this.btnHome.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnHome.ForeColor = System.Drawing.Color.Black;
             this.btnHome.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnHome.Location = new System.Drawing.Point(171, 677);
+            this.btnHome.Location = new System.Drawing.Point(206, 677);
             this.btnHome.Name = "btnHome";
-            this.btnHome.Size = new System.Drawing.Size(128, 33);
+            this.btnHome.Size = new System.Drawing.Size(93, 33);
             this.btnHome.TabIndex = 5;
             this.btnHome.TabStop = false;
             this.btnHome.Text = "Home Test";
@@ -258,34 +328,6 @@ namespace QMC.LCP_280.Process.Unit
             this.positionVelocityPropertyCollectionView.Name = "positionVelocityPropertyCollectionView";
             this.positionVelocityPropertyCollectionView.Size = new System.Drawing.Size(293, 220);
             this.positionVelocityPropertyCollectionView.TabIndex = 0;
-            // 
-            // selectAxisListBoxItemsView
-            // 
-            this.selectAxisListBoxItemsView.BorderWidth = 2;
-            this.selectAxisListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.selectAxisListBoxItemsView.GroupName = "Select Axis";
-            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(3, 3);
-            this.selectAxisListBoxItemsView.Name = "selectAxisListBoxItemsView";
-            this.selectAxisListBoxItemsView.SelectedIndex = -1;
-            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(262, 746);
-            this.selectAxisListBoxItemsView.TabIndex = 2;
-            // 
-            // tableLayoutPanel1
-            // 
-            this.tableLayoutPanel1.ColumnCount = 3;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 21.28164F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 24.76266F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.9557F));
-            this.tableLayoutPanel1.Controls.Add(this.selectAxisListBoxItemsView, 0, 0);
-            this.tableLayoutPanel1.Controls.Add(this.gbAxisProperty, 2, 0);
-            this.tableLayoutPanel1.Controls.Add(this.gbAxisPositions, 1, 0);
-            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 1;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 752);
-            this.tableLayoutPanel1.TabIndex = 14;
             // 
             // Motion_Setup
             // 
@@ -701,5 +743,7 @@ namespace QMC.LCP_280.Process.Unit
         private Panel panel2;
         private Panel panel1;
         private IndividualMenuButton btnHome;
+        private IndividualMenuButton btnServoOn;
+        private IndividualMenuButton btnServoOff;
     }
 }

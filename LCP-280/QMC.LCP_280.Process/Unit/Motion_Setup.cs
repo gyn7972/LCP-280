@@ -240,6 +240,80 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        private void btnServoOff_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 1) 선택된 축 이름 확인
+                string axisName = selectAxisListBoxItemsView?.SelectedItemName;
+                if (string.IsNullOrWhiteSpace(axisName))
+                {
+                    MessageBox.Show("저장할 축을 먼저 선택하세요.", "알림",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 2) 축 객체 조회
+                var axis = _axisManager?.Get(UNIT_NAME, axisName);
+                if (axis == null)
+                {
+                    MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                int ret = axis.Servo(false);
+                if (ret != 0)
+                {
+                    MessageBox.Show($"서보 OFF 명령이 실패했습니다. 오류코드: {ret}", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"서보 OFF 오류: {ex.Message}", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnServoOn_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 1) 선택된 축 이름 확인
+                string axisName = selectAxisListBoxItemsView?.SelectedItemName;
+                if (string.IsNullOrWhiteSpace(axisName))
+                {
+                    MessageBox.Show("저장할 축을 먼저 선택하세요.", "알림",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 2) 축 객체 조회
+                var axis = _axisManager?.Get(UNIT_NAME, axisName);
+                if (axis == null)
+                {
+                    MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                int ret = axis.Servo(true);
+                if (ret != 0)
+                {
+                    MessageBox.Show($"서보 ON 명령이 실패했습니다. 오류코드: {ret}", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"서보 ON 오류: {ex.Message}", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
         private void btnHome_Click(object sender, EventArgs e)
         {
             try

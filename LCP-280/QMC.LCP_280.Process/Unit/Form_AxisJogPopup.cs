@@ -410,24 +410,6 @@ namespace QMC.LCP_280.Process.Unit
             lblPosition.Text = hasAxis ? "----" : "축 미선택";
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-            CKDMotorDriver motorDriver = EquipmentInst.CKDMotor;
-            if (motorDriver != null )
-            {
-                motorDriver.MovePitchCW_8Div();
-            }
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            CKDMotorDriver motorDriver = EquipmentInst.CKDMotor;
-            if (motorDriver != null)
-            {
-                motorDriver.MovePitchCCW_8Div();
-            }
-        }
-
         //private async void DoStepMoveAsync(MotionAxis axis, JogCommand jc, double stepUnit)
         //{
         //    lblStatus.Text = "이동 중...";
