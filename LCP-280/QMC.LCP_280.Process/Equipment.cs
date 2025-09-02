@@ -1,27 +1,28 @@
-﻿using QMC.Common.Unit;
+﻿using QMC.Common;
+using QMC.Common.Cameras;
+using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
-using QMC.Common;
-using QMC.LCP_280.Process.Unit;
-using System;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Linq;
-using QMC.Common.Motions;
-using System.IO;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
+using QMC.Common.Keithley;
+using QMC.Common.Motion;
 using QMC.Common.Motion.Ajin.HW;
 using QMC.Common.Motion.Ajin.IO;
-using System.Windows.Forms;
-using QMC.Common.Motion;
-using QMC.Common.Cameras.HIKVISION;
-using QMC.Common.Cameras;
-using QMC.Common.Keithley;
-using QMC.Common.Spectrometer;
-using QMC.Common.IOUtil;
+using QMC.Common.Motions;
 using QMC.Common.Motions.CKD;
+using QMC.Common.Spectrometer;
+using QMC.Common.Unit;
+using QMC.LCP_280.Process.Unit;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process
 {
@@ -119,8 +120,8 @@ namespace QMC.LCP_280.Process
         public DioScanService DioScan => _dioScan;
         public DIOUnit UnitIO => _unitIO;
 
-        // [+] CKD DD Motor Driver 추가
-        public CKDMotorDriver CKDMotor;
+        // [+] CKD Motor Driver (PDO Mapping) 추가
+        private CKDMotorDriver _ckdDriver;
 
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, Camera> Cameras { get; } = new Dictionary<string, Camera>(StringComparer.OrdinalIgnoreCase);
@@ -195,10 +196,6 @@ namespace QMC.LCP_280.Process
                 // 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
                 BootstrapAxesDirect();
                 BootstrapIODirect();
-
-                // === CKD DD Motor Driver 초기화 ===
-                InitiaiizeCKDMotor();
-                CKDMotor.StartReadInputDataMonitoring();
 
                 // === 카메라 초기화 ===
                 InitializeCameras();
@@ -887,8 +884,8 @@ namespace QMC.LCP_280.Process
                     // 1) 모든 Unit 정지
                     StopAllUnitsAsync().GetAwaiter().GetResult();
 
-                    // + CKD Dispose
-                    CKDMotor.Dispose();
+                    // [+] CKD Motor Driver (PDO Mapping) 정리
+                    _ckdDriver?.Dispose();
 
                     // 2) DioScanService 정리
                     _dioScan?.Stop();
@@ -975,6 +972,12 @@ namespace QMC.LCP_280.Process
             };
             scanner.Start();
 
+            // [+] CKD Motor Driver (PDO Mapping) 추가
+            if (_ckdDriver == null)
+            {
+                _ckdDriver = new CKDMotorDriver("CKD_DD_MotorDriver");
+                _ckdDriver.StartReadInputDataMonitoring();
+            }
 
             // 예) CassetteLoadingElevator 유닛의 Z축 하나 생성/등록/부착
             //    필요에 맞게 더 추가(Y, X 등)
@@ -1060,8 +1063,8 @@ namespace QMC.LCP_280.Process
                 /* 22 */ "Ejector Z Axis",
                 /* 23 */ "Bin Feeder Y Axis",
                 /* 24 */ "Bin Lifter Z Axis",
-                /* 25 */ //"Index T Axis",
-            };
+                /* 25 */ "Index T Axis",
+                };
 
                 var boardNo = 0; // 필요시 보드별로 바꾸세요.
 
@@ -1135,21 +1138,28 @@ namespace QMC.LCP_280.Process
                 config.TrySave(configPath, out err);
             }
 
-            // 드라이버: 실제 보드 준비되면 AjinDriver로 교체
-            //IMotionDriver driver
-            var driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
-            //IMotionDriver driver = new SimDriver(setup.PulsesPerUnit);
+            if (axisName != "Index T Axis")
+            {
+                // 드라이버: 실제 보드 준비되면 AjinDriver로 교체
+                //IMotionDriver driver
+                var driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
+                //IMotionDriver driver = new SimDriver(setup.PulsesPerUnit);
 
-            // (선택) AXL Open + .mot 로드 : AjinAxlBoardHost 사용
-            // new AjinAxlBoardHost("C:\\Para\\xxx.mot").Open();  // 필요 시
+                // (선택) AXL Open + .mot 로드 : AjinAxlBoardHost 사용
+                // new AjinAxlBoardHost("C:\\Para\\xxx.mot").Open();  // 필요 시
 
-            // 드라이버 설정 Test 진행하고 적용.
-            //driver.ProfileMode = config.ProfileMode;
-            //int rc = driver.ConfigureFromSetupAndConfig(setup.AxisNo, setup, config);
-            //if (rc != 0) throw new InvalidOperationException($"Ajin configure failed rc={rc}");
-
-
-            return new MotionAxis(setup, config, driver);
+                // 드라이버 설정 Test 진행하고 적용.
+                //driver.ProfileMode = config.ProfileMode;
+                //int rc = driver.ConfigureFromSetupAndConfig(setup.AxisNo, setup, config);
+                //if (rc != 0) throw new InvalidOperationException($"Ajin configure failed rc={rc}");
+                return new MotionAxis(setup, config, driver);
+            }
+            else
+            {
+                // CKD T축 전용 드라이버
+                var driver = _ckdDriver;
+                return new MotionAxis(setup, config, driver);
+            }
         }
 
         // === 생성된 축을 유닛 인스턴스에 주입 ===
@@ -1269,21 +1279,6 @@ namespace QMC.LCP_280.Process
         // 사용 예:
         // 1) 프로그램 시작 시:  InitializeCameras(connect: false);   // ⚡ config만 미리 로드/생성
         // 2) 나중에 연결 시도:  InitializeCameras(connect: true);    // 🔌 실제 연결
-
-
-        private void InitiaiizeCKDMotor()
-        {
-            try
-            {
-                var motor = new CKDMotorDriver("Index T Axis");
-                CKDMotor = motor;
-                Console.WriteLine($"[CKD Motor] {motor.Name} ready");
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
-        }
 
         private void InitializeCameras(bool connect = true)
         {

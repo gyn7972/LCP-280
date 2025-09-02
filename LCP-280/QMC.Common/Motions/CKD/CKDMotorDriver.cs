@@ -495,6 +495,7 @@ namespace QMC.Common.Motions.CKD
         private const uint StartBitOffset = 1320;
         private const int PdoWriteDelay = 25; // ms
         private const int ReadPeriod = 20; // ms
+        private const double Resolution = 540672; // 펄스수 (1회전 당)
 
         #region Field
         private TxPdoInputData txPdoData;
@@ -504,7 +505,7 @@ namespace QMC.Common.Motions.CKD
         private Task readInputTask;
         private readonly object gate = new object();
 
-        private bool isInitialized = false;
+        private bool _disposed = false;
         #endregion
 
         #region Property
@@ -516,10 +517,6 @@ namespace QMC.Common.Motions.CKD
         {
             get { return rxPdoData; }
         }
-        public bool IsInitialized
-        {
-            get { return isInitialized; }
-        }
         #endregion
 
         #region Constructor
@@ -527,10 +524,27 @@ namespace QMC.Common.Motions.CKD
         {
             txPdoData = new TxPdoInputData(4);
             rxPdoData = new RxPdoOutputData(4);
+
+            StartReadInputDataMonitoring();
         }
         public void Dispose()
         {
-            StopReadInputDataMonitoring();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // 관리되는 리소스 해제
+                    StopReadInputDataMonitoring();
+                }
+
+                // 관리되지 않는 리소스 해제
+                _disposed = true;
+            }
         }
         #endregion
 
@@ -551,61 +565,17 @@ namespace QMC.Common.Motions.CKD
                 return ret;
             if ((ret = SendSetMonitorCodeCommand()) != 0)
                 return ret;
-
-            isInitialized = true;
             return ret;
         }
         #endregion
 
         #region DD Motor Control
-        public int RunProgram(uint programNo)
+        public int RunProgram(ProgramNumber programNumber)
         {
             int ret = 0;
-            if ((ret = SendSetProgramNoCommand(programNo)) != 0)
+            if ((ret = SendSetProgramNoCommand((uint)programNumber)) != 0)
                 return ret;
             if ((ret = SendProgramStartCommand()) != 0)
-                return ret;
-            return ret;
-        }
-        public int MoveIncremental_Div8_CCW()
-        {
-            int ret = 0;
-            if ((ret = RunProgram((uint)ProgramNumber.Incremental_Div8_CCW)) != 0)
-                return ret;
-            return ret;
-        }
-        public int MoveIncremental_Div8_CW()
-        {
-            int ret = 0;
-            if ((ret = RunProgram((uint)ProgramNumber.Incremental_Div8_CW)) != 0)
-                return ret;
-            return ret;
-        }
-        public int MoveIncremental_Div16_CCW()
-        {
-            int ret = 0;
-            if ((ret = RunProgram((uint)ProgramNumber.Incremental_Div16_CCW)) != 0)
-                return ret;
-            return ret;
-        }
-        public int MoveIncremental_Div16_CW()
-        {
-            int ret = 0;
-            if ((ret = RunProgram((uint)ProgramNumber.Incremental_Div16_CW)) != 0)
-                return ret;
-            return ret;
-        }
-        public int MoveIncremental_Div32_CCW()
-        {
-            int ret = 0;
-            if ((ret = RunProgram((uint)ProgramNumber.Incremental_Div32_CCW)) != 0)
-                return ret;
-            return ret;
-        }
-        public int MoveIncremental_Div32_CW()
-        {
-            int ret = 0;
-            if ((ret = RunProgram((uint)ProgramNumber.Incremental_Div32_CW)) != 0)
                 return ret;
             return ret;
         }
@@ -616,7 +586,7 @@ namespace QMC.Common.Motions.CKD
                 return ret;
             return ret;
         }
-        public int Home()
+        public int HomeSearch()
         {
             int ret = 0;
             if ((ret = SendHomeSearchCommand()) != 0)
@@ -683,11 +653,6 @@ namespace QMC.Common.Motions.CKD
             SignalMappingAddress mappingPos = inputSignal1MappingAddr[InputSignal1Mapping.InPosition];
             return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
         }
-        public bool IsPositionComplete()
-        {
-            SignalMappingAddress mappingPos = inputSignal1MappingAddr[InputSignal1Mapping.PositionCompletion];
-            return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
-        }
         public bool IsRunWait()
         {
             SignalMappingAddress mappingPos = inputSignal1MappingAddr[InputSignal1Mapping.StartInputWait];
@@ -726,9 +691,10 @@ namespace QMC.Common.Motions.CKD
             SignalMappingAddress mappingPos = inputSignal1MappingAddr[InputSignal1Mapping.Ready];
             return GetBit(txPdoData.InputSignal1[mappingPos.ByteIndex], mappingPos.BitIndex);
         }
-        public int GetPositionDegree()
+        public double GetPositionDegree()
         {
-            int value = BitConverter.ToInt32(txPdoData.InputData1, 0);
+            int milliDegree = BitConverter.ToInt32(txPdoData.InputData1, 0);
+            double value = milliDegree / 1000.0;
             return value;
         }
         public int GetPositionPulse()
@@ -739,6 +705,12 @@ namespace QMC.Common.Motions.CKD
         public int GetErrorPulse()
         {
             int value = BitConverter.ToInt32(txPdoData.InputData3, 0);
+            return value;
+        }
+        public double GetErrorDegree()
+        {
+            int errorPulse = GetErrorPulse();
+            double value = errorPulse * 360.0 / Resolution;
             return value;
         }
         public int GetVelocity()
@@ -812,7 +784,6 @@ namespace QMC.Common.Motions.CKD
         #region PDO Mapping (Output) [Master > Driver]
 
         #region Output Signal 1
-
         private int SendOutputSignal1SetBit(OutputSignal1Mapping signal, bool bit)
         {
             int ret = 0;
