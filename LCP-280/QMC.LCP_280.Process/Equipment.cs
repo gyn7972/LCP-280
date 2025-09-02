@@ -339,36 +339,8 @@ namespace QMC.LCP_280.Process
             {
                 case InputCassetteLifter cassetteUnit:
                     return new CassetteElevatorRecipe();
-                case InputRingTransfer inputRingTransferUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case InputStage inputStageUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case InputStageEjector inputStageEjectorUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case InputDieTransfer inputDieTransferUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case Rotary rotaryUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case IndexLoadAligner indexLoadAlignerUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case IndexChipProbeController indexChipProbeControllerUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case IndexChipProber indexChipProberUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case IndexUnloadAligner indexUnloadAlignerUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case OutputDieTransfer outputDieTransferUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case OutputStage outputStageUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case OutputCassetteLifter outputCassetteLifterUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case OutputRingTransfer outputRingTransferUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
-                case GageRnR gageRnRUnit:
-                    return new DefaultUnitRecipe(unit.UnitName);
                 default:
-                    return new DefaultUnitRecipe(unit.UnitName);
+                    return new CassetteElevatorRecipe();
             }
         }
 

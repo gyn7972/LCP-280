@@ -164,6 +164,7 @@
     <Compile Include="IO\DIOModuleSetup.cs" />
     <Compile Include="IO\DioScanService.cs" />
     <Compile Include="IO\DIOUnit.cs" />
+    <Compile Include="IO\IODefinitions.cs" />
     <Compile Include="IO\IDigitalIO.cs" />
     <Compile Include="IO\IDIODriver.cs" />
     <Compile Include="IO\IOUtil\Cylinder.cs" />

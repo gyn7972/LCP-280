@@ -15,13 +15,29 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum TeachingPositionName
         {
-            Loading,
-            Unloading,
-            Ready,
-            Home
-            // 필요시 추가
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+
+        // IO 추가 필요시 여기에 정의
+        //[JsonIgnore]
+        //public HardInputDef[] HardInputs => _hardInputs;
+        //[JsonIgnore]
+        //private static readonly HardInputDef[] _hardInputs = new[]
+        //{
+        //    new HardInputDef { No = 1, Name = "SPHERE FW", Disp = "X006" },
+        //    new HardInputDef { No = 2, Name = "SPHERE BW", Disp = "X007" },
+        //    new HardInputDef { No = 3, Name = "PROBE CARD VACUUM CHECK", Disp = "X018" },
+        //};
+
+        //[JsonIgnore]
+        //public HardOutputDef[] HardOutputs => _hardOutputs;
+        //[JsonIgnore]
+        //private static readonly HardOutputDef[] _hardOutputs = new[]
+        //{
+        //    new HardOutputDef { No = 1, Name = "SPHERE FW", Disp = "Y026" },
+        //    new HardOutputDef { No = 2, Name = "SPHERE BW", Disp = "Y027" },
+        //    new HardOutputDef { No = 3, Name = "PROBE CARD VACUUM CHECK", Disp = "Y011" },
+        //};
 
         public IndexChipProberConfig() : base("IndexChipProberConfig")
         {
@@ -41,10 +57,6 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Probe Z Axis", 0.0 },
-                        { "Probe Card X Axis", 100.0 },
-                        { "Probe Card Y Axis", 200.0 },
-                        { "Probe Card Z Axis", 0.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

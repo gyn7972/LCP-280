@@ -401,27 +401,6 @@ namespace QMC.LCP_280.Process.Unit
             _scan.TryGetOutput(m.ModuleName, key, out after);
 
             new MessageBoxOk().ShowDialog("Info!", $"{key}: {before} -> {after}");
-
-
-
-
-
-            //var m = _lastDoModule;
-            //if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
-
-            //string strMsg = string.Empty;
-            //var mbYes = new MessageBoxYesNo();
-            //strMsg = string.Format("Singnal 변경하시겠습니까?");
-            //if (mbYes.ShowDialog("Info", strMsg) == DialogResult.No)
-            //    return;
-
-            //bool now = false; 
-            //_scan.TryGetOutput(m.ModuleName, key, out now);
-            //_scan.WriteOutput(m.ModuleName, key, !now);
-
-            //var mb = new MessageBoxOk();
-            //strMsg = string.Format("{0}, {1}", key, now);
-            //mb.ShowDialog("Info!", strMsg);
         }
 
         private void OnOutputItemRightClicked(object sender, string key)

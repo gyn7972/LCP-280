@@ -40,7 +40,7 @@ namespace QMC.LCP_280.Process.Unit
         private struct _IoRef { public string Module; public string Disp; public PropertyState Prop; }
         private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
         // 출력 사용 안함
-        //private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
         // 타이머 제거 (실시간 스캔 이벤트 사용)
         private Timer _ioTimer; // 남겨두되 사용 안함
 
@@ -70,7 +70,6 @@ namespace QMC.LCP_280.Process.Unit
             this.btnMovePosition = new QMC.Common.IndividualMenuButton();
             this.rbTeachingMoveMode = new QMC.Common.RadioButtonView();
             this.editorPanel = new System.Windows.Forms.Panel();
-            this.button_Test = new System.Windows.Forms.Button();
             this.positionEditorView = new QMC.Common.PropertyCollectionView();
             this.btnCancel = new QMC.Common.IndividualMenuButton();
             this.btnSave = new QMC.Common.IndividualMenuButton();
@@ -173,7 +172,6 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // editorPanel
             // 
-            this.editorPanel.Controls.Add(this.button_Test);
             this.editorPanel.Controls.Add(this.positionEditorView);
             this.editorPanel.Controls.Add(this.btnCancel);
             this.editorPanel.Controls.Add(this.btnSave);
@@ -182,16 +180,6 @@ namespace QMC.LCP_280.Process.Unit
             this.editorPanel.Name = "editorPanel";
             this.editorPanel.Size = new System.Drawing.Size(366, 210);
             this.editorPanel.TabIndex = 8;
-            // 
-            // button_Test
-            // 
-            this.button_Test.Location = new System.Drawing.Point(147, 173);
-            this.button_Test.Name = "button_Test";
-            this.button_Test.Size = new System.Drawing.Size(75, 23);
-            this.button_Test.TabIndex = 12;
-            this.button_Test.Text = "Test";
-            this.button_Test.UseVisualStyleBackColor = true;
-            this.button_Test.Click += new System.EventHandler(this.button_Test_Click);
             // 
             // positionEditorView
             // 
@@ -377,14 +365,14 @@ namespace QMC.LCP_280.Process.Unit
             this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
             this.positionItemPanel.TabIndex = 0;
             // 
-            // InputCassetteLifterUnit_Config
+            // InputRingTransferUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 780);
             this.Controls.Add(this.mainTableLayoutPanel);
-            this.Name = "InputCassetteLifterUnit_Config";
-            this.Text = "InputCassetteLifter Unit Configuration";
+            this.Name = "InputRingTransferUnit_Config";
+            this.Text = "InputRingTransfer Unit Configuration";
             this.gbPositionTeaching.ResumeLayout(false);
             this.positionTableLayoutPanel.ResumeLayout(false);
             this.gbTeachingMove.ResumeLayout(false);
@@ -418,7 +406,7 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // ===== Digital IO 초기화 (Cassette Lifter 관련 IO 자동 필터) =====
+        // ===== Digital IO 초기화 (InputRingTransfer Unit 관련 IO 자동 필터) =====
         private void InitializeDigitalIO()
         {
             try
@@ -432,53 +420,133 @@ namespace QMC.LCP_280.Process.Unit
                 if (scan == null || unitIO == null)
                 {
                     inputView.SetProperties(new PropertyCollection());
+                    outputView.SetProperties(new PropertyCollection());
                     return;
                 }
 
                 _ioInputs.Clear();
+                _ioOutputs.Clear();
 
-                var hardInputs = new[]
+                HardInputDef[] hardInputs;
+                HardOutputDef[] hardOutputs;
+
+                const string UNIT_NAME = "InputRingTransfer";
+                if (eq?.Units != null &&
+                    eq.Units.TryGetValue(UNIT_NAME, out var unit) &&
+                    unit is InputRingTransfer transfer &&
+                    transfer.InputRingTransferConfig != null)
                 {
-                    new { No = 1, Name = "WAFER LIFTER CASSETTE CHECK 0", Disp = "X016" },
-                    new { No = 2, Name = "WAFER LIFTER CASSETTE CHECK 1", Disp = "X017" },
-                    new { No = 3, Name = "WAFER LIFTER RING JUT CHECK",   Disp = "X018" },
-                    new { No = 4, Name = "WAFER MAPPING",                 Disp = "X019" }
-                };
+                    var cfg = transfer.InputRingTransferConfig;
+
+                    // Config에 HardInputs가 선언되어 있지 않으면 처리하지 않음
+                    var cfgType = cfg.GetType();
+                    var piIn = cfgType.GetProperty("HardInputs");
+                    if (piIn == null)
+                    {
+                        inputView.SetProperties(new PropertyCollection());
+                        outputView.SetProperties(new PropertyCollection());
+                        return;
+                    }
+
+                    hardInputs = piIn.GetValue(cfg) as HardInputDef[] ?? Array.Empty<HardInputDef>();
+
+                    // HardInputs가 비어 있으면 처리하지 않음
+                    if (hardInputs.Length == 0)
+                    {
+                        inputView.SetProperties(new PropertyCollection());
+                    }
+
+                    // ★ Output도 동일 정책 적용: 프로퍼티 없거나 비어 있으면 출력만 건너뜀
+                    var piOut = cfgType.GetProperty("HardOutputs");
+                    if (piOut == null)
+                    {
+                        hardOutputs = Array.Empty<HardOutputDef>();
+                        outputView.SetProperties(new PropertyCollection());
+                    }
+                    else
+                    {
+                        hardOutputs = piOut.GetValue(cfg) as HardOutputDef[] ?? Array.Empty<HardOutputDef>();
+                        if (hardOutputs.Length == 0)
+                        {
+                            outputView.SetProperties(new PropertyCollection());
+                        }
+                    }
+                }
+                else
+                {
+                    hardInputs = Array.Empty<HardInputDef>();
+                    hardOutputs = Array.Empty<HardOutputDef>();
+                }
 
                 // 모듈명 매핑
-                Func<string, Tuple<string,string>> resolve = disp =>
+                Func<string, Tuple<string, string>> resolveIn = disp =>
                 {
-                    if (unitIO?.Modules == null) return new Tuple<string,string>(null, disp);
+                    if (unitIO?.Modules == null) return new Tuple<string, string>(null, disp);
                     foreach (var m in unitIO.Modules)
                     {
                         if (m?.Inputs == null) continue;
                         foreach (var ch in m.Inputs)
                         {
                             if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
-                                return new Tuple<string,string>(m.ModuleName, ch.DisplayNo);
+                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
                         }
                     }
-                    return new Tuple<string,string>(null, disp);
+                    return new Tuple<string, string>(null, disp);
+                };
+                Func<string, Tuple<string, string>> resolveOut = disp =>
+                {
+                    if (unitIO?.Modules == null) return new Tuple<string, string>(null, disp);
+                    foreach (var m in unitIO.Modules)
+                    {
+                        if (m?.Outputs == null) continue;
+                        foreach (var ch in m.Outputs)
+                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
+                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
+                    }
+                    return new Tuple<string, string>(null, disp);
                 };
 
-                var pc = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
-                pc.Add(new TitleOnlyProperty("No", "Name", "State"));
-
-                foreach (var item in hardInputs)
+                if (hardInputs != null && hardInputs.Length > 0)
                 {
-                    var map = resolve(item.Disp);
-                    bool cur = false;
-                    if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur);
-                    // PropertyState(번호, 표시 문자열, 초기 상태)
-                    string nameCell = item.Disp + " " + item.Name; // 첫 토큰이 키(Xnnn)
-                    var ps = new PropertyState(item.No.ToString(), nameCell, cur);
-                    pc.Add(ps);
-                    _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+
+                    var pcIn = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
+                    pcIn.Add(new TitleOnlyProperty("No", "Name", "State"));
+                    foreach (var item in hardInputs)
+                    {
+                        var map = resolveIn(item.Disp);
+                        bool cur = false;
+                        if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur);
+                        string nameCell = $"{item.Disp} {item.Name}";
+                        var ps = new PropertyState(item.No.ToString(), nameCell, cur);
+                        pcIn.Add(ps);
+                        _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                    }
+                    inputView.SetProperties(pcIn);
+                }
+                else
+                {
+                    inputView.SetProperties(new PropertyCollection());
                 }
 
-                inputView.SetProperties(pc);
-                // 출력 영역 비움
-                outputView?.SetProperties(new PropertyCollection());
+                if (hardOutputs != null && hardOutputs.Length > 0)
+                {
+                    var pcOut = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
+                    pcOut.Add(new TitleOnlyProperty("No", "Name", "State"));
+                    foreach (var item in hardOutputs)
+                    {
+                        var map = resolveOut(item.Disp);
+                        bool cur = false; // 필요 시 현재 출력 상태 조회 API로 대체
+                        string nameCell = $"{item.Disp} {item.Name}";
+                        var ps = new PropertyState(item.No.ToString(), nameCell, cur);
+                        pcOut.Add(ps);
+                        _ioOutputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                    }
+                    outputView.SetProperties(pcOut);
+                }
+                else
+                {
+                    outputView.SetProperties(new PropertyCollection());
+                }
 
                 // 이벤트 중복 등록 방지 후 등록
                 scan.InputChanged -= OnDioInputChanged;
@@ -515,17 +583,17 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // Equipment에서 CassetteLoadingElevator Unit 가져오기
+                // Equipment에서 InputRingTransfer Unit 가져오기
                 var equipment = Equipment.Instance;
-                const string UNIT_NAME = "InputRingTransferUnit";
+                const string UNIT_NAME = "InputRingTransfer";
 
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var inputRingTransferUnit = unit as InputRingTransfer;
+                    var transfer = unit as InputRingTransfer;
                     // TeachingPositions 멤버를 직접 사용하여 Position 이름 리스트 추출
-                    if (inputRingTransferUnit?.TeachingPositions != null && inputRingTransferUnit.TeachingPositions.Count > 0)
+                    if (transfer?.TeachingPositions != null && transfer.TeachingPositions.Count > 0)
                     {
-                        var positionNames = inputRingTransferUnit.TeachingPositions.Select(tp => tp.Name).ToArray();
+                        var positionNames = transfer.TeachingPositions.Select(tp => tp.Name).ToArray();
                         positionItemView?.SetItems(positionNames);
                         Console.WriteLine($"✅ TeachingPositions를 listBoxItemsView에 설정 완료: {positionNames.Length}개 항목");
                         Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionNames)}");
@@ -601,8 +669,8 @@ namespace QMC.LCP_280.Process.Unit
             const string UNIT_NAME = "InputRingTransfer";
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
-                var inputRingTransfer = unit as InputRingTransfer;
-                var config = inputRingTransfer?.InputRingTransferConfig;
+                var transfer = unit as InputRingTransfer;
+                var config = transfer?.InputRingTransferConfig;
                 if (config?.TeachingPositions != null && selectedIndex >= 0 && selectedIndex < config.TeachingPositions.Count)
                 {
                     var tp = config.TeachingPositions[selectedIndex];
@@ -631,8 +699,8 @@ namespace QMC.LCP_280.Process.Unit
             const string UNIT_NAME = "InputRingTransfer";
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
-                var inputRingTransfer = unit as InputRingTransfer;
-                var config = inputRingTransfer?.InputRingTransferConfig;
+                var transfer = unit as InputRingTransfer;
+                var config = transfer?.InputRingTransferConfig;
                 if (config?.TeachingPositions != null)
                 {
                     var positionNames = config.TeachingPositions.Select(tp => tp.Name).ToArray();
@@ -643,12 +711,12 @@ namespace QMC.LCP_280.Process.Unit
 
         private void OnAxisSelected(object sender, int index)
         {
-           
+
         }
 
         private void UpdateAxisActualPosition()
         {
-           
+
         }
 
         private void btnMovePosition_Click(object sender, EventArgs e)
@@ -774,7 +842,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 MessageBox.Show("Move 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }  
+        }
 
         private void InitializeRadioButtonView()
         {
@@ -789,9 +857,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Save / Cancel
-
-
-      #region Save / Cancel
 
         private void btnSave_Click(object sender, EventArgs e)
         {
@@ -902,9 +967,9 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            
+
         }
-           
+
 
         #endregion  #region Paint / Resize override (기존)
 
@@ -924,10 +989,36 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
-        #endregion
+        private void OnOutputItemClicked(object sender, string key)
+        {
+            //var m = _lastDoModule;
+            //if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
 
+            //var ask = new MessageBoxYesNo();
+            //if (ask.ShowDialog("Info", "Signal 변경하시겠습니까?") == DialogResult.No) return;
+
+            //// 1) 지금 캐시값
+            //bool before = false;
+            //_scan.TryGetOutput(m.ModuleName, key, out before);
+
+            //// 2) 쓰기 (Reverse는 DioScanService에서 자동 반영)
+            //var rc = _scan.WriteOutput(m.ModuleName, key, !before);
+            //if (rc != 0)
+            //{
+            //    // -1: 키 못 찾음(설정/키 불일치), 기타: 드라이버 에러
+            //    new MessageBoxOk().ShowDialog("Error", $"WriteOutput 실패 (rc={rc})");
+            //    return;
+            //}
+
+            //// 3) 보드에서 실제 값 재읽기(출력도 캐시에 반영)
+            //_scan.RefreshOnce();
+
+            //bool after = before;
+            //_scan.TryGetOutput(m.ModuleName, key, out after);
+
+            //new MessageBoxOk().ShowDialog("Info!", $"{key}: {before} -> {after}");
+        }
         private ListBoxItemsView axisPositionsView;
-        private Button button_Test;
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel ioTableLayoutPanel;
         private Panel positionItemPanel;

@@ -15,7 +15,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class InputCassetteLifterUnit_Config
+    partial class OutputDieTransferUnit_Config
     {
         private IOPropertyCollectionView inputView;
         private IOPropertyCollectionView outputView;
@@ -365,14 +365,14 @@ namespace QMC.LCP_280.Process.Unit
             this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
             this.positionItemPanel.TabIndex = 0;
             // 
-            // InputCassetteLifterUnit_Config
+            // OutputDieTransferUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 780);
             this.Controls.Add(this.mainTableLayoutPanel);
-            this.Name = "InputCassetteLifterUnit_Config";
-            this.Text = "InputCassetteLifter Unit Configuration";
+            this.Name = "OutputDieTransferUnit_Config";
+            this.Text = "OutputDieTransfer Unit Configuration";
             this.gbPositionTeaching.ResumeLayout(false);
             this.positionTableLayoutPanel.ResumeLayout(false);
             this.gbTeachingMove.ResumeLayout(false);
@@ -406,7 +406,7 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // ===== Digital IO 초기화 (InputCassetteLifter Unit 관련 IO 자동 필터) =====
+        // ===== Digital IO 초기화 (OutputDieTransfer Unit 관련 IO 자동 필터) =====
         private void InitializeDigitalIO()
         {
             try
@@ -430,13 +430,13 @@ namespace QMC.LCP_280.Process.Unit
                 HardInputDef[] hardInputs;
                 HardOutputDef[] hardOutputs;
 
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputDieTransfer";
                 if (eq?.Units != null &&
                     eq.Units.TryGetValue(UNIT_NAME, out var unit) &&
-                    unit is InputCassetteLifter lifter &&
-                    lifter.InputCassetteLifterConfig != null)
+                    unit is OutputDieTransfer transfer &&
+                    transfer.OutputDieTransferConfig != null)
                 {
-                    var cfg = lifter.InputCassetteLifterConfig;
+                    var cfg = transfer.OutputDieTransferConfig;
 
                     // Config에 HardInputs가 선언되어 있지 않으면 처리하지 않음
                     var cfgType = cfg.GetType();
@@ -583,17 +583,17 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // Equipment에서 InputCassetteLifter Unit 가져오기
+                // Equipment에서 OutputDieTransfer Unit 가져오기
                 var equipment = Equipment.Instance;
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputDieTransfer";
 
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var lifter = unit as InputCassetteLifter;
+                    var transfer = unit as OutputDieTransfer;
                     // TeachingPositions 멤버를 직접 사용하여 Position 이름 리스트 추출
-                    if (lifter?.TeachingPositions != null && lifter.TeachingPositions.Count > 0)
+                    if (transfer?.TeachingPositions != null && transfer.TeachingPositions.Count > 0)
                     {
-                        var positionNames = lifter.TeachingPositions.Select(tp => tp.Name).ToArray();
+                        var positionNames = transfer.TeachingPositions.Select(tp => tp.Name).ToArray();
                         positionItemView?.SetItems(positionNames);
                         Console.WriteLine($"✅ TeachingPositions를 listBoxItemsView에 설정 완료: {positionNames.Length}개 항목");
                         Console.WriteLine($"   설정된 항목들: {string.Join(", ", positionNames)}");
@@ -642,13 +642,13 @@ namespace QMC.LCP_280.Process.Unit
 
                 // ★ 선택된 TeachingPosition의 축 이름들을 JogControl에 전달하여 필터링 표시
                 var equipment = Equipment.Instance;
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputDieTransfer";
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var lifter = unit as InputCassetteLifter;
-                    if (lifter != null && selectedIndex >= 0 && selectedIndex < lifter.InputCassetteLifterConfig.TeachingPositions.Count)
+                    var transfer = unit as OutputDieTransfer;
+                    if (transfer != null && selectedIndex >= 0 && selectedIndex < transfer.OutputDieTransferConfig.TeachingPositions.Count)
                     {
-                        var tp = lifter.InputCassetteLifterConfig.TeachingPositions[selectedIndex];
+                        var tp = transfer.OutputDieTransferConfig.TeachingPositions[selectedIndex];
                         if (jogControl != null && tp != null && tp.AxisPositions != null)
                         {
                             jogControl.SetTeachingAxisList(tp.AxisPositions.Keys);
@@ -664,13 +664,13 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPositionInPropertyCollectionView(int selectedIndex)
         {
-            // Equipment에서 InputCassetteLifter Unit 가져오기
+            // Equipment에서 OutputDieTransfer Unit 가져오기
             var equipment = Equipment.Instance;
-            const string UNIT_NAME = "InputCassetteLifter";
+            const string UNIT_NAME = "OutputDieTransfer";
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
-                var lifter = unit as InputCassetteLifter;
-                var config = lifter?.InputCassetteLifterConfig;
+                var transfer = unit as OutputDieTransfer;
+                var config = transfer?.OutputDieTransferConfig;
                 if (config?.TeachingPositions != null && selectedIndex >= 0 && selectedIndex < config.TeachingPositions.Count)
                 {
                     var tp = config.TeachingPositions[selectedIndex];
@@ -694,13 +694,13 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitializeTeachingPositionList()
         {
-            // Equipment에서 InputCassetteLifter Unit 가져오기
+            // Equipment에서 OutputDieTransfer Unit 가져오기
             var equipment = Equipment.Instance;
-            const string UNIT_NAME = "InputCassetteLifter";
+            const string UNIT_NAME = "OutputDieTransfer";
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
-                var lifter = unit as InputCassetteLifter;
-                var config = lifter?.InputCassetteLifterConfig;
+                var transfer = unit as OutputDieTransfer;
+                var config = transfer?.OutputDieTransferConfig;
                 if (config?.TeachingPositions != null)
                 {
                     var positionNames = config.TeachingPositions.Select(tp => tp.Name).ToArray();
@@ -723,15 +723,15 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputDieTransfer";
                 var equipment = Equipment.Instance;
                 if (!equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
                     MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                var lifter = unit as InputCassetteLifter;
-                if (lifter == null)
+                var transfer = unit as OutputDieTransfer;
+                if (transfer == null)
                 {
                     MessageBox.Show("Unit 형식 오류", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
@@ -750,13 +750,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch { selIndex = -1; }
 
-                if (selIndex < 0 || selIndex >= lifter.InputCassetteLifterConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= transfer.OutputDieTransferConfig.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var tp = lifter.InputCassetteLifterConfig.TeachingPositions[selIndex];
+                var tp = transfer.OutputDieTransferConfig.TeachingPositions[selIndex];
 
                 // Fine / Coarse 판단 (RadioButtonView SelectedIndex: 0=Fine, 1=Coarse)
                 bool isFine = true;
@@ -792,11 +792,11 @@ namespace QMC.LCP_280.Process.Unit
                     // 축 찾기: TeachingPosition.Axes 사전 우선 → 없으면 Unit.Axes에서 키 또는 Name 으로 재검색
                     MotionAxis axis = null;
                     if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
-                    if (axis == null && lifter.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
+                    if (axis == null && transfer.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
                     if (axis == null)
                     {
                         // Name 매칭 시도
-                        foreach (var aPair in lifter.Axes)
+                        foreach (var aPair in transfer.Axes)
                         {
                             if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
                             {
@@ -824,7 +824,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     MotionAxis axis = null;
                     if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
-                    if (axis == null && lifter.Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
+                    if (axis == null && transfer.Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
                     if (axis == null) continue;
 
                     int rc = axis.WaitMoveDone(-1); // axis.Setup.MoveTimeoutMs 사용
@@ -862,15 +862,15 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputDieTransfer";
                 var equipment = Equipment.Instance;
                 if (!equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
                     MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                var lifter = unit as InputCassetteLifter;
-                if (lifter == null)
+                var transfer = unit as OutputDieTransfer;
+                if (transfer == null)
                 {
                     MessageBox.Show("Unit 형식이 올바르지 않습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
@@ -890,7 +890,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch { selIndex = -1; }
 
-                if (selIndex < 0 || selIndex >= lifter.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= transfer.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
@@ -906,7 +906,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var target = lifter.TeachingPositions[selIndex];
+                var target = transfer.TeachingPositions[selIndex];
 
                 // 기존 AxisPositions 복사 후 수정
                 var newAxisPositions = new Dictionary<string, double>(target.AxisPositions != null ? target.AxisPositions : new Dictionary<string, double>());
@@ -946,13 +946,13 @@ namespace QMC.LCP_280.Process.Unit
                 target.ExtraInfo = newExtra;
 
                 // Config에도 반영 (SetTeachingPosition은 Saveconfig 호출 포함)
-                lifter.InputCassetteLifterConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description) { ExtraInfo = new Dictionary<string, object>(target.ExtraInfo) });
+                transfer.OutputDieTransferConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description) { ExtraInfo = new Dictionary<string, object>(target.ExtraInfo) });
 
                 // 저장 후 재로드 & 재바인딩 (선택적으로 최신 반영)
-                lifter.InputCassetteLifterConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-                lifter.TeachingPositions.Clear();
-                foreach (var tp in lifter.InputCassetteLifterConfig.TeachingPositions)
-                    lifter.TeachingPositions.Add(tp);
+                transfer.OutputDieTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                transfer.TeachingPositions.Clear();
+                foreach (var tp in transfer.OutputDieTransferConfig.TeachingPositions)
+                    transfer.TeachingPositions.Add(tp);
 
                 // 리스트 갱신
                 SetAxisDefinitionsToAxisListBox();

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using static QMC.LCP_280.Process.Unit.IndexChipProbeController;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -22,6 +21,28 @@ namespace QMC.LCP_280.Process.Unit
             // 필요시 추가
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+
+        // IO 추가 필요시 여기에 정의
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = new[]
+        {
+            new HardInputDef { No = 1, Name = "WAFER LIFTER CASSETTE CHECK 0", Disp = "X016" },
+            new HardInputDef { No = 2, Name = "WAFER LIFTER CASSETTE CHECK 1", Disp = "X017" },
+            new HardInputDef { No = 3, Name = "WAFER LIFTER RING JUT CHECK",   Disp = "X018" },
+            new HardInputDef { No = 4, Name = "WAFER MAPPING",                 Disp = "X019" }
+        };
+
+        //[JsonIgnore]
+        //public HardOutputDef[] HardOutputs => _hardOutputs;
+        //[JsonIgnore]
+        //private static readonly HardOutputDef[] _hardOutputs = new[]
+        //{
+        //    new HardOutputDef { No = 1, Name = "SPHERE FW", Disp = "Y026" },
+        //    new HardOutputDef { No = 2, Name = "SPHERE BW", Disp = "Y027" },
+        //    new HardOutputDef { No = 3, Name = "PROBE CARD VACUUM CHECK", Disp = "Y011" },
+        //};
 
         public InputCassetteLifterConfig() : base("InputCassetteLifterConfig")
         {
@@ -41,9 +62,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Wafer Lifter Z Axis", 0.0 },
-                        { "Wafer Stage X Axis", 100.0 },
-                        { "Wafer Stage Y Axis", 200.0 }
+                        { "Wafer Stage Y Axis", 200.0 },
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);
@@ -94,6 +113,7 @@ namespace QMC.LCP_280.Process.Unit
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int result = base.Load();
+
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager);
             return result;

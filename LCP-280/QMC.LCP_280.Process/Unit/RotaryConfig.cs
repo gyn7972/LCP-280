@@ -22,6 +22,55 @@ namespace QMC.LCP_280.Process.Unit
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
+        // IO 추가 필요시 여기에 정의
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = new[]
+        {
+            new HardInputDef { No = 1,  Name = "INDEX AIR TANK PRESSURE CHECK",     Disp = "X040" },
+            new HardInputDef { No = 2,  Name = "INDEX VACCUM TANK PRRESSURE CHECK", Disp = "X041" },
+            new HardInputDef { No = 3,  Name = "INDEX 1 FLOW CHECK",                Disp = "X042" },
+            new HardInputDef { No = 4,  Name = "INDEX 2 FLOW CHECK",                Disp = "X043" },
+            new HardInputDef { No = 5,  Name = "INDEX 3 FLOW CHECK",                Disp = "X044" },
+            new HardInputDef { No = 6,  Name = "INDEX 4 FLOW CHECK",                Disp = "X045" },
+            new HardInputDef { No = 7,  Name = "INDEX 5 FLOW CHECK",                Disp = "X046" },
+            new HardInputDef { No = 8,  Name = "INDEX 6 FLOW CHECK",                Disp = "X047" },
+            new HardInputDef { No = 9,  Name = "INDEX 7 FLOW CHECK",                Disp = "X048" },
+            new HardInputDef { No = 10, Name = "INDEX 8 FLOW CHECK",                Disp = "X049" },
+        };
+
+        [JsonIgnore]
+        public HardOutputDef[] HardOutputs => _hardOutputs;
+        [JsonIgnore]
+        private static readonly HardOutputDef[] _hardOutputs = new[]
+        {
+            new HardOutputDef { No = 1,  Name = "INDEX 1 VACUUM", Disp = "Y051" },
+            new HardOutputDef { No = 2,  Name = "INDEX 2 VACUUM", Disp = "Y052" },
+            new HardOutputDef { No = 3,  Name = "INDEX 3 VACUUM", Disp = "Y053" },
+            new HardOutputDef { No = 4,  Name = "INDEX 4 VACUUM", Disp = "Y054" },
+            new HardOutputDef { No = 5,  Name = "INDEX 5 VACUUM", Disp = "Y055" },
+            new HardOutputDef { No = 6,  Name = "INDEX 6 VACUUM", Disp = "Y056" },
+            new HardOutputDef { No = 7,  Name = "INDEX 7 VACUUM", Disp = "Y057" },
+            new HardOutputDef { No = 8,  Name = "INDEX 8 VACUUM", Disp = "Y058" },
+            new HardOutputDef { No = 9,  Name = "INDEX 1 BLOW",   Disp = "Y059" },
+            new HardOutputDef { No = 10, Name = "INDEX 2 BLOW",   Disp = "Y060" },
+            new HardOutputDef { No = 11, Name = "INDEX 3 BLOW",   Disp = "Y061" },
+            new HardOutputDef { No = 12, Name = "INDEX 4 BLOW",   Disp = "Y062" },
+            new HardOutputDef { No = 13, Name = "INDEX 5 BLOW",   Disp = "Y063" },
+            new HardOutputDef { No = 14, Name = "INDEX 6 BLOW",   Disp = "Y064" },
+            new HardOutputDef { No = 15, Name = "INDEX 7 BLOW",   Disp = "Y065" },
+            new HardOutputDef { No = 16, Name = "INDEX 8 BLOW",   Disp = "Y066" },
+            new HardOutputDef { No = 17, Name = "INDEX 1 VENT",   Disp = "Y067" },
+            new HardOutputDef { No = 18, Name = "INDEX 2 VENT",   Disp = "Y068" },
+            new HardOutputDef { No = 19, Name = "INDEX 3 VENT",   Disp = "Y069" },
+            new HardOutputDef { No = 20, Name = "INDEX 4 VENT",   Disp = "Y070" },
+            new HardOutputDef { No = 21, Name = "INDEX 5 VENT",   Disp = "Y071" },
+            new HardOutputDef { No = 22, Name = "INDEX 6 VENT",   Disp = "Y072" },
+            new HardOutputDef { No = 23, Name = "INDEX 7 VENT",   Disp = "Y073" },
+            new HardOutputDef { No = 24, Name = "INDEX 8 VENT",   Disp = "Y074" }
+        };
+
         public RotaryConfig() : base("RotaryConfig")
         {
             //InitializeDefaultTeachingPositions();
@@ -40,9 +89,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Wafer Stage T Axis", 0.0 },
-                        { "Align T Axis", 100.0 },
-                        { "Bin Stage T Axis", 200.0 }
+                        { "Index T Axis", 0.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

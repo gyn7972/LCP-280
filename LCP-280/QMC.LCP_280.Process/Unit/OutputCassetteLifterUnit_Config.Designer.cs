@@ -15,7 +15,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class InputCassetteLifterUnit_Config
+    partial class OutputCassetteLifterUnit_Config
     {
         private IOPropertyCollectionView inputView;
         private IOPropertyCollectionView outputView;
@@ -365,14 +365,14 @@ namespace QMC.LCP_280.Process.Unit
             this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
             this.positionItemPanel.TabIndex = 0;
             // 
-            // InputCassetteLifterUnit_Config
+            // OutputCassetteLifterUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 780);
             this.Controls.Add(this.mainTableLayoutPanel);
-            this.Name = "InputCassetteLifterUnit_Config";
-            this.Text = "InputCassetteLifter Unit Configuration";
+            this.Name = "OutputCassetteLifterUnit_Config";
+            this.Text = "OutputCassetteLifter Unit Configuration";
             this.gbPositionTeaching.ResumeLayout(false);
             this.positionTableLayoutPanel.ResumeLayout(false);
             this.gbTeachingMove.ResumeLayout(false);
@@ -406,7 +406,7 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // ===== Digital IO 초기화 (InputCassetteLifter Unit 관련 IO 자동 필터) =====
+        // ===== Digital IO 초기화 (OutputCassetteLifter Unit 관련 IO 자동 필터) =====
         private void InitializeDigitalIO()
         {
             try
@@ -430,13 +430,13 @@ namespace QMC.LCP_280.Process.Unit
                 HardInputDef[] hardInputs;
                 HardOutputDef[] hardOutputs;
 
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputCassetteLifter";
                 if (eq?.Units != null &&
                     eq.Units.TryGetValue(UNIT_NAME, out var unit) &&
-                    unit is InputCassetteLifter lifter &&
-                    lifter.InputCassetteLifterConfig != null)
+                    unit is OutputCassetteLifter lifter &&
+                    lifter.OutputCassetteLifterConfig != null)
                 {
-                    var cfg = lifter.InputCassetteLifterConfig;
+                    var cfg = lifter.OutputCassetteLifterConfig;
 
                     // Config에 HardInputs가 선언되어 있지 않으면 처리하지 않음
                     var cfgType = cfg.GetType();
@@ -583,13 +583,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // Equipment에서 InputCassetteLifter Unit 가져오기
+                // Equipment에서 OutputCassetteLifter Unit 가져오기
                 var equipment = Equipment.Instance;
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputCassetteLifter";
 
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var lifter = unit as InputCassetteLifter;
+                    var lifter = unit as OutputCassetteLifter;
                     // TeachingPositions 멤버를 직접 사용하여 Position 이름 리스트 추출
                     if (lifter?.TeachingPositions != null && lifter.TeachingPositions.Count > 0)
                     {
@@ -642,13 +642,13 @@ namespace QMC.LCP_280.Process.Unit
 
                 // ★ 선택된 TeachingPosition의 축 이름들을 JogControl에 전달하여 필터링 표시
                 var equipment = Equipment.Instance;
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputCassetteLifter";
                 if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    var lifter = unit as InputCassetteLifter;
-                    if (lifter != null && selectedIndex >= 0 && selectedIndex < lifter.InputCassetteLifterConfig.TeachingPositions.Count)
+                    var lifter = unit as OutputCassetteLifter;
+                    if (lifter != null && selectedIndex >= 0 && selectedIndex < lifter.OutputCassetteLifterConfig.TeachingPositions.Count)
                     {
-                        var tp = lifter.InputCassetteLifterConfig.TeachingPositions[selectedIndex];
+                        var tp = lifter.OutputCassetteLifterConfig.TeachingPositions[selectedIndex];
                         if (jogControl != null && tp != null && tp.AxisPositions != null)
                         {
                             jogControl.SetTeachingAxisList(tp.AxisPositions.Keys);
@@ -664,13 +664,13 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPositionInPropertyCollectionView(int selectedIndex)
         {
-            // Equipment에서 InputCassetteLifter Unit 가져오기
+            // Equipment에서 OutputCassetteLifter Unit 가져오기
             var equipment = Equipment.Instance;
-            const string UNIT_NAME = "InputCassetteLifter";
+            const string UNIT_NAME = "OutputCassetteLifter";
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
-                var lifter = unit as InputCassetteLifter;
-                var config = lifter?.InputCassetteLifterConfig;
+                var lifter = unit as OutputCassetteLifter;
+                var config = lifter?.OutputCassetteLifterConfig;
                 if (config?.TeachingPositions != null && selectedIndex >= 0 && selectedIndex < config.TeachingPositions.Count)
                 {
                     var tp = config.TeachingPositions[selectedIndex];
@@ -694,13 +694,13 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitializeTeachingPositionList()
         {
-            // Equipment에서 InputCassetteLifter Unit 가져오기
+            // Equipment에서 OutputCassetteLifter Unit 가져오기
             var equipment = Equipment.Instance;
-            const string UNIT_NAME = "InputCassetteLifter";
+            const string UNIT_NAME = "OutputCassetteLifter";
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
-                var lifter = unit as InputCassetteLifter;
-                var config = lifter?.InputCassetteLifterConfig;
+                var lifter = unit as OutputCassetteLifter;
+                var config = lifter?.OutputCassetteLifterConfig;
                 if (config?.TeachingPositions != null)
                 {
                     var positionNames = config.TeachingPositions.Select(tp => tp.Name).ToArray();
@@ -723,14 +723,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputCassetteLifter";
                 var equipment = Equipment.Instance;
                 if (!equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
                     MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                var lifter = unit as InputCassetteLifter;
+                var lifter = unit as OutputCassetteLifter;
                 if (lifter == null)
                 {
                     MessageBox.Show("Unit 형식 오류", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -750,13 +750,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch { selIndex = -1; }
 
-                if (selIndex < 0 || selIndex >= lifter.InputCassetteLifterConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= lifter.OutputCassetteLifterConfig.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var tp = lifter.InputCassetteLifterConfig.TeachingPositions[selIndex];
+                var tp = lifter.OutputCassetteLifterConfig.TeachingPositions[selIndex];
 
                 // Fine / Coarse 판단 (RadioButtonView SelectedIndex: 0=Fine, 1=Coarse)
                 bool isFine = true;
@@ -862,14 +862,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                const string UNIT_NAME = "InputCassetteLifter";
+                const string UNIT_NAME = "OutputCassetteLifter";
                 var equipment = Equipment.Instance;
                 if (!equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
                     MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                var lifter = unit as InputCassetteLifter;
+                var lifter = unit as OutputCassetteLifter;
                 if (lifter == null)
                 {
                     MessageBox.Show("Unit 형식이 올바르지 않습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -946,12 +946,12 @@ namespace QMC.LCP_280.Process.Unit
                 target.ExtraInfo = newExtra;
 
                 // Config에도 반영 (SetTeachingPosition은 Saveconfig 호출 포함)
-                lifter.InputCassetteLifterConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description) { ExtraInfo = new Dictionary<string, object>(target.ExtraInfo) });
+                lifter.OutputCassetteLifterConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description) { ExtraInfo = new Dictionary<string, object>(target.ExtraInfo) });
 
                 // 저장 후 재로드 & 재바인딩 (선택적으로 최신 반영)
-                lifter.InputCassetteLifterConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                lifter.OutputCassetteLifterConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
                 lifter.TeachingPositions.Clear();
-                foreach (var tp in lifter.InputCassetteLifterConfig.TeachingPositions)
+                foreach (var tp in lifter.OutputCassetteLifterConfig.TeachingPositions)
                     lifter.TeachingPositions.Add(tp);
 
                 // 리스트 갱신

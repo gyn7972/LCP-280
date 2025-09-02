@@ -115,6 +115,34 @@ namespace QMC.Common
                 Console.WriteLine("🔍 Formconfig.LoadFormsFromManager() 시작");
 
                 var configForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Config);
+                // 원하는 순서를 명시
+                var desiredOrder = new[]
+                {
+                    "InputCassetteLifter",
+                    "InputRingTransfer",
+                    "InputStage",
+                    "InputStageEjector",
+                    "InputDieTransfer",
+                    "Rotary",
+                    "IndexLoadAligner",
+                    "IndexChipProbeController",
+                    "IndexChipProber",
+                    "IndexUnloadAligner",
+                    "OutputDieTransfer",
+                    "OutputStage",
+                    "OutputCassetteLifter",
+                    "OutputRingTransfer",
+                };
+                var indexMap = desiredOrder
+                    .Select((name, idx) => new { name, idx })
+                    .ToDictionary(x => x.name, x => x.idx);
+
+                // 표시명 기준 정렬(명시되지 않은 항목은 마지막)
+                configForms = configForms
+                    .OrderBy(f => indexMap.ContainsKey(f.DisplayName) ? indexMap[f.DisplayName] : int.MaxValue)
+                    .ThenBy(f => f.DisplayName) // 동일 우선순위 시 이름순
+                    .ToList();
+
                 Console.WriteLine($"   등록된 config 폼 개수: {configForms.Count}");
 
                 foreach (var formInfo in configForms)

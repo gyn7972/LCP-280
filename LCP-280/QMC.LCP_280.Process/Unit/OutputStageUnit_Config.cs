@@ -12,15 +12,15 @@ namespace QMC.LCP_280.Process.Unit
     /// CassetteLoadingElevator Unit의 Config 폼
     /// Equipment와 연동하여 Config 및 Recipe 관리
     /// </summary>
-    public partial class InputRingTransferUnit_Config : Form
+    public partial class OutputStageUnit_Config : Form
     {
-        private const string UNIT_NAME = "InputRingTransferUnit";
+        private const string UNIT_NAME = "OutputStageUnit";
         private Equipment Equipment => Equipment.Instance;
-        private InputRingTransfer InputRingTransferUnit { get; set; }
+        private OutputStage OutputStageUnit { get; set; }
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        public InputRingTransferUnit_Config()
+        public OutputStageUnit_Config()
         {
             InitializeComponent();
             this.SuspendLayout();
@@ -28,7 +28,7 @@ namespace QMC.LCP_280.Process.Unit
             InitializeUI();
             this.ResumeLayout(true);
 
-            Console.WriteLine($"✅ InputRingTransferUnit_Config 생성자 완료");
+            Console.WriteLine($"✅ OutputStageUnit_Config 생성자 완료");
         }
 
         private void InitializeUnit()
@@ -37,10 +37,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    InputRingTransferUnit = unit as InputRingTransfer;
+                    OutputStageUnit = unit as OutputStage;
                 }
 
-                if (InputRingTransferUnit == null)
+                if (OutputStageUnit == null)
                 {
                     MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
