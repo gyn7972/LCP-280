@@ -960,6 +960,13 @@ namespace QMC.LCP_280.Process
                 }
             }
 
+            // [+] CKD Motor Driver (PDO Mapping) 추가
+            if (_ckdDriver == null)
+            {
+                _ckdDriver = new CKDMotorDriver("CKD_DD_MotorDriver");
+                _ckdDriver.StartReadInputDataMonitoring();
+            }
+
             Directory.CreateDirectory(_axisRoot);
             CreateAxes();
 
@@ -971,13 +978,6 @@ namespace QMC.LCP_280.Process
                 // status.State.Done / status.IO.Alarm / status.PV.ActualPosition ...
             };
             scanner.Start();
-
-            // [+] CKD Motor Driver (PDO Mapping) 추가
-            if (_ckdDriver == null)
-            {
-                _ckdDriver = new CKDMotorDriver("CKD_DD_MotorDriver");
-                _ckdDriver.StartReadInputDataMonitoring();
-            }
 
             // 예) CassetteLoadingElevator 유닛의 Z축 하나 생성/등록/부착
             //    필요에 맞게 더 추가(Y, X 등)
