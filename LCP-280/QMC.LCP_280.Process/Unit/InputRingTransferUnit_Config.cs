@@ -91,7 +91,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.ResumeLayout(true);
             }
 
-            Console.WriteLine($"📐 {nameof(InputRingTransferUnit_Config)}.SetPanelSize → {width}x{height}");
+            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Config)}.SetPanelSize → {width}x{height}");
         }
     }
 }

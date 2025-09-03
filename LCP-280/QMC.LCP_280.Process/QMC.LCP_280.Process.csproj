@@ -98,12 +98,6 @@
     <Compile Include="TestGyn.Designer.cs">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\CKDMotor_Setup.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\CKDMotor_Setup.Designer.cs">
-      <DependentUpon>CKDMotor_Setup.cs</DependentUpon>
-    </Compile>
     <Compile Include="Unit\CommonUnitConfig.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -126,6 +120,8 @@
     <Compile Include="Unit\IndexLoadAlignerConfig.cs" />
     <Compile Include="Unit\IndexUnloadAligner.cs" />
     <Compile Include="Unit\IndexUnloadAlignerConfig.cs" />
+    <Compile Include="Unit\InputRingTransferConfig.cs" />
+    <Compile Include="Unit\InputRingTransfer.cs" />
     <Compile Include="Unit\InputCassetteLifterConfig.cs" />
     <Compile Include="Unit\InputCassetteLifter.cs" />
     <Compile Include="Unit\Cylinder_Setup.cs">
@@ -140,11 +136,89 @@
     <Compile Include="Unit\DigitalIO_Setup.Designer.cs">
       <DependentUpon>DigitalIO_Setup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\InputStageEjectorUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\InputStageEjectorUnit_Config.Designer.cs">
+      <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\OutputRingTransferUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\OutputRingTransferUnit_Config.Designer.cs">
+      <DependentUpon>OutputRingTransferUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\OutputDieTransferUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\OutputDieTransferUnit_Config.Designer.cs">
+      <DependentUpon>OutputDieTransferUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\OutputCassetteLifterUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\OutputCassetteLifterUnit_Config.Designer.cs">
+      <DependentUpon>OutputCassetteLifterUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\IndexUnloadAlignerUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\IndexUnloadAlignerUnit_Config.Designer.cs">
+      <DependentUpon>IndexUnloadAlignerUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\IndexLoadAlignerUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\IndexLoadAlignerUnit_Config.Designer.cs">
+      <DependentUpon>IndexLoadAlignerUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\IndexChipProberUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\IndexChipProberUnit_Config.Designer.cs">
+      <DependentUpon>IndexChipProberUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\IndexChipProbeControllerUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\IndexChipProbeControllerUnit_Config.Designer.cs">
+      <DependentUpon>IndexChipProbeControllerUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\GageRnRUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\GageRnRUnit_Config.Designer.cs">
+      <DependentUpon>GageRnRUnit_Config.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\InputRingTransferUnit_Config.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Unit\InputRingTransferUnit_Config.Designer.cs">
       <DependentUpon>InputRingTransferUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\RotaryUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\RotaryUnit_Config.Designer.cs">
+      <DependentUpon>RotaryUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\OutputStageUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\OutputStageUnit_Config.Designer.cs">
+      <DependentUpon>OutputStageUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\InputStageUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\InputStageUnit_Config.Designer.cs">
+      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\InputDieTransferUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\InputDieTransferUnit_Config.Designer.cs">
+      <DependentUpon>InputDieTransferUnit_Config.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\InputCassetteLifterUnit_Working.cs">
       <SubType>Form</SubType>
@@ -154,8 +228,6 @@
     </Compile>
     <Compile Include="Unit\InputDieTransfer.cs" />
     <Compile Include="Unit\InputDieTransferConfig.cs" />
-    <Compile Include="Unit\InputRingTransfer.cs" />
-    <Compile Include="Unit\InputRingTransferConfig.cs" />
     <Compile Include="Unit\InputStage.cs" />
     <Compile Include="Unit\InputStageConfig.cs" />
     <Compile Include="Unit\InputStageEjector.cs" />
@@ -216,9 +288,6 @@
     <EmbeddedResource Include="TestGyn.resx">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\CKDMotor_Setup.resx">
-      <DependentUpon>CKDMotor_Setup.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Unit\CommonUnitConfig.resx">
       <DependentUpon>CommonUnitConfig.cs</DependentUpon>
     </EmbeddedResource>
@@ -231,8 +300,47 @@
     <EmbeddedResource Include="Unit\Form_AxisJogPopup.resx">
       <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\InputStageEjectorUnit_Config.resx">
+      <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\OutputRingTransferUnit_Config.resx">
+      <DependentUpon>OutputRingTransferUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\OutputDieTransferUnit_Config.resx">
+      <DependentUpon>OutputDieTransferUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\OutputCassetteLifterUnit_Config.resx">
+      <DependentUpon>OutputCassetteLifterUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\IndexUnloadAlignerUnit_Config.resx">
+      <DependentUpon>IndexUnloadAlignerUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\IndexLoadAlignerUnit_Config.resx">
+      <DependentUpon>IndexLoadAlignerUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\IndexChipProberUnit_Config.resx">
+      <DependentUpon>IndexChipProberUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\IndexChipProbeControllerUnit_Config.resx">
+      <DependentUpon>IndexChipProbeControllerUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\GageRnRUnit_Config.resx">
+      <DependentUpon>GageRnRUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\InputRingTransferUnit_Config.resx">
       <DependentUpon>InputRingTransferUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\RotaryUnit_Config.resx">
+      <DependentUpon>RotaryUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\OutputStageUnit_Config.resx">
+      <DependentUpon>OutputStageUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\InputStageUnit_Config.resx">
+      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\InputDieTransferUnit_Config.resx">
+      <DependentUpon>InputDieTransferUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\InputCassetteLifterUnit_Working.resx">
       <DependentUpon>InputCassetteLifterUnit_Working.cs</DependentUpon>

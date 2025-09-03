@@ -22,6 +22,35 @@ namespace QMC.LCP_280.Process.Unit
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
+        // IO 추가 필요시 여기에 정의
+        //[JsonIgnore]
+        //public HardInputDef[] HardInputs => _hardInputs;
+        //[JsonIgnore]
+        //private static readonly HardInputDef[] _hardInputs = new[]
+        //{
+        //    new HardInputDef { No = 1, Name = "WAFER STAGE RING CHECK 0",  Disp = "X025" },
+        //    new HardInputDef { No = 2, Name = "WAFER STAGE RING CHECK 1",  Disp = "X026" },
+        //    new HardInputDef { No = 3, Name = "WAFER STAGE CLAMP DOWN",    Disp = "X027" },
+        //    new HardInputDef { No = 4, Name = "WAFER STAGE CLAMP",         Disp = "X028" },
+        //    new HardInputDef { No = 5, Name = "WAFER STAGE EXPANDER UP",   Disp = "X029" },
+        //    new HardInputDef { No = 6, Name = "WAFER STAGE EXPANDER DOWN", Disp = "X030" },
+        //    new HardInputDef { No = 8, Name = "EJECTOR VACUUM CHECK",      Disp = "X031" },
+        //};
+
+        //[JsonIgnore]
+        //public HardOutputDef[] HardOutputs => _hardOutputs;
+        //[JsonIgnore]
+        //private static readonly HardOutputDef[] _hardOutputs = new[]
+        //{
+        //    new HardOutputDef { No = 1, Name = "WAFER STAGE CLAMP UP",      Disp = "Y020" },
+        //    new HardOutputDef { No = 1, Name = "WAFER STAGE CLAMP DOWN",    Disp = "Y021" },
+        //    new HardOutputDef { No = 1, Name = "WAFER STAGE CLAMP",         Disp = "Y022" },
+        //    new HardOutputDef { No = 1, Name = "WAFER STAGE UNCLAMP",       Disp = "Y023" },
+        //    new HardOutputDef { No = 1, Name = "WAFER STAGE EXPANDER UP",   Disp = "Y024" },
+        //    new HardOutputDef { No = 1, Name = "WAFER STAGE EXPANDER DOWN", Disp = "Y025" },
+        //    new HardOutputDef { No = 1, Name = "EJECTOR VACUUM",            Disp = "Y036" },
+        //};
+
         public InputStageEjectorConfig() : base("InputStageEjectorConfig")
         {
             //InitializeDefaultTeachingPositions();
@@ -40,8 +69,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Eject Pin Z Axis", 0.0 },
-                        { "Ejector Z Axis", 100.0 }
+                        { "Eject Pin Z Axis", 0.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

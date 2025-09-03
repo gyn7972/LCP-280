@@ -55,12 +55,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        private void button_Test_Click(object sender, EventArgs e)
-        {
-            TestGyn testGyn = new TestGyn();
-            testGyn.ShowDialog();
-        }
-
         public void SetPanelSize(int width, int height)
         {
             // 디자이너 값과 다른 경우 경고(1회)

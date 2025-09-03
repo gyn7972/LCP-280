@@ -22,6 +22,30 @@ namespace QMC.LCP_280.Process.Unit
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
+        // IO 추가 필요시 여기에 정의
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = new[]
+        {
+            new HardInputDef { No = 1, Name = "BIN FEEDER UP",             Disp = "X064" },
+            new HardInputDef { No = 2, Name = "BIN FEEDER DOWN",           Disp = "X065" },
+            new HardInputDef { No = 3, Name = "BIN FEEDER UNCLAMP",        Disp = "X066" },
+            new HardInputDef { No = 4, Name = "BIN FEEDER RING CHECK",     Disp = "X067" },
+            new HardInputDef { No = 5, Name = "BIN FEEDER OVERLOAD CHECK", Disp = "X068" }
+        };
+
+        [JsonIgnore]
+        public HardOutputDef[] HardOutputs => _hardOutputs;
+        [JsonIgnore]
+        private static readonly HardOutputDef[] _hardOutputs = new[]
+        {
+            new HardOutputDef { No = 1, Name = "BIN FEEDER UP",      Disp = "Y034" },
+            new HardOutputDef { No = 2, Name = "BIN FEEDER DOWNE",   Disp = "Y035" },
+            new HardOutputDef { No = 3, Name = "BIN FEEDER CLAMP",   Disp = "Y036" },
+            new HardOutputDef { No = 4, Name = "BIN FEEDER UNCALMP", Disp = "Y037" }
+        };
+
         public OutputRingTransferConfig() : base("OutputRingTransferConfig")
         {
             //InitializeDefaultTeachingPositions();
@@ -40,9 +64,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Ring Transfer X Axis", 0.0 },
-                        { "Ring Transfer Y Axis", 100.0 },
-                        { "Ring Transfer Z Axis", 200.0 }
+                        { "Bin Feeder Y Axis", 0.0 },
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

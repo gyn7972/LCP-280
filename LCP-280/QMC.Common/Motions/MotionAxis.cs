@@ -11,6 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
+// CKD
+using QMC.Common.Motions.CKD;
+using QMC.Common.Motion.Ajin;
+
 namespace QMC.Common.Motions
 {
     //사용 예시
@@ -46,6 +50,7 @@ namespace QMC.Common.Motions
 
         private readonly object _gate = new object();
         private readonly AjinDriver _driver;
+        private readonly CKDMotorDriver _ckdDriver;
 
         public MotionAxisSetup Setup { get; set;  }
         public MotionAxisConfig Config { get; set; }
@@ -72,6 +77,25 @@ namespace QMC.Common.Motions
 
             _correction = correction ?? new DefaultCorrection(Setup, Config);
 
+            InitAlarm();
+        }
+        public MotionAxis(MotionAxisSetup setup, MotionAxisConfig config, CKDMotorDriver driver, IPropertyCorrection correction = null)
+        {
+            if (setup == null) throw new ArgumentNullException(nameof(setup));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (driver == null) throw new ArgumentNullException(nameof(driver));
+            
+            Setup = setup;
+            Config = config;
+            _ckdDriver = driver;
+            
+            Setup.Validate();
+            Config.Validate();
+            
+            Status = new MotionAxisStatus();
+            
+            _correction = correction ?? new DefaultCorrection(Setup, Config);
+            
             InitAlarm();
         }
 
@@ -158,93 +182,294 @@ namespace QMC.Common.Motions
         // ===== 상태 =====
         public double GetPosition()  // 논리 단위(mm/deg)
         {
-            var pulse = _driver.ReadActualPulse(AxisNo);
-            return _correction.ToLogical(pulse);
+            if (_driver != null)
+            {
+                var pulse = _driver.ReadActualPulse(AxisNo);
+                return _correction.ToLogical(pulse);
+            }
+            else if (_ckdDriver != null)
+            {
+                var degree = _ckdDriver.GetPositionDegree() / 1000.0;
+                return degree;
+            }
+            else
+            {
+                throw new InvalidOperationException("No valid driver assigned.");
+            }
         }
 
         public bool InPosition(double logicalTarget)
         {
-            var pos = GetPosition();
-            return Math.Abs(pos - logicalTarget) <= Config.InposTolerance;
+            if (_driver != null)
+            {
+                var pos = GetPosition();
+                return Math.Abs(pos - logicalTarget) <= Config.InposTolerance;
+            }
+            else if (_ckdDriver != null)
+            {
+                return _ckdDriver.IsInPosition();
+            }
+            else
+            {
+                throw new InvalidOperationException("No valid driver assigned.");
+            }
         }
 
         // ===== 동작 =====
         public int HomeSync()
         {
-            var rc = _driver.Home(AxisNo);
-            if (rc != 0) return rc;
-
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
+            if (_driver != null)
             {
-                if (_driver.IsHomeDone(AxisNo)) return 0;
-                Thread.Sleep(5);
+                var rc = _driver.Home(AxisNo);
+                if (rc != 0) return rc;
+
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
+                {
+                    if (_driver.IsHomeDone(AxisNo)) return 0;
+                    Thread.Sleep(5);
+                }
+            }
+            else if (_ckdDriver != null)
+            {
+                var rc = _ckdDriver.HomeSearch();
+                if (rc != 0) return rc;
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
+                {
+                    if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition()) return 0;
+                    Thread.Sleep(5);
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support HomeSync.");
             }
             return -1; // timeout
         }
 
+        public int HomeAsync()
+        {
+            if (_driver != null)
+            {
+                var rc = _driver.Home(AxisNo);
+                if (rc != 0) return rc;
+            }
+            else if (_ckdDriver != null)
+            {
+                var rc = _ckdDriver.HomeSearch();
+                if (rc != 0) return rc;
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support HomeAsync.");
+            }
+            return 0;
+        }
+
         public int MoveAbs(double logicalTarget, double vel = 5, double acc = 10, double dec = 10, double jerkPercent = 50)
         {
-            GuardSoftLimit(logicalTarget);
-            var p = _correction.ToHardware(logicalTarget);
-            var jerk = MapJerkPercentToDriver((int)jerkPercent, (int)jerkPercent);
-            return _driver.MoveAbsPulse(AxisNo, p, vel, acc, dec, jerk);
+            if (_driver != null)
+            {
+                GuardSoftLimit(logicalTarget);
+                var p = _correction.ToHardware(logicalTarget);
+                var jerk = MapJerkPercentToDriver((int)jerkPercent, (int)jerkPercent);
+                return _driver.MoveAbsPulse(AxisNo, p, vel, acc, dec, jerk);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support Absolute Move.");
+            }
         }
 
         public int MoveRel(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
-            var target = GetPosition() + logicalTarget;
-            return MoveAbs(target, vel, acc, dec, jerkPercent);
+            if (_driver != null)
+            {
+                var target = GetPosition() + logicalTarget;
+                return MoveAbs(target, vel, acc, dec, jerkPercent);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support Relative Move.");
+            }
+        }
+
+        public int MoveNextIndex()
+        {
+            if (_ckdDriver != null)
+            {
+                return _ckdDriver.RunProgram(CKDMotorDriver.ProgramNumber.Incremental_Div8_CCW);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support MoveNextIndex.");
+            }
+        }
+
+        public int MovePrevIndex()
+        {
+            if (_ckdDriver != null)
+            {
+                return _ckdDriver.RunProgram(CKDMotorDriver.ProgramNumber.Incremental_Div8_CW);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support MovePrevIndex.");
+            }
         }
 
         public int WaitMoveDone(int timeoutMs)
         {
-            if (timeoutMs < 0) timeoutMs = Setup.MoveTimeoutMs;
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeoutMs)
+            if (_driver != null)
             {
-                if (_driver.IsMoveDone(AxisNo)) return 0;
-                Thread.Sleep(5);
+                if (timeoutMs < 0) timeoutMs = Setup.MoveTimeoutMs;
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (_driver.IsMoveDone(AxisNo)) return 0;
+                    Thread.Sleep(5);
+                }
+            }
+            else if(_ckdDriver != null)
+            {
+                if (timeoutMs < 0) timeoutMs = Setup.MoveTimeoutMs;
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (_ckdDriver.IsInPosition() && _ckdDriver.IsRunWait()) return 0;
+                    Thread.Sleep(5);
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("No valid driver assigned.");
             }
             return -1;
         }
 
         public void JogStart(double signedVel)
         {
-            try { this.Servo(true); } catch (Exception ex) { Log.Write(ex); }
+            if (_driver != null)
+            {
+                try { this.Servo(true); } catch (Exception ex) { Log.Write(ex); }
 
-            double dAcc = 10; // Config.JogAcc;
-            double dDec = 10; // Config.JogDec;
+                double dAcc = 10; // Config.JogAcc;
+                double dDec = 10; // Config.JogDec;
 
-            var drv = this._driver as AjinDriver;
-            if (drv != null) drv.JogVelStart(this.AxisNo, signedVel, dAcc, dDec);
+                var drv = this._driver as AjinDriver;
+                if (drv != null) drv.JogVelStart(this.AxisNo, signedVel, dAcc, dDec);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support Jog Move.");
+            }
         }
 
         public void JogStop()
         {
-            var drv = this._driver as AjinDriver;
-            if (drv != null) drv.JogStop(this.AxisNo);
+            if (_driver != null)
+            {
+                var drv = this._driver as AjinDriver;
+                if (drv != null) drv.JogStop(this.AxisNo);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support Jog Stop.");
+            }
         }
 
         public void JogEStop()
         {
-            var drv = this._driver as AjinDriver;
-            if (drv != null) drv.JogEStop(this.AxisNo);
+            if (_driver != null)
+            {
+                var drv = this._driver as AjinDriver;
+                if (drv != null) drv.JogEStop(this.AxisNo);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support Jog EStop.");
+            }
         }
 
 
-        public int Stop() { return _driver.Stop(AxisNo); }
-        public int EmgStop() { return _driver.EmgStop(AxisNo); }
-        public int Servo(bool on) { return _driver.Servo(AxisNo, on); }
-        public int ClearAlarm() { return _driver.ClearAlarm(AxisNo); }
+        public int Stop() 
+        { 
+            if (_driver != null)
+            {
+                return _driver.Stop(AxisNo);
+            }
+            else if(_ckdDriver != null)
+            {
+                // CKD에서 정지 Command가 있는지 확인 필요
+                return 0;
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support Stop.");
+            }
+        }
+        public int EmgStop() 
+        {   
+            if (_driver != null)
+            {
+                return _driver.EmgStop(AxisNo);
+            }
+            else if(_ckdDriver != null)
+            {
+                // CKD에서 Software Emergency Stop Command는 있지만 급정지(E-Stop)은 없음
+                return 0;
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support EStop.");
+            }
+        }
+        public int Servo(bool on) 
+        {   
+            if (_driver != null)
+            {
+                return _driver.Servo(AxisNo, on);
+            }
+            else if (_ckdDriver != null)
+            {
+                return _ckdDriver.Servo(on);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support Servo On/Off.");
+            }
+        }
+        public int ClearAlarm() 
+        { 
+            if (_driver != null)
+            {
+                return _driver.ClearAlarm(AxisNo);
+            }
+            else if(_ckdDriver != null)
+            {
+                return _ckdDriver.AlarmReset();
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support ClearAlarm.");
+            }
+        }
 
         /// <summary>현재 위치를 논리값으로 재설정(Actual/Command 동기화)</summary>
         public int SetPositionLogical(double logicalValue)
         {
-            var p = _correction.ToHardware(logicalValue);
-            var rc = _driver.SetActualPulse(AxisNo, p);
-            if (rc != 0) return rc;
-            return _driver.SetCommandPulse(AxisNo, p);
+            if (_driver != null)
+            {
+                var p = _correction.ToHardware(logicalValue);
+                var rc = _driver.SetActualPulse(AxisNo, p);
+                if (rc != 0) return rc;
+                return _driver.SetCommandPulse(AxisNo, p);
+            }
+            else
+            {
+                throw new InvalidOperationException("This axis does not support SetPosition.");
+            }
         }
 
         // ===== 내부 유틸 =====
@@ -410,43 +635,69 @@ namespace QMC.Common.Motions
         //
         public MotionAxisStatus GetStatusSnapshot()
         {
-            // 드라이버는 pulse/초 단위 반환 → 보정계층으로 논리단위로 변환
-            var pulsesPerUnit = Setup.PulsesPerUnit;
+            if (_driver != null)
+            {
+                // 드라이버는 pulse/초 단위 반환 → 보정계층으로 논리단위로 변환
+                var pulsesPerUnit = Setup.PulsesPerUnit;
 
-            var cmdPulse = _driver.ReadCommandPulse(AxisNo);
-            var actPulse = _driver.ReadActualPulse(AxisNo);
-            var errPulse = _driver.ReadErrorPulse(AxisNo);
+                var cmdPulse = _driver.ReadCommandPulse(AxisNo);
+                var actPulse = _driver.ReadActualPulse(AxisNo);
+                var errPulse = _driver.ReadErrorPulse(AxisNo);
 
-            var cmdVelPps = _driver.ReadCommandVelPulsePerSec(AxisNo);
-            var actVelPps = _driver.ReadActualVelPulsePerSec(AxisNo);
+                var cmdVelPps = _driver.ReadCommandVelPulsePerSec(AxisNo);
+                var actVelPps = _driver.ReadActualVelPulsePerSec(AxisNo);
 
-            Status.PV.CommandPosition = _correction.ToLogical(cmdPulse);
-            Status.PV.ActualPosition = _correction.ToLogical(actPulse);
-            Status.PV.ErrorPosition = _correction.ToLogical(errPulse);
-            Status.PV.CommandVelocity = cmdVelPps / pulsesPerUnit;   // pulse/s → unit/s
-            Status.PV.ActualVelocity = actVelPps / pulsesPerUnit;
+                Status.PV.CommandPosition = _correction.ToLogical(cmdPulse);
+                Status.PV.ActualPosition = _correction.ToLogical(actPulse);
+                Status.PV.ErrorPosition = _correction.ToLogical(errPulse);
+                Status.PV.CommandVelocity = cmdVelPps / pulsesPerUnit;   // pulse/s → unit/s
+                Status.PV.ActualVelocity = actVelPps / pulsesPerUnit;
 
-            Status.IO.ServoOn = _driver.ReadServoOn(AxisNo);
-            Status.IO.Alarm = _driver.ReadAlarm(AxisNo);
-            Status.IO.NegativeLimitSensor = _driver.ReadNegativeLimit(AxisNo);
-            Status.IO.PositiveLimitSensor = _driver.ReadPositiveLimit(AxisNo);
-            Status.IO.HomeSensor = _driver.ReadHomeSensor(AxisNo);
+                Status.IO.ServoOn = _driver.ReadServoOn(AxisNo);
+                Status.IO.Alarm = _driver.ReadAlarm(AxisNo);
+                Status.IO.NegativeLimitSensor = _driver.ReadNegativeLimit(AxisNo);
+                Status.IO.PositiveLimitSensor = _driver.ReadPositiveLimit(AxisNo);
+                Status.IO.HomeSensor = _driver.ReadHomeSensor(AxisNo);
 
-            Status.State.Done = _driver.ReadDone(AxisNo);
-            Status.State.Inposition = _driver.ReadInposition(AxisNo);
-            Status.State.InpositionDone = _driver.ReadInpositionDone(AxisNo);
-            Status.State.InpositionTimeout = _driver.ReadInpositionTimeout(AxisNo);
-            Status.State.HomeEnd = _driver.ReadHomeEnd(AxisNo);
-            Status.State.HomeTimeout = _driver.ReadHomeTimeout(AxisNo);
+                Status.State.Done = _driver.ReadDone(AxisNo);
+                Status.State.Inposition = _driver.ReadInposition(AxisNo);
+                Status.State.InpositionDone = _driver.ReadInpositionDone(AxisNo);
+                Status.State.InpositionTimeout = _driver.ReadInpositionTimeout(AxisNo);
+                Status.State.HomeEnd = _driver.ReadHomeEnd(AxisNo);
+                Status.State.HomeTimeout = _driver.ReadHomeTimeout(AxisNo);
 
-            Status.TimestampUtc = DateTime.UtcNow;
+                Status.TimestampUtc = DateTime.UtcNow;
+                return Status;
+            }
+            else if (_ckdDriver != null)
+            {
+                var cmdDeg = _ckdDriver.GetPositionDegree();
+                var actDeg = cmdDeg;
+                var errDeg = _ckdDriver.GetErrorDegree();
+
+                var cmdVelRpm = _ckdDriver.GetVelocity();
+                var actVelRpm = cmdVelRpm;
+
+                Status.PV.CommandPosition = cmdDeg;
+                Status.PV.ActualPosition = actDeg;
+                Status.PV.ErrorPosition = errDeg;
+                Status.PV.CommandVelocity = cmdVelRpm;
+                Status.PV.ActualVelocity = actVelRpm;
+
+                Status.IO.ServoOn = _ckdDriver.IsServoOn();
+                Status.IO.Alarm = _ckdDriver.IsAlarm();
+                Status.IO.NegativeLimitSensor = false; // DD Motor에 NegativeLimit 없음
+                Status.IO.PositiveLimitSensor = false; // DD Motor에 PositiveLimit 없음
+                Status.IO.HomeSensor = _ckdDriver.IsHomePosition();
+
+                Status.State.Done = _ckdDriver.IsInPosition() && _ckdDriver.IsRunWait();
+                Status.State.Inposition = _ckdDriver.IsInPosition();
+                Status.State.InpositionDone = _ckdDriver.IsInPosition() && _ckdDriver.IsRunWait();
+                Status.State.InpositionTimeout = false; // 확인 필요.?
+                Status.State.HomeEnd = _ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition() && _ckdDriver.IsRunWait();
+                Status.State.HomeTimeout = false; // 확인 필요.?
+            }
             return Status;
         }
-
-
-        //CKD
-
-
-
     }
 }

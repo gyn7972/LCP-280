@@ -23,9 +23,11 @@ namespace QMC.LCP_280.Process.Unit
 
         public override void AddComponents()
         {
+            // 축 바인딩까지 포함해서 불러오기
             InputRingTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
             InputRingTransferConfig.InitializeDefaultTeachingPositions();
 
+            // TeachingPosition에 Axis 바인딩
             TeachingPositions.Clear();
             foreach (var tp in InputRingTransferConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
@@ -64,7 +66,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     double pos = tp.AxisPositions[axisKey];
                     int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
+                    if (r != 0) result = r; // 마지막 에러 반환
                 }
             }
             return result;

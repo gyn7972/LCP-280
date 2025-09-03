@@ -22,6 +22,39 @@ namespace QMC.LCP_280.Process.Unit
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
+        // IO 추가 필요시 여기에 정의
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = new[]
+        {
+            new HardInputDef { No = 1, Name = "LEFT TOOL AIR TANK PRESSURE CHECK",    Disp = "X032" },
+            new HardInputDef { No = 2, Name = "LEFT TOOL VACUUM TANK PRESSURE CHECK", Disp = "X033" },
+            new HardInputDef { No = 3, Name = "LEFT TOOL ARM 1 FLOW CHECK",           Disp = "X034" },
+            new HardInputDef { No = 4, Name = "LEFT TOOL ARM 2 FLOW CHECK",           Disp = "X035" },
+            new HardInputDef { No = 5, Name = "LEFT TOOL ARM 3 FLOW CHECK",           Disp = "X036" },
+            new HardInputDef { No = 6, Name = "LEFT TOOL ARM 4 FLOW CHECK",           Disp = "X037" }
+        };
+
+        [JsonIgnore]
+        public HardOutputDef[] HardOutputs => _hardOutputs;
+        [JsonIgnore]
+        private static readonly HardOutputDef[] _hardOutputs = new[]
+        {
+            new HardOutputDef { No = 1,  Name = "LEFT ARM 1 VACUUM", Disp = "Y039" },
+            new HardOutputDef { No = 2,  Name = "LEFT ARM 2 VACUUM", Disp = "Y040" },
+            new HardOutputDef { No = 3,  Name = "LEFT ARM 3 VACUUM", Disp = "Y041" },
+            new HardOutputDef { No = 4,  Name = "LEFT ARM 4 VACUUM", Disp = "Y042" },
+            new HardOutputDef { No = 5,  Name = "LEFT ARM 1 BLOW",   Disp = "Y043" },
+            new HardOutputDef { No = 6,  Name = "LEFT ARM 2 BLOW",   Disp = "Y044" },
+            new HardOutputDef { No = 7,  Name = "LEFT ARM 3 BLOW",   Disp = "Y045" },
+            new HardOutputDef { No = 8,  Name = "LEFT ARM 4 BLOW",   Disp = "Y046" },
+            new HardOutputDef { No = 9,  Name = "LEFT ARM 1 VENT",   Disp = "Y047" },
+            new HardOutputDef { No = 10, Name = "LEFT ARM 2 VENT",   Disp = "Y048" },
+            new HardOutputDef { No = 11, Name = "LEFT ARM 3 VENT",   Disp = "Y049" },
+            new HardOutputDef { No = 12, Name = "LEFT ARM 4 VENT",   Disp = "Y050" }
+        };
+
         public InputDieTransferConfig() : base("InputDieTransferConfig")
         {
             //InitializeDefaultTeachingPositions();
@@ -41,11 +74,8 @@ namespace QMC.LCP_280.Process.Unit
                     var axisPositions = new Dictionary<string, double>
                     {
                         { "Left Tool T Axis", 0.0 },
-                        { "Right Tool T Axis", 100.0 },
                         { "Left Pick Z Axis", 200.0 },
                         { "Left Place Z Axis", 0.0 },
-                        { "Right Pick Z Axis", 100.0 },
-                        { "Right Place Z Axis", 200.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

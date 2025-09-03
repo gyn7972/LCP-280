@@ -114,9 +114,9 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.cameraPropertyCollectionView.Controls.Add(this.btn_Save_Setup_Cylinder);
             this.cameraPropertyCollectionView.GroupName = "Property";
-            this.cameraPropertyCollectionView.Location = new System.Drawing.Point(229, 482);
+            this.cameraPropertyCollectionView.Location = new System.Drawing.Point(239, 489);
             this.cameraPropertyCollectionView.Name = "cameraPropertyCollectionView";
-            this.cameraPropertyCollectionView.Size = new System.Drawing.Size(400, 215);
+            this.cameraPropertyCollectionView.Size = new System.Drawing.Size(444, 215);
             this.cameraPropertyCollectionView.TabIndex = 13;
             // 
             // btn_Save_Setup_Cylinder
@@ -146,11 +146,11 @@ namespace QMC.LCP_280.Process.Unit
             this.visionImageViewer.FrameRate = 1D;
             this.visionImageViewer.InputImage = null;
             this.visionImageViewer.IsViewCustomizedImage = false;
-            this.visionImageViewer.Location = new System.Drawing.Point(229, 22);
+            this.visionImageViewer.Location = new System.Drawing.Point(238, 22);
             this.visionImageViewer.Name = "visionImageViewer";
             this.visionImageViewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.visionImageViewer.Simulated = false;
-            this.visionImageViewer.Size = new System.Drawing.Size(400, 445);
+            this.visionImageViewer.Size = new System.Drawing.Size(445, 445);
             this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.visionImageViewer.TabIndex = 16;
             this.visionImageViewer.TabStop = false;
@@ -162,20 +162,20 @@ namespace QMC.LCP_280.Process.Unit
             this.iluminatorListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.iluminatorListBoxItemsView.BorderWidth = 2;
             this.iluminatorListBoxItemsView.GroupName = "Illuminator";
-            this.iluminatorListBoxItemsView.Location = new System.Drawing.Point(634, 15);
+            this.iluminatorListBoxItemsView.Location = new System.Drawing.Point(692, 15);
             this.iluminatorListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.iluminatorListBoxItemsView.Name = "iluminatorListBoxItemsView";
             this.iluminatorListBoxItemsView.SelectedIndex = -1;
-            this.iluminatorListBoxItemsView.Size = new System.Drawing.Size(212, 675);
+            this.iluminatorListBoxItemsView.Size = new System.Drawing.Size(189, 675);
             this.iluminatorListBoxItemsView.TabIndex = 17;
             // 
             // illuminatorPropertyCollectionView
             // 
             this.illuminatorPropertyCollectionView.Controls.Add(this.individualMenuButton1);
             this.illuminatorPropertyCollectionView.GroupName = "Property";
-            this.illuminatorPropertyCollectionView.Location = new System.Drawing.Point(851, 327);
+            this.illuminatorPropertyCollectionView.Location = new System.Drawing.Point(887, 314);
             this.illuminatorPropertyCollectionView.Name = "illuminatorPropertyCollectionView";
-            this.illuminatorPropertyCollectionView.Size = new System.Drawing.Size(400, 247);
+            this.illuminatorPropertyCollectionView.Size = new System.Drawing.Size(370, 247);
             this.illuminatorPropertyCollectionView.TabIndex = 18;
             // 
             // individualMenuButton1
@@ -201,11 +201,11 @@ namespace QMC.LCP_280.Process.Unit
             this.iluminatorChannelListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.iluminatorChannelListBoxItemsView.BorderWidth = 2;
             this.iluminatorChannelListBoxItemsView.GroupName = "Channel";
-            this.iluminatorChannelListBoxItemsView.Location = new System.Drawing.Point(851, 15);
+            this.iluminatorChannelListBoxItemsView.Location = new System.Drawing.Point(887, 15);
             this.iluminatorChannelListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.iluminatorChannelListBoxItemsView.Name = "iluminatorChannelListBoxItemsView";
             this.iluminatorChannelListBoxItemsView.SelectedIndex = -1;
-            this.iluminatorChannelListBoxItemsView.Size = new System.Drawing.Size(400, 303);
+            this.iluminatorChannelListBoxItemsView.Size = new System.Drawing.Size(370, 303);
             this.iluminatorChannelListBoxItemsView.TabIndex = 19;
             // 
             // btn_Camera_Setup
@@ -236,7 +236,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Illuninator_Setup.Location = new System.Drawing.Point(746, 706);
+            this.btn_Illuninator_Setup.Location = new System.Drawing.Point(784, 706);
             this.btn_Illuninator_Setup.Name = "btn_Illuninator_Setup";
             this.btn_Illuninator_Setup.Size = new System.Drawing.Size(100, 40);
             this.btn_Illuninator_Setup.TabIndex = 21;
@@ -254,7 +254,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Off_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Off_Illuminator.ForeColor = System.Drawing.Color.Black;
             this.btn_Off_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Off_Illuminator.Location = new System.Drawing.Point(229, 40);
+            this.btn_Off_Illuminator.Location = new System.Drawing.Point(206, 40);
             this.btn_Off_Illuminator.Name = "btn_Off_Illuminator";
             this.btn_Off_Illuminator.Size = new System.Drawing.Size(150, 50);
             this.btn_Off_Illuminator.TabIndex = 1;
@@ -272,7 +272,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_On_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_On_Illuminator.ForeColor = System.Drawing.Color.Black;
             this.btn_On_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_On_Illuminator.Location = new System.Drawing.Point(22, 40);
+            this.btn_On_Illuminator.Location = new System.Drawing.Point(21, 40);
             this.btn_On_Illuminator.Name = "btn_On_Illuminator";
             this.btn_On_Illuminator.Size = new System.Drawing.Size(150, 50);
             this.btn_On_Illuminator.TabIndex = 0;
@@ -285,9 +285,9 @@ namespace QMC.LCP_280.Process.Unit
             this.gbIlluminatorControl.BackColor = System.Drawing.Color.White;
             this.gbIlluminatorControl.Controls.Add(this.btn_Off_Illuminator);
             this.gbIlluminatorControl.Controls.Add(this.btn_On_Illuminator);
-            this.gbIlluminatorControl.Location = new System.Drawing.Point(852, 626);
+            this.gbIlluminatorControl.Location = new System.Drawing.Point(887, 626);
             this.gbIlluminatorControl.Name = "gbIlluminatorControl";
-            this.gbIlluminatorControl.Size = new System.Drawing.Size(400, 108);
+            this.gbIlluminatorControl.Size = new System.Drawing.Size(370, 108);
             this.gbIlluminatorControl.TabIndex = 22;
             this.gbIlluminatorControl.TabStop = false;
             this.gbIlluminatorControl.Text = "Control";
@@ -302,7 +302,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Camera_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Save_Camera_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Save_Camera_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Camera_Setup.Location = new System.Drawing.Point(529, 704);
+            this.btn_Save_Camera_Setup.Location = new System.Drawing.Point(583, 710);
             this.btn_Save_Camera_Setup.Name = "btn_Save_Camera_Setup";
             this.btn_Save_Camera_Setup.Size = new System.Drawing.Size(100, 40);
             this.btn_Save_Camera_Setup.TabIndex = 23;
@@ -320,7 +320,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Save_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Save_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Illuninator_Setup.Location = new System.Drawing.Point(1148, 579);
+            this.btn_Save_Illuninator_Setup.Location = new System.Drawing.Point(1157, 567);
             this.btn_Save_Illuninator_Setup.Name = "btn_Save_Illuninator_Setup";
             this.btn_Save_Illuninator_Setup.Size = new System.Drawing.Size(100, 40);
             this.btn_Save_Illuninator_Setup.TabIndex = 24;
