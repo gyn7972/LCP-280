@@ -18,11 +18,26 @@ namespace QMC.LCP_280.Process.Unit
         private PropertyCollection propertyCollection;
         private string selectSourcemeterName;
 
+        private FormSetupKeithleyInstrument setupDialog = new FormSetupKeithleyInstrument();
+
         public Instrument_Setup()
         {
             InitializeComponent();
             InitializeUI();
+
+            setupDialog.OnNewResourceSelected += SetupDialog_OnNewResourceSelected;
         }
+
+        private void Instrument_Setup_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (selectSourcemeter != null)
+            {
+                selectSourcemeter.OnReceived -= SelectSourcemeter_OnReceived;
+                selectSourcemeter.OnSessionOpened -= SelectSourcemeter_OnSessionOpened;
+                selectSourcemeter.OnSessionClosed -= SelectSourcemeter_OnSessionClosed;
+                selectSourcemeter.OnError -= SelectSourcemeter_OnError;
+            }
+        }     
 
         public void InitializeUI()
         {
@@ -64,22 +79,27 @@ namespace QMC.LCP_280.Process.Unit
 
         private void SelectSourcemeter_OnError(object sender, Exception e)
         {
-            tbLog.AppendText($"[{selectSourcemeterName}] Error: {e.Message}.");
+            tbLog.AppendText($"[{selectSourcemeterName}] Error: {e.Message}.\n");
         }
 
         private void SelectSourcemeter_OnSessionClosed(object sender, EventArgs e)
         {
-            tbLog.AppendText($"[{selectSourcemeterName}] Session closed.");
+            tbLog.AppendText($"[{selectSourcemeterName}] Session closed.\n");
         }
 
         private void SelectSourcemeter_OnSessionOpened(object sender, EventArgs e)
         {
-            tbLog.AppendText($"[{selectSourcemeterName}] Session opened.");
+            tbLog.AppendText($"[{selectSourcemeterName}] Session opened.\n");
         }
 
         private void SelectSourcemeter_OnReceived(object sender, EventArgs e)
         {
-            tbLog.AppendText($"[{selectSourcemeterName}] Message received.");
+            tbLog.AppendText($"[{selectSourcemeterName}] Message received.\n");
+        }
+        private void SetupDialog_OnNewResourceSelected(object sender, string e)
+        {
+            propertyCollection["ResourceName"].Value = e;
+            configPropertyCollectionView.SetProperties(propertyCollection);
         }
 
         private void DisplaySelectSourcemeterInformation(KeithleySourcemeter sourcemeter)
@@ -116,25 +136,47 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btn_Setup_Click(object sender, EventArgs e)
         {
-            if (selectSourcemeter == null)
-            {
-                MessageBox.Show($"No sourcemeter selected or invalid instance. (Select: {lbivSelectItem.SelectedItemName})");
-                return;
-            }
-
-            FormSetupKeithleyInstrument dialog = new FormSetupKeithleyInstrument(selectSourcemeter);
-            dialog.ShowDialog(this);
+            setupDialog?.ShowDialog(this);
         }
 
         private void btn_Initialize_Click(object sender, EventArgs e)
         {
-            if (selectSourcemeter == null)
+            selectSourcemeter?.Initialize();
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            try
             {
-                MessageBox.Show($"No sourcemeter selected or invalid instance. (Select: {lbivSelectItem.SelectedItemName})");
+                selectSourcemeter?.Config.ApplyValueFromPropertyCollection(propertyCollection);
+                selectSourcemeter?.Config.Save();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save configuration. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-
-            selectSourcemeter.Initialize();
         }
+
+        private void btn_SendTest_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                //selectSourcemeter?.Write(tbSendText.Text);
+                string response = "";
+
+                if (selectSourcemeter?.Query(tbSendText.Text, ref response) == 0)
+                    MessageBox.Show(response);
+                else
+                    MessageBox.Show("No response received.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to send command. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+        }
+
+        
     }
 }

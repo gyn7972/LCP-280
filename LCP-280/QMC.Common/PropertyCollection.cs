@@ -115,6 +115,24 @@ namespace QMC.Common
             set { _properties[index] = value; }
         }
 
+        public PropertyBase this[string title]
+        {
+            get
+            {
+                var prop = _properties.FirstOrDefault(p => p.Title == title);
+                if (prop == null)
+                    throw new KeyNotFoundException($"Property with title '{title}' not found.");
+                return prop;
+            }
+            set
+            {
+                var index = _properties.FindIndex(p => p.Title == title);
+                if (index == -1)
+                    throw new KeyNotFoundException($"Property with title '{title}' not found.");
+                _properties[index] = value;
+            }
+        }
+
         public int Count => _properties.Count;
 
         public IEnumerator<PropertyBase> GetEnumerator()

@@ -68,16 +68,14 @@ namespace QMC.Common.Keithley
             {
                 CloseSession();
 
-                ResourceManager resourceManager = new ResourceManager();
-
-                session = (MessageBasedSession)resourceManager.Open(resourceName);
-                session.SynchronizeCallbacks = false;
-                session.TimeoutMilliseconds = 1000;
-
-                // Enable Service Request Event
-                session.EnableEvent(EventType.ServiceRequest);
-                session.ServiceRequest += OnServiceRequest;
-
+                using (var resourceManager = new ResourceManager())
+                {
+                    session = (MessageBasedSession)resourceManager.Open(resourceName);
+                    session.SynchronizeCallbacks = true;
+                    session.TimeoutMilliseconds = 1000;
+                    session.ServiceRequest += OnServiceRequest;
+                }
+                
                 isConnected = true;
 
                 // Open Session Event

@@ -207,6 +207,36 @@ namespace QMC.Common.Keithley
         #endregion
 
         #region Methods
+        public int Write(string command)
+        {
+            if (!communicator.IsConnected)
+                return -1;
+            int ret = 0;
+            if (!communicator.Write(command))
+                ret = -2;
+            return ret;
+        }
+
+        public int Read(ref string response)
+        {
+            if (!communicator.IsConnected)
+                return -1;
+            int ret = 0;
+            if (!communicator.Read(ref response))
+                ret = -2;
+            return ret;
+        }
+
+        public int Query(string command, ref string response)
+        {
+            if (!communicator.IsConnected)
+                return -1;
+            int ret = 0;
+            if (!communicator.Query(command, ref response))
+                ret = -2;
+            return ret;
+        }
+
         public bool LoadParameter()
         {
             bool result = false;
