@@ -150,7 +150,7 @@ namespace QMC.LCP_280.Process.Unit
             this.visionImageViewer.Name = "visionImageViewer";
             this.visionImageViewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.visionImageViewer.Simulated = false;
-            this.visionImageViewer.Size = new System.Drawing.Size(445, 445);
+            this.visionImageViewer.Size = new System.Drawing.Size(445, 372);
             this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.visionImageViewer.TabIndex = 16;
             this.visionImageViewer.TabStop = false;
