@@ -52,7 +52,7 @@
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.configPropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.gbControl = new System.Windows.Forms.GroupBox();
-            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.btnSave = new QMC.Common.IndividualMenuButton();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -181,6 +181,7 @@
             this.btn_SendTest.TabStop = false;
             this.btn_SendTest.Text = "Send";
             this.btn_SendTest.UseVisualStyleBackColor = false;
+            this.btn_SendTest.Click += new System.EventHandler(this.btn_SendTest_Click);
             // 
             // tbSendText
             // 
@@ -376,7 +377,7 @@
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel3.Controls.Add(this.configPropertyCollectionView, 0, 0);
             this.tableLayoutPanel3.Controls.Add(this.gbControl, 0, 2);
-            this.tableLayoutPanel3.Controls.Add(this.individualMenuButton1, 0, 1);
+            this.tableLayoutPanel3.Controls.Add(this.btnSave, 0, 1);
             this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel3.Location = new System.Drawing.Point(799, 3);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -409,24 +410,25 @@
             this.gbControl.TabStop = false;
             this.gbControl.Text = "Control";
             // 
-            // individualMenuButton1
+            // btnSave
             // 
-            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.Dock = System.Windows.Forms.DockStyle.Right;
-            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton1.Location = new System.Drawing.Point(348, 327);
-            this.individualMenuButton1.Name = "individualMenuButton1";
-            this.individualMenuButton1.Size = new System.Drawing.Size(90, 42);
-            this.individualMenuButton1.TabIndex = 25;
-            this.individualMenuButton1.TabStop = false;
-            this.individualMenuButton1.Text = "Save";
-            this.individualMenuButton1.UseVisualStyleBackColor = false;
+            this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSave.CustomForeColor = System.Drawing.Color.Black;
+            this.btnSave.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnSave.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSave.ForeColor = System.Drawing.Color.Black;
+            this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnSave.Location = new System.Drawing.Point(348, 327);
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(90, 42);
+            this.btnSave.TabIndex = 25;
+            this.btnSave.TabStop = false;
+            this.btnSave.Text = "Save";
+            this.btnSave.UseVisualStyleBackColor = false;
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
             // tabPage2
             // 
@@ -448,6 +450,7 @@
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Name = "Instrument_Setup";
             this.Text = "Instrument_Setup";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Instrument_Setup_FormClosed);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
@@ -488,6 +491,6 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
         private System.Windows.Forms.GroupBox gbControl;
         private Common.PropertyCollectionView configPropertyCollectionView;
-        private Common.IndividualMenuButton individualMenuButton1;
+        private Common.IndividualMenuButton btnSave;
     }
 }
