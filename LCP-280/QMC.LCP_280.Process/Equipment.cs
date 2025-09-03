@@ -161,6 +161,16 @@ namespace QMC.LCP_280.Process
         {
             return Sourcemeters.TryGetValue(key, out var sm) ? sm : null;
         }
+
+        // Spectrometer
+        public Dictionary<string, CASSpectrometer> Spectrometers { get; } = new Dictionary<string, CASSpectrometer>(StringComparer.OrdinalIgnoreCase);
+        // == 편의 프로퍼티 추가 ==
+        public CASSpectrometer Spectrometer => GetSpectrometer("Spectrometer");
+
+        private CASSpectrometer GetSpectrometer(string key)
+        {
+            return Spectrometers.TryGetValue(key, out var sm) ? sm : null;
+        }
         #endregion
 
         #region Constructor & Initialization
@@ -202,6 +212,9 @@ namespace QMC.LCP_280.Process
 
                 // === Sourcemeter 초기화 ===
                 InitializeSourcemeters();
+
+                // === Spectrometer 초기화 ===
+                InitializeSpectrometers();
 
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
@@ -1348,6 +1361,28 @@ namespace QMC.LCP_280.Process
             }
         }
 
+        private void InitializeSpectrometers()
+        {
+            // 파일로 변경 필요. ( Equipment_Setup.json )
+            var list = new List<string>()
+            {
+                "Index_Prober_Spectrometer"
+            };
+
+            foreach (string name in list)
+            {
+                try
+                {
+                    var spc = new CASSpectrometer(name);
+                    Spectrometers[name] = spc;
+                    Console.WriteLine($"[Sourcemeter] {name} ready");
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
+            }
+        }
     }
 
     #region Supporting Classes and Enums

@@ -747,6 +747,7 @@ namespace QMC.Common.Motions.CKD
         private async Task RunReadInputDataMonitoring(CancellationToken ct)
         {
             var sw = new StopWatch();
+            SendSetMonitorCodeCommand();
             RequestMonitorExecution(true);
             while (!ct.IsCancellationRequested)
             {

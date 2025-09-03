@@ -264,7 +264,7 @@ namespace QMC.Common.Motions
             {
                 throw new InvalidOperationException("This axis does not support HomeAsync.");
             }
-            return -1; // timeout
+            return 0;
         }
 
         public int MoveAbs(double logicalTarget, double vel = 5, double acc = 10, double dec = 10, double jerkPercent = 50)

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using QMC.Common;
 using QMC.Common.Motions;
+using QMC.Common.Motions.CKD;
 
 namespace QMC.LCP_280.Process.Unit
 {
