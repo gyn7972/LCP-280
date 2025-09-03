@@ -472,6 +472,31 @@ namespace QMC.Common.Motions
             }
         }
 
+        /// <summary>
+        /// 현재 Setup/Config를 AjinDriver 하드웨어에 적용
+        /// (CKD나 다른 드라이버는 무시)
+        /// </summary>
+        public int ApplyToDriver()
+        {
+            if (_driver != null)
+            {
+                try
+                {
+                    // 프로파일 모드 동기화
+                    _driver.ProfileMode = Config.ProfileMode;
+                    
+                    // 하드웨어 설정 적용
+                    return _driver.ConfigureFromSetupAndConfig(Setup.AxisNo, Setup, Config);
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("MotionAxis", $"ApplyToDriver 실패 - 축: {Name}, 오류: {ex.Message}");
+                    return -1;
+                }
+            }
+            return 0; // CKD나 다른 드라이버는 성공으로 처리
+        }
+
         // ===== 내부 유틸 =====
         private void GuardSoftLimit(double logicalTarget)
         {
