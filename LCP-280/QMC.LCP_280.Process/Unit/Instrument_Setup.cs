@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Keithley;
+using QMC.Common.Spectrometer;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,8 +17,9 @@ namespace QMC.LCP_280.Process.Unit
     {
         private Equipment equipment => Equipment.Instance;
 
+        // Sourcemeter
         private KeithleySourcemeter selectSourcemeter;
-        private PropertyCollection pcConfig;
+        private PropertyCollection pcSmuConfig;
         private string selectSourcemeterName;
 
         private KeithleySourcemeterChannel selectSourcemeterChannel;
@@ -25,67 +27,78 @@ namespace QMC.LCP_280.Process.Unit
 
         private FormSetupKeithleyInstrument setupDialog = new FormSetupKeithleyInstrument();
 
+        // Spectrometer
+        private CASSpectrometer selectSpectrometer;
+        private PropertyCollection pcSpcConfig;
+        private string selectSpectrometerName;
+
+        private FormSetupCASSpectrometerInterface setupSpectrometerDialog = new FormSetupCASSpectrometerInterface();
+
+
         public Instrument_Setup()
         {
             InitializeComponent();
             InitializeUI();
 
             setupDialog.OnNewResourceSelected += SetupDialog_OnNewResourceSelected;
+            setupSpectrometerDialog.OnNewDeviceConfigApplied += SetupSpectrometerDialog_OnNewDeviceConfigApplied;
+        }
+
+        public void InitializeUI()
+        {
+            InitializeSourcemeterListView();
+            InitializeSpectrometerListView();
         }
 
         private void Instrument_Setup_FormClosed(object sender, FormClosedEventArgs e)
         {
-            if (selectSourcemeter != null)
-            {
-                selectSourcemeter.Communicator.OnReceived -= SelectSourcemeter_OnReceived;
-                selectSourcemeter.Communicator.OnSessionOpened -= SelectSourcemeter_OnSessionOpened;
-                selectSourcemeter.Communicator.OnReceived -= SelectSourcemeter_OnSessionClosed;
-                selectSourcemeter.Communicator.OnError -= SelectSourcemeter_OnError;
-            }
-        }     
-
-        public void InitializeUI()
-        {
-            InitializeListView();
         }
 
-        private void InitializeListView()
+        #region Sourcemeter Pages
+        private void InitializeSourcemeterListView()
         {
             List<string> names = equipment.Sourcemeters.Keys.ToList();
-            lbivSelectItem.SetItems(names.ToArray());
+            lbivSelectSourcemeter.SetItems(names.ToArray());
         }
 
         private void lbivSelectItem_ItemSelected(object sender, int e)
         {
-            // Unsubscribe previous event handlers
-            if (selectSourcemeter != null)
-            {
-                selectSourcemeter.Communicator.OnReceived -= SelectSourcemeter_OnReceived;
-                selectSourcemeter.Communicator.OnSessionOpened -= SelectSourcemeter_OnSessionOpened;
-                selectSourcemeter.Communicator.OnSessionClosed -= SelectSourcemeter_OnSessionClosed;
-                selectSourcemeter.Communicator.OnError -= SelectSourcemeter_OnError;
-            }
-
             // Select new sourcemeter
-            selectSourcemeter = equipment.Sourcemeters[lbivSelectItem.SelectedItemName];
-
-            // Subscribe to new event handlers
+            selectSourcemeter = equipment.Sourcemeters[lbivSelectSourcemeter.SelectedItemName];
             if (selectSourcemeter != null)
             {
+                // sourcemeter
                 selectSourcemeterName = selectSourcemeter.Name;
-                selectSourcemeter.Communicator.OnReceived += SelectSourcemeter_OnReceived;
-                selectSourcemeter.Communicator.OnReceived += SelectSourcemeter_OnSessionOpened;
-                selectSourcemeter.Communicator.OnSessionClosed += SelectSourcemeter_OnSessionClosed;
-                selectSourcemeter.Communicator.OnError += SelectSourcemeter_OnError;
 
+                // sourcemeter channel
                 List<string> channelNames = selectSourcemeter.Channels.Keys.ToList();
                 lbivSelectChannel.SetItems(channelNames.ToArray());
-
                 selectSourcemeterChannel = null;
-                selectSourcemeterChannelName = "";
             }
             
             DisplaySelectSourcemeterInformation(selectSourcemeter);
+        }
+
+        private void DisplaySelectSourcemeterInformation(KeithleySourcemeter sourcemeter)
+        {
+            if (sourcemeter == null)
+            {
+                MessageBox.Show($"No sourcemeter selected or invalid instance. (Select: {lbivSelectSourcemeter.SelectedItemName})");
+                return;
+            }
+
+            // Device Information
+            lbModelValue.Text = selectSourcemeter.Name;
+
+            // Device Status
+            lbStatusValue.Text = selectSourcemeter.Communicator.IsConnected ? "Connected" : "Disconnected";
+
+            // Comm. Terminal
+            tbLog.Clear();
+            tbSendText.Clear();
+
+            pcSmuConfig = selectSourcemeter.Config.GetPropertyCollection();
+            pcvConfig.SetProperties(pcSmuConfig);
         }
 
         private void lbivSelectChannel_ItemSelected(object sender, int e)
@@ -116,32 +129,19 @@ namespace QMC.LCP_280.Process.Unit
         {
             tbLog.AppendText($"[{selectSourcemeterName}] Message received.\n");
         }
+
         private void SetupDialog_OnNewResourceSelected(object sender, string e)
         {
-            pcConfig["ResourceName"].Value = e;
-            pcvConfig.SetProperties(pcConfig);
-        }
-
-        private void DisplaySelectSourcemeterInformation(KeithleySourcemeter sourcemeter)
-        {
-            if (sourcemeter == null)
+            try
             {
-                MessageBox.Show($"No sourcemeter selected or invalid instance. (Select: {lbivSelectItem.SelectedItemName})");
+                pcSmuConfig["ResourceName"].Value = e;
+                pcvConfig.SetProperties(pcSmuConfig);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred. {ex.Message}");
                 return;
             }
-
-            // Device Information
-            lbModelValue.Text = selectSourcemeter.Name;
-
-            // Device Status
-            lbStatusValue.Text = selectSourcemeter.Communicator.IsConnected ? "Connected" : "Disconnected";
-
-            // Comm. Terminal
-            tbLog.Clear();
-            tbSendText.Clear();
-
-            pcConfig = selectSourcemeter.Config.GetPropertyCollection();
-            pcvConfig.SetProperties(pcConfig);
         }
 
         private void btn_Connect_Click(object sender, EventArgs e)
@@ -227,7 +227,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (MessageBox.Show("Would you like to save your settings?", "Save", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
-                    selectSourcemeter.Config.ApplyValueFromPropertyCollection(pcConfig);
+                    selectSourcemeter.Config.ApplyValueFromPropertyCollection(pcSmuConfig);
                     if (selectSourcemeter.Config.Save() == 0)
                     {
                         MessageBox.Show($"The settings for [{selectSourcemeter.Name}] have been successfully saved.");
@@ -260,17 +260,142 @@ namespace QMC.LCP_280.Process.Unit
 
             try
             {
-
+                if (selectSourcemeter.Communicator.Write(tbSendText.Text))
+                {
+                    tbLog.AppendText($"[{selectSourcemeter.Name}] Sent: {tbSendText.Text}\n");
+                }
+                else
+                {
+                    tbLog.AppendText($"[{selectSourcemeter.Name}] Failed to send: {tbSendText.Text}\n");
+                }
             }
             catch (Exception ex)
             {
-
+                MessageBox.Show($"Failed to write session. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
             }
         }
 
         private void btnChannelTest_Click(object sender, EventArgs e)
         {
-
+            // Do this.
         }
+        #endregion
+
+        #region Spectrometer Pages
+        private void InitializeSpectrometerListView()
+        {
+            List<string> names = equipment.Spectrometers.Keys.ToList();
+            lbivSelectSpectrometer.SetItems(names.ToArray());
+        }
+
+        private void lbivSelectSpectrometer_ItemSelected(object sender, int e)
+        {
+            // Select new sourcemeter
+            selectSpectrometer = equipment.Spectrometers[lbivSelectSpectrometer.SelectedItemName];
+            if (selectSpectrometer != null)
+            {
+                selectSpectrometerName = selectSpectrometer.Name;
+            }
+
+            DisplaySelectSpectrometerInformation(selectSpectrometer);
+        }
+
+        private void DisplaySelectSpectrometerInformation(CASSpectrometer spectrometer)
+        {
+            if (spectrometer == null)
+            {
+                MessageBox.Show($"No spectrometer selected or invalid instance. (Select: {lbivSelectSpectrometer.SelectedItemName})");
+                return;
+            }
+
+            // Device Information
+            lbSpectrometerModelValue.Text = "";
+            lbSpectrometerSerialNoValue.Text = "";
+
+            // Device Status
+            lbSpectrometerStatusValue.Text = "";
+            lbSpectrometerDeviceInterfaceValue.Text = "";
+            lbSpectrometerDeviceOption.Text = "";
+
+            pcSpcConfig = selectSpectrometer.Config.GetPropertyCollection();
+            pcvSpectrometerConfig.SetProperties(pcSpcConfig);
+        }
+
+        private void SetupSpectrometerDialog_OnNewDeviceConfigApplied(object sender, CASSpectrometerConfig e)
+        {
+            try
+            {
+                if (e == null)
+                {
+                    throw new ArgumentNullException("argument is null.");
+                }
+
+                pcSpcConfig["DeviceInterfaceType"].Value = e.DeviceInterfaceType;
+                pcSpcConfig["DeviceInterfaceOption"].Value = e.DeviceInterfaceOption;
+                pcSpcConfig["ConfigFileName"].Value = e.ConfigFileName;
+                pcSpcConfig["CalibFileName"].Value = e.CalibFileName;
+                pcvConfig.SetProperties(pcSpcConfig);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred. {ex.Message}");
+                return;
+            }
+        }
+
+        private void btnSpectrometerSetup_Click(object sender, EventArgs e)
+        {
+            setupSpectrometerDialog?.ShowDialog(this);
+        }
+
+        private void btnSpectrometerInitialize_Click(object sender, EventArgs e)
+        {
+            if (selectSpectrometer == null)
+            {
+                MessageBox.Show("No spectrometer selected or invalid instance.");
+                return;
+            }
+
+            int ret = 0;
+            if ((ret = selectSpectrometer.Initialize()) != 0)
+            {
+                MessageBox.Show($"Initialization operation failed. (Reason Code: {ret})");
+                return;
+            }
+
+            MessageBox.Show($"[{selectSpectrometer.Name}] was successfully initialized.");
+        }
+
+        private void btnSpectrometerConfigSave_Click(object sender, EventArgs e)
+        {
+            if (selectSpectrometer == null)
+            {
+                MessageBox.Show("No spectrometer selected or invalid instance.");
+                return;
+            }
+
+            try
+            {
+                if (MessageBox.Show("Would you like to save your settings?", "Save", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    selectSpectrometer.Config.ApplyValueFromPropertyCollection(pcSpcConfig);
+                    if (selectSpectrometer.Config.Save() == 0)
+                    {
+                        MessageBox.Show($"The settings for [{selectSpectrometer.Name}] have been successfully saved.");
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Failed to save the settings of [{selectSpectrometer.Name}].");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save configuration. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+        }
+        #endregion
     }
 }

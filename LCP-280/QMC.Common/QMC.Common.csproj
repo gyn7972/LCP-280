@@ -323,6 +323,12 @@
     <Compile Include="Spectrometer\CASSpectrometer.cs" />
     <Compile Include="Spectrometer\CASSpectrometerConfig.cs" />
     <Compile Include="Spectrometer\CASSpectrometerInterfaceManager.cs" />
+    <Compile Include="Spectrometer\FormSetupCASSpectrometerInterface.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Spectrometer\FormSetupCASSpectrometerInterface.Designer.cs">
+      <DependentUpon>FormSetupCASSpectrometerInterface.cs</DependentUpon>
+    </Compile>
     <Compile Include="Spectrometer\InstrumentSystems.CAS4.CAS4DLL.cs" />
     <Compile Include="TabbedViewHost.cs">
       <SubType>UserControl</SubType>
@@ -428,6 +434,9 @@
     </Compile>
     <EmbeddedResource Include="PropertyCollectionView.resx">
       <DependentUpon>PropertyCollectionView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Spectrometer\FormSetupCASSpectrometerInterface.resx">
+      <DependentUpon>FormSetupCASSpectrometerInterface.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="TopContentsEquipmentControl.resx">
       <DependentUpon>TopContentsEquipmentControl.cs</DependentUpon>
