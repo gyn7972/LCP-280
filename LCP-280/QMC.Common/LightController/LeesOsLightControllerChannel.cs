@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace QMC.Common.LightController
 {
-    public class LeesOsLightControllerChannel : BaseComponent
+    public class LeesOsLightControllerChannel// : BaseComponent
     {
         #region Field
         #endregion
@@ -15,32 +15,32 @@ namespace QMC.Common.LightController
         #region Property
         public int ChannelNo { get; private set; }
         public new LeesOsLightControllerChannelConfig Config { get; private set; }
-        public LeesOsLightController OwnerController { get; set; }
+        public LeesOsLightController Owner { get; set; }
         #endregion
 
         #region Constructor
-        public LeesOsLightControllerChannel(string name, LeesOsLightController owner) : base(name)
+        public LeesOsLightControllerChannel(string name, LeesOsLightController owner)// : base(name)
         {
-            OwnerController = owner;
-            ChannelNo = OwnerController.Channels.Count + 1;
+            Owner = owner;
+            ChannelNo = Owner.Channels.Count + 1;
             Config = new LeesOsLightControllerChannelConfig(name, this);
         }
         #endregion
 
         #region Method
-        public override int Initialize()
-        {
-            return 0;
-        }
+        //public override int Initialize()
+        //{
+        //    return 0;
+        //}
 
-        public override int Create()
-        {
-            return 0;
-        }
+        //public override int Create()
+        //{
+        //    return 0;
+        //}
 
-        public override void Close()
-        {
-        }
+        //public override void Close()
+        //{
+        //}
         #endregion
     }
 }
