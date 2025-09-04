@@ -107,15 +107,6 @@ namespace QMC.Common.Motion.Ajin
                 {
                     //if ((ret = AXL.CheckErrorCode("AXL.AxlOpen", AXL.AxlOpen(7))) != 0) return ret;
                     if ((ret = AXL.CheckErrorCode("AXL.AxlOpenNoReset", AXL.AxlOpenNoReset(7))) != 0) return ret;
-
-                    // 보드 개수 자동 감지 후 모든 보드 스캔
-                    int boardCount = 0;
-                    if ((ret = AXL.CheckErrorCode("AXL.AxlGetBoardCount", AXL.AxlGetBoardCount(ref boardCount))) != 0) return ret;
-
-                    for (int boardNo = 0; boardNo < boardCount; boardNo++)
-                    {
-                        if ((ret = AXL.CheckErrorCode("AXL.AxlScanStart", AXL.AxlScanStart(boardNo, 0))) != 0) return ret;
-                    }
                 }
                 // 전체 라이브러리에서 interrupt 사용을 설정한다.
                 if ((ret = AXL.InterruptEnable()) != 0) return ret;

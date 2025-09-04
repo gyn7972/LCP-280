@@ -1678,6 +1678,15 @@ namespace QMC.Common.Motion.Ajin
             return ret;
         }
 
+        public static int GetAxisCount(out int axisCount)
+        {
+            axisCount = 0;
+            int ret = 0;
+            if ((ret = AXL.CheckErrorCode("AXM.AxmInfoGetAxisCount", AXM.AxmInfoGetAxisCount(ref axisCount))) != 0)
+                return ret;
+            return 0;
+        }
+
         public static int GetActualPosition(int axis, ref double pulse)
         {
             int ret = 0;

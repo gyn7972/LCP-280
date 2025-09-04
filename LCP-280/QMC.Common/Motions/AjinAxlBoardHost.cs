@@ -66,6 +66,11 @@ namespace QMC.Common.Motion.Ajin.HW
             if (rc != 0)
                 throw new InvalidOperationException("AxlOpen failed. rc=" + rc);
 
+            int axisCount;
+            rc = AXM.GetAxisCount(out axisCount);
+            if (rc != 0) throw new Exception($"GetAxisCount 실패: 0x{rc:X8}");
+            Console.WriteLine($"모션 축 개수: {axisCount}");
+
             if (!string.IsNullOrEmpty(ParameterFilePath) && File.Exists(ParameterFilePath))
             {
                 rc = (int)AXM.AxmMotLoadParaAll(ParameterFilePath);
