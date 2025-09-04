@@ -523,11 +523,11 @@ namespace QMC.LCP_280.Process.Unit
 
             // Config
             pc.Add(new TitleOnlyProperty("Config"));
-            pc.Add(new DoubleProperty("Output Mode", (double)axis.Setup.OutputMode));       // TODO: Enum Editor
-            pc.Add(new DoubleProperty("Input Mode", (double)axis.Setup.InputMode));         // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Pulse Output", (double)axis.Setup.PulseOutput));       // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Encoder Input", (double)axis.Setup.EncoderInput));         // TODO: Enum Editor
             pc.Add(new DoubleProperty("Input Source", (double)axis.Setup.InputSource));     // TODO: Enum Editor
             pc.Add(new DoubleProperty("Z Phase Level", (double)axis.Setup.ZPhaseLevel));    // TODO: Enum Editor
-            pc.Add(new DoubleProperty("Servo Level", (double)axis.Setup.ServoLevel));       // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Servo Level", (double)axis.Setup.ServoOnLevel));       // TODO: Enum Editor
 
             // Emergency
             pc.Add(new TitleOnlyProperty("Emergency Signal"));

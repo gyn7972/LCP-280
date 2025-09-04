@@ -96,11 +96,11 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.AxisPowerPercent = GetInt("Common", "Axis Power", axis.Setup.AxisPowerPercent);
 
                 // --- Config
-                axis.Setup.OutputMode = (OutputMode)GetInt("Config", "Output Mode", (int)axis.Setup.OutputMode);
-                axis.Setup.InputMode = (InputMode)GetInt("Config", "Input Mode", (int)axis.Setup.InputMode);
+                axis.Setup.PulseOutput = (PulseOutput)GetInt("Config", "Pulse Output", (int)axis.Setup.PulseOutput);
+                axis.Setup.EncoderInput = (EncoderInput)GetInt("Config", "Enconder Input", (int)axis.Setup.EncoderInput);
                 axis.Setup.InputSource = (InputSource)GetInt("Config", "Input Source", (int)axis.Setup.InputSource);
                 axis.Setup.ZPhaseLevel = (ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
-                axis.Setup.ServoLevel = (ActiveLevel)GetInt("Config", "Servo Level", (int)axis.Setup.ServoLevel);
+                axis.Setup.ServoOnLevel = (ActiveLevel)GetInt("Config", "Servo On Level", (int)axis.Setup.ServoOnLevel);
 
                 // --- Emergency Signal
                 axis.Setup.EmergencyLevel = (ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);

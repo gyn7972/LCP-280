@@ -9,7 +9,7 @@ namespace QMC.Common.Motions
 {
     //public enum ActiveLevel { Low = 0, High = 1 }
     //public enum OutputMode { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
-    //public enum InputMode { Normal, Reverse, Reverse_SQR4 }
+    //public enum EncoderInput { Normal, Reverse, Reverse_SQR4 }
     //public enum InputSource { Encoder, ServoDriver, External }
     //public enum StopMode { Emergency, DecelStop }
     //public enum HomeMode { NegativeLimit, PositiveLimit, HomeSensor }
@@ -41,13 +41,13 @@ namespace QMC.Common.Motions
         public int AxisPowerPercent { get; set; } = 100;
 
         // ===== Config (배선/방향) =====
-        [Category("Config"), DisplayName("Output Mode")]
-        [DefaultValue(OutputMode.TwoPulse_High_CCW_CW)]
-        public OutputMode OutputMode { get; set; } = OutputMode.TwoPulse_High_CCW_CW;
+        [Category("Config"), DisplayName("Pulse Output")]
+        [DefaultValue(PulseOutput.TwoPulse_High_CCW_CW)]
+        public PulseOutput PulseOutput { get; set; } = PulseOutput.TwoPulse_High_CCW_CW;
 
-        [Category("Config"), DisplayName("Input Mode")]
-        [DefaultValue(InputMode.Reverse_SQR4)]
-        public InputMode InputMode { get; set; } = InputMode.Reverse_SQR4;
+        [Category("Config"), DisplayName("Encoder Input")]
+        [DefaultValue(EncoderInput.Reverse_SQR4)]
+        public EncoderInput EncoderInput { get; set; } = EncoderInput.Reverse_SQR4;
 
         [Category("Config"), DisplayName("Input Source")]
         [DefaultValue(InputSource.Encoder)]
@@ -57,9 +57,9 @@ namespace QMC.Common.Motions
         [DefaultValue(ActiveLevel.High)]
         public ActiveLevel ZPhaseLevel { get; set; } = ActiveLevel.High;
 
-        [Category("Config"), DisplayName("Servo Level")]
+        [Category("Config"), DisplayName("Servo On Level")]
         [DefaultValue(ActiveLevel.High)]
-        public ActiveLevel ServoLevel { get; set; } = ActiveLevel.High;
+        public ActiveLevel ServoOnLevel { get; set; } = ActiveLevel.High;
 
         // ===== Emergency =====
         [Category("Emergency Signal"), DisplayName("Level")]

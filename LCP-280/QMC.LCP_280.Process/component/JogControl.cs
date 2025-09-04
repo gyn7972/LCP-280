@@ -189,6 +189,9 @@ namespace QMC.LCP_280.Process.Unit
             btnNextIndex.Click += btnNextIndex_Click;
 
             btnStop.Click += btnStop_Click;
+
+            // 절대 위치 이동 버튼
+            btnCommandPositionMove.Click += BtnCommandPositionMove_Click;
         }
 
         // ===== 모드/축에 따른 UI 스위치 =====
@@ -395,6 +398,33 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        // ★ 절대 위치 이동 (Command Position)
+        private void BtnCommandPositionMove_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axisManager == null) return;
+                string axisName = selectAxisListBoxItemsView.SelectedItemName;
+                if (string.IsNullOrEmpty(axisName)) return;
+
+                MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
+                if (axis == null) return;
+
+                double target = (double)nudCommandPosition.Value;
+
+                double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity;
+                double acc = axis.Config.JogAcc;
+                double dec = axis.Config.JogDec;
+                double jerk = axis.Config.AccJerkPercent;
+
+                axis.MoveAbs(target, vel, acc, dec, jerk);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
         // ★ 연속조그 시작
         private void StartJogContinuous(MotionAxis axis, JogCommand jc, double velocity = 5)
         {
@@ -489,7 +519,11 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnStepClear_Click(object sender, EventArgs e)
         {
-            nudStep.Value = nudStep.Minimum;
+            // 요청: Clear 시 값을 0으로 설정 (범위를 벗어나지 않도록 클램프)
+            decimal target = 0M;
+            if (target < nudStep.Minimum) target = nudStep.Minimum;
+            if (target > nudStep.Maximum) target = nudStep.Maximum;
+            nudStep.Value = target;
         }
 
         private void UpdateUIByAxisSelection(string axisName)

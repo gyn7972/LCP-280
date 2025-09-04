@@ -69,8 +69,6 @@ namespace QMC.Common.Motion.Ajin
         // EzSpy에 출력할 메시지 레벨 확인
         [DllImport(LibraryFileName)]
         private static extern uint AxlGetLogLevel(ref uint upLevel);
-        [DllImport(LibraryFileName)]
-        private static extern uint AxlScanStart(int lBoardNo, long lNet);
         #endregion
 
         #region Field
@@ -106,7 +104,7 @@ namespace QMC.Common.Motion.Ajin
                 if (AXL.IsOpened() == false)
                 {
                     //if ((ret = AXL.CheckErrorCode("AXL.AxlOpen", AXL.AxlOpen(7))) != 0) return ret;
-                    if ((ret = AXL.CheckErrorCode("AXL.AxlOpenNoReset", AXL.AxlOpenNoReset(7))) != 0) return ret;
+                    if ((ret = AXL.CheckErrorCode("AXL.AxlOpen", AXL.AxlOpenNoReset(7))) != 0) return ret;
                 }
                 // 전체 라이브러리에서 interrupt 사용을 설정한다.
                 if ((ret = AXL.InterruptEnable()) != 0) return ret;

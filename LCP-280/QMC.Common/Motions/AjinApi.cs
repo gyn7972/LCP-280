@@ -355,14 +355,14 @@ namespace QMC.Common.Motions
         public static int ApplySetupBasic(int axisNo, MotionAxisSetup setup)
         {
             int rc;
-            var outMethod = MapOutputMethod(setup.OutputMode);
+            var outMethod = MapOutputMethod(setup.PulseOutput);
             if ((rc = AXM.SetOutputMethod(axisNo, outMethod)) != 0) return rc;        // 펄스 출력 방식
 
-            var encMethod = MapEncoderMethod(setup.InputMode);
+            var encMethod = MapEncoderMethod(setup.EncoderInput);
             if ((rc = AXM.SetEncoderMethod(axisNo, encMethod)) != 0) return rc;       // 엔코더 입력 방식
 
             if ((rc = AXM.SetZPhaseLevel(axisNo, setup.ZPhaseLevel)) != 0) return rc; // Z상 레벨
-            if ((rc = AXM.SetAmpEnableLevel(axisNo, setup.ServoLevel)) != 0) return rc;// Servo On 레벨
+            if ((rc = AXM.SetAmpEnableLevel(axisNo, setup.ServoOnLevel)) != 0) return rc;// Servo On 레벨
                                                                                        // ※ Inpos/Alarm 레벨 setter가 래퍼에 없으면 .mot 기본값 사용(필요 시 래퍼 추가)
 
             return 0;
@@ -411,26 +411,26 @@ namespace QMC.Common.Motions
         // ─────────────────────────────────────────────────────────────
         // 매핑 유틸
         // ─────────────────────────────────────────────────────────────
-        private static AXM.MotorOutputMethod MapOutputMethod(OutputMode m)
+        private static AXM.MotorOutputMethod MapOutputMethod(PulseOutput m)
         {
             switch (m)
             {
-                case OutputMode.TwoPulse_High_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwHigh; // :contentReference[oaicite:12]{index=12}
-                case OutputMode.TwoPulse_Low_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwLow;  // :contentReference[oaicite:13]{index=13}
-                case OutputMode.AB_Phase:
+                case PulseOutput.TwoPulse_High_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwHigh; // :contentReference[oaicite:12]{index=12}
+                case PulseOutput.TwoPulse_Low_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwLow;  // :contentReference[oaicite:13]{index=13}
+                case PulseOutput.AB_Phase:
                     // 래퍼에 AB-Phase 전용 항목이 없다면(현재 enum에 미포함) TwoCcwCwHigh를 기본값으로 사용.
                     return AXM.MotorOutputMethod.TwoCcwCwHigh;
                 default: return AXM.MotorOutputMethod.TwoCcwCwHigh;
             }
         }
 
-        private static AXM.EncoderInputMethod MapEncoderMethod(InputMode m)
+        private static AXM.EncoderInputMethod MapEncoderMethod(EncoderInput m)
         {
             switch (m)
             {
-                case InputMode.Normal: return AXM.EncoderInputMethod.ObverseSqr4Mode;  // :contentReference[oaicite:14]{index=14}
-                case InputMode.Reverse: return AXM.EncoderInputMethod.ReverseUpDownMode; // 필요시 ReverseSqr4Mode로 변경
-                case InputMode.Reverse_SQR4: return AXM.EncoderInputMethod.ReverseSqr4Mode;  // :contentReference[oaicite:15]{index=15}
+                case EncoderInput.Normal: return AXM.EncoderInputMethod.ObverseSqr4Mode;  // :contentReference[oaicite:14]{index=14}
+                case EncoderInput.Reverse: return AXM.EncoderInputMethod.ReverseUpDownMode; // 필요시 ReverseSqr4Mode로 변경
+                case EncoderInput.Reverse_SQR4: return AXM.EncoderInputMethod.ReverseSqr4Mode;  // :contentReference[oaicite:15]{index=15}
                 default: return AXM.EncoderInputMethod.ObverseSqr4Mode;
             }
         }

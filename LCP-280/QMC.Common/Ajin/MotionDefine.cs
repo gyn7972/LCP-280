@@ -136,10 +136,10 @@ namespace QMC.Common
     }
 
     [Serializable]
-    public enum OutputMode { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
+    public enum PulseOutput { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
 
     [Serializable]
-    public enum InputMode { Normal, Reverse, Reverse_SQR4 }
+    public enum EncoderInput { Normal, Reverse, Reverse_SQR4 }
 
     [Serializable]
     public enum InputSource { Encoder, ServoDriver, External }
