@@ -136,10 +136,21 @@ namespace QMC.Common.Spectrometer
         public override int Initialize()
         {
             int ret = 0;
+            if (IsCreated())
+            {
+                OnTerminateDevice();
+            }
+
+            if (!OnCreateDevice())
+            {
+                return -1;
+            }
+
             if (!OnInitDevice())
             {
-                ret = -1;
+                return -1;
             }
+
             return ret;
         }
 
