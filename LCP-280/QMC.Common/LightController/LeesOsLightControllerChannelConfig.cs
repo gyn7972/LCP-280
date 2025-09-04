@@ -83,7 +83,7 @@ namespace QMC.Common.LightController
 
         public override bool Validate()
         {
-            if(Volume < 0 || Volume > ownerChannel.OwnerController.MaximumVolume)
+            if(Volume < 0 || Volume > ownerChannel.Owner.MaximumVolume)
                 return false;
 
             return true;
@@ -93,8 +93,8 @@ namespace QMC.Common.LightController
         {
             PropertyCollection pc = new PropertyCollection();
             string title = "Channel Config";
-            if (ownerChannel.OwnerController != null)
-                title = $"{ownerChannel.OwnerController.Name} - Channel {ownerChannel.ChannelNo} Config";
+            if (ownerChannel.Owner != null)
+                title = $"{ownerChannel.Owner.Name} - Channel {ownerChannel.ChannelNo} Config";
             pc.Add(title);
             pc.Add(nameof(On), On);
             pc.Add(nameof(Volume), Volume);

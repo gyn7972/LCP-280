@@ -182,6 +182,7 @@
     <Compile Include="Keithley\KeithleyInstrumentCommunicator.cs" />
     <Compile Include="Keithley\KeithleyInstrumentResourceManager.cs" />
     <Compile Include="Keithley\KeithleySourcemeter.cs" />
+    <Compile Include="Keithley\KeithleySourcemeterChannel.cs" />
     <Compile Include="Keithley\KeithleySourcemeterConfig.cs" />
     <Compile Include="LightController\LeesOsLightController.cs" />
     <Compile Include="LightController\LeesOsLightControllerChannel.cs" />

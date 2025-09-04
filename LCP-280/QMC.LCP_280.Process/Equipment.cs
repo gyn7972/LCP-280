@@ -1351,6 +1351,13 @@ namespace QMC.LCP_280.Process
                 try
                 {
                     var smu = new KeithleySourcemeter(name);
+                    int ret = smu.Config.Load();
+                    if (ret != 0)
+                    {
+                        Log.Write("Equipment", $"[Sourcemeter] '{name}' config load failed, code=0x{ret:X8}");
+                        continue;
+                    }
+
                     Sourcemeters[name] = smu;
                     Console.WriteLine($"[Sourcemeter] {name} ready");
                 }
@@ -1374,6 +1381,13 @@ namespace QMC.LCP_280.Process
                 try
                 {
                     var spc = new CASSpectrometer(name);
+                    int ret = spc.Config.Load();
+                    if (ret != 0)
+                    {
+                        Log.Write("Equipment", $"[Spectrometer] '{name}' config load failed, code=0x{ret:X8}");
+                        continue;
+                    }
+
                     Spectrometers[name] = spc;
                     Console.WriteLine($"[Sourcemeter] {name} ready");
                 }

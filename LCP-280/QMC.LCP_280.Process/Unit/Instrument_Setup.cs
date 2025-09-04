@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -14,9 +15,13 @@ namespace QMC.LCP_280.Process.Unit
     public partial class Instrument_Setup : Form
     {
         private Equipment equipment => Equipment.Instance;
+
         private KeithleySourcemeter selectSourcemeter;
-        private PropertyCollection propertyCollection;
+        private PropertyCollection pcConfig;
         private string selectSourcemeterName;
+
+        private KeithleySourcemeterChannel selectSourcemeterChannel;
+        private string selectSourcemeterChannelName;
 
         private FormSetupKeithleyInstrument setupDialog = new FormSetupKeithleyInstrument();
 
@@ -32,10 +37,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (selectSourcemeter != null)
             {
-                selectSourcemeter.OnReceived -= SelectSourcemeter_OnReceived;
-                selectSourcemeter.OnSessionOpened -= SelectSourcemeter_OnSessionOpened;
-                selectSourcemeter.OnSessionClosed -= SelectSourcemeter_OnSessionClosed;
-                selectSourcemeter.OnError -= SelectSourcemeter_OnError;
+                selectSourcemeter.Communicator.OnReceived -= SelectSourcemeter_OnReceived;
+                selectSourcemeter.Communicator.OnSessionOpened -= SelectSourcemeter_OnSessionOpened;
+                selectSourcemeter.Communicator.OnReceived -= SelectSourcemeter_OnSessionClosed;
+                selectSourcemeter.Communicator.OnError -= SelectSourcemeter_OnError;
             }
         }     
 
@@ -55,10 +60,10 @@ namespace QMC.LCP_280.Process.Unit
             // Unsubscribe previous event handlers
             if (selectSourcemeter != null)
             {
-                selectSourcemeter.OnReceived -= SelectSourcemeter_OnReceived;
-                selectSourcemeter.OnSessionOpened -= SelectSourcemeter_OnSessionOpened;
-                selectSourcemeter.OnSessionClosed -= SelectSourcemeter_OnSessionClosed;
-                selectSourcemeter.OnError -= SelectSourcemeter_OnError;
+                selectSourcemeter.Communicator.OnReceived -= SelectSourcemeter_OnReceived;
+                selectSourcemeter.Communicator.OnSessionOpened -= SelectSourcemeter_OnSessionOpened;
+                selectSourcemeter.Communicator.OnSessionClosed -= SelectSourcemeter_OnSessionClosed;
+                selectSourcemeter.Communicator.OnError -= SelectSourcemeter_OnError;
             }
 
             // Select new sourcemeter
@@ -68,13 +73,28 @@ namespace QMC.LCP_280.Process.Unit
             if (selectSourcemeter != null)
             {
                 selectSourcemeterName = selectSourcemeter.Name;
-                selectSourcemeter.OnReceived += SelectSourcemeter_OnReceived;
-                selectSourcemeter.OnSessionOpened += SelectSourcemeter_OnSessionOpened;
-                selectSourcemeter.OnSessionClosed += SelectSourcemeter_OnSessionClosed;
-                selectSourcemeter.OnError += SelectSourcemeter_OnError;
+                selectSourcemeter.Communicator.OnReceived += SelectSourcemeter_OnReceived;
+                selectSourcemeter.Communicator.OnReceived += SelectSourcemeter_OnSessionOpened;
+                selectSourcemeter.Communicator.OnSessionClosed += SelectSourcemeter_OnSessionClosed;
+                selectSourcemeter.Communicator.OnError += SelectSourcemeter_OnError;
+
+                List<string> channelNames = selectSourcemeter.Channels.Keys.ToList();
+                lbivSelectChannel.SetItems(channelNames.ToArray());
+
+                selectSourcemeterChannel = null;
+                selectSourcemeterChannelName = "";
             }
             
             DisplaySelectSourcemeterInformation(selectSourcemeter);
+        }
+
+        private void lbivSelectChannel_ItemSelected(object sender, int e)
+        {
+            selectSourcemeterChannel = selectSourcemeter.Channels[lbivSelectChannel.SelectedItemName];
+            if (selectSourcemeterChannel != null)
+            {
+                selectSourcemeterChannelName = selectSourcemeterChannel.Name;
+            }
         }
 
         private void SelectSourcemeter_OnError(object sender, Exception e)
@@ -98,8 +118,8 @@ namespace QMC.LCP_280.Process.Unit
         }
         private void SetupDialog_OnNewResourceSelected(object sender, string e)
         {
-            propertyCollection["ResourceName"].Value = e;
-            configPropertyCollectionView.SetProperties(propertyCollection);
+            pcConfig["ResourceName"].Value = e;
+            pcvConfig.SetProperties(pcConfig);
         }
 
         private void DisplaySelectSourcemeterInformation(KeithleySourcemeter sourcemeter)
@@ -114,42 +134,109 @@ namespace QMC.LCP_280.Process.Unit
             lbModelValue.Text = selectSourcemeter.Name;
 
             // Device Status
-            lbStatusValue.Text = selectSourcemeter.IsConnected ? "Connected" : "Disconnected";
+            lbStatusValue.Text = selectSourcemeter.Communicator.IsConnected ? "Connected" : "Disconnected";
 
             // Comm. Terminal
             tbLog.Clear();
             tbSendText.Clear();
 
-            propertyCollection = selectSourcemeter.Config.GetPropertyCollection();
-            configPropertyCollectionView.SetProperties(propertyCollection);
+            pcConfig = selectSourcemeter.Config.GetPropertyCollection();
+            pcvConfig.SetProperties(pcConfig);
         }
 
         private void btn_Connect_Click(object sender, EventArgs e)
         {
-            // Do this.
+            if (selectSourcemeter == null)
+            {
+                MessageBox.Show("No sourcemeter selected or invalid instance.");
+                return;
+            }
+            if (selectSourcemeter.Communicator.IsConnected)
+            {
+                MessageBox.Show("The sourcemeter is already connected.");
+                return;
+            }
+
+            // Open Session
+            if (selectSourcemeter.Communicator.OpenSession(selectSourcemeter.Config.ResourceName))
+            {
+                MessageBox.Show("Communication connection successful.");
+            }
+            else
+            {
+                MessageBox.Show("Communication connection failed.");
+            }
         }
 
-        private void btn_Disconnect_Click(object sender, EventArgs e)
+        private void btn_Disconnect_Click(object sender, MouseEventArgs e)
         {
-            // Do this.
+            if (selectSourcemeter == null)
+            {
+                MessageBox.Show("No sourcemeter selected or invalid instance.");
+                return;
+            }
+            if (!selectSourcemeter.Communicator.IsConnected)
+            {
+                MessageBox.Show("The sourcemeter is already disconnected.");
+                return;
+            }
+
+            // Close Session
+            if (selectSourcemeter.Communicator.CloseSession())
+            {
+                MessageBox.Show("The communication connection has been disconnected.");
+            }
+            else
+            {
+                MessageBox.Show("Failed to disconnect communication.");
+            }
         }
 
-        private void btn_Setup_Click(object sender, EventArgs e)
+        private void btn_Setup_MouseClick(object sender, MouseEventArgs e)
         {
             setupDialog?.ShowDialog(this);
         }
 
         private void btn_Initialize_Click(object sender, EventArgs e)
         {
-            selectSourcemeter?.Initialize();
+            if (selectSourcemeter == null)
+            {
+                MessageBox.Show("No sourcemeter selected or invalid instance.");
+                return;
+            }
+
+            int ret = 0;
+            if ((ret = selectSourcemeter.Initialize()) != 0)
+            {
+                MessageBox.Show($"Initialization operation failed. (Reason Code: {ret})");
+                return;
+            }
+
+            MessageBox.Show($"[{selectSourcemeter.Name}] was successfully initialized.");
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
+            if (selectSourcemeter == null)
+            {
+                MessageBox.Show("No sourcemeter selected or invalid instance.");
+                return;
+            }
+
             try
             {
-                selectSourcemeter?.Config.ApplyValueFromPropertyCollection(propertyCollection);
-                selectSourcemeter?.Config.Save();
+                if (MessageBox.Show("Would you like to save your settings?", "Save", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    selectSourcemeter.Config.ApplyValueFromPropertyCollection(pcConfig);
+                    if (selectSourcemeter.Config.Save() == 0)
+                    {
+                        MessageBox.Show($"The settings for [{selectSourcemeter.Name}] have been successfully saved.");
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Failed to save the settings of [{selectSourcemeter.Name}].");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -160,23 +247,30 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btn_SendTest_Click(object sender, EventArgs e)
         {
+            if (selectSourcemeter == null)
+            {
+                MessageBox.Show("No sourcemeter selected or invalid instance.");
+                return;
+            }
+            if (!selectSourcemeter.Communicator.IsConnected)
+            {
+                MessageBox.Show("The sourcemeter is already disconnected.");
+                return;
+            }
+
             try
             {
-                //selectSourcemeter?.Write(tbSendText.Text);
-                string response = "";
 
-                if (selectSourcemeter?.Query(tbSendText.Text, ref response) == 0)
-                    MessageBox.Show(response);
-                else
-                    MessageBox.Show("No response received.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to send command. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+
             }
         }
 
-        
+        private void btnChannelTest_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
