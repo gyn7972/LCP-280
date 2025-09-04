@@ -70,9 +70,7 @@ namespace QMC.Common.Motion.Ajin
         [DllImport(LibraryFileName)]
         private static extern uint AxlGetLogLevel(ref uint upLevel);
         [DllImport(LibraryFileName)]
-        private static extern uint AxlScanStart(ref uint upLevel);
-        [DllImport(LibraryFileName)]
-        private static extern uint AxlBoardConnect(int lBoardNo, long lNet);
+        private static extern uint AxlScanStart(int lBoardNo, long lNet);
         #endregion
 
         #region Field
@@ -108,11 +106,16 @@ namespace QMC.Common.Motion.Ajin
                 if (AXL.IsOpened() == false)
                 {
                     //if ((ret = AXL.CheckErrorCode("AXL.AxlOpen", AXL.AxlOpen(7))) != 0) return ret;
-                    if ((ret = AXL.CheckErrorCode("AXL.AxlOpen", AXL.AxlOpenNoReset(7))) != 0) return ret;
+                    if ((ret = AXL.CheckErrorCode("AXL.AxlOpenNoReset", AXL.AxlOpenNoReset(7))) != 0) return ret;
 
-                    // ★ 하드웨어 스캔 시작 ★
-                    uint scanLevel = 0;
-                    if ((ret = AXL.CheckErrorCode("AXL.AxlScanStart", AXL.AxlScanStart(ref scanLevel))) != 0) return ret;
+                    // 보드 개수 자동 감지 후 모든 보드 스캔
+                    int boardCount = 0;
+                    if ((ret = AXL.CheckErrorCode("AXL.AxlGetBoardCount", AXL.AxlGetBoardCount(ref boardCount))) != 0) return ret;
+
+                    for (int boardNo = 0; boardNo < boardCount; boardNo++)
+                    {
+                        if ((ret = AXL.CheckErrorCode("AXL.AxlScanStart", AXL.AxlScanStart(boardNo, 0))) != 0) return ret;
+                    }
                 }
                 // 전체 라이브러리에서 interrupt 사용을 설정한다.
                 if ((ret = AXL.InterruptEnable()) != 0) return ret;
