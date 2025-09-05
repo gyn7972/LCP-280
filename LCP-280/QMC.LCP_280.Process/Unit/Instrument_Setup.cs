@@ -10,6 +10,7 @@ using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -240,7 +241,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to save configuration. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
         }
@@ -271,7 +272,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to write session. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
         }
@@ -296,6 +297,7 @@ namespace QMC.LCP_280.Process.Unit
             if (selectSpectrometer != null)
             {
                 selectSpectrometerName = selectSpectrometer.Name;
+                casSpectrumViewer.AttachSpectrometer(selectSpectrometer);
             }
 
             DisplaySelectSpectrometerInformation(selectSpectrometer);
@@ -335,11 +337,11 @@ namespace QMC.LCP_280.Process.Unit
                 pcSpcConfig["DeviceInterfaceOption"].Value = e.DeviceInterfaceOption;
                 pcSpcConfig["ConfigFileName"].Value = e.ConfigFileName;
                 pcSpcConfig["CalibFileName"].Value = e.CalibFileName;
-                pcvConfig.SetProperties(pcSpcConfig);
+                pcvSpectrometerConfig.SetProperties(pcSpcConfig);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred. {ex.Message}");
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
         }
@@ -392,10 +394,66 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to save configuration. {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
         }
         #endregion
+
+        private void btnMeasureTest_Click(object sender, EventArgs e)
+        {
+            if (selectSpectrometer == null)
+            {
+                MessageBox.Show("No spectrometer selected or invalid instance.");
+                return;
+            }
+            if (!selectSpectrometer.IsInitialized())
+            {
+                MessageBox.Show("The spectrometer is not initialized.");
+                return;
+            }
+
+            try
+            {
+                int ret = 0;
+                if ((ret = selectSpectrometer.Measure()) != 0)
+                {
+                    MessageBox.Show($"Failed to measurement. (Reason Code: {ret})");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+        }
+
+        private void btnMeasureDarkCurrent_Click(object sender, EventArgs e)
+        {
+            if (selectSpectrometer == null)
+            {
+                MessageBox.Show("No spectrometer selected or invalid instance.");
+                return;
+            }
+            if (!selectSpectrometer.IsCreated())
+            {
+                MessageBox.Show("The spectrometer is not created.");
+                return;
+            }
+
+            try
+            {
+                int ret = 0;
+                if ((ret = selectSpectrometer.MeasureDarkCurrent()) != 0)
+                {
+                    MessageBox.Show($"Failed to dark current measurement. (Reason Code: {ret})");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+        }
     }
 }

@@ -897,6 +897,26 @@ namespace QMC.LCP_280.Process
                     }
                     Cameras.Clear();
 
+                    // [+] Instruments
+                    foreach (var sm in Sourcemeters.Values)
+                    {
+                        try
+                        {
+                            if (sm is IDisposable disposableSm)
+                                disposableSm.Dispose();
+                        }
+                        catch { /* swallow */ }
+                    }
+                    foreach (var spc in Spectrometers.Values)
+                    {
+                        try
+                        {
+                            if (spc is IDisposable disposableSpc)
+                                disposableSpc.Dispose();
+                        }
+                        catch { /* swallow */ }
+                    }
+
                     // 6) Units
                     foreach (var unit in Units.Values)
                     {

@@ -11,10 +11,7 @@ using System.Windows.Forms;
 
 namespace QMC.Common.Keithley
 {
-    /// <summary>
-    /// Keithley Sourcemeter 클래스입니다.
-    /// </summary>
-    public class KeithleySourcemeter : BaseComponent
+    public class KeithleySourcemeter : BaseComponent, IDisposable
     {
         #region Defines
         public enum SMUInstrumentCategory
@@ -27,7 +24,6 @@ namespace QMC.Common.Keithley
 
         #region Field
         private string identification = "";
-        
         #endregion
 
         #region Property
@@ -51,6 +47,35 @@ namespace QMC.Common.Keithley
                 { "smua", new KeithleySourcemeterChannel("smua", this) },
                 //{ "smub", new KeithleySourcemeterChannel("smub", this) },
             };
+        }
+        #endregion
+
+        #region IDisposable
+        private bool disposed = false;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        private void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    // Dispose managed resources
+                    if (Communicator != null)
+                    {
+                        if (Communicator.IsConnected)
+                        {
+                            Communicator.CloseSession();
+                        }
+                        Communicator = null;
+                    }
+                }
+                // Dispose unmanaged resources
+                disposed = true;
+            }   
         }
         #endregion
 

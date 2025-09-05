@@ -8,20 +8,20 @@ using System.Text;
 
 namespace QMC.Common
 {
-    public abstract class BaseConfig
+    public abstract class BaseConfig : ICloneable
     {
         // ===== 공통 메타 속성 =====
         [DefaultValue(null)]
         public string Name { get; set; }
 
-        [DefaultValue(true)]
-        public bool IsEnabled { get; set; } = true;
+        //[DefaultValue(true)]
+        //public bool IsEnabled { get; set; } = true;
 
         [JsonIgnore]
-        public DateTime LastModified { get; private set; } = DateTime.Now;
+        private DateTime LastModified { get; set; } = DateTime.Now;
 
-        [JsonIgnore]
-        public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
+        //[JsonIgnore]
+        //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
 
         // ===== 생성/초기화 =====
         protected BaseConfig(string name = null)
@@ -49,6 +49,13 @@ namespace QMC.Common
             var dir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", GetType().Name);
             var file = string.IsNullOrWhiteSpace(Name) ? $"{GetType().Name}.json" : $"{Name}.json";
             return Path.Combine(dir, file);
+        }
+
+        public object Clone()
+        {
+            var settings = GetJsonSettings();
+            var json = JsonConvert.SerializeObject(this, settings);
+            return JsonConvert.DeserializeObject(json, GetType(), settings);
         }
 
         /// <summary>Newtonsoft.Json 설정(파생에서 컨버터 추가/교체 허용)</summary>

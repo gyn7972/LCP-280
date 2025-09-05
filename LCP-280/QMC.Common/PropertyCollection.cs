@@ -39,6 +39,21 @@ namespace QMC.Common
                 IntProperty intProp = new IntProperty(title, intValue);
                 _properties.Add(intProp);
             }
+            else if (obj is long longValue)
+            {
+                LongProperty longProp = new LongProperty(title, longValue);
+                _properties.Add(longProp);
+            }
+            else if (obj is float floatValue)
+            {
+                FloatProperty floatProp = new FloatProperty(title, floatValue);
+                _properties.Add(floatProp);
+            }
+            else if (obj is double doubleValue)
+            {
+                DoubleProperty doubleProp = new DoubleProperty(title, doubleValue);
+                _properties.Add(doubleProp);
+            }
             else if (obj is string strValue)
             {
                 StringProperty stringProp = new StringProperty(title, strValue);
@@ -75,6 +90,27 @@ namespace QMC.Common
                     return (T)prop.Value;
                 else
                     throw new InvalidCastException($"Property '{title}' is not of type IntProperty.");
+            }
+            else if (type == typeof(long))
+            {
+                if (prop is LongProperty)
+                    return (T)prop.Value;
+                else
+                    throw new InvalidCastException($"Property '{title}' is not of type LongProperty.");
+            }
+            else if (type == typeof(float))
+            {
+                if (prop is FloatProperty)
+                    return (T)prop.Value;
+                else
+                    throw new InvalidCastException($"Property '{title}' is not of type FloatProperty.");
+            }
+            else if (type == typeof(double))
+            {
+                if (prop is DoubleProperty)
+                    return (T)prop.Value;
+                else
+                    throw new InvalidCastException($"Property '{title}' is not of type DoubleProperty.");
             }
             else if (type == typeof(string))
             {
