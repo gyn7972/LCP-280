@@ -675,7 +675,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var tp = config.TeachingPositions[selectedIndex];
                     var editorProperties = new PropertyCollection();
-                    editorProperties.Add(new TitleOnlyProperty($"Teaching Position: {tp.Name}"));
+                    editorProperties.Add(new TitleOnlyProperty($"Teaching Position: {tp.Name} (mm, Abs. Pos)"));
                     editorProperties.Add(new StringProperty("Description", tp.Description ?? ""));
                     // 축별 위치값 표시
                     foreach (var axis in tp.AxisPositions)

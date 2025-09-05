@@ -14,6 +14,7 @@ namespace QMC.Common.Spectrometer
         #region Defines
         public enum DeviceInterface
         {
+            None,
             PCI,
             Test,
             USB,
@@ -61,7 +62,9 @@ namespace QMC.Common.Spectrometer
         public override bool Validate()
         {
             // Validate the configuration values
-            if (DeviceInterfaceType < 0 || DeviceInterfaceType < 0)
+            if (DeviceInterfaceType == DeviceInterface.None)
+                return false;
+            if (DeviceInterfaceOption < 0)
                 return false;
             if (string.IsNullOrEmpty(ConfigFileName) || string.IsNullOrEmpty(CalibFileName))
                 return false;

@@ -87,8 +87,8 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Setup_Input = new QMC.Common.IndividualMenuButton();
             this.btn_Save_Setup_Ouput = new QMC.Common.IndividualMenuButton();
             this.dioModuleListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.inputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView("IO Property Group", 19);
-            this.outputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView("IO Property Group", 19);
+            this.inputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
+            this.outputIOPropertyCollectionView = new QMC.Common.IOPropertyCollectionView();
             this.inputpropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.outputpropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.SuspendLayout();
@@ -134,11 +134,20 @@ namespace QMC.LCP_280.Process.Unit
             // dioModuleListBoxItemsView
             // 
             this.dioModuleListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.dioModuleListBoxItemsView.BorderColor = System.Drawing.Color.White;
             this.dioModuleListBoxItemsView.BorderWidth = 2;
+            this.dioModuleListBoxItemsView.GroupBackColor = System.Drawing.Color.White;
+            this.dioModuleListBoxItemsView.GroupForeColor = System.Drawing.Color.Black;
             this.dioModuleListBoxItemsView.GroupName = "DIO Module";
+            this.dioModuleListBoxItemsView.ItemBackColor = System.Drawing.Color.Black;
+            this.dioModuleListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
+            this.dioModuleListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
+            this.dioModuleListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
             this.dioModuleListBoxItemsView.Location = new System.Drawing.Point(12, 12);
             this.dioModuleListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.dioModuleListBoxItemsView.Name = "dioModuleListBoxItemsView";
+            this.dioModuleListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.dioModuleListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.dioModuleListBoxItemsView.SelectedIndex = -1;
             this.dioModuleListBoxItemsView.Size = new System.Drawing.Size(305, 722);
             this.dioModuleListBoxItemsView.TabIndex = 2;
@@ -146,17 +155,25 @@ namespace QMC.LCP_280.Process.Unit
             // inputIOPropertyCollectionView
             // 
             this.inputIOPropertyCollectionView.GroupName = "Digital Input";
+            this.inputIOPropertyCollectionView.ListBackColor = System.Drawing.Color.Black;
+            this.inputIOPropertyCollectionView.ListForeColor = System.Drawing.Color.Lime;
             this.inputIOPropertyCollectionView.Location = new System.Drawing.Point(323, 12);
             this.inputIOPropertyCollectionView.Name = "inputIOPropertyCollectionView";
-            this.inputIOPropertyCollectionView.Size = new System.Drawing.Size(460, 722);
+            this.inputIOPropertyCollectionView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.inputIOPropertyCollectionView.SelectedForeColor = System.Drawing.Color.Black;
+            this.inputIOPropertyCollectionView.Size = new System.Drawing.Size(460, 522);
             this.inputIOPropertyCollectionView.TabIndex = 11;
             // 
             // outputIOPropertyCollectionView
             // 
             this.outputIOPropertyCollectionView.GroupName = "Digital Output";
+            this.outputIOPropertyCollectionView.ListBackColor = System.Drawing.Color.Black;
+            this.outputIOPropertyCollectionView.ListForeColor = System.Drawing.Color.Lime;
             this.outputIOPropertyCollectionView.Location = new System.Drawing.Point(792, 12);
             this.outputIOPropertyCollectionView.Name = "outputIOPropertyCollectionView";
-            this.outputIOPropertyCollectionView.Size = new System.Drawing.Size(460, 722);
+            this.outputIOPropertyCollectionView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.outputIOPropertyCollectionView.SelectedForeColor = System.Drawing.Color.Black;
+            this.outputIOPropertyCollectionView.Size = new System.Drawing.Size(460, 522);
             this.outputIOPropertyCollectionView.TabIndex = 12;
             // 
             // inputpropertyCollectionView

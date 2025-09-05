@@ -49,11 +49,11 @@ namespace QMC.Common.Keithley
         public KeithleySourcemeter.SMUInstrumentCategory Model { get; set; }
         public string ResourceName { get; set; }
         public string ScriptFileName { get; set; }
-        public SMUSenseMode SenseMode { get; set; }
-        public SMUSourceSink SourceSink { get; set; }
-        public SMUSourceSettling SourceSettling { get; set; }
-        public SMUSourceOffmode SourceOffmode { get; set; }
-        public SMUMeasureAutoZero MeasureAutoZero { get; set; }
+        public SMUSenseMode SenseMode { get; set; } // channel
+        public SMUSourceSink SourceSink { get; set; } // channel
+        public SMUSourceSettling SourceSettling { get; set; } // channel
+        public SMUSourceOffmode SourceOffmode { get; set; } // channel
+        public SMUMeasureAutoZero MeasureAutoZero { get; set; } // channel
         public int MeasureTimeout { get; set; }
         #endregion
 
@@ -75,6 +75,7 @@ namespace QMC.Common.Keithley
             SourceSettling = SMUSourceSettling.SMOOTH;
             SourceOffmode = SMUSourceOffmode.NORMAL;
             MeasureAutoZero = SMUMeasureAutoZero.AUTO;
+            MeasureTimeout = 1000; // ms
         }
 
         public override bool Validate()
@@ -83,6 +84,8 @@ namespace QMC.Common.Keithley
             if (string.IsNullOrEmpty(ResourceName))
                 return false;
             if (string.IsNullOrEmpty(ScriptFileName))
+                return false;
+            if (MeasureTimeout <= 0)
                 return false;
 
             return true;

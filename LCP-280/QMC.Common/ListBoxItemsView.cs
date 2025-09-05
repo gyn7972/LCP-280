@@ -9,12 +9,23 @@ namespace QMC.Common
     public partial class ListBoxItemsView : UserControl
     {
         private int _borderWidth = 2;
+        private Color _borderColor = Color.Black;
         private ListBox listBox;
         private GroupBox groupBox; // PropertyCollectionView처럼 private 필드로 선언
 
         private string _fontFamily = "맑은 고딕";
         private float _fontSize = 10f;
         private string _groupName = "Group Title";
+
+        // 색상 테마 (디자이너에서 설정 가능하도록 노출)
+        private Color _listBackColor = Color.White;
+        private Color _listForeColor = Color.Black;
+        private Color _itemBackColor = Color.White;
+        private Color _itemForeColor = Color.Black;
+        private Color _selectedBackColor = Color.Yellow;
+        private Color _selectedForeColor = Color.Black;
+        private Color _groupBackColor = Color.White;
+        private Color _groupForeColor = Color.Black;
 
         public event EventHandler<int> ItemSelected;
 
@@ -48,6 +59,88 @@ namespace QMC.Common
             }
         }
 
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("ListBox 테두리 색상")]
+        public Color BorderColor
+        {
+            get => _borderColor;
+            set { _borderColor = value; listBox?.Invalidate(); }
+        }
+
+        // 리스트/아이템/선택 색상 (디자이너에서 설정 가능)
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("리스트 박스 배경색")]
+        public Color ListBackColor
+        {
+            get => _listBackColor;
+            set { _listBackColor = value; if (listBox != null) listBox.BackColor = value; Invalidate(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("리스트 박스 글자색")]
+        public Color ListForeColor
+        {
+            get => _listForeColor;
+            set { _listForeColor = value; if (listBox != null) listBox.ForeColor = value; Invalidate(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("아이템 배경색 (선택되지 않은 상태)")]
+        public Color ItemBackColor
+        {
+            get => _itemBackColor;
+            set { _itemBackColor = value; Invalidate(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("아이템 글자색 (선택되지 않은 상태)")]
+        public Color ItemForeColor
+        {
+            get => _itemForeColor;
+            set { _itemForeColor = value; Invalidate(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("선택된 아이템 배경색")]
+        public Color SelectedBackColor
+        {
+            get => _selectedBackColor;
+            set { _selectedBackColor = value; Invalidate(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("선택된 아이템 글자색")]
+        public Color SelectedForeColor
+        {
+            get => _selectedForeColor;
+            set { _selectedForeColor = value; Invalidate(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("GroupBox 배경색")]
+        public Color GroupBackColor
+        {
+            get => _groupBackColor;
+            set { _groupBackColor = value; if (groupBox != null) groupBox.BackColor = value; Invalidate(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("GroupBox 글자색")]
+        public Color GroupForeColor
+        {
+            get => _groupForeColor;
+            set { _groupForeColor = value; if (groupBox != null) groupBox.ForeColor = value; Invalidate(); }
+        }
+
         // 기본 생성자 추가 (PropertyCollectionView와 동일)
         public ListBoxItemsView()
         {
@@ -79,6 +172,7 @@ namespace QMC.Common
         // PropertyCollectionView의 InitializeComponentUser와 동일한 초기화 메서드
         private void InitializeUserControl(string groupName)
         {
+            ApplyGreenOnBlackTheme();
             InitializeUserControl(groupName, Size.Empty);
         }
 
@@ -105,8 +199,8 @@ namespace QMC.Common
             {
                 Text = groupName,
                 Font = new Font("맑은 고딕", 10f, FontStyle.Regular),
-                ForeColor = Color.Black,
-                BackColor = Color.White,
+                ForeColor = _groupForeColor,
+                BackColor = _groupBackColor,
                 Padding = new Padding(8, 8, 8, 8)
             };
 
@@ -134,7 +228,9 @@ namespace QMC.Common
             {
                 Dock = DockStyle.Fill,
                 DrawMode = DrawMode.OwnerDrawVariable,
-                Font = new Font(_fontFamily, _fontSize, FontStyle.Regular)
+                Font = new Font(_fontFamily, _fontSize, FontStyle.Regular),
+                BackColor = _listBackColor,
+                ForeColor = _listForeColor
             };
             listBox.DrawItem += ListBox_DrawItem;
             listBox.MeasureItem += (s, e) => {
@@ -150,7 +246,7 @@ namespace QMC.Common
             }
         }
 
-        // Designer에서 크기 조정시 로그 출력 (PropertyCollectionView와 동일)
+        // 디자이너에서 크기 조정시 로그 출력 (PropertyCollectionView와 동일)
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
@@ -215,28 +311,30 @@ namespace QMC.Common
             }
         }
 
-        // 선택 인덱스 배경 노란색
+        // 선택 인덱스 배경 노란색 -> 사용자 지정 색상으로 변경
         private void ListBox_DrawItem(object sender, DrawItemEventArgs e)
         {
             if (e.Index < 0 || listBox == null) return;
 
             bool selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
-            e.Graphics.FillRectangle(
-                selected ? Brushes.Yellow : Brushes.White,
-                e.Bounds);
 
-            using (var brush = new SolidBrush(listBox.ForeColor))
+            using (var back = new SolidBrush(selected ? _selectedBackColor : _itemBackColor))
+            {
+                e.Graphics.FillRectangle(back, e.Bounds);
+            }
+
+            using (var brush = new SolidBrush(selected ? _selectedForeColor : _itemForeColor))
             {
                 e.Graphics.DrawString(
                     listBox.Items[e.Index].ToString(),
                     listBox.Font,
-                    Brushes.Black,
+                    brush,
                     e.Bounds.Left,
                     e.Bounds.Top);
             }
 
-            // 테두리 그리기
-            using (var pen = new Pen(Color.Black, _borderWidth))
+            // 테두리 그리기 (컨트롤 전체 테두리 1회만 그리면 좋지만, 간단히 매 아이템에서 덮어 그림)
+            using (var pen = new Pen(_borderColor, _borderWidth))
             {
                 Rectangle borderRect = listBox.ClientRectangle;
                 borderRect.Width -= 1;
@@ -255,14 +353,12 @@ namespace QMC.Common
             // 🚀 Position Item 선택 이벤트 발생
             ItemSelected?.Invoke(this, listBox.SelectedIndex);
 
-            // 🚀 디버그 모드에서만 선택된 아이템 정보 출력
 #if DEBUG
             if (listBox.SelectedIndex >= 0)
             {
                 var item = listBox.Items[listBox.SelectedIndex];
                 string name = item as string;
 
-                // Name 속성이 있으면 사용
                 if (name == null && item != null)
                 {
                     var prop = item.GetType().GetProperty("Name");
@@ -270,7 +366,6 @@ namespace QMC.Common
                         name = prop.GetValue(item)?.ToString();
                 }
 
-                // 그래도 없으면 ToString()
                 if (string.IsNullOrEmpty(name) && item != null)
                     name = item.ToString();
 
@@ -313,7 +408,7 @@ namespace QMC.Common
         {
             Console.WriteLine($"🔧 ListBoxItemsView.SetGroupBoxSize 호출: 요청된 크기={size}");
             Console.WriteLine($"   현재 UserControl 크기={this.Size}");
-            Console.WriteLine($"   현재 GroupBox 크기={(groupBox?.Size.ToString() ?? "null")}");
+            Console.WriteLine($"   현재 GroupBox 크기={(groupBox?.Size.ToString() ?? "null")} ");
             Console.WriteLine($"   현재 GroupBox Dock={groupBox?.Dock}");
             
             if (groupBox != null)
@@ -387,6 +482,24 @@ namespace QMC.Common
                 // fallback: ToString()
                 return item?.ToString() ?? string.Empty;
             }
+        }
+
+        // ===== 편의 메서드: Green on Black 테마 적용 =====
+        public void ApplyGreenOnBlackTheme()
+        {
+            // GroupBox
+            GroupBackColor = Color.White;
+            GroupForeColor = Color.Black;
+
+            // ListBox 및 아이템/선택 색
+            ListBackColor = Color.Black;
+            ListForeColor = Color.Lime;
+            ItemBackColor = Color.Black;
+            ItemForeColor = Color.Lime;
+            SelectedBackColor = Color.FromArgb(198, 255, 0);
+            SelectedForeColor = Color.Black;
+            BorderColor = Color.White;
+            BorderWidth = 1;
         }
     }
 }

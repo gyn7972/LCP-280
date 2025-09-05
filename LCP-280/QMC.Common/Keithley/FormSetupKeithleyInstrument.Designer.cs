@@ -94,6 +94,8 @@
             this.Controls.Add(this.comboBoxInterface);
             this.Name = "FormSetupKeithleyInstrument";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
+            this.Text = "Keithley Resource Manager";
+            this.Shown += new System.EventHandler(this.FormSetupKeithleyInstrument_Shown);
             this.ResumeLayout(false);
 
         }

@@ -574,12 +574,12 @@ namespace QMC.Common.Motions
         private static MotionAxisConfig CloneConfig(MotionAxisConfig c)
         {
             var t = new MotionAxisConfig();
-            t.HomeSpeed = c.HomeSpeed;
-            t.HomeReturnSpeed = c.HomeReturnSpeed;
-            t.HomeRecursionSpeed = c.HomeRecursionSpeed;
-            t.ZPhaseSpeed = c.ZPhaseSpeed;
-            t.HomeAcc = c.HomeAcc;
-            t.HomeReturnAcc = c.HomeReturnAcc;
+            t.HomeFirstSpeed = c.HomeFirstSpeed;
+            t.HomeSecondSpeed = c.HomeSecondSpeed;
+            t.HomeThirdSpeed = c.HomeThirdSpeed;
+            t.HomeLastSpeed = c.HomeLastSpeed;
+            t.HomeFirstAcc = c.HomeFirstAcc;
+            t.HomeSecondAcc = c.HomeSecondAcc;
             t.JogFineVelocity = c.JogFineVelocity;
             t.JogCoarseVelocity = c.JogCoarseVelocity;
             t.JogAcc = c.JogAcc;
@@ -605,11 +605,11 @@ namespace QMC.Common.Motions
             t.PulsesPerUnit = s.PulsesPerUnit;
             t.AxisScale = s.AxisScale;
             t.AxisPowerPercent = s.AxisPowerPercent;
-            t.OutputMode = s.OutputMode;
-            t.InputMode = s.InputMode;
+            t.PulseOutput = s.PulseOutput;
+            t.EncoderInput = s.EncoderInput;
             t.InputSource = s.InputSource;
             t.ZPhaseLevel = s.ZPhaseLevel;
-            t.ServoLevel = s.ServoLevel;
+            t.ServoOnLevel = s.ServoOnLevel;
             t.EmergencyLevel = s.EmergencyLevel;
             t.StopMode = s.StopMode;
             t.InpositionLevel = s.InpositionLevel;
@@ -617,6 +617,8 @@ namespace QMC.Common.Motions
             t.SoftwareLength = s.SoftwareLength;
             t.HomeSignalLevel = s.HomeSignalLevel;
             t.HomeMode = s.HomeMode;
+            t.HomeClearTime = s.HomeClearTime;
+            t.HomeOffset = s.HomeOffset;
             t.AlarmResetSignal = s.AlarmResetSignal;
             t.AlarmLevel = s.AlarmLevel;
             t.SoftLimitEnable = s.SoftLimitEnable;
@@ -636,11 +638,11 @@ namespace QMC.Common.Motions
             dst.PulsesPerUnit = src.PulsesPerUnit;
             dst.AxisScale = src.AxisScale;
             dst.AxisPowerPercent = src.AxisPowerPercent;
-            dst.OutputMode = src.OutputMode;
-            dst.InputMode = src.InputMode;
+            dst.PulseOutput = src.PulseOutput;
+            dst.EncoderInput = src.EncoderInput;
             dst.InputSource = src.InputSource;
             dst.ZPhaseLevel = src.ZPhaseLevel;
-            dst.ServoLevel = src.ServoLevel;
+            dst.ServoOnLevel = src.ServoOnLevel;
             dst.EmergencyLevel = src.EmergencyLevel;
             dst.StopMode = src.StopMode;
             dst.InpositionLevel = src.InpositionLevel;
@@ -648,6 +650,8 @@ namespace QMC.Common.Motions
             dst.SoftwareLength = src.SoftwareLength;
             dst.HomeSignalLevel = src.HomeSignalLevel;
             dst.HomeMode = src.HomeMode;
+            dst.HomeClearTime = src.HomeClearTime;
+            dst.HomeOffset = src.HomeOffset;
             dst.AlarmResetSignal = src.AlarmResetSignal;
             dst.AlarmLevel = src.AlarmLevel;
             dst.SoftLimitEnable = src.SoftLimitEnable;

@@ -21,13 +21,10 @@ namespace QMC.Common.Keithley
         public FormSetupKeithleyInstrument()
         {
             InitializeComponent();
-            InitializeUI();
         }
 
-        private void InitializeUI()
+        private void FormSetupKeithleyInstrument_Shown(object sender, EventArgs e)
         {
-            this.Text = $"Resource Manager";
-
             comboBoxInterface.Items.Clear();
             comboBoxInterface.Items.Add("All");
             foreach (HardwareInterfaceType type in Enum.GetValues(typeof(HardwareInterfaceType)))
@@ -99,5 +96,7 @@ namespace QMC.Common.Keithley
                 this.Close();
             }
         }
+
+        
     }
 }

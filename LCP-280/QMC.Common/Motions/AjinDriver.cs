@@ -189,12 +189,12 @@ namespace QMC.Common.Motions
 
             // 2) 홈 파라미터 (속도/가속은 Config(mm기준)→pulse로 변환)
             double ppu = _pulsesPerUnit; // mm→pulse
-            double h1v = cfg.HomeSpeed * ppu;
-            double h2v = cfg.HomeReturnSpeed * ppu;
-            double hlv = cfg.HomeRecursionSpeed * ppu;
-            double izv = cfg.ZPhaseSpeed * ppu;
-            double h1a = cfg.HomeAcc * ppu;
-            double h2a = cfg.HomeReturnAcc * ppu;
+            double h1v = cfg.HomeFirstSpeed * ppu;
+            double h2v = cfg.HomeSecondSpeed * ppu;
+            double hlv = cfg.HomeThirdSpeed * ppu;
+            double izv = cfg.HomeLastSpeed * ppu;
+            double h1a = cfg.HomeFirstAcc * ppu;
+            double h2a = cfg.HomeSecondAcc * ppu;
 
             rc = AjinApi.ApplyHomeFromSetup(axisNo, setup, h1v, h2v, hlv, izv, h1a, h2a);
             if (rc != 0) return rc;
