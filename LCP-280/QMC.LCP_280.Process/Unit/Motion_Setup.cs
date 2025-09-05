@@ -113,10 +113,13 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.SoftwareLength = GetDouble("Inposition", "Software Length", axis.Setup.SoftwareLength);
 
                 // --- Home
-                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
+                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "SignalLevel", (int)axis.Setup.HomeSignalLevel);
                 axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
+                axis.Setup.HomeDirection = (HomeDirection)GetInt("Home", "Direction", (int)axis.Setup.HomeDirection);
+                axis.Setup.HomeSignal = (HomeSignal)GetInt("Home", "Signal", (int)axis.Setup.HomeSignal);
+                axis.Setup.HomeZPhase = (HomeZPhase)GetInt("Home", "Z Phase", (int)axis.Setup.HomeZPhase);
                 axis.Setup.HomeClearTime = GetDouble("Home", "Clear Time(ms)", axis.Setup.HomeClearTime);
-                axis.Setup.HomeOffset = GetDouble("Home", "Offset", axis.Setup.HomeOffset);
+                axis.Setup.HomeOffset = GetDouble("Home", "Offset(mm)", axis.Setup.HomeOffset);
 
                 // --- Alarm
                 axis.Setup.AlarmResetSignal = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);

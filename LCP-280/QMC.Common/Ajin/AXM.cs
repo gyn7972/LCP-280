@@ -1758,7 +1758,7 @@ namespace QMC.Common.Motion.Ajin
         #endregion
 
         #region 홈관련 함수
-        public static int SetHomeMethod(int axis, Directions direction, HomeSignals signal, ZPhaseMethods zphase, double homeClearTime, double escapeDistance)
+        public static int SetHomeMethod(int axis, HomeDirection direction, HomeSignal signal, HomeZPhase zphase, double homeClearTime, double escapeDistance)
         {
             int ret = 0;
             int nHmDir = (int)direction;

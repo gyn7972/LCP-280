@@ -12,7 +12,7 @@ namespace QMC.Common.Motions
     //public enum EncoderInput { Normal, Reverse, Reverse_SQR4 }
     //public enum InputSource { Encoder, ServoDriver, External }
     //public enum StopMode { Emergency, DecelStop }
-    //public enum HomeMode { NegativeLimit, PositiveLimit, HomeSensor }
+    //public enum HomeSignal { NegativeLimit, PositiveLimit, HomeSensor }
 
     [Serializable]
     public sealed class MotionAxisSetup : BaseSetup
@@ -92,11 +92,23 @@ namespace QMC.Common.Motions
         [DefaultValue(HomeMode.NegativeLimit)]
         public HomeMode HomeMode { get; set; } = HomeMode.NegativeLimit;
 
+        [Category("Home"), DisplayName("Direction")]
+        [DefaultValue(HomeDirection.Ccw)]
+        public HomeDirection HomeDirection { get; set; } = HomeDirection.Ccw;
+
+        [Category("Home"), DisplayName("Signal")]
+        [DefaultValue(HomeSignal.PositiveLimit)]
+        public HomeSignal HomeSignal { get; set; } = HomeSignal.PositiveLimit;
+
+        [Category("Home"), DisplayName("Z Phase")]
+        [DefaultValue(HomeZPhase.None)]
+        public HomeZPhase HomeZPhase { get; set; } = HomeZPhase.None;
+
         [Category("Home"), DisplayName("Clear Time(ms)")]
         [DefaultValue(false)]
         public double HomeClearTime { get; set; } = 1000.000;
 
-        [Category("Home"), DisplayName("Offset")]
+        [Category("Home"), DisplayName("Offset(mm)")]
         [DefaultValue(false)]
         public double HomeOffset { get; set; } = 0;
 

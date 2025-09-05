@@ -90,14 +90,14 @@ namespace QMC.Common
         Error = 3
     }
     [Serializable]
-    public enum Directions : int
+    public enum HomeDirection : int
     {
         Ccw = 0,
         Cw = 1,
     }
 
     [Serializable]
-    public enum HomeSignals : uint
+    public enum HomeSignal : uint
     {
         PositiveLimit = 0,
         NegativeLimit = 1,
@@ -105,7 +105,7 @@ namespace QMC.Common
         ZPhase = 5,
     }
     [Serializable]
-    public enum ZPhaseMethods : uint
+    public enum HomeZPhase : uint
     {
         None,
         Cw = 1,

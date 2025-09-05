@@ -379,8 +379,8 @@ namespace QMC.Common.Motions
             int rc;
 
             // 1) 홈 방법 (방향/신호/Z상)
-            MapHome(setup.HomeMode, out var dir, out var sig, out var z);
-            if ((rc = AXM.SetHomeMethod(axisNo, dir, sig, z, homeClearTime: 0.05, escapeDistance: 0.5)) != 0) return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
+            //MapHome(setup.HomeMode, out var dir, out var sig, out var z);
+            if ((rc = AXM.SetHomeMethod(axisNo, setup.HomeDirection, setup.HomeSignal, setup.HomeZPhase, setup.HomeClearTime, setup.HomeOffset)) != 0) return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
 
             // 2) 홈 속도/가속
             if ((rc = AXM.SetHomeVelocity(axisNo, firstVel, secondVel, lastVel, indexVel, firstAcc, secondAcc)) != 0) return rc; // AxmHomeSetVel :contentReference[oaicite:5]{index=5}
@@ -435,27 +435,27 @@ namespace QMC.Common.Motions
             }
         }
 
-        private static void MapHome(HomeMode m, out Directions dir, out HomeSignals sig, out ZPhaseMethods z)
+        private static void MapHome(HomeMode m, out HomeDirection dir, out HomeSignal sig, out HomeZPhase z)
         {
             switch (m)
             {
                 case HomeMode.NegativeLimit:
-                    dir = Directions.Ccw;                  // 기존 NegDir → Ccw
-                    sig = HomeSignals.NegativeLimit;       // 기존 Limit → NegativeLimit
-                    z = ZPhaseMethods.Ccw;               // 기존 Z_Phase → Ccw(방향 기준)
+                    dir = HomeDirection.Ccw;                  // 기존 NegDir → Ccw
+                    sig = HomeSignal.NegativeLimit;       // 기존 Limit → NegativeLimit
+                    z = HomeZPhase.Ccw;               // 기존 Z_Phase → Ccw(방향 기준)
                     break;
 
                 case HomeMode.PositiveLimit:
-                    dir = Directions.Cw;                   // 기존 PosDir → Cw
-                    sig = HomeSignals.PositiveLimit;       // 기존 Limit → PositiveLimit
-                    z = ZPhaseMethods.Cw;                // 기존 Z_Phase → Cw(방향 기준)
+                    dir = HomeDirection.Cw;                   // 기존 PosDir → Cw
+                    sig = HomeSignal.PositiveLimit;       // 기존 Limit → PositiveLimit
+                    z = HomeZPhase.Cw;                // 기존 Z_Phase → Cw(방향 기준)
                     break;
 
                 case HomeMode.HomeSensor:
                 default:
-                    dir = Directions.Ccw;                  // 기존 NegDir → Ccw (기본 방향)
-                    sig = HomeSignals.HomeSensor;          // 기존 Home → HomeSensor
-                    z = ZPhaseMethods.Ccw;               // 기존 Z_Phase → Ccw
+                    dir = HomeDirection.Ccw;                  // 기존 NegDir → Ccw (기본 방향)
+                    sig = HomeSignal.HomeSensor;          // 기존 Home → HomeSensor
+                    z = HomeZPhase.Ccw;               // 기존 Z_Phase → Ccw
                     break;
             }
         }

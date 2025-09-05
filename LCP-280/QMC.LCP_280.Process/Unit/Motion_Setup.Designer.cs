@@ -542,10 +542,13 @@ namespace QMC.LCP_280.Process.Unit
 
             // Home
             pc.Add(new TitleOnlyProperty("Home"));
-            pc.Add(new DoubleProperty("Signal", (double)axis.Setup.HomeSignalLevel));       // TODO: Enum Editor
+            pc.Add(new DoubleProperty("SignalLevel", (double)axis.Setup.HomeSignalLevel));       // TODO: Enum Editor
             pc.Add(new DoubleProperty("Mode", (double)axis.Setup.HomeMode));                // TODO: Enum Editor
-            pc.Add(new DoubleProperty("Clear Time", (double)axis.Setup.HomeClearTime));
-            pc.Add(new DoubleProperty("Offset", (double)axis.Setup.HomeOffset));
+            pc.Add(new DoubleProperty("Direction", (double)axis.Setup.HomeDirection));
+            pc.Add(new DoubleProperty("Signal", (double)axis.Setup.HomeSignal));
+            pc.Add(new DoubleProperty("Z Phase", (double)axis.Setup.HomeZPhase));
+            pc.Add(new DoubleProperty("Clear Time(ms)", (double)axis.Setup.HomeClearTime));
+            pc.Add(new DoubleProperty("Offset(mm)", (double)axis.Setup.HomeOffset));
 
             // Alarm
             pc.Add(new TitleOnlyProperty("Alarm"));

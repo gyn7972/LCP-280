@@ -617,6 +617,9 @@ namespace QMC.Common.Motions
             t.SoftwareLength = s.SoftwareLength;
             t.HomeSignalLevel = s.HomeSignalLevel;
             t.HomeMode = s.HomeMode;
+            t.HomeDirection = s.HomeDirection;
+            t.HomeSignal = s.HomeSignal;
+            t.HomeZPhase = s.HomeZPhase;
             t.HomeClearTime = s.HomeClearTime;
             t.HomeOffset = s.HomeOffset;
             t.AlarmResetSignal = s.AlarmResetSignal;
@@ -650,6 +653,9 @@ namespace QMC.Common.Motions
             dst.SoftwareLength = src.SoftwareLength;
             dst.HomeSignalLevel = src.HomeSignalLevel;
             dst.HomeMode = src.HomeMode;
+            dst.HomeDirection = src.HomeDirection;
+            dst.HomeSignal = src.HomeSignal;
+            dst.HomeZPhase = src.HomeZPhase;
             dst.HomeClearTime = src.HomeClearTime;
             dst.HomeOffset = src.HomeOffset;
             dst.AlarmResetSignal = src.AlarmResetSignal;
