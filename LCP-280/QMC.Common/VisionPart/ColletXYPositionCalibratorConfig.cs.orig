@@ -1,0 +1,361 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QMC.Common.VisionPart
+{
+    [Serializable]
+    public enum ParamColletXYPositionCalibratorConfigKey
+    {
+        AutoOffsetX,
+        AutoOffsetY,
+        UserOffsetX,
+        UserOffsetY,
+        BeforeDelay,
+        ColletSize,
+        Velocity,
+        StartPosition,
+        CalibrationValue,
+    }
+    [Serializable]
+    public class ColletXYPositionCalibratorConfig : BaseConfig
+    {
+        public double AutoOffsetX { get; set; }
+        public double AutoOffsetY { get; set; }
+        public double UserOffsetX { get; set; }
+        public double UserOffsetY { get; set; }
+        public int BeforeDelay { get; set; }
+        public int ColletSize { get; set; }
+        public int Velocity { get; set; }
+        public XyztCoordinate StartPosition { get; set; }
+
+        public XyCoordinate CalibrationValue { get; set; }
+
+<<<<<<< HEAD
+        public override ListParam ToListParam()
+        {
+            ListParam listParam = new ListParam();
+            ParamGroup group = new ParamGroup();
+            group.Name = "ColletXYPositionCalibratorConfig";
+            {
+                Param param = new Param();
+                param.SetParam("AutoOffsetX", Param.DisplayTypeKey.Text, AutoOffsetX, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("AutoOffsetY", Param.DisplayTypeKey.Text, AutoOffsetY, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("UserOffsetX", Param.DisplayTypeKey.Text, UserOffsetX, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("UserOffsetY", Param.DisplayTypeKey.Text, UserOffsetY, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("BeforeDelay", Param.DisplayTypeKey.Text, BeforeDelay, Param.ValueTypeKey.Int, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("ColletSize", Param.DisplayTypeKey.Text, ColletSize, Param.ValueTypeKey.Int, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("Velocity", Param.DisplayTypeKey.Text, Velocity, Param.ValueTypeKey.Int, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("StartPosition", Param.DisplayTypeKey.Text, StartPosition, Param.ValueTypeKey.XYZT_Coordinate, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam("CalibrationValue", Param.DisplayTypeKey.Text, CalibrationValue, Param.ValueTypeKey.XY_Coordinate, group.Name);
+                group.AddParam(param);
+            }
+
+            return listParam;
+        }
+        public override void SetParam(ListParam listParam)
+        {
+            ParamGroup parameterGroup = listParam.GetGroup("ColletXYPositionCalibratorConfig");
+
+            if (parameterGroup != null)
+            {
+                Param param = null;
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.AutoOffsetX);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        AutoOffsetX = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.AutoOffsetY);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        AutoOffsetY = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.UserOffsetX);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        UserOffsetX = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.UserOffsetY);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        UserOffsetY = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.BeforeDelay);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        BeforeDelay = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.ColletSize);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        ColletSize = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.Velocity);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        Velocity = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.StartPosition);
+                if (param != null)
+                {
+                    XyztCoordinate value = new XyztCoordinate();
+                    if (param.GetXYZTValue(ref value))
+                    {
+                        StartPosition = value;
+                    }
+                }
+                param = parameterGroup.GetParam((int)ParamColletXYPositionCalibratorConfigKey.CalibrationValue);
+                if (param != null)
+                {
+                    XyCoordinate value = new XyCoordinate();
+                    if (param.GetXYValue(ref value))
+                    {
+                        CalibrationValue = value;
+                    }
+                }
+            }
+=======
+
+        public override ListParam ToListParam()
+        {
+            ListParam list = new ListParam();
+            ParamGroup paramGroup = new ParamGroup();
+            paramGroup.Name = "ColletXYPositionCalibratorConfig";
+            {
+                Param param = new Param();
+                param.SetParam("AutoOffsetX", Param.DisplayTypeKey.Text, AutoOffsetX, Param.ValueTypeKey.Double, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("AutoOffsetY", Param.DisplayTypeKey.Text, AutoOffsetY, Param.ValueTypeKey.Double, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("UserOffsetX", Param.DisplayTypeKey.Text, UserOffsetX, Param.ValueTypeKey.Double, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("UserOffsetY", Param.DisplayTypeKey.Text, UserOffsetY, Param.ValueTypeKey.Int, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("BeforeDelay", Param.DisplayTypeKey.Text, BeforeDelay, Param.ValueTypeKey.Double, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("ColletSize", Param.DisplayTypeKey.Text, ColletSize, Param.ValueTypeKey.Double, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("Velocity", Param.DisplayTypeKey.Text, Velocity, Param.ValueTypeKey.Double, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("StartPosition", Param.DisplayTypeKey.Text, StartPosition, Param.ValueTypeKey.XYZT_Coordinate, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            {
+                Param param = new Param();
+                param.SetParam("CalibrationValue", Param.DisplayTypeKey.Text, CalibrationValue, Param.ValueTypeKey.XY_Coordinate, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+
+            list.SetGroup(paramGroup);
+            return list;
+        }
+        public override void SetParam(ListParam listParam)
+        {
+            ParamGroup group = listParam.GetGroup("ColletXYPositionCalibratorConfig");
+            if (group != null)
+            {
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.AutoOffsetX);
+                    if (param != null)
+                    {
+                        double value = 0.0;
+                        if (param.GetDoubleValue(ref value))
+                        {
+                            AutoOffsetX = value;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.AutoOffsetY);
+                    if (param != null)
+                    {
+                        double value = 0.0;
+                        if (param.GetDoubleValue(ref value))
+                        {
+                            AutoOffsetY = value;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.UserOffsetX);
+                    if (param != null)
+                    {
+                        double value = 0.0;
+                        if (param.GetDoubleValue(ref value))
+                        {
+                            UserOffsetX = value;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.UserOffsetY);
+                    if (param != null)
+                    {
+                        int value = 0;
+                        if (param.GetIntValue(ref value))
+                        {
+                            UserOffsetY = value;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.BeforeDelay);
+                    if (param != null)
+                    {
+                        double value = 0;
+                        if (param.GetDoubleValue(ref value))
+                        {
+                            BeforeDelay = value;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.ColletSize);
+                    if (param != null)
+                    {
+                        double value = 0;
+                        if (param.GetDoubleValue(ref value))
+                        {
+                            ColletSize = value;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.Velocity);
+                    if (param != null)
+                    {
+                        double value = 0;
+                        if (param.GetDoubleValue(ref value))
+                        {
+                            Velocity = value;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.StartPosition);
+                    if (param != null)
+                    {
+                        XyztCoordinate xyztCoordinate = new XyztCoordinate();
+                        if (param.GetXYZTValue(ref xyztCoordinate))
+                        {
+                            StartPosition = xyztCoordinate;
+                        }
+                    }
+                }
+                {
+                    Param param = null;
+                    param = group.GetParam((int)ParamColletXYPositionCalibratorConfigKey.CalibrationValue);
+                    if (param != null)
+                    {
+                        XyCoordinate xyCoordinate = new XyCoordinate();
+                        if (param.GetXYValue(ref xyCoordinate))
+                        {
+                            CalibrationValue = xyCoordinate;
+                        }
+                    }
+                }
+            }
+              
+>>>>>>> origin/UI_branch
+        }
+    }
+}

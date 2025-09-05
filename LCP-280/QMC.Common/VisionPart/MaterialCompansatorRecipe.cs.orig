@@ -1,0 +1,405 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QMC.Common.VisionPart
+{
+    [Serializable]
+    public enum MaterialCompensatorRecipeKey
+    {
+        UseCompensator,
+        OperateMode,
+        FilePath,
+        LoadMode,
+        FileName,
+        PatternMatchingParameter,
+        RetryCount,
+        DelayAfterMove,
+        UseSaveImage,
+        //UseBlob,
+        //BlobSize,
+        //BlobROI,
+        //BlobThreshold,
+    }
+    [Serializable]
+    public enum CompanstorOperateMode
+    {
+        Compensate,
+        LoadFile,
+    }
+
+    [Serializable]
+    public enum LoadMethod
+    {
+        PCBID,
+        UseText,
+    }
+
+    [Serializable]
+    public class MaterialCompansatorRecipe : BaseRecipe
+    {
+        private double m_StartPositionX;
+        private double m_StartPositionY;
+        private bool m_bInveterX;
+        private bool m_bInveterY;
+        [NonSerialized]
+        private XyCoordinateCollection m_MatrialPos;
+        private MaterialCompansatorInformationList m_InformationList;
+        public List<MaterialPitch> XGridValue { set; get; }
+        public List<MaterialPitch> YGridValue { set; get; }
+        public IlluminationDataList IlluminationDataSets { set; get; }
+        public IlluminationDataSet IlluminationDataSet { set; get; }
+        public Point InspectRoiStartLocation { set; get; }
+        public Point InspectRoiEndLocation { set; get; }
+        public Point TrainRoiStartLocation { set; get; }
+        public Point TrainRoiEndLocation { set; get; }
+        public bool UseCompensator { set; get; }
+        public PatternMatchingParameters PatternMatchingParameter { set; get; }
+        public int RetryCount { set; get; }
+        public bool IsLeaveImageLog { set; get; }
+        public int DelayAfterMove { set; get; }
+        public bool UseBlob { set; get; }
+        public int BlobSize { set; get; }
+        public int BlobROI { set; get; }
+        public int BlobThreshold { set; get; }
+        public bool UseSaveImage { set; get; }
+        public bool UseLoadFile { set; get; }
+        public string FilePath { set; get; }
+        public LoadMethod LoadMode { set; get; }
+        public string FileName { set; get; }
+        public CompanstorOperateMode OperateMode { set; get; }
+        public MaterialCompansatorRecipe(Part part)
+        {
+            IlluminationDataSets = new IlluminationDataList();
+            IlluminationDataSet = new IlluminationDataSet(part.Name);
+            InspectRoiStartLocation = new Point();
+            InspectRoiEndLocation = new Point();
+            TrainRoiStartLocation = new Point();
+            TrainRoiEndLocation = new Point();
+
+            Init();
+
+            m_StartPositionX = 0;
+            m_StartPositionY = 0;
+            m_MatrialPos = new XyCoordinateCollection();
+
+            m_bInveterX = false;
+            m_bInveterY = false;
+            UseCompensator = false;
+
+            RetryCount = 1;
+            IsLeaveImageLog = false;
+            DelayAfterMove = 0;
+            UseBlob = false;
+            BlobROI = 0;
+            BlobSize = 0;
+            BlobThreshold = 0;
+            OperateMode = CompanstorOperateMode.Compensate;
+
+            UseLoadFile = false;
+            FilePath = " ";
+            LoadMode = LoadMethod.PCBID;
+            FileName = " ";
+            m_InformationList = new MaterialCompansatorInformationList();
+        }
+        public void Init()
+        {
+            if (this.PatternMatchingParameter == null)
+                PatternMatchingParameter = new PatternMatchingParameters();
+
+            if (XGridValue == null)
+            {
+                XGridValue = new List<MaterialPitch>();
+            }
+            if (YGridValue == null)
+            {
+                YGridValue = new List<MaterialPitch>();
+            }
+            if (m_InformationList == null)
+            {
+                m_InformationList = new MaterialCompansatorInformationList();
+            }
+        }
+
+        public override ListParam ToListParam()
+        {
+            ListParam listParam = new ListParam();
+            ParamGroup paramgroup = new ParamGroup();
+            paramgroup.Name = this.GetType().Name;
+            if (listParam != null)
+            {
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(UseCompensator), Param.DisplayTypeKey.CheckBox, UseCompensator, Param.ValueTypeKey.Bool, paramgroup.Name);
+                    paramgroup.AddParam(param);
+                }
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(OperateMode), Param.DisplayTypeKey.Combobox, OperateMode, Param.ValueTypeKey.Int, paramgroup.Name);
+                    param.SelectValues.Clear();
+                    foreach (Enum e in Enum.GetValues(typeof(CompanstorOperateMode)))
+                    {
+                        param.SelectValues.Add(e.ToString());
+                    }
+                    paramgroup.AddParam(param);
+                }
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(FilePath), Param.DisplayTypeKey.Text, FilePath, Param.ValueTypeKey.String, paramgroup.Name);
+                    paramgroup.AddParam(param);
+                }
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(LoadMode), Param.DisplayTypeKey.Combobox, LoadMode, Param.ValueTypeKey.Int, paramgroup.Name);
+                    param.SelectValues.Clear();
+                    foreach (Enum e in Enum.GetValues(typeof(LoadMethod)))
+                    {
+                        param.SelectValues.Add(e.ToString());
+                    }
+                    paramgroup.AddParam(param);
+                }
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(FileName), Param.DisplayTypeKey.Text, FileName, Param.ValueTypeKey.String, paramgroup.Name);
+                    paramgroup.AddParam(param);
+                }                
+                {
+                    if (this.PatternMatchingParameter != null)
+                    {
+                        ParamGroup parameterGroup = PatternMatchingParameter.GetParamGroup();
+                        paramgroup.SetGroup(parameterGroup);
+                    }
+                }
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(RetryCount), Param.DisplayTypeKey.Text, RetryCount, Param.ValueTypeKey.Int, paramgroup.Name);
+                    paramgroup.AddParam(param);
+                }
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(DelayAfterMove), Param.DisplayTypeKey.Text, DelayAfterMove, Param.ValueTypeKey.Int, paramgroup.Name);
+                    paramgroup.AddParam(param);
+                }
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(UseSaveImage), Param.DisplayTypeKey.CheckBox, UseSaveImage, Param.ValueTypeKey.Bool, paramgroup.Name);
+                    paramgroup.AddParam(param);
+                }
+                //{
+                //    Param param = new Param();
+                //    param.SetParam(nameof(UseBlob), Param.DisplayTypeKey.CheckBox, UseBlob, Param.ValueTypeKey.Bool, paramgroup.Name);
+                //    paramgroup.AddParam(param);
+                //}
+                //{
+                //    Param param = new Param();
+                //    param.SetParam(nameof(BlobSize), Param.DisplayTypeKey.Text, BlobSize, Param.ValueTypeKey.Int, paramgroup.Name);
+                //    paramgroup.AddParam(param);
+                //}
+                //{
+                //    Param param = new Param();
+                //    param.SetParam(nameof(BlobROI), Param.DisplayTypeKey.Text, BlobROI, Param.ValueTypeKey.Int, paramgroup.Name);
+                //    paramgroup.AddParam(param);
+                //}
+                //{
+                //    Param param = new Param();
+                //    param.SetParam(nameof(BlobThreshold), Param.DisplayTypeKey.Text, BlobThreshold, Param.ValueTypeKey.Int, paramgroup.Name);
+                //    paramgroup.AddParam(param);
+                //}
+            }
+            listParam.SetGroup(paramgroup);
+            return listParam;
+        }
+
+        public override void SetParam(ListParam listParam)
+        {
+            ParamGroup group = listParam.GetGroup(this.GetType().Name);
+            if (group != null)
+            {
+                Param param = null;
+                                param = group.GetParam((int)MaterialCompensatorRecipeKey.UseCompensator);
+                if (param != null)
+                {
+                    bool value = false;
+                    if (param.GetBoolValue(ref value))
+                    {
+                        this.UseCompensator = value;
+                    }
+                }
+                param = group.GetParam((int)MaterialCompensatorRecipeKey.OperateMode);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        OperateMode = (CompanstorOperateMode)value;
+                    }
+                }
+                param = group.GetParam((int)MaterialCompensatorRecipeKey.FilePath);
+                if (param != null)
+                {
+                    string value = string.Empty;
+                    if (param.GetStringValue(ref value))
+                    {
+                        this.FilePath = value;
+                    }
+                }
+                param = group.GetParam((int)MaterialCompensatorRecipeKey.LoadMode);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        LoadMode = (LoadMethod)value;
+                    }
+                }
+                param = group.GetParam((int)MaterialCompensatorRecipeKey.FileName);
+                if (param != null)
+                {
+                    string value = string.Empty;
+                    if (param.GetStringValue(ref value))
+                    {
+                        this.FileName = value;
+                    }
+                }
+                {
+                    ParamGroup groupPatternMatchingParameter = group.GetGroup(PatternMatchingParameter.GetType().Name);
+                    if (groupPatternMatchingParameter != null)
+                    {
+                        if (this.PatternMatchingParameter != null)
+                        {
+                            this.PatternMatchingParameter.SetParamGroup(groupPatternMatchingParameter);
+                        }
+                    }
+                }
+                param = group.GetParam((int)MaterialCompensatorRecipeKey.RetryCount);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        this.RetryCount = value;
+                    }
+                }
+                param = group.GetParam((int)MaterialCompensatorRecipeKey.DelayAfterMove);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        this.DelayAfterMove = value;
+                    }
+                }
+                param = group.GetParam((int)MaterialCompensatorRecipeKey.UseSaveImage);
+                if (param != null)
+                {
+                    bool value = false;
+                    if (param.GetBoolValue(ref value))
+                    {
+                        this.UseSaveImage = value;
+                    }
+                }
+                //param = group.GetParam((int)MaterialCompensatorRecipeKey.UseBlob);
+                //if (param != null)
+                //{
+                //    bool value = false;
+                //    if (param.GetBoolValue(ref value))
+                //    {
+                //        this.UseBlob = value;
+                //    }
+                //}
+                //param = group.GetParam((int)MaterialCompensatorRecipeKey.BlobSize);
+                //if (param != null)
+                //{
+                //    int value = 0;
+                //    if (param.GetIntValue(ref value))
+                //    {
+                //        this.BlobSize = value;
+                //    }
+                //}
+                //param = group.GetParam((int)MaterialCompensatorRecipeKey.BlobROI);
+                //if (param != null)
+                //{
+                //    int value = 0;
+                //    if (param.GetIntValue(ref value))
+                //    {
+                //        this.BlobROI = value;
+                //    }
+                //}
+                //param = group.GetParam((int)MaterialCompensatorRecipeKey.BlobThreshold);
+                //if (param != null)
+                //{
+                //    int value = 0;
+                //    if (param.GetIntValue(ref value))
+                //    {
+                //        this.BlobThreshold = value;
+                //    }
+                //}
+
+                //param = group.GetParam((int)MaterialCompensatorRecipeKey.UseLoadFile);
+                //if (param != null)
+                //{
+                //    bool value = false;
+                //    if (param.GetBoolValue(ref value))
+                //    {
+                //        this.UseLoadFile = value;
+                //    }
+                //}         
+
+            }
+        }
+
+        public bool InvertedX
+        {
+            get { return m_bInveterX; }
+            set { m_bInveterX = value; }
+        }
+        public bool InvertedY
+        {
+            get { return m_bInveterY; }
+            set { m_bInveterY = value; }
+        }
+        public XyCoordinateCollection MatrialPos
+        {
+            get { return m_MatrialPos; }
+            set { m_MatrialPos = value; }
+        }
+        public MaterialCompansatorInformationList InformationList
+        {
+            get { return m_InformationList; }
+            set { m_InformationList = value; }
+        }
+
+        public double StartPositionX
+        {
+            get { return this.m_StartPositionX; }
+            set { this.m_StartPositionX = value; }
+        }
+
+        public double StartPositionY
+        {
+            get { return this.m_StartPositionY; }
+            set { this.m_StartPositionY = value; }
+        }
+<<<<<<< HEAD
+        //public override List<object> GetPositions()
+        //{
+        //    List<object> positions = new List<object>();
+        //    positions.Add(m_MatrialPos);
+
+        //    return positions;
+        //}
+=======
+>>>>>>> origin/UI_branch
+        public override IlluminationDataList GetIlluminationDatas()
+        {
+            IlluminationDataList IlluminationrList = new IlluminationDataList();
+            IlluminationrList.Add(IlluminationDataSet);
+            return IlluminationrList;
+        }
+
+    }
+}

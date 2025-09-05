@@ -44,7 +44,7 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 1, Name = "WAFER FEEDER UP",      Disp = "Y016" },
             new HardOutputDef { No = 2, Name = "WAFER FEEDER DOWNE",   Disp = "Y017" },
             new HardOutputDef { No = 3, Name = "WAFER FEEDER CLAMP",   Disp = "Y018" },
-            new HardOutputDef { No = 4, Name = "WAFER FEEDER UNCALMP", Disp = "Y019" }
+            new HardOutputDef { No = 4, Name = "WAFER FEEDER UNCLAMP", Disp = "Y019" }
         };
 
         public InputRingTransferConfig() : base("InputRingTransferConfig")

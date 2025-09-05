@@ -1,0 +1,546 @@
+﻿using Cognex.VisionPro;
+using QMC.Common.Modules;
+using QMC.Common.Parts;
+using QMC.Common.Vision;
+using QMC.Common.Vision.Cameras;
+using QMC.Common.Vision.Cognex;
+using QMC.Common.Vision.Optics;
+using QMC.Common.Vision.Tools;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace QMC.Common.VisionPart
+{
+    public class VisionCalibrator : MultiPatternMatchingVisionPart
+    {
+
+        public enum MoveDirection
+        {
+            Start,
+            Top,
+            Bottom,
+            Left,
+            Right,
+        }
+
+        public enum MotionPositionKeys
+        {
+            Start,
+        }
+
+
+        //protected List<XytCoordinate> m_listDies;
+        public IlluminationDataSet IlluminationData
+        {
+            set
+            {
+                VisionCalibratorRecipe.IlluminationDataSet = value;
+            }
+            get
+            {
+                return VisionCalibratorRecipe.IlluminationDataSet;
+            }
+        }
+
+        public XytStage Stage { set; get; }
+
+<<<<<<< HEAD
+        public VisionCalibratorConfig VisonCalibratorConfig 
+        { 
+=======
+        public VisonCalibratorConfig VisonCalibratorConfig
+        {
+>>>>>>> origin/master
+            set
+            {
+                Config = value;
+            }
+            get
+            {
+                return Config as VisionCalibratorConfig;
+            }
+        }
+        public VisionCalibratorRecipe VisionCalibratorRecipe
+        {
+            set
+            {
+                Recipe = value;
+            }
+            get
+            {
+                return Recipe as VisionCalibratorRecipe;
+            }
+        }
+        public VisionCalibrator(string strName) : base(strName)
+        {
+            VisonCalibratorConfig = new VisionCalibratorConfig();
+            VisionCalibratorRecipe = new VisionCalibratorRecipe(this);
+            IlluminationData = new IlluminationDataSet(Name);
+            UseTrainRoi = true;
+            UseInspectRoi = true;
+        }
+
+        public override int Create()
+        {
+            int ret = base.Create();
+
+
+            return ret;
+        }
+        public override void Close()
+        {
+            base.Close();
+        }
+        public override void Stop()
+        {
+            base.Stop();
+            Stage.Stop();
+        }
+        public int Train()
+        {
+            int ret = 0;
+
+            if ((ret = OnTrain(VisionCalibratorRecipe.TrainRoiStartLocation, VisionCalibratorRecipe.TrainRoiEndLocation, VisionCalibratorRecipe.MultiPatternMatchingParameters, IlluminationData)) != 0)
+            {
+                return ret;
+            }
+
+            if (VisionCalibratorRecipe != null)
+            {
+                if (VisionCalibratorRecipe.PatternMatchingParameters == null)
+                {
+                    PatternMatchingParameters newParameter = new PatternMatchingParameters();
+                    VisionCalibratorRecipe.PatternMatchingParameters = newParameter;
+                }
+                VisionCalibratorRecipe.PatternMatchingParameters.TrainImage = TrainImage;
+                Owner.SaveRecipeData();
+            }
+            return ret;
+        }
+
+        public PatternMatchingResult Search()
+        {
+            int ret = 0;
+            if ((ret = OnSearch(VisionCalibratorRecipe.InspectRoiStartLocation, VisionCalibratorRecipe.InspectRoiEndLocation, VisionCalibratorRecipe.MultiPatternMatchingParameters, IlluminationData)) != 0)
+            {
+                return null;
+            }
+
+            return m_MultiPatternMatchingTool.Result;
+        }
+
+        public XytCoordinate GetCurrentPosition()
+        {
+            XytCoordinate current = new XytCoordinate();
+            if (Stage != null)
+            {
+                Stage.GetActualPosition(ref current);
+            }
+
+            return current;
+        }
+
+        public override int OnWork()
+        {
+            int ret = 0;
+            bool isCompensation = false;
+            MoveDirection[] moveDirection = (MoveDirection[])Enum.GetValues(typeof(MoveDirection));
+            PatternMatchingResult patternMatchingResult = null;
+            XytCoordinate targetCoordinate = new XytCoordinate();
+            XyCoordinate coodinate = new XyCoordinate();
+
+            double temp = 0.0;
+
+            XyCoordinate MillimeterValue = new XyCoordinate();
+            XyCoordinate PixelValue = new XyCoordinate();
+            VisionScale sumScale = new VisionScale();
+            List<VisionScale> listScale = new List<VisionScale>();
+
+            List<PointD> centerResult = new List<PointD>();
+            List<PointD> topResult = new List<PointD>();
+            List<PointD> bottomResult = new List<PointD>();
+            List<PointD> leftResult = new List<PointD>();
+            List<PointD> rightResult = new List<PointD>();
+            DirectionResultKeyedCollection directionResult = new DirectionResultKeyedCollection();
+            PointD center = new PointD();
+            PointD top = new PointD();
+            PointD bottom = new PointD();
+            PointD left = new PointD();
+            PointD right = new PointD();
+            VisionScale scale = new VisionScale();
+            try
+            {
+                for (int iter = 0; iter < 10; iter++)
+                {
+
+
+                    for (int i = 0; i < moveDirection.Length; i++)
+                    {
+                        // 시작 위치 설정
+                        if (moveDirection[i] == MoveDirection.Start)
+                            targetCoordinate = this.VisonCalibratorConfig.VisionCalPositions[(int)VisionCalibratorConfig.PositionVisionCal.Start].Coordinate;
+                        else if (moveDirection[i] == MoveDirection.Top)
+                            targetCoordinate = this.VisonCalibratorConfig.VisionCalPositions[(int)VisionCalibratorConfig.PositionVisionCal.Start].Coordinate + new XyCoordinate(0, this.VisonCalibratorConfig.MoveDistance);
+                        else if (moveDirection[i] == MoveDirection.Bottom)
+                            targetCoordinate = this.VisonCalibratorConfig.VisionCalPositions[(int)VisionCalibratorConfig.PositionVisionCal.Start].Coordinate + new XyCoordinate(0, this.VisonCalibratorConfig.MoveDistance * -1);
+                        else if (moveDirection[i] == MoveDirection.Left)
+                            targetCoordinate = this.VisonCalibratorConfig.VisionCalPositions[(int)VisionCalibratorConfig.PositionVisionCal.Start].Coordinate + new XyCoordinate(this.VisonCalibratorConfig.MoveDistance * -1, 0);
+                        else if (moveDirection[i] == MoveDirection.Right)
+                            targetCoordinate = this.VisonCalibratorConfig.VisionCalPositions[(int)VisionCalibratorConfig.PositionVisionCal.Start].Coordinate + new XyCoordinate(this.VisonCalibratorConfig.MoveDistance, 0);
+
+                        if ((ret = this.PatternMatchingAfterMove(targetCoordinate, out patternMatchingResult)) != 0) return ret;
+
+
+
+                        if (patternMatchingResult != null && patternMatchingResult.Values.Count > 0)
+                        {
+                            //directionResult.Add(new DirectionResult(new PointD(patternMatchingResult.Values[0].X, patternMatchingResult.Values[0].Y), moveDirection[i]));
+                            if (moveDirection[i] == MoveDirection.Start)
+                                centerResult.Add(new PointD(patternMatchingResult.Values[0].X, patternMatchingResult.Values[0].Y));
+                            else if (moveDirection[i] == MoveDirection.Top)
+                                topResult.Add(new PointD(patternMatchingResult.Values[0].X, patternMatchingResult.Values[0].Y));
+                            else if (moveDirection[i] == MoveDirection.Bottom)
+                                bottomResult.Add(new PointD(patternMatchingResult.Values[0].X, patternMatchingResult.Values[0].Y));
+                            else if (moveDirection[i] == MoveDirection.Left)
+                                leftResult.Add(new PointD(patternMatchingResult.Values[0].X, patternMatchingResult.Values[0].Y));
+                            else if (moveDirection[i] == MoveDirection.Right)
+                                rightResult.Add(new PointD(patternMatchingResult.Values[0].X, patternMatchingResult.Values[0].Y));
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+                }
+                center = GetAverage(centerResult);
+                top = GetAverage(topResult);
+                bottom = GetAverage(bottomResult);
+                left = GetAverage(leftResult);
+                right = GetAverage(rightResult);
+
+                // Scale Inverted 계산
+                if (center.X < right.X)
+                    scale.InvertedX = false;
+                else
+                    scale.InvertedX = true;
+
+
+                if (center.Y < top.Y)
+                    scale.InvertedY = false;
+                else
+                    scale.InvertedY = true;
+
+
+                // Scale 계산
+                scale.X = (this.VisonCalibratorConfig.MoveDistance * 2) / qGeometry.GetDistanceBetweenTwoPoints(left, right);
+                scale.Y = (this.VisonCalibratorConfig.MoveDistance * 2) / qGeometry.GetDistanceBetweenTwoPoints(top, bottom);
+
+                if (qGeometry.GetAngle(left, right, ref temp) == false) return -1;
+                scale.XAxisT = temp;
+
+                if (qGeometry.GetAngle(bottom, top, ref temp) == false) return -1;
+                scale.YAxisT = temp;
+                Log.Write(this, String.Format("X : {0}, Y : {1}, XAXIST : {2}, YAXIST : {3}", scale.X, scale.Y, scale.XAxisT, scale.YAxisT));
+
+
+                if ((ret = VisionScale.ConvertPosition<XyCoordinate>(scale, Camera.Resolution, patternMatchingResult.Values[0], out coodinate)) != 0) return ret;
+                listScale.Add(scale);
+                this.VisonCalibratorConfig.Scale.X = scale.X;
+                this.VisonCalibratorConfig.Scale.Y = scale.Y;
+
+                this.VisonCalibratorConfig.Scale.XAxisT = scale.XAxisT;
+                this.VisonCalibratorConfig.Scale.YAxisT = scale.YAxisT;
+                this.VisonCalibratorConfig.Scale.InvertedX = scale.InvertedX;
+                this.VisonCalibratorConfig.Scale.InvertedY = scale.InvertedY;
+
+                //if (listScale.Count() > 0)
+                //{
+                //    this.Config.Scale.X = listScale.Average(t => t.X);
+                //    this.Config.Scale.Y = listScale.Average(t => t.Y);
+
+                //    this.Config.Scale.XAxisT = listScale.Average(t => t.XAxisT);
+                //    this.Config.Scale.YAxisT = listScale.Average(t => t.YAxisT);
+                //    this.Config.Scale.InvertedX = listScale[0].InvertedX;
+                //    this.Config.Scale.InvertedY = listScale[0].InvertedY;
+                //}
+            }
+            finally
+            {
+
+            }
+
+            return ret;
+        }
+        private PointD GetAverage(List<PointD> points)
+        {
+            PointD average = new PointD();
+            average.X = points.Average(x => x.X);
+            average.Y = points.Average(y => y.Y);
+            return average;
+        }
+        private int PatternMatchingAfterMove(XytCoordinate coordinate, out PatternMatchingResult result)
+        {
+            int ret = 0;
+            result = null;
+
+            if ((ret = this.Stage.MovePosition(coordinate)) != 0) return ret;
+            Thread.Sleep(100);
+            for (int i = 0; i < 5; i++)
+            {
+                result = this.Search();
+                if (result != null)
+                {
+                    if (result.Values != null)
+                    {
+                        if (result.Values.Count > 0)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (result.Values.Count < 1)
+            {
+                //Matching 실패.
+                ret = -1;
+            }
+
+            FireUpdateResult(result);
+
+            return ret;
+        }
+
+        private int OnPatternMatch(out PatternMatchingResult result)
+        {
+            int ret = 0;
+            result = GetResult();
+            return ret;
+        }
+
+        public override void UpdateConfigData() //참고 : 오버라이드,, 파트 콜
+        {
+            DieLoader dieLoader = Owner as DieLoader;
+            if (dieLoader != null)
+            {
+                VisonCalibratorConfig = dieLoader.DieLoaderConfig.VisonCalibratorConfig;
+                if (VisionCalibratorRecipe.IlluminationDataSet == null)
+                    VisionCalibratorRecipe.IlluminationDataSet = new IlluminationDataSet(Name);
+                VisionCalibratorRecipe.IlluminationDataSet.SetIlluminationChannel(dieLoader.DieLoaderConfig.ListIlluminationChannel);
+                VisonCalibratorConfig.Init();
+
+            }
+
+            DieUnloader dieUnloader = Owner as DieUnloader;
+            if (dieUnloader != null)
+            {
+                VisonCalibratorConfig = dieUnloader.DieUnloaderConfig.VisonCalibratorConfig;
+                if (VisionCalibratorRecipe.IlluminationDataSet == null)
+                    VisionCalibratorRecipe.IlluminationDataSet = new IlluminationDataSet(Name);
+                VisionCalibratorRecipe.IlluminationDataSet.SetIlluminationChannel(dieUnloader.DieUnloaderConfig.ListIlluminationChannel);
+                VisonCalibratorConfig.Init();
+
+            }
+        }
+
+        public override void UpdateRecipeData()
+        {
+            if (Owner is DieLoader)
+            {
+                DieLoader dieLoader = Owner as DieLoader;
+                if (dieLoader != null)
+                {
+                    if (dieLoader.DieLoaderRecipe.VisionCalibratorRecipe != null)
+                    {
+                        this.VisionCalibratorRecipe = dieLoader.DieLoaderRecipe.VisionCalibratorRecipe;
+                        if (VisionCalibratorRecipe.IlluminationDataSet == null)
+                            VisionCalibratorRecipe.IlluminationDataSet = new IlluminationDataSet(Name);
+                        VisionCalibratorRecipe.IlluminationDataSet.SetIlluminationChannel(dieLoader.DieLoaderConfig.ListIlluminationChannel);
+                    }
+                    else
+                    {
+                        dieLoader.DieLoaderRecipe.VisionCalibratorRecipe = this.VisionCalibratorRecipe;
+                    }
+                }
+            }
+            else if (Owner is DieUnloader)
+            {
+                DieUnloader dieUnLoader = Owner as DieUnloader;
+                if (dieUnLoader != null)
+                {
+                    if (dieUnLoader.DieUnloaderRecipe.VisionCalibratorRecipe != null)
+                    {
+                        this.VisionCalibratorRecipe = dieUnLoader.DieUnloaderRecipe.VisionCalibratorRecipe;
+                        if (VisionCalibratorRecipe.IlluminationDataSet == null)
+                            VisionCalibratorRecipe.IlluminationDataSet = new IlluminationDataSet(Name);
+                        VisionCalibratorRecipe.IlluminationDataSet.SetIlluminationChannel(dieUnLoader.DieUnloaderConfig.ListIlluminationChannel);
+                    }
+                    else
+                    {
+                        dieUnLoader.DieUnloaderRecipe.VisionCalibratorRecipe = this.VisionCalibratorRecipe;
+                    }
+                }
+            }
+
+            DieUnloader dieUnloader = Owner as DieUnloader;
+            if (dieUnloader != null)
+            {
+                if (dieUnloader.DieUnloaderRecipe.VisionCalibratorRecipe != null)
+                {
+                    this.VisionCalibratorRecipe = dieUnloader.DieUnloaderRecipe.VisionCalibratorRecipe;
+                }
+                else
+                {
+                    dieUnloader.DieUnloaderRecipe.VisionCalibratorRecipe = this.VisionCalibratorRecipe;
+                }
+            }
+            base.UpdateRecipeData();
+        }
+
+        public override void SetParameter(double dTolerance, int nMaxInstance, double dMinScore, bool bDuplicateChecked, bool bUseMaskImage)
+        {
+            this.VisionCalibratorRecipe.PatternMatchingParameters.MaxTolerance = dTolerance;
+            this.VisionCalibratorRecipe.PatternMatchingParameters.MinTolerance = dTolerance * -1;
+            this.VisionCalibratorRecipe.PatternMatchingParameters.MaxInstance = nMaxInstance;
+            this.VisionCalibratorRecipe.PatternMatchingParameters.MinScore = dMinScore;
+            this.VisionCalibratorRecipe.PatternMatchingParameters.DuplicateChecked = bDuplicateChecked;
+            this.VisionCalibratorRecipe.PatternMatchingParameters.UseMaskImage = bUseMaskImage;
+        }
+
+        public override void GetParameter(out PatternMatchingParameters parameter)
+        {
+            parameter = new PatternMatchingParameters();
+            parameter.MaxTolerance = VisionCalibratorRecipe.PatternMatchingParameters.MaxTolerance;
+            parameter.MinTolerance = VisionCalibratorRecipe.PatternMatchingParameters.MinTolerance;
+            parameter.MaxInstance = VisionCalibratorRecipe.PatternMatchingParameters.MaxInstance;
+            parameter.MinScore = VisionCalibratorRecipe.PatternMatchingParameters.MinScore;
+            parameter.DuplicateChecked = VisionCalibratorRecipe.PatternMatchingParameters.DuplicateChecked;
+            parameter.UseMaskImage = VisionCalibratorRecipe.PatternMatchingParameters.UseMaskImage;
+        }
+
+        public override MultiPatternMatchingParameters GetPatternMatchingParameters()
+        {
+            return VisionCalibratorRecipe.MultiPatternMatchingParameters;
+        }
+
+        public override void SetPatternMatchingParameters(MultiPatternMatchingParameters parameters)
+        {
+            base.SetPatternMatchingParameters(parameters);
+            VisionCalibratorRecipe.MultiPatternMatchingParameters = parameters;
+        }
+
+        public override Point GetInspectStartPoint()
+        {
+            return VisionCalibratorRecipe.InspectRoiStartLocation;
+        }
+
+        public override Point GetInspectEndPoint()
+        {
+            return VisionCalibratorRecipe.InspectRoiEndLocation;
+        }
+
+        public override Point GetTrainStartPoint()
+        {
+            return VisionCalibratorRecipe.TrainRoiStartLocation;
+        }
+
+        public override Point GetTrainEndPoint()
+        {
+            return VisionCalibratorRecipe.TrainRoiEndLocation;
+        }
+
+        public override void SetInspectStartPoint(Point point)
+        {
+            VisionCalibratorRecipe.InspectRoiStartLocation = point;
+        }
+        public override void SetInspectEndPoint(Point point)
+        {
+            VisionCalibratorRecipe.InspectRoiEndLocation = point;
+        }
+
+        public override void SetTrainStartPoint(Point point)
+        {
+            VisionCalibratorRecipe.TrainRoiStartLocation = point;
+        }
+
+        public override void SetTrainEndPoint(Point point)
+        {
+            VisionCalibratorRecipe.TrainRoiEndLocation = point;
+        }
+
+        public override IlluminationDataSet GetIlluminationDataSet()
+        {
+            return IlluminationData;
+        }
+
+        public int MovePosition(string strPosition)
+        {
+            int ret = 0;
+
+            XytCoordinate position = VisonCalibratorConfig.GetCalibratorPosition(strPosition);
+
+            if ((ret = Stage.MovePosition(position)) != 0)
+            {
+                return ret;
+            }
+
+            return ret;
+        }
+
+        public void SetPositionData(string strPosition)
+        {
+            XytCoordinate currentPosition = new XytCoordinate();
+            this.Stage.GetActualPosition(ref currentPosition);
+            VisonCalibratorConfig.SetCalibratorPosition(strPosition, TargetType.Base, currentPosition);
+            Equipment.SaveConfig();
+        }
+
+        [Serializable]
+        public class DirectionResult
+        {
+            #region Field
+            private PointD m_PixelLocation;
+            private MoveDirection m_Direction;
+            #endregion
+
+            #region Constructor
+            public DirectionResult(PointD pixelLocation, MoveDirection direction)
+            {
+                this.PixelLocation = pixelLocation;
+                this.Direction = direction;
+            }
+
+            public DirectionResult() : this(PointD.Empty, MoveDirection.Start) { }
+            #endregion
+
+            #region Property
+            public MoveDirection Direction
+            {
+                get { return this.m_Direction; }
+                set { this.m_Direction = value; }
+            }
+
+            public PointD PixelLocation
+            {
+                get { return this.m_PixelLocation; }
+                set { this.m_PixelLocation = value; }
+            }
+            #endregion
+        }
+        [Serializable]
+        public class DirectionResultKeyedCollection : KeyedCollection<MoveDirection, DirectionResult>
+        {
+            protected override MoveDirection GetKeyForItem(DirectionResult item)
+            {
+                return item.Direction;
+            }
+        }
+    }
+}

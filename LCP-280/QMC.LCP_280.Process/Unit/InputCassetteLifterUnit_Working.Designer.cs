@@ -45,15 +45,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.gbModuleUnit = new System.Windows.Forms.GroupBox();
-            this.axisPositionsView = new QMC.Common.PropertyCollectionView();
-            this.infomationView = new QMC.Common.PropertyCollectionView();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
             this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.sequencePanel = new System.Windows.Forms.Panel();
+            this.axisPositionsView = new QMC.Common.PropertyCollectionView();
+            this.infomationView = new QMC.Common.PropertyCollectionView();
             this.outputIoView = new QMC.Common.IOPropertyCollectionView();
             this.inputIoView = new QMC.Common.IOPropertyCollectionView();
-            this.sequencePanel = new System.Windows.Forms.Panel();
-            this.btnManualAction = new QMC.Common.IndividualMenuButton();
-            this.sequenceView = new QMC.Common.ListBoxItemsView();
+            this.button1 = new System.Windows.Forms.Button();
             this.tableLayoutPanel.SuspendLayout();
             this.gbModuleUnit.SuspendLayout();
             this.gbDigitalIO.SuspendLayout();
@@ -93,24 +92,6 @@ namespace QMC.LCP_280.Process.Unit
             this.gbModuleUnit.TabStop = false;
             this.gbModuleUnit.Text = "ModuleUnit";
             // 
-            // axisPositionsView
-            // 
-            this.axisPositionsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.axisPositionsView.GroupName = "Axis Positions";
-            this.axisPositionsView.Location = new System.Drawing.Point(3, 17);
-            this.axisPositionsView.Name = "axisPositionsView";
-            this.axisPositionsView.Size = new System.Drawing.Size(620, 364);
-            this.axisPositionsView.TabIndex = 2;
-            // 
-            // infomationView
-            // 
-            this.infomationView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.infomationView.GroupName = "Infomation";
-            this.infomationView.Location = new System.Drawing.Point(3, 3);
-            this.infomationView.Name = "infomationView";
-            this.infomationView.Size = new System.Drawing.Size(310, 384);
-            this.infomationView.TabIndex = 0;
-            // 
             // gbDigitalIO
             // 
             this.tableLayoutPanel.SetColumnSpan(this.gbDigitalIO, 2);
@@ -138,6 +119,33 @@ namespace QMC.LCP_280.Process.Unit
             this.ioTableLayoutPanel.Size = new System.Drawing.Size(620, 364);
             this.ioTableLayoutPanel.TabIndex = 0;
             // 
+            // sequencePanel
+            // 
+            this.sequencePanel.Controls.Add(this.button1);
+            this.sequencePanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.sequencePanel.Location = new System.Drawing.Point(3, 393);
+            this.sequencePanel.Name = "sequencePanel";
+            this.sequencePanel.Size = new System.Drawing.Size(310, 384);
+            this.sequencePanel.TabIndex = 8;
+            // 
+            // axisPositionsView
+            // 
+            this.axisPositionsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.axisPositionsView.GroupName = "Axis Positions";
+            this.axisPositionsView.Location = new System.Drawing.Point(3, 17);
+            this.axisPositionsView.Name = "axisPositionsView";
+            this.axisPositionsView.Size = new System.Drawing.Size(620, 364);
+            this.axisPositionsView.TabIndex = 2;
+            // 
+            // infomationView
+            // 
+            this.infomationView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.infomationView.GroupName = "Infomation";
+            this.infomationView.Location = new System.Drawing.Point(3, 3);
+            this.infomationView.Name = "infomationView";
+            this.infomationView.Size = new System.Drawing.Size(310, 384);
+            this.infomationView.TabIndex = 0;
+            // 
             // outputIoView
             // 
             this.outputIoView.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -156,42 +164,15 @@ namespace QMC.LCP_280.Process.Unit
             this.inputIoView.Size = new System.Drawing.Size(304, 358);
             this.inputIoView.TabIndex = 3;
             // 
-            // sequencePanel
+            // button1
             // 
-            this.sequencePanel.Controls.Add(this.btnManualAction);
-            this.sequencePanel.Controls.Add(this.sequenceView);
-            this.sequencePanel.Location = new System.Drawing.Point(3, 393);
-            this.sequencePanel.Name = "sequencePanel";
-            this.sequencePanel.Size = new System.Drawing.Size(310, 384);
-            this.sequencePanel.TabIndex = 8;
-            // 
-            // btnManualAction
-            // 
-            this.btnManualAction.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnManualAction.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnManualAction.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnManualAction.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnManualAction.CustomForeColor = System.Drawing.Color.Black;
-            this.btnManualAction.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnManualAction.ForeColor = System.Drawing.Color.Black;
-            this.btnManualAction.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnManualAction.Location = new System.Drawing.Point(203, 319);
-            this.btnManualAction.Name = "btnManualAction";
-            this.btnManualAction.Size = new System.Drawing.Size(104, 50);
-            this.btnManualAction.TabIndex = 7;
-            this.btnManualAction.TabStop = false;
-            this.btnManualAction.Text = "Manual\r\nAction";
-            this.btnManualAction.UseVisualStyleBackColor = false;
-            // 
-            // sequenceView
-            // 
-            this.sequenceView.BorderWidth = 2;
-            this.sequenceView.GroupName = "Sequence";
-            this.sequenceView.Location = new System.Drawing.Point(0, 3);
-            this.sequenceView.Name = "sequenceView";
-            this.sequenceView.SelectedIndex = -1;
-            this.sequenceView.Size = new System.Drawing.Size(197, 378);
-            this.sequenceView.TabIndex = 1;
+            this.button1.Location = new System.Drawing.Point(216, 17);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 0;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // InputCassetteLifterUnit_Working
             // 
@@ -246,7 +227,7 @@ namespace QMC.LCP_280.Process.Unit
         private GroupBox gbDigitalIO;
         private GroupBox gbModuleUnit;
         private TableLayoutPanel ioTableLayoutPanel;
-        private IndividualMenuButton btnManualAction;
         private Panel sequencePanel;
+        private Button button1;
     }
 }

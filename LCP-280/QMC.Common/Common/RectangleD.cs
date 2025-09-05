@@ -146,22 +146,6 @@ namespace QMC.Common
             if (xRange.Contains(x) == false && yRange.Contains(y) == false) return ShapeLocation.Outer;
 
             return ShapeLocation.Outer;
-            //if (this.X < x && x < this.X + this.Width && y < this.Y && this.Y - this.Height < y)
-            //{
-            //    return ShapeLocation.Inner;
-            //}
-            //else if (this.X <= x && x <= this.X + this.Width && (y == this.Y || y == this.Y - this.Height))
-            //{
-            //    return ShapeLocation.Overlapping;
-            //}
-            //else if ((x == this.X || x == this.X + this.Width) && y <= this.Y && this.Y - this.Height <= y)
-            //{
-            //    return ShapeLocation.Overlapping;
-            //}
-            //else
-            //{
-            //    return ShapeLocation.Outer;
-            //}
         }
 
         public ShapeLocation Contains(Point point)
@@ -384,12 +368,6 @@ namespace QMC.Common
         }
 
 
-        //public static implicit operator RectangleD(string text)
-        //{
-        //    return RectangleD.Parse(text);
-        //}
-
-
         public static explicit operator RectangleD(Rectangle rectangle)
         {
             return new RectangleD((double)rectangle.X, (double)rectangle.Y, (double)rectangle.Width, (double)rectangle.Height);
@@ -421,15 +399,44 @@ namespace QMC.Common
         {
             if (value is string)
             {
-                string text = value as string;
-                string[] array = text.Split(',');
+                culture = culture ?? CultureInfo.InvariantCulture;
+                string text = (string)value;
+                if (string.IsNullOrWhiteSpace(text)) return RectangleD.Empty;
+
+                // 공백 제거 후 분리
+                string[] tokens = text.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(t => t.Trim())
+                                      .ToArray();
+
+                if (tokens.Length < 4)
+                    throw new FormatException($"RectangleD 문자열 형식 오류(필드 수 부족): '{text}'");
+
+                double x = double.Parse(tokens[0], culture);
+                double y = double.Parse(tokens[1], culture);
+                double w = double.Parse(tokens[2], culture);
+                double h = double.Parse(tokens[3], culture);
+
                 RectangleD rect = new RectangleD();
-                rect.X = double.Parse(array[0]);
-                rect.Y = double.Parse(array[1]);
-                rect.Width = double.Parse(array[2]);
-                rect.Height = double.Parse(array[3]);
-                PointD point = new PointD(double.Parse(array[4]), double.Parse(array[5]));
-                rect.Center = point;
+                rect.X = x;
+                rect.Y = y;
+                rect.Width = w;
+                rect.Height = h;
+
+                // 선택적으로 Center (6개 값: X,Y,W,H,CX,CY) 지원
+                if (tokens.Length >= 6)
+                {
+                    double cx = double.Parse(tokens[4], culture);
+                    double cy = double.Parse(tokens[5], culture);
+                    try
+                    {
+                        rect.Center = new PointD(cx, cy); // Center 설정 시 X,Y 재계산 로직 존재
+                    }
+                    catch
+                    {
+                        // Center 설정으로 인한 예외는 무시 (필요시 로깅)
+                    }
+                }
+
                 return rect;
             }
             return base.ConvertFrom(context, culture, value);
@@ -437,39 +444,18 @@ namespace QMC.Common
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == typeof(string) && value is PointD)
+            if (destinationType == typeof(string) && value is RectangleD)
             {
+                // 기존 저장 포맷 (4개 값) 유지. 호환성을 위해 Center 는 출력하지 않음.
                 RectangleD rect = (RectangleD)value;
-                return string.Format("{0}, {1}, {2}, {3}, {4}, {5}",
+                return string.Format(culture ?? CultureInfo.InvariantCulture, "{0}, {1}, {2}, {3}",
                     rect.X,
                     rect.Y,
                     rect.Width,
-                    rect.Height,
-                    rect.Center.X,
-                    rect.Center.Y
-                    );
+                    rect.Height);
             }
             return base.ConvertTo(context, culture, value, destinationType);
         }
-        //protected override ObjectCollection CreateInstanceDescriptor(object value)
-        //{
-        //    ObjectCollection constructMember = new ObjectCollection();
-        //    constructMember.Add(this.GetPropertyValue(value, "X"));
-        //    constructMember.Add(this.GetPropertyValue(value, "Y"));
-        //    constructMember.Add(this.GetPropertyValue(value, "Width"));
-        //    constructMember.Add(this.GetPropertyValue(value, "Height"));
-        //    return constructMember;
-        //}
-        //protected override StringCollection GetListProperties()
-        //{
-        //    StringCollection propertyList = new StringCollection();
-        //    propertyList.Add("X");
-        //    propertyList.Add("Y");
-        //    propertyList.Add("Width");
-        //    propertyList.Add("Height");
-
-        //    return propertyList;
-        //}
     }
 
     [Serializable]
