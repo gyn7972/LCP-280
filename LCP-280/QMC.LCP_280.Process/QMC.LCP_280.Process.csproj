@@ -89,6 +89,7 @@
       <DependentUpon>PatternMatchingDialog.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\PatternMatchingRecipeStore.cs" />
+    <Compile Include="Component\PatternMatchingRunner.cs" />
     <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />

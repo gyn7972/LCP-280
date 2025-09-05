@@ -201,7 +201,6 @@ namespace QMC.Common
                             m_ImageViewer.ResultOverlays.Add(overlay);
                             overlay.Visible = true;
                         }
-                        m_ImageViewer.Display();
                     }
                 }
             }

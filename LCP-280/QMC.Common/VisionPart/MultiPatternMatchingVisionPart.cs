@@ -304,33 +304,53 @@ namespace QMC.Common.VisionPart
                 return ret;
             }
 
-            // === Apply ROI offset so results become absolute coordinates ===
+            // OnSearch 내부 - ROI offset 처리 (단 1회만, relative 로 판단될 때)
             if ((startRoiPoint.X != 0 || startRoiPoint.Y != 0) && m_MultiPatternMatchingTool.Result != null)
             {
                 try
                 {
-                    var values = m_MultiPatternMatchingTool.Result.Values;
-                    for (int i = 0; i < values.Count; i++)
+                    var res = m_MultiPatternMatchingTool.Result;
+                    var values = res.Values;
+                    if (values != null && values.Count > 0)
                     {
-                        var val = values[i];
-                        val.X += startRoiPoint.X;
-                        val.Y += startRoiPoint.Y;
-                        values[i] = val; // reassign if struct
-                    }
-                    // Shift overlays (only if frame type)
-                    foreach (var ov in m_MultiPatternMatchingTool.Result.ResultOverlays)
-                    {
-                        try
+                        int roiW = Math.Max(1, endRoiPoint.X - startRoiPoint.X + 1);
+                        int roiH = Math.Max(1, endRoiPoint.Y - startRoiPoint.Y + 1);
+                        double minX = double.MaxValue, maxX = double.MinValue, minY = double.MaxValue, maxY = double.MinValue;
+                        for (int i = 0; i < values.Count; i++)
                         {
-                            var f = ov as FrameVisionImageOverlay;
-                            if (f != null)
+                            var v = values[i];
+                            if (v.X < minX) minX = v.X; if (v.X > maxX) maxX = v.X;
+                            if (v.Y < minY) minY = v.Y; if (v.Y > maxY) maxY = v.Y;
+                        }
+                        bool looksRelative = minX >= -0.5 && minY >= -0.5 && maxX <= roiW + 0.5 && maxY <= roiH + 0.5;
+                        if (looksRelative)
+                        {
+                            // Values → 절대좌표
+                            for (int i = 0; i < values.Count; i++)
                             {
-                                f.StartLocation = new Point(f.StartLocation.X + startRoiPoint.X, f.StartLocation.Y + startRoiPoint.Y);
-                                f.EndLocation = new Point(f.EndLocation.X + startRoiPoint.X, f.EndLocation.Y + startRoiPoint.Y);
-                                f.CenterLocation = new Point(f.CenterLocation.X + startRoiPoint.X, f.CenterLocation.Y + startRoiPoint.Y);
+                                var v = values[i];
+                                v.X += startRoiPoint.X;
+                                v.Y += startRoiPoint.Y;
+                                values[i] = v;
+                            }
+                            // Overlays (Frame 계열만 처리)
+                            if (res.ResultOverlays != null)
+                            {
+                                foreach (var ov in res.ResultOverlays)
+                                {
+                                    try
+                                    {
+                                        if (ov is FrameVisionImageOverlay f)
+                                        {
+                                            f.StartLocation = new Point(f.StartLocation.X + startRoiPoint.X, f.StartLocation.Y + startRoiPoint.Y);
+                                            f.EndLocation = new Point(f.EndLocation.X + startRoiPoint.X, f.EndLocation.Y + startRoiPoint.Y);
+                                            f.CenterLocation = new Point(f.CenterLocation.X + startRoiPoint.X, f.CenterLocation.Y + startRoiPoint.Y);
+                                        }
+                                    }
+                                    catch { }
+                                }
                             }
                         }
-                        catch { }
                     }
                 }
                 catch { }
