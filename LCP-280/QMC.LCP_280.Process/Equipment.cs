@@ -13,7 +13,8 @@ using QMC.Common.Motions;
 using QMC.Common.Motions.CKD;
 using QMC.Common.Spectrometer;
 using QMC.Common.Unit;
-using QMC.LCP_280.Process.Unit;
+using QMC.LCP_280.Process.Unit; // ensure unit namespace
+using System.Threading; // CancellationToken
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -171,6 +172,7 @@ namespace QMC.LCP_280.Process
         {
             return Spectrometers.TryGetValue(key, out var sm) ? sm : null;
         }
+
         #endregion
 
         #region Constructor & Initialization
@@ -220,7 +222,6 @@ namespace QMC.LCP_280.Process
                 AutoRegisterUnits();
 
                 OnStateChanged(EquipmentState.Ready);
-                Console.WriteLine("Equipment 초기화 완료");
             }
             catch (Exception ex)
             {
@@ -230,37 +231,38 @@ namespace QMC.LCP_280.Process
             }
         }
 
+
+        #region Unit Registration
+
         /// <summary>
-        /// 기본 Unit들 자동 등록
+        /// 기본 Unit들 자동 등록 (필요 시 추가/삭제)
         /// </summary>
         private void AutoRegisterUnits()
         {
-            // 개발자가 필요한 Unit들을 여기에 추가
-            RegisterUnit(new InputCassetteLifter(), "InputCassetteLifter");
-            RegisterUnit(new InputRingTransfer(), "InputRingTransfer");
-            RegisterUnit(new InputStage(), "InputStage");
-            RegisterUnit(new InputStageEjector(), "InputStageEjector");
-            RegisterUnit(new InputDieTransfer(), "InputDieTransfer");
-            RegisterUnit(new Rotary(), "Rotary");
-            RegisterUnit(new IndexLoadAligner(), "IndexLoadAligner");
-            RegisterUnit(new IndexChipProbeController(), "IndexChipProbeController");
-            RegisterUnit(new IndexChipProber(), "IndexChipProber");
-            RegisterUnit(new IndexUnloadAligner(), "IndexUnloadAligner");
-            RegisterUnit(new OutputDieTransfer(), "OutputDieTransfer");
-            RegisterUnit(new OutputStage(), "OutputStage");
-            RegisterUnit(new OutputCassetteLifter(), "OutputCassetteLifter");
-            RegisterUnit(new OutputRingTransfer(), "OutputRingTransfer");
-            RegisterUnit(new GageRnR(), "GageRnR");
+            // 중복 등록 방지: 이미 존재하면 스킵
+            void TryAdd(BaseUnit u, string name)
+            {
+                if (!Units.ContainsKey(name))
+                    RegisterUnit(u, name);
+            }
 
-            // 추가 Unit들 예시:
-            // RegisterUnit(new WaferAlignmentUnit(), "WaferAlignment");
-            // RegisterUnit(new DieLoaderUnit(), "DieLoader");
-            // RegisterUnit(new VisionInspectionUnit(), "VisionInspection");
+            TryAdd(new InputCassetteLifter(), "InputCassetteLifter");
+            TryAdd(new InputRingTransfer(), "InputRingTransfer");
+            TryAdd(new InputStage(), "InputStage");
+            TryAdd(new InputStageEjector(), "InputStageEjector");
+            TryAdd(new InputDieTransfer(), "InputDieTransfer");
+            TryAdd(new Rotary(), "Rotary");
+            TryAdd(new IndexLoadAligner(), "IndexLoadAligner");
+            TryAdd(new IndexChipProbeController(), "IndexChipProbeController");
+            TryAdd(new IndexChipProber(), "IndexChipProber");
+            TryAdd(new IndexUnloadAligner(), "IndexUnloadAligner");
+            TryAdd(new OutputDieTransfer(), "OutputDieTransfer");
+            TryAdd(new OutputStage(), "OutputStage");
+            TryAdd(new OutputCassetteLifter(), "OutputCassetteLifter");
+            TryAdd(new OutputRingTransfer(), "OutputRingTransfer");
+            TryAdd(new GageRnR(), "GageRnR");
+            TryAdd(new EquipmentStatusUnit(), "EquipmentStatusUnit"); // 신규 상태 유닛
         }
-
-        #endregion
-
-        #region Unit Registration
 
         /// <summary>
         /// Unit을 설비에 등록
@@ -521,14 +523,16 @@ namespace QMC.LCP_280.Process
         /// </summary>
         private async Task PerformUnitCycle(BaseUnit unit, CancellationToken cancellationToken)
         {
-            // Unit 타입별로 다른 작업 수행
             switch (unit)
             {
                 case InputCassetteLifter cassetteUnit:
                     await PerformCassetteElevatorCycle(cassetteUnit, cancellationToken);
                     break;
+                case EquipmentStatusUnit statusUnit:
+                    statusUnit.Refresh(); // 고속 경량 Refresh
+                    await Task.Delay(1, cancellationToken);
+                    break;
                 default:
-                    // 기본 Unit 작업
                     await Task.Delay(1, cancellationToken);
                     break;
             }
@@ -821,7 +825,7 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// 등록된 모든 Unit 이름 목록 가져오기
+        /// 등록된 모든 Unit 이름 목록 가져기
         /// </summary>
         public List<string> GetRegisteredUnitNames()
         {
@@ -1537,3 +1541,4 @@ namespace QMC.LCP_280.Process
     #endregion
 
 }
+#endregion

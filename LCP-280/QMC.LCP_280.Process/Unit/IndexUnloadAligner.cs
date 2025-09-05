@@ -6,6 +6,7 @@ using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -23,33 +24,22 @@ namespace QMC.LCP_280.Process.Unit
 
         public override void AddComponents()
         {
-            // 축 바인딩까지 포함해서 불러오기
             IndexUnloadAlignerConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
             IndexUnloadAlignerConfig.InitializeDefaultTeachingPositions();
-
-            // TeachingPosition에 Axis 바인딩
             TeachingPositions.Clear();
             foreach (var tp in IndexUnloadAlignerConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
+            BindAxes();
         }
 
-        public override void OnRun()
-        {
-            base.OnRun();
-        }
-
-        public override void OnStop()
-        {
-            base.OnStop();
-        }
+        public override void OnRun() => base.OnRun();
+        public override void OnStop() => base.OnStop();
 
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
             foreach (var axisPair in Axes)
-            {
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            }
             var tp = new TeachingPosition(positionName, axisPositions, description);
             IndexUnloadAlignerConfig.SetTeachingPosition(tp);
         }
@@ -58,7 +48,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = IndexUnloadAlignerConfig.GetTeachingPosition(positionName);
             if (tp == null) return -1;
-
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
             {
@@ -66,10 +55,38 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     double pos = tp.AxisPositions[axisKey];
                     int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r; // 마지막 에러 반환
+                    if (r != 0) result = r;
                 }
             }
             return result;
         }
+
+        #region Axis Helpers
+        private readonly List<MotionAxis> _axes = new List<MotionAxis>();
+        public IReadOnlyList<MotionAxis> BoundAxes => _axes;
+        private void BindAxes()
+        {
+            _axes.Clear();
+            foreach (var kv in Axes) _axes.Add(kv.Value);
+        }
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = IndexUnloadAlignerConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        #endregion
+
+        #region IO Helpers (No IO defined)
+        public bool ReadInput(string name) => false;
+        public bool WriteOutput(string name, bool on) => false;
+        #endregion
     }
 }

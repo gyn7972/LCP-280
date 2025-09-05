@@ -83,6 +83,13 @@
     <Compile Include="Component\JogControl.Designer.cs">
       <DependentUpon>JogControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\PatternMatchingDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\PatternMatchingDialog.Designer.cs">
+      <DependentUpon>PatternMatchingDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\PatternMatchingRecipeStore.cs" />
     <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
@@ -105,6 +112,7 @@
     <Compile Include="Unit\CommonUnitConfig.Designer.cs">
       <DependentUpon>CommonUnitConfig.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\EquipmentStatusUnit.cs" />
     <Compile Include="Unit\Form_AxisJogPopup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -121,6 +129,25 @@
     <Compile Include="Unit\IndexLoadAlignerConfig.cs" />
     <Compile Include="Unit\IndexUnloadAligner.cs" />
     <Compile Include="Unit\IndexUnloadAlignerConfig.cs" />
+    <Compile Include="Unit\InputDieTransferUnit_Working.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\InputDieTransferUnit_Working.Designer.cs">
+      <DependentUpon>InputDieTransferUnit_Working.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\ChipLoading_Working.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\ChipLoading_Working.Designer.cs">
+      <DependentUpon>ChipLoading_Working.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\InputStageSequence.cs" />
+    <Compile Include="Unit\InputStageUnit_Working.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\InputStageUnit_Working.Designer.cs">
+      <DependentUpon>InputStageUnit_Working.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\InputRingTransferConfig.cs" />
     <Compile Include="Unit\InputRingTransfer.cs" />
     <Compile Include="Unit\InputCassetteLifterConfig.cs" />
@@ -282,6 +309,10 @@
     <EmbeddedResource Include="Component\JogControl.resx">
       <DependentUpon>JogControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\PatternMatchingDialog.resx">
+      <DependentUpon>PatternMatchingDialog.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -306,6 +337,15 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Form_AxisJogPopup.resx">
       <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\InputDieTransferUnit_Working.resx">
+      <DependentUpon>InputDieTransferUnit_Working.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\ChipLoading_Working.resx">
+      <DependentUpon>ChipLoading_Working.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\InputStageUnit_Working.resx">
+      <DependentUpon>InputStageUnit_Working.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\InputStageEjectorUnit_Config.resx">
       <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>

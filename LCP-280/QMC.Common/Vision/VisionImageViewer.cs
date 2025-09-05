@@ -1566,14 +1566,22 @@ namespace QMC.Common.Vision
 
         private void RenderForDisplay(BufferedGraphics m_Graphics)
         {
-            if(this.m_GraphicsDisplay != null)
+            try
             {
-                lock(m_Graphics)
+                if (this.m_GraphicsDisplay != null)
+                {
+                    lock (m_Graphics)
 
-                { 
-                    m_Graphics.Render(this.m_GraphicsDisplay);
+                    {
+                        m_Graphics.Render(this.m_GraphicsDisplay);
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            
         }
 
 

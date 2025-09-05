@@ -167,6 +167,11 @@ namespace QMC.Common.Vision
                 bmp = m_bitmap = new Bitmap(this.Header.Width, this.Header.Height, this.Header.PixelFormat);
             }
             //Create a BitmapData and Lock all pixels to be written 
+            if (this.RawData == null)
+            {
+                // 원본 데이터가 없으면 의미있는 이미지가 아님
+                return null;
+            }
             bmpData = bmp.LockBits(
                         new Rectangle(0, 0, bmp.Width, bmp.Height),
                         ImageLockMode.ReadWrite, this.Header.PixelFormat);
@@ -203,6 +208,12 @@ namespace QMC.Common.Vision
 
         public Image CutImage(Rectangle rectangle)
         {
+            // 방어 코드: 이미지가 유효하지 않은 경우 null 반환
+            if (this.Header == null || this.RawData == null || this.RawData.Length == 0 || this.Header.Width <= 0 || this.Header.Height <= 0)
+            {
+                return null;
+            }
+
             int x = rectangle.X;
             int y = rectangle.Y;
             int w = rectangle.Width;
@@ -224,18 +235,12 @@ namespace QMC.Common.Vision
                 h = Header.Height;
             }
 
-            //if(m_bitmap != null)
-            //{
-            //    if(m_bitmap.Width == rectangle.Width)
-            //    {
-            //        return m_bitmap;
-            //    }
-            //    else
-            //    {
-            //        m_bitmap.Dispose();
-            //        m_bitmap = null;
-            //    }
-            //}
+            // ROI 가 이미지 범위 밖인 경우
+            if (w <= 0 || h <= 0)
+            {
+                return null;
+            }
+
             Bitmap bmp = null;
             BitmapData bmpData;
 
@@ -298,6 +303,7 @@ namespace QMC.Common.Vision
             VisionImage visionImage = null;
 
             cutImage = (Bitmap)this.CutImage(startPosition, endPosition);
+            if (cutImage == null) return null; // 방어
 
             visionImage = VisionImage.CreateInstance(cutImage);
             cutImage.Dispose();
@@ -310,6 +316,7 @@ namespace QMC.Common.Vision
             VisionImage visionImage = null;
 
             cutImage = (Bitmap)this.CutImage(centerPosition, size);
+            if (cutImage == null) return null; // 방어
 
             visionImage = VisionImage.CreateInstance(cutImage);
             cutImage.Dispose();
@@ -322,6 +329,7 @@ namespace QMC.Common.Vision
             VisionImage visionImage = null;
 
             cutImage = (Bitmap)this.CutImage(rectangle);
+            if (cutImage == null) return null; // 방어
 
             visionImage = VisionImage.CreateInstance(cutImage);
             cutImage.Dispose();
@@ -471,7 +479,8 @@ namespace QMC.Common.Vision
                 if (filter == FileFilter.bmp)
                 {
                     Bitmap image = (Bitmap)this.GetImage();
-                    image.Save(stream, ImageFormat.Bmp);
+                    if (image != null)
+                        image.Save(stream, ImageFormat.Bmp);
                 }
                 else if (filter == FileFilter.vif)
                 {
@@ -481,12 +490,14 @@ namespace QMC.Common.Vision
                 else if (filter == FileFilter.jpg)
                 {
                     Bitmap image = (Bitmap)this.GetImage();
-                    image.Save(stream, ImageFormat.Jpeg);
+                    if (image != null)
+                        image.Save(stream, ImageFormat.Jpeg);
                 }
                 else if (filter == FileFilter.tif)
                 {
                     Bitmap image = (Bitmap)this.GetImage();
-                    image.Save(stream, ImageFormat.Tiff);
+                    if (image != null)
+                        image.Save(stream, ImageFormat.Tiff);
                 }
             }
             catch (Exception ex)

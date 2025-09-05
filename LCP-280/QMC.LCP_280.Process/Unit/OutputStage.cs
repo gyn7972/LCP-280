@@ -6,6 +6,7 @@ using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -14,8 +15,7 @@ namespace QMC.LCP_280.Process.Unit
         public OutputStageConfig OutputStageConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
 
-        public OutputStage(OutputStageConfig config = null)
-            : base("OutputStageConfig")
+        public OutputStage(OutputStageConfig config = null) : base("OutputStageConfig")
         {
             OutputStageConfig = config ?? new OutputStageConfig();
             AddComponents();
@@ -23,33 +23,23 @@ namespace QMC.LCP_280.Process.Unit
 
         public override void AddComponents()
         {
-            // 축 바인딩까지 포함해서 불러오기
             OutputStageConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
             OutputStageConfig.InitializeDefaultTeachingPositions();
-
-            // TeachingPosition에 Axis 바인딩
             TeachingPositions.Clear();
             foreach (var tp in OutputStageConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
+            BindAxes();
+            BindIoDomains();
         }
 
-        public override void OnRun()
-        {
-            base.OnRun();
-        }
-
-        public override void OnStop()
-        {
-            base.OnStop();
-        }
+        public override void OnRun() => base.OnRun();
+        public override void OnStop() { base.OnStop(); }
 
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
             foreach (var axisPair in Axes)
-            {
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            }
             var tp = new TeachingPosition(positionName, axisPositions, description);
             OutputStageConfig.SetTeachingPosition(tp);
         }
@@ -58,7 +48,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = OutputStageConfig.GetTeachingPosition(positionName);
             if (tp == null) return -1;
-
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
             {
@@ -66,10 +55,113 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     double pos = tp.AxisPositions[axisKey];
                     int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r; // 마지막 에러 반환
+                    if (r != 0) result = r;
                 }
             }
             return result;
         }
+
+        #region Axis Helpers
+        private MotionAxis _axX, _axY, _axT;
+        public MotionAxis AxisX => _axX;
+        public MotionAxis AxisY => _axY;
+        public MotionAxis AxisT => _axT;
+        private void BindAxes()
+        {
+            Axes.TryGetValue("Bin Stage X Axis", out _axX);
+            Axes.TryGetValue("Bin Stage Y Axis", out _axY);
+            Axes.TryGetValue("Bin Stage T Axis", out _axT);
+        }
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = OutputStageConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        #endregion
+
+        #region IO Low-Level
+        public bool ReadInput(string name)
+        {
+            var hi = OutputStageConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            if (hi == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
+            return false;
+        }
+        public bool WriteOutput(string name, bool on)
+        {
+            var ho = OutputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            if (ho == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
+            return false;
+        }
+        #endregion
+
+        #region IO Domain Mapping
+        private Cylinder _clampLiftCylinder;   // CLAMP UP/DOWN
+        private Cylinder _plateCylinder;       // PLATE UP/DOWN
+        private Vacuum _vacuum;                // Stage vacuum
+
+        private const string NAME_CLAMP_UP = "BIN STAGE CLAMP UP";
+        private const string NAME_CLAMP_DOWN = "BIN STAGE CLAMP DOWN";
+        private const string NAME_CLAMP = "BIN STAGE CLAMP";
+        private const string NAME_UNCLAMP = "BIN STAGE UNCLAMP";
+        private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";
+        private const string NAME_PLATE_DOWN = "BIN STAGE PLATE DOWN";
+        private const string NAME_VAC = "BIN STAGE VACUUM";
+        private const string NAME_VAC_OK = "BIN STAGE VACUUM CHECK"; // input
+        private const string NAME_RING0 = "BIN STAGE RING CHECK 0";
+        private const string NAME_RING1 = "BIN STAGE RING CHECK 1";
+
+        private void BindIoDomains()
+        {
+            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
+            // Clamp lift
+            DIO.MapByName(unit, "OutStage.ClampUpOut", true, NAME_CLAMP_UP);
+            DIO.MapByName(unit, "OutStage.ClampDownOut", true, NAME_CLAMP_DOWN);
+            DIO.MapByName(unit, "OutStage.ClampUpIn", false, NAME_CLAMP);
+            DIO.MapByName(unit, "OutStage.ClampDownIn", false, NAME_CLAMP_DOWN);
+            _clampLiftCylinder = new Cylinder("OutStageClampLift", "OutStage.ClampUpOut", "OutStage.ClampDownOut", "OutStage.ClampUpIn", "OutStage.ClampDownIn");
+            // Plate
+            DIO.MapByName(unit, "OutStage.PlateUpOut", true, NAME_PLATE_UP);
+            DIO.MapByName(unit, "OutStage.PlateDownOut", true, NAME_PLATE_DOWN);
+            DIO.MapByName(unit, "OutStage.PlateUpIn", false, NAME_PLATE_UP);
+            DIO.MapByName(unit, "OutStage.PlateDownIn", false, NAME_PLATE_DOWN);
+            _plateCylinder = new Cylinder("OutStagePlate", "OutStage.PlateUpOut", "OutStage.PlateDownOut", "OutStage.PlateUpIn", "OutStage.PlateDownIn");
+            // Vacuum
+            DIO.MapByName(unit, "OutStage.VacOut", true, NAME_VAC);
+            DIO.MapByName(unit, "OutStage.VacOk", false, NAME_VAC_OK);
+            _vacuum = new Vacuum("OutStage", "OutStage.VacOut", "OutStage.VacOk");
+            // Clamp / Unclamp simple outs (already partially mapped above for sensors)
+            DIO.MapByName(unit, "OutStage.ClampOut", true, NAME_CLAMP);
+            DIO.MapByName(unit, "OutStage.UnclampOut", true, NAME_UNCLAMP);
+        }
+
+        public bool ClampLiftUp(int timeoutMs = 3000) => _clampLiftCylinder?.Extend(timeoutMs) ?? false;
+        public bool ClampLiftDown(int timeoutMs = 3000) => _clampLiftCylinder?.Retract(timeoutMs) ?? false;
+        public bool PlateUp(int timeoutMs = 3000) => _plateCylinder?.Extend(timeoutMs) ?? false;
+        public bool PlateDown(int timeoutMs = 3000) => _plateCylinder?.Retract(timeoutMs) ?? false;
+        public void Clamp(bool on) { WriteOutput(NAME_CLAMP, on); WriteOutput(NAME_UNCLAMP, !on); }
+        public void VacuumOn() => _vacuum?.On();
+        public void VacuumOff() => _vacuum?.Off();
+        public bool VacuumOk() => _vacuum?.IsOk() ?? false;
+        public bool IsClamp() => ReadInput(NAME_CLAMP);
+        public bool IsClampDown() => ReadInput(NAME_CLAMP_DOWN);
+        public bool Ring0() => ReadInput(NAME_RING0);
+        public bool Ring1() => ReadInput(NAME_RING1);
+        public bool IsRingPresent() => Ring0() || Ring1();
+        public bool VacuumCheck() => ReadInput(NAME_VAC_OK) || VacuumOk();
+        #endregion
     }
 }

@@ -355,14 +355,14 @@ namespace QMC.Common.Motions
         public static int ApplySetupBasic(int axisNo, MotionAxisSetup setup)
         {
             int rc;
-            var outMethod = MapOutputMethod(setup.OutputMode);
+            var outMethod = MapOutputMethod(setup.PulseOutput);
             if ((rc = AXM.SetOutputMethod(axisNo, outMethod)) != 0) return rc;        // 펄스 출력 방식
 
-            var encMethod = MapEncoderMethod(setup.InputMode);
+            var encMethod = MapEncoderMethod(setup.EncoderInput);
             if ((rc = AXM.SetEncoderMethod(axisNo, encMethod)) != 0) return rc;       // 엔코더 입력 방식
 
             if ((rc = AXM.SetZPhaseLevel(axisNo, setup.ZPhaseLevel)) != 0) return rc; // Z상 레벨
-            if ((rc = AXM.SetAmpEnableLevel(axisNo, setup.ServoLevel)) != 0) return rc;// Servo On 레벨
+            if ((rc = AXM.SetAmpEnableLevel(axisNo, setup.ServoOnLevel)) != 0) return rc;// Servo On 레벨
                                                                                        // ※ Inpos/Alarm 레벨 setter가 래퍼에 없으면 .mot 기본값 사용(필요 시 래퍼 추가)
 
             return 0;
@@ -379,8 +379,8 @@ namespace QMC.Common.Motions
             int rc;
 
             // 1) 홈 방법 (방향/신호/Z상)
-            MapHome(setup.HomeMode, out var dir, out var sig, out var z);
-            if ((rc = AXM.SetHomeMethod(axisNo, dir, sig, z, homeClearTime: 0.05, escapeDistance: 0.5)) != 0) return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
+            //MapHome(setup.HomeMode, out var dir, out var sig, out var z);
+            if ((rc = AXM.SetHomeMethod(axisNo, setup.HomeDirection, setup.HomeSignal, setup.HomeZPhase, setup.HomeClearTime, setup.HomeOffset)) != 0) return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
 
             // 2) 홈 속도/가속
             if ((rc = AXM.SetHomeVelocity(axisNo, firstVel, secondVel, lastVel, indexVel, firstAcc, secondAcc)) != 0) return rc; // AxmHomeSetVel :contentReference[oaicite:5]{index=5}
@@ -411,51 +411,51 @@ namespace QMC.Common.Motions
         // ─────────────────────────────────────────────────────────────
         // 매핑 유틸
         // ─────────────────────────────────────────────────────────────
-        private static AXM.MotorOutputMethod MapOutputMethod(OutputMode m)
+        private static AXM.MotorOutputMethod MapOutputMethod(PulseOutput m)
         {
             switch (m)
             {
-                case OutputMode.TwoPulse_High_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwHigh; // :contentReference[oaicite:12]{index=12}
-                case OutputMode.TwoPulse_Low_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwLow;  // :contentReference[oaicite:13]{index=13}
-                case OutputMode.AB_Phase:
+                case PulseOutput.TwoPulse_High_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwHigh; // :contentReference[oaicite:12]{index=12}
+                case PulseOutput.TwoPulse_Low_CCW_CW: return AXM.MotorOutputMethod.TwoCcwCwLow;  // :contentReference[oaicite:13]{index=13}
+                case PulseOutput.AB_Phase:
                     // 래퍼에 AB-Phase 전용 항목이 없다면(현재 enum에 미포함) TwoCcwCwHigh를 기본값으로 사용.
                     return AXM.MotorOutputMethod.TwoCcwCwHigh;
                 default: return AXM.MotorOutputMethod.TwoCcwCwHigh;
             }
         }
 
-        private static AXM.EncoderInputMethod MapEncoderMethod(InputMode m)
+        private static AXM.EncoderInputMethod MapEncoderMethod(EncoderInput m)
         {
             switch (m)
             {
-                case InputMode.Normal: return AXM.EncoderInputMethod.ObverseSqr4Mode;  // :contentReference[oaicite:14]{index=14}
-                case InputMode.Reverse: return AXM.EncoderInputMethod.ReverseUpDownMode; // 필요시 ReverseSqr4Mode로 변경
-                case InputMode.Reverse_SQR4: return AXM.EncoderInputMethod.ReverseSqr4Mode;  // :contentReference[oaicite:15]{index=15}
+                case EncoderInput.Normal: return AXM.EncoderInputMethod.ObverseSqr4Mode;  // :contentReference[oaicite:14]{index=14}
+                case EncoderInput.Reverse: return AXM.EncoderInputMethod.ReverseUpDownMode; // 필요시 ReverseSqr4Mode로 변경
+                case EncoderInput.Reverse_SQR4: return AXM.EncoderInputMethod.ReverseSqr4Mode;  // :contentReference[oaicite:15]{index=15}
                 default: return AXM.EncoderInputMethod.ObverseSqr4Mode;
             }
         }
 
-        private static void MapHome(HomeMode m, out Directions dir, out HomeSignals sig, out ZPhaseMethods z)
+        private static void MapHome(HomeMode m, out HomeDirection dir, out HomeSignal sig, out HomeZPhase z)
         {
             switch (m)
             {
                 case HomeMode.NegativeLimit:
-                    dir = Directions.Ccw;                  // 기존 NegDir → Ccw
-                    sig = HomeSignals.NegativeLimit;       // 기존 Limit → NegativeLimit
-                    z = ZPhaseMethods.Ccw;               // 기존 Z_Phase → Ccw(방향 기준)
+                    dir = HomeDirection.Ccw;                  // 기존 NegDir → Ccw
+                    sig = HomeSignal.NegativeLimit;       // 기존 Limit → NegativeLimit
+                    z = HomeZPhase.Ccw;               // 기존 Z_Phase → Ccw(방향 기준)
                     break;
 
                 case HomeMode.PositiveLimit:
-                    dir = Directions.Cw;                   // 기존 PosDir → Cw
-                    sig = HomeSignals.PositiveLimit;       // 기존 Limit → PositiveLimit
-                    z = ZPhaseMethods.Cw;                // 기존 Z_Phase → Cw(방향 기준)
+                    dir = HomeDirection.Cw;                   // 기존 PosDir → Cw
+                    sig = HomeSignal.PositiveLimit;       // 기존 Limit → PositiveLimit
+                    z = HomeZPhase.Cw;                // 기존 Z_Phase → Cw(방향 기준)
                     break;
 
                 case HomeMode.HomeSensor:
                 default:
-                    dir = Directions.Ccw;                  // 기존 NegDir → Ccw (기본 방향)
-                    sig = HomeSignals.HomeSensor;          // 기존 Home → HomeSensor
-                    z = ZPhaseMethods.Ccw;               // 기존 Z_Phase → Ccw
+                    dir = HomeDirection.Ccw;                  // 기존 NegDir → Ccw (기본 방향)
+                    sig = HomeSignal.HomeSensor;          // 기존 Home → HomeSensor
+                    z = HomeZPhase.Ccw;               // 기존 Z_Phase → Ccw
                     break;
             }
         }

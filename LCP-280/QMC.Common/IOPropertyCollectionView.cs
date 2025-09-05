@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.ComponentModel; // for Browsable, Category, Description attributes
 
 namespace QMC.Common
 {
@@ -22,6 +23,48 @@ namespace QMC.Common
 
         // 키 숫자부 자릿수 (예: X003 -> 3). UI 구성 시 실제 키들 보고 자동 설정됨.
         private int _keyPadWidth = 3;
+
+        // ===== 1번 열(Name 열) 색상 커스터마이징 =====
+        private Color _listBackColor = Color.Black;           // 기본 배경
+        private Color _listForeColor = Color.Lime;            // 기본 글자색
+        private Color _selectedBackColor = Color.FromArgb(198, 255, 0); // 선택 배경
+        private Color _selectedForeColor = Color.Black;       // 선택 글자색
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("1번 열(Name) 기본 배경색")] 
+        public Color ListBackColor
+        {
+            get => _listBackColor;
+            set { _listBackColor = value; UpdateNameColumnColors(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("1번 열(Name) 기본 글자색")] 
+        public Color ListForeColor
+        {
+            get => _listForeColor;
+            set { _listForeColor = value; UpdateNameColumnColors(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("1번 열(Name) 선택 배경색")] 
+        public Color SelectedBackColor
+        {
+            get => _selectedBackColor;
+            set { _selectedBackColor = value; UpdateNameColumnColors(); }
+        }
+
+        [Browsable(true)]
+        [Category("Appearance")]
+        [Description("1번 열(Name) 선택 글자색")] 
+        public Color SelectedForeColor
+        {
+            get => _selectedForeColor;
+            set { _selectedForeColor = value; UpdateNameColumnColors(); }
+        }
 
         protected override CreateParams CreateParams
         {
@@ -91,6 +134,37 @@ namespace QMC.Common
                 BindingFlags.NonPublic | BindingFlags.Instance
             );
             miUpdateStyles?.Invoke(c, null);
+        }
+
+        // 1번 열 색상 즉시 반영
+        private void UpdateNameColumnColors()
+        {
+            try
+            {
+                var tableLayoutPanelField = typeof(PropertyCollectionView).GetField("tableLayoutPanel", BindingFlags.NonPublic | BindingFlags.Instance);
+                var tableLayoutPanel = tableLayoutPanelField?.GetValue(this) as TableLayoutPanel;
+                if (tableLayoutPanel == null) return;
+
+                foreach (Control ctrl in tableLayoutPanel.Controls)
+                {
+                    var lbl = ctrl as Label;
+                    if (lbl == null) continue;
+                    if (!(lbl.Tag is string tag) || tag != "IONameLabel") continue;
+
+                    if (ReferenceEquals(lbl, _selectedNameLabel))
+                    {
+                        lbl.BackColor = _selectedBackColor;
+                        lbl.ForeColor = _selectedForeColor;
+                    }
+                    else
+                    {
+                        lbl.BackColor = _listBackColor;
+                        lbl.ForeColor = _listForeColor;
+                    }
+                }
+                tableLayoutPanel.Invalidate();
+            }
+            catch { /* ignore */ }
         }
 
         public override void SetProperties(PropertyCollection properties)
@@ -227,13 +301,19 @@ namespace QMC.Common
                         AutoSize = false,
                         Margin = new Padding(0),
                         Padding = new Padding(2),
-                        BackColor = Color.White
+                        BackColor = _listBackColor,
+                        ForeColor = _listForeColor,
+                        Tag = "IONameLabel"
                     };
                     nameLabel.Click += (s, e) =>
                     {
                         if (_selectedNameLabel != null)
-                            _selectedNameLabel.BackColor = Color.White;
-                        nameLabel.BackColor = Color.Yellow;
+                        {
+                            _selectedNameLabel.BackColor = _listBackColor;
+                            _selectedNameLabel.ForeColor = _listForeColor;
+                        }
+                        nameLabel.BackColor = _selectedBackColor;
+                        nameLabel.ForeColor = _selectedForeColor;
                         _selectedNameLabel = nameLabel;
                     };
                     tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
@@ -249,13 +329,19 @@ namespace QMC.Common
                         AutoSize = false,
                         Margin = new Padding(0),
                         Padding = new Padding(2),
-                        BackColor = Color.White
+                        BackColor = _listBackColor,
+                        ForeColor = _listForeColor,
+                        Tag = "IONameLabel"
                     };
                     nameLabel.Click += (s, e) =>
                     {
                         if (_selectedNameLabel != null)
-                            _selectedNameLabel.BackColor = Color.White;
-                        nameLabel.BackColor = Color.Yellow;
+                        {
+                            _selectedNameLabel.BackColor = _listBackColor;
+                            _selectedNameLabel.ForeColor = _listForeColor;
+                        }
+                        nameLabel.BackColor = _selectedBackColor;
+                        nameLabel.ForeColor = _selectedForeColor;
                         _selectedNameLabel = nameLabel;
                     };
                     tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);

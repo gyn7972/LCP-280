@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using QMC.Common;
+using QMC.Common.Motion.Ajin;
 using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
@@ -96,11 +97,11 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.AxisPowerPercent = GetInt("Common", "Axis Power", axis.Setup.AxisPowerPercent);
 
                 // --- Config
-                axis.Setup.OutputMode = (OutputMode)GetInt("Config", "Output Mode", (int)axis.Setup.OutputMode);
-                axis.Setup.InputMode = (InputMode)GetInt("Config", "Input Mode", (int)axis.Setup.InputMode);
+                axis.Setup.PulseOutput = (PulseOutput)GetInt("Config", "Pulse Output", (int)axis.Setup.PulseOutput);
+                axis.Setup.EncoderInput = (EncoderInput)GetInt("Config", "Enconder Input", (int)axis.Setup.EncoderInput);
                 axis.Setup.InputSource = (InputSource)GetInt("Config", "Input Source", (int)axis.Setup.InputSource);
                 axis.Setup.ZPhaseLevel = (ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
-                axis.Setup.ServoLevel = (ActiveLevel)GetInt("Config", "Servo Level", (int)axis.Setup.ServoLevel);
+                axis.Setup.ServoOnLevel = (ActiveLevel)GetInt("Config", "Servo On Level", (int)axis.Setup.ServoOnLevel);
 
                 // --- Emergency Signal
                 axis.Setup.EmergencyLevel = (ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);
@@ -112,8 +113,13 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.SoftwareLength = GetDouble("Inposition", "Software Length", axis.Setup.SoftwareLength);
 
                 // --- Home
-                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
+                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "SignalLevel", (int)axis.Setup.HomeSignalLevel);
                 axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
+                axis.Setup.HomeDirection = (HomeDirection)GetInt("Home", "Direction", (int)axis.Setup.HomeDirection);
+                axis.Setup.HomeSignal = (HomeSignal)GetInt("Home", "Signal", (int)axis.Setup.HomeSignal);
+                axis.Setup.HomeZPhase = (HomeZPhase)GetInt("Home", "Z Phase", (int)axis.Setup.HomeZPhase);
+                axis.Setup.HomeClearTime = GetDouble("Home", "Clear Time(ms)", axis.Setup.HomeClearTime);
+                axis.Setup.HomeOffset = GetDouble("Home", "Offset(mm)", axis.Setup.HomeOffset);
 
                 // --- Alarm
                 axis.Setup.AlarmResetSignal = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);
@@ -127,12 +133,12 @@ namespace QMC.LCP_280.Process.Unit
                 if (_speedIndex?.Count > 0)
                 {
                     // Home
-                    axis.Config.HomeSpeed = GetDoubleS("Home", "Home Speed(mm/s)", axis.Config.HomeSpeed);
-                    axis.Config.HomeReturnSpeed = GetDoubleS("Home", "H-Return Speed(mm/s)", axis.Config.HomeReturnSpeed);
-                    axis.Config.HomeRecursionSpeed = GetDoubleS("Home", "H-Recursion Speed(mm/s)", axis.Config.HomeRecursionSpeed);
-                    axis.Config.ZPhaseSpeed = GetDoubleS("Home", "Z-Phase Speed(mm/s)", axis.Config.ZPhaseSpeed);
-                    axis.Config.HomeAcc = GetDoubleS("Home", "Home Acc(mm/s^2)", axis.Config.HomeAcc);
-                    axis.Config.HomeReturnAcc = GetDoubleS("Home", "H-Return Acc(mm/s^2)", axis.Config.HomeReturnAcc);
+                    axis.Config.HomeFirstSpeed = GetDoubleS("Home", "Vel. 1st(mm/s)", axis.Config.HomeFirstSpeed);
+                    axis.Config.HomeSecondSpeed = GetDoubleS("Home", "Vel. 2nd(mm/s)", axis.Config.HomeSecondSpeed);
+                    axis.Config.HomeThirdSpeed = GetDoubleS("Home", "Vel. 3rd(mm/s)", axis.Config.HomeThirdSpeed);
+                    axis.Config.HomeLastSpeed = GetDoubleS("Home", "Vel. Last(mm/s)", axis.Config.HomeLastSpeed);
+                    axis.Config.HomeFirstAcc = GetDoubleS("Home", "Accel. 1st(mm/s^2)", axis.Config.HomeFirstAcc);
+                    axis.Config.HomeSecondAcc = GetDoubleS("Home", "Accel. 2nd(mm/s^2)", axis.Config.HomeSecondAcc);
 
                     // Jog
                     axis.Config.JogFineVelocity = GetDoubleS("Jog", "Fine Velocity(mm/s)", axis.Config.JogFineVelocity);
@@ -214,12 +220,12 @@ namespace QMC.LCP_280.Process.Unit
                 if (_speedIndex?.Count > 0)
                 {
                     // Home
-                    axis.Config.HomeSpeed = GetDoubleS("Home", "Home Speed(mm/s)", axis.Config.HomeSpeed);
-                    axis.Config.HomeReturnSpeed = GetDoubleS("Home", "H-Return Speed(mm/s)", axis.Config.HomeReturnSpeed);
-                    axis.Config.HomeRecursionSpeed = GetDoubleS("Home", "H-Recursion Speed(mm/s)", axis.Config.HomeRecursionSpeed);
-                    axis.Config.ZPhaseSpeed = GetDoubleS("Home", "Z-Phase Speed(mm/s)", axis.Config.ZPhaseSpeed);
-                    axis.Config.HomeAcc = GetDoubleS("Home", "Home Acc(mm/s^2)", axis.Config.HomeAcc);
-                    axis.Config.HomeReturnAcc = GetDoubleS("Home", "H-Return Acc(mm/s^2)", axis.Config.HomeReturnAcc);
+                    axis.Config.HomeFirstSpeed = GetDoubleS("Home", "Vel. 1st(mm/s)", axis.Config.HomeFirstSpeed);
+                    axis.Config.HomeSecondSpeed = GetDoubleS("Home", "Vel. 2nd(mm/s)", axis.Config.HomeSecondSpeed);
+                    axis.Config.HomeThirdSpeed = GetDoubleS("Home", "Vel. 3rd(mm/s)", axis.Config.HomeThirdSpeed);
+                    axis.Config.HomeLastSpeed = GetDoubleS("Home", "Vel. Last(mm/s)", axis.Config.HomeLastSpeed);
+                    axis.Config.HomeFirstAcc = GetDoubleS("Home", "Accel. 1st(mm/s^2)", axis.Config.HomeFirstAcc);
+                    axis.Config.HomeSecondAcc = GetDoubleS("Home", "Accel. 2nd(mm/s^2)", axis.Config.HomeSecondAcc);
 
                     // Jog
                     axis.Config.JogFineVelocity = GetDoubleS("Jog", "Fine Velocity(mm/s)", axis.Config.JogFineVelocity);

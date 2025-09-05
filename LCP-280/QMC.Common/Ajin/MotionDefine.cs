@@ -90,14 +90,14 @@ namespace QMC.Common
         Error = 3
     }
     [Serializable]
-    public enum Directions : int
+    public enum HomeDirection : int
     {
         Ccw = 0,
         Cw = 1,
     }
 
     [Serializable]
-    public enum HomeSignals : uint
+    public enum HomeSignal : uint
     {
         PositiveLimit = 0,
         NegativeLimit = 1,
@@ -105,7 +105,7 @@ namespace QMC.Common
         ZPhase = 5,
     }
     [Serializable]
-    public enum ZPhaseMethods : uint
+    public enum HomeZPhase : uint
     {
         None,
         Cw = 1,
@@ -136,10 +136,10 @@ namespace QMC.Common
     }
 
     [Serializable]
-    public enum OutputMode { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
+    public enum PulseOutput { TwoPulse_High_CCW_CW, TwoPulse_Low_CCW_CW, AB_Phase }
 
     [Serializable]
-    public enum InputMode { Normal, Reverse, Reverse_SQR4 }
+    public enum EncoderInput { Normal, Reverse, Reverse_SQR4 }
 
     [Serializable]
     public enum InputSource { Encoder, ServoDriver, External }
