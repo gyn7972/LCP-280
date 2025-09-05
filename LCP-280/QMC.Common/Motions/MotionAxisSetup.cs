@@ -92,6 +92,14 @@ namespace QMC.Common.Motions
         [DefaultValue(HomeMode.NegativeLimit)]
         public HomeMode HomeMode { get; set; } = HomeMode.NegativeLimit;
 
+        [Category("Home"), DisplayName("Clear Time(ms)")]
+        [DefaultValue(false)]
+        public double HomeClearTime { get; set; } = 1000.000;
+
+        [Category("Home"), DisplayName("Offset")]
+        [DefaultValue(false)]
+        public double HomeOffset { get; set; } = 0;
+
         // ===== Alarm =====
         [Category("Alarm"), DisplayName("Reset Signal Level")]
         [DefaultValue(ActiveLevel.High)]

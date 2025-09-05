@@ -544,6 +544,8 @@ namespace QMC.LCP_280.Process.Unit
             pc.Add(new TitleOnlyProperty("Home"));
             pc.Add(new DoubleProperty("Signal", (double)axis.Setup.HomeSignalLevel));       // TODO: Enum Editor
             pc.Add(new DoubleProperty("Mode", (double)axis.Setup.HomeMode));                // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Clear Time", (double)axis.Setup.HomeClearTime));
+            pc.Add(new DoubleProperty("Offset", (double)axis.Setup.HomeOffset));
 
             // Alarm
             pc.Add(new TitleOnlyProperty("Alarm"));
@@ -564,12 +566,12 @@ namespace QMC.LCP_280.Process.Unit
 
             // Home
             pc.Add(new TitleOnlyProperty("Home"));
-            pc.Add(new DoubleProperty("Home Speed(mm/s)", axis.Config.HomeSpeed));
-            pc.Add(new DoubleProperty("H-Return Speed(mm/s)", axis.Config.HomeReturnSpeed));
-            pc.Add(new DoubleProperty("H-Recursion Speed(mm/s)", axis.Config.HomeRecursionSpeed));
-            pc.Add(new DoubleProperty("Z-Phase Speed(mm/s)", axis.Config.ZPhaseSpeed));
-            pc.Add(new DoubleProperty("Home Acc(mm/s^2)", axis.Config.HomeAcc));
-            pc.Add(new DoubleProperty("H-Return Acc(mm/s^2)", axis.Config.HomeReturnAcc));
+            pc.Add(new DoubleProperty("Vel. 1st(mm/s)", axis.Config.HomeFirstSpeed));
+            pc.Add(new DoubleProperty("Vel. 2nd(mm/s)", axis.Config.HomeSecondSpeed));
+            pc.Add(new DoubleProperty("Vel. 3rd(mm/s)", axis.Config.HomeThirdSpeed));
+            pc.Add(new DoubleProperty("Vel. Last(mm/s)", axis.Config.HomeLastSpeed));
+            pc.Add(new DoubleProperty("Accel. 1st(mm/s^2)", axis.Config.HomeFirstAcc));
+            pc.Add(new DoubleProperty("Accel. 2nd(mm/s^2)", axis.Config.HomeSecondAcc));
 
             // Jog
             pc.Add(new TitleOnlyProperty("Jog"));

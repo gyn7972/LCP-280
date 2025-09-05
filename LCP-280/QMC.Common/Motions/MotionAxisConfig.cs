@@ -18,27 +18,27 @@ namespace QMC.Common.Motions
         // ===== Home Speed =====
         [Category("Speed.Home"), DisplayName("Home Speed (mm/s)")]
         [DefaultValue(0.0)]
-        public double HomeSpeed { get; set; } = 0.000;
+        public double HomeFirstSpeed { get; set; } = 0.000;
 
         [Category("Speed.Home"), DisplayName("H-Return Speed (mm/s)")]
         [DefaultValue(0.0)]
-        public double HomeReturnSpeed { get; set; } = 0.000;
+        public double HomeSecondSpeed { get; set; } = 0.000;
 
         [Category("Speed.Home"), DisplayName("H-Recursion Speed (mm/s)")]
         [DefaultValue(0.0)]
-        public double HomeRecursionSpeed { get; set; } = 0.000;
+        public double HomeThirdSpeed { get; set; } = 0.000;
 
         [Category("Speed.Home"), DisplayName("Z-Phase Speed (mm/s)")]
         [DefaultValue(0.0)]
-        public double ZPhaseSpeed { get; set; } = 0.000;
+        public double HomeLastSpeed { get; set; } = 0.000;
 
         [Category("Speed.Home"), DisplayName("Home Acc (mm/s^2)")]
         [DefaultValue(0.0)]
-        public double HomeAcc { get; set; } = 0.000;
+        public double HomeFirstAcc { get; set; } = 0.000;
 
         [Category("Speed.Home"), DisplayName("H-Return Acc (mm/s^2)")]
         [DefaultValue(0.0)]
-        public double HomeReturnAcc { get; set; } = 0.000;
+        public double HomeSecondAcc { get; set; } = 0.000;
 
         // ===== Jog =====
         [Category("Speed.Jog"), DisplayName("Fine Velocity (mm/s)")]

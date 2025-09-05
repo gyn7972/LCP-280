@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using QMC.Common;
+using QMC.Common.Motion.Ajin;
 using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
@@ -114,6 +115,8 @@ namespace QMC.LCP_280.Process.Unit
                 // --- Home
                 axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
                 axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
+                axis.Setup.HomeClearTime = GetDouble("Home", "Clear Time(ms)", axis.Setup.HomeClearTime);
+                axis.Setup.HomeOffset = GetDouble("Home", "Offset", axis.Setup.HomeOffset);
 
                 // --- Alarm
                 axis.Setup.AlarmResetSignal = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);
@@ -127,12 +130,12 @@ namespace QMC.LCP_280.Process.Unit
                 if (_speedIndex?.Count > 0)
                 {
                     // Home
-                    axis.Config.HomeSpeed = GetDoubleS("Home", "Home Speed(mm/s)", axis.Config.HomeSpeed);
-                    axis.Config.HomeReturnSpeed = GetDoubleS("Home", "H-Return Speed(mm/s)", axis.Config.HomeReturnSpeed);
-                    axis.Config.HomeRecursionSpeed = GetDoubleS("Home", "H-Recursion Speed(mm/s)", axis.Config.HomeRecursionSpeed);
-                    axis.Config.ZPhaseSpeed = GetDoubleS("Home", "Z-Phase Speed(mm/s)", axis.Config.ZPhaseSpeed);
-                    axis.Config.HomeAcc = GetDoubleS("Home", "Home Acc(mm/s^2)", axis.Config.HomeAcc);
-                    axis.Config.HomeReturnAcc = GetDoubleS("Home", "H-Return Acc(mm/s^2)", axis.Config.HomeReturnAcc);
+                    axis.Config.HomeFirstSpeed = GetDoubleS("Home", "Vel. 1st(mm/s)", axis.Config.HomeFirstSpeed);
+                    axis.Config.HomeSecondSpeed = GetDoubleS("Home", "Vel. 2nd(mm/s)", axis.Config.HomeSecondSpeed);
+                    axis.Config.HomeThirdSpeed = GetDoubleS("Home", "Vel. 3rd(mm/s)", axis.Config.HomeThirdSpeed);
+                    axis.Config.HomeLastSpeed = GetDoubleS("Home", "Vel. Last(mm/s)", axis.Config.HomeLastSpeed);
+                    axis.Config.HomeFirstAcc = GetDoubleS("Home", "Accel. 1st(mm/s^2)", axis.Config.HomeFirstAcc);
+                    axis.Config.HomeSecondAcc = GetDoubleS("Home", "Accel. 2nd(mm/s^2)", axis.Config.HomeSecondAcc);
 
                     // Jog
                     axis.Config.JogFineVelocity = GetDoubleS("Jog", "Fine Velocity(mm/s)", axis.Config.JogFineVelocity);
@@ -214,12 +217,12 @@ namespace QMC.LCP_280.Process.Unit
                 if (_speedIndex?.Count > 0)
                 {
                     // Home
-                    axis.Config.HomeSpeed = GetDoubleS("Home", "Home Speed(mm/s)", axis.Config.HomeSpeed);
-                    axis.Config.HomeReturnSpeed = GetDoubleS("Home", "H-Return Speed(mm/s)", axis.Config.HomeReturnSpeed);
-                    axis.Config.HomeRecursionSpeed = GetDoubleS("Home", "H-Recursion Speed(mm/s)", axis.Config.HomeRecursionSpeed);
-                    axis.Config.ZPhaseSpeed = GetDoubleS("Home", "Z-Phase Speed(mm/s)", axis.Config.ZPhaseSpeed);
-                    axis.Config.HomeAcc = GetDoubleS("Home", "Home Acc(mm/s^2)", axis.Config.HomeAcc);
-                    axis.Config.HomeReturnAcc = GetDoubleS("Home", "H-Return Acc(mm/s^2)", axis.Config.HomeReturnAcc);
+                    axis.Config.HomeFirstSpeed = GetDoubleS("Home", "Vel. 1st(mm/s)", axis.Config.HomeFirstSpeed);
+                    axis.Config.HomeSecondSpeed = GetDoubleS("Home", "Vel. 2nd(mm/s)", axis.Config.HomeSecondSpeed);
+                    axis.Config.HomeThirdSpeed = GetDoubleS("Home", "Vel. 3rd(mm/s)", axis.Config.HomeThirdSpeed);
+                    axis.Config.HomeLastSpeed = GetDoubleS("Home", "Vel. Last(mm/s)", axis.Config.HomeLastSpeed);
+                    axis.Config.HomeFirstAcc = GetDoubleS("Home", "Accel. 1st(mm/s^2)", axis.Config.HomeFirstAcc);
+                    axis.Config.HomeSecondAcc = GetDoubleS("Home", "Accel. 2nd(mm/s^2)", axis.Config.HomeSecondAcc);
 
                     // Jog
                     axis.Config.JogFineVelocity = GetDoubleS("Jog", "Fine Velocity(mm/s)", axis.Config.JogFineVelocity);

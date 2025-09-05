@@ -574,12 +574,12 @@ namespace QMC.Common.Motions
         private static MotionAxisConfig CloneConfig(MotionAxisConfig c)
         {
             var t = new MotionAxisConfig();
-            t.HomeSpeed = c.HomeSpeed;
-            t.HomeReturnSpeed = c.HomeReturnSpeed;
-            t.HomeRecursionSpeed = c.HomeRecursionSpeed;
-            t.ZPhaseSpeed = c.ZPhaseSpeed;
-            t.HomeAcc = c.HomeAcc;
-            t.HomeReturnAcc = c.HomeReturnAcc;
+            t.HomeFirstSpeed = c.HomeFirstSpeed;
+            t.HomeSecondSpeed = c.HomeSecondSpeed;
+            t.HomeThirdSpeed = c.HomeThirdSpeed;
+            t.HomeLastSpeed = c.HomeLastSpeed;
+            t.HomeFirstAcc = c.HomeFirstAcc;
+            t.HomeSecondAcc = c.HomeSecondAcc;
             t.JogFineVelocity = c.JogFineVelocity;
             t.JogCoarseVelocity = c.JogCoarseVelocity;
             t.JogAcc = c.JogAcc;
@@ -617,6 +617,8 @@ namespace QMC.Common.Motions
             t.SoftwareLength = s.SoftwareLength;
             t.HomeSignalLevel = s.HomeSignalLevel;
             t.HomeMode = s.HomeMode;
+            t.HomeClearTime = s.HomeClearTime;
+            t.HomeOffset = s.HomeOffset;
             t.AlarmResetSignal = s.AlarmResetSignal;
             t.AlarmLevel = s.AlarmLevel;
             t.SoftLimitEnable = s.SoftLimitEnable;
@@ -648,6 +650,8 @@ namespace QMC.Common.Motions
             dst.SoftwareLength = src.SoftwareLength;
             dst.HomeSignalLevel = src.HomeSignalLevel;
             dst.HomeMode = src.HomeMode;
+            dst.HomeClearTime = src.HomeClearTime;
+            dst.HomeOffset = src.HomeOffset;
             dst.AlarmResetSignal = src.AlarmResetSignal;
             dst.AlarmLevel = src.AlarmLevel;
             dst.SoftLimitEnable = src.SoftLimitEnable;
