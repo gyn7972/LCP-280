@@ -456,7 +456,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
-                    btnHome.Enabled = false;
+                    btnHome.Enabled = true;
                 }
 
                 _editorProrertiesPosition = BuildPositionProperties(axis);
@@ -518,6 +518,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // Common
             pc.Add(new TitleOnlyProperty("Common"));
+            pc.Add(new DoubleProperty("Pulses Per Unit", axis.Setup.PulsesPerUnit));
             pc.Add(new DoubleProperty("Axis Scale", axis.Setup.AxisScale));
             pc.Add(new DoubleProperty("Axis Power", axis.Setup.AxisPowerPercent));
 
@@ -536,29 +537,32 @@ namespace QMC.LCP_280.Process.Unit
 
             // Inposition
             pc.Add(new TitleOnlyProperty("Inposition"));
-            pc.Add(new DoubleProperty("Level", (double)axis.Setup.InpositionLevel));        // TODO: Enum Editor
+            pc.Add(new DoubleProperty("Level", (double)axis.Setup.InPosition));        // TODO: Enum Editor
             pc.Add(new BoolProperty("Software", axis.Setup.SoftwareLimitEnable));           // bool OK
             pc.Add(new DoubleProperty("Software Length", (double)axis.Setup.SoftwareLength));
+         
+            // Alarm
+            pc.Add(new TitleOnlyProperty("Alarm"));
+            pc.Add(new DoubleProperty("Reset Signal", (double)axis.Setup.AlarmResetLevel));// TODO: Enum Editor
+            pc.Add(new DoubleProperty("Level", (double)axis.Setup.AlarmLevel));             // TODO: Enum Editor
+
+            // Limit
+            pc.Add(new TitleOnlyProperty("Limit"));
+            pc.Add(new DoubleProperty("+End Limit", (double)axis.Setup.PositiveLimitLevel));
+            pc.Add(new DoubleProperty("-End Limit", (double)axis.Setup.NegativeLimitLevel));
+            pc.Add(new DoubleProperty("Soft Limit -", (double)axis.Setup.SoftLimitMin));
+            pc.Add(new DoubleProperty("Soft Limit +", (double)axis.Setup.SoftLimitMax));
 
             // Home
             pc.Add(new TitleOnlyProperty("Home"));
-            pc.Add(new DoubleProperty("SignalLevel", (double)axis.Setup.HomeSignalLevel));       // TODO: Enum Editor
             pc.Add(new DoubleProperty("Mode", (double)axis.Setup.HomeMode));                // TODO: Enum Editor
+            pc.Add(new DoubleProperty("SignalLevel", (double)axis.Setup.HomeSignalLevel));       // TODO: Enum Editor
             pc.Add(new DoubleProperty("Direction", (double)axis.Setup.HomeDirection));
             pc.Add(new DoubleProperty("Signal", (double)axis.Setup.HomeSignal));
             pc.Add(new DoubleProperty("Z Phase", (double)axis.Setup.HomeZPhase));
             pc.Add(new DoubleProperty("Clear Time(ms)", (double)axis.Setup.HomeClearTime));
             pc.Add(new DoubleProperty("Offset(mm)", (double)axis.Setup.HomeOffset));
 
-            // Alarm
-            pc.Add(new TitleOnlyProperty("Alarm"));
-            pc.Add(new DoubleProperty("Reset Signal", (double)axis.Setup.AlarmResetSignal));// TODO: Enum Editor
-            pc.Add(new DoubleProperty("Level", (double)axis.Setup.AlarmLevel));             // TODO: Enum Editor
-
-            // Limit
-            pc.Add(new TitleOnlyProperty("Limit"));
-            pc.Add(new DoubleProperty("Soft Limit -", (double)axis.Setup.SoftLimitMin));
-            pc.Add(new DoubleProperty("Soft Limit +", (double)axis.Setup.SoftLimitMax));
 
             return pc;
         }

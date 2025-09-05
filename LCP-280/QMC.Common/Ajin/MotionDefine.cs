@@ -149,4 +149,7 @@ namespace QMC.Common
 
     [Serializable]
     public enum HomeMode { NegativeLimit, PositiveLimit, HomeSensor }
+
+    [Serializable]
+    public enum InPosition { Low, High, Unused, Used }
 }

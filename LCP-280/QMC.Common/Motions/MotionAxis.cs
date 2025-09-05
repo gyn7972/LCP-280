@@ -612,7 +612,7 @@ namespace QMC.Common.Motions
             t.ServoOnLevel = s.ServoOnLevel;
             t.EmergencyLevel = s.EmergencyLevel;
             t.StopMode = s.StopMode;
-            t.InpositionLevel = s.InpositionLevel;
+            t.InPosition = s.InPosition;
             t.SoftwareLimitEnable = s.SoftwareLimitEnable;
             t.SoftwareLength = s.SoftwareLength;
             t.HomeSignalLevel = s.HomeSignalLevel;
@@ -622,8 +622,10 @@ namespace QMC.Common.Motions
             t.HomeZPhase = s.HomeZPhase;
             t.HomeClearTime = s.HomeClearTime;
             t.HomeOffset = s.HomeOffset;
-            t.AlarmResetSignal = s.AlarmResetSignal;
+            t.AlarmResetLevel = s.AlarmResetLevel;
             t.AlarmLevel = s.AlarmLevel;
+            t.PositiveLimitLevel = s.PositiveLimitLevel;
+            t.NegativeLimitLevel = s.NegativeLimitLevel;
             t.SoftLimitEnable = s.SoftLimitEnable;
             t.SoftLimitMin = s.SoftLimitMin;
             t.SoftLimitMax = s.SoftLimitMax;
@@ -648,7 +650,7 @@ namespace QMC.Common.Motions
             dst.ServoOnLevel = src.ServoOnLevel;
             dst.EmergencyLevel = src.EmergencyLevel;
             dst.StopMode = src.StopMode;
-            dst.InpositionLevel = src.InpositionLevel;
+            dst.InPosition = src.InPosition;
             dst.SoftwareLimitEnable = src.SoftwareLimitEnable;
             dst.SoftwareLength = src.SoftwareLength;
             dst.HomeSignalLevel = src.HomeSignalLevel;
@@ -658,8 +660,10 @@ namespace QMC.Common.Motions
             dst.HomeZPhase = src.HomeZPhase;
             dst.HomeClearTime = src.HomeClearTime;
             dst.HomeOffset = src.HomeOffset;
-            dst.AlarmResetSignal = src.AlarmResetSignal;
+            dst.AlarmResetLevel = src.AlarmResetLevel;
             dst.AlarmLevel = src.AlarmLevel;
+            dst.PositiveLimitLevel = src.PositiveLimitLevel;
+            dst.NegativeLimitLevel = src.NegativeLimitLevel;
             dst.SoftLimitEnable = src.SoftLimitEnable;
             dst.SoftLimitMin = src.SoftLimitMin;
             dst.SoftLimitMax = src.SoftLimitMax;
