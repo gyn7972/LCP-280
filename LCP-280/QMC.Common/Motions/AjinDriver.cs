@@ -184,11 +184,12 @@ namespace QMC.Common.Motions
         public int ConfigureFromSetupAndConfig(int axisNo, MotionAxisSetup setup, MotionAxisConfig cfg)
         {
             // 1) 배선/레벨 등 기본 셋업
-            int rc = AjinApi.ApplySetupBasic(axisNo, setup);
-            if (rc != 0) return rc;
+            int rc = 0;
+            //int rc = AjinApi.ApplySetupBasic(axisNo, setup);
+            //if (rc != 0) return rc;
 
             // 2) 홈 파라미터 (속도/가속은 Config(mm기준)→pulse로 변환)
-            double ppu = _pulsesPerUnit; // mm→pulse
+            double ppu = 1; //_pulsesPerUnit; // mm→pulse 재확인 필요
             double h1v = cfg.HomeFirstSpeed * ppu;
             double h2v = cfg.HomeSecondSpeed * ppu;
             double hlv = cfg.HomeThirdSpeed * ppu;
@@ -205,11 +206,14 @@ namespace QMC.Common.Motions
             double d = cfg.RunDec * ppu;
 
             if (ProfileMode == ProfileMode.SCurve)
-                rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 10.0));
+                rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 10.0), setup.PulsesPerUnit, setup.AxisScale);
             else
-                rc = AjinApi.ApplyTrapProfile(axisNo, v, a, d);
+                rc = AjinApi.ApplyTrapProfile(axisNo, v, a, d, setup.PulsesPerUnit, setup.AxisScale);
             if (rc != 0) return rc;
 
+            if ((rc = AjinApi.ApplyMotionSignal(axisNo, (uint)setup.StopMode, (uint)setup.EmergencyLevel, setup.AlarmLevel, 
+                setup.AlarmResetLevel, setup.InPosition, setup.PositiveLimitLevel, setup.NegativeLimitLevel)) != 0)
+                return rc;
             return 0;
         }
 

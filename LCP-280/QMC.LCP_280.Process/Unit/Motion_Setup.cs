@@ -1,13 +1,14 @@
-﻿using System;
+﻿using QMC.Common;
+using QMC.Common.Motion.Ajin;
+using QMC.Common.Motions;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Motion.Ajin;
-using QMC.Common.Motions;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -93,7 +94,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 5) 에디터 값 → axis.Setup 반영 (섹션 기준으로 안전 매핑)
                 // --- Common
-                axis.Setup.AxisScale = GetDouble("Common", "Axis Scale", axis.Setup.AxisScale);
+                axis.Setup.PulsesPerUnit = GetInt("Common", "Pulses Per Unit", axis.Setup.PulsesPerUnit);
+                axis.Setup.AxisScale = GetInt("Common", "Axis Scale", axis.Setup.AxisScale);
                 axis.Setup.AxisPowerPercent = GetInt("Common", "Axis Power", axis.Setup.AxisPowerPercent);
 
                 // --- Config
@@ -107,22 +109,27 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.EmergencyLevel = (ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);
                 axis.Setup.StopMode = (StopMode)GetInt("Emergency Signal", "Stop Mode", (int)axis.Setup.StopMode);
 
-                // --- Inposition
-                axis.Setup.InpositionLevel = (ActiveLevel)GetInt("Inposition", "Level", (int)axis.Setup.InpositionLevel);
-                axis.Setup.SoftwareLimitEnable = GetBool("Inposition", "Software", axis.Setup.SoftwareLimitEnable);
-                axis.Setup.SoftwareLength = GetDouble("Inposition", "Software Length", axis.Setup.SoftwareLength);
+                // --- InPosition
+                axis.Setup.InPosition = (InPosition)GetInt("InPosition", "Level", (int)axis.Setup.InPosition);
+                axis.Setup.SoftwareLimitEnable = GetBool("InPosition", "Software", axis.Setup.SoftwareLimitEnable);
+                axis.Setup.SoftwareLength = GetDouble("InPosition", "Software Length", axis.Setup.SoftwareLength);
 
                 // --- Home
-                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal", (int)axis.Setup.HomeSignalLevel);
+                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "SignalLevel", (int)axis.Setup.HomeSignalLevel);
                 axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
+                axis.Setup.HomeDirection = (HomeDirection)GetInt("Home", "Direction", (int)axis.Setup.HomeDirection);
+                axis.Setup.HomeSignal = (HomeSignal)GetInt("Home", "Signal", (int)axis.Setup.HomeSignal);
+                axis.Setup.HomeZPhase = (HomeZPhase)GetInt("Home", "Z Phase", (int)axis.Setup.HomeZPhase);
                 axis.Setup.HomeClearTime = GetDouble("Home", "Clear Time(ms)", axis.Setup.HomeClearTime);
-                axis.Setup.HomeOffset = GetDouble("Home", "Offset", axis.Setup.HomeOffset);
+                axis.Setup.HomeOffset = GetDouble("Home", "Offset(mm)", axis.Setup.HomeOffset);
 
                 // --- Alarm
-                axis.Setup.AlarmResetSignal = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetSignal);
+                axis.Setup.AlarmResetLevel = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetLevel);
                 axis.Setup.AlarmLevel = (ActiveLevel)GetInt("Alarm", "Level", (int)axis.Setup.AlarmLevel);
 
                 // --- Limit
+                axis.Setup.PositiveLimitLevel = (ActiveLevel)GetInt("Limit", "+End Limit",(int)axis.Setup.PositiveLimitLevel);
+                axis.Setup.NegativeLimitLevel = (ActiveLevel)GetInt("Limit", "-End Limit", (int)axis.Setup.NegativeLimitLevel);
                 axis.Setup.SoftLimitMin = GetDouble("Limit", "Soft Limit -", axis.Setup.SoftLimitMin);
                 axis.Setup.SoftLimitMax = GetDouble("Limit", "Soft Limit +", axis.Setup.SoftLimitMax);
 

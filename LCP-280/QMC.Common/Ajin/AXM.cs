@@ -7,12 +7,13 @@
  * 
  */
 
+using QMC.Common;
+using QMC.Common.IO;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Text;
-using QMC.Common;
 
 
 namespace QMC.Common.Motion.Ajin
@@ -1194,6 +1195,12 @@ namespace QMC.Common.Motion.Ajin
             if ((ret = AXL.CheckErrorCode("AXM.AxmMotSetEncInputMethod", AXM.AxmMotSetEncInputMethod(axis, value))) != 0) return ret;
             return ret;
         }
+        public static int SetMoveUnitPerPulse(int axis, int dUnit, int nPulse)
+        {
+            int ret = 0;
+            if ((ret = AXL.CheckErrorCode("AXM.AxmMotSetMoveUnitPerPulse", AXM.AxmMotSetMoveUnitPerPulse(axis, dUnit, nPulse))) != 0) return ret;
+            return ret;
+        }
 
         public static int SetProfileMode(int axis, AXT_MOTION_PROFILE_MODE mode)
         {
@@ -1365,10 +1372,10 @@ namespace QMC.Common.Motion.Ajin
             level = value == 0 ? ActiveLevel.Low : ActiveLevel.High;
             return ret;
         }
-        public static int SetInPositionLevel(int axis, ActiveLevel level)
+        public static int SetInPositionLevel(int axis, InPosition level)
         {
             int ret = 0;
-            uint value = level == ActiveLevel.High ? (uint)1 : (uint)0;
+            uint value = (uint)level;
             if ((ret = AXL.CheckErrorCode("AXM.AxmSignalSetInpos", AXM.AxmSignalSetInpos(axis, value))) != 0) return ret;
             return ret;
         }
@@ -1464,6 +1471,16 @@ namespace QMC.Common.Motion.Ajin
             if ((ret = AXL.CheckErrorCode("AXM.AxmSignalGetLimit", AXM.AxmSignalGetLimit(axis, ref stop, ref positive, ref negative))) != 0) return ret;
             positive = level == ActiveLevel.High ? (uint)1 : (uint)0;
             if ((ret = AXL.CheckErrorCode("AXM.AxmSignalSetLimit", AXM.AxmSignalSetLimit(axis, stop, positive, negative))) != 0) return ret;
+            return ret;
+        }
+        public static int SetPositiveLimitLevel(int axis, uint stopMode, ActiveLevel positive, ActiveLevel negetive)
+        {
+            int ret = 0;
+            uint stop = 0, curPos = 0, curNeg = 0;
+            if ((ret = AXL.CheckErrorCode("AXM.AxmSignalGetLimit", AXM.AxmSignalGetLimit(axis, ref stop, ref curPos, ref curNeg))) != 0) return ret;
+            uint newPos = (positive == ActiveLevel.High) ? 1u : 0u;
+            uint newNeg = (negetive == ActiveLevel.High) ? 1u : 0u;
+            if ((ret = AXL.CheckErrorCode("AXM.AxmSignalSetLimit", AXM.AxmSignalSetLimit(axis, stop, newPos, newNeg))) != 0) return ret;
             return ret;
         }
         public static int GetPositiveLimitValue(int axis, ref bool value)
@@ -1594,6 +1611,16 @@ namespace QMC.Common.Motion.Ajin
 
             return ret;
         }
+
+        public static int SetSignalStop(int axis, uint stopMode, uint level)
+        {
+            int ret = 0;
+
+            if ((ret = AXL.CheckErrorCode("AXM.AxmSignalSetStop", AXM.AxmSignalSetStop(axis, stopMode, level))) != 0) return ret;
+
+            return ret;
+        }
+
 
         public static int ReadInputBit(int axis, int bit, ref DioValue value)
         {
@@ -1758,7 +1785,7 @@ namespace QMC.Common.Motion.Ajin
         #endregion
 
         #region 홈관련 함수
-        public static int SetHomeMethod(int axis, Directions direction, HomeSignals signal, ZPhaseMethods zphase, double homeClearTime, double escapeDistance)
+        public static int SetHomeMethod(int axis, HomeDirection direction, HomeSignal signal, HomeZPhase zphase, double homeClearTime, double escapeDistance)
         {
             int ret = 0;
             int nHmDir = (int)direction;

@@ -1,7 +1,8 @@
-﻿using System;
-using System.Threading;
+﻿using QMC.Common.Motion.Ajin; // AXL/AXM/AXD 래퍼 (Ajin SDK)
 using QMC.Common.Motions; // ActiveLevel 등 공용 enum
-using QMC.Common.Motion.Ajin; // AXL/AXM/AXD 래퍼 (Ajin SDK)
+using System;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace QMC.Common.Motions
 {
@@ -379,8 +380,10 @@ namespace QMC.Common.Motions
             int rc;
 
             // 1) 홈 방법 (방향/신호/Z상)
-            MapHome(setup.HomeMode, out var dir, out var sig, out var z);
-            if ((rc = AXM.SetHomeMethod(axisNo, dir, sig, z, homeClearTime: 0.05, escapeDistance: 0.5)) != 0) return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
+            //MapHome(setup.HomeMode, out var dir, out var sig, out var z);
+            if ((rc = AXM.SetHomeSensorLevel(axisNo, setup.HomeSignalLevel)) != 0) return rc;
+
+            if ((rc = AXM.SetHomeMethod(axisNo, setup.HomeDirection, setup.HomeSignal, setup.HomeZPhase, setup.HomeClearTime, setup.HomeOffset)) != 0) return rc; // AxmHomeSetMethod :contentReference[oaicite:4]{index=4}
 
             // 2) 홈 속도/가속
             if ((rc = AXM.SetHomeVelocity(axisNo, firstVel, secondVel, lastVel, indexVel, firstAcc, secondAcc)) != 0) return rc; // AxmHomeSetVel :contentReference[oaicite:5]{index=5}
@@ -389,18 +392,20 @@ namespace QMC.Common.Motions
         }
 
         // ── 프로파일(Trap/S) 사전 세팅: 속도/저크는 보드에 기록, 가/감속은 MovePosition에서 사용 ──
-        public static int ApplyTrapProfile(int axis, double velPps, double accPps2, double decPps2)
+        public static int ApplyTrapProfile(int axis, double velPps, double accPps2, double decPps2, int unit, int pulse)
         {
             int rc;
+            if ((rc = AXM.SetMoveUnitPerPulse(axis, unit, pulse)) != 0) return rc; ;
             if ((rc = AXM.SetProfileMode(axis, AXT_MOTION_PROFILE_MODE.SYM_TRAPEZOIDE_MODE)) != 0) return rc; // AxmMotSetProfileMode :contentReference[oaicite:6]{index=6}
             if ((rc = AXM.SetMaxVelocity(axis, velPps)) != 0) return rc; // AxmMotSetMaxVel (+ Override) :contentReference[oaicite:7]{index=7}
                                                                          // acc/dec는 MovePosition(..., vel, acc, dec)에서 실제 사용 (보드 전역 set 함수 없음)
             return 0;
         }
 
-        public static int ApplySCurveProfile(int axis, double velPps, double accPps2, double decPps2, int jerk0to1000)
+        public static int ApplySCurveProfile(int axis, double velPps, double accPps2, double decPps2, int jerk0to1000, int unit, int pulse)
         {
             int rc;
+            if ((rc = AXM.SetMoveUnitPerPulse(axis, unit, pulse)) != 0) return rc; ;
             if ((rc = AXM.SetProfileMode(axis, AXT_MOTION_PROFILE_MODE.SYM_S_CURVE_MODE)) != 0) return rc; // :contentReference[oaicite:8]{index=8}
             if ((rc = AXM.SetMaxVelocity(axis, velPps)) != 0) return rc;                                   // :contentReference[oaicite:9]{index=9}
             if ((rc = AXM.SetAccelerationJerk(axis, jerk0to1000)) != 0) return rc;                         // AxmMotSetAccelJerk :contentReference[oaicite:10]{index=10}
@@ -435,33 +440,44 @@ namespace QMC.Common.Motions
             }
         }
 
-        private static void MapHome(HomeMode m, out Directions dir, out HomeSignals sig, out ZPhaseMethods z)
+        private static void MapHome(HomeMode m, out HomeDirection dir, out HomeSignal sig, out HomeZPhase z)
         {
             switch (m)
             {
                 case HomeMode.NegativeLimit:
-                    dir = Directions.Ccw;                  // 기존 NegDir → Ccw
-                    sig = HomeSignals.NegativeLimit;       // 기존 Limit → NegativeLimit
-                    z = ZPhaseMethods.Ccw;               // 기존 Z_Phase → Ccw(방향 기준)
+                    dir = HomeDirection.Ccw;                  // 기존 NegDir → Ccw
+                    sig = HomeSignal.NegativeLimit;       // 기존 Limit → NegativeLimit
+                    z = HomeZPhase.Ccw;               // 기존 Z_Phase → Ccw(방향 기준)
                     break;
 
                 case HomeMode.PositiveLimit:
-                    dir = Directions.Cw;                   // 기존 PosDir → Cw
-                    sig = HomeSignals.PositiveLimit;       // 기존 Limit → PositiveLimit
-                    z = ZPhaseMethods.Cw;                // 기존 Z_Phase → Cw(방향 기준)
+                    dir = HomeDirection.Cw;                   // 기존 PosDir → Cw
+                    sig = HomeSignal.PositiveLimit;       // 기존 Limit → PositiveLimit
+                    z = HomeZPhase.Cw;                // 기존 Z_Phase → Cw(방향 기준)
                     break;
 
                 case HomeMode.HomeSensor:
                 default:
-                    dir = Directions.Ccw;                  // 기존 NegDir → Ccw (기본 방향)
-                    sig = HomeSignals.HomeSensor;          // 기존 Home → HomeSensor
-                    z = ZPhaseMethods.Ccw;               // 기존 Z_Phase → Ccw
+                    dir = HomeDirection.Ccw;                  // 기존 NegDir → Ccw (기본 방향)
+                    sig = HomeSignal.HomeSensor;          // 기존 Home → HomeSensor
+                    z = HomeZPhase.Ccw;               // 기존 Z_Phase → Ccw
                     break;
             }
         }
 
-        
+        // ── MotionSignal
+        public static int ApplyMotionSignal(int axis, uint eStopMode, uint eStopLevel, ActiveLevel alarmLevel, 
+            ActiveLevel alarmResetLevel, InPosition inPosition, ActiveLevel positiveLevel, ActiveLevel negariveLevel)
+        {
+            int rc;
 
+            if ((rc = AXM.SetSignalStop(axis, eStopMode, eStopLevel)) != 0) return rc;
+            if ((rc = AXM.SetAmpFaultLevel(axis, alarmLevel)) != 0) return rc;
+            if ((rc = AXM.SetAmpResetLevel(axis, alarmResetLevel)) != 0) return rc;
+            if ((rc = AXM.SetInPositionLevel(axis, inPosition)) != 0) return rc;
+            if ((rc = AXM.SetPositiveLimitLevel(axis, eStopMode, positiveLevel, alarmLevel)) != 0) return rc;
+            return 0;
+        }
 
 
 
