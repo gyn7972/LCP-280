@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using QMC.Common;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Spectrometer;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -103,6 +101,12 @@ namespace QMC.LCP_280.Process.Unit
 
             // _lifterPropView.GetCurrentProperties()로 현재 컬렉션을 얻어
             // 모델/설비에 반영하는 로직을 추가 가능
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            PatternMatchingDialog dlg = new PatternMatchingDialog();
+            dlg.ShowDialog();
         }
     }
 }

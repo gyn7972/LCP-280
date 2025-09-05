@@ -1,0 +1,316 @@
+﻿using QMC.Common.Hmi;
+using QMC.Common.Modules;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QMC.Common.VisionPart
+{
+    [Serializable]
+    public enum ParamThetaCorrectorConfigKey
+    {
+        ThetaCorrectionUnitAngle,
+        ThetaCorrectionAngleTolerance,
+        MaxTolerance,
+        MinTolerance,
+        UseSaveThetaCorrectionData,
+        RetryCount,
+        PatternMatchingParameter,
+    }
+
+    [Serializable]
+    public class ThetaCorrectorConfig : BaseConfig
+    {
+        [Serializable]
+        public enum PositionAligns
+        {
+            First,
+            Second,
+            Third,
+            Forth
+        }
+
+        public Point InspectRoiStartLocation { set; get; }
+        public Point InspectRoiEndLocation { set; get; }
+        public Point TrainRoiStartLocation { set; get; }
+        public Point TrainRoiEndLocation { set; get; }
+        public PatternMatchingParameters PatternMatchingParameter { set; get; }
+
+        public double ThetaCorrectionUnitAngle { set; get; }
+        public double ThetaCorrectionAngleTolerance { set; get; }
+
+        public double MaxTolerance { set; get; }
+        public double MinTolerance { set; get; }
+        public bool UseSaveThetaCorrectionData { set; get; }
+        public int RetryCount { get; set; }
+        public XytPositionDataCollection Positions { set; get; }
+        private ThetaCorrectionCoordinateCollection m_thetaCorrections;
+        public XyCoordinate FirstPosition { set; get; }
+        public XyCoordinate SecondPosition { set; get; }
+        public XyCoordinate ThirdPosition { set; get; }
+        public XyCoordinate FourthPosition { set; get; }
+
+        public ThetaCorrectionCoordinateCollection ThetaCorrectionCoordinates
+        {
+            get { return m_thetaCorrections; }
+            set { m_thetaCorrections = value; }
+        }
+
+        public ThetaCorrectorConfig()
+        {
+
+            Init();
+
+            ThetaCorrectionUnitAngle = 0.5;
+            ThetaCorrectionAngleTolerance = 5;
+
+            MaxTolerance = 5;
+            MinTolerance = -5;
+            UseSaveThetaCorrectionData = false;
+            RetryCount = 10;
+
+            FirstPosition = new XyCoordinate();
+            SecondPosition = new XyCoordinate();
+            ThirdPosition = new XyCoordinate();
+            FourthPosition = new XyCoordinate();
+
+            ThetaCorrectionCoordinates = new ThetaCorrectionCoordinateCollection();
+            //PatternMatchingParameter = new PatternMatchingParameters();
+
+        }
+
+        public void Init()
+        {
+            if (PatternMatchingParameter == null)
+            {
+                PatternMatchingParameter = new PatternMatchingParameters();
+            }
+
+            if (Positions == null)
+            {
+                Positions = new XytPositionDataCollection();
+                Positions.Name = "Theta Corrector";
+                foreach (PositionAligns key in Enum.GetValues(typeof(PositionAligns)))
+                {
+                    XytPositionData positionBase = new XytPositionData();
+                    positionBase.Name = key.ToString();
+                    //positionBase.Coordinate = 
+                    Positions.Add(positionBase);
+
+                    XytPositionData positionTarget = new XytPositionData();
+                    positionTarget.Name = key.ToString();
+                    positionTarget.Type = TargetType.Offset;
+                    Positions.Add(positionTarget);
+                }
+            }
+        }
+        public void MakePosition()
+        {
+            Positions = new XytPositionDataCollection();
+            foreach (PositionAligns key in Enum.GetValues(typeof(PositionAligns)))
+            {
+                XytPositionData positionBase = new XytPositionData();
+                positionBase.Name = key.ToString();
+                //positionBase.Coordinate = 
+                Positions.Add(positionBase);
+
+                XytPositionData positionTarget = new XytPositionData();
+                positionTarget.Name = key.ToString();
+                positionTarget.Type = TargetType.Offset;
+                Positions.Add(positionTarget);
+            }
+        }
+        public void SetPositionData(string strPosition, TargetType targetType, XytCoordinate coordinate)
+        {
+            if (Positions == null)
+            {
+                Positions = new XytPositionDataCollection();
+                foreach (PositionAligns key in Enum.GetValues(typeof(PositionAligns)))
+                {
+                    XytPositionData positionBase = new XytPositionData();
+                    positionBase.Name = key.ToString();
+                    //positionBase.Coordinate = 
+                    Positions.Add(positionBase);
+
+                    XytPositionData positionTarget = new XytPositionData();
+                    positionTarget.Name = key.ToString();
+                    positionTarget.Type = TargetType.Offset;
+                    Positions.Add(positionTarget);
+                }
+            }
+
+            foreach (XytPositionData position in Positions)
+            {
+                if (position.Name == strPosition && position.Type == targetType)
+                {
+                    position.X = coordinate.X;
+                    position.Y = coordinate.Y;
+                    position.T = coordinate.T;
+                    break;
+                }
+            }
+        }
+
+
+        public XytCoordinate GetPositionData(string strPosition)
+        {
+            XytCoordinate coordinate = new XytCoordinate();
+
+            foreach (XytPositionData position in Positions)
+            {
+                if (position.Name == strPosition)
+                {
+                    coordinate += position.Coordinate;
+                    break;
+                }
+            }
+
+            return coordinate;
+        }
+
+        public void UpdatePosition()
+        {
+            DieLoader dieloader = Equipment.GetModule("DieLoader") as DieLoader;
+            ThetaCorrectorConfig config = dieloader.ThetaCorrector.ThetaCorrectorConfig;
+            if (Positions != null && Positions.Count != 0)
+            {
+                config.FirstPosition = (XyCoordinate)Positions.GetPositionCoordinate(PositionAligns.First.ToString());
+                config.SecondPosition = (XyCoordinate)Positions.GetPositionCoordinate(PositionAligns.Second.ToString());
+                config.ThirdPosition = (XyCoordinate)Positions.GetPositionCoordinate(PositionAligns.Third.ToString());
+                config.FourthPosition = (XyCoordinate)Positions.GetPositionCoordinate(PositionAligns.Forth.ToString());
+            }
+        }
+
+        public override ListParam ToListParam()
+        {
+            ListParam list = new ListParam();
+            ParamGroup group = new ParamGroup();
+            group.Name = this.GetType().Name;
+            {
+                Param param = new Param();
+                param.SetParam(nameof(ThetaCorrectionUnitAngle), Param.DisplayTypeKey.Text, ThetaCorrectionUnitAngle, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam(nameof(ThetaCorrectionAngleTolerance), Param.DisplayTypeKey.Text, ThetaCorrectionAngleTolerance, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam(nameof(MaxTolerance), Param.DisplayTypeKey.Text, MaxTolerance, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam(nameof(MinTolerance), Param.DisplayTypeKey.Text, MinTolerance, Param.ValueTypeKey.Double, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam(nameof(UseSaveThetaCorrectionData), Param.DisplayTypeKey.CheckBox, UseSaveThetaCorrectionData, Param.ValueTypeKey.Bool, group.Name);
+                group.AddParam(param);
+            }
+            {
+                Param param = new Param();
+                param.SetParam(nameof(RetryCount), Param.DisplayTypeKey.Text, RetryCount, Param.ValueTypeKey.Int, group.Name);
+                group.AddParam(param);
+            }
+            {
+                ParamGroup parameterGroup = this.PatternMatchingParameter.GetParamGroup();
+                group.SetGroup(parameterGroup);
+            }
+
+            list.SetGroup(group);
+            return list;
+        }
+
+        public override void SetParam(ListParam listParam)
+        {
+            ParamGroup group = listParam.GetGroup(this.GetType().Name);
+
+            if (group != null)
+            {
+                Param param = null;
+                param = group.GetParam((int)ParamThetaCorrectorConfigKey.ThetaCorrectionUnitAngle);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        ThetaCorrectionUnitAngle = value;
+                    }
+                }
+                param = group.GetParam((int)ParamThetaCorrectorConfigKey.ThetaCorrectionAngleTolerance);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        ThetaCorrectionAngleTolerance = value;
+                    }
+                }
+                param = group.GetParam((int)ParamThetaCorrectorConfigKey.MaxTolerance);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        MaxTolerance = value;
+                    }
+                }
+                param = group.GetParam((int)ParamThetaCorrectorConfigKey.MinTolerance);
+                if (param != null)
+                {
+                    double value = 0;
+                    if (param.GetDoubleValue(ref value))
+                    {
+                        MinTolerance = value;
+                    }
+                }
+                param = group.GetParam((int)ParamThetaCorrectorConfigKey.UseSaveThetaCorrectionData);
+                if (param != null)
+                {
+                    bool value = false;
+                    if (param.GetBoolValue(ref value))
+                    {
+                        UseSaveThetaCorrectionData = value;
+                    }
+                }
+                param = group.GetParam((int)ParamThetaCorrectorConfigKey.RetryCount);
+                if (param != null)
+                {
+                    int value = 0;
+                    if (param.GetIntValue(ref value))
+                    {
+                        RetryCount = value;
+                    }
+                }
+                {
+<<<<<<< HEAD
+                    ParamGroup subGroup = group.GetGroup("PatternMatchingParameters");
+                    this.PatternMatchingParameter.SetParamGroup(subGroup);
+=======
+                    if (PatternMatchingParameter != null)
+                    {
+                        ParamGroup subGroup = group.GetGroup(PatternMatchingParameter.GetType().Name);
+                        this.PatternMatchingParameter.SetGroup(subGroup);
+                    }
+>>>>>>> origin/UI_branch
+                }
+            }
+        }
+
+        public override List<object> GetPositions()
+        {
+            List<object> positions = new List<object>();
+            positions.Add(Positions);
+
+            return positions;
+        }
+    }
+}

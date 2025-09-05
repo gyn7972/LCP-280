@@ -1,0 +1,399 @@
+﻿using QMC.Common;
+using QMC.Common.Hmi;
+using QMC.Common.Vision;
+using QMC.Common.Vision.Cameras;
+using QMC.Common.Vision.Tools;
+using QMC.Common.VisionPart;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace MicroLedDieTransfers2
+{
+    public delegate void ClickMultiTrainButtonEventHandler(PatternMatchingParamControl.ButtonType type);
+    public delegate void ChangedMultiTrainImageEventHandler(int nIndex, VisionImage image);
+    public delegate void ChangeMultiTrainImageListEventHandler(MultiPatternMatchingParameters parameters);
+
+    public partial class PatternMatchingParamControl : UserControl
+    {
+        public enum ButtonType
+        {
+            Train,
+            Add,
+            Remove,
+            Clear,
+            Up,
+            Down
+        }
+
+        public int SelectedRow { set; get; }
+
+        public string ImageTag { set; get; }
+
+        #region Field
+        public ClickMultiTrainButtonEventHandler MultiTrainButtonClick;
+        public ChangedMultiTrainImageEventHandler MultiImageChanged;
+        public event ChangeMultiTrainImageListEventHandler MultiImageChangeImageList;
+        private Camera m_Camera;
+        public MultiPatternMatchingVisionPart m_Owner;
+        private MultiPatternMatchingParameters m_MultiPatternMatchingParameters;
+        private MaintROIControl m_RoiControl;
+        private ParamGroupControl m_ParamGroupControl;
+        private PatternMatchingResultControl m_ResultControl;
+        private VisionImageViewer m_ImageViewer;
+        #endregion
+
+
+        public PatternMatchingParamControl(MultiPatternMatchingVisionPart visionpart, bool IsMaint)
+        {
+            m_Owner = visionpart;
+            if (visionpart != null)
+            {
+                m_MultiPatternMatchingParameters = visionpart.GetPatternMatchingParameters();
+            }
+            else
+            {
+                m_MultiPatternMatchingParameters = new MultiPatternMatchingParameters();
+            }
+            if (m_Owner != null)
+                m_Camera = m_Owner.Camera;
+            //m_Camera = camera;
+            InitializeComponent();
+            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
+            this.UpdateStyles();
+
+            this.pictureBoxTrainImage.BackColor = FormBaseConfiguration.Instance.BackColor;
+            this.pictureBoxTrainImage.ImageChanged += TrainImageChanged;
+            this.baseListBoxTrainList.BackColor = FormBaseConfiguration.Instance.ContentBackColor;
+            Font defaultFont = this.baseListBoxTrainList.Font;
+            this.baseListBoxTrainList.Font = new Font(defaultFont.FontFamily, FormBaseConfiguration.Instance.ControlFontSize);
+
+            SetPatternMatchingParam(m_MultiPatternMatchingParameters);
+            InitROIControl();
+            InitSearchControl(IsMaint);
+        }
+
+        private void InitParamGroupControl(ParamGroup group)
+        {
+            m_ParamGroupControl = new ParamGroupControl(group, FormBaseConfiguration.Instance.InnerSubParamGroupControlWidth);
+            m_ParamGroupControl.Location = new Point(FormBaseConfiguration.Instance.MaintControlFisrtLocation.X, pictureBoxTrainImage.Location.Y + pictureBoxTrainImage.Size.Height + FormBaseConfiguration.Instance.ControlGap);
+            m_ParamGroupControl.EnableExpand(false);
+            baseGroupBoxPatternMatching.Controls.Add(m_ParamGroupControl);
+        }
+        private void InitSearchControl(bool IsMaint)
+        {
+            if (IsMaint)
+            {
+                this.m_ResultControl = new PatternMatchingResultControl();
+                this.m_ResultControl.Location = new Point(this.m_RoiControl.Location.X, this.m_RoiControl.Location.Y + this.m_RoiControl.Height + FormBaseConfiguration.Instance.ControlGap_5);
+                this.m_ResultControl.SearchButtonClick += ResultControl_SearchButtonClick;
+                baseGroupBoxPatternMatching.Controls.Add(this.m_ResultControl);
+            }
+            else
+            {
+                this.m_ResultControl = new PatternMatchingResultControl();
+                this.baseGroupBoxPatternMatching.MaximumSize = new Size(this.baseGroupBoxPatternMatching.Width, this.baseGroupBoxPatternMatching.Height - this.m_ResultControl.Height - FormBaseConfiguration.Instance.ControlGap_5);
+                this.Size = this.baseGroupBoxPatternMatching.Size;
+            }
+        }
+
+<<<<<<< HEAD
+        private void InitROIControl()
+        {
+            if (m_Owner != null)
+            {
+                this.m_RoiControl = new MaintROIControl(m_Owner);
+                this.m_RoiControl.Location = new Point(this.m_ParamGroupControl.Location.X, this.m_ParamGroupControl.Location.Y + this.m_ParamGroupControl.Height + FormBaseConfiguration.Instance.ControlGap_5);
+                this.baseGroupBoxPatternMatching.Controls.Add(m_RoiControl);
+            }
+            else
+            {
+                this.m_RoiControl = new MaintROIControl();
+                this.m_RoiControl.Location = new Point(this.m_ParamGroupControl.Location.X, this.m_ParamGroupControl.Location.Y + this.m_ParamGroupControl.Height + FormBaseConfiguration.Instance.ControlGap_5);
+                this.baseGroupBoxPatternMatching.Controls.Add(m_RoiControl);
+            }
+            this.baseGroupBoxPatternMatching.Size = new Size(this.baseGroupBoxPatternMatching.Width, this.baseGroupBoxPatternMatching.Height + this.m_RoiControl.Height + FormBaseConfiguration.Instance.ControlGap_10);
+            this.Size = this.baseGroupBoxPatternMatching.Size;
+=======
+        public void SetImageViewer(VisionImageViewer imageViewer)
+        {
+            m_ImageViewer = imageViewer;
+>>>>>>> origin/UI_branch
+        }
+
+        private void ResultControl_SearchButtonClick()
+        {
+            ParamGroup group = this.m_ParamGroupControl.GetParamGroup();
+            m_MultiPatternMatchingParameters.SetParamGroup(group);
+            PatternMatchingResult result = null;
+            if (m_Owner != null)
+            {
+                if(m_ImageViewer != null)
+                {
+                    m_ImageViewer.ResultOverlays.Clear();
+                }
+
+                m_Owner.OnSearch(m_Owner.GetInspectStartPoint(), m_Owner.GetInspectEndPoint(), m_MultiPatternMatchingParameters, m_Owner.GetIlluminationDataSet());
+                result = m_Owner.GetResult();
+                if (result != null)
+                {
+                    if (result.Values.Count > 0)
+                    {
+                        this.m_ResultControl.SetResultData(result.Values[0].X, result.Values[0].Y, result.Values[0].R);
+                    }
+
+                    if(m_ImageViewer != null)
+                    {
+                        foreach (var overlay in result.ResultOverlays)
+                        {
+                            //m_visionImageViewer.NormalOverlays.Add(overlay);
+                            m_ImageViewer.ResultOverlays.Add(overlay);
+                            overlay.Visible = true;
+                        }
+
+                        m_ImageViewer.Display();
+                    }
+                }
+            }
+        }
+
+        private void ParamTextControlTolerance_ParamValueChanged()
+        {
+            Param param = new Param();
+
+
+        }
+
+        private void TrainImageChanged()
+        {
+            int curIndex = this.baseListBoxTrainList.SelectedIndex;
+            if (MultiImageChanged != null && curIndex >= 0)
+            {
+                MultiImageChanged(curIndex, this.pictureBoxTrainImage.GetImage());
+            }
+        }
+
+        public void SetButtonState(bool bOn) // Maint에선 true, Recipe에선  false 기본이 true
+        {
+            baseToggleButtonAvg.Enabled = bOn;
+            baseToggleButtonAvg.Visible = bOn;
+            baseButtonTrain.Enabled = bOn;
+            baseButtonTrain.Visible = bOn;
+            if (!bOn)
+            {
+                baseListBoxTrainList.Height = pictureBoxTrainImage.Height;
+            }
+        }
+
+        private void baseButtonAdd_Click(object sender, EventArgs e)
+        {
+            VisionImage newimage = new VisionImage();
+            newimage.Tag = (string)m_MultiPatternMatchingParameters.TrainImages.Count.ToString();
+            m_MultiPatternMatchingParameters.TrainImages.Add(newimage);
+            Equipment.SaveRecipe();
+            UpdateTrainList();
+        }
+
+        private void baseButtonRemove_Click(object sender, EventArgs e)
+        {
+            int sel = baseListBoxTrainList.SelectedIndex;
+            if (sel >= 0 && sel < m_MultiPatternMatchingParameters.TrainImages.Count)
+            {
+                m_MultiPatternMatchingParameters.TrainImages.RemoveAt(sel);
+                Equipment.SaveRecipe();
+                UpdateTrainList();
+                if (MultiImageChangeImageList != null)
+                {
+                    MultiImageChangeImageList(m_MultiPatternMatchingParameters);
+                }
+            }
+        }
+
+        private void baseButtonClear_Click(object sender, EventArgs e)
+        {
+            m_MultiPatternMatchingParameters.TrainImages.Clear();
+            Equipment.SaveRecipe();
+            UpdateTrainList();
+            if (MultiImageChangeImageList != null)
+            {
+                MultiImageChangeImageList(m_MultiPatternMatchingParameters);
+            }
+        }
+
+        private void baseButtonUp_Click(object sender, EventArgs e)
+        {
+            int sel = baseListBoxTrainList.SelectedIndex;
+            if (sel > 0)
+            {
+                SwapList<VisionImage>(m_MultiPatternMatchingParameters.TrainImages, sel, sel - 1);
+                UpdateTrainList();
+                baseListBoxTrainList.SetSelected(sel - 1, true);
+                Equipment.SaveRecipe();
+                if (MultiImageChangeImageList != null)
+                {
+                    MultiImageChangeImageList(m_MultiPatternMatchingParameters);
+                }
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        private void baseButtonDown_Click(object sender, EventArgs e)
+        {
+            int sel = baseListBoxTrainList.SelectedIndex;
+            if (sel < m_MultiPatternMatchingParameters.TrainImages.Count - 1)
+            {
+                SwapList<VisionImage>(m_MultiPatternMatchingParameters.TrainImages, sel, sel + 1);
+                UpdateTrainList();
+                baseListBoxTrainList.SetSelected(sel + 1, true);
+                Equipment.SaveRecipe();
+                if (MultiImageChangeImageList != null)
+                {
+                    MultiImageChangeImageList(m_MultiPatternMatchingParameters);
+                }
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        private void baseToggleButtonAvg_Click(object sender, EventArgs e)
+        {
+            bool isOn = !this.baseToggleButtonAvg.GetButtonStatus();
+            this.baseToggleButtonAvg.UpdateToggleStatus(isOn);
+            m_Camera.IsAvgOn = isOn;
+        }
+
+        private void baseButtonTrain_Click(object sender, EventArgs e)
+        {
+            if (MultiTrainButtonClick != null)
+            {
+                ImageTag = string.Empty;
+                if (m_MultiPatternMatchingParameters.TrainImages[this.SelectedRow].Tag == null)
+                {
+                    m_MultiPatternMatchingParameters.TrainImages[this.SelectedRow].Tag = 0;
+                }
+                ImageTag = m_MultiPatternMatchingParameters.TrainImages[this.SelectedRow].Tag.ToString();
+                MultiTrainButtonClick(ButtonType.Train);
+                m_MultiPatternMatchingParameters.TrainImages[this.SelectedRow].Tag = ImageTag;
+                Equipment.SaveRecipe();
+            }
+        }
+        private void UpdateTrainList()
+        {
+            BindingSource bs = new BindingSource();
+
+            if (m_MultiPatternMatchingParameters.TrainImages.Count > 0)
+            {
+                for (int i = 0; i < m_MultiPatternMatchingParameters.TrainImages.Count; i++)
+                {
+                    if (m_MultiPatternMatchingParameters.TrainImages[i].Tag != null)
+                        m_MultiPatternMatchingParameters.TrainImages[i].Index = int.Parse(m_MultiPatternMatchingParameters.TrainImages[i].Tag.ToString());
+                    else if (m_MultiPatternMatchingParameters.TrainImages[i].Index != 0)
+                        m_MultiPatternMatchingParameters.TrainImages[i].Tag = m_MultiPatternMatchingParameters.TrainImages[i].Index;
+                }
+            }
+            bs.DataSource = m_MultiPatternMatchingParameters.TrainImages;
+            baseListBoxTrainList.DisplayMember = "Tag";
+            baseListBoxTrainList.DataSource = bs;
+        }
+        public void SwapList<T>(List<T> list, int from, int to)
+        {
+            if (from < 0 || to < 0)
+            {
+                return;
+            }
+
+            try
+            {
+                if (from < list.Count && to < list.Count)
+                {
+                    T tmp = list[from];
+                    list[from] = list[to];
+                    list[to] = tmp;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Todo: 미래의 성균이가 Log 작성할겁니다.
+            }
+        }
+
+        private void baseListBoxTrainList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            string listBox = sender as string;
+            int curIndex = this.baseListBoxTrainList.SelectedIndex;
+
+            if (curIndex > -1)
+            {
+                this.SelectedRow = curIndex;
+                this.pictureBoxTrainImage.SetImage(m_MultiPatternMatchingParameters.TrainImages[SelectedRow].GetImage());
+            }
+        }
+
+        private void pictureBoxTrainImage_ImageChanged()
+        {
+            int curIndex = this.baseListBoxTrainList.SelectedIndex;
+            if (MultiImageChanged != null && curIndex >= 0)
+            {
+                MultiImageChanged(curIndex, this.pictureBoxTrainImage.GetImage());
+            }
+        }
+
+        public void SetTrainImage(VisionImage image)
+        {
+            this.pictureBoxTrainImage.SetImage(image.GetImage());
+        }
+
+        public void SetTrainList()
+        {
+            if (m_MultiPatternMatchingParameters.TrainImages != null)
+            {
+                UpdateTrainList();
+            }
+        }
+
+        public VisionImage GetTrainImage()
+        {
+            VisionImage image = null;
+            if (this.pictureBoxTrainImage.GetImage() != null)
+            {
+                image = this.pictureBoxTrainImage.GetImage();
+            }
+            return image;
+        }
+
+        public int SetPatternMatchingParam(MultiPatternMatchingParameters patternMatchingParam)
+        {
+            int ret = 0;
+            if (patternMatchingParam != null)
+            {
+                InitParamGroupControl(patternMatchingParam.GetParamGroup());
+                if (patternMatchingParam != null && patternMatchingParam.TrainImages.Count != 0)
+                {
+                    for (int i = 0; i < patternMatchingParam.TrainImages.Count; i++)
+                    {
+                        patternMatchingParam.TrainImages[i].Tag = i.ToString();
+                    }
+                    patternMatchingParam.TrainImages = patternMatchingParam.TrainImages;
+                }
+                //Equipment.SaveRecipe();
+                UpdateTrainList();
+            }
+            else
+            {
+                ret = -1;
+            }
+            return ret;
+        }
+    }
+}

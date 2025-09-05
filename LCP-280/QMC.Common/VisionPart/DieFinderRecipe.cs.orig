@@ -1,0 +1,235 @@
+﻿using QMC.Common.Hmi;
+using QMC.Common.Modules;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QMC.Common.VisionPart
+{
+    [Serializable]
+    public enum ParamDieFinderRecipeKey
+    {
+        ImageSave,
+        UseDieRefind,
+        IsInvertedThreshold,
+        ChipThreshold,
+    }
+    [Serializable]
+    public class DieFinderRecipe : BaseRecipe
+    {
+        [NonSerialized]
+        protected DieFinder m_Owner;
+        [Browsable(false)]
+        public Point InspectRoiStartLocation { set; get; }
+        [Browsable(false)]
+        public Point InspectRoiEndLocation { set; get; }
+        [Browsable(false)]
+        public Point TrainRoiStartLocation { set; get; }
+        [Browsable(false)]
+        public Point TrainRoiEndLocation { set; get; }
+        [Browsable(false)]
+        [TypeConverter(typeof(NormalExpandableObjectConverter))]
+        public IlluminationDataSet IlluminationDataSet { set; get; }
+        [Browsable(false)]
+        [TypeConverter(typeof(NormalExpandableObjectConverter))]
+        public PatternMatchingParameters PatternMatchingParameter { set; get; }
+        [Browsable(false)]
+        [TypeConverter(typeof(NormalExpandableObjectConverter))]
+        public MultiPatternMatchingParameters MultiPatternMatchingParameter { set; get; }
+
+        [TypeConverter(typeof(NormalExpandableObjectConverter))]
+        public DieFindParameter FinderParamter{get; set;}
+
+        public bool UseDieRefind { set; get; }
+        public int ChipThreshold { set; get; }
+        public bool IsInvertedThreshold { set; get; }
+
+        public bool ImageSave { set; get; }
+
+        private string m_strGroupNameRefind;
+        private string m_strGroupMultiPatternMatchingParameter;
+        public DieFinderRecipe(DieFinder dieFinder)
+        {
+            m_Owner = dieFinder;
+            UseDieRefind = false;
+            IsInvertedThreshold = false;
+            ChipThreshold = 10;
+            InspectRoiStartLocation = new Point();
+            InspectRoiEndLocation = new Point();
+            TrainRoiStartLocation = new Point();
+            TrainRoiEndLocation = new Point();
+<<<<<<< HEAD
+            
+=======
+>>>>>>> origin/UI_branch
+            Init(m_Owner.Name);
+        }
+
+        public void Init(string strName)
+        {
+            if(IlluminationDataSet == null)
+            {
+                IlluminationDataSet = new IlluminationDataSet(strName);
+            }
+            if(PatternMatchingParameter == null)
+            {
+                PatternMatchingParameter = new PatternMatchingParameters();
+            }
+
+            if (MultiPatternMatchingParameter == null)
+            {
+                MultiPatternMatchingParameter = new MultiPatternMatchingParameters();
+                MultiPatternMatchingParameter.SetParameter(PatternMatchingParameter);
+            }
+            if (FinderParamter == null)
+                FinderParamter = new DieFindParameter();
+
+            m_strGroupNameRefind = "Refind";
+            m_strGroupMultiPatternMatchingParameter = "MultiPatternMatchingParameter";
+        }
+
+        public int GetInspectionRoi(Point pointCenter, ref Point pointStart, ref Point pointEnd)
+        {
+            int ret = 0;
+            int width =Math.Abs(InspectRoiEndLocation.X - InspectRoiStartLocation.X);
+            int height = Math.Abs(InspectRoiEndLocation.Y - InspectRoiStartLocation.Y);
+
+            pointStart.X = pointCenter.X - (width / 2);
+            pointStart.Y = pointCenter.Y - (height / 2);
+
+            pointEnd.X = pointStart.X + width;
+            pointEnd.Y = pointStart.Y + height;
+
+
+            return ret;
+        }
+
+        public override ListParam ToListParam()
+        {
+            ListParam listParam = new ListParam(); 
+            ParamGroup paramGroup = new ParamGroup();
+            paramGroup.Name = this.GetType().Name;
+            {
+                Param param = new Param();
+                param.SetParam(nameof(ImageSave), Param.DisplayTypeKey.CheckBox, ImageSave, Param.ValueTypeKey.Bool, paramGroup.Name);
+                paramGroup.AddParam(param);
+            }
+            {
+                ParamGroup groupRefind = new ParamGroup();
+                groupRefind.Name = m_strGroupNameRefind;
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(UseDieRefind), Param.DisplayTypeKey.CheckBox, UseDieRefind, Param.ValueTypeKey.Bool, groupRefind.Name);
+                    groupRefind.AddParam(param);
+                }
+
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(IsInvertedThreshold), Param.DisplayTypeKey.CheckBox, IsInvertedThreshold, Param.ValueTypeKey.Bool, groupRefind.Name);
+                    groupRefind.AddParam(param);
+                }
+
+                {
+                    Param param = new Param();
+                    param.SetParam(nameof(ChipThreshold), Param.DisplayTypeKey.Text, ChipThreshold, Param.ValueTypeKey.Int, groupRefind.Name);
+                    groupRefind.AddParam(param);
+                }
+                paramGroup.SetGroup(groupRefind);
+            }
+            
+            listParam.SetGroup(paramGroup);
+            return listParam;
+        }
+
+        public override void SetParam(ListParam listParam)
+        {
+            ParamGroup group = listParam.GetGroup(this.GetType().Name);
+
+            if (group != null)
+            {
+                Param param = null;
+
+                param = group.GetParam((int)ParamDieFinderRecipeKey.ImageSave);
+                if (param != null)
+                {
+                    bool value = false;
+                    if (param.GetBoolValue(ref value))
+                    {
+                        ImageSave = value;
+                    }
+                }
+
+                {
+                    ParamGroup groupRefinde = listParam.GetGroup(m_strGroupNameRefind);
+                    param = groupRefinde.GetParam((int)ParamDieFinderRecipeKey.UseDieRefind);
+                    if (param != null)
+                    {
+                        bool value = false;
+                        if (param.GetBoolValue(ref value))
+                        {
+                            UseDieRefind = value;
+                        }
+                    }
+
+                    param = groupRefinde.GetParam((int)ParamDieFinderRecipeKey.IsInvertedThreshold);
+                    if (param != null)
+                    {
+                        bool value = false;
+                        if (param.GetBoolValue(ref value))
+                        {
+                            IsInvertedThreshold = value;
+                        }
+                    }
+
+                    param = groupRefinde.GetParam((int)ParamDieFinderRecipeKey.ChipThreshold);
+                    if (param != null)
+                    {
+                        int value = 0;
+                        if (param.GetIntValue(ref value))
+                        {
+                            ChipThreshold = value;
+                        }
+                    }
+                }
+
+                //{
+                //    ParamGroup subGroup = group.GetGroup(m_strGroupMultiPatternMatchingParameter);
+                //    this.MultiPatternMatchingParameter.SetParamGroup(subGroup);
+                //}
+            }
+        }
+        public override IlluminationDataList GetIlluminationDatas()
+        {
+            IlluminationDataList IlluminationrList = new IlluminationDataList();
+            IlluminationrList.Add(IlluminationDataSet);
+            return IlluminationrList;
+        }
+
+        public string GetRefindeGroupName()
+        {
+            return m_strGroupNameRefind;
+        }
+
+        public ParamGroup GetRefindGroup()
+        {
+            ListParam list = ToListParam();
+            ParamGroup group = list.GetGroup();
+            ParamGroup subGroup = group.GetGroup(m_strGroupNameRefind);
+            
+            return subGroup;
+        }
+    }
+
+    [Serializable]
+    public class DieFindParameter
+    {
+        public DieFindParameter()
+        {
+
+        }
+    }
+}
