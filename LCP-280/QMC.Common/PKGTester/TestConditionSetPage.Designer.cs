@@ -45,12 +45,12 @@
             this.btnSaveSet = new QMC.Common.IndividualMenuButton();
             this.btnNewSet = new QMC.Common.IndividualMenuButton();
             this.btnOpenSet = new QMC.Common.IndividualMenuButton();
-            this.btnItemInsert = new QMC.Common.IndividualMenuButton();
             this.btnItemDelete = new QMC.Common.IndividualMenuButton();
             this.btnItemCopy = new QMC.Common.IndividualMenuButton();
             this.btnItemPaste = new QMC.Common.IndividualMenuButton();
             this.btnItemDown = new QMC.Common.IndividualMenuButton();
             this.btnItemUp = new QMC.Common.IndividualMenuButton();
+            this.btnItemInsert = new QMC.Common.IndividualMenuButton();
             this.pcvItem = new QMC.Common.PropertyCollectionView();
             this.btnItemClear = new QMC.Common.IndividualMenuButton();
             this.btnItemModify = new QMC.Common.IndividualMenuButton();
@@ -318,26 +318,6 @@
             this.btnOpenSet.UseVisualStyleBackColor = false;
             this.btnOpenSet.Click += new System.EventHandler(this.btnOpenSet_Click);
             // 
-            // btnItemInsert
-            // 
-            this.btnItemInsert.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnItemInsert.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnItemInsert.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnItemInsert.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnItemInsert.CustomForeColor = System.Drawing.Color.Black;
-            this.btnItemInsert.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnItemInsert.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnItemInsert.ForeColor = System.Drawing.Color.Black;
-            this.btnItemInsert.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnItemInsert.Location = new System.Drawing.Point(3, 3);
-            this.btnItemInsert.Name = "btnItemInsert";
-            this.btnItemInsert.Size = new System.Drawing.Size(132, 33);
-            this.btnItemInsert.TabIndex = 27;
-            this.btnItemInsert.TabStop = false;
-            this.btnItemInsert.Text = "Item Insert";
-            this.btnItemInsert.UseVisualStyleBackColor = false;
-            this.btnItemInsert.Click += new System.EventHandler(this.btnItemInsert_Click);
-            // 
             // btnItemDelete
             // 
             this.btnItemDelete.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -437,6 +417,26 @@
             this.btnItemUp.Text = "▲";
             this.btnItemUp.UseVisualStyleBackColor = false;
             this.btnItemUp.Click += new System.EventHandler(this.btnItemUp_Click);
+            // 
+            // btnItemInsert
+            // 
+            this.btnItemInsert.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnItemInsert.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnItemInsert.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnItemInsert.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnItemInsert.CustomForeColor = System.Drawing.Color.Black;
+            this.btnItemInsert.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnItemInsert.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnItemInsert.ForeColor = System.Drawing.Color.Black;
+            this.btnItemInsert.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnItemInsert.Location = new System.Drawing.Point(3, 3);
+            this.btnItemInsert.Name = "btnItemInsert";
+            this.btnItemInsert.Size = new System.Drawing.Size(132, 33);
+            this.btnItemInsert.TabIndex = 27;
+            this.btnItemInsert.TabStop = false;
+            this.btnItemInsert.Text = "Item Insert";
+            this.btnItemInsert.UseVisualStyleBackColor = false;
+            this.btnItemInsert.Click += new System.EventHandler(this.btnItemInsert_Click);
             // 
             // pcvItem
             // 

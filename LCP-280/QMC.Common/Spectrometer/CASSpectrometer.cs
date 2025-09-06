@@ -1,5 +1,6 @@
 ﻿using InstrumentSystems.CAS4;
 using QMC.Common.Component;
+using QMC.Common.PKGTester;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -97,27 +98,19 @@ namespace QMC.Common.Spectrometer
         private List<CASSpectrometerDensityFilter> densityFilterList;
         private CASSpectrometerResult measureData;
         private CASSpectrometerSpectrum spectrumData;
+
+        private List<TestConditionItem> testItems = new List<TestConditionItem>();
+        private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
+        private string intensityUnit = ""; // 이건 dpidCalibrationUnit 데이터를 받아서 갱신할 필요 있다...
         #endregion
 
         #region Property
         public new CASSpectrometerConfig Config { get; private set; }
-        public int DeviceId
-        {
-            get { return deviceId; }
-        }
-        public List<CASSpectrometerDensityFilter> DensityFilterList
-        {
-            get { return densityFilterList; }
-        }
-        public CASSpectrometerResult MeasureData
-        {
-            get { return measureData; }
-        }
-        public CASSpectrometerSpectrum SpectrumData
-        {
-            get { return spectrumData; }
-        }
-        
+        public int DeviceId => deviceId;
+        public List<CASSpectrometerDensityFilter> DensityFilterList => densityFilterList;
+        public CASSpectrometerResult MeasureData => measureData;
+        public CASSpectrometerSpectrum SpectrumData => spectrumData;
+        public IDictionary<string, TestItemResult> Results => results;
         #endregion
 
         #region Constructor
@@ -194,6 +187,179 @@ namespace QMC.Common.Spectrometer
             }
             while (false);
             return ret;
+        }
+        #endregion
+
+        #region Test Item Methods
+        public void ClearTestItems()
+        {
+            testItems.Clear();
+            results.Clear();
+        }
+        public bool AddTestItem(TestConditionItem item)
+        {
+            if (item == null)
+                return false;
+            if (item.Type.GetCategory() != TestItemCategory.Optical)
+                return false;
+
+            testItems.Add(item);
+            results.Add(item.Name, new TestItemResult());
+            return true;
+        }
+        public bool BuildTestCommands()
+        {
+            try
+            {
+                // Do something
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            return true;
+        }
+        public bool GetResultProcess()
+        {
+            try
+            {
+                foreach (var item in testItems)
+                {
+                    TestItemResult itemResult = results[item.Name];
+
+                    double value = 0;
+                    switch (item.Type)
+                    {
+                        case TestItemType.RadInt:
+                            value = measureData.RadInt;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = measureData.RadIntUnit;
+                            break;
+                        case TestItemType.PhotInt:
+                            value = measureData.PhotInt;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = MeasureData.PhotIntUnit;
+                            break;
+                        case TestItemType.WP:
+                            value = measureData.WP;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.FWHM:
+                            value = measureData.FWHM;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.CIEX:
+                            value = measureData.CIEX;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEY:
+                            value = measureData.CIEY;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEZ:
+                            value = measureData.CIEZ;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEU:
+                            value = measureData.CIEU;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEV1976:
+                            value = measureData.CIEV1976;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEV1960:
+                            value = measureData.CIEV1960;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.LambdaDom:
+                            value = measureData.LambdaDom;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.Purity:
+                            value = measureData.Purity;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CCT:
+                            value = measureData.CCT;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CRI:
+                            value = measureData.CRI;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.Centroid:
+                            value = measureData.Centroid;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.StimulusX:
+                            value = measureData.StimulusX;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.StimulusY:
+                            value = measureData.StimulusY;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.StimulusZ:
+                            value = measureData.StimulusZ;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.PickValue:
+                            value = measureData.StimulusX;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = intensityUnit;
+                            break;
+                        case TestItemType.ADC:
+                            value = measureData.ADC;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            return true;
         }
         #endregion
 
@@ -381,6 +547,7 @@ namespace QMC.Common.Spectrometer
 
                 // Device Initialize
                 CheckCASErrorAndThrow(CAS4DLL.casInitialize(deviceId, CAS4DLL.InitOnce));
+                GetDeviceParameter(CAS4DLL.dpidCalibrationUnit, ref intensityUnit);
                 result = true;
 
                 OnDeviceInitialized?.Invoke(this);
@@ -432,12 +599,11 @@ namespace QMC.Common.Spectrometer
                 //ApplyMeasurementCondition();
 
                 // Measure
-                //CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
+                CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
 
-                //// Data Process
-                //GetMeasureData();
-                //GetSpectrumData();
-                GetSpectrumDataTest();
+                // Data Process
+                GetMeasureData();
+                GetSpectrumData();
                 result = true;
 
                 OnMeasureCompleted?.Invoke(this);

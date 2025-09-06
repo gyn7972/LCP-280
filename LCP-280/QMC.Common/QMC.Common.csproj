@@ -378,6 +378,7 @@
     <Compile Include="PatternMatching\MultiPatternMatchingParameterControl.Designer.cs">
       <DependentUpon>MultiPatternMatchingParameterControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="VisionPart\MultiPatternMatchingVisionPart.cs" />
     <Compile Include="PatternMatching\PatternMatchingParamControl.cs">
       <SubType>UserControl</SubType>

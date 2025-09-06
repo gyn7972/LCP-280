@@ -19,33 +19,36 @@ namespace QMC.Common.Keithley
         }
         public class ChannelCommand
         {
-            public CommandAction action { get; set; }
+            public string Name { get; set; }
+            public CommandAction Action { get; set; }
 
             // Source
-            public double sourceValue { get; set; }
-            public double sourceTime { get; set; }
-            public double sourceLimit { get; set; }
-            public double sourceRange { get; set; }
+            public double SourceValue { get; set; }
+            public double SourceTime { get; set; }
+            public double SourceLimit { get; set; }
+            public double SourceRange { get; set; }
 
             // Measure
-            public double measureRange { get; set; }
-            public double measureTime { get; set; }
+            public double MeasureRange { get; set; }
+            public double MeasureTime { get; set; }
 
             // Pulse Sweep
-            public double pulseWidth { get; set; }
-            public double pulsePeriod { get; set; }
-            public int pulseCount { get; set; }
+            public double PulseWidth { get; set; }
+            public double PulsePeriod { get; set; }
+            public int PulseCount { get; set; }
         }
         #endregion
 
         #region Field
         private List<ChannelCommand> commands;
         private StringBuilder stringBuilder;
+        private List<string> bufferDatas;
         #endregion
 
         #region Property
         public string Name { get; set; }
         public KeithleySourcemeter Owner { get; private set; }
+        public string[] BufferDatas => bufferDatas.ToArray();
         #endregion
 
         #region Constructor
@@ -60,7 +63,7 @@ namespace QMC.Common.Keithley
         #endregion
 
         #region Method
-        public int ApplyConfig()
+        public bool ApplyConfig()
         {
             try
             {
@@ -72,34 +75,30 @@ namespace QMC.Common.Keithley
                 stringBuilder.AppendLine($"{Name}.source.settling = {(int)config.SourceSettling}");
                 stringBuilder.AppendLine($"{Name}.source.offmode = {(int)config.SourceOffmode}");
 
-                if (!Owner.Communicator.Write(stringBuilder.ToString()))
-                    throw new Exception($"[{Name}] Failed to apply config.");
+                return Owner.Communicator.Write(stringBuilder.ToString());
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
-                return -1;
+                return false;
             }
-            return 0;
         }
-        public int ChannelReset()
+        public bool ChannelReset()
         {
             try
             {
                 stringBuilder.Clear();
                 stringBuilder.AppendLine($"{Name}.reset()");
 
-                if (!Owner.Communicator.Write(stringBuilder.ToString()))
-                    throw new Exception($"[{Name}] Failed to apply config.");
+                return Owner.Communicator.Write(stringBuilder.ToString());
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
-                return -1;
+                return false;
             }
-            return 0;
         }
-        public int ChannelOn(bool on)
+        public bool ChannelOn(bool on)
         {
             try
             {
@@ -107,15 +106,13 @@ namespace QMC.Common.Keithley
                 int value = on ? 1 : 0;
                 stringBuilder.AppendLine($"{Name}.source.output = {value}");
 
-                if (!Owner.Communicator.Write(stringBuilder.ToString()))
-                    throw new Exception($"[{Name}] Failed to apply config.");
+                return Owner.Communicator.Write(stringBuilder.ToString());
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
-                return -1;
+                return false;
             }
-            return 0;
         }
         #endregion
 
@@ -131,8 +128,9 @@ namespace QMC.Common.Keithley
 
             commands.Add(command);
         }
-        public int RunMeasureCommands()
+        public bool RunMeasureCommands()
         {
+            bufferDatas.Clear();
             try
             {
                 stringBuilder.Clear();
@@ -144,41 +142,39 @@ namespace QMC.Common.Keithley
 
                 foreach (var cmd in commands)
                 {
-                    switch (cmd.action)
+                    switch (cmd.Action)
                     {
                         case CommandAction.MeasureI:
                             args.Add(Name);
-                            args.Add(cmd.sourceValue.ToString());
-                            args.Add(cmd.sourceRange.ToString());
-                            args.Add(cmd.measureRange.ToString());
-                            args.Add(cmd.measureTime.ToString());
-                            args.Add(cmd.sourceLimit.ToString());
-                            args.Add(cmd.sourceTime.ToString());
+                            args.Add(cmd.SourceValue.ToString());
+                            args.Add(cmd.SourceRange.ToString());
+                            args.Add(cmd.MeasureRange.ToString());
+                            args.Add(cmd.MeasureTime.ToString());
+                            args.Add(cmd.SourceLimit.ToString());
+                            args.Add(cmd.SourceTime.ToString());
                             stringBuilder.AppendLine("vi(" + string.Join(",", args) + ")");
                             break;
-
                         case CommandAction.MeasureV:
                             args.Add(Name);
-                            args.Add(cmd.sourceValue.ToString());
-                            args.Add(cmd.sourceRange.ToString());
-                            args.Add(cmd.measureRange.ToString());
-                            args.Add(cmd.measureTime.ToString());
-                            args.Add(cmd.sourceLimit.ToString());
-                            args.Add(cmd.sourceTime.ToString());
+                            args.Add(cmd.SourceValue.ToString());
+                            args.Add(cmd.SourceRange.ToString());
+                            args.Add(cmd.MeasureRange.ToString());
+                            args.Add(cmd.MeasureTime.ToString());
+                            args.Add(cmd.SourceLimit.ToString());
+                            args.Add(cmd.SourceTime.ToString());
                             stringBuilder.AppendLine("iv(" + string.Join(",", args) + ")");
                             break;
-
                         case CommandAction.MeasureVAndPulseTrigger:
                             args.Add(Name);
-                            args.Add(cmd.sourceValue.ToString());
-                            args.Add(cmd.sourceRange.ToString());
-                            args.Add(cmd.measureRange.ToString());
-                            args.Add(cmd.measureTime.ToString());
-                            args.Add(cmd.sourceLimit.ToString());
-                            args.Add(cmd.sourceTime.ToString());
-                            args.Add(cmd.pulsePeriod.ToString());
-                            args.Add(cmd.pulseWidth.ToString());
-                            args.Add(cmd.pulseCount.ToString());
+                            args.Add(cmd.SourceValue.ToString());
+                            args.Add(cmd.SourceRange.ToString());
+                            args.Add(cmd.MeasureRange.ToString());
+                            args.Add(cmd.MeasureTime.ToString());
+                            args.Add(cmd.SourceLimit.ToString());
+                            args.Add(cmd.SourceTime.ToString());
+                            args.Add(cmd.PulsePeriod.ToString());
+                            args.Add(cmd.PulseWidth.ToString());
+                            args.Add(cmd.PulseCount.ToString());
                             stringBuilder.AppendLine("VF_Pulse(" + string.Join(",", args) + ")");
                             break;
                     }
@@ -187,27 +183,7 @@ namespace QMC.Common.Keithley
                 // end run command
                 stringBuilder.AppendLine("endmeasure()");
 
-                if (!Owner.Communicator.Write(stringBuilder.ToString()))
-                    throw new Exception($"[{Name}] Failed to send messsage: {stringBuilder.ToString()}");
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-                Log.Write(ex);
-                return -1;
-            }
-            return 0;
-        }
-        public bool WaitComplete()
-        {
-            try
-            {
-                string response = "";
-                if (!Owner.Communicator.Query("*OPC?", ref response))
-                    throw new Exception($"[{Name}] Failed to query opc.");
-
-                if (response == "1")
-                    return true;
+                return Owner.Communicator.Write(stringBuilder.ToString());
             }
             catch (Exception ex)
             {
@@ -215,9 +191,25 @@ namespace QMC.Common.Keithley
                 Log.Write(ex);
                 return false;
             }
-            return false;
         }
-        public int ReadBufferString(ref string buffer)
+        public bool WaitComplete()
+        {
+            try
+            {
+                string response = "";
+                if (!Owner.Communicator.Query("*OPC?", ref response))
+                    return false;
+
+                return (response == "1");
+            }
+            catch (Exception ex)
+            {
+                // Error handling
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool ReadBufferData()
         {
             try
             {
@@ -227,14 +219,23 @@ namespace QMC.Common.Keithley
 
                 if (!Owner.Communicator.Query(bufferReadCommand, ref bufferData))
                     throw new Exception($"[{Name}] Failed to read buffer.");
+
+                bufferData = bufferData.Trim();
+                string[] datas = bufferData.Split(new char[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+                bufferDatas.Clear();
+                foreach (var d in datas)
+                    bufferDatas.Add(d.Trim());
             }
             catch (Exception ex)
             {
                 // Error handling
+                bufferDatas.Clear();
+
                 Log.Write(ex);
-                return -1;
+                return false;
             }
-            return 0;
+            return true;
         }
         #endregion
     }

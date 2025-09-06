@@ -30,14 +30,19 @@
         {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.lbxIntOption = new System.Windows.Forms.ListBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.lbxIntType = new System.Windows.Forms.ListBox();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel15 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.btnSelectCalibFile = new QMC.Common.IndividualMenuButton();
             this.btnSelectConfigFile = new QMC.Common.IndividualMenuButton();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.btnRefresh = new QMC.Common.IndividualMenuButton();
+            this.panel2 = new System.Windows.Forms.Panel();
             this.btnApply = new QMC.Common.IndividualMenuButton();
+            this.tableLayoutPanel15 = new System.Windows.Forms.TableLayoutPanel();
             this.lbCalibFilePathValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.customBorderLabel7 = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbInterfaceOptionValue = new QMC.Common.CustomControl.CustomBorderLabel();
@@ -46,20 +51,15 @@
             this.customBorderLabel3 = new QMC.Common.CustomControl.CustomBorderLabel();
             this.customBorderLabel4 = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbInterfaceTypeValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.lbxIntOption = new System.Windows.Forms.ListBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
+            this.groupBox2.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
+            this.groupBox4.SuspendLayout();
+            this.groupBox3.SuspendLayout();
             this.panel2.SuspendLayout();
             this.tableLayoutPanel15.SuspendLayout();
-            this.groupBox2.SuspendLayout();
-            this.tableLayoutPanel3.SuspendLayout();
-            this.groupBox3.SuspendLayout();
-            this.groupBox4.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -94,6 +94,30 @@
             this.tableLayoutPanel2.Size = new System.Drawing.Size(744, 315);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
+            // groupBox2
+            // 
+            this.groupBox2.Controls.Add(this.lbxIntOption);
+            this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox2.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBox2.Location = new System.Drawing.Point(299, 3);
+            this.groupBox2.Name = "groupBox2";
+            this.groupBox2.Padding = new System.Windows.Forms.Padding(10);
+            this.groupBox2.Size = new System.Drawing.Size(290, 309);
+            this.groupBox2.TabIndex = 1;
+            this.groupBox2.TabStop = false;
+            this.groupBox2.Text = "Interface Option";
+            // 
+            // lbxIntOption
+            // 
+            this.lbxIntOption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbxIntOption.FormattingEnabled = true;
+            this.lbxIntOption.ItemHeight = 17;
+            this.lbxIntOption.Location = new System.Drawing.Point(10, 28);
+            this.lbxIntOption.Name = "lbxIntOption";
+            this.lbxIntOption.Size = new System.Drawing.Size(270, 271);
+            this.lbxIntOption.TabIndex = 0;
+            this.lbxIntOption.SelectedIndexChanged += new System.EventHandler(this.lbxIntOption_SelectedIndexChanged);
+            // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.lbxIntType);
@@ -118,38 +142,34 @@
             this.lbxIntType.TabIndex = 0;
             this.lbxIntType.SelectedValueChanged += new System.EventHandler(this.lbxIntType_SelectedValueChanged);
             // 
-            // panel2
+            // tableLayoutPanel3
             // 
-            this.panel2.Controls.Add(this.btnApply);
-            this.panel2.Controls.Add(this.tableLayoutPanel15);
-            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel2.Location = new System.Drawing.Point(3, 324);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(744, 162);
-            this.panel2.TabIndex = 1;
+            this.tableLayoutPanel3.ColumnCount = 1;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.Controls.Add(this.groupBox4, 0, 1);
+            this.tableLayoutPanel3.Controls.Add(this.groupBox3, 0, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(595, 3);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 2;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 195F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(146, 309);
+            this.tableLayoutPanel3.TabIndex = 2;
             // 
-            // tableLayoutPanel15
+            // groupBox4
             // 
-            this.tableLayoutPanel15.ColumnCount = 2;
-            this.tableLayoutPanel15.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 19.08127F));
-            this.tableLayoutPanel15.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 80.91873F));
-            this.tableLayoutPanel15.Controls.Add(this.lbCalibFilePathValue, 1, 3);
-            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel7, 0, 3);
-            this.tableLayoutPanel15.Controls.Add(this.lbInterfaceOptionValue, 1, 1);
-            this.tableLayoutPanel15.Controls.Add(this.lbConfigFilePathValue, 1, 2);
-            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel2, 0, 2);
-            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel3, 0, 0);
-            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel4, 0, 1);
-            this.tableLayoutPanel15.Controls.Add(this.lbInterfaceTypeValue, 1, 0);
-            this.tableLayoutPanel15.Location = new System.Drawing.Point(13, 14);
-            this.tableLayoutPanel15.Name = "tableLayoutPanel15";
-            this.tableLayoutPanel15.RowCount = 4;
-            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel15.Size = new System.Drawing.Size(566, 135);
-            this.tableLayoutPanel15.TabIndex = 22;
+            this.groupBox4.Controls.Add(this.btnSelectCalibFile);
+            this.groupBox4.Controls.Add(this.btnSelectConfigFile);
+            this.groupBox4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox4.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBox4.Location = new System.Drawing.Point(3, 117);
+            this.groupBox4.Name = "groupBox4";
+            this.groupBox4.Padding = new System.Windows.Forms.Padding(10);
+            this.groupBox4.Size = new System.Drawing.Size(140, 189);
+            this.groupBox4.TabIndex = 3;
+            this.groupBox4.TabStop = false;
+            this.groupBox4.Text = "Select File";
             // 
             // btnSelectCalibFile
             // 
@@ -189,6 +209,20 @@
             this.btnSelectConfigFile.UseVisualStyleBackColor = false;
             this.btnSelectConfigFile.Click += new System.EventHandler(this.btnSelectConfigFile_Click);
             // 
+            // groupBox3
+            // 
+            this.groupBox3.Controls.Add(this.btnRefresh);
+            this.groupBox3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox3.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBox3.Location = new System.Drawing.Point(3, 0);
+            this.groupBox3.Margin = new System.Windows.Forms.Padding(3, 0, 3, 3);
+            this.groupBox3.Name = "groupBox3";
+            this.groupBox3.Padding = new System.Windows.Forms.Padding(10);
+            this.groupBox3.Size = new System.Drawing.Size(140, 111);
+            this.groupBox3.TabIndex = 2;
+            this.groupBox3.TabStop = false;
+            this.groupBox3.Text = "Interface List";
+            // 
             // btnRefresh
             // 
             this.btnRefresh.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -208,6 +242,16 @@
             this.btnRefresh.UseVisualStyleBackColor = false;
             this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
             // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.btnApply);
+            this.panel2.Controls.Add(this.tableLayoutPanel15);
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel2.Location = new System.Drawing.Point(3, 324);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(744, 162);
+            this.panel2.TabIndex = 1;
+            // 
             // btnApply
             // 
             this.btnApply.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -226,6 +270,29 @@
             this.btnApply.Text = "Apply";
             this.btnApply.UseVisualStyleBackColor = false;
             this.btnApply.Click += new System.EventHandler(this.btnApply_Click);
+            // 
+            // tableLayoutPanel15
+            // 
+            this.tableLayoutPanel15.ColumnCount = 2;
+            this.tableLayoutPanel15.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 19.08127F));
+            this.tableLayoutPanel15.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 80.91873F));
+            this.tableLayoutPanel15.Controls.Add(this.lbCalibFilePathValue, 1, 3);
+            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel7, 0, 3);
+            this.tableLayoutPanel15.Controls.Add(this.lbInterfaceOptionValue, 1, 1);
+            this.tableLayoutPanel15.Controls.Add(this.lbConfigFilePathValue, 1, 2);
+            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel2, 0, 2);
+            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel3, 0, 0);
+            this.tableLayoutPanel15.Controls.Add(this.customBorderLabel4, 0, 1);
+            this.tableLayoutPanel15.Controls.Add(this.lbInterfaceTypeValue, 1, 0);
+            this.tableLayoutPanel15.Location = new System.Drawing.Point(13, 14);
+            this.tableLayoutPanel15.Name = "tableLayoutPanel15";
+            this.tableLayoutPanel15.RowCount = 4;
+            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel15.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel15.Size = new System.Drawing.Size(566, 135);
+            this.tableLayoutPanel15.TabIndex = 22;
             // 
             // lbCalibFilePathValue
             // 
@@ -347,92 +414,26 @@
             this.lbInterfaceTypeValue.Text = " - ";
             this.lbInterfaceTypeValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // lbxIntOption
-            // 
-            this.lbxIntOption.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbxIntOption.FormattingEnabled = true;
-            this.lbxIntOption.ItemHeight = 17;
-            this.lbxIntOption.Location = new System.Drawing.Point(10, 28);
-            this.lbxIntOption.Name = "lbxIntOption";
-            this.lbxIntOption.Size = new System.Drawing.Size(270, 271);
-            this.lbxIntOption.TabIndex = 0;
-            this.lbxIntOption.SelectedIndexChanged += new System.EventHandler(this.lbxIntOption_SelectedIndexChanged);
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Controls.Add(this.lbxIntOption);
-            this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox2.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBox2.Location = new System.Drawing.Point(299, 3);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Padding = new System.Windows.Forms.Padding(10);
-            this.groupBox2.Size = new System.Drawing.Size(290, 309);
-            this.groupBox2.TabIndex = 1;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Interface Option";
-            // 
-            // tableLayoutPanel3
-            // 
-            this.tableLayoutPanel3.ColumnCount = 1;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.Controls.Add(this.groupBox4, 0, 1);
-            this.tableLayoutPanel3.Controls.Add(this.groupBox3, 0, 0);
-            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(595, 3);
-            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 2;
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 195F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(146, 309);
-            this.tableLayoutPanel3.TabIndex = 2;
-            // 
-            // groupBox3
-            // 
-            this.groupBox3.Controls.Add(this.btnRefresh);
-            this.groupBox3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox3.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBox3.Location = new System.Drawing.Point(3, 0);
-            this.groupBox3.Margin = new System.Windows.Forms.Padding(3, 0, 3, 3);
-            this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Padding = new System.Windows.Forms.Padding(10);
-            this.groupBox3.Size = new System.Drawing.Size(140, 111);
-            this.groupBox3.TabIndex = 2;
-            this.groupBox3.TabStop = false;
-            this.groupBox3.Text = "Interface List";
-            // 
-            // groupBox4
-            // 
-            this.groupBox4.Controls.Add(this.btnSelectCalibFile);
-            this.groupBox4.Controls.Add(this.btnSelectConfigFile);
-            this.groupBox4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox4.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBox4.Location = new System.Drawing.Point(3, 117);
-            this.groupBox4.Name = "groupBox4";
-            this.groupBox4.Padding = new System.Windows.Forms.Padding(10);
-            this.groupBox4.Size = new System.Drawing.Size(140, 189);
-            this.groupBox4.TabIndex = 3;
-            this.groupBox4.TabStop = false;
-            this.groupBox4.Text = "Select File";
-            // 
             // FormSetupCASSpectrometerInterface
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(770, 509);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "FormSetupCASSpectrometerInterface";
             this.Padding = new System.Windows.Forms.Padding(10);
-            this.Text = "FormSetupCASSpectrometerInterface";
+            this.Text = "CAS Interface Manager";
             this.Shown += new System.EventHandler(this.FormSetupCASSpectrometerInterface_Shown);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
+            this.groupBox2.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
+            this.groupBox4.ResumeLayout(false);
+            this.groupBox3.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.tableLayoutPanel15.ResumeLayout(false);
-            this.groupBox2.ResumeLayout(false);
-            this.tableLayoutPanel3.ResumeLayout(false);
-            this.groupBox3.ResumeLayout(false);
-            this.groupBox4.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

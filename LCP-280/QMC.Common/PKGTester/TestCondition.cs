@@ -16,11 +16,9 @@ namespace QMC.Common.PKGTester
         // Source
         public double SourceValue { get; set; }
         public double SourceTime { get; set; }
+        public double SourceLimit { get; set; }
 
         // Measure
-        //public double MeasureValueMin { get; set; }
-        //public double MeasureValueMax { get; set; }
-        //public double MeasureValueLimit { get; set; }
         public double MeasureTime { get; set; }
 
         // Data Calibration
@@ -42,9 +40,7 @@ namespace QMC.Common.PKGTester
             Type = TestItemType.None;
             SourceValue = 0;
             SourceTime = 1;
-            //MeasureValueMin = 0;
-            //MeasureValueMax = 1;
-            //MeasureValueLimit = 0;
+            SourceLimit = 0;
             MeasureTime = 1;
             UseGain = false;
             UseOffset = false;
@@ -57,10 +53,14 @@ namespace QMC.Common.PKGTester
                 return false;
             if (Type.GetCategory() == TestItemCategory.Undefined)
                 return false;
-            if (SourceTime <= 0 || MeasureTime <= 0)
+            if (SourceValue < 0)
                 return false;
-            //if (MeasureValueMin > MeasureValueMax)
-            //    return false;
+            if (SourceTime <= 0)
+                return false;
+            if (SourceLimit < 0)
+                return false;
+            if (MeasureTime <= 0)
+                return false;
 
             return true;
         }
@@ -76,9 +76,7 @@ namespace QMC.Common.PKGTester
             {
                 pc.Add(nameof(SourceValue), SourceValue);
                 pc.Add(nameof(SourceTime), SourceTime);
-                //pc.Add(nameof(MeasureValueMin), MeasureValueMin);
-                //pc.Add(nameof(MeasureValueMax), MeasureValueMax);
-                //pc.Add(nameof(MeasureValueLimit), MeasureValueLimit);
+                pc.Add(nameof(SourceLimit), SourceLimit);
                 pc.Add(nameof(MeasureTime), MeasureTime);
             }
             pc.Add(nameof(UseGain), UseGain);
@@ -103,9 +101,7 @@ namespace QMC.Common.PKGTester
                 {
                     SourceValue = pc.GetValue<double>(nameof(SourceValue));
                     SourceTime = pc.GetValue<double>(nameof(SourceTime));
-                    //MeasureValueMin = pc.GetValue<double>(nameof(MeasureValueMin));
-                    //MeasureValueMax = pc.GetValue<double>(nameof(MeasureValueMax));
-                    //MeasureValueLimit = pc.GetValue<double>(nameof(MeasureValueLimit));
+                    SourceLimit = pc.GetValue<double>(nameof(SourceLimit));
                     MeasureTime = pc.GetValue<double>(nameof(MeasureTime));
                 }
                 UseGain = pc.GetValue<bool>(nameof(UseGain));
@@ -297,6 +293,13 @@ namespace QMC.Common.PKGTester
                 Log.Write(ex);
                 return -1;
             }
+        }
+        #endregion
+
+        #region Mehods
+        public string[] GetItemNameList()
+        {
+            return items.Select(x => x.Name).ToArray();
         }
         #endregion
     }
