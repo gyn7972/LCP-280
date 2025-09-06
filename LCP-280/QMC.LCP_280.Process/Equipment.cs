@@ -979,6 +979,10 @@ namespace QMC.LCP_280.Process
             Directory.CreateDirectory(_axisRoot);
             CreateAxes();
 
+            ClearAllMotionAlarmsOnStartup();
+            ServoOnAllAxesOnStartup();
+            ApplyMotionParamsForAllAxes();
+
             var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
             scanner.AxisStatusUpdated += (axis, status) =>
             {
@@ -1000,6 +1004,110 @@ namespace QMC.LCP_280.Process
             // var axisX = CreateOrLoadAxis("Prober", "StageX", 1, 0);
             // _axisManager.Register(axisX;
             // AttachAxisToUnit("Prober", "AxisX", axisX);
+        }
+
+        private void ClearAllMotionAlarmsOnStartup()
+        {
+            try
+            {
+                var axes = _axisManager.GetAll();
+                for (int i = 0; i < axes.Length; i++)
+                {
+                    var axis = axes[i];
+                    try
+                    {
+                        // 현재 축 IO 상태 읽기(내부에서 드라이버별로 알람 신호 읽음)
+                        var st = axis.GetStatusSnapshot();
+                        if (st.IO.Alarm)
+                        {
+                            // 알람만 있을 때 해제 시도
+                            axis.ClearAlarm();
+                            System.Threading.Thread.Sleep(5); // 드라이버 래치 해제 간 짧은 여유
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        private void ServoOnAllAxesOnStartup()
+        {
+            try
+            {
+                var axes = _axisManager.GetAll();
+                for (int i = 0; i < axes.Length; i++)
+                {
+                    var axis = axes[i];
+                    try
+                    {
+                        var st = axis.GetStatusSnapshot();
+
+                        // 알람 남아있으면 스킵 (알람 해제 루틴 이후여야 함)
+                        if (st.IO.Alarm)
+                            continue;
+
+                        // 이미 서보 ON이면 스킵
+                        if (st.IO.ServoOn)
+                            continue;
+
+                        // 서보 ON 시도
+                        int rc = axis.Servo(true);
+                        if (rc != 0)
+                            Log.Write("Equipment", $"[ServoOn] Axis='{axis.Name}' 실패 rc={rc}");
+
+                        // 드라이버 래치/통신 여유
+                        System.Threading.Thread.Sleep(5);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        private void ApplyMotionParamsForAllAxes()
+        {
+            try
+            {
+                var axes = _axisManager.GetAll();
+                for (int i = 0; i < axes.Length; i++)
+                {
+                    var axis = axes[i];
+                    try
+                    {
+                        // 요구사항: 서보 ON 이후 적용. (서보 OFF 축은 스킵)
+                        var st = axis.GetStatusSnapshot();
+                        if (!st.IO.ServoOn)
+                            continue;
+
+                        int rc = axis.ApplyToDriver();
+                        if (rc != 0)
+                            Log.Write("Equipment", "[ApplyToDriver] Axis='" + axis.Name + "' 실패 rc=" + rc);
+
+                        System.Threading.Thread.Sleep(1); // 드라이버에 과도한 연속 호출 방지
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
 
         private void BootstrapIODirect()

@@ -28,13 +28,13 @@ namespace QMC.Common.Motions
         [DefaultValue(0)]
         public int AxisNo { get; set; } = 0;
 
-        [Category("Common"), DisplayName("Pulses per Unit")]
-        [DefaultValue(1000.0)]
-        public double PulsesPerUnit { get; set; } = 1000.0;
+        [Category("Common"), DisplayName("Pulses Per Unit")]
+        [DefaultValue(1)]
+        public int PulsesPerUnit { get; set; } = 1;
 
         [Category("Common"), DisplayName("Axis Scale")]
-        [DefaultValue(1.0)]
-        public double AxisScale { get; set; } = 1.000;
+        [DefaultValue(1000)]
+        public int AxisScale { get; set; } = 1000;
 
         [Category("Common"), DisplayName("Axis Power (%)")]
         [DefaultValue(100)]
@@ -70,10 +70,10 @@ namespace QMC.Common.Motions
         [DefaultValue(StopMode.Emergency)]
         public StopMode StopMode { get; set; } = StopMode.Emergency;
 
-        // ===== Inposition =====
-        [Category("Inposition"), DisplayName("Level")]
-        [DefaultValue(ActiveLevel.High)]
-        public ActiveLevel InpositionLevel { get; set; } = ActiveLevel.High;
+        // ===== InpPosition =====
+        [Category("InPosition"), DisplayName("Level")]
+        [DefaultValue(InPosition.High)]
+        public InPosition InPosition { get; set; } = InPosition.High;
 
         [Category("Inposition"), DisplayName("Software Limit")]
         [DefaultValue(false)]
@@ -115,7 +115,7 @@ namespace QMC.Common.Motions
         // ===== Alarm =====
         [Category("Alarm"), DisplayName("Reset Signal Level")]
         [DefaultValue(ActiveLevel.High)]
-        public ActiveLevel AlarmResetSignal { get; set; } = ActiveLevel.High;
+        public ActiveLevel AlarmResetLevel { get; set; } = ActiveLevel.High;
 
         [Category("Alarm"), DisplayName("Alarm Level")]
         [DefaultValue(ActiveLevel.Low)]
@@ -125,6 +125,14 @@ namespace QMC.Common.Motions
         [Category("Limit"), DisplayName("Soft Limit Enable")]
         [DefaultValue(false)]
         public bool SoftLimitEnable { get; set; } = false;
+
+        [Category("Limit"), DisplayName("+ End Limit")]
+        [DefaultValue(ActiveLevel.Low)]
+        public ActiveLevel PositiveLimitLevel { get; set; } = ActiveLevel.Low;
+
+        [Category("Limit"), DisplayName("- End Limit")]
+        [DefaultValue(ActiveLevel.Low)]
+        public ActiveLevel NegativeLimitLevel { get; set; } = ActiveLevel.Low;
 
         [Category("Limit"), DisplayName("Soft Limit Min (mm)")]
         [DefaultValue(-1000.0)]
@@ -147,7 +155,7 @@ namespace QMC.Common.Motions
         public override void Reset()
         {
             // 구조/기본값 보강 (여기선 값형 위주라 특별 보강 없음)
-            if (AxisScale == 0.0) AxisScale = 1.0;
+            if (AxisScale == 0) AxisScale = 1;
         }
 
         protected override void OnLoaded()
@@ -164,8 +172,8 @@ namespace QMC.Common.Motions
                 SoftLimitMax = tmp;
             }
 
-            if (AxisScale == 0.0) AxisScale = 1.0;
-            if (PulsesPerUnit <= 0.0) PulsesPerUnit = 1000.0;
+            if (AxisScale == 0.0) AxisScale = 1;
+            if (PulsesPerUnit <= 0.0) PulsesPerUnit = 1000;
         }
 
         public override bool Validate()

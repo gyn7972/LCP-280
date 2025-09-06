@@ -206,11 +206,14 @@ namespace QMC.Common.Motions
             double d = cfg.RunDec * ppu;
 
             if (ProfileMode == ProfileMode.SCurve)
-                rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 10.0));
+                rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 10.0), setup.PulsesPerUnit, setup.AxisScale);
             else
-                rc = AjinApi.ApplyTrapProfile(axisNo, v, a, d);
+                rc = AjinApi.ApplyTrapProfile(axisNo, v, a, d, setup.PulsesPerUnit, setup.AxisScale);
             if (rc != 0) return rc;
 
+            if ((rc = AjinApi.ApplyMotionSignal(axisNo, (uint)setup.StopMode, (uint)setup.EmergencyLevel, setup.AlarmLevel, 
+                setup.AlarmResetLevel, setup.InPosition, setup.PositiveLimitLevel, setup.NegativeLimitLevel)) != 0)
+                return rc;
             return 0;
         }
 
