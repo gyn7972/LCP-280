@@ -981,7 +981,7 @@ namespace QMC.LCP_280.Process
 
             ClearAllMotionAlarmsOnStartup();
             ServoOnAllAxesOnStartup();
-            //ApplyMotionParamsForAllAxes(); 테스트중
+            ApplyMotionParamsForAllAxes();
 
             var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
             scanner.AxisStatusUpdated += (axis, status) =>
