@@ -65,18 +65,6 @@ namespace QMC.LCP_280.Process.Unit
             this.grpMove = new System.Windows.Forms.GroupBox();
             this.rdoFine = new System.Windows.Forms.RadioButton();
             this.rdoCoarse = new System.Windows.Forms.RadioButton();
-            this.tblJog = new System.Windows.Forms.TableLayoutPanel();
-            this.btnXPlus = new System.Windows.Forms.Button();
-            this.btnStop = new System.Windows.Forms.Button();
-            this.btnXMinus = new System.Windows.Forms.Button();
-            this.btnZPlus = new System.Windows.Forms.Button();
-            this.btnYPlus = new System.Windows.Forms.Button();
-            this.btnZMinus = new System.Windows.Forms.Button();
-            this.btnYMinus = new System.Windows.Forms.Button();
-            this.btnTMinus = new System.Windows.Forms.Button();
-            this.btnTPlus = new System.Windows.Forms.Button();
-            this.btnNextIndex = new System.Windows.Forms.Button();
-            this.btnPrevIndex = new System.Windows.Forms.Button();
             this.grpMoveMode = new System.Windows.Forms.GroupBox();
             this.rdoContinuous = new System.Windows.Forms.RadioButton();
             this.stepLine = new System.Windows.Forms.FlowLayoutPanel();
@@ -92,13 +80,24 @@ namespace QMC.LCP_280.Process.Unit
             this.tlpCommandPosition = new System.Windows.Forms.TableLayoutPanel();
             this.btnCommandPositionMove = new QMC.Common.IndividualMenuButton();
             this.nudCommandPosition = new System.Windows.Forms.NumericUpDown();
+            this.tblJog = new System.Windows.Forms.TableLayoutPanel();
+            this.btnXPlus = new System.Windows.Forms.Button();
+            this.btnStop = new System.Windows.Forms.Button();
+            this.btnXMinus = new System.Windows.Forms.Button();
+            this.btnZPlus = new System.Windows.Forms.Button();
+            this.btnYPlus = new System.Windows.Forms.Button();
+            this.btnZMinus = new System.Windows.Forms.Button();
+            this.btnYMinus = new System.Windows.Forms.Button();
+            this.btnTMinus = new System.Windows.Forms.Button();
+            this.btnTPlus = new System.Windows.Forms.Button();
+            this.btnNextIndex = new System.Windows.Forms.Button();
+            this.btnPrevIndex = new System.Windows.Forms.Button();
             this.layoutRoot.SuspendLayout();
             this.layoutLeft.SuspendLayout();
             this.grpSelectAxis.SuspendLayout();
             this.tblCurrentPosition.SuspendLayout();
             this.layoutRight.SuspendLayout();
             this.grpMove.SuspendLayout();
-            this.tblJog.SuspendLayout();
             this.grpMoveMode.SuspendLayout();
             this.stepLine.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudStep)).BeginInit();
@@ -106,6 +105,7 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBox1.SuspendLayout();
             this.tlpCommandPosition.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudCommandPosition)).BeginInit();
+            this.tblJog.SuspendLayout();
             this.SuspendLayout();
             // 
             // layoutRoot
@@ -274,146 +274,6 @@ namespace QMC.LCP_280.Process.Unit
             this.rdoCoarse.TabStop = true;
             this.rdoCoarse.Text = "Coarse";
             // 
-            // tblJog
-            // 
-            this.tblJog.ColumnCount = 4;
-            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.Controls.Add(this.btnXPlus, 3, 1);
-            this.tblJog.Controls.Add(this.btnStop, 2, 1);
-            this.tblJog.Controls.Add(this.btnXMinus, 1, 1);
-            this.tblJog.Controls.Add(this.btnZPlus, 0, 0);
-            this.tblJog.Controls.Add(this.btnYPlus, 2, 0);
-            this.tblJog.Controls.Add(this.btnZMinus, 0, 2);
-            this.tblJog.Controls.Add(this.btnYMinus, 2, 2);
-            this.tblJog.Controls.Add(this.btnTMinus, 3, 0);
-            this.tblJog.Controls.Add(this.btnTPlus, 1, 0);
-            this.tblJog.Controls.Add(this.btnNextIndex, 3, 3);
-            this.tblJog.Controls.Add(this.btnPrevIndex, 1, 3);
-            this.tblJog.Location = new System.Drawing.Point(4, 258);
-            this.tblJog.Margin = new System.Windows.Forms.Padding(0);
-            this.tblJog.Name = "tblJog";
-            this.tblJog.Padding = new System.Windows.Forms.Padding(3);
-            this.tblJog.RowCount = 4;
-            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tblJog.Size = new System.Drawing.Size(1209, 273);
-            this.tblJog.TabIndex = 2;
-            // 
-            // btnXPlus
-            // 
-            this.btnXPlus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnXPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnXPlus.Location = new System.Drawing.Point(906, 72);
-            this.btnXPlus.Name = "btnXPlus";
-            this.btnXPlus.Size = new System.Drawing.Size(297, 60);
-            this.btnXPlus.TabIndex = 6;
-            this.btnXPlus.Text = "+X";
-            // 
-            // btnStop
-            // 
-            this.btnStop.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnStop.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStop.Location = new System.Drawing.Point(606, 72);
-            this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(294, 60);
-            this.btnStop.TabIndex = 5;
-            this.btnStop.Text = "STOP";
-            // 
-            // btnXMinus
-            // 
-            this.btnXMinus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnXMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnXMinus.Location = new System.Drawing.Point(306, 72);
-            this.btnXMinus.Name = "btnXMinus";
-            this.btnXMinus.Size = new System.Drawing.Size(294, 60);
-            this.btnXMinus.TabIndex = 4;
-            this.btnXMinus.Text = "-X";
-            // 
-            // btnZPlus
-            // 
-            this.btnZPlus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnZPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnZPlus.Location = new System.Drawing.Point(6, 6);
-            this.btnZPlus.Name = "btnZPlus";
-            this.btnZPlus.Size = new System.Drawing.Size(294, 60);
-            this.btnZPlus.TabIndex = 3;
-            this.btnZPlus.Text = "+Z";
-            // 
-            // btnYPlus
-            // 
-            this.btnYPlus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnYPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnYPlus.Location = new System.Drawing.Point(606, 6);
-            this.btnYPlus.Name = "btnYPlus";
-            this.btnYPlus.Size = new System.Drawing.Size(294, 60);
-            this.btnYPlus.TabIndex = 1;
-            this.btnYPlus.Text = "+Y";
-            // 
-            // btnZMinus
-            // 
-            this.btnZMinus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnZMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnZMinus.Location = new System.Drawing.Point(6, 138);
-            this.btnZMinus.Name = "btnZMinus";
-            this.btnZMinus.Size = new System.Drawing.Size(294, 60);
-            this.btnZMinus.TabIndex = 7;
-            this.btnZMinus.Text = "-Z";
-            // 
-            // btnYMinus
-            // 
-            this.btnYMinus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnYMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnYMinus.Location = new System.Drawing.Point(606, 138);
-            this.btnYMinus.Name = "btnYMinus";
-            this.btnYMinus.Size = new System.Drawing.Size(294, 60);
-            this.btnYMinus.TabIndex = 8;
-            this.btnYMinus.Text = "-Y";
-            // 
-            // btnTMinus
-            // 
-            this.btnTMinus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnTMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTMinus.Location = new System.Drawing.Point(906, 6);
-            this.btnTMinus.Name = "btnTMinus";
-            this.btnTMinus.Size = new System.Drawing.Size(297, 60);
-            this.btnTMinus.TabIndex = 0;
-            this.btnTMinus.Text = "CW";
-            // 
-            // btnTPlus
-            // 
-            this.btnTPlus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnTPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnTPlus.Location = new System.Drawing.Point(306, 6);
-            this.btnTPlus.Name = "btnTPlus";
-            this.btnTPlus.Size = new System.Drawing.Size(294, 60);
-            this.btnTPlus.TabIndex = 2;
-            this.btnTPlus.Text = "CCW";
-            // 
-            // btnNextIndex
-            // 
-            this.btnNextIndex.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnNextIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnNextIndex.Location = new System.Drawing.Point(906, 204);
-            this.btnNextIndex.Name = "btnNextIndex";
-            this.btnNextIndex.Size = new System.Drawing.Size(297, 63);
-            this.btnNextIndex.TabIndex = 10;
-            this.btnNextIndex.Text = "Next Index";
-            // 
-            // btnPrevIndex
-            // 
-            this.btnPrevIndex.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnPrevIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnPrevIndex.Location = new System.Drawing.Point(306, 204);
-            this.btnPrevIndex.Name = "btnPrevIndex";
-            this.btnPrevIndex.Size = new System.Drawing.Size(294, 63);
-            this.btnPrevIndex.TabIndex = 9;
-            this.btnPrevIndex.Text = "Prev Index";
-            // 
             // grpMoveMode
             // 
             this.grpMoveMode.Controls.Add(this.rdoContinuous);
@@ -456,8 +316,7 @@ namespace QMC.LCP_280.Process.Unit
             // rdoStep
             // 
             this.rdoStep.AutoSize = true;
-            this.rdoStep.Location = new System.Drawing.Point(2, 4);
-            this.rdoStep.Margin = new System.Windows.Forms.Padding(2, 4, 6, 2);
+            this.rdoStep.Location = new System.Drawing.Point(3, 3);
             this.rdoStep.Name = "rdoStep";
             this.rdoStep.Size = new System.Drawing.Size(48, 16);
             this.rdoStep.TabIndex = 0;
@@ -468,7 +327,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.nudStep.DecimalPlaces = 3;
             this.nudStep.Enabled = false;
-            this.nudStep.Location = new System.Drawing.Point(56, 2);
+            this.nudStep.Location = new System.Drawing.Point(54, 2);
             this.nudStep.Margin = new System.Windows.Forms.Padding(0, 2, 6, 2);
             this.nudStep.Maximum = new decimal(new int[] {
             500,
@@ -616,6 +475,146 @@ namespace QMC.LCP_280.Process.Unit
             this.nudCommandPosition.Size = new System.Drawing.Size(592, 21);
             this.nudCommandPosition.TabIndex = 2;
             // 
+            // tblJog
+            // 
+            this.tblJog.ColumnCount = 4;
+            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.Controls.Add(this.btnXPlus, 3, 1);
+            this.tblJog.Controls.Add(this.btnStop, 2, 1);
+            this.tblJog.Controls.Add(this.btnXMinus, 1, 1);
+            this.tblJog.Controls.Add(this.btnZPlus, 0, 0);
+            this.tblJog.Controls.Add(this.btnYPlus, 2, 0);
+            this.tblJog.Controls.Add(this.btnZMinus, 0, 2);
+            this.tblJog.Controls.Add(this.btnYMinus, 2, 2);
+            this.tblJog.Controls.Add(this.btnTMinus, 3, 0);
+            this.tblJog.Controls.Add(this.btnTPlus, 1, 0);
+            this.tblJog.Controls.Add(this.btnNextIndex, 3, 3);
+            this.tblJog.Controls.Add(this.btnPrevIndex, 1, 3);
+            this.tblJog.Location = new System.Drawing.Point(4, 258);
+            this.tblJog.Margin = new System.Windows.Forms.Padding(0);
+            this.tblJog.Name = "tblJog";
+            this.tblJog.Padding = new System.Windows.Forms.Padding(3);
+            this.tblJog.RowCount = 4;
+            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tblJog.Size = new System.Drawing.Size(1209, 273);
+            this.tblJog.TabIndex = 2;
+            // 
+            // btnXPlus
+            // 
+            this.btnXPlus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnXPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnXPlus.Location = new System.Drawing.Point(906, 72);
+            this.btnXPlus.Name = "btnXPlus";
+            this.btnXPlus.Size = new System.Drawing.Size(297, 60);
+            this.btnXPlus.TabIndex = 6;
+            this.btnXPlus.Text = "+X";
+            // 
+            // btnStop
+            // 
+            this.btnStop.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStop.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStop.Location = new System.Drawing.Point(606, 72);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(294, 60);
+            this.btnStop.TabIndex = 5;
+            this.btnStop.Text = "STOP";
+            // 
+            // btnXMinus
+            // 
+            this.btnXMinus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnXMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnXMinus.Location = new System.Drawing.Point(306, 72);
+            this.btnXMinus.Name = "btnXMinus";
+            this.btnXMinus.Size = new System.Drawing.Size(294, 60);
+            this.btnXMinus.TabIndex = 4;
+            this.btnXMinus.Text = "-X";
+            // 
+            // btnZPlus
+            // 
+            this.btnZPlus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnZPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnZPlus.Location = new System.Drawing.Point(6, 6);
+            this.btnZPlus.Name = "btnZPlus";
+            this.btnZPlus.Size = new System.Drawing.Size(294, 60);
+            this.btnZPlus.TabIndex = 3;
+            this.btnZPlus.Text = "+Z";
+            // 
+            // btnYPlus
+            // 
+            this.btnYPlus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnYPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnYPlus.Location = new System.Drawing.Point(606, 6);
+            this.btnYPlus.Name = "btnYPlus";
+            this.btnYPlus.Size = new System.Drawing.Size(294, 60);
+            this.btnYPlus.TabIndex = 1;
+            this.btnYPlus.Text = "+Y";
+            // 
+            // btnZMinus
+            // 
+            this.btnZMinus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnZMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnZMinus.Location = new System.Drawing.Point(6, 138);
+            this.btnZMinus.Name = "btnZMinus";
+            this.btnZMinus.Size = new System.Drawing.Size(294, 60);
+            this.btnZMinus.TabIndex = 7;
+            this.btnZMinus.Text = "-Z";
+            // 
+            // btnYMinus
+            // 
+            this.btnYMinus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnYMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnYMinus.Location = new System.Drawing.Point(606, 138);
+            this.btnYMinus.Name = "btnYMinus";
+            this.btnYMinus.Size = new System.Drawing.Size(294, 60);
+            this.btnYMinus.TabIndex = 8;
+            this.btnYMinus.Text = "-Y";
+            // 
+            // btnTMinus
+            // 
+            this.btnTMinus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnTMinus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTMinus.Location = new System.Drawing.Point(906, 6);
+            this.btnTMinus.Name = "btnTMinus";
+            this.btnTMinus.Size = new System.Drawing.Size(297, 60);
+            this.btnTMinus.TabIndex = 0;
+            this.btnTMinus.Text = "CW";
+            // 
+            // btnTPlus
+            // 
+            this.btnTPlus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnTPlus.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnTPlus.Location = new System.Drawing.Point(306, 6);
+            this.btnTPlus.Name = "btnTPlus";
+            this.btnTPlus.Size = new System.Drawing.Size(294, 60);
+            this.btnTPlus.TabIndex = 2;
+            this.btnTPlus.Text = "CCW";
+            // 
+            // btnNextIndex
+            // 
+            this.btnNextIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnNextIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnNextIndex.Location = new System.Drawing.Point(906, 204);
+            this.btnNextIndex.Name = "btnNextIndex";
+            this.btnNextIndex.Size = new System.Drawing.Size(297, 63);
+            this.btnNextIndex.TabIndex = 10;
+            this.btnNextIndex.Text = "Next Index";
+            // 
+            // btnPrevIndex
+            // 
+            this.btnPrevIndex.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnPrevIndex.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnPrevIndex.Location = new System.Drawing.Point(306, 204);
+            this.btnPrevIndex.Name = "btnPrevIndex";
+            this.btnPrevIndex.Size = new System.Drawing.Size(294, 63);
+            this.btnPrevIndex.TabIndex = 9;
+            this.btnPrevIndex.Text = "Prev Index";
+            // 
             // JogControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -632,7 +631,6 @@ namespace QMC.LCP_280.Process.Unit
             this.layoutRight.ResumeLayout(false);
             this.grpMove.ResumeLayout(false);
             this.grpMove.PerformLayout();
-            this.tblJog.ResumeLayout(false);
             this.grpMoveMode.ResumeLayout(false);
             this.grpMoveMode.PerformLayout();
             this.stepLine.ResumeLayout(false);
@@ -642,6 +640,7 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBox1.ResumeLayout(false);
             this.tlpCommandPosition.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.nudCommandPosition)).EndInit();
+            this.tblJog.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

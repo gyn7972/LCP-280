@@ -27,9 +27,30 @@ namespace QMC.LCP_280.Process
         private Point _lastResultPoint = Point.Empty; // 검색 결과 표시용
         private double _lastResultAngle = 0;          // 각도 저장 (미사용시 확장 대비)
 
+        // Added: Unified runtime runner
+        private PatternMatchingRunner _runner;
+
+        // NEW: 저장된 다중 결과 목록
+        private List<PatternMatchingResult.PatternMatchingResultValue> _lastValues = new List<PatternMatchingResult.PatternMatchingResultValue>();
+        // NEW: 러너가 반환한 마지막 실행 결과 (대표 좌표 포함)
+        private PatternMatchingRunner.PatternMatchRunResult _lastRunResult;
+
         public PatternMatchingDialog()
         {
             InitializeComponent();
+
+            // 라디오 버튼 직접 참조 (디자이너 partial 클래스의 필드)
+            if (radioSingle != null)
+            {
+                radioSingle.CheckedChanged -= SearchModeRadioChanged;
+                radioSingle.CheckedChanged += SearchModeRadioChanged;
+                radioSingle.Checked = true; // 기본: 단일(First)
+            }
+            if (radioMulti != null)
+            {
+                radioMulti.CheckedChanged -= SearchModeRadioChanged;
+                radioMulti.CheckedChanged += SearchModeRadioChanged;
+            }
 
             _recipeDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "PatternMatching");
 
@@ -44,9 +65,8 @@ namespace QMC.LCP_280.Process
             maintROIControl.SetImageviwer(_viewer);
             AttachEvents();
 
-            if (_btnLoadImage != null) _btnLoadImage.Click += BtnLoadImage_Click;
             if (_btnClose != null) _btnClose.Click += (s, e) => Close();
-            if (_btnSaveParam != null) _btnSaveParam.Click += BtnSaveParam_Click; // confirm save
+            if (_btnSaveParam != null) _btnSaveParam.Click += BtnSaveParam_Click;
             if (_btnLoadParam != null) _btnLoadParam.Click += (s, e) => LoadRecipeForCurrentCamera();
 
             if (patternMatchingParamControl != null)
@@ -55,9 +75,36 @@ namespace QMC.LCP_280.Process
                 patternMatchingParamControl.UpdateParameters(_parameters);
             }
 
-            // 뷰어 결과 크로스 표시용 Paint 이벤트
+            // 수동 Paint 이벤트 제거 (Overlay 시스템 사용)
             if (_viewer != null)
-                _viewer.Paint += Viewer_PaintCross;
+            {
+                _viewer.Paint -= Viewer_PaintCross;
+                // removed old overlay handler reference (no longer exists)
+                // _viewer.Paint -= Viewer_PaintOverlay;
+                _viewer.Paint -= Viewer_PaintMatches; // avoid duplicate
+                _viewer.Paint += Viewer_PaintMatches; // new unified paint
+            }
+
+            // 체크박스 이벤트 연결 (Runner 생성 전이라도 상태를 기억, Runner 생성 시 반영)
+            if (chkShowIndexes != null)
+            {
+                chkShowIndexes.CheckedChanged += (s, e) =>
+                {
+                    if (_runner != null)
+                        _runner.SetShowMatchIndexes(chkShowIndexes.Checked);
+                    RebuildResultOverlays();
+                };
+            }
+            if (chkHighlightRef != null)
+            {
+                chkHighlightRef.Checked = true; // 기본 활성화
+                chkHighlightRef.CheckedChanged += (s, e) =>
+                {
+                    if (_runner != null)
+                        _runner.SetHighlightReference(chkHighlightRef.Checked);
+                    RebuildResultOverlays();
+                };
+            }
 
             LoadRecipe(_currentRecipeName);
             TryBindEquipmentCameras();
@@ -92,7 +139,6 @@ namespace QMC.LCP_280.Process
             if (_viewer?.Image == null) return;
             try
             {
-                // PictureBox(Zoom) 좌표 변환
                 var imgW = _viewer.Image.Width;
                 var imgH = _viewer.Image.Height;
                 var boxW = _viewer.ClientSize.Width;
@@ -115,7 +161,132 @@ namespace QMC.LCP_280.Process
             catch { }
         }
 
-        #region Core Helpers
+        // NEW: Direct drawing (avoid overlay coordinate issues)
+        private void Viewer_PaintMatches(object sender, PaintEventArgs e)
+        {
+            if (_viewer?.Image == null) return;
+            if ((_lastValues == null || _lastValues.Count == 0) && (_lastRunResult == null || !_lastRunResult.Success)) return;
+            try
+            {
+                if ((_lastValues == null || _lastValues.Count == 0) && _lastRunResult?.Matches != null && _lastRunResult.Matches.Count > 0)
+                {
+                    _lastValues = new List<PatternMatchingResult.PatternMatchingResultValue>(_lastRunResult.Matches);
+                }
+                var img = _viewer.Image;
+                int imgW = img.Width;
+                int imgH = img.Height;
+                int boxW = _viewer.ClientSize.Width;
+                int boxH = _viewer.ClientSize.Height;
+                double scale = Math.Min((double)boxW / imgW, (double)boxH / imgH);
+                int drawW = (int)(imgW * scale);
+                int drawH = (int)(imgH * scale);
+                int offX = (boxW - drawW) / 2;
+                int offY = (boxH - drawH) / 2;
+
+                bool showIdx = chkShowIndexes?.Checked ?? false;
+                bool highlight = chkHighlightRef?.Checked ?? false;
+
+                int patternW = 40, patternH = 40;
+                try
+                {
+                    var ti = _parameters?.TrainImages?.FirstOrDefault(t => t?.Header != null && t.Header.Width > 0 && t.Header.Height > 0);
+                    if (ti != null) { patternW = ti.Header.Width; patternH = ti.Header.Height; }
+                }
+                catch { }
+
+                // NOTE: MultiPatternMatchingVisionPart.OnSearch() 이미 ROI offset을 절대좌표로 더해줌
+                // 따라서 ROI가 전체보다 작아도 결과 좌표는 항상 원본 이미지 기준 절대값이다.
+                // 이전 로직(ROI 범위 추론 후 재오프셋)이 중복 적용되어 작은 ROI에서 십자가가 사라지는 문제 발생 → 제거.
+                Point roiStart = Point.Empty; Point roiEnd = Point.Empty; // kept for info text only
+                try
+                {
+                    if (_visionPart != null && _visionPart.UseInspectRoi)
+                    {
+                        roiStart = _visionPart.GetInspectStartPoint();
+                        roiEnd = _visionPart.GetInspectEndPoint();
+                    }
+                }
+                catch { }
+
+                if (_lastValues == null || _lastValues.Count == 0) return;
+
+                // 대표 인덱스
+                int repIndex = (_lastRunResult != null && _lastRunResult.ReferenceIndex >= 0) ? _lastRunResult.ReferenceIndex : 0;
+                if (listViewResults?.SelectedIndices.Count > 0) repIndex = listViewResults.SelectedIndices[0];
+                if (repIndex < 0 || repIndex >= _lastValues.Count) repIndex = 0;
+
+                using (var penRectSel = new Pen(Color.Lime, 2))
+                using (var penRect = new Pen(Color.FromArgb(180, 0, 255, 0), 1))
+                using (var penCrossSel = new Pen(Color.Lime, 2))
+                using (var penCross = new Pen(Color.Lime, 1))
+                using (var penHighlight = new Pen(Color.Lime, 2) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dash })
+                using (var fontIdxBig = new Font("Arial", 14f, FontStyle.Bold))
+                using (var fontIdx = new Font("Arial", 12f, FontStyle.Bold))
+                using (var fontDbg = new Font("Consolas", 8f))
+                using (var fontInfo = new Font("Consolas", 9f, FontStyle.Bold))
+                using (var brushWhite = new SolidBrush(Color.White))
+                using (var brushYellow = new SolidBrush(Color.Yellow))
+                using (var brushCyan = new SolidBrush(Color.Cyan))
+                {
+                    int crossLenSel = 24; int crossLen = 16; bool debug = false; // debug off now
+                    for (int i = 0; i < _lastValues.Count; i++)
+                    {
+                        var v = _lastValues[i];
+                        double cx = v.X; // absolute
+                        double cy = v.Y; // absolute
+
+                        double dx = offX + cx * scale;
+                        double dy = offY + cy * scale;
+                        bool isRep = (i == repIndex);
+
+                        // Draw simple rectangle (pattern size approximate, no rotation assumption)
+                        double hw = patternW / 2.0; double hh = patternH / 2.0;
+                        PointF[] poly = new PointF[4];
+                        poly[0] = new PointF((float)(offX + (cx - hw) * scale), (float)(offY + (cy - hh) * scale));
+                        poly[1] = new PointF((float)(offX + (cx + hw) * scale), (float)(offY + (cy - hh) * scale));
+                        poly[2] = new PointF((float)(offX + (cx + hw) * scale), (float)(offY + (cy + hh) * scale));
+                        poly[3] = new PointF((float)(offX + (cx - hw) * scale), (float)(offY + (cy + hh) * scale));
+                        e.Graphics.DrawPolygon(isRep ? penRectSel : penRect, poly);
+
+                        int len = isRep ? crossLenSel : crossLen;
+                        e.Graphics.DrawLine(isRep ? penCrossSel : penCross, (float)(dx - len), (float)dy, (float)(dx + len), (float)dy);
+                        e.Graphics.DrawLine(isRep ? penCrossSel : penCross, (float)dx, (float)(dy - len), (float)dx, (float)(dy + len));
+
+                        if (showIdx)
+                        {
+                            var f = isRep ? fontIdxBig : fontIdx;
+                            var txt = i.ToString();
+                            e.Graphics.DrawString(txt, f, brushWhite, (float)(dx + len + 4), (float)(dy - len - 4));
+                        }
+                        if (debug && i < 3)
+                        {
+                            string raw = $"Abs({v.X:0.0},{v.Y:0.0})";
+                            e.Graphics.DrawString(raw, fontDbg, brushYellow, (float)(dx + 6), (float)(dy + 6));
+                        }
+                    }
+
+                    if (highlight && repIndex >= 0 && repIndex < _lastValues.Count)
+                    {
+                        var v = _lastValues[repIndex];
+                        double dx = offX + v.X * scale; double dy = offY + v.Y * scale;
+                        int r = (int)((Math.Max(patternW, patternH) / 2 + 10) * scale);
+                        e.Graphics.DrawEllipse(penHighlight, (float)(dx - r), (float)(dy - r), r * 2, r * 2);
+                    }
+
+                    string info = $"ROIStart=({roiStart.X},{roiStart.Y}) (coords are ABSOLUTE)";
+                    e.Graphics.DrawString(info, fontInfo, brushCyan, 10, 10);
+                }
+            }
+            catch { }
+        }
+
+        private void RebuildResultOverlays()
+        {
+            // Overlays removed – direct painting in Viewer_PaintMatches handles drawing.
+            _viewer?.Invalidate();
+        }
+
+        // Core Helpers (region removed to avoid unmatched directives)
         private void UpdateStatus(string text)
         {
             if (_lblStatus != null) _lblStatus.Text = text;
@@ -131,7 +302,6 @@ namespace QMC.LCP_280.Process
         }
 
         private string GetCurrentCameraName() => _viewer?.Camera?.Name ?? "NoCamera";
-        #endregion
 
         #region Camera Binding
         private void TryBindEquipmentCameras()
@@ -200,36 +370,69 @@ namespace QMC.LCP_280.Process
             try
             {
                 if (index < 0 || index >= _cameras.Count) return;
-
-                // 1) 현재 Viewer 내용 완전 초기화
                 ClearViewer();
-
-                // 2) (기존) 이전 카메라 라이브 정지
                 try { _viewer.Camera?.StopLive(); } catch { }
-
-                // 3) 새 카메라 할당
                 var cam = _cameras[index];
                 _viewer.Camera = cam;
-
-                // 4) 새 카메라 기준 Viewer 재설정/초기 이미지 세팅
                 ResetViewerForCameraChange(cam);
-
-                // 5) 라이브 시작/업데이트
                 try { cam.StartLive(); } catch { }
-                _viewer.Display();
                 _viewer.StartUpdateTask();
-
-                // 6) ROI/파라미터 영역 동기화
                 SyncImageInfoToControls(cam);
-
-                // 7) 레시피 로드 (자동 저장은 제거)
                 _suspendAutoLoad = true;
                 try { LoadRecipeForCurrentCamera(); } finally { _suspendAutoLoad = false; }
+
+                try
+                {
+                    _runner?.Dispose();
+                    var opt = new PatternMatchingRunner.RunnerOptions
+                    {
+                        AutoLoadRecipe = false,
+                        RecipeRootDirectory = _recipeDirectory,
+                        RecipeName = _currentRecipeName,
+                        DrawCrossOnViewer = false,        // 내부 러너 그리기 비활성 (UI에서 직접 그림)
+                        CrossColor = Color.Lime,
+                        CrossHalfLength = 15,
+                        EnableSaveImage = false
+                    };
+                    _runner = new PatternMatchingRunner(cam, _viewer, opt);
+                    UpdateRunnerModeFromUI(); // 모드 적용
+                    ApplyOverlayOptionCheckboxes();     // 체크박스 상태 적용
+                    _runner.AfterSearch += r =>
+                    {
+                        if (IsHandleCreated)
+                        {
+                            try
+                            {
+                                BeginInvoke(new Action(() =>
+                                {
+                                    UpdateStatus(r.Success ? "Search Success." : ("Search Fail: " + r.FailReason));
+                                    // 검색 후 뷰 갱신
+                                    _viewer?.Invalidate();
+                                    RebuildResultOverlays();
+                                }));
+                            }
+                            catch { }
+                        }
+                    };
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Runner init failed: " + ex.Message);
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("ApplyCameraSelection error: " + ex.Message);
             }
+        }
+
+        private void UpdateRunnerModeFromUI()
+        {
+            if (_runner == null) return;
+            if (radioSingle != null && radioSingle.Checked)
+                _runner.SetSearchMode(PatternMatchingRunner.SearchMode.First);
+            else if (radioMulti != null && radioMulti.Checked)
+                _runner.SetSearchMode(PatternMatchingRunner.SearchMode.All);
         }
 
         private void SyncImageInfoToControls(Camera cam)
@@ -399,74 +602,7 @@ namespace QMC.LCP_280.Process
         }
         #endregion
 
-        #region Train / Search
-        private void BtnLoadImage_Click(object sender, EventArgs e)
-        {
-            using (var ofd = new OpenFileDialog())
-            {
-                ofd.Filter = "Image Files|*.bmp;*.png;*.jpg;*.jpeg;*.tif;*.tiff|All Files|*.*";
-                if (ofd.ShowDialog(this) != DialogResult.OK) return;
-                try
-                {
-                    using (var img = Image.FromFile(ofd.FileName))
-                    {
-                        var vimg = VisionImage.CreateInstance(img);
-                        vimg.Tag = Path.GetFileName(ofd.FileName);
-                        _visionPart.TestImage = vimg;
-                        _viewer.Image = vimg.GetImage();
-                        _viewer.Refresh();
-                        maintROIControl.UpdateImageInfo(_viewer.Image.Size);
-                        maintROIControl.EnsureDefaultRoiTools();
-                        UpdateStatus($"Loaded: {Path.GetFileName(ofd.FileName)}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(this, "이미지 로드 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
-        }
-
-        private void BtnTrain_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                SyncParametersFromUI();
-                Point start = _visionPart.GetTrainStartPoint();
-                Point end = _visionPart.GetTrainEndPoint();
-                if (start == Point.Empty && end == Point.Empty)
-                {
-                    MessageBox.Show(this, "Train ROI가 설정되지 않았습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                VisionImage sourceImage = null;
-                if (_viewer.Camera != null && _viewer.Camera.Opened)
-                    _viewer.Camera.GrabSync(out sourceImage);
-                if (sourceImage == null && _viewer.Camera?.LatestImage?.RawData != null)
-                    sourceImage = _viewer.Camera.LatestImage;
-                if (sourceImage == null && _visionPart.TestImage?.GetImage() != null)
-                    sourceImage = _visionPart.TestImage;
-                if (sourceImage == null && _viewer.InputImage?.RawData != null)
-                    sourceImage = _viewer.InputImage;
-                if (sourceImage == null || sourceImage.GetImage() == null)
-                {
-                    MessageBox.Show(this, "Train에 사용할 이미지가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-                var cut = sourceImage.CutVisionImage(start, end);
-                if (cut == null || cut.GetImage() == null)
-                {
-                    MessageBox.Show(this, "ROI 잘라내기에 실패했습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                AddTrainImage(cut);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, "Train 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
+        #region Search
         private VisionImage AcquireCurrentSearchImage()
         {
             VisionImage src = null;
@@ -488,100 +624,101 @@ namespace QMC.LCP_280.Process
             return src;
         }
 
-        private void EnsureTemplatesTrained()
-        {
-            if (_parameters?.TrainImages == null) return;
-            for (int i = 0; i < _parameters.TrainImages.Count; i++)
-            {
-                var t = _parameters.TrainImages[i];
-                if (t == null || t.GetImage() == null) continue;
-                try { _visionPart.OnTrain(new Point(0, 0), new Point(t.Header.Width - 1, t.Header.Height - 1), _parameters, null, i); } catch { }
-            }
-        }
-
         private void BtnSearch_Click(object sender, EventArgs e)
         {
-            SyncParametersFromUI();
-            if (_parameters == null)
-                _parameters = _visionPart.GetPatternMatchingParameters();
-
-            if (_parameters.TrainImages.Count == 0 || _parameters.TrainImages.All(v => v == null || v.GetImage() == null))
-            {
-                MessageBox.Show(this, "최소 1개 이상의 Train Image가 필요합니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            var testImage = AcquireCurrentSearchImage();
-            if (testImage == null || testImage.GetImage() == null)
-            {
-                MessageBox.Show(this, "검색할 이미지(카메라 또는 로드된 이미지)가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            _visionPart.TestImage = testImage; // 내부 참조 업데이트
-
-            EnsureTemplatesTrained();
-
-            Point searchStart = new Point(0, 0);
-            Point searchEnd = new Point(testImage.Header.Width - 1, testImage.Header.Height - 1);
             try
             {
-                if (_visionPart.UseInspectRoi)
+                SyncParametersFromUI();
+                if (_parameters == null)
+                    _parameters = _visionPart.GetPatternMatchingParameters();
+                if (_parameters == null || _parameters.TrainImages == null || _parameters.TrainImages.Count == 0 ||
+                    _parameters.TrainImages.All(v => v == null || v.GetImage() == null))
                 {
-                    var ispStart = _visionPart.GetInspectStartPoint();
-                    var ispEnd = _visionPart.GetInspectEndPoint();
-                    if (ispEnd.X > ispStart.X && ispEnd.Y > ispStart.Y)
-                    {
-                        searchStart = ispStart;
-                        searchEnd = ispEnd;
-                    }
-                }
-            }
-            catch { }
-
-            try
-            {
-                if (_viewer != null) _viewer.ResultOverlays.Clear();
-                // 검색 전에 ROI 최신화
-                maintROIControl?.CommitCurrentRoi();
-                int ret = _visionPart.OnSearch(searchStart, searchEnd, _parameters, null, testImage);
-                if (ret != 0)
-                {
-                    UpdateStatus("Search failed (ret=" + ret + ")");
+                    MessageBox.Show(this, "최소 1개 이상의 Train Image가 필요합니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
-                var result = _visionPart.GetResult();
-                if (result != null && result.Values.Count > 0)
+                var testImage = AcquireCurrentSearchImage();
+                if (testImage == null || testImage.GetImage() == null)
                 {
-                    var v = result.Values[0];
-                    _lastResultPoint = new Point((int)v.X, (int)v.Y);
-                    _lastResultAngle = v.R;
-                    // UI 표시 (디자이너에 추가된 텍스트박스 존재 시)
-                    if (txtResultX != null) txtResultX.Text = v.X.ToString("0.000");
-                    if (txtResultY != null) txtResultY.Text = v.Y.ToString("0.000");
-                    if (txtResultT != null) txtResultT.Text = v.R.ToString("0.000");
-                    _viewer?.Invalidate();
+                    MessageBox.Show(this, "검색할 이미지(카메라 또는 로드된 이미지)가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
-                // 결과 오버레이 (패턴툴에서 제공되면 표시)
-                if (result != null && _viewer != null)
+                maintROIControl?.CommitCurrentRoi();
+                SaveRecipeForCurrentCamera();
+                if (_runner == null && _viewer?.Camera != null)
                 {
-                    foreach (var ov in result.ResultOverlays)
+                    var opt = new PatternMatchingRunner.RunnerOptions
                     {
-                        ov.Visible = true;
-                        _viewer.ResultOverlays.Add(ov);
-                    }
-                    _viewer.Display();
+                        AutoLoadRecipe = false,
+                        RecipeRootDirectory = _recipeDirectory,
+                        RecipeName = _currentRecipeName,
+                        DrawCrossOnViewer = false,
+                        CrossColor = Color.Lime,
+                        CrossHalfLength = 15,
+                        EnableSaveImage = false
+                    };
+                    _runner = new PatternMatchingRunner(_viewer.Camera, _viewer, opt);
+                    UpdateRunnerModeFromUI();
+                    ApplyOverlayOptionCheckboxes();
                 }
-
-                if (result != null && result.Values.Count > 0)
+                if (_runner == null)
                 {
-                    UpdateStatus("Search Success.");
+                    MessageBox.Show(this, "Runner 초기화 실패 (카메라 없음).", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                _runner.LoadRecipe();
+                UpdateRunnerModeFromUI();
+
+                var res = _runner.Search(testImage, save: false);
+                _lastRunResult = res; // 새 결과 저장 (대표 좌표 포함)
+                if (!res.Success || res.RawResult == null)
+                {
+                    UpdateStatus("Search Fail: " + res.FailReason);
+                    MessageBox.Show(this, "Search 실패: " + res.FailReason, "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    listViewResults.Items.Clear();
+                    _lastValues.Clear();
+                    _viewer?.Invalidate();
+                    return;
+                }
+                var raw = res.RawResult;
+                _lastValues = raw.Values != null ? new List<PatternMatchingResult.PatternMatchingResultValue>(raw.Values) : new List<PatternMatchingResult.PatternMatchingResultValue>();
+                PopulateResultList();
+                if (_lastValues.Count > 0)
+                {
+                    // 대표 인덱스 기준 (PatternMatchRunResult.ReferenceIndex)
+                    int idx = (res.ReferenceIndex >= 0 && res.ReferenceIndex < _lastValues.Count) ? res.ReferenceIndex : 0;
+                    var first = _lastValues[idx];
+                    _lastResultPoint = new Point((int)first.X, (int)first.Y);
+                    _lastResultAngle = first.R;
+                    txtResultX.Text = first.X.ToString("0.000");
+                    txtResultY.Text = first.Y.ToString("0.000");
+                    txtResultT.Text = first.R.ToString("0.000");
                 }
                 else
                 {
-                    UpdateStatus("Search Fail.");
+                    txtResultX.Clear(); txtResultY.Clear(); txtResultT.Clear();
+                    _lastResultPoint = Point.Empty; _lastResultAngle = 0;
                 }
-
-                    
+                _viewer?.Invalidate();
+                UpdateStatus(res.Success ? "Search Success." : "Search Fail.");
+                var txtAvgXCtrl = this.txtAvgX;
+                var txtAvgYCtrl = this.txtAvgY;
+                var txtAvgTCtrl = this.txtAvgT;
+                if (txtAvgXCtrl != null && txtAvgYCtrl != null && txtAvgTCtrl != null)
+                {
+                    bool isAll = radioMulti != null && radioMulti.Checked;
+                    if (isAll && res.AvgXExcludingExtremes.HasValue)
+                    {
+                        txtAvgXCtrl.Text = res.AvgXExcludingExtremes.Value.ToString("0.000");
+                        txtAvgYCtrl.Text = res.AvgYExcludingExtremes.Value.ToString("0.000");
+                        txtAvgTCtrl.Text = res.AvgRExcludingExtremes.Value.ToString("0.000");
+                    }
+                    else
+                    {
+                        txtAvgXCtrl.Clear(); txtAvgYCtrl.Clear(); txtAvgTCtrl.Clear();
+                    }
+                }
+                RebuildResultOverlays();
             }
             catch (Exception ex)
             {
@@ -590,17 +727,48 @@ namespace QMC.LCP_280.Process
             }
         }
 
-        private void AddTrainImage(VisionImage cut)
+        private void PopulateResultList()
         {
-            if (cut == null || cut.RawData == null || cut.Header == null || cut.Header.Width <= 0 || cut.Header.Height <= 0) return;
-            // ROI Commit 후 Tag 순서 보정
-            maintROIControl?.CommitCurrentRoi();
-            _parameters.TrainImages.RemoveAll(v => v == null || v.RawData == null);
-            cut.Tag = $"Train_{_parameters.TrainImages.Count}";
-            _parameters.TrainImages.Add(cut);
-            // 파라미터 컨트롤 즉시 갱신
-            patternMatchingParamControl?.UpdateParameters(_parameters);
-            UpdateStatus($"Train image added (Count={_parameters.TrainImages.Count})");
+            if (listViewResults == null) return;
+            listViewResults.BeginUpdate();
+            try
+            {
+                listViewResults.Items.Clear();
+                for (int i = 0; i < _lastValues.Count; i++)
+                {
+                    var v = _lastValues[i];
+                    var item = new ListViewItem(new string[]
+                    {
+                        i.ToString(),
+                        v.X.ToString("0.000"),
+                        v.Y.ToString("0.000"),
+                        v.R.ToString("0.000"),
+                        v.Score.ToString("0.000")
+                    }) { Tag = (PatternMatchingResult.PatternMatchingResultValue?)v };
+                    listViewResults.Items.Add(item);
+                }
+            }
+            finally
+            {
+                listViewResults.EndUpdate();
+            }
+        }
+
+        private void OnResultListSelectionChanged()
+        {
+            if (listViewResults == null) return;
+            if (listViewResults.SelectedItems.Count <= 0) return;
+            var sel = listViewResults.SelectedItems[0];
+            var val = sel.Tag as PatternMatchingResult.PatternMatchingResultValue?;
+            if (val == null) return;
+            var vv = val.Value;
+            _lastResultPoint = new Point((int)vv.X, (int)vv.Y);
+            _lastResultAngle = vv.R;
+            if (txtResultX != null) txtResultX.Text = vv.X.ToString("0.000");
+            if (txtResultY != null) txtResultY.Text = vv.Y.ToString("0.000");
+            if (txtResultT != null) txtResultT.Text = vv.R.ToString("0.000");
+            RebuildResultOverlays();
+            _viewer?.Invalidate();
         }
         #endregion
 
@@ -632,6 +800,17 @@ namespace QMC.LCP_280.Process
                 Log.Write("PatternMatchingDialog", "TrainImageCaptured handler exception: " + ex.Message);
             }
         }
+
+        private void AddTrainImage(VisionImage cut)
+        {
+            if (cut == null || cut.RawData == null || cut.Header == null || cut.Header.Width <= 0 || cut.Header.Height <= 0) return;
+            maintROIControl?.CommitCurrentRoi();
+            _parameters.TrainImages.RemoveAll(v => v == null || v.RawData == null);
+            cut.Tag = $"Train_{_parameters.TrainImages.Count}";
+            _parameters.TrainImages.Add(cut);
+            patternMatchingParamControl?.UpdateParameters(_parameters);
+            UpdateStatus($"Train image added (Count={_parameters.TrainImages.Count})");
+        }
         #endregion
 
         #region Internal VisionPart Wrapper
@@ -659,5 +838,27 @@ namespace QMC.LCP_280.Process
         }
         #endregion
 
+        private void listViewResults_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            OnResultListSelectionChanged();
+        }
+
+        private void SearchModeRadioChanged(object sender, EventArgs e)
+        {
+            UpdateRunnerModeFromUI();
+            // 모드 변경 시 평균 필드 초기화
+            if (radioSingle != null && radioSingle.Checked)
+            {
+                txtAvgX.Clear(); txtAvgY.Clear(); txtAvgT.Clear();
+            }
+            RebuildResultOverlays();
+        }
+
+        private void ApplyOverlayOptionCheckboxes()
+        {
+            if (_runner == null) return;
+            if (chkShowIndexes != null) _runner.SetShowMatchIndexes(chkShowIndexes.Checked);
+            if (chkHighlightRef != null) _runner.SetHighlightReference(chkHighlightRef.Checked);
+        }
     }
 }

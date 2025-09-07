@@ -2,223 +2,106 @@
 using QMC.Common.CustomControl;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Unit;
+using QMC.LCP_280.Process.Sequences; // added for ManualSequenceControl
+using QMC.LCP_280.Process.Component; // added for TeachingPositionControl
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class ChipLoading_Working
+    partial class ChipLoader_Working
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
+        private IContainer components = null;
 
-
-        private System.ComponentModel.IContainer components = null;
-
-        // Actual Position 주기 업데이트 타이머
-        private Timer _axisPosTimer;
-
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
-        #region Windows Form Designer generated code
-
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
-            this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.gbModuleUnit = new System.Windows.Forms.GroupBox();
-            this.axisPositionsView = new QMC.Common.PropertyCollectionView();
-            this.infomationView = new QMC.Common.PropertyCollectionView();
-            this.gbDigitalIO = new System.Windows.Forms.GroupBox();
-            this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.outputIoView = new QMC.Common.IOPropertyCollectionView();
-            this.inputIoView = new QMC.Common.IOPropertyCollectionView();
-            this.sequencePanel = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel.SuspendLayout();
-            this.gbModuleUnit.SuspendLayout();
-            this.gbDigitalIO.SuspendLayout();
-            this.ioTableLayoutPanel.SuspendLayout();
-            this.sequencePanel.SuspendLayout();
+            this.components = new System.ComponentModel.Container();
+            this._Cameraviewer = new QMC.Common.Vision.VisionImageViewer();
+            this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
+            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
+            this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
+            ((System.ComponentModel.ISupportInitialize)(this._Cameraviewer)).BeginInit();
             this.SuspendLayout();
             // 
-            // tableLayoutPanel
+            // _Cameraviewer
             // 
-            this.tableLayoutPanel.ColumnCount = 4;
-            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel.Controls.Add(this.gbModuleUnit, 1, 0);
-            this.tableLayoutPanel.Controls.Add(this.infomationView, 0, 0);
-            this.tableLayoutPanel.Controls.Add(this.gbDigitalIO, 1, 1);
-            this.tableLayoutPanel.Controls.Add(this.sequencePanel, 0, 1);
-            this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel.Name = "tableLayoutPanel";
-            this.tableLayoutPanel.RowCount = 2;
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel.Size = new System.Drawing.Size(1264, 780);
-            this.tableLayoutPanel.TabIndex = 1;
+            this._Cameraviewer.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._Cameraviewer.BackColor = System.Drawing.Color.Black;
+            this._Cameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._Cameraviewer.Camera = null;
+            this._Cameraviewer.CameraSwitch = null;
+            this._Cameraviewer.FrameRate = 1D;
+            this._Cameraviewer.InputImage = null;
+            this._Cameraviewer.IsViewCustomizedImage = false;
+            this._Cameraviewer.Location = new System.Drawing.Point(535, 12);
+            this._Cameraviewer.Name = "_Cameraviewer";
+            this._Cameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
+            this._Cameraviewer.Simulated = false;
+            this._Cameraviewer.Size = new System.Drawing.Size(370, 350);
+            this._Cameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this._Cameraviewer.TabIndex = 12;
+            this._Cameraviewer.TabStop = false;
+            this._Cameraviewer.UpdateDelayTime = 80;
+            this._Cameraviewer.VisibleCrossLine = true;
             // 
-            // gbModuleUnit
+            // dioControl
             // 
-            this.tableLayoutPanel.SetColumnSpan(this.gbModuleUnit, 2);
-            this.gbModuleUnit.Controls.Add(this.axisPositionsView);
-            this.gbModuleUnit.Location = new System.Drawing.Point(319, 3);
-            this.gbModuleUnit.Name = "gbModuleUnit";
-            this.gbModuleUnit.Size = new System.Drawing.Size(626, 384);
-            this.gbModuleUnit.TabIndex = 6;
-            this.gbModuleUnit.TabStop = false;
-            this.gbModuleUnit.Text = "ModuleUnit";
+            this.dioControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dioControl.Location = new System.Drawing.Point(12, 368);
+            this.dioControl.Name = "dioControl";
+            this.dioControl.RefreshIntervalMs = 400;
+            this.dioControl.Size = new System.Drawing.Size(517, 263);
+            this.dioControl.TabIndex = 11;
             // 
-            // axisPositionsView
+            // teachingPositionControl
             // 
-            this.axisPositionsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.axisPositionsView.GroupName = "Axis Positions";
-            this.axisPositionsView.Location = new System.Drawing.Point(3, 17);
-            this.axisPositionsView.Name = "axisPositionsView";
-            this.axisPositionsView.Size = new System.Drawing.Size(620, 364);
-            this.axisPositionsView.TabIndex = 2;
+            this.teachingPositionControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
+            this.teachingPositionControl.Location = new System.Drawing.Point(12, 12);
+            this.teachingPositionControl.Name = "teachingPositionControl";
+            this.teachingPositionControl.ShowCancelButton = true;
+            this.teachingPositionControl.ShowSaveButton = true;
+            this.teachingPositionControl.Size = new System.Drawing.Size(517, 350);
+            this.teachingPositionControl.TabIndex = 10;
+            this.teachingPositionControl.UnitName = null;
             // 
-            // infomationView
+            // manualSequenceControl
             // 
-            this.infomationView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.infomationView.GroupName = "Infomation";
-            this.infomationView.Location = new System.Drawing.Point(3, 3);
-            this.infomationView.Name = "infomationView";
-            this.infomationView.Size = new System.Drawing.Size(310, 384);
-            this.infomationView.TabIndex = 0;
+            this.manualSequenceControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.manualSequenceControl.Location = new System.Drawing.Point(911, 12);
+            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(260, 200);
+            this.manualSequenceControl.Name = "manualSequenceControl";
+            this.manualSequenceControl.Size = new System.Drawing.Size(341, 350);
+            this.manualSequenceControl.TabIndex = 9;
             // 
-            // gbDigitalIO
+            // ChipLoader_Working
             // 
-            this.tableLayoutPanel.SetColumnSpan(this.gbDigitalIO, 2);
-            this.gbDigitalIO.Controls.Add(this.ioTableLayoutPanel);
-            this.gbDigitalIO.Location = new System.Drawing.Point(319, 393);
-            this.gbDigitalIO.Name = "gbDigitalIO";
-            this.gbDigitalIO.Size = new System.Drawing.Size(626, 384);
-            this.gbDigitalIO.TabIndex = 5;
-            this.gbDigitalIO.TabStop = false;
-            this.gbDigitalIO.Text = "Digital I/O";
-            // 
-            // ioTableLayoutPanel
-            // 
-            this.ioTableLayoutPanel.ColumnCount = 2;
-            this.ioTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.ioTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.ioTableLayoutPanel.Controls.Add(this.outputIoView, 1, 0);
-            this.ioTableLayoutPanel.Controls.Add(this.inputIoView, 0, 0);
-            this.ioTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ioTableLayoutPanel.Location = new System.Drawing.Point(3, 17);
-            this.ioTableLayoutPanel.Name = "ioTableLayoutPanel";
-            this.ioTableLayoutPanel.RowCount = 1;
-            this.ioTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.ioTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.ioTableLayoutPanel.Size = new System.Drawing.Size(620, 364);
-            this.ioTableLayoutPanel.TabIndex = 0;
-            // 
-            // outputIoView
-            // 
-            this.outputIoView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.outputIoView.GroupName = "Output";
-            this.outputIoView.Location = new System.Drawing.Point(313, 3);
-            this.outputIoView.Name = "outputIoView";
-            this.outputIoView.Size = new System.Drawing.Size(304, 358);
-            this.outputIoView.TabIndex = 4;
-            // 
-            // inputIoView
-            // 
-            this.inputIoView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.inputIoView.GroupName = "Input";
-            this.inputIoView.Location = new System.Drawing.Point(3, 3);
-            this.inputIoView.Name = "inputIoView";
-            this.inputIoView.Size = new System.Drawing.Size(304, 358);
-            this.inputIoView.TabIndex = 3;
-            // 
-            // sequencePanel
-            // 
-            this.sequencePanel.Controls.Add(null);
-            this.sequencePanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.sequencePanel.Location = new System.Drawing.Point(3, 393);
-            this.sequencePanel.Name = "sequencePanel";
-            this.sequencePanel.Size = new System.Drawing.Size(310, 384);
-            this.sequencePanel.TabIndex = 8;
-            // 
-            // inputStageSequenceControl
-            //
-            // 
-            // InputStageUnit_Working
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1264, 780);
-            this.Controls.Add(this.tableLayoutPanel);
-            this.Name = "InputStageUnit_Working";
-            this.Text = "InputCassetteLifter Unit Configuration";
-            this.tableLayoutPanel.ResumeLayout(false);
-            this.gbModuleUnit.ResumeLayout(false);
-            this.gbDigitalIO.ResumeLayout(false);
-            this.ioTableLayoutPanel.ResumeLayout(false);
-            this.sequencePanel.ResumeLayout(false);
+            this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.Controls.Add(this._Cameraviewer);
+            this.Controls.Add(this.dioControl);
+            this.Controls.Add(this.teachingPositionControl);
+            this.Controls.Add(this.manualSequenceControl);
+            this.Name = "ChipLoader_Working";
+            this.Text = "ChipLoader Working";
+            ((System.ComponentModel.ISupportInitialize)(this._Cameraviewer)).EndInit();
             this.ResumeLayout(false);
 
         }
 
-        #endregion
-
-        private void InitializeUI()
+        protected override void Dispose(bool disposing)
         {
-            try
-            {
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-        /// <summary>
-        /// CassetteElevator + WaferTransferArm 의 AxisDefinition DisplayName 을 axisListBoxItemsView 에 설정
-        /// </summary>
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            base.OnPaint(e);
+            if (disposing && (components != null)) components.Dispose();
+            base.Dispose(disposing);
         }
 
-        protected override void OnResize(EventArgs e)
-        {
-            base.OnResize(e);
-            this.Invalidate();
-        }
-
-        private TableLayoutPanel tableLayoutPanel;
-        private PropertyCollectionView infomationView;
-        private ListBoxItemsView sequenceView;
-        private PropertyCollectionView axisPositionsView;
-        private IOPropertyCollectionView inputIoView;
-        private IOPropertyCollectionView outputIoView;
-        private GroupBox gbDigitalIO;
-        private GroupBox gbModuleUnit;
-        private TableLayoutPanel ioTableLayoutPanel;
-        private Panel sequencePanel;
+        private ManualSequenceControl manualSequenceControl;
+        private TeachingPositionControl teachingPositionControl;
+        private DIOControl dioControl;
+        private Common.Vision.VisionImageViewer _Cameraviewer;
     }
 }

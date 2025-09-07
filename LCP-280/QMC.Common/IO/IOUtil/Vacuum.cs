@@ -10,6 +10,10 @@ namespace QMC.Common.IOUtil
         public string Name { get; }
         private readonly string _outKey, _okInKey;
 
+        // 새로 추가: 외부에서 직접 키 접근 가능 (리플렉션 제거 목적)
+        public string OutKey => _outKey;
+        public string OkInKey => _okInKey;
+
         public Vacuum(string name, string outKey, string okInKey) { Name = name; _outKey = outKey; _okInKey = okInKey; }
 
         public void On() => DIO.Out(_outKey, true);

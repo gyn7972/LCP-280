@@ -4,9 +4,7 @@ using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -17,14 +15,25 @@ namespace QMC.LCP_280.Process.Unit
             Loading,
             Unloading,
             Ready,
-            Home
-            // 필요시 추가
+            Home,
+            Pick,
+            Place
         }
+
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        // IO 추가 필요시 여기에 정의
+        // Offset (X,Y,T or Z axes depending) : positionName -> (t, pickZ, placeZ) but we keep generic dictionary with axis offsets
+        // Use same pattern as InputStage: store (dx, dy, dt) although here axes are T, PickZ, PlaceZ; we map generically by axis name.
+        public Dictionary<string, Dictionary<string, double>> Offsets { get; set; } = new Dictionary<string, Dictionary<string, double>>();
+
+        // Predictive control flags (mirroring InputStage)
+        public bool EnablePredictiveControl { get; set; } = false;
+        public double MoveDoneRemainDistance { get; set; } = 0.005;
+
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hard_inputs_backup = null; // reserved
         [JsonIgnore]
         private static readonly HardInputDef[] _hardInputs = new[]
         {
@@ -55,37 +64,32 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 12, Name = "LEFT ARM 4 VENT",   Disp = "Y050" }
         };
 
-        public InputDieTransferConfig() : base("InputDieTransferConfig")
-        {
-            //InitializeDefaultTeachingPositions();
-        }
+        public InputDieTransferConfig() : base("InputDieTransferConfig") { }
 
-        // enum 기반으로 기본 TeachingPosition 생성
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                var tp = TeachingPositions.FirstOrDefault(p => p.Name == posName);
-                if (tp == null)
+                if (TeachingPositions.Find(p => p.Name == posName) == null)
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
                         { "Left Tool T Axis", 0.0 },
-                        { "Left Pick Z Axis", 200.0 },
-                        { "Left Place Z Axis", 0.0 },
+                        { "Left Pick Z Axis", 50.0 },
+                        { "Left Place Z Axis", 50.0 },
                     };
-                    tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
-                    TeachingPositions.Add(tp);
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }
-                // 축 바인딩은 여기서 하지 말고!
+                if (!Offsets.ContainsKey(posName))
+                {
+                    Offsets[posName] = new Dictionary<string, double>();
+                }
             }
             Saveconfig();
         }
 
-        // 포지션 추가/업데이트
         public void SetTeachingPosition(TeachingPosition tp)
         {
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
@@ -95,50 +99,55 @@ namespace QMC.LCP_280.Process.Unit
                 exist.Description = tp.Description;
                 exist.ExtraInfo = tp.ExtraInfo;
             }
-            else
-            {
-                TeachingPositions.Add(tp);
-            }
+            else TeachingPositions.Add(tp);
+            if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = new Dictionary<string, double>();
             Saveconfig();
         }
 
-        // 포지션 조회
-        public TeachingPosition GetTeachingPosition(string name)
-            => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
-        // 저장: 축 정보(Axes) 제외하고 순수 데이터만 저장
+        public (double t, double pickZ, double placeZ) GetPositionWithOffset(string name)
+        {
+            var tp = GetTeachingPosition(name);
+            if (tp == null) return (0, 0, 0);
+            double t = tp.AxisPositions.TryGetValue("Left Tool T Axis", out var vt) ? vt : 0;
+            double pz = tp.AxisPositions.TryGetValue("Left Pick Z Axis", out var vpz) ? vpz : 0;
+            double plz = tp.AxisPositions.TryGetValue("Left Place Z Axis", out var vplz) ? vplz : 0;
+            if (Offsets.TryGetValue(name, out var offDict))
+            {
+                if (offDict.TryGetValue("Left Tool T Axis", out var ot)) t += ot;
+                if (offDict.TryGetValue("Left Pick Z Axis", out var opz)) pz += opz;
+                if (offDict.TryGetValue("Left Place Z Axis", out var oplz)) plz += oplz;
+            }
+            return (t, pz, plz);
+        }
+
+        public void SetOffset(string name, string axisName, double delta)
+        {
+            if (!Offsets.ContainsKey(name)) Offsets[name] = new Dictionary<string, double>();
+            Offsets[name][axisName] = delta;
+            Saveconfig();
+        }
+
         public int Saveconfig()
         {
-            // 축 정보 제외하고 TeachingPositions만 저장
             var purePositions = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-
-            // 임시로 TeachingPositions를 교체해서 저장
             var original = TeachingPositions;
             TeachingPositions = purePositions;
-            try
-            {
-                return Save();
-            }
-            finally
-            {
-                TeachingPositions = original;
-            }
+            try { return Save(); }
+            finally { TeachingPositions = original; }
         }
 
-        // 불러오기: 저장 데이터를 불러온 뒤, 런타임에 축 바인딩
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int result = Load();
             if (result != 0) return result;
-
-            // 각 TeachingPosition에 축 바인딩
             foreach (var tp in TeachingPositions)
-            {
-                tp.BindAxes(axisManager, "Unit"); // unitName = "Unit" (혹은 필요에 맞게)
-            }
-
+                tp.BindAxes(axisManager, "Unit");
+            foreach (var tp in TeachingPositions)
+                if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = new Dictionary<string, double>();
             return 0;
         }
     }

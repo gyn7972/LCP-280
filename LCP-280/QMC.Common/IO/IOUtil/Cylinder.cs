@@ -10,6 +10,12 @@ namespace QMC.Common.IOUtil
         public string Name { get; }
         private readonly string _fwdOutKey, _bwdOutKey, _fwdInKey, _bwdInKey;
 
+        // 키 직접 접근 프로퍼티 (리플렉션 제거 목적)
+        public string FwdOutKey => _fwdOutKey;
+        public string BwdOutKey => _bwdOutKey;
+        public string FwdInKey => _fwdInKey;
+        public string BwdInKey => _bwdInKey;
+
         public Cylinder(string name, string fwdOutKey, string bwdOutKey, string fwdInKey, string bwdInKey)
         { Name = name; _fwdOutKey = fwdOutKey; _bwdOutKey = bwdOutKey; _fwdInKey = fwdInKey; _bwdInKey = bwdInKey; }
 
