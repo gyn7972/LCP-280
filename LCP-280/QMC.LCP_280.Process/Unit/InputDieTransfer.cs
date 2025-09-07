@@ -15,6 +15,14 @@ namespace QMC.LCP_280.Process.Unit
         public InputDieTransferConfig InputDieTransferConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
 
+        // DryRun: motion 실제, IO 시뮬레이션
+        public bool DryRun { get; private set; }
+        public void SetDryRun(bool on) => DryRun = on;
+
+        // Sim IO States
+        private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, bool> _simInputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+
         public InputDieTransfer(InputDieTransferConfig config = null)
             : base("InputDieTransferConfig")
         {
@@ -30,48 +38,62 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var tp in InputDieTransferConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
             BindAxes();
-            // No cylinder mapping: only discrete vacuum/blow/vent outputs
         }
 
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
 
-        public void TeachCurrentPosition(string positionName, string description = null)
+        #region Teaching & Motion Helpers
+        public void TeachCurrentPosition(string name, string description = null)
         {
-            var axisPositions = new Dictionary<string, double>();
-            foreach (var axisPair in Axes)
-                axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            var tp = new TeachingPosition(positionName, axisPositions, description);
-            InputDieTransferConfig.SetTeachingPosition(tp);
+            var pos = new Dictionary<string, double>();
+            foreach (var kv in Axes) pos[kv.Key] = kv.Value.GetPosition();
+            InputDieTransferConfig.SetTeachingPosition(new TeachingPosition(name, pos, description));
         }
 
-        public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
+        public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
-            var tp = InputDieTransferConfig.GetTeachingPosition(positionName);
+            var tp = InputDieTransferConfig.GetTeachingPosition(name);
             if (tp == null) return -1;
-            int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
-            return result;
+            var (t, pz, plz) = InputDieTransferConfig.GetPositionWithOffset(name);
+            int rc = 0;
+            if (_toolT != null) rc |= _toolT.MoveAbs(t, vel > 0 ? vel : _toolT.Config.MaxVelocity, acc > 0 ? acc : _toolT.Config.RunAcc, dec > 0 ? dec : _toolT.Config.RunDec, jerk > 0 ? jerk : _toolT.Config.AccJerkPercent);
+            if (_pickZ != null) rc |= _pickZ.MoveAbs(pz, vel > 0 ? vel : _pickZ.Config.MaxVelocity, acc > 0 ? acc : _pickZ.Config.RunAcc, dec > 0 ? dec : _pickZ.Config.RunDec, jerk > 0 ? jerk : _pickZ.Config.AccJerkPercent);
+            if (_placeZ != null) rc |= _placeZ.MoveAbs(plz, vel > 0 ? vel : _placeZ.Config.MaxVelocity, acc > 0 ? acc : _placeZ.Config.RunAcc, dec > 0 ? dec : _placeZ.Config.RunDec, jerk > 0 ? jerk : _placeZ.Config.AccJerkPercent);
+            return rc;
         }
+
+        public bool InPosTeaching(string name)
+        {
+            var (t, pz, plz) = InputDieTransferConfig.GetPositionWithOffset(name);
+            return InPos(_toolT, t) && InPos(_pickZ, pz) && InPos(_placeZ, plz);
+        }
+
+        public void ApplyOffset(string positionName, string axisName, double delta)
+            => InputDieTransferConfig.SetOffset(positionName, axisName, delta);
+        #endregion
 
         #region Axis Helpers
         private MotionAxis _toolT, _pickZ, _placeZ;
-        public MotionAxis ToolT => _toolT;
-        public MotionAxis PickZ => _pickZ;
-        public MotionAxis PlaceZ => _placeZ;
+        public MotionAxis ToolT => _toolT; public MotionAxis PickZ => _pickZ; public MotionAxis PlaceZ => _placeZ;
         private void BindAxes()
         {
             Axes.TryGetValue("Left Tool T Axis", out _toolT);
             Axes.TryGetValue("Left Pick Z Axis", out _pickZ);
             Axes.TryGetValue("Left Place Z Axis", out _placeZ);
+            bool useInPos = !InputDieTransferConfig.EnablePredictiveControl;
+            foreach (var ax in new[] { _toolT, _pickZ, _placeZ })
+            {
+                if (ax == null) continue;
+                try
+                {
+                    var mi = ax.GetType().GetMethod("SetInPositionEnable");
+                    var mr = ax.GetType().GetMethod("SetInPositionRange");
+                    if (mi != null) mi.Invoke(ax, new object[] { useInPos });
+                    if (mr != null) mr.Invoke(ax, new object[] { InputDieTransferConfig.MoveDoneRemainDistance });
+                }
+                catch { }
+            }
         }
         public double GetTP(string tpName, string axisName)
         {
@@ -88,9 +110,13 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region IO Helpers
+        #region IO Helpers (DryRun aware)
         public bool ReadInput(string name)
         {
+            if (DryRun)
+            {
+                bool v; return _simInputs.TryGetValue(name, out v) && v;
+            }
             var hi = InputDieTransferConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -98,8 +124,10 @@ namespace QMC.LCP_280.Process.Unit
                 if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
             return false;
         }
+
         public bool WriteOutput(string name, bool on)
         {
+            if (DryRun) { _simOutputs[name] = on; return true; }
             var ho = InputDieTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -117,14 +145,14 @@ namespace QMC.LCP_280.Process.Unit
         public void SetArmVac(int armIndex, bool on) => SetIndexedOutput(VAC_NAMES, armIndex, on);
         public void SetArmBlow(int armIndex, bool on) => SetIndexedOutput(BLOW_NAMES, armIndex, on);
         public void SetArmVent(int armIndex, bool on) => SetIndexedOutput(VENT_NAMES, armIndex, on);
-        public void AllVacOff() { for (int i = 0; i < 4; i++) SetArmVac(i, false); }
-        public void AllBlowOff() { for (int i = 0; i < 4; i++) SetArmBlow(i, false); }
-        public void AllVentOff() { for (int i = 0; i < 4; i++) SetArmVent(i, false); }
+        public void AllVacOff() { for (int i = 0; i < VAC_NAMES.Length; i++) SetArmVac(i, false); }
+        public void AllBlowOff() { for (int i = 0; i < BLOW_NAMES.Length; i++) SetArmBlow(i, false); }
+        public void AllVentOff() { for (int i = 0; i < VENT_NAMES.Length; i++) SetArmVent(i, false); }
 
-        private void SetIndexedOutput(string[] arr, int armIdx, bool on)
+        private void SetIndexedOutput(string[] arr, int idx, bool on)
         {
-            if (armIdx < 0 || armIdx >= arr.Length) return;
-            WriteOutput(arr[armIdx], on);
+            if (idx < 0 || idx >= arr.Length) return;
+            WriteOutput(arr[idx], on);
         }
         #endregion
     }

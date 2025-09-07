@@ -300,16 +300,6 @@ namespace QMC.LCP_280.Process.Unit
             this.rdoContinuous.Text = "Continuous";
             this.rdoContinuous.CheckedChanged += new System.EventHandler(this.rdoContinuous_CheckedChanged);
             // 
-            // rdoStep
-            // 
-            this.rdoStep.AutoSize = true;
-            this.rdoStep.Location = new System.Drawing.Point(120, 18);
-            this.rdoStep.Name = "rdoStep";
-            this.rdoStep.Size = new System.Drawing.Size(48, 16);
-            this.rdoStep.TabIndex = 0;
-            this.rdoStep.Text = "Step";
-            this.rdoStep.CheckedChanged += new System.EventHandler(this.rdoStep_CheckedChanged);
-            // 
             // stepLine
             // 
             this.stepLine.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
@@ -323,11 +313,21 @@ namespace QMC.LCP_280.Process.Unit
             this.stepLine.TabIndex = 1;
             this.stepLine.WrapContents = false;
             // 
+            // rdoStep
+            // 
+            this.rdoStep.AutoSize = true;
+            this.rdoStep.Location = new System.Drawing.Point(3, 3);
+            this.rdoStep.Name = "rdoStep";
+            this.rdoStep.Size = new System.Drawing.Size(48, 16);
+            this.rdoStep.TabIndex = 0;
+            this.rdoStep.Text = "Step";
+            this.rdoStep.CheckedChanged += new System.EventHandler(this.rdoStep_CheckedChanged);
+            // 
             // nudStep
             // 
             this.nudStep.DecimalPlaces = 3;
             this.nudStep.Enabled = false;
-            this.nudStep.Location = new System.Drawing.Point(62, 2);
+            this.nudStep.Location = new System.Drawing.Point(54, 2);
             this.nudStep.Margin = new System.Windows.Forms.Padding(0, 2, 6, 2);
             this.nudStep.Maximum = new decimal(new int[] {
             500,
@@ -634,6 +634,7 @@ namespace QMC.LCP_280.Process.Unit
             this.grpMoveMode.ResumeLayout(false);
             this.grpMoveMode.PerformLayout();
             this.stepLine.ResumeLayout(false);
+            this.stepLine.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudStep)).EndInit();
             this.presetRow.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);

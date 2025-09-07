@@ -63,10 +63,13 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Axis Helpers
         private MotionAxis _axZ;
+        private MotionAxis _axPinZ;
         public MotionAxis AxisZ => _axZ;
+        public MotionAxis AxisPinZ => _axPinZ;
         private void BindAxes()
         {
-            Axes.TryGetValue("Eject Pin Z Axis", out _axZ);
+            Axes.TryGetValue("Eject Pin Z Axis", out _axPinZ);
+            Axes.TryGetValue("Eject Z Axis", out _axZ);
         }
         public double GetTP(string tpName, string axisName)
         {

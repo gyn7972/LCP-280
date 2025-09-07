@@ -76,6 +76,18 @@
     <Compile Include="CassetteMapView.Designer.cs">
       <DependentUpon>CassetteMapView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\DIOControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\DIOControl.Designer.cs">
+      <DependentUpon>DIOControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\ManualSequenceControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\ManualSequenceControl.Designer.cs">
+      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\JogControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -90,7 +102,19 @@
     </Compile>
     <Compile Include="Component\PatternMatchingRecipeStore.cs" />
     <Compile Include="Component\PatternMatchingRunner.cs" />
+    <Compile Include="Component\SeqInputChipAlignVision.cs" />
+    <Compile Include="Component\SeqInputChipMappingVision.cs" />
+    <Compile Include="Component\SeqInputDieTransferChipDown.cs" />
+    <Compile Include="Component\SeqInputDieTransferChipUp.cs" />
+    <Compile Include="Component\SeqInputStage.cs" />
+    <Compile Include="Component\SeqWaferLocalScan.cs" />
     <Compile Include="Component\TeachingPosition.cs" />
+    <Compile Include="Component\TeachingPositionControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\TeachingPositionControl.Designer.cs">
+      <DependentUpon>TeachingPositionControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
     <Compile Include="Sequence.cs">
@@ -141,7 +165,6 @@
     <Compile Include="Unit\ChipLoading_Working.Designer.cs">
       <DependentUpon>ChipLoading_Working.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\InputStageSequence.cs" />
     <Compile Include="Unit\InputStageUnit_Working.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -300,12 +323,26 @@
     <Compile Include="WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Work\ChipLoader.cs" />
+    <Compile Include="Work\ChipUnloder.cs" />
+    <Compile Include="Work\Process.cs" />
+    <Compile Include="Work\WaferRing.cs" />
+    <Compile Include="Work\WaferBin.cs" />
+    <EmbeddedResource Include="Component\DIOControl.resx">
+      <DependentUpon>DIOControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\ManualSequenceControl.resx">
+      <DependentUpon>ManualSequenceControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Component\JogControl.resx">
       <DependentUpon>JogControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\PatternMatchingDialog.resx">
       <DependentUpon>PatternMatchingDialog.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\TeachingPositionControl.resx">
+      <DependentUpon>TeachingPositionControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

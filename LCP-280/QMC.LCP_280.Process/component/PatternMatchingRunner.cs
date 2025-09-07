@@ -231,7 +231,7 @@ namespace QMC.LCP_280.Process
 
         private PatternMatchingResult _lastRawResult;          // 마지막 RawResult 저장 (재표시용)
         private int _lastReferenceIndex = -1;                   // 마지막 대표 매치 인덱스
-        private Font _indexFont = new Font(FontFamily.GenericSansSerif, 10f, FontStyle.Bold);
+        private Font _indexFont = new Font(FontFamily.GenericSansSerif, 15f, FontStyle.Bold);
         // Viewer management (restored)
         private readonly object _viewersLock = new object();
         private readonly HashSet<VisionImageViewer> _viewers = new HashSet<VisionImageViewer>();

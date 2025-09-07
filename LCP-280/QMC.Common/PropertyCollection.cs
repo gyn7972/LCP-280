@@ -39,6 +39,22 @@ namespace QMC.Common
                 IntProperty intProp = new IntProperty(title, intValue);
                 _properties.Add(intProp);
             }
+            else if (obj is long longValue)
+            {
+                LongProperty longProp = new LongProperty(title, longValue);
+                _properties.Add(longProp);
+            }
+            else if (obj is float floatValue)
+            {
+                FloatProperty floatProp = new FloatProperty(title, floatValue);
+                _properties.Add(floatProp);
+            }
+            else if (obj is double doubleValue)
+            {
+                // TeachingPosition.AxisPositions (Dictionary<string,double>) 지원
+                DoubleProperty doubleProp = new DoubleProperty(title, doubleValue);
+                _properties.Add(doubleProp);
+            }
             else if (obj is string strValue)
             {
                 StringProperty stringProp = new StringProperty(title, strValue);
@@ -73,8 +89,47 @@ namespace QMC.Common
             {
                 if (prop is IntProperty)
                     return (T)prop.Value;
+                // 다른 숫자 타입을 int로 변환 허용
+                if (prop is LongProperty lp)
+                    return (T)(object)checked((int)lp.Value);
+                if (prop is FloatProperty fp)
+                    return (T)(object)(int)Math.Round(fp.Value);
+                if (prop is DoubleProperty dp)
+                    return (T)(object)(int)Math.Round(dp.Value);
                 else
                     throw new InvalidCastException($"Property '{title}' is not of type IntProperty.");
+            }
+            else if (type == typeof(long))
+            {
+                if (prop is LongProperty)
+                    return (T)prop.Value;
+                if (prop is IntProperty ip)
+                    return (T)(object)(long)ip.Value;
+                if (prop is DoubleProperty dp2)
+                    return (T)(object)(long)Math.Round(dp2.Value);
+                throw new InvalidCastException($"Property '{title}' is not of a compatible integer property type.");
+            }
+            else if (type == typeof(float))
+            {
+                if (prop is FloatProperty)
+                    return (T)prop.Value;
+                if (prop is DoubleProperty dp3)
+                    return (T)(object)(float)dp3.Value;
+                if (prop is IntProperty ip2)
+                    return (T)(object)(float)ip2.Value;
+                throw new InvalidCastException($"Property '{title}' is not of a compatible float property type.");
+            }
+            else if (type == typeof(double))
+            {
+                if (prop is DoubleProperty)
+                    return (T)prop.Value;
+                if (prop is FloatProperty fp2)
+                    return (T)(object)(double)fp2.Value;
+                if (prop is IntProperty ip3)
+                    return (T)(object)(double)ip3.Value;
+                if (prop is LongProperty lp2)
+                    return (T)(object)(double)lp2.Value;
+                throw new InvalidCastException($"Property '{title}' is not of a compatible double property type.");
             }
             else if (type == typeof(string))
             {
@@ -83,7 +138,7 @@ namespace QMC.Common
                 else if (prop is ComboBoxProperty)
                     return (T)prop.Value;
                 else
-                    throw new InvalidCastException($"Property '{title}' is not of type StringProperty or ComboBoxProperty.");
+                    return (T)(object)(prop.Value != null ? prop.Value.ToString() : string.Empty); // fallback 문자열 변환
             }
             else if (type.IsEnum)
             {

@@ -1,108 +1,263 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
+﻿using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Sequences; // for ManualSequenceControl
+using System;
+using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Spectrometer;
 
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// ChipLoading_Working Unit의 Config 폼
+    /// ChipLoading Working Form - Provides Teaching Move / Axis Move / IO Control for
+    /// InputStage, InputStageEjector, InputDieTransfer units.
+    /// 패널을 자유롭게 이동/리사이즈 할 수 있는 layout edit 기능(chkEditLayout) 포함.
     /// </summary>
-    public partial class ChipLoading_Working : Form
+    public partial class ChipLoader_Working : Form
     {
-        private const string UNIT_NAME = "ChipLoading_Working";
+        private const string Work_NAME = "ChipLoader";
         private Equipment Equipment => Equipment.Instance;
-        private InputCassetteLifter InputCassetteLifterUnit { get; set; }
-        private readonly Size _designerSize;
-        private bool _sizeMismatchWarned;
+        
+        private SeqInputStage SeqInputStage { get; set; }
+        private SeqInputChipAlignVision _seqAlignVision;
+        private SeqInputChipMappingVision _seqMappingVision;
+        private SeqInputDieTransferChipUp _seqDiePick;
+        private SeqInputDieTransferChipDown _seqDiePlace;
 
-        public ChipLoading_Working()
+        private InputStage InputStageUnit { get; set; }
+        private InputStageEjector InputStageEjectorUnit { get; set; }
+        private InputDieTransfer InputDieTransferUnit { get; set; }
+
+        private bool _isLayoutEditMode = false;
+
+        // === 새 기본 생성자 (FormManager / 디자이너 반사 생성 대응) ===
+        public ChipLoader_Working() : this(
+            TryGetUnit<InputStage>("InputStage"),
+            TryGetUnit<InputStageEjector>("InputStageEjector"),
+            TryGetUnit<InputDieTransfer>("InputDieTransfer"))
+        {
+            // 기본 생성자는 상위 생성자에서 모든 작업을 처리
+        }
+
+        // 기존 의존성 주입 생성자 유지
+        public ChipLoader_Working(InputStage inputStage, InputStageEjector inputStageEjector, InputDieTransfer inputDieTransfer)
         {
             InitializeComponent();
-            this.SuspendLayout();
-            _designerSize = this.Size;
-            InitializeUI();
-            this.ResumeLayout(true);
+            InputStageUnit = inputStage;
+            InputStageEjectorUnit = inputStageEjector;
+            InputDieTransferUnit = inputDieTransfer;
+            Load += ChipLoader_Working_Load;
+            FormClosing += ChipLoader_Working_FormClosing;
 
-            Console.WriteLine("✅ InputCassetteLifterUnit_Working 생성자 완료");
         }
 
-        private void InitializeUnit()
+        private static T TryGetUnit<T>(string unitName) where T : class
         {
             try
             {
-                if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
-                    InputCassetteLifterUnit = unit as InputCassetteLifter;
+                var eq = Equipment.Instance;
+                if (eq?.Units != null && eq.Units.TryGetValue(unitName, out var u))
+                    return u as T;
+            }
+            catch { }
+            return null;
+        }
 
-                if (InputCassetteLifterUnit == null)
+        private void ChipLoader_Working_Load(object sender, System.EventArgs e)
+        {
+            Text = $"{Work_NAME} Working";
+
+            // TeachingPositionControl 일반화 버전 사용 (RegisterUnit)
+            try
+            {
+                if (teachingPositionControl != null)
                 {
-                    MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
-                        "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    teachingPositionControl.ClearUnits();
+
+                    if (InputStageUnit != null)
+                    {
+                        teachingPositionControl.RegisterUnit(
+                            "InputStage",
+                            InputStageUnit,
+                            () => InputStageUnit.InputStageConfig?.TeachingPositions,
+                            (name, vel) => InputStageUnit.MoveToTeachingPosition(name, vel: vel),
+                            tp => InputStageUnit.InputStageConfig?.SetTeachingPosition(tp),
+                            autoReload: false);
+                    }
+
+                    if (InputStageEjectorUnit != null)
+                    {
+                        teachingPositionControl.RegisterUnit(
+                            "InputStageEjector",
+                            InputStageEjectorUnit,
+                            () => InputStageEjectorUnit.InputStageEjectorConfig?.TeachingPositions,
+                            (name, vel) => InputStageEjectorUnit.MoveToTeachingPosition(name, vel: vel),
+                            tp => InputStageEjectorUnit.InputStageEjectorConfig?.SetTeachingPosition(tp),
+                            autoReload: false);
+                    }
+
+                    if (InputDieTransferUnit != null)
+                    {
+                        teachingPositionControl.RegisterUnit(
+                            "InputDieTransfer",
+                            InputDieTransferUnit,
+                            () => InputDieTransferUnit.InputDieTransferConfig?.TeachingPositions,
+                            (name, vel) => InputDieTransferUnit.MoveToTeachingPosition(name, vel: vel),
+                            tp => InputDieTransferUnit.InputDieTransferConfig?.SetTeachingPosition(tp),
+                            autoReload: false);
+                    }
+
+                    teachingPositionControl.SetSaveCancelVisible(false, false);
+
+                    teachingPositionControl.RefreshData();
+                }
+            }
+            catch
+            {
+                // 구버전 컨트롤(일반화 이전) 호환: 기존 SetUnits 호출 (예외 무시)
+                try { teachingPositionControl?.SetUnits(InputStageUnit, InputStageEjectorUnit, InputDieTransferUnit, true); } catch { }
+            }
+
+            // DIO Control 바인딩 (Cylinder/Vacuum I/O)
+            try 
+            { 
+                if (InputStageUnit != null)
+                {
+                    // Pass delegates (lambda) 대신에 즉시 호출하지 말고
+                    // Vacuum (Input Stage)
+                    dioControl?.BindDIOInput(() => InputStageUnit.IsVacuum(), "Vacuum", "StageVac");
+                    dioControl?.BindDIOOutput(
+                        () => InputStageUnit.VacuumOn(),
+                        () => InputStageUnit.VacuumOff(),
+                        "Vacuum ON/OFF",
+                        () => InputStageUnit.IsVacuum(),
+                        "StageVacCtrl");
+
+                    // Clamp Lift Cylinder (Extend/ Retract)
+                    dioControl?.BindDIOOutput(
+                        () => InputStageUnit.ClampLiftUp(),
+                        () => InputStageUnit.ClampLiftDown(),
+                        "ClampLift EXT/RET",
+                        () => InputStageUnit.IsClamp(),
+                        "StageClamp"); // state: use clamp up sensor
+                    dioControl?.BindDIOInput(() => InputStageUnit.IsClamp(), "ClampLift UP Sns", "StageClampUp");
+                    dioControl?.BindDIOInput(() => InputStageUnit.IsClampDown(), "ClampLift DOWN Sns", "StageClampDn");
+
+                    // Expander Up/Down Cylinder
+                    dioControl?.BindDIOOutput(
+                        () => InputStageUnit.ExpanderUp(),
+                        () => InputStageUnit.ExpanderDown(),
+                        "Expander UP/DOWN",
+                        () => InputStageUnit.IsExpanderUp(),
+                        "StageExp");
+                    dioControl?.BindDIOInput(() => InputStageUnit.IsExpanderUp(), "Expander UP Sns", "StageExpUp");
+                    dioControl?.BindDIOInput(() => InputStageUnit.IsExpanderDown(), "Expander DOWN Sns", "StageExpDn");
+
+                }
+                else 
+                    dioControl?.BindUnits(InputStageUnit, InputStageEjectorUnit, InputDieTransferUnit); 
+            } 
+            catch { }
+
+            // Camera viewer binding
+            try
+            {
+                if (_Cameraviewer != null && InputStageUnit?.StageCamera != null)
+                {
+                    if (_Cameraviewer.Camera != InputStageUnit.StageCamera)
+                        _Cameraviewer.Camera = InputStageUnit.StageCamera;
+                    try { InputStageUnit.StageCamera.StartLive(); } catch { }
+                    try { _Cameraviewer.StartUpdateTask(); } catch { }
+                }
+            }
+            catch { }
+
+            InitSequences();
+        }
+
+        private void InitSequences()
+        {
+            try
+            {
+                if (manualSequenceControl != null)
+                {
+                    manualSequenceControl.ClearSequences();
                 }
 
-                Console.WriteLine($"{UNIT_NAME} Unit 연결 완료");
+                // InputStage main sequence
+                if (InputStageUnit != null)
+                {
+                    if (SeqInputStage == null)
+                        SeqInputStage = new SeqInputStage(InputStageUnit);
+
+                    manualSequenceControl?.RegisterSequence(
+                        "InputStage",
+                        SeqInputStage,
+                        () => Enum.GetNames(typeof(SeqInputStage.Step)),
+                        step => SeqInputStage.StartSingle(step),
+                        idx => Enum.GetName(typeof(SeqInputStage.Step), idx),
+                        autoSelect: true);
+                }
+
+                // Align Vision sequence (manual / single steps not exposed -> run whole sequence)
+                if (InputStageUnit != null)
+                {
+                    if (_seqAlignVision == null)
+                        _seqAlignVision = new SeqInputChipAlignVision(InputStageUnit);
+                    manualSequenceControl?.RegisterSequence(
+                        "AlignVision",
+                        _seqAlignVision,
+                        () => SeqInputChipAlignVision.GetStepNames(),
+                        step => _seqAlignVision.StartSingle(step),
+                        idx => Enum.GetName(typeof(SeqInputChipAlignVision.Step), idx));
+                }
+
+                // Mapping Vision sequence
+                if (InputStageUnit != null)
+                {
+                    if (_seqMappingVision == null)
+                        _seqMappingVision = new SeqInputChipMappingVision(InputStageUnit);
+                    manualSequenceControl?.RegisterSequence(
+                        "MappingVision",
+                        _seqMappingVision,
+                        () => SeqInputChipMappingVision.GetStepNames(),
+                        step => _seqMappingVision.StartSingle(step),
+                        idx => Enum.GetName(typeof(SeqInputChipMappingVision.Step), idx));
+                }
+
+                // Die Transfer Pick (Chip Up)
+                if (InputDieTransferUnit != null)
+                {
+                    if (_seqDiePick == null)
+                        _seqDiePick = new SeqInputDieTransferChipUp(InputDieTransferUnit);
+                    manualSequenceControl?.RegisterSequence(
+                        "DiePick",
+                        _seqDiePick,
+                        () => Enum.GetNames(typeof(SeqInputDieTransferChipUp.Step)),
+                        step => {
+                            try { return _seqDiePick.Start(); } catch { return false; }
+                        },
+                        idx => Enum.GetName(typeof(SeqInputDieTransferChipUp.Step), idx));
+                }
+
+                // Die Transfer Place (Chip Down)
+                if (InputDieTransferUnit != null)
+                {
+                    if (_seqDiePlace == null)
+                        _seqDiePlace = new SeqInputDieTransferChipDown(InputDieTransferUnit);
+                    manualSequenceControl?.RegisterSequence(
+                        "DiePlace",
+                        _seqDiePlace,
+                        () => Enum.GetNames(typeof(SeqInputDieTransferChipDown.Step)),
+                        step => { try { return _seqDiePlace.Start(); } catch { return false; } },
+                        idx => Enum.GetName(typeof(SeqInputDieTransferChipDown.Step), idx));
+                }
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Unit 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            catch { }
         }
 
-        private void button_Test_Click(object sender, EventArgs e)
+        private void ChipLoader_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
-            TestGyn testGyn = new TestGyn();
-            testGyn.ShowDialog();
-        }
-
-        public void SetPanelSize(int width, int height)
-        {
-            // 디자이너 값과 다른 경우 경고(1회)
-            if (!_sizeMismatchWarned && (width != _designerSize.Width || height != _designerSize.Height))
-            {
-                string formName = this.GetType().Name;
-                string msg =
-                    $"폼: {formName}\n" +
-                    $"디자이너 크기: {_designerSize.Width} x {_designerSize.Height}\n" +
-                    $"전달 크기(SetPanelSize): {width} x {height}\n\n" +
-                    "크기가 일치하지 않습니다.";
-#if DEBUG
-                Debug.WriteLine($"[SizeMismatch] {msg}");
-#endif
-                try { MessageBox.Show(this, msg, "크기 불일치", MessageBoxButtons.OK, MessageBoxIcon.Warning); } catch { /* ignore */ }
-                _sizeMismatchWarned = true;
-            }
-
-            try
-            {
-                this.SuspendLayout();
-                this.Size = new Size(width, height);
-                this.Invalidate();
-                this.Update();
-            }
-            finally
-            {
-                this.ResumeLayout(true);
-            }
-
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Working)}.SetPanelSize → {width}x{height}");
-        }
-
-        private void AxispositonListBoxItemsView_Load(object sender, EventArgs e)
-        {
-        }
-
-        // (옵션) 저장 시 텍스트박스 → PropertyBase에 커밋하고 사용
-        private void ApplyProperties()
-        {
-            // 텍스트 변경을 즉시 반영하도록 바인딩되어 있지만,
-            // 명시 커밋이 필요할 때 호출
-
-            // _lifterPropView.GetCurrentProperties()로 현재 컬렉션을 얻어
-            // 모델/설비에 반영하는 로직을 추가 가능
+            try { SeqInputStage?.Stop(); } catch { }
         }
     }
 }
