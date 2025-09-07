@@ -1,4 +1,5 @@
 ﻿using QMC.Common.Component;
+using QMC.Common.PKGTester;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
@@ -11,10 +12,7 @@ using System.Windows.Forms;
 
 namespace QMC.Common.Keithley
 {
-    /// <summary>
-    /// Keithley Sourcemeter 클래스입니다.
-    /// </summary>
-    public class KeithleySourcemeter : BaseComponent
+    public class KeithleySourcemeter : BaseComponent, IDisposable
     {
         #region Defines
         public enum SMUInstrumentCategory
@@ -27,7 +25,8 @@ namespace QMC.Common.Keithley
 
         #region Field
         private string identification = "";
-        
+        private List<TestConditionItem> testItems = new List<TestConditionItem>();
+        private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
         #endregion
 
         #region Property
@@ -37,6 +36,7 @@ namespace QMC.Common.Keithley
         public string ModelName { get; private set; }
         public string SerialNo { get; private set; }
         public string FirmwareRevision { get; private set; }
+        public IDictionary<string, TestItemResult> Results => results;
         #endregion
 
         #region Constructor
@@ -51,6 +51,35 @@ namespace QMC.Common.Keithley
                 { "smua", new KeithleySourcemeterChannel("smua", this) },
                 //{ "smub", new KeithleySourcemeterChannel("smub", this) },
             };
+        }
+        #endregion
+
+        #region IDisposable
+        private bool disposed = false;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        private void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    // Dispose managed resources
+                    if (Communicator != null)
+                    {
+                        if (Communicator.IsConnected)
+                        {
+                            Communicator.CloseSession();
+                        }
+                        Communicator = null;
+                    }
+                }
+                // Dispose unmanaged resources
+                disposed = true;
+            }   
         }
         #endregion
 
@@ -96,7 +125,7 @@ namespace QMC.Common.Keithley
                 foreach (var item in Channels)
                 {
                     var channel = item.Value;
-                    if (channel.ApplyConfig() != 0)
+                    if (!channel.ApplyConfig())
                     {
                         throw new InvalidOperationException($"Failed to apply channel [{channel.Name}] config.");
                     }
@@ -114,6 +143,190 @@ namespace QMC.Common.Keithley
             return 0;
         }
         #endregion
+
+        #region Test Item Methods
+        public void ClearTestItems()
+        {
+            testItems.Clear();
+            results.Clear();
+        }   
+        public bool AddTestItem(TestConditionItem item)
+        {
+            if (item == null)
+                return false;
+            if (item.Type.GetCategory() != TestItemCategory.Electrical)
+                return false;
+
+            testItems.Add(item);
+            results.Add(item.Name, new TestItemResult());
+            return true;
+        }
+        public bool BuildTestCommands()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
+                channel.ClearCommands();
+                foreach (var item in testItems)
+                {
+                    KeithleySourcemeterChannel.ChannelCommand command = new KeithleySourcemeterChannel.ChannelCommand();
+                    switch (item.Type)
+                    {
+                        case TestItemType.VF:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureV;
+                                command.SourceValue = item.SourceValue;
+                                command.SourceTime = item.SourceTime;
+                                command.SourceLimit = item.SourceLimit;
+                                command.SourceRange = GetISourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetVMeasureRange(command.SourceLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.VR:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureV;
+                                command.SourceValue = item.SourceValue * -1.0;
+                                command.SourceTime = item.SourceTime;
+                                command.SourceLimit = item.SourceLimit;
+                                command.SourceRange = GetISourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetVMeasureRange(command.SourceLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.IF:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureI;
+                                command.SourceValue = item.SourceValue;
+                                command.SourceTime = item.SourceTime;
+                                command.SourceLimit = item.SourceLimit;
+                                command.SourceRange = GetVSourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetIMeasureRange(command.SourceLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.IR:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureI;
+                                command.SourceValue = item.SourceValue * -1;
+                                command.SourceTime = item.SourceTime;
+                                command.SourceLimit = item.SourceLimit;
+                                command.SourceRange = GetVSourceRange(command.SourceValue);
+                                command.MeasureTime = item.MeasureTime;
+                                command.MeasureRange = GetIMeasureRange(command.SourceLimit);
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        default:
+                            throw new InvalidOperationException($"Not supported test item type. (Type: {item.Type})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            return true;
+        }
+        public bool GetResultProcess()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
+
+                if (channel.BufferDatas.Length != testItems.Count)
+                {
+                    throw new InvalidOperationException($"Data count mismatch. (Expected: {testItems.Count}, Actual: {channel.BufferDatas.Length})");
+                }
+
+                // Data assign
+                for (int i = 0; i < channel.BufferDatas.Length; i ++)
+                {
+                    TestConditionItem item = testItems[i];
+                    TestItemResult itemResult = results[item.Name];
+
+                    double value = double.Parse(channel.BufferDatas[i]);
+                    switch (testItems[i].Type)
+                    {
+                        case TestItemType.VF:
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "V";
+                            break;
+                        case TestItemType.VR:
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "V";
+                            break;
+                        case TestItemType.IF:
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "A";
+                            break;
+                        case TestItemType.IR:
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "A";
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                foreach (var key in results.Keys.ToList())
+                {
+                    results[key].Reset();
+                }
+
+                Log.Write(ex);
+                return false;
+            }
+            return true;
+        }
+        #endregion
+
+        public int ApplyParameter()
+        {
+            return 0;
+        }
+        public int Measure()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = Channels["smua"];
+
+                if (!channel.RunMeasureCommands())
+                    throw new Exception("Failed to run measure commands.");
+
+                StopWatch sw = new StopWatch();
+                sw.Start();
+
+                while (!channel.WaitComplete())
+                {
+                    if (sw.Elapsed.Milliseconds >= Config.MeasureTimeout)
+                        throw new Exception("Measurement timeout occurred.");
+
+                    Thread.Sleep(10);
+                }
+
+                if (!channel.ReadBufferData())
+                    throw new Exception("Failed to read buffer data.");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
 
         // Script Methods
         #region Script Methods

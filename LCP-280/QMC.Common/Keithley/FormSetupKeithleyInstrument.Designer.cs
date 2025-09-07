@@ -92,6 +92,7 @@
             this.Controls.Add(this.listBoxResource);
             this.Controls.Add(this.buttonSearch);
             this.Controls.Add(this.comboBoxInterface);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "FormSetupKeithleyInstrument";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Keithley Resource Manager";

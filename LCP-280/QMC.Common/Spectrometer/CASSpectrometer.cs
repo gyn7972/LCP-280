@@ -1,5 +1,6 @@
 ﻿using InstrumentSystems.CAS4;
 using QMC.Common.Component;
+using QMC.Common.PKGTester;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -90,34 +91,26 @@ namespace QMC.Common.Spectrometer
     /// <summary>
     /// National Instruments사 Spectrometer(CAS) 클래스입니다.
     /// </summary>
-    public class CASSpectrometer : BaseComponent
+    public class CASSpectrometer : BaseComponent, IDisposable
     {
         #region Field
         private int deviceId;
         private List<CASSpectrometerDensityFilter> densityFilterList;
-        private CASSpectrometerResult result;
-        private CASSpectrometerSpectrum spectrum;
+        private CASSpectrometerResult measureData;
+        private CASSpectrometerSpectrum spectrumData;
+
+        private List<TestConditionItem> testItems = new List<TestConditionItem>();
+        private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
+        private string intensityUnit = ""; // 이건 dpidCalibrationUnit 데이터를 받아서 갱신할 필요 있다...
         #endregion
 
         #region Property
         public new CASSpectrometerConfig Config { get; private set; }
-        public int DeviceId
-        {
-            get { return deviceId; }
-        }
-        public List<CASSpectrometerDensityFilter> DensityFilterList
-        {
-            get { return densityFilterList; }
-        }
-        public CASSpectrometerResult Result
-        {
-            get { return result; }
-        }
-        public CASSpectrometerSpectrum Spectrum
-        {
-            get { return spectrum; }
-        }
-        
+        public int DeviceId => deviceId;
+        public List<CASSpectrometerDensityFilter> DensityFilterList => densityFilterList;
+        public CASSpectrometerResult MeasureData => measureData;
+        public CASSpectrometerSpectrum SpectrumData => spectrumData;
+        public IDictionary<string, TestItemResult> Results => results;
         #endregion
 
         #region Constructor
@@ -125,119 +118,321 @@ namespace QMC.Common.Spectrometer
         {
             deviceId = -1; // Default value for uninitialized device ID
             densityFilterList = new List<CASSpectrometerDensityFilter>();
-            result = new CASSpectrometerResult();
-            spectrum = new CASSpectrometerSpectrum();
+            measureData = new CASSpectrometerResult();
+            spectrumData = new CASSpectrometerSpectrum();
 
             Config = new CASSpectrometerConfig(name);
         }
+        #endregion
+
+        #region IDisposable
+        private bool disposed = false;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        private void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    // Dispose managed resources
+                    TerminateDevice();
+                    Config = null;
+                    measureData = null;
+                    spectrumData = null;
+                    if (densityFilterList != null)
+                    {
+                        densityFilterList.Clear();
+                        densityFilterList = null;
+                    }
+                }
+                // Free unmanaged resources if any
+                disposed = true;
+            }
+        }
+        #endregion
+
+        #region Event
+        public delegate void DeviceEventHandler(object sender);
+
+        public event DeviceEventHandler OnDeviceCreated;
+        public event DeviceEventHandler OnDeviceInitialized;
+        public event DeviceEventHandler OnDeviceTerminated;
+        public event DeviceEventHandler OnMeasureCompleted;
         #endregion
 
         #region Override Methods
         public override int Initialize()
         {
             int ret = 0;
-            if (IsCreated())
+            do
             {
-                OnTerminateDevice();
+                if (!IsCreated())
+                {
+                    TerminateDevice();
+                }
+                if (!CreateDevice())
+                {
+                    ret = -1;
+                    break;
+                }
+                if (!InitializeDevice())
+                {
+                    ret = -1;
+                    break;
+                }
             }
-
-            if (!OnCreateDevice())
-            {
-                return -1;
-            }
-
-            if (!OnInitDevice())
-            {
-                return -1;
-            }
-
+            while (false);
             return ret;
         }
+        #endregion
 
-        public override int Create()
+        #region Test Item Methods
+        public void ClearTestItems()
         {
-            int ret = 0;
-            if (!OnCreateDevice())
-            {
-                ret = -1;
-            }
-            return ret;
+            testItems.Clear();
+            results.Clear();
         }
-
-        public override void Close()
+        public bool AddTestItem(TestConditionItem item)
         {
-            OnTerminateDevice();
+            if (item == null)
+                return false;
+            if (item.Type.GetCategory() != TestItemCategory.Optical)
+                return false;
+
+            testItems.Add(item);
+            results.Add(item.Name, new TestItemResult());
+            return true;
+        }
+        public bool BuildTestCommands()
+        {
+            try
+            {
+                // Do something
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            return true;
+        }
+        public bool GetResultProcess()
+        {
+            try
+            {
+                foreach (var item in testItems)
+                {
+                    TestItemResult itemResult = results[item.Name];
+
+                    double value = 0;
+                    switch (item.Type)
+                    {
+                        case TestItemType.RadInt:
+                            value = measureData.RadInt;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = measureData.RadIntUnit;
+                            break;
+                        case TestItemType.PhotInt:
+                            value = measureData.PhotInt;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = MeasureData.PhotIntUnit;
+                            break;
+                        case TestItemType.WP:
+                            value = measureData.WP;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.FWHM:
+                            value = measureData.FWHM;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.CIEX:
+                            value = measureData.CIEX;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEY:
+                            value = measureData.CIEY;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEZ:
+                            value = measureData.CIEZ;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEU:
+                            value = measureData.CIEU;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEV1976:
+                            value = measureData.CIEV1976;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CIEV1960:
+                            value = measureData.CIEV1960;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.LambdaDom:
+                            value = measureData.LambdaDom;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.Purity:
+                            value = measureData.Purity;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CCT:
+                            value = measureData.CCT;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.CRI:
+                            value = measureData.CRI;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.Centroid:
+                            value = measureData.Centroid;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = "nm"; // Manual 참조
+                            break;
+                        case TestItemType.StimulusX:
+                            value = measureData.StimulusX;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.StimulusY:
+                            value = measureData.StimulusY;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.StimulusZ:
+                            value = measureData.StimulusZ;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                        case TestItemType.PickValue:
+                            value = measureData.StimulusX;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = intensityUnit;
+                            break;
+                        case TestItemType.ADC:
+                            value = measureData.ADC;
+                            itemResult.RawData = value;
+                            itemResult.Value = value;
+                            itemResult.Unit = ""; // 무차원
+                            break;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+            return true;
         }
         #endregion
 
         #region Methods
-        public bool LoadParameter()
+        public int ApplyParameter()
         {
-            if (!IsCreated())
-                return false;
-
-            bool result = false;
+            int ret = 0;
             do
             {
-                if (!LoadMeasurementCondition())
+                if (!IsCreated())
+                {
+                    ret = -1;
                     break;
-
-                result = true;
-            }
-            while (false);
-            return result;
-        }
-        public bool ApplyParameter()
-        {
-            if (!IsCreated())
-                return false;
-
-            bool result = false;
-            do
-            {
+                }
                 if (!ApplyMeasurementCondition())
+                {
+                    ret = -1;
                     break;
-
-                result = true;
+                }
             }
             while (false);
-            return result;
+            return ret;
         }
-        public bool Measure()
+        public int Measure()
         {
-            bool result = false;
+            int ret = 0;
             do
             {
-                if (this.Config.UseExternalTrigger)
+                //if (!IsCreated())
+                //{
+                //    ret = -1;
+                //    break;
+                //}
+                if (Config.UseExternalTrigger)
                 {
                     // Measure with external trigger
-                    if (!OnMeasureAndExternalTrigger())
+                    if (!SendMeasureCommandAndExternalTrigger())
+                    {
+                        ret = -1;
                         break;
+                    }
                 }
                 else
                 {
                     // Normal measurement
-                    if (!OnMeasure())
+                    if (!SendMeasureCommand())
+                    {
+                        ret = -1;
                         break;
+                    }
                 }
-
-                result = true;
             }
             while (false);
-            return result;
+            return ret;
         }
-        public bool MeasureDarkCurrent()
+        public int MeasureDarkCurrent()
         {
-            bool result = false;
+            int ret = 0;
             do
             {
-                if (!OnMeasureDarkCurrent())
+                if (!IsCreated())
+                {
+                    ret = -1;
                     break;
-
-                result = true;
+                }
+                if (!SendMeasureDarkCurrentComand())
+                {
+                    ret = -1;
+                    break;
+                }
             }
             while (false);
-            return result;
+            return ret;
         }
 
         // Error Handling
@@ -254,13 +449,13 @@ namespace QMC.Common.Spectrometer
         }
         private void CheckCASErrorAndThrow()
         {
-            CheckCASErrorAndThrow(CAS4DLL.casGetError(this.deviceId));
+            CheckCASErrorAndThrow(CAS4DLL.casGetError(deviceId));
         }
         #endregion
 
         // Device Management
         #region Device Management Methods
-        private bool OnCreateDevice()
+        private bool CreateDevice()
         {
             if (IsCreated())
                 return true;
@@ -293,40 +488,51 @@ namespace QMC.Common.Spectrometer
 
                 int deviceInterfaceOption = Config.DeviceInterfaceOption;
 
-                int deviceId = CAS4DLL.casCreateDeviceEx(deviceInterfaceType, deviceInterfaceOption);
-                CheckCASErrorAndThrow(deviceId);
+                int newId = CAS4DLL.casCreateDeviceEx(deviceInterfaceType, deviceInterfaceOption);
+                CheckCASErrorAndThrow(newId);
 
                 // Processing after successful device initialization
                 UpdateSupportDensityFilterList();
 
-                this.deviceId = deviceId;
+                deviceId = newId;
                 result = true;
+
+                OnDeviceCreated?.Invoke(this);
             }
             catch (Exception ex)
             {
-                // Handle any exceptions that occur during device creation
+                // Error handling
+                Log.Write(ex);
             }
             return result;
         }        
-        private bool OnTerminateDevice()
+        private bool TerminateDevice()
         {
             bool result = false;
             try
             {
+                bool tryDoneDevice = false;
                 if(IsCreated())
                 {
-                    CheckCASErrorAndThrow(CAS4DLL.casDoneDevice(this.deviceId));
+                    CheckCASErrorAndThrow(CAS4DLL.casDoneDevice(deviceId));
+                    tryDoneDevice = true;
                 }
-                this.deviceId = -1;
+                deviceId = -1;
                 result = true;
+
+                if (tryDoneDevice)
+                {
+                    OnDeviceTerminated?.Invoke(this);
+                }
             }
             catch (Exception ex)
             {
-                // Error Handling
+                // Error handling
+                Log.Write(ex);
             }
             return result;
         }
-        private bool OnInitDevice()
+        private bool InitializeDevice()
         {
             if (!IsCreated())
                 return false;
@@ -335,23 +541,28 @@ namespace QMC.Common.Spectrometer
             try
             {
                 // Set parameter
-                SetDeviceParameter(CAS4DLL.dpidConfigFileName, this.Config.ConfigFileName);
-                SetDeviceParameter(CAS4DLL.dpidCalibFileName, this.Config.CalibFileName);
+                SetDeviceParameter(CAS4DLL.dpidConfigFileName, Config.ConfigFileName);
+                SetDeviceParameter(CAS4DLL.dpidCalibFileName, Config.CalibFileName);
                 ApplyMeasurementCondition();
 
                 // Device Initialize
-                CheckCASErrorAndThrow(CAS4DLL.casInitialize(this.deviceId, CAS4DLL.InitOnce));
+                CheckCASErrorAndThrow(CAS4DLL.casInitialize(deviceId, CAS4DLL.InitOnce));
+                GetDeviceParameter(CAS4DLL.dpidCalibrationUnit, ref intensityUnit);
                 result = true;
+
+                OnDeviceInitialized?.Invoke(this);
             }
             catch (Exception ex)
             {
                 // Error handling
+                Log.Write(ex);
             }
             return result;
         }
+
         public bool IsCreated()
         {
-            return (this.deviceId >= 0);
+            return (deviceId >= 0);
         }
         public bool IsInitialized()
         {
@@ -375,48 +586,45 @@ namespace QMC.Common.Spectrometer
 
         // Measurement Methods
         #region Measurement Methods
-        private bool OnMeasure()
+        private bool SendMeasureCommand()
         {
-            if (!IsCreated())
-                return false;
-
             bool result = false;
             try
             {
                 // Data clear
-                this.result.Clear();
-                this.spectrum.Clear();
+                measureData.Clear();
+                spectrumData.Clear();
 
                 // Apply measurement parameter
                 //ApplyMeasurementCondition();
 
                 // Measure
-                CheckCASErrorAndThrow(CAS4DLL.casMeasure(this.deviceId));
+                CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
 
                 // Data Process
                 GetMeasureData();
                 GetSpectrumData();
                 result = true;
+
+                OnMeasureCompleted?.Invoke(this);
             }
             catch (Exception ex)
             {
-                // Error Handling
-                this.result.Clear();
-                this.spectrum.Clear();
+                // Error handling
+                Log.Write(ex);
+                measureData.Clear();
+                spectrumData.Clear();
             }
             return result;
         }
-        private bool OnMeasureAndExternalTrigger()
+        private bool SendMeasureCommandAndExternalTrigger()
         {
-            if (!IsCreated())
-                return false;
-
             bool result = false;
             try
             {
                 // Data clear
-                this.result.Clear();
-                this.spectrum.Clear();
+                measureData.Clear();
+                spectrumData.Clear();
 
                 // Apply measurement parameter
                 //ApplyMeasurementCondition();
@@ -427,19 +635,22 @@ namespace QMC.Common.Spectrometer
 
                 // Set digital output for triggering & Measure
                 OnDigitalOut(2);
-                CheckCASErrorAndThrow(CAS4DLL.casMeasure(this.deviceId));
+                CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
                 OffDigitalOut(2);
 
                 // Data Process
                 GetMeasureData();
                 GetSpectrumData();
                 result = true;
+
+                OnMeasureCompleted?.Invoke(this);
             }
             catch (Exception ex)
             {
-                // Error Handling
-                this.result.Clear();
-                this.spectrum.Clear();
+                // Error handling
+                Log.Write(ex);
+                measureData.Clear();
+                spectrumData.Clear();
             }
             finally
             {
@@ -447,21 +658,19 @@ namespace QMC.Common.Spectrometer
             }
             return result;
         }
-        private bool OnMeasureDarkCurrent()
+        private bool SendMeasureDarkCurrentComand()
         {
-            if (!IsCreated())
-                return false;
-
             bool result = false;
             try
             {
                 OpenShutter();
-                CheckCASErrorAndThrow(CAS4DLL.casMeasureDarkCurrent(this.deviceId));
+                CheckCASErrorAndThrow(CAS4DLL.casMeasureDarkCurrent(deviceId));
                 CloseShutter();
             }
             catch (Exception ex)
             {
                 // Error handling
+                Log.Write(ex);
             }
             finally
             {
@@ -472,65 +681,65 @@ namespace QMC.Common.Spectrometer
         private void GetMeasureData()
         {
             // Color metric
-            CheckCASErrorAndThrow(CAS4DLL.casColorMetric(this.deviceId));
+            CheckCASErrorAndThrow(CAS4DLL.casColorMetric(deviceId));
 
             // Photometric and Radiometric Integral
             StringBuilder sb = new StringBuilder(256);
 
             double photInt = 0.0;
-            CAS4DLL.casGetPhotInt(this.deviceId, out photInt, sb, sb.Capacity);
+            CAS4DLL.casGetPhotInt(deviceId, out photInt, sb, sb.Capacity);
             CheckCASErrorAndThrow();
-            this.Result.PhotInt = photInt;
-            this.result.PhotIntUnit = sb.ToString();
+            MeasureData.PhotInt = photInt;
+            measureData.PhotIntUnit = sb.ToString();
 
             double radInt = 0.0;
-            CAS4DLL.casGetRadInt(this.deviceId, out radInt, sb, sb.Capacity);
+            CAS4DLL.casGetRadInt(deviceId, out radInt, sb, sb.Capacity);
             CheckCASErrorAndThrow();
-            this.Result.RadInt = radInt;
-            this.result.RadIntUnit = sb.ToString();
+            MeasureData.RadInt = radInt;
+            measureData.RadIntUnit = sb.ToString();
 
             // color coordinates
             double CIEX = 0.0, CIEY = 0.0, CIEZ = 0.0, CIEU = 0.0, CIEV1976 = 0.0, CIEV1960 = 0.0;
-            CAS4DLL.casGetColorCoordinates(this.deviceId, ref CIEX, ref CIEY, ref CIEZ, ref CIEU, ref CIEV1976, ref CIEV1960);
+            CAS4DLL.casGetColorCoordinates(deviceId, ref CIEX, ref CIEY, ref CIEZ, ref CIEU, ref CIEV1976, ref CIEV1960);
             CheckCASErrorAndThrow();
-            this.Result.CIEX = CIEX;
-            this.Result.CIEY = CIEY;
-            this.Result.CIEZ = CIEZ;
-            this.result.CIEU = CIEU;
-            this.result.CIEV1976 = CIEV1976;
-            this.result.CIEV1960 = CIEV1960;
+            MeasureData.CIEX = CIEX;
+            MeasureData.CIEY = CIEY;
+            MeasureData.CIEZ = CIEZ;
+            measureData.CIEU = CIEU;
+            measureData.CIEV1976 = CIEV1976;
+            measureData.CIEV1960 = CIEV1960;
 
             // Tristimulus
             double stimulusX = 0.0, stimulusY = 0.0, stimulusZ = 0.0;
-            CAS4DLL.casGetTriStimulus(this.deviceId, ref stimulusX, ref stimulusY, ref stimulusZ);
-            this.Result.StimulusX = stimulusX;
-            this.Result.StimulusY = stimulusY;
-            this.Result.StimulusZ = stimulusZ;
+            CAS4DLL.casGetTriStimulus(deviceId, ref stimulusX, ref stimulusY, ref stimulusZ);
+            MeasureData.StimulusX = stimulusX;
+            MeasureData.StimulusY = stimulusY;
+            MeasureData.StimulusZ = stimulusZ;
 
             // calulate lambda dominant wavelength and purity
             double lambdaDom = 0.0, purity = 0.0;
-            CheckCASErrorAndThrow(CAS4DLL.casCalculateLambdaDom(this.deviceId, 1.0 / 3.0, 1.0 / 3.0, ref lambdaDom, ref purity));
-            this.Result.LambdaDom = lambdaDom;
-            this.Result.Purity = purity;
+            CheckCASErrorAndThrow(CAS4DLL.casCalculateLambdaDom(deviceId, 1.0 / 3.0, 1.0 / 3.0, ref lambdaDom, ref purity));
+            MeasureData.LambdaDom = lambdaDom;
+            MeasureData.Purity = purity;
 
             // Wavelength and peak value
             double WP = 0.0, pickValue = 0.0;
-            CAS4DLL.casGetPeak(this.deviceId, out WP, out pickValue);
+            CAS4DLL.casGetPeak(deviceId, out WP, out pickValue);
             CheckCASErrorAndThrow();
-            this.result.WP = WP;
-            this.result.PickValue = pickValue;
-            this.result.Centroid = CAS4DLL.casGetCentroid(this.deviceId);
-            this.result.FWHM = CAS4DLL.casGetWidth(this.deviceId);
+            measureData.WP = WP;
+            measureData.PickValue = pickValue;
+            measureData.Centroid = CAS4DLL.casGetCentroid(deviceId);
+            measureData.FWHM = CAS4DLL.casGetWidth(deviceId);
 
             // color rendering index
-            CAS4DLL.casCalculateCRI(this.deviceId);
-            this.result.CRI = CAS4DLL.casGetCRI(this.deviceId, 0);
+            CAS4DLL.casCalculateCRI(deviceId);
+            measureData.CRI = CAS4DLL.casGetCRI(deviceId, 0);
 
             // color temperature
-            this.result.CCT = CAS4DLL.casGetCCT(this.deviceId);
+            measureData.CCT = CAS4DLL.casGetCCT(deviceId);
 
             // Maximum ADC value
-            this.result.ADC = (int)CAS4DLL.casGetMeasurementParameter(this.deviceId, CAS4DLL.mpidMaxADCValue);
+            measureData.ADC = (int)CAS4DLL.casGetMeasurementParameter(deviceId, CAS4DLL.mpidMaxADCValue);
         }
         private void GetSpectrumData()
         {
@@ -544,16 +753,40 @@ namespace QMC.Common.Spectrometer
             GetDeviceParameter(CAS4DLL.dpidDeadPixels, ref value);
             deadPixels = (int)Math.Round(value);
 
-            this.spectrum.WaveLength = new double[visiblePixels];
-            this.spectrum.Intensity = new double[visiblePixels];
+            spectrumData.WaveLength = new double[visiblePixels];
+            spectrumData.Intensity = new double[visiblePixels];
 
-            for (int i = 0; i < this.spectrum.WaveLength.Length; i++)
+            for (int i = 0; i < spectrumData.WaveLength.Length; i++)
             {
-                spectrum.Intensity[i] = CAS4DLL.casGetData(this.deviceId, i + deadPixels);
-                spectrum.MaximumIntensity = Math.Max(spectrum.MaximumIntensity, spectrum.Intensity[i]);
+                spectrumData.Intensity[i] = CAS4DLL.casGetData(deviceId, i + deadPixels);
+                spectrumData.MaximumIntensity = Math.Max(spectrumData.MaximumIntensity, spectrumData.Intensity[i]);
 
-                spectrum.WaveLength[i] = CAS4DLL.casGetXArray(this.deviceId, i + deadPixels);
+                spectrumData.WaveLength[i] = CAS4DLL.casGetXArray(deviceId, i + deadPixels);
             }
+        }
+        private void GetSpectrumDataTest()
+        {
+            // 380 ~ 780, 1 step
+            int n = 780 - 380 + 1;
+            spectrumData.WaveLength = new double[n];
+            spectrumData.Intensity = new double[n];
+            double mean = 550.0;
+            double stddev = 40.0;
+            Random rand = new Random();
+            double max = double.MinValue;
+            for (int i = 0; i < n; i++)
+            {
+                double x = 380 + i;
+                spectrumData.WaveLength[i] = x;
+                // Gaussian: exp(-0.5 * ((x-mean)/stddev)^2)
+                double gauss = Math.Exp(-0.5 * Math.Pow((x - mean) / stddev, 2));
+                // Add noise: [-0.02, 0.02]
+                double noise = (rand.NextDouble() - 0.5) * 0.04;
+                double intensity = gauss + noise;
+                spectrumData.Intensity[i] = intensity;
+                if (intensity > max) max = intensity;
+            }
+            spectrumData.MaximumIntensity = max;
         }
         #endregion
 
@@ -561,37 +794,33 @@ namespace QMC.Common.Spectrometer
         #region Control Methods
         private bool OnDigitalOut(int port)
         {
-            if (!IsCreated())
-                return false;
-
             bool result = false;
             try
             {
-                CAS4DLL.casSetDigitalOut(this.deviceId, port, 1);
+                CAS4DLL.casSetDigitalOut(deviceId, port, 1);
                 CheckCASErrorAndThrow();
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
+                Log.Write(ex);
             }
             return result;
         }
         private bool OffDigitalOut(int port)
         {
-            if (!IsCreated())
-                return false;
-
             bool result = false;
             try
             {
-                CAS4DLL.casSetDigitalOut(this.deviceId, port, 0);
+                CAS4DLL.casSetDigitalOut(deviceId, port, 0);
                 CheckCASErrorAndThrow();
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
+                Log.Write(ex);
             }
             return result;
         }
@@ -603,13 +832,14 @@ namespace QMC.Common.Spectrometer
             bool result = false;
             try
             {
-                CAS4DLL.casSetShutter(this.deviceId, CAS4DLL.casShutterOpen);
+                CAS4DLL.casSetShutter(deviceId, CAS4DLL.casShutterOpen);
                 CheckCASErrorAndThrow();
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
+                Log.Write(ex);
             }
             return result;
         }
@@ -621,13 +851,14 @@ namespace QMC.Common.Spectrometer
             bool result = false;
             try
             {
-                CAS4DLL.casSetShutter(this.deviceId, CAS4DLL.casShutterClose);
+                CAS4DLL.casSetShutter(deviceId, CAS4DLL.casShutterClose);
                 CheckCASErrorAndThrow();
                 result = true;
             }
             catch (Exception ex)
             {
                 // Error handling
+                Log.Write(ex);
             }
             return result;
         }
@@ -640,7 +871,7 @@ namespace QMC.Common.Spectrometer
             if (!IsCreated())
                 throw new InvalidOperationException("The Device was not created.");
 
-            int result = CAS4DLL.casSetDeviceParameter(this.deviceId, what, value);
+            int result = CAS4DLL.casSetDeviceParameter(deviceId, what, value);
             CheckCASErrorAndThrow(result);
         }
         private void SetDeviceParameter(int what, string value)
@@ -648,7 +879,7 @@ namespace QMC.Common.Spectrometer
             if (!IsCreated())
                 throw new InvalidOperationException("The Device was not created.");
 
-            int result = CAS4DLL.casSetDeviceParameterString(this.deviceId, what, value);
+            int result = CAS4DLL.casSetDeviceParameterString(deviceId, what, value);
             CheckCASErrorAndThrow(result);
         }
         private void GetDeviceParameter(int what, ref double value)
@@ -656,7 +887,7 @@ namespace QMC.Common.Spectrometer
             if (!IsCreated())
                 throw new InvalidOperationException("The Device was not created.");
 
-            double result = CAS4DLL.casGetDeviceParameter(this.deviceId, what);
+            double result = CAS4DLL.casGetDeviceParameter(deviceId, what);
             CheckCASErrorAndThrow();
             value = result;
         }
@@ -666,7 +897,7 @@ namespace QMC.Common.Spectrometer
                 throw new InvalidOperationException("The Device was not created.");
 
             StringBuilder sb = new StringBuilder(256);
-            int result = CAS4DLL.casGetDeviceParameterString(this.deviceId, what, sb, sb.Capacity);
+            int result = CAS4DLL.casGetDeviceParameterString(deviceId, what, sb, sb.Capacity);
             CheckCASErrorAndThrow(result);
             value = sb.ToString();
         }
@@ -675,7 +906,7 @@ namespace QMC.Common.Spectrometer
             if (!IsCreated())
                 throw new InvalidOperationException("The Device was not created.");
 
-            int result = CAS4DLL.casSetMeasurementParameter(this.deviceId, what, value);
+            int result = CAS4DLL.casSetMeasurementParameter(deviceId, what, value);
             CheckCASErrorAndThrow(result);
         }
         private void GetMeasurementParameter(int what, ref double value)
@@ -683,7 +914,7 @@ namespace QMC.Common.Spectrometer
             if (!IsCreated())
                 throw new InvalidOperationException("The Device was not created.");
 
-            double result = CAS4DLL.casGetMeasurementParameter(this.deviceId, what);
+            double result = CAS4DLL.casGetMeasurementParameter(deviceId, what);
             CheckCASErrorAndThrow();
             value = result;
         }
@@ -706,17 +937,18 @@ namespace QMC.Common.Spectrometer
                 GetMeasurementParameter(CAS4DLL.mpidColormetricStop, ref colormetricStop);
                 GetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, ref triggerTimeout);
 
-                this.Config.IntegrationTime = (int)Math.Round(integrationTime);
-                this.Config.Averages = (int)Math.Round(averages);
-                this.Config.DensityFilter = (int)Math.Round(densityFilter);
-                this.Config.ColormetricStart = (int)Math.Round(colormetricStart);
-                this.Config.ColormetricStop = (int)Math.Round(colormetricStop);
-                this.Config.TriggerTimeout = (int)Math.Round(triggerTimeout);
+                Config.IntegrationTime = (int)Math.Round(integrationTime);
+                Config.Averages = (int)Math.Round(averages);
+                Config.DensityFilter = (int)Math.Round(densityFilter);
+                Config.ColormetricStart = (int)Math.Round(colormetricStart);
+                Config.ColormetricStop = (int)Math.Round(colormetricStop);
+                Config.TriggerTimeout = (int)Math.Round(triggerTimeout);
                 result = true;
             }
             catch (Exception ex)
             {
-                // Error Handling
+                // Error handling
+                Log.Write(ex);
             }
             return result;
         }
@@ -725,18 +957,19 @@ namespace QMC.Common.Spectrometer
             bool result = false;
             try
             {
-                SetMeasurementParameter(CAS4DLL.mpidIntegrationTime, this.Config.IntegrationTime);
-                SetMeasurementParameter(CAS4DLL.mpidAverages, this.Config.Averages);
-                SetMeasurementParameter(CAS4DLL.mpidDensityFilter, this.Config.DensityFilter);
-                SetMeasurementParameter(CAS4DLL.mpidColormetricStart, this.Config.ColormetricStart);
-                SetMeasurementParameter(CAS4DLL.mpidColormetricStop, this.Config.ColormetricStop);
+                SetMeasurementParameter(CAS4DLL.mpidIntegrationTime, Config.IntegrationTime);
+                SetMeasurementParameter(CAS4DLL.mpidAverages, Config.Averages);
+                SetMeasurementParameter(CAS4DLL.mpidDensityFilter, Config.DensityFilter);
+                SetMeasurementParameter(CAS4DLL.mpidColormetricStart, Config.ColormetricStart);
+                SetMeasurementParameter(CAS4DLL.mpidColormetricStop, Config.ColormetricStop);
                 SetMeasurementParameter(CAS4DLL.mpidObserver, CAS4DLL.cieObserver1931);
-                SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, this.Config.TriggerTimeout);
+                SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
                 result = true;
             }
             catch (Exception ex)
             {
-                // Error Handling
+                // Error handling
+                Log.Write(ex);
             }
             return result;
         }
@@ -752,7 +985,7 @@ namespace QMC.Common.Spectrometer
                 StringBuilder stringBuilder = new StringBuilder(256);
                 for (int i = 0; i < 7; i++)
                 {
-                    CAS4DLL.casGetFilterName(this.deviceId, i, stringBuilder, stringBuilder.Capacity);
+                    CAS4DLL.casGetFilterName(deviceId, i, stringBuilder, stringBuilder.Capacity);
                     string filterName = stringBuilder.ToString();
                     if (string.IsNullOrEmpty(filterName) || filterName == "none")
                         continue;
@@ -768,7 +1001,7 @@ namespace QMC.Common.Spectrometer
         public string GetDensityFilterNameFromValue(int value)
         {
             string filterName = string.Empty;
-            foreach (var filter in this.DensityFilterList)
+            foreach (var filter in DensityFilterList)
             {
                 if (filter.Value == value)
                 {
@@ -781,7 +1014,7 @@ namespace QMC.Common.Spectrometer
         public int GetDensityFilterValueFromName(string name)
         {
             int filterValue = -1;
-            foreach (var filter in this.DensityFilterList)
+            foreach (var filter in DensityFilterList)
             {
                 if (filter.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 {
@@ -794,7 +1027,7 @@ namespace QMC.Common.Spectrometer
         public List<string> GetSupportDensityFilterNameList()
         {
             List<string> filterNames = new List<string>();
-            foreach (var filter in this.DensityFilterList)
+            foreach (var filter in DensityFilterList)
             {
                 filterNames.Add(filter.Name);
             }

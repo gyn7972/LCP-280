@@ -57,6 +57,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -311,6 +312,12 @@
     <Compile Include="Unit\OutputStageConfig.cs" />
     <Compile Include="Unit\Rotary.cs" />
     <Compile Include="Unit\RotaryConfig.cs" />
+    <Compile Include="Unit\Measurement_Recipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\Measurement_Recipe.Designer.cs">
+      <DependentUpon>Measurement_Recipe.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\Vision_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -431,6 +438,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\InputCassetteLifterUnit_Config.resx">
       <DependentUpon>InputCassetteLifterUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\Measurement_Recipe.resx">
+      <DependentUpon>Measurement_Recipe.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Vision_Setup.resx">
       <DependentUpon>Vision_Setup.cs</DependentUpon>

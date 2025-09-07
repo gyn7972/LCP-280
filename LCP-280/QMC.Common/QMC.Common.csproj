@@ -110,6 +110,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Windows.Forms.DataVisualization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -377,6 +378,7 @@
     <Compile Include="PatternMatching\MultiPatternMatchingParameterControl.Designer.cs">
       <DependentUpon>MultiPatternMatchingParameterControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="VisionPart\MultiPatternMatchingVisionPart.cs" />
     <Compile Include="PatternMatching\PatternMatchingParamControl.cs">
       <SubType>UserControl</SubType>
@@ -396,6 +398,14 @@
     <Compile Include="PatternMatching\SimpleControls.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="PKGTester\TestCondition.cs" />
+    <Compile Include="PKGTester\TestConditionSetPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="PKGTester\TestConditionSetPage.Designer.cs">
+      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PKGTester\TestItem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />
     <Compile Include="PropertyButton.cs" />
@@ -417,6 +427,12 @@
     <Compile Include="Spectrometer\CASSpectrometer.cs" />
     <Compile Include="Spectrometer\CASSpectrometerConfig.cs" />
     <Compile Include="Spectrometer\CASSpectrometerInterfaceManager.cs" />
+    <Compile Include="Spectrometer\CASSpectrumViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Spectrometer\CASSpectrumViewer.Designer.cs">
+      <DependentUpon>CASSpectrumViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="Spectrometer\FormSetupCASSpectrometerInterface.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -545,6 +561,9 @@
     <EmbeddedResource Include="PatternMatching\PatternMatchingResultControl.resx">
       <DependentUpon>PatternMatchingResultControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="PKGTester\TestConditionSetPage.resx">
+      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -557,6 +576,9 @@
     </Compile>
     <EmbeddedResource Include="PropertyCollectionView.resx">
       <DependentUpon>PropertyCollectionView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Spectrometer\CASSpectrumViewer.resx">
+      <DependentUpon>CASSpectrumViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Spectrometer\FormSetupCASSpectrometerInterface.resx">
       <DependentUpon>FormSetupCASSpectrometerInterface.cs</DependentUpon>

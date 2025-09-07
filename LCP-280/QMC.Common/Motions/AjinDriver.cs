@@ -15,6 +15,9 @@ namespace QMC.Common.Motions
         private readonly bool _useLogicalUnits;
         private readonly double _pulsesPerUnit; // mm->pulse, deg->pulse
 
+        private MotionAxisSetup _lastSetup;
+        private MotionAxisConfig _lastConfig;
+
         // 프로파일/모드 설정 (필요 시 외부에서 주입/변경 가능)
         public ProfileMode ProfileMode { get; set; } = ProfileMode.SCurve;
 
@@ -34,6 +37,22 @@ namespace QMC.Common.Motions
             // 1) 홈 파라미터 세팅
             // TODO: 실제 홈 모드/레벨/속도 등 세팅 필요시 여기서 호출
             // AjinApi.HomeSet(axisNo, ...);
+
+            if (_lastSetup != null && _lastConfig != null)
+            {
+                // 단위 변환 스케일 (기존 구현과 동일하게 ppu=1 유지; 필요 시 _pulsesPerUnit로 조정)
+                double ppu = 1; // _pulsesPerUnit;
+
+                double h1v = _lastConfig.HomeFirstSpeed * ppu;
+                double h2v = _lastConfig.HomeSecondSpeed * ppu;
+                double hlv = _lastConfig.HomeThirdSpeed * ppu;
+                double izv = _lastConfig.HomeLastSpeed * ppu;
+                double h1a = _lastConfig.HomeFirstAcc * ppu;
+                double h2a = _lastConfig.HomeSecondAcc * ppu;
+
+                int rc0 = AjinApi.ApplyHomeFromSetup(axisNo, _lastSetup, h1v, h2v, hlv, izv, h1a, h2a);
+                if (rc0 != 0) return rc0;
+            }
 
             // 2) 홈 시작
             return AjinApi.HomeStart(axisNo);
@@ -183,6 +202,10 @@ namespace QMC.Common.Motions
         // AjinDriver.cs
         public int ConfigureFromSetupAndConfig(int axisNo, MotionAxisSetup setup, MotionAxisConfig cfg)
         {
+            // 최근 설정 캐시 (Home에서 재사용)
+            _lastSetup = setup;
+            _lastConfig = cfg;
+
             // 1) 배선/레벨 등 기본 셋업
             int rc = 0;
             //int rc = AjinApi.ApplySetupBasic(axisNo, setup);
@@ -206,7 +229,7 @@ namespace QMC.Common.Motions
             double d = cfg.RunDec * ppu;
 
             if (ProfileMode == ProfileMode.SCurve)
-                rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 10.0), setup.PulsesPerUnit, setup.AxisScale);
+                rc = AjinApi.ApplySCurveProfile(axisNo, v, a, d, jerk0to1000: (int)Math.Round(cfg.AccJerkPercent * 1.0), setup.PulsesPerUnit, setup.AxisScale);
             else
                 rc = AjinApi.ApplyTrapProfile(axisNo, v, a, d, setup.PulsesPerUnit, setup.AxisScale);
             if (rc != 0) return rc;

@@ -83,10 +83,13 @@
             this.lbSpectrometerSerialNoValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbSpectrometerModelValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnMeasureDarkCurrent = new QMC.Common.IndividualMenuButton();
+            this.btnMeasureTest = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel16 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel17 = new System.Windows.Forms.TableLayoutPanel();
             this.btnSpectrometerConfigSave = new QMC.Common.IndividualMenuButton();
             this.pcvSpectrometerConfig = new QMC.Common.PropertyCollectionView();
+            this.casSpectrumViewer = new QMC.Common.Spectrometer.CASSpectrumViewer();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -110,6 +113,7 @@
             this.tableLayoutPanel14.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.tableLayoutPanel15.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.tableLayoutPanel16.SuspendLayout();
             this.tableLayoutPanel17.SuspendLayout();
             this.SuspendLayout();
@@ -119,7 +123,7 @@
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControl1.Font = new System.Drawing.Font("Arial", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.tabControl1.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
@@ -130,10 +134,10 @@
             // 
             this.tabPage1.Controls.Add(this.tableLayoutPanel1);
             this.tabPage1.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.tabPage1.Location = new System.Drawing.Point(4, 27);
+            this.tabPage1.Location = new System.Drawing.Point(4, 29);
             this.tabPage1.Name = "tabPage1";
             this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(1256, 721);
+            this.tabPage1.Size = new System.Drawing.Size(1256, 719);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Sourcemeter";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -152,7 +156,7 @@
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1250, 715);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1250, 713);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // lbivSelectSourcemeter
@@ -164,7 +168,7 @@
             this.lbivSelectSourcemeter.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.lbivSelectSourcemeter.Name = "lbivSelectSourcemeter";
             this.lbivSelectSourcemeter.SelectedIndex = -1;
-            this.lbivSelectSourcemeter.Size = new System.Drawing.Size(293, 705);
+            this.lbivSelectSourcemeter.Size = new System.Drawing.Size(293, 703);
             this.lbivSelectSourcemeter.TabIndex = 0;
             this.lbivSelectSourcemeter.ItemSelected += new System.EventHandler<int>(this.lbivSelectItem_ItemSelected);
             // 
@@ -182,7 +186,7 @@
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 121F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 129F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 195F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(492, 709);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(492, 707);
             this.tableLayoutPanel2.TabIndex = 1;
             // 
             // gbCommTerminal
@@ -192,7 +196,7 @@
             this.gbCommTerminal.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.gbCommTerminal.Location = new System.Drawing.Point(3, 253);
             this.gbCommTerminal.Name = "gbCommTerminal";
-            this.gbCommTerminal.Size = new System.Drawing.Size(486, 453);
+            this.gbCommTerminal.Size = new System.Drawing.Size(486, 451);
             this.gbCommTerminal.TabIndex = 29;
             this.gbCommTerminal.TabStop = false;
             this.gbCommTerminal.Text = "Comm. Terminal";
@@ -209,7 +213,7 @@
             this.tableLayoutPanel6.RowCount = 2;
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 91.46919F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 8.530806F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(480, 429);
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(480, 427);
             this.tableLayoutPanel6.TabIndex = 23;
             // 
             // tbLog
@@ -218,7 +222,7 @@
             this.tbLog.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.tbLog.Location = new System.Drawing.Point(3, 3);
             this.tbLog.Name = "tbLog";
-            this.tbLog.Size = new System.Drawing.Size(474, 386);
+            this.tbLog.Size = new System.Drawing.Size(474, 384);
             this.tbLog.TabIndex = 1;
             this.tbLog.Text = "";
             // 
@@ -230,7 +234,7 @@
             this.tableLayoutPanel7.Controls.Add(this.btn_SendTest, 1, 0);
             this.tableLayoutPanel7.Controls.Add(this.tbSendText, 0, 0);
             this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 395);
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 393);
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
             this.tableLayoutPanel7.RowCount = 1;
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
@@ -504,7 +508,7 @@
             this.tableLayoutPanel3.RowCount = 2;
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 53.7037F));
             this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 46.2963F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(445, 709);
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(445, 707);
             this.tableLayoutPanel3.TabIndex = 2;
             // 
             // tableLayoutPanel4
@@ -519,7 +523,7 @@
             this.tableLayoutPanel4.RowCount = 2;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 89.48787F));
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10.51213F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(439, 374);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(439, 373);
             this.tableLayoutPanel4.TabIndex = 0;
             // 
             // btnSave
@@ -533,7 +537,7 @@
             this.btnSave.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSave.ForeColor = System.Drawing.Color.Black;
             this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnSave.Location = new System.Drawing.Point(346, 337);
+            this.btnSave.Location = new System.Drawing.Point(346, 336);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(90, 34);
             this.btnSave.TabIndex = 27;
@@ -549,7 +553,7 @@
             this.pcvConfig.Location = new System.Drawing.Point(0, 0);
             this.pcvConfig.Margin = new System.Windows.Forms.Padding(0);
             this.pcvConfig.Name = "pcvConfig";
-            this.pcvConfig.Size = new System.Drawing.Size(439, 334);
+            this.pcvConfig.Size = new System.Drawing.Size(439, 333);
             this.pcvConfig.TabIndex = 7;
             // 
             // gbChannel
@@ -557,9 +561,9 @@
             this.gbChannel.Controls.Add(this.tableLayoutPanel5);
             this.gbChannel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbChannel.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.gbChannel.Location = new System.Drawing.Point(3, 383);
+            this.gbChannel.Location = new System.Drawing.Point(3, 382);
             this.gbChannel.Name = "gbChannel";
-            this.gbChannel.Size = new System.Drawing.Size(439, 323);
+            this.gbChannel.Size = new System.Drawing.Size(439, 322);
             this.gbChannel.TabIndex = 1;
             this.gbChannel.TabStop = false;
             this.gbChannel.Text = "Channel";
@@ -576,7 +580,7 @@
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 86.77966F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 13.22034F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(433, 299);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(433, 298);
             this.tableLayoutPanel5.TabIndex = 0;
             // 
             // lbivSelectChannel
@@ -588,7 +592,7 @@
             this.lbivSelectChannel.Margin = new System.Windows.Forms.Padding(4, 7, 4, 7);
             this.lbivSelectChannel.Name = "lbivSelectChannel";
             this.lbivSelectChannel.SelectedIndex = -1;
-            this.lbivSelectChannel.Size = new System.Drawing.Size(425, 245);
+            this.lbivSelectChannel.Size = new System.Drawing.Size(425, 244);
             this.lbivSelectChannel.TabIndex = 1;
             this.lbivSelectChannel.ItemSelected += new System.EventHandler<int>(this.lbivSelectChannel_ItemSelected);
             // 
@@ -596,7 +600,7 @@
             // 
             this.panel1.Controls.Add(this.btnChannelTest);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(3, 262);
+            this.panel1.Location = new System.Drawing.Point(3, 261);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(427, 34);
             this.panel1.TabIndex = 2;
@@ -624,10 +628,10 @@
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.tableLayoutPanel8);
-            this.tabPage2.Location = new System.Drawing.Point(4, 27);
+            this.tabPage2.Location = new System.Drawing.Point(4, 29);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(1256, 721);
+            this.tabPage2.Size = new System.Drawing.Size(1256, 719);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Spectrometer";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -646,7 +650,7 @@
             this.tableLayoutPanel8.Name = "tableLayoutPanel8";
             this.tableLayoutPanel8.RowCount = 1;
             this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel8.Size = new System.Drawing.Size(1250, 715);
+            this.tableLayoutPanel8.Size = new System.Drawing.Size(1250, 713);
             this.tableLayoutPanel8.TabIndex = 1;
             // 
             // lbivSelectSpectrometer
@@ -658,7 +662,7 @@
             this.lbivSelectSpectrometer.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.lbivSelectSpectrometer.Name = "lbivSelectSpectrometer";
             this.lbivSelectSpectrometer.SelectedIndex = -1;
-            this.lbivSelectSpectrometer.Size = new System.Drawing.Size(293, 705);
+            this.lbivSelectSpectrometer.Size = new System.Drawing.Size(293, 703);
             this.lbivSelectSpectrometer.TabIndex = 0;
             this.lbivSelectSpectrometer.ItemSelected += new System.EventHandler<int>(this.lbivSelectSpectrometer_ItemSelected);
             // 
@@ -676,7 +680,7 @@
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 121F));
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 209F));
             this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 115F));
-            this.tableLayoutPanel9.Size = new System.Drawing.Size(492, 709);
+            this.tableLayoutPanel9.Size = new System.Drawing.Size(492, 707);
             this.tableLayoutPanel9.TabIndex = 1;
             // 
             // groupBox2
@@ -934,27 +938,68 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.btnMeasureDarkCurrent);
+            this.groupBox1.Controls.Add(this.btnMeasureTest);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox1.Location = new System.Drawing.Point(3, 333);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(486, 373);
+            this.groupBox1.Size = new System.Drawing.Size(486, 371);
             this.groupBox1.TabIndex = 4;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Control";
+            // 
+            // btnMeasureDarkCurrent
+            // 
+            this.btnMeasureDarkCurrent.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMeasureDarkCurrent.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnMeasureDarkCurrent.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMeasureDarkCurrent.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMeasureDarkCurrent.CustomForeColor = System.Drawing.Color.Black;
+            this.btnMeasureDarkCurrent.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnMeasureDarkCurrent.ForeColor = System.Drawing.Color.Black;
+            this.btnMeasureDarkCurrent.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnMeasureDarkCurrent.Location = new System.Drawing.Point(20, 90);
+            this.btnMeasureDarkCurrent.Name = "btnMeasureDarkCurrent";
+            this.btnMeasureDarkCurrent.Size = new System.Drawing.Size(185, 43);
+            this.btnMeasureDarkCurrent.TabIndex = 25;
+            this.btnMeasureDarkCurrent.TabStop = false;
+            this.btnMeasureDarkCurrent.Text = "Measure DarkCurrent";
+            this.btnMeasureDarkCurrent.UseVisualStyleBackColor = false;
+            this.btnMeasureDarkCurrent.Click += new System.EventHandler(this.btnMeasureDarkCurrent_Click);
+            // 
+            // btnMeasureTest
+            // 
+            this.btnMeasureTest.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMeasureTest.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnMeasureTest.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMeasureTest.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMeasureTest.CustomForeColor = System.Drawing.Color.Black;
+            this.btnMeasureTest.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnMeasureTest.ForeColor = System.Drawing.Color.Black;
+            this.btnMeasureTest.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnMeasureTest.Location = new System.Drawing.Point(20, 38);
+            this.btnMeasureTest.Name = "btnMeasureTest";
+            this.btnMeasureTest.Size = new System.Drawing.Size(185, 43);
+            this.btnMeasureTest.TabIndex = 24;
+            this.btnMeasureTest.TabStop = false;
+            this.btnMeasureTest.Text = "Measure";
+            this.btnMeasureTest.UseVisualStyleBackColor = false;
+            this.btnMeasureTest.Click += new System.EventHandler(this.btnMeasureTest_Click);
             // 
             // tableLayoutPanel16
             // 
             this.tableLayoutPanel16.ColumnCount = 1;
             this.tableLayoutPanel16.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel16.Controls.Add(this.tableLayoutPanel17, 0, 0);
+            this.tableLayoutPanel16.Controls.Add(this.casSpectrumViewer, 0, 1);
             this.tableLayoutPanel16.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel16.Location = new System.Drawing.Point(802, 3);
             this.tableLayoutPanel16.Name = "tableLayoutPanel16";
             this.tableLayoutPanel16.RowCount = 2;
             this.tableLayoutPanel16.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 61.07193F));
             this.tableLayoutPanel16.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 38.92807F));
-            this.tableLayoutPanel16.Size = new System.Drawing.Size(445, 709);
+            this.tableLayoutPanel16.Size = new System.Drawing.Size(445, 707);
             this.tableLayoutPanel16.TabIndex = 2;
             // 
             // tableLayoutPanel17
@@ -969,7 +1014,7 @@
             this.tableLayoutPanel17.RowCount = 2;
             this.tableLayoutPanel17.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 89.48787F));
             this.tableLayoutPanel17.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10.51213F));
-            this.tableLayoutPanel17.Size = new System.Drawing.Size(439, 427);
+            this.tableLayoutPanel17.Size = new System.Drawing.Size(439, 425);
             this.tableLayoutPanel17.TabIndex = 0;
             // 
             // btnSpectrometerConfigSave
@@ -983,7 +1028,7 @@
             this.btnSpectrometerConfigSave.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSpectrometerConfigSave.ForeColor = System.Drawing.Color.Black;
             this.btnSpectrometerConfigSave.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnSpectrometerConfigSave.Location = new System.Drawing.Point(346, 385);
+            this.btnSpectrometerConfigSave.Location = new System.Drawing.Point(346, 383);
             this.btnSpectrometerConfigSave.Name = "btnSpectrometerConfigSave";
             this.btnSpectrometerConfigSave.Size = new System.Drawing.Size(90, 39);
             this.btnSpectrometerConfigSave.TabIndex = 27;
@@ -999,8 +1044,17 @@
             this.pcvSpectrometerConfig.Location = new System.Drawing.Point(0, 0);
             this.pcvSpectrometerConfig.Margin = new System.Windows.Forms.Padding(0);
             this.pcvSpectrometerConfig.Name = "pcvSpectrometerConfig";
-            this.pcvSpectrometerConfig.Size = new System.Drawing.Size(439, 382);
+            this.pcvSpectrometerConfig.Size = new System.Drawing.Size(439, 380);
             this.pcvSpectrometerConfig.TabIndex = 7;
+            // 
+            // casSpectrumViewer
+            // 
+            this.casSpectrumViewer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.casSpectrumViewer.Location = new System.Drawing.Point(4, 435);
+            this.casSpectrumViewer.Margin = new System.Windows.Forms.Padding(4);
+            this.casSpectrumViewer.Name = "casSpectrumViewer";
+            this.casSpectrumViewer.Size = new System.Drawing.Size(437, 268);
+            this.casSpectrumViewer.TabIndex = 1;
             // 
             // Instrument_Setup
             // 
@@ -1037,6 +1091,7 @@
             this.tableLayoutPanel14.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
             this.tableLayoutPanel15.ResumeLayout(false);
+            this.groupBox1.ResumeLayout(false);
             this.tableLayoutPanel16.ResumeLayout(false);
             this.tableLayoutPanel17.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -1104,5 +1159,8 @@
         private Common.IndividualMenuButton btnSpectrometerConfigSave;
         private Common.PropertyCollectionView pcvSpectrometerConfig;
         private System.Windows.Forms.GroupBox groupBox1;
+        private Common.IndividualMenuButton btnMeasureTest;
+        private Common.Spectrometer.CASSpectrumViewer casSpectrumViewer;
+        private Common.IndividualMenuButton btnMeasureDarkCurrent;
     }
 }

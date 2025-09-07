@@ -270,15 +270,34 @@ namespace QMC.Common
                         Margin = new Padding(0),
                         Font = _textBoxFont,
                         DropDownStyle = ComboBoxStyle.DropDownList,
-                        DataSource = comboBoxProperty.Options,
-                        SelectedItem = comboBoxProperty.Value?.ToString(),
+                        //DataSource = comboBoxProperty.Options,
+                        //SelectedItem = comboBoxProperty.Value?.ToString(),
                         Visible = false
                     };
+
+                    // 수정: 이전에 선택한 아이템이 Load시 Display되지 않는 부분 수정
+                    comboBox.Items.Clear();
+                    comboBox.Items.AddRange(comboBoxProperty.Options.ToArray());
+
+                    // Value와 일치하는 인덱스를 찾아서 선택
+                    if (comboBoxProperty.Value != null)
+                    {
+                        int idx = comboBoxProperty.Options.IndexOf(comboBoxProperty.Value.ToString());
+                        if (idx >= 0)
+                            comboBox.SelectedIndex = idx;
+                        else
+                            comboBox.SelectedIndex = 0; // 기본값
+                    }
+                    else
+                    {
+                        comboBox.SelectedIndex = 0;
+                    }
+
                     comboBox.SelectedIndexChanged += (sender, args) =>
                     {
                         comboBoxProperty.SetValue(comboBox.SelectedItem?.ToString());
                     };
-
+                    
                     controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
                     controlsToAdd.Add(Tuple.Create((Control)comboBox, 1, row));
                 }
