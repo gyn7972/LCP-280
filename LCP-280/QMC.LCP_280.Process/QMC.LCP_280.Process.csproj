@@ -85,6 +85,7 @@
       <DependentUpon>DIOControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\InterlockManager.cs" />
+    <Compile Include="Component\MachineHomeCoordinator.cs" />
     <Compile Include="Component\ManualSequenceControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

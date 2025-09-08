@@ -17,6 +17,12 @@ namespace QMC.Common.Motions
         private readonly MotionAxisManager _manager;
         private readonly List<List<MotionAxis>> _steps = new List<List<MotionAxis>>();
 
+        /// <summary>
+        /// 각 단계 시작 전에 호출되는 인터락 훅. Ok=false면 해당 단계 전체를 시작하지 않고 NotStarted 처리합니다.
+        /// stepIndex: 0부터 시작하는 단계 인덱스.
+        /// </summary>
+        public Func<int, IReadOnlyList<MotionAxis>, CancellationToken, Task<(bool Ok, string Reason)>> PreStepInterlockAsync { get; set; }
+
         public HomeSequence(MotionAxisManager manager)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
@@ -103,14 +109,28 @@ namespace QMC.Common.Motions
         public async Task<IReadOnlyList<HomeAxisResult>> RunAsync(CancellationToken token = default(CancellationToken))
         {
             var all = new List<HomeAxisResult>();
-            foreach (var step in _steps)
+            for (int stepIndex = 0; stepIndex < _steps.Count; stepIndex++)
             {
+                var step = _steps[stepIndex];
                 if (step == null || step.Count == 0) continue;
                 if (token.IsCancellationRequested) break;
 
+                // 0) 단계 시작 전 상위 설비 인터락 훅(도어/실린더 등) 확인
+                if (PreStepInterlockAsync != null)
+                {
+                    var tuple = await PreStepInterlockAsync(stepIndex, step, token).ConfigureAwait(false);
+                    if (!tuple.Ok)
+                    {
+                        // 단계 전체 미시작 처리
+                        for (int i = 0; i < step.Count; i++)
+                            all.Add(HomeAxisResult.NotStarted(step[i], tuple.Reason));
+                        continue; // 다음 단계로
+                    }
+                }
+
                 var tasks = new List<Task<HomeAxisResult>>(step.Count);
 
-                // 사전 인터락 검사: 통과 축만 시작, 실패 축은 NotStarted로 바로 기록
+                // 1) 축별 사전 인터락 검사: 통과 축만 시작, 실패 축은 NotStarted로 바로 기록
                 foreach (var axis in step)
                 {
                     if (!axis.CheckHomeInterlocks(out var reason))
