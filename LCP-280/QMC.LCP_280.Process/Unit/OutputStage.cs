@@ -1,4 +1,5 @@
 using QMC.Common;
+using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
@@ -12,10 +13,28 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputStage : BaseUnit
     {
-        public OutputStageConfig OutputStageConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        // Wrapper collection to allow enum index access
+        public class TeachingPositionCollection : List<TeachingPosition>
+        {
+            public TeachingPosition this[OutputStageConfig.TeachingPositionName name]
+            {
+                get
+                {
+                    string key = name.ToString();
+                    return this.FirstOrDefault(p => p != null && p.Name.Equals(key, System.StringComparison.OrdinalIgnoreCase));
+                }
+            }
+        }
 
-        public OutputStage(OutputStageConfig config = null) : base("OutputStageConfig")
+        public OutputStageConfig OutputStageConfig { get; private set; }
+        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+
+        // Stage camera
+        public HIKGigECamera StageCamera { get; private set; }
+        public string StageCameraKey { get; set; } = "Out_Stage";
+
+        public OutputStage(OutputStageConfig config = null)
+            : base("OutputStageConfig")
         {
             OutputStageConfig = config ?? new OutputStageConfig();
             AddComponents();
@@ -30,6 +49,17 @@ namespace QMC.LCP_280.Process.Unit
                 TeachingPositions.Add(tp);
             BindAxes();
             BindIoDomains();
+            BindCamera();
+        }
+
+        private void BindCamera()
+        {
+            var eq = Equipment.Instance;
+            if (eq == null) return;
+            if (eq.Cameras != null && eq.Cameras.TryGetValue(StageCameraKey, out var cam))
+                StageCamera = cam as HIKGigECamera;
+            else
+                StageCamera = eq.OutStageCam; // fallback
         }
 
         public override void OnRun() => base.OnRun();

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Windows.Forms;
+using QMC.LCP_280.Process; // AxisNames
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -356,14 +357,29 @@ namespace QMC.LCP_280.Process.Unit
         private void EnsureAxisHomeInterlocks(MotionAxis axis)
         {
             if (axis == null) return;
+
             try
             {
                 var il = QMC.LCP_280.Process.Component.InterlockManager.Instance;
                 il.Start(); // 이미 시작되어 있으면 내부에서 무시
 
+                // WaferStage X 축 홈 인터락 조건 등록 예시
+                // TODO: 모듈명("WaferStageIO") / 표시번호("X201","X202") 는 실제 IO 맵에 맞게 수정하세요.
+                //  - Vacuum OFF (센서가 1=ON 이라면 expected:false 로 설정하여 OFF 요구)
+                //  - Clamp Open (Open 센서 ON 필요)
+                if (axis.Name.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
+                {
+                    var rules = il.GetRules();
+                    bool Has(string n) => rules.Any(r => r.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
+
+                    if (!Has("WaferStageX_Home_VacuumOff"))
+                        il.AddAxisIoRequire("WaferStageX_Home_VacuumOff", axis, "WaferStageIO", "X201", false); // Vacuum 센서 예상 OFF
+                    if (!Has("WaferStageX_Home_ClampOpen"))
+                        il.AddAxisIoRequire("WaferStageX_Home_ClampOpen", axis, "WaferStageIO", "X202", true);  // Clamp Open 센서 ON
+                }
+
                 // 축 이름 매칭 (프로젝트 실제 축 이름에 맞게 수정 필요)
-                if (axis.Name.Equals("Input Stage X Axis", StringComparison.OrdinalIgnoreCase) ||
-                    axis.Name.Equals("InputStageX", StringComparison.OrdinalIgnoreCase))
+                if (axis.Name.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
                 {
                     var rules = il.GetRules();
                     bool Has(string n) => rules.Any(r => r.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
