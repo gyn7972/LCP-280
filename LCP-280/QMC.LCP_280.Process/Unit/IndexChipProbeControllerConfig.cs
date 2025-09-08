@@ -4,60 +4,71 @@ using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using static QMC.LCP_280.Process.Unit.IndexChipProbeController;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// IndexChipProbeControllerConfig
+    ///  - Probe Z / Probe Card XYZ / Sphere Z Teaching Positions
+    ///  - Sphere FW/BW Cylinder + Probe Card Vacuum I/O 명칭 상수화
+    ///  - OutputStageConfig 패턴 구조 적용
+    /// </summary>
     public class IndexChipProbeControllerConfig : BaseConfig
     {
+        /// <summary>장치 IO 명칭</summary>
+        internal static class IO
+        {
+            // Inputs
+            public const string SPHERE_FW_SNS  = "SPHERE FW";                // X038 (Forward sensor)
+            public const string SPHERE_BW_SNS  = "SPHERE BW";                // X039 (Backward sensor)
+            public const string PROBE_VAC_OK   = "PROBE CARD VACUUM CHECK";  // X050
+            // Outputs
+            public const string SPHERE_FW_VLV  = "SPHERE FW";                // Y026 (Forward valve)
+            public const string SPHERE_BW_VLV  = "SPHERE BW";                // Y027 (Backward valve)
+            public const string PROBE_VAC_VLV  = "PROBE CARD VACUUM";  // Y075 (Vac valve or combined channel)
+        }
+
         public enum TeachingPositionName
         {
             TopContact,
-            TopContactWating,
+            TopContactWating, // typo preserved
             Ready
-            // 필요시 추가
         }
+
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        // IO 추가 필요시 여기에 정의
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
-        [JsonIgnore]
         private static readonly HardInputDef[] _hardInputs = new[]
         {
-            new HardInputDef { No = 1, Name = "SPHERE FW",               Disp = "X038" },
-            new HardInputDef { No = 2, Name = "SPHERE BW",               Disp = "X039" },
-            new HardInputDef { No = 3, Name = "PROBE CARD VACUUM CHECK", Disp = "X050" },
+            new HardInputDef { No = 1, Name = IO.SPHERE_FW_SNS, Disp = "X038" },
+            new HardInputDef { No = 2, Name = IO.SPHERE_BW_SNS, Disp = "X039" },
+            new HardInputDef { No = 3, Name = IO.PROBE_VAC_OK,  Disp = "X050" },
         };
 
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs;
-        [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = new[]
         {
-            new HardOutputDef { No = 1, Name = "SPHERE FW",               Disp = "Y026" },
-            new HardOutputDef { No = 2, Name = "SPHERE BW",               Disp = "Y027" },
-            new HardOutputDef { No = 3, Name = "PROBE CARD VACUUM CHECK", Disp = "Y075" },
+            new HardOutputDef { No = 1, Name = IO.SPHERE_FW_VLV, Disp = "Y026" },
+            new HardOutputDef { No = 2, Name = IO.SPHERE_BW_VLV, Disp = "Y027" },
+            new HardOutputDef { No = 3, Name = IO.PROBE_VAC_VLV, Disp = "Y075" },
         };
+        #endregion
 
-        public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig")
-        {
-            //InitializeDefaultTeachingPositions();
-        }
+        public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig") { }
 
-        // enum 기반으로 기본 TeachingPosition 생성
+        /// <summary>Teaching Position 기본 생성</summary>
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
-                string posName = name.ToString();
-                var tp = TeachingPositions.FirstOrDefault(p => p.Name == posName);
-                if (tp == null)
+                var posName = name.ToString();
+                if (!existing.Contains(posName))
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
@@ -67,68 +78,45 @@ namespace QMC.LCP_280.Process.Unit
                         { "Probe Card Z Axis", 0.0 },
                         { "Sphere Z Axis", 0.0 }
                     };
-                    tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
-                    TeachingPositions.Add(tp);
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
-                // 축 바인딩은 여기서 하지 말고!
             }
             Saveconfig();
         }
 
-        // 포지션 추가/업데이트
+        /// <summary>Teaching Position 추가/갱신</summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description = tp.Description;
-                exist.ExtraInfo = tp.ExtraInfo;
+                exist.Description   = tp.Description;
+                exist.ExtraInfo     = tp.ExtraInfo;
             }
-            else
-            {
-                TeachingPositions.Add(tp);
-            }
+            else TeachingPositions.Add(tp);
             Saveconfig();
         }
 
-        // 포지션 조회
-        public TeachingPosition GetTeachingPosition(string name)
-            => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
-        // 저장: 축 정보(Axes) 제외하고 순수 데이터만 저장
+        /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
         public int Saveconfig()
         {
-            // 축 정보 제외하고 TeachingPositions만 저장
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-
-            // 임시로 TeachingPositions를 교체해서 저장
-            var original = TeachingPositions;
-            TeachingPositions = purePositions;
-            try
-            {
-                return Save();
-            }
-            finally
-            {
-                TeachingPositions = original;
-            }
+            var original = TeachingPositions; TeachingPositions = pure;
+            try { return Save(); }
+            finally { TeachingPositions = original; }
         }
 
-        // 불러오기: 저장 데이터를 불러온 뒤, 런타임에 축 바인딩
+        /// <summary>Config 로드 후 축 바인딩</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load();
-            if (result != 0) return result;
-
-            // 각 TeachingPosition에 축 바인딩
+            int result = Load(); if (result != 0) return result;
             foreach (var tp in TeachingPositions)
-            {
-                tp.BindAxes(axisManager, "Unit"); // unitName = "Unit" (혹은 필요에 맞게)
-            }
-
+                tp.BindAxes(axisManager, "Unit");
             return 0;
         }
     }

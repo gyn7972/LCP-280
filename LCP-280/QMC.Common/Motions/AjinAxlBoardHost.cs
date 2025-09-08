@@ -68,7 +68,7 @@ namespace QMC.Common.Motion.Ajin.HW
 
             if (!string.IsNullOrEmpty(ParameterFilePath) && File.Exists(ParameterFilePath))
             {
-                //rc = (int)AXM.AxmMotLoadParaAll(ParameterFilePath);
+                rc = (int)AXM.AxmMotLoadParaAll(ParameterFilePath);
                 if (rc != 0)
                 {
                     // 파라미터 로드 실패해도 AXL은 열려 있으므로, 필요 시 Close

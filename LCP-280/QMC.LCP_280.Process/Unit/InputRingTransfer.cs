@@ -4,19 +4,38 @@ using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
-using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Component; // TeachingPosition
 using System.Collections.Generic;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// InputRingTransfer (Wafer Feeder / Ring Transfer Unit)
+    ///  - X 축 이송 + Lift + Clamp (Ring 존재 검사 / Overload 검사)
+    ///  - Teaching Position 관리 (InputRingTransferConfig)
+    ///  - Cylinder 기반 동작 API (FeederUp/Down, Clamp)
+    ///  - OutputStage / InputStage 와 동일한 Region/패턴 구성
+    /// </summary>
     public class InputRingTransfer : BaseUnit
     {
+        #region Config / Teaching
         public InputRingTransferConfig InputRingTransferConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        #endregion
 
-        public InputRingTransfer(InputRingTransferConfig config = null)
-            : base("InputRingTransferConfig")
+        #region Axes
+        private MotionAxis _feederX;
+        public MotionAxis FeederX => _feederX;
+        #endregion
+
+        #region IO Domain Members
+        private Cylinder _feederLift; // Up/Down
+        // (Clamp 은 단순 On/Off 두 출력 조합으로 처리)
+        #endregion
+
+        #region Constructor / Initialization
+        public InputRingTransfer(InputRingTransferConfig config = null) : base("InputRingTransferConfig")
         {
             InputRingTransferConfig = config ?? new InputRingTransferConfig();
             AddComponents();
@@ -32,10 +51,14 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
         }
+        #endregion
 
-        public override void OnRun() => base.OnRun();
+        #region Runtime Hooks
+        public override void OnRun()  => base.OnRun();
         public override void OnStop() => base.OnStop();
+        #endregion
 
+        #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
@@ -61,14 +84,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-
-        #region Axis Helpers
-        private MotionAxis _feederX;
-        public MotionAxis FeederX => _feederX;
-        private void BindAxes()
-        {
-            Axes.TryGetValue("Wafer Feeder X Axis", out _feederX);
-        }
         public double GetTP(string tpName, string axisName)
         {
             var tp = InputRingTransferConfig.GetTeachingPosition(tpName);
@@ -84,7 +99,11 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region IO Helpers
+        #region Axis Binding
+        private void BindAxes() => Axes.TryGetValue("Wafer Feeder X Axis", out _feederX);
+        #endregion
+
+        #region Low-Level IO (Read/Write by Name)
         public bool ReadInput(string name)
         {
             var hi = InputRingTransferConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
@@ -105,41 +124,39 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        #region IO Domain (Feeder Lift / Clamp)
-        private Cylinder _feederLift; // UP/DOWN
-        private const string NAME_FEEDER_UP = "WAFER FEEDER UP";
-        private const string NAME_FEEDER_DOWN = "WAFER FEEDER DOWN";
-        private const string NAME_FEEDER_CLAMP = "WAFER FEEDER CLAMP";
-        private const string NAME_FEEDER_UNCLAMP = "WAFER FEEDER UNCLAMP"; // output UNCALMP (typo) handled below
-        private const string NAME_FEEDER_UNCLAMP_ALT = "WAFER FEEDER UNCLAMP";
-        private const string NAME_FEEDER_RING = "WAFER FEEDER RING CHECK";
-        private const string NAME_FEEDER_OVERLOAD = "WAFER FEEDER OVERLOAD CHECK";
-
+        #region IO Domain Mapping
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            // Lift outputs (note output name typo for DOWN -> DOWNE not present here; config defines only UP/DOWNE for some other units)
-            DIO.MapByName(unit, "InFeeder.UpOut", true, NAME_FEEDER_UP);
-            DIO.MapByName(unit, "InFeeder.DownOut", true, NAME_FEEDER_DOWN);
-            // Sensors
-            DIO.MapByName(unit, "InFeeder.UpIn", false, NAME_FEEDER_UP);
-            DIO.MapByName(unit, "InFeeder.DownIn", false, NAME_FEEDER_DOWN);
+            // Lift
+            DIO.MapByName(unit, "InFeeder.UpOut",   true,  InputRingTransferConfig.IO.FEEDER_UP_VALVE);
+            DIO.MapByName(unit, "InFeeder.DownOut", true,  InputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
+            DIO.MapByName(unit, "InFeeder.UpIn",    false, InputRingTransferConfig.IO.FEEDER_UP);
+            DIO.MapByName(unit, "InFeeder.DownIn",  false, InputRingTransferConfig.IO.FEEDER_DOWN);
             _feederLift = new Cylinder("WaferFeederLift", "InFeeder.UpOut", "InFeeder.DownOut", "InFeeder.UpIn", "InFeeder.DownIn");
-            // Clamp outputs
-            DIO.MapByName(unit, "InFeeder.ClampOut", true, NAME_FEEDER_CLAMP);
-            DIO.MapByName(unit, "InFeeder.UnclampOut", true, NAME_FEEDER_UNCLAMP_ALT);
+            // Clamp / Unclamp
+            DIO.MapByName(unit, "InFeeder.ClampOut",   true, InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
+            DIO.MapByName(unit, "InFeeder.UnclampOut", true, InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
         }
+        #endregion
 
-        public bool FeederUp(int timeoutMs = 3000) => _feederLift?.Extend(timeoutMs) ?? false;
-        public bool FeederDown(int timeoutMs = 3000) => _feederLift?.Retract(timeoutMs) ?? false;
-        public void FeederAllOff() => _feederLift?.AllOff();
+        #region High-Level Actuator API
+        public bool FeederUp(int timeoutMs = 3000)    => _feederLift?.Extend(timeoutMs) ?? false;
+        public bool FeederDown(int timeoutMs = 3000)  => _feederLift?.Retract(timeoutMs) ?? false;
+        public void FeederAllOff()                    => _feederLift?.AllOff();
         public void SetClamp(bool clamp)
         {
-            WriteOutput(NAME_FEEDER_CLAMP, clamp);
-            WriteOutput(NAME_FEEDER_UNCLAMP_ALT, !clamp);
+            WriteOutput(InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, clamp);
+            WriteOutput(InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, !clamp);
         }
-        public bool IsRingPresent() => ReadInput(NAME_FEEDER_RING);
-        public bool Overload() => ReadInput(NAME_FEEDER_OVERLOAD);
+        #endregion
+
+        #region Status Helpers
+        public bool IsFeederUp()        => ReadInput(InputRingTransferConfig.IO.FEEDER_UP);
+        public bool IsFeederDown()      => ReadInput(InputRingTransferConfig.IO.FEEDER_DOWN);
+        public bool IsUnclamped()       => ReadInput(InputRingTransferConfig.IO.FEEDER_UNCLAMP);
+        public bool IsRingPresent()     => ReadInput(InputRingTransferConfig.IO.FEEDER_RING_CHECK);
+        public bool IsOverload()        => ReadInput(InputRingTransferConfig.IO.FEEDER_OVERLOAD);
         #endregion
     }
 }

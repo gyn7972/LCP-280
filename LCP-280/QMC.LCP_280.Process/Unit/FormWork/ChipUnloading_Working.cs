@@ -4,33 +4,32 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // ODT IO 상수
+using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;             // Rotary IO 상수/배열
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
     /// <summary>
     /// ChipUnloading Working Form
-    /// - TeachingPositionControl: OutputStage, OutputDieTransfer 등록
-    /// - DIO 제어: OutputStage (Vacuum/Clamp/Expander 등 - InputStage와 동일 네이밍 가정), OutputDieTransfer Arm Vacuum/Blow/Vent
-    /// - 카메라 뷰 / 향후 수동 시퀀스 등록 구조 준비
+    /// - TeachingPositionControl: OutputStage, OutputDieTransfer, Rotary
+    /// - DIO 제어:
+    ///    OutputStage : 센서 입력 + 밸브 강제 제어
+    ///    OutputDieTransfer : Arm Vac/Blow/Vent 제어
+    ///    Rotary : Slot Flow 입력 + Slot Vac/Blow/Vent 강제 제어
     /// </summary>
     public partial class ChipUnloading_Working : Form
     {
         private const string WORK_NAME = "ChipUnloader";
         private Equipment Equipment => Equipment.Instance;
 
-        // (필요 시 구현될 Output 전용 시퀀스 자리 - 현재는 미구현 가정)
-        // private SeqOutputStage _seqOutputStage;
-        // private SeqOutputDieTransferPick _seqDiePick;
-        // private SeqOutputDieTransferPlace _seqDiePlace;
-
         private OutputStage OutputStageUnit { get; set; }
         private OutputDieTransfer OutputDieTransferUnit { get; set; }
         private Rotary RotaryUnit { get; set; }
 
-        private bool _initialized;
+        private bool _initialized;          // 실제 UI 바인딩 완료 여부
+        private bool _preloadRequested;     // PreloadUI 호출되었는지(중복 방지)
         private bool _isLayoutEditMode;
 
-        // 기본 생성자 (FormManager 자동 생성 대응)
         public ChipUnloading_Working() : this(
             TryGetUnit<OutputStage>("OutputStage"),
             TryGetUnit<OutputDieTransfer>("OutputDieTransfer"),
@@ -38,7 +37,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
         }
 
-        // 의존성 주입 생성자
         public ChipUnloading_Working(OutputStage outputStage, OutputDieTransfer outputDieTransfer, Rotary rotaty)
         {
             InitializeComponent();
@@ -48,6 +46,48 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             Load += ChipUnloading_Working_Load;
             FormClosing += ChipUnloading_Working_FormClosing;
+        }
+
+        /// <summary>
+        /// 외부(탭 컨테이너)에서 폼을 Show 하기 전에 UI를 미리 구성하고 핸들을 확보하기 위한 메서드.
+        /// - Teaching/DIO/Camera 바인딩 선행
+        /// - Handle 강제 생성
+        /// </summary>
+        public void PreloadUI()
+        {
+            if (IsDisposed || Disposing) return;
+            if (_preloadRequested) return; // 1회만
+            _preloadRequested = true;
+            EnsureInitialized();
+            // 강제 Handle 생성 (이미 생성되어 있으면 영향 없음)
+            var handle = Handle;
+        }
+
+        private void ChipUnloading_Working_Load(object sender, EventArgs e)
+        {
+            EnsureInitialized();
+        }
+
+        /// <summary>
+        /// UI 초기화(Teaching/DIO/Camera) 공용 메서드. 여러 경로(Load/Preload)에서 안전 호출.
+        /// </summary>
+        private void EnsureInitialized()
+        {
+            if (_initialized) return;
+            _initialized = true;
+            try
+            {
+                Text = $"{WORK_NAME} Working";
+                BindTeachingPositions();
+                BindDioControls();
+                BindCamera();
+                InitSequences();
+            }
+            catch (Exception ex)
+            {
+                // 심각한 에러라도 폼 생성은 유지
+                try { this.Controls.Add(new Label { Dock = DockStyle.Fill, Text = $"Init 실패: {ex.Message}", ForeColor = System.Drawing.Color.Red, TextAlign = System.Drawing.ContentAlignment.MiddleCenter }); } catch { }
+            }
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -60,19 +100,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             }
             catch { }
             return null;
-        }
-
-        private void ChipUnloading_Working_Load(object sender, EventArgs e)
-        {
-            if (_initialized) return;
-            _initialized = true;
-
-            Text = $"{WORK_NAME} Working";
-
-            BindTeachingPositions();
-            BindDioControls();
-            BindCamera();
-            InitSequences(); // (시퀀스 존재 시 추가)
         }
 
         #region Teaching Position Control
@@ -120,11 +147,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 teachingPositionControl.SetSaveCancelVisible(false, false);
                 teachingPositionControl.RefreshData();
             }
-            catch
-            {
-                try { }
-                catch { }
-            }
+            catch { }
         }
         #endregion
 
@@ -135,83 +158,122 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 if (dioControl == null) return;
 
-                // --- OutputStage 강타입 IO 바인딩 ---
+                // 원하는 정렬 선택:
+                dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.Insertion;
+
+                // 그룹 구분선: OutputStage
+                dioControl.BindDIOInput(() => false, "---- OutputStage ----", "SEP_OutStage");
+                // OutputStage (센서 + 밸브 강제 제어)
                 StrongBindOutputStage();
 
-                // OutputDieTransfer Arm Vacuum/Blow/Vent
+                // 그룹 구분선: OutputDieTransfer
                 if (OutputDieTransferUnit != null)
                 {
-                    //4개 중에 1개만 사용.
-                    for (int arm = 0; arm < 1; arm++) //for (int arm = 0; arm < 4; arm++)
+                    dioControl.BindDIOInput(() => false, "---- OutputDieTransfer ----", "SEP_ODT");
+                    for (int arm = 0; arm < 1; arm++)
                     {
                         int idx = arm;
                         dioControl.BindDIOOutput(
                             () => OutputDieTransferUnit.SetArmVac(idx, true),
                             () => OutputDieTransferUnit.SetArmVac(idx, false),
                             $"ODT Arm{idx + 1} VAC ON/OFF",
-                            () => false,
+                            () => OutputDieTransferUnit.IsArmVacOn(idx),
                             $"ODT_Arm{idx + 1}_Vac");
 
                         dioControl.BindDIOOutput(
                             () => OutputDieTransferUnit.SetArmBlow(idx, true),
                             () => OutputDieTransferUnit.SetArmBlow(idx, false),
                             $"ODT Arm{idx + 1} BLOW ON/OFF",
-                            () => false,
+                            () => OutputDieTransferUnit.IsArmBlowOn(idx),
                             $"ODT_Arm{idx + 1}_Blow");
 
                         dioControl.BindDIOOutput(
                             () => OutputDieTransferUnit.SetArmVent(idx, true),
                             () => OutputDieTransferUnit.SetArmVent(idx, false),
                             $"ODT Arm{idx + 1} VENT ON/OFF",
-                            () => false,
+                            () => OutputDieTransferUnit.IsArmVentOn(idx),
                             $"ODT_Arm{idx + 1}_Vent");
                     }
 
-                    // All OFF
                     dioControl.BindDIOOutput(
-                        () => { OutputDieTransferUnit.AllVacOff(); },
-                        () => { OutputDieTransferUnit.AllVacOff(); },
+                        () => OutputDieTransferUnit.AllVacOff(),
+                        () => OutputDieTransferUnit.AllVacOff(),
                         "ODT All VAC OFF",
                         () => false,
                         "ODT_AllVacOff");
                     dioControl.BindDIOOutput(
-                        () => { OutputDieTransferUnit.AllBlowOff(); },
-                        () => { OutputDieTransferUnit.AllBlowOff(); },
+                        () => OutputDieTransferUnit.AllBlowOff(),
+                        () => OutputDieTransferUnit.AllBlowOff(),
                         "ODT All BLOW OFF",
                         () => false,
                         "ODT_AllBlowOff");
                     dioControl.BindDIOOutput(
-                        () => { OutputDieTransferUnit.AllVentOff(); },
-                        () => { OutputDieTransferUnit.AllVentOff(); },
+                        () => OutputDieTransferUnit.AllVentOff(),
+                        () => OutputDieTransferUnit.AllVentOff(),
                         "ODT All VENT OFF",
                         () => false,
                         "ODT_AllVentOff");
                 }
 
-                // Rotary Air / Vacuum (reflection 안전 처리)
+                // 그룹 구분선: Rotary
                 if (RotaryUnit != null)
                 {
-                    bool hasAir = Has(RotaryUnit, "AirOn") && Has(RotaryUnit, "AirOff") && Has(RotaryUnit, "IsAirOn");
-                    bool hasVac = Has(RotaryUnit, "VacOn") && Has(RotaryUnit, "VacOff") && Has(RotaryUnit, "IsVacOn");
-                    if (hasAir)
+                    dioControl.BindDIOInput(() => false, "---- Rotary ----", "SEP_Rotary");
+                    dioControl.BindDIOInput(() => RotaryUnit.AirTankPressureOk(), "Rot AirTank OK", "Rot_AirTk");
+                    dioControl.BindDIOInput(() => RotaryUnit.VacTankPressureOk(), "Rot VacTank OK", "Rot_VacTk");
+
+                    int slotCount = SLOT_VAC.Length; // 8
+                    for (int slot = 0; slot < slotCount; slot++)
                     {
+                        int s = slot;
+                        dioControl.BindDIOInput(
+                            () => RotaryUnit.SlotFlowOk(s),
+                            $"Rot Slot{s + 1} FLOW",
+                            $"Rot_S{s + 1}_Flow");
+
                         dioControl.BindDIOOutput(
-                            () => { Invoke(RotaryUnit, "AirOn"); },
-                            () => { Invoke(RotaryUnit, "AirOff"); },
-                            "Rotary Air ON/OFF",
-                            () => InvokeBool(RotaryUnit, "IsAirOn"),
-                            "RotaryAir");
-                    }
-                    if (hasVac)
-                    {
+                            () => RotaryUnit.SetSlotVac(s, true),
+                            () => RotaryUnit.SetSlotVac(s, false),
+                            $"Rot Slot{s + 1} VAC",
+                            () => RotaryUnit.IsSlotVacOn(s),
+                            $"Rot_S{s + 1}_Vac");
+
                         dioControl.BindDIOOutput(
-                            () => { Invoke(RotaryUnit, "VacOn"); },
-                            () => { Invoke(RotaryUnit, "VacOff"); },
-                            "Rotary Vacuum ON/OFF",
-                            () => InvokeBool(RotaryUnit, "IsVacOn"),
-                            "RotaryVac");
+                            () => RotaryUnit.SetSlotBlow(s, true),
+                            () => RotaryUnit.SetSlotBlow(s, false),
+                            $"Rot Slot{s + 1} BLOW",
+                            () => RotaryUnit.IsSlotBlowOn(s),
+                            $"Rot_S{s + 1}_Blow");
+
+                        dioControl.BindDIOOutput(
+                            () => RotaryUnit.SetSlotVent(s, true),
+                            () => RotaryUnit.SetSlotVent(s, false),
+                            $"Rot Slot{s + 1} VENT",
+                            () => RotaryUnit.IsSlotVentOn(s),
+                            $"Rot_S{s + 1}_Vent");
                     }
+
+                    dioControl.BindDIOOutput(
+                        () => RotaryUnit.AllVacOff(),
+                        () => RotaryUnit.AllVacOff(),
+                        "Rot All VAC OFF",
+                        () => false,
+                        "Rot_AllVacOff");
+                    dioControl.BindDIOOutput(
+                        () => RotaryUnit.AllBlowOff(),
+                        () => RotaryUnit.AllBlowOff(),
+                        "Rot All BLOW OFF",
+                        () => false,
+                        "Rot_AllBlowOff");
+                    dioControl.BindDIOOutput(
+                        () => RotaryUnit.AllVentOff(),
+                        () => RotaryUnit.AllVentOff(),
+                        "Rot All VENT OFF",
+                        () => false,
+                        "Rot_AllVentOff");
                 }
+
+                dioControl.RebuildLists();
             }
             catch { }
         }
@@ -221,81 +283,71 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             if (OutputStageUnit == null || dioControl == null) return;
             try
             {
-                // Vacuum
-                dioControl.BindDIOInput(() => OutputStageUnit.IsVacuum(), "Vacuum", "OutStageVacOk");
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.VacuumOn(),
-                    () => OutputStageUnit.VacuumOff(),
-                    "Vacuum ON/OFF",
-                    () => OutputStageUnit.IsVacuum(),
-                    "OutStageVac");
-
-                // Clamp Lift (physical sensor: DOWN only, UP = logical)
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.ClampLiftUp(),
-                    () => OutputStageUnit.ClampLiftDown(),
-                    "ClampLift UP/DOWN",
-                    () => OutputStageUnit.IsClampLiftUp(),
-                    "OutStageClampLift");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftUp(), "ClampLift UP (Logic)", "OutStageClampLiftUp");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftDown(), "ClampLift DOWN Sns", "OutStageClampLiftDn");
-
-                // Clamp Forward / Backward (physical sensor: FWD only, BWD = logical)
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.ClampFwd(),
-                    () => OutputStageUnit.ClampBwd(),
-                    "Clamp FWD/BWD",
-                    () => OutputStageUnit.IsClampFwd(),
-                    "OutStageClampFB");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampFwd(), "Clamp FWD Sns", "OutStageClampFwd");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampBwd(), "Clamp BWD (Logic)", "OutStageClampBwd");
-
-                // Plate Up/Down
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.PlateUp(),
-                    () => OutputStageUnit.PlateDown(),
-                    "Plate UP/DOWN",
-                    () => OutputStageUnit.IsPlateUp(),
-                    "OutStagePlate");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsVacuum(), "Vacuum OK(Sns)", "OutStageVacOk");
                 dioControl.BindDIOInput(() => OutputStageUnit.IsPlateUp(), "Plate UP Sns", "OutStagePlateUp");
                 dioControl.BindDIOInput(() => OutputStageUnit.IsPlateDown(), "Plate DOWN Sns", "OutStagePlateDn");
-
-                // Ring Sensors
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftDown(), "ClampLift DOWN Sns", "OutStageLiftDn");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampFwd(), "Clamp FWD Sns", "OutStageClampFwd");
                 dioControl.BindDIOInput(() => OutputStageUnit.Ring0(), "Ring Sns 0", "OutStageRing0");
                 dioControl.BindDIOInput(() => OutputStageUnit.Ring1(), "Ring Sns 1", "OutStageRing1");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsRingPresent(), "Ring Present", "OutStageRingAny");
-            }
-            catch { }
-        }
+                dioControl.BindDIOInput(() => OutputStageUnit.IsRingPresent(), "Ring Any", "OutStageRingAny");
 
-        private static bool Has(object obj, string method)
-        {
-            if (obj == null) return false;
-            return obj.GetType().GetMethod(method,
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) != null;
-        }
-        private static void Invoke(object obj, string method)
-        {
-            try { obj?.GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.Invoke(obj, null); } catch { }
-        }
-        private static bool InvokeBool(object obj, string method)
-        {
-            try
-            {
-                var mi = obj?.GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (mi == null) return false;
-                var v = mi.Invoke(obj, null);
-                if (v is bool b) return b;
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.SetVacuumValve(true),
+                    () => OutputStageUnit.SetVacuumValve(false),
+                    "Vacuum Valve",
+                    () => OutputStageUnit.IsVacuumValveOn(),
+                    "OutStageVacValve");
+
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.SetPlateUpValve(true),
+                    () => OutputStageUnit.SetPlateUpValve(false),
+                    "Plate UP Valve",
+                    () => OutputStageUnit.IsPlateUpValveOn(),
+                    "OutStagePlateUp");
+
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.SetPlateDownValve(true),
+                    () => OutputStageUnit.SetPlateDownValve(false),
+                    "Plate DOWN Valve",
+                    () => OutputStageUnit.IsPlateDownValveOn(),
+                    "OutStagePlateDown");
+
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.SetClampLiftUpValve(true),
+                    () => OutputStageUnit.SetClampLiftUpValve(false),
+                    "ClampLift UP Valve",
+                    () => OutputStageUnit.IsClampLiftUpValveOn(),
+                    "OutStageLiftUp");
+
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.SetClampLiftDownValve(true),
+                    () => OutputStageUnit.SetClampLiftDownValve(false),
+                    "ClampLift DOWN Valve",
+                    () => OutputStageUnit.IsClampLiftDownValveOn(),
+                    "OutStageLiftDown");
+
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.SetClampFwdValve(true),
+                    () => OutputStageUnit.SetClampFwdValve(false),
+                    "Clamp FWD Valve",
+                    () => OutputStageUnit.IsClampFwdValveOn(),
+                    "OutStageClampFwd");
+
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.SetClampBwdValve(true),
+                    () => OutputStageUnit.SetClampBwdValve(false),
+                    "Clamp BWD Valve",
+                    () => OutputStageUnit.IsClampBwdValveOn(),
+                    "OutStageClampBwd");
             }
             catch { }
-            return false;
         }
         #endregion
 
         #region Camera
         private void BindCamera()
         {
-            // Camera viewer binding
             try
             {
                 if (_ChipUnloadingCameraviewer != null && OutputStageUnit?.StageCamera != null)
@@ -324,9 +376,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void ChipUnloading_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
-            try
-            {
-            }
+            try { }
             catch { }
         }
 

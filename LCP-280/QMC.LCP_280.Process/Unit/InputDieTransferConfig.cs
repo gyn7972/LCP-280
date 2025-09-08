@@ -8,9 +8,16 @@ using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// InputDieTransferConfig
+    ///  - Teaching Position + Offset 관리 (T / PickZ / PlaceZ)
+    ///  - Arm Vacuum / Blow / Vent 및 Flow / Tank Pressure I/O 상수화
+    ///  - Hard I/O 테이블과 저장/로드 로직 제공
+    /// </summary>
     public class InputDieTransferConfig : BaseConfig
     {
-        internal static class IO // centralized IO names
+        /// <summary>장치 IO 명칭 모음</summary>
+        internal static class IO
         {
             // Inputs (X032~X037)
             public const string AIR_TANK_PRESSURE = "LEFT TOOL AIR TANK PRESSURE CHECK";      // X032
@@ -35,27 +42,29 @@ namespace QMC.LCP_280.Process.Unit
             public const string ARM4_VENT = "LEFT ARM 4 VENT";   // Y050
         }
 
+        /// <summary>Teaching Position 이름 (기존 오타(Wating) 유지 - 호환 목적)</summary>
         public enum TeachingPositionName
         {
             Pickup,
-            PickupWating,
+            PickupWating,  // typo preserved
             Place,
-            PlaceWating,
+            PlaceWating,   // typo preserved
             Ready
-            // 필요시 추가
         }
 
+        /// <summary>Teaching Position 순수 목록</summary>
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        // Offsets: positionName -> (t, pickZ, placeZ)
+        /// <summary>Offset: positionName -> (T, PickZ, PlaceZ)</summary>
         public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } = new Dictionary<string, (double t, double pickZ, double placeZ)>();
 
+        // Motion Done 보조 설정
         public bool EnablePredictiveControl { get; set; } = false;
         public double MoveDoneRemainDistance { get; set; } = 0.005;
 
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
-        [JsonIgnore]
         private static readonly HardInputDef[] _hardInputs = new[]
         {
             new HardInputDef { No = 1, Name = IO.AIR_TANK_PRESSURE, Disp = "X032" },
@@ -68,7 +77,6 @@ namespace QMC.LCP_280.Process.Unit
 
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs;
-        [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = new[]
         {
             new HardOutputDef { No = 1,  Name = IO.ARM1_VAC,  Disp = "Y039" },
@@ -84,9 +92,11 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 11, Name = IO.ARM3_VENT, Disp = "Y049" },
             new HardOutputDef { No = 12, Name = IO.ARM4_VENT, Disp = "Y050" },
         };
+        #endregion
 
         public InputDieTransferConfig() : base("InputDieTransferConfig") { }
 
+        /// <summary>Teaching Position 기본 생성</summary>
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
@@ -108,14 +118,15 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
+        /// <summary>Teaching Position 추가/갱신</summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description = tp.Description;
-                exist.ExtraInfo = tp.ExtraInfo;
+                exist.Description   = tp.Description;
+                exist.ExtraInfo     = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
             if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
@@ -124,6 +135,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
+        /// <summary>Offset 적용된 목표 좌표</summary>
         public (double t, double pickZ, double placeZ) GetPositionWithOffset(string name)
         {
             var tp = GetTeachingPosition(name);
@@ -131,10 +143,7 @@ namespace QMC.LCP_280.Process.Unit
             double t = tp.AxisPositions.TryGetValue("Left Tool T Axis", out var vt) ? vt : 0;
             double pz = tp.AxisPositions.TryGetValue("Left Pick Z Axis", out var vpz) ? vpz : 0;
             double plz = tp.AxisPositions.TryGetValue("Left Place Z Axis", out var vplz) ? vplz : 0;
-            if (Offsets.TryGetValue(name, out var off))
-            {
-                t += off.t; pz += off.pickZ; plz += off.placeZ;
-            }
+            if (Offsets.TryGetValue(name, out var off)) { t += off.t; pz += off.pickZ; plz += off.placeZ; }
             return (t, pz, plz);
         }
 
@@ -144,17 +153,18 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
+        /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
         public int Saveconfig()
         {
             var purePositions = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-            var original = TeachingPositions;
-            TeachingPositions = purePositions;
+            var original = TeachingPositions; TeachingPositions = purePositions;
             try { return Save(); }
             finally { TeachingPositions = original; }
         }
 
+        /// <summary>Config 로드 + TeachingPosition 축 바인딩 + Offset 키 보정</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int result = Load();

@@ -5,8 +5,10 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // IO 상수/배열
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -87,10 +89,10 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region IO Helpers
+        #region IO Helpers (Input / Output 상태)
         public bool ReadInput(string name)
         {
-            var hi = OutputDieTransferConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = OutputDieTransferConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -99,32 +101,45 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            var ho = OutputDieTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = OutputDieTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
                 if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
             return false;
         }
+
+        // 출력 캐시 상태 조회 (입력과 무관하게 실제 On/Off 표시)
+        public bool IsOutputOn(string name)
+        {
+            var ho = OutputDieTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (ho == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+            {
+                // TryGetOutput 메서드가 프레임워크에 존재한다고 가정 (InputStage 패턴 유사)
+                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
+            }
+            return false;
+        }
         #endregion
 
         #region Arm Vacuum / Blow / Vent Control
-        private static readonly string[] VAC_NAMES = { "RIGHT ARM 1 VACUUM", "RIGHT ARM 2 VACUUM", "RIGHT ARM 3 VACUUM", "RIGHT ARM 4 VACUUM" };
-        private static readonly string[] BLOW_NAMES = { "RIGHT ARM 1 BLOW", "RIGHT ARM 2 BLOW", "RIGHT ARM 3 BLOW", "RIGHT ARM 4 BLOW" };
-        private static readonly string[] VENT_NAMES = { "RIGHT ARM 1 VENT", "RIGHT ARM 2 VENT", "RIGHT ARM 3 VENT", "RIGHT ARM 4 VENT" };
-        private static readonly string[] FLOW_INPUTS = { "RIGHT TOOL ARM 1 FLOW CHECK", "RIGHT TOOL ARM 2 FLOW CHECK", "RIGHT TOOL ARM 3 FLOW CHECK", "RIGHT TOOL ARM 4 FLOW CHECK" };
-        private const string NAME_AIR_TANK = "RIGHT TOOL AIR TANK PRESSURE CHECK";
-        private const string NAME_VAC_TANK = "RIGHT TOOL VACUUM TANK PRESSURE CHECK";
+        public void SetArmVac(int armIndex, bool on) => SetIndexedOutput(ARM_VAC, armIndex, on);
+        public void SetArmBlow(int armIndex, bool on) => SetIndexedOutput(ARM_BLOW, armIndex, on);
+        public void SetArmVent(int armIndex, bool on) => SetIndexedOutput(ARM_VENT, armIndex, on);
 
-        public void SetArmVac(int armIndex, bool on) => SetIndexedOutput(VAC_NAMES, armIndex, on);
-        public void SetArmBlow(int armIndex, bool on) => SetIndexedOutput(BLOW_NAMES, armIndex, on);
-        public void SetArmVent(int armIndex, bool on) => SetIndexedOutput(VENT_NAMES, armIndex, on);
-        public void AllVacOff() { for (int i = 0; i < 4; i++) SetArmVac(i, false); }
-        public void AllBlowOff() { for (int i = 0; i < 4; i++) SetArmBlow(i, false); }
-        public void AllVentOff() { for (int i = 0; i < 4; i++) SetArmVent(i, false); }
-        public bool ArmFlowOk(int armIndex) => armIndex >= 0 && armIndex < FLOW_INPUTS.Length && ReadInput(FLOW_INPUTS[armIndex]);
-        public bool AirTankOk() => ReadInput(NAME_AIR_TANK);
-        public bool VacuumTankOk() => ReadInput(NAME_VAC_TANK);
+        public bool IsArmVacOn(int armIndex) => armIndex >= 0 && armIndex < ARM_VAC.Length && IsOutputOn(ARM_VAC[armIndex]);
+        public bool IsArmBlowOn(int armIndex) => armIndex >= 0 && armIndex < ARM_BLOW.Length && IsOutputOn(ARM_BLOW[armIndex]);
+        public bool IsArmVentOn(int armIndex) => armIndex >= 0 && armIndex < ARM_VENT.Length && IsOutputOn(ARM_VENT[armIndex]);
+
+        public void AllVacOff() { for (int i = 0; i < ARM_VAC.Length; i++) SetArmVac(i, false); }
+        public void AllBlowOff() { for (int i = 0; i < ARM_BLOW.Length; i++) SetArmBlow(i, false); }
+        public void AllVentOff() { for (int i = 0; i < ARM_VENT.Length; i++) SetArmVent(i, false); }
+
+        public bool ArmFlowOk(int armIndex) => armIndex >= 0 && armIndex < ARM_FLOW.Length && ReadInput(ARM_FLOW[armIndex]);
+        public bool AirTankOk() => ReadInput(AIR_TANK_PRESS);
+        public bool VacuumTankOk() => ReadInput(VAC_TANK_PRESS);
 
         private void SetIndexedOutput(string[] arr, int armIdx, bool on)
         {
