@@ -29,7 +29,7 @@ namespace QMC.LCP_280.Process.Component
                 .AddParallelStepByAxisNames(
                     "Left Tool T Axis", "Right Tool T Axis", "Probe Card Y Axis", "Align T Axis")
                 .AddParallelStepByAxisNames(
-                    "Wafer Feeder Y Axis", "Bin Feeder Y Axis")
+                    "Probe Card X Axis", "Wafer Feeder Y Axis", "Bin Feeder Y Axis")
                 .AddParallelStepByAxisNames(
                     "Index T Axis", "Wafer Stage Y Axis", "Bin Stage Y Axis", "Wafer Lifter Z Axis", "Bin Lifter Z Axis")
                 .AddParallelStepByAxisNames(
