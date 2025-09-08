@@ -14,13 +14,13 @@ namespace QMC.LCP_280.Process.Unit
         public RotaryConfig RotaryConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
 
-        private MotionAxis _axisT; // Index rotation
+        private MotionAxis _axisT;
         public MotionAxis AxisT => _axisT;
 
         public bool DryRun { get; private set; }
         public void SetDryRun(bool on) => DryRun = on;
         private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, bool> _simInputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, bool> _simInputs  = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
 
         public Rotary(RotaryConfig config = null) : base("Rotary")
         {
@@ -108,22 +108,34 @@ namespace QMC.LCP_280.Process.Unit
             if (ho == null) return false; var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules) if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true; return false;
         }
+        public bool IsOutputOn(string name)
+        {
+            if (DryRun) { bool v; return _simOutputs.TryGetValue(name, out v) && v; }
+            var ho = RotaryConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            if (ho == null) return false; var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules) if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v; return false;
+        }
         #endregion
 
-        #region Pressure / Flow Inputs
+        #region Pressure
         public bool AirTankPressureOk() => ReadInput(RotaryConfig.IO.AIR_TANK_PRESSURE);
         public bool VacTankPressureOk() => ReadInput(RotaryConfig.IO.VAC_TANK_PRESSURE) || ReadInput(RotaryConfig.IO.VAC_TANK_PRESSURE_LEGACY);
         #endregion
 
         #region Slot Vacuum/Blow/Vent Controls
-        private static readonly string[] VAC_NAMES = { RotaryConfig.IO.VAC1, RotaryConfig.IO.VAC2, RotaryConfig.IO.VAC3, RotaryConfig.IO.VAC4, RotaryConfig.IO.VAC5, RotaryConfig.IO.VAC6, RotaryConfig.IO.VAC7, RotaryConfig.IO.VAC8 };
+        private static readonly string[] VAC_NAMES  = { RotaryConfig.IO.VAC1, RotaryConfig.IO.VAC2, RotaryConfig.IO.VAC3, RotaryConfig.IO.VAC4, RotaryConfig.IO.VAC5, RotaryConfig.IO.VAC6, RotaryConfig.IO.VAC7, RotaryConfig.IO.VAC8 };
         private static readonly string[] BLOW_NAMES = { RotaryConfig.IO.BLOW1, RotaryConfig.IO.BLOW2, RotaryConfig.IO.BLOW3, RotaryConfig.IO.BLOW4, RotaryConfig.IO.BLOW5, RotaryConfig.IO.BLOW6, RotaryConfig.IO.BLOW7, RotaryConfig.IO.BLOW8 };
         private static readonly string[] VENT_NAMES = { RotaryConfig.IO.VENT1, RotaryConfig.IO.VENT2, RotaryConfig.IO.VENT3, RotaryConfig.IO.VENT4, RotaryConfig.IO.VENT5, RotaryConfig.IO.VENT6, RotaryConfig.IO.VENT7, RotaryConfig.IO.VENT8 };
 
-        public void SetSlotVac(int slotIndex, bool on) => SetIndexedOutput(VAC_NAMES, slotIndex, on);
+        public void SetSlotVac(int slotIndex, bool on)  => SetIndexedOutput(VAC_NAMES, slotIndex, on);
         public void SetSlotBlow(int slotIndex, bool on) => SetIndexedOutput(BLOW_NAMES, slotIndex, on);
         public void SetSlotVent(int slotIndex, bool on) => SetIndexedOutput(VENT_NAMES, slotIndex, on);
-        public void AllVacOff() { for (int i = 0; i < VAC_NAMES.Length; i++) SetSlotVac(i, false); }
+
+        public bool IsSlotVacOn(int slotIndex)  => slotIndex >= 0 && slotIndex < VAC_NAMES.Length  && IsOutputOn(VAC_NAMES[slotIndex]);
+        public bool IsSlotBlowOn(int slotIndex) => slotIndex >= 0 && slotIndex < BLOW_NAMES.Length && IsOutputOn(BLOW_NAMES[slotIndex]);
+        public bool IsSlotVentOn(int slotIndex) => slotIndex >= 0 && slotIndex < VENT_NAMES.Length && IsOutputOn(VENT_NAMES[slotIndex]);
+
+        public void AllVacOff()  { for (int i = 0; i < VAC_NAMES.Length; i++)  SetSlotVac(i, false); }
         public void AllBlowOff() { for (int i = 0; i < BLOW_NAMES.Length; i++) SetSlotBlow(i, false); }
         public void AllVentOff() { for (int i = 0; i < VENT_NAMES.Length; i++) SetSlotVent(i, false); }
 
