@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using QMC.LCP_280.Process; // AxisNames
+using QMC.LCP_280.Process.Component; // InterlockManager, MachineHomeCoordinator
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -63,13 +64,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // 취소 토큰 준비
                 _homeCts?.Cancel();
                 _homeCts?.Dispose();
                 _homeCts = new CancellationTokenSource();
                 var token = _homeCts.Token;
 
-                // 1) ClearAlarm / Servo On (전체 축)
                 var axes = _axisManager?.GetAll();
                 if (axes == null || axes.Length == 0)
                 {
@@ -80,14 +79,10 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     try { ax.ClearAlarm(); } catch { }
                     try { ax.Servo(true); } catch { }
-                    //try { ax.ApplyToDriver(); } catch { } // 요청에 따라 주석 처리
                 }
 
-                // 2) 홈 시퀀스 실행: 축 이름만으로 묶기 (유닛 무시)
-                var seq = new HomeSequence(_axisManager)
-                    .AddParallelStepByAxisNames("Eject Pin Z Axis", "Ejector Z Axis", "Left Pick Z Axis", "Left Place Z Axis", "Right Pick Z Axis",
-                    "Right Place Z Axis", "Index Z Axis", "Sphere Z Axis", "Probe Z Axis", "Probe Card Z Axis")
-                    .AddParallelStepByAxisNames("Left Tool T Axis", "Right Tool T Axis", "Probe Card Y Axis", "Align T Axis");
+                // 시퀀스 구성은 코디네이터로 위임 → 유지보수/재사용성 향상
+                var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(Equipment);
 
                 var results = await seq.RunAsync(token).ConfigureAwait(true);
 
@@ -359,7 +354,7 @@ namespace QMC.LCP_280.Process.Unit
                 int ret = axis.Servo(false);
                 if (ret != 0)
                 {
-                    MessageBox.Show($"서보 OFF 명령이 실패했습니다. 오류코드: {ret}", "오류",
+                    MessageBox.Show($"서버 OFF 명령이 실패했습니다. 오류코드: {ret}", "오류",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
@@ -515,21 +510,15 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var p in pc)
             {
                 if (p == null) continue;
-
-                // 섹션 헤더(TitleOnlyProperty)는 섹션명으로만 사용
                 if (p is TitleOnlyProperty)
                 {
                     currentSection = GetName(p) ?? string.Empty;
                     continue;
                 }
-
                 var title = GetName(p);
                 if (string.IsNullOrEmpty(title)) continue;
-
                 var key = (currentSection, title);
-                // 뒤에 같은 타이틀이 있어도 최초 1개를 신뢰(중복 방지)
-                if (!map.ContainsKey(key))
-                    map[key] = p;
+                if (!map.ContainsKey(key)) map[key] = p;
             }
             return map;
         }
