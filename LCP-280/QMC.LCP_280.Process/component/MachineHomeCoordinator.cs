@@ -29,15 +29,9 @@ namespace QMC.LCP_280.Process.Component
                 .AddParallelStepByAxisNames(
                     "Left Tool T Axis", "Right Tool T Axis", "Probe Card Y Axis", "Align T Axis")
                 .AddParallelStepByAxisNames(
-                    "Wafer Feeder Y Axis", "Bin Feeder Y Axis")
-                .AddParallelStepByAxisNames(
-                    "Index T Axis", "Wafer Stage Y Axis", "Bin Stage Y Axis", "Wafer Lifter Z Axis", "Bin Lifter Z Axis")
-                .AddParallelStepByAxisNames(
-                    "Wafer Stage X Axis", "Bin Stage X Axis")
-                .AddParallelStepByAxisNames(
-                    "Wafer Stage T Axis", "Bin Stage T Axis");
+                    "Wafer Feeder Y Axis", "Bin Feeder Y Axis");
 
-            // 단계별 훅: 도어/실린더 등 전역 인터락과 축 사전 체크, 피더축 전용 IO 동작
+            // 단계별 훅: 도어/실린더 등 전역 인터락과 축 사전 체크, 피더/스테이지 전용 IO 동작
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
             {
                 string reason;
@@ -46,6 +40,7 @@ namespace QMC.LCP_280.Process.Component
                 // 이 단계에 포함된 축이 무엇인지 검사하여 해당 유닛의 인터락 동작 수행
                 bool needWaferFeeder = list != null && list.Any(a => a != null && a.Name.Equals("Wafer Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
                 bool needBinFeeder = list != null && list.Any(a => a != null && a.Name.Equals("Bin Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
+                bool needRightToolT = list != null && list.Any(a => a != null && a.Name.Equals("Right Tool T Axis", StringComparison.OrdinalIgnoreCase));
 
                 if (needWaferFeeder)
                 {
@@ -80,6 +75,25 @@ namespace QMC.LCP_280.Process.Component
                     catch (Exception ex)
                     {
                         return (false, "Bin Feeder PreStep 실패: " + ex.Message);
+                    }
+                }
+
+                if (needRightToolT)
+                {
+                    try
+                    {
+                        if (eq.Units != null && eq.Units.TryGetValue("OutputStage", out var u3) && u3 is OutputStage outStage)
+                        {
+                            if (!outStage.PlateDown(3000))
+                                return (false, "OutputStage PlateDown 실패");
+                            await Task.Delay(50, ct).ConfigureAwait(false);
+                            if (!outStage.IsPlateDown())
+                                return (false, "OutputStage PlateDown 센서 미확인");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return (false, "OutputStage PreStep 실패: " + ex.Message);
                     }
                 }
 
