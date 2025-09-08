@@ -69,7 +69,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AxisNames.cs" />
+    <Compile Include="Component\AxisNames.cs" />
     <Compile Include="CassetteData.cs" />
     <Compile Include="CassetteDataConfig.cs" />
     <Compile Include="CassetteMapView.cs">
