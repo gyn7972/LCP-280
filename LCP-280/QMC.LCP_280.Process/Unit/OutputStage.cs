@@ -148,8 +148,8 @@ namespace QMC.LCP_280.Process.Unit
         // === BIN STAGE INPUTS ===
         private const string NAME_RING0 = "BIN STAGE RING CHECK 0";
         private const string NAME_RING1 = "BIN STAGE RING CHECK 1";
-        private const string NAME_CLAMP_UP = "BIN STAGE CLAMP UP";      // Lift Up sensor
-        private const string NAME_CLAMP_BWD = "BIN STAGE CLAMP BWD";    // Clamp BWD(sensor available)
+        private const string NAME_CLAMP_FWD = "BIN STAGE CLAMP FWD CHECK";      // Lift Up sensor
+        private const string NAME_CLAMP_DOWN = "BIN STAGE CLAMP DOWN CHECK";    // Clamp BWD(sensor available)
         private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";      // Plate Up sensor
         private const string NAME_PLATE_DN = "BIN STAGE PLATE DOWN";    // Plate Down sensor
         private const string NAME_VAC_OK = "BIN STAGE VACUUM CHECK";    // Vacuum OK
@@ -182,26 +182,26 @@ namespace QMC.LCP_280.Process.Unit
             // Lift (Up/Down) : Outputs 2개 (UP/DOWN) + Input 1개(UP) 만 존재
             DIO.MapByName(unit, "OutStage.LiftUpOut", true, NAME_CLAMP_UP_OUT);
             DIO.MapByName(unit, "OutStage.LiftDownOut", true, NAME_CLAMP_DOWN_OUT);
-            DIO.MapByName(unit, "OutStage.LiftUpIn", false, NAME_CLAMP_UP); // Only UP sensor physically present
+            DIO.MapByName(unit, "OutStage.LiftDownIn", false, NAME_CLAMP_DOWN); // Only UP sensor physically present
             // DOWN 센서는 없음 -> Cylinder 생성 시 가상 NO_SENSOR 키 사용
             _cylClampLift = new Cylinder(
                 "OutStageLift",
                 "OutStage.LiftUpOut",
                 "OutStage.LiftDownOut",
-                "OutStage.LiftUpIn",
-                "OutStage.LiftDownIn/*NO_SENSOR*/");
+                "OutStage.LiftUpIn/*NO_SENSOR*/",
+                "OutStage.LiftDownIn");
 
             // Clamp FWD/BWD (outputs 2 + BWD sensor 1개)
             DIO.MapByName(unit, "OutStage.ClampFwdOut", true, NAME_CLAMP_FWD_OUT);
             DIO.MapByName(unit, "OutStage.ClampBwdOut", true, NAME_CLAMP_BWD_OUT);
-            DIO.MapByName(unit, "OutStage.ClampBwdIn", false, NAME_CLAMP_BWD);
+            DIO.MapByName(unit, "OutStage.ClampFwdIn", false, NAME_CLAMP_FWD);
             // FWD 센서는 없음 -> Cylinder 생성 시 가상 NO_SENSOR 키 사용
             _cylClampFB = new Cylinder(
                 "OutStageLift",
                 "OutStage.ClampFwdOut",
                 "OutStage.ClampBwdOut",
-                "OutStage.ClampFwdIn/*NO_SENSOR*/",
-                "OutStage.ClampBwdIn");
+                "OutStage.ClampFwdIn",
+                "OutStage.ClampBwdIn/*NO_SENSOR*/");
         }
 
         // --- Vacuum ---
@@ -220,16 +220,16 @@ namespace QMC.LCP_280.Process.Unit
         // --- Lift Cylinder API ---
         public bool ClampLiftUp(int timeoutMs = 3000) => _cylClampLift?.Extend(timeoutMs) ?? false;
         public bool ClampLiftDown(int timeoutMs = 3000) => _cylClampLift?.Retract(timeoutMs) ?? false;
-        public bool IsClampLiftUp() => ReadInput(NAME_CLAMP_UP);
+        public bool IsClampLiftUp() => !IsClampLiftDown();
         // DOWN 센서가 없으므로 UP 센서 반전으로 판단 (필요 시 별도 로직 교체)
-        public bool IsClampLiftDown() => !IsClampLiftUp();
+        public bool IsClampLiftDown() => ReadInput(NAME_CLAMP_DOWN);
 
         // --- FB Cylinder API ---
         public bool ClampFwd(int timeoutMs = 3000) => _cylClampFB?.Extend(timeoutMs) ?? false; // FWD = Extend (Close)
         public bool ClampBwd(int timeoutMs = 3000) => _cylClampFB?.Retract(timeoutMs) ?? false; // BWD = Retract (Open)
         // Only BWD sensor present -> FWD(closed) inferred by inverse
-        public bool IsClampFwd() => !ReadInput(NAME_CLAMP_BWD);
-        public bool IsClampBwd() => ReadInput(NAME_CLAMP_BWD);
+        public bool IsClampFwd() => ReadInput(NAME_CLAMP_FWD);
+        public bool IsClampBwd() => !IsClampFwd();
 
         // === Backward Compatibility Wrappers (legacy UI expectation) ===
         // Clamp(bool) previously toggled simple outputs; now map to FWD/BWD cylinder

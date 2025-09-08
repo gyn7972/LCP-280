@@ -30,8 +30,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             new HardInputDef { No = 1, Name = "BIN STAGE RING CHECK 0", Disp = "X057" },
             new HardInputDef { No = 2, Name = "BIN STAGE RING CHECK 1", Disp = "X058" },
-            new HardInputDef { No = 3, Name = "BIN STAGE CLAMP DOWN",   Disp = "X059" },
-            new HardInputDef { No = 4, Name = "BIN STAGE CLAMP",        Disp = "X060" },
+            new HardInputDef { No = 3, Name = "BIN STAGE CLAMP FWD CHECK",   Disp = "X059" },
+            new HardInputDef { No = 4, Name = "BIN STAGE CLAMP DOWN CHECK",   Disp = "X060" },
             new HardInputDef { No = 5, Name = "BIN STAGE PLATE UP",     Disp = "X061" },
             new HardInputDef { No = 6, Name = "BIN STAGE PLATE DOWN",   Disp = "X062" },
             new HardInputDef { No = 7, Name = "BIN STAGE VACUUM CHECK", Disp = "X063" },
@@ -44,8 +44,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             new HardOutputDef { No = 1, Name = "BIN STAGE CLAMP UP",   Disp = "Y028" },
             new HardOutputDef { No = 2, Name = "BIN STAGE CLAMP DOWN", Disp = "Y029" },
-            new HardOutputDef { No = 3, Name = "BIN STAGE CLAMP",      Disp = "Y030" },
-            new HardOutputDef { No = 4, Name = "BIN STAGE UNCLAMP",    Disp = "Y031" },
+            new HardOutputDef { No = 3, Name = "BIN STAGE CLAMP FWD",  Disp = "Y030" },
+            new HardOutputDef { No = 4, Name = "BIN STAGE CLAMP BWD",   Disp = "Y031" },
             new HardOutputDef { No = 5, Name = "BIN STAGE PLATE UP",   Disp = "Y032" },
             new HardOutputDef { No = 6, Name = "BIN STAGE PLATE DOWN", Disp = "Y033" },
             new HardOutputDef { No = 7, Name = "BIN STAGE VACUUM",     Disp = "Y088" },

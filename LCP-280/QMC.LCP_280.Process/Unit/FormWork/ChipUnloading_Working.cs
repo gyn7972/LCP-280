@@ -229,26 +229,25 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     () => OutputStageUnit.IsVacuum(),
                     "OutStageVacCtrl");
 
-                // Clamp Lift (Up/Down) - use dedicated lift methods & sensors
+                // Clamp Lift (physical sensor: DOWN only, UP = logical)
                 dioControl.BindDIOOutput(
                     () => OutputStageUnit.ClampLiftUp(),
                     () => OutputStageUnit.ClampLiftDown(),
                     "ClampLift UP/DOWN",
                     () => OutputStageUnit.IsClampLiftUp(),
                     "OutStageClampLift");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftUp(), "ClampLift UP Sns", "OutStageClampLiftUp");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftUp(), "ClampLift UP (Logic)", "OutStageClampLiftUp");
                 dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftDown(), "ClampLift DOWN Sns", "OutStageClampLiftDn");
 
-                // Clamp Forward / Backward (Close / Open)
+                // Clamp Forward / Backward (physical sensor: FWD only, BWD = logical)
                 dioControl.BindDIOOutput(
                     () => OutputStageUnit.ClampFwd(),
                     () => OutputStageUnit.ClampBwd(),
                     "Clamp FWD/BWD",
                     () => OutputStageUnit.IsClampFwd(),
                     "OutStageClampFB");
-                // FWD sensor inferred (no physical) -> show logical state
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampFwd(), "Clamp FWD (Logic)", "OutStageClampFwd");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampBwd(), "Clamp BWD Sns", "OutStageClampBwd");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampFwd(), "Clamp FWD Sns", "OutStageClampFwd");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampBwd(), "Clamp BWD (Logic)", "OutStageClampBwd");
 
                 // Expander (Plate) Up/Down
                 dioControl.BindDIOOutput(
