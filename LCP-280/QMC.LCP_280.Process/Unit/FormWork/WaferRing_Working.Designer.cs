@@ -28,35 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
-            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.SuspendLayout();
-            // 
-            // _ChipLoadingCameraviewer
-            // 
-            this._ChipLoadingCameraviewer.BackColor = System.Drawing.Color.Black;
-            this._ChipLoadingCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this._ChipLoadingCameraviewer.Camera = null;
-            this._ChipLoadingCameraviewer.CameraSwitch = null;
-            this._ChipLoadingCameraviewer.FrameRate = 1D;
-            this._ChipLoadingCameraviewer.InputImage = null;
-            this._ChipLoadingCameraviewer.IsViewCustomizedImage = false;
-            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(535, 12);
-            this._ChipLoadingCameraviewer.MaximumSize = new System.Drawing.Size(370, 350);
-            this._ChipLoadingCameraviewer.MinimumSize = new System.Drawing.Size(370, 350);
-            this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
-            this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
-            this._ChipLoadingCameraviewer.Simulated = false;
-            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(370, 350);
-            this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this._ChipLoadingCameraviewer.TabIndex = 16;
-            this._ChipLoadingCameraviewer.TabStop = false;
-            this._ChipLoadingCameraviewer.UpdateDelayTime = 80;
-            this._ChipLoadingCameraviewer.VisibleCrossLine = true;
             // 
             // dioControl
             // 
@@ -97,20 +72,16 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1264, 751);
-            this.Controls.Add(this._ChipLoadingCameraviewer);
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
             this.Name = "WaferRing_Working";
             this.Text = "WaferRing_Working";
-            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.ResumeLayout(false);
 
         }
 
         #endregion
-
-        private Common.Vision.VisionImageViewer _ChipLoadingCameraviewer;
         private Component.DIOControl dioControl;
         private Component.TeachingPositionControl teachingPositionControl;
         private Sequences.ManualSequenceControl manualSequenceControl;
