@@ -1092,9 +1092,9 @@ namespace QMC.LCP_280.Process
                         if (!st.IO.ServoOn)
                             continue;
 
-                        int rc = axis.ApplyToDriver();
-                        if (rc != 0)
-                            Log.Write("Equipment", "[ApplyToDriver] Axis='" + axis.Name + "' 실패 rc=" + rc);
+                        //int rc = axis.ApplyToDriver();
+                        //if (rc != 0)
+                        //    Log.Write("Equipment", "[ApplyToDriver] Axis='" + axis.Name + "' 실패 rc=" + rc);
 
                         System.Threading.Thread.Sleep(1); // 드라이버에 과도한 연속 호출 방지
                     }

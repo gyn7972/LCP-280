@@ -1,15 +1,17 @@
-﻿using QMC.Common;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
+using QMC.Common;
+using QMC.Common.Spectrometer;
 
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// CassetteLoadingElevator Unit의 Config 폼
+    /// InputStageUnit_Working Unit의 Config 폼
     /// </summary>
-    public partial class InputCassetteLifterUnit_Working : Form
+    public partial class InputStageUnitWorkTest : Form
     {
         private const string UNIT_NAME = "InputCassetteLifterUnit";
         private Equipment Equipment => Equipment.Instance;
@@ -17,7 +19,7 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        public InputCassetteLifterUnit_Working()
+        public InputStageUnitWorkTest()
         {
             InitializeComponent();
             this.SuspendLayout();
@@ -86,7 +88,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.ResumeLayout(true);
             }
 
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Working)}.SetPanelSize → {width}x{height}");
+            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnitWorkTest)}.SetPanelSize → {width}x{height}");
         }
 
         private void AxispositonListBoxItemsView_Load(object sender, EventArgs e)
@@ -101,12 +103,6 @@ namespace QMC.LCP_280.Process.Unit
 
             // _lifterPropView.GetCurrentProperties()로 현재 컬렉션을 얻어
             // 모델/설비에 반영하는 로직을 추가 가능
-        }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            PatternMatchingDialog dlg = new PatternMatchingDialog();
-            dlg.ShowDialog();
         }
     }
 }
