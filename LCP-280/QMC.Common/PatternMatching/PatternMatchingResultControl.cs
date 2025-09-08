@@ -115,7 +115,6 @@ namespace QMC.Common
                             ov.Visible = true;
                             _viewer.ResultOverlays.Add(ov);
                         }
-                        _viewer.Display();
                     }
                     catch { }
                 }

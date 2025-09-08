@@ -1,0 +1,20 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace QMC.LCP_280.Process.Work
+{
+    internal class ChipLoader
+    {
+        //waferRingStage
+        //waferEjector
+        //dietransfer
+        //index
+
+        //Seq
+        //ChipUp_dieTransfer_PicZ
+        //ChipDown_dieTransfer_PlaceZ
+    }
+}

@@ -235,6 +235,7 @@
     <Compile Include="IO\IOUtil\DIO.cs" />
     <Compile Include="IO\IOUtil\IoAutoBindings.cs.cs" />
     <Compile Include="IO\IOUtil\IoBindings.cs" />
+    <Compile Include="IO\IOUtil\UnitIoHelper.cs" />
     <Compile Include="IO\IOUtil\Vacuum.cs" />
     <Compile Include="IO\SimDioDriver.cs" />
     <Compile Include="Keithley\FormSetupKeithleyInstrument.cs">

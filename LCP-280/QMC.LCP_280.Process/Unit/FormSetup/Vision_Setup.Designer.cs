@@ -520,27 +520,10 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(ex);
             }
 
-
             // 6) 다시 표시
             visionImageViewer.ResumeDisplay();
-            visionImageViewer.Display();
-
             visionImageViewer.StartUpdateTask();
 
-            //if (_camSwitch == null) return;
-            //if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
-
-            //// 이전 카메라가 Live 중이면 드라이버에 맞춰 정리(필요 시)
-            //try 
-            //{ 
-            //    _camSwitch.Cameras[_camSwitch.SelectCameraIndex]?.StopLive(); 
-            //} 
-            //catch  (Exception ex)
-            //{
-            //    Log.Write(ex);
-            //}
-
-            //_camSwitch.Change(selectedIndex); // 뷰어가 AfterChange에서 버퍼/스케일/센터를 다시 맞춤
         }
 
         private void ResetViewerForCameraChange()
