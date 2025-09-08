@@ -10,6 +10,7 @@ namespace QMC.Common.PKGTester
     public enum TestItemCategory
     {
         Electrical,
+        ElectricalSource,
         Optical,
         UserDefined,
         Undefined
@@ -23,7 +24,10 @@ namespace QMC.Common.PKGTester
         [Category("Electrical")] VR,
         [Category("Electrical")] IF,
         [Category("Electrical")] IR,
-        
+
+        [Category("ElectricalSource")] IPulseSweep,
+        [Category("ElectricalSource")] VPulseSweep,
+
         [Category("Optical")] RadInt,
         [Category("Optical")] PhotInt,
         [Category("Optical")] WP,

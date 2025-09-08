@@ -126,6 +126,22 @@ namespace QMC.Common.Keithley
                 {
                     throw new Exception("Failed to apply parameter.");
                 }
+
+                // Initialize SMU
+                if (Init() != 0)
+                {
+                    throw new Exception("Failed to initialize sourcemeter.");
+                }
+
+                // Initialize SMU Channels
+                foreach (var item in Channels)
+                {
+                    var channel = item.Value;
+                    if (!channel.Init())
+                    {
+                        throw new Exception($"Failed to initialize channel [{channel.Name}].");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -164,6 +180,22 @@ namespace QMC.Common.Keithley
             }
             return 0;
         }
+
+        public int Init()
+        {
+            try
+            {
+                if (!Communicator.Write("init()"))
+                    throw new Exception("Failed to send init command.");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+
         public int Measure()
         {
             try
@@ -175,7 +207,7 @@ namespace QMC.Common.Keithley
                     return 0;
                 }
 
-                if (!channel.RunMeasureCommands())
+                if (!channel.RunCommands())
                     throw new Exception("Failed to run measure commands.");
 
                 StopWatch sw = new StopWatch();
@@ -210,11 +242,14 @@ namespace QMC.Common.Keithley
         {
             if (item == null)
                 return false;
-            if (item.Type.GetCategory() != TestItemCategory.Electrical)
+
+            TestItemCategory category = item.GetTestItemCategory();
+            if (!(category == TestItemCategory.Electrical || category == TestItemCategory.ElectricalSource))
                 return false;
 
             testItems.Add(item);
-            results.Add(item.Name, new TestItemResult());
+            if (category == TestItemCategory.Electrical)
+                results.Add(item.Name, new TestItemResult());
             return true;
         }
         public bool BuildTestCommands()
@@ -280,6 +315,28 @@ namespace QMC.Common.Keithley
                                 channel.AddCommand(command);
                             }
                             break;
+                        case TestItemType.VPulseSweep:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.PulseSweepVAndTrigger;
+                                command.SourceValue = item.SourceValue;
+                                command.PulseWidth = item.PulseWidth;
+                                command.PulsePeriod = item.PulsePeriod;
+                                command.PulseCount = item.PulseCount;
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.IPulseSweep:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.PulseSweepIAndTrigger;
+                                command.SourceValue = item.SourceValue;
+                                command.PulseWidth = item.PulseWidth;
+                                command.PulsePeriod = item.PulsePeriod;
+                                command.PulseCount = item.PulseCount;
+                                channel.AddCommand(command);
+                            }
+                            break;
                         default:
                             throw new InvalidOperationException($"Not supported test item type. (Type: {item.Type})");
                     }
@@ -298,7 +355,14 @@ namespace QMC.Common.Keithley
             {
                 KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
 
-                if (channel.BufferDatas.Length != testItems.Count)
+                int measureCount = 0;
+                foreach (var item in testItems)
+                {
+                    if (item.IsMeasureItem())
+                        measureCount ++;
+                }
+
+                if (channel.BufferDatas.Length != measureCount)
                 {
                     throw new InvalidOperationException($"Data count mismatch. (Expected: {testItems.Count}, Actual: {channel.BufferDatas.Length})");
                 }
@@ -313,24 +377,32 @@ namespace QMC.Common.Keithley
                     switch (testItems[i].Type)
                     {
                         case TestItemType.VF:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "V";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "V";
+                            }
                             break;
                         case TestItemType.VR:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "V";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "V";
+                            }
                             break;
                         case TestItemType.IF:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "A";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "A";
+                            }
                             break;
                         case TestItemType.IR:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "A";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "A";
+                            }
                             break;
                     }
                 }
@@ -341,7 +413,6 @@ namespace QMC.Common.Keithley
                 {
                     results[key].Reset();
                 }
-
                 Log.Write(ex);
                 return false;
             }

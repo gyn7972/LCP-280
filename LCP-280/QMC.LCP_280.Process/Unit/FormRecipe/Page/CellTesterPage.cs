@@ -57,6 +57,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             ClearResultGrid();
             foreach (var item in tester.ConditionSet.Items)
             {
+                if (!item.IsMeasureItem())
+                    continue;
+
                 DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn();
                 col.Name = item.Name;
                 col.HeaderText = item.Name;
@@ -179,7 +182,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private async void btnTestStart_Click(object sender, EventArgs e)
         {
-            int result = await tester.ManualMeasureAsync(10, 500);
+            int result = await tester.ManualMeasureAsync(1, 500);
         }
 
         private void btnTestStop_Click(object sender, EventArgs e)

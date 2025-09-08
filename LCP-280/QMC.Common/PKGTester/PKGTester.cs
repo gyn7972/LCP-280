@@ -75,8 +75,8 @@ namespace QMC.Common.PKGTester
         {
             if (conditionSet == null)
                 return -1;
-            if (this.conditionSet == conditionSet)
-                return 0;
+            if (!conditionSet.Validate())
+                return -1;
 
             this.conditionSet.CopyConditionFrom(conditionSet);
             RebuildTestMechanism();
@@ -130,15 +130,20 @@ namespace QMC.Common.PKGTester
                     if (item == null)
                         throw new InvalidOperationException("Invalid TestItem.");
 
-                    switch (item.Type.GetCategory())
+                    switch (item.GetTestItemCategory())
                     {
                         case TestItemCategory.Electrical:
-                            if (!sourcemeter.AddTestItem(item))
-                                throw new Exception("Failed to add test item to sourcemeter.");
+                        case TestItemCategory.ElectricalSource:
+                            {
+                                if (!sourcemeter.AddTestItem(item))
+                                    throw new Exception("Failed to add test item to sourcemeter.");
+                            }
                             break;
                         case TestItemCategory.Optical:
-                            if (!spectrometer.AddTestItem(item))
-                                throw new Exception("Failed to add test item to spectrometer.");
+                            {
+                                if (!spectrometer.AddTestItem(item))
+                                    throw new Exception("Failed to add test item to spectrometer.");
+                            }
                             break;
                         default:
                             throw new Exception("Undefined TestItemCategory.");
@@ -167,14 +172,9 @@ namespace QMC.Common.PKGTester
                     if (item == null)
                         throw new InvalidOperationException("Invalid TestItem");
 
-                    switch (item.Type.GetCategory())
+                    if (item.IsMeasureItem())
                     {
-                        case TestItemCategory.Electrical:
-                        case TestItemCategory.Optical:
-                            results.Add(item.Name, new TestItemResult());
-                            break;
-                        default:
-                            throw new Exception("Undefined TestItemCategory.");
+                        results.Add(item.Name, new TestItemResult());
                     }
                 }
             }
@@ -230,16 +230,19 @@ namespace QMC.Common.PKGTester
             {
                 foreach (var item in conditionSet.Items)
                 {
-                    TestItemResult itemResult = results[item.Name];
+                    if (item.IsMeasureItem())
+                    {
+                        TestItemResult itemResult = results[item.Name];
 
-                    // Calibrate
-                    double value = itemResult.RawData;
-                    //if (item.UseGain)
-                    //    value *= item.Gain;
-                    //if (item.UseOffset)
-                    //    value += item.Offset;
+                        // Calibrate
+                        double value = itemResult.RawData;
+                        //if (item.UseGain)
+                        //    value *= item.Gain;
+                        //if (item.UseOffset)
+                        //    value += item.Offset;
 
-                    itemResult.Value = value;
+                        itemResult.Value = value;
+                    }   
                 }
             }
             catch (Exception ex)

@@ -94,20 +94,63 @@ namespace QMC.LCP_280.Process.Unit
 
                     if (dataGrid.Columns.Contains(pd.Name))
                     {
-                        if (pd.Name.Contains("Source") || pd.Name.Contains("Measure"))
+                        switch (item.GetTestItemCategory())
                         {
-                            if (item.Type.GetCategory() == TestItemCategory.Electrical)
-                            {
-                                row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
-                            }
-                            else 
-                            {                                 
-                                row.Cells[pd.Name].Value = "-";
-                            }
-                        }
-                        else
-                        {
-                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                            case TestItemCategory.Electrical:
+                                {
+                                    if (pd.Name.Contains("Pulse"))
+                                    {
+                                        row.Cells[pd.Name].Value = "-";
+                                    }
+                                    else
+                                    {
+                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                    }       
+                                }
+                                break;
+                            case TestItemCategory.ElectricalSource:
+                                {
+                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure"))
+                                    {
+                                        if (pd.Name == "SourceValue")
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = "-";
+                                        }
+                                    }
+                                    else
+                                    {
+                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                    }
+                                }
+                                break;
+                            case TestItemCategory.Optical:
+                                {
+                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure") || pd.Name.Contains("Pulse"))
+                                    {
+                                        row.Cells[pd.Name].Value = "-";
+                                    }
+                                    else
+                                    {
+                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                    }
+                                }
+                                break;
+                            default:
+                                {
+                                    if (pd.Name == "Type")
+                                    {
+                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                    }
+                                    else
+                                    {
+                                        row.Cells[pd.Name].Value = "-";
+                                    }
+                                }
+                                break;
                         }
                     }
                 }

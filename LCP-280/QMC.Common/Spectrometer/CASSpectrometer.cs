@@ -216,7 +216,7 @@ namespace QMC.Common.Spectrometer
         {
             if (item == null)
                 return false;
-            if (item.Type.GetCategory() != TestItemCategory.Optical)
+            if (item.GetTestItemCategory() != TestItemCategory.Optical)
                 return false;
 
             testItems.Add(item);

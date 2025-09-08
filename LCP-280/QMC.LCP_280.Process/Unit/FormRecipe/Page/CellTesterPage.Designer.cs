@@ -33,16 +33,16 @@
             this.dataGridResult = new System.Windows.Forms.DataGridView();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.casSpectrumViewer = new QMC.Common.Spectrometer.CASSpectrumViewer();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.lbResultValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.radioButtonView1 = new QMC.Common.RadioButtonView();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.btnResultSave = new QMC.Common.IndividualMenuButton();
             this.btnResultClear = new QMC.Common.IndividualMenuButton();
             this.btnLastClear = new QMC.Common.IndividualMenuButton();
+            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btnTestStop = new QMC.Common.IndividualMenuButton();
             this.btnTestStart = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
@@ -51,9 +51,9 @@
             this.tableLayoutPanel3.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
-            this.tableLayoutPanel7.SuspendLayout();
             this.panel1.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
+            this.tableLayoutPanel7.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -92,6 +92,7 @@
             this.dataGridResult.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataGridResult.Location = new System.Drawing.Point(3, 3);
             this.dataGridResult.Name = "dataGridResult";
+            this.dataGridResult.RowHeadersVisible = false;
             this.dataGridResult.RowTemplate.Height = 23;
             this.dataGridResult.Size = new System.Drawing.Size(1099, 441);
             this.dataGridResult.TabIndex = 0;
@@ -126,6 +127,14 @@
             this.tableLayoutPanel4.Size = new System.Drawing.Size(755, 235);
             this.tableLayoutPanel4.TabIndex = 0;
             // 
+            // casSpectrumViewer
+            // 
+            this.casSpectrumViewer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.casSpectrumViewer.Location = new System.Drawing.Point(3, 3);
+            this.casSpectrumViewer.Name = "casSpectrumViewer";
+            this.casSpectrumViewer.Size = new System.Drawing.Size(437, 229);
+            this.casSpectrumViewer.TabIndex = 0;
+            // 
             // tableLayoutPanel5
             // 
             this.tableLayoutPanel5.ColumnCount = 1;
@@ -140,55 +149,6 @@
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 74.5614F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(306, 229);
             this.tableLayoutPanel5.TabIndex = 1;
-            // 
-            // tableLayoutPanel7
-            // 
-            this.tableLayoutPanel7.ColumnCount = 1;
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Controls.Add(this.btnTestStop, 0, 1);
-            this.tableLayoutPanel7.Controls.Add(this.btnTestStart, 0, 0);
-            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Top;
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(1114, 3);
-            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 2;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(133, 101);
-            this.tableLayoutPanel7.TabIndex = 1;
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.tableLayoutPanel6);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(764, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(332, 235);
-            this.panel1.TabIndex = 1;
-            // 
-            // tableLayoutPanel6
-            // 
-            this.tableLayoutPanel6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel6.ColumnCount = 1;
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel6.Controls.Add(this.btnResultSave, 0, 2);
-            this.tableLayoutPanel6.Controls.Add(this.btnResultClear, 0, 1);
-            this.tableLayoutPanel6.Controls.Add(this.btnLastClear, 0, 0);
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(185, 3);
-            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
-            this.tableLayoutPanel6.RowCount = 3;
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(144, 136);
-            this.tableLayoutPanel6.TabIndex = 3;
-            // 
-            // casSpectrumViewer
-            // 
-            this.casSpectrumViewer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.casSpectrumViewer.Location = new System.Drawing.Point(3, 3);
-            this.casSpectrumViewer.Name = "casSpectrumViewer";
-            this.casSpectrumViewer.Size = new System.Drawing.Size(437, 229);
-            this.casSpectrumViewer.TabIndex = 0;
             // 
             // lbResultValue
             // 
@@ -216,6 +176,32 @@
             this.radioButtonView1.SelectedIndex = -1;
             this.radioButtonView1.Size = new System.Drawing.Size(300, 165);
             this.radioButtonView1.TabIndex = 0;
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.tableLayoutPanel6);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(764, 3);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(332, 235);
+            this.panel1.TabIndex = 1;
+            // 
+            // tableLayoutPanel6
+            // 
+            this.tableLayoutPanel6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel6.ColumnCount = 1;
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel6.Controls.Add(this.btnResultSave, 0, 2);
+            this.tableLayoutPanel6.Controls.Add(this.btnResultClear, 0, 1);
+            this.tableLayoutPanel6.Controls.Add(this.btnLastClear, 0, 0);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(185, 3);
+            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
+            this.tableLayoutPanel6.RowCount = 3;
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(144, 136);
+            this.tableLayoutPanel6.TabIndex = 3;
             // 
             // btnResultSave
             // 
@@ -277,6 +263,21 @@
             this.btnLastClear.UseVisualStyleBackColor = false;
             this.btnLastClear.Click += new System.EventHandler(this.btnLastClear_Click);
             // 
+            // tableLayoutPanel7
+            // 
+            this.tableLayoutPanel7.ColumnCount = 1;
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Controls.Add(this.btnTestStop, 0, 1);
+            this.tableLayoutPanel7.Controls.Add(this.btnTestStart, 0, 0);
+            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(1114, 3);
+            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
+            this.tableLayoutPanel7.RowCount = 2;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(133, 101);
+            this.tableLayoutPanel7.TabIndex = 1;
+            // 
             // btnTestStop
             // 
             this.btnTestStop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -333,9 +334,9 @@
             this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel4.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
-            this.tableLayoutPanel7.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
+            this.tableLayoutPanel7.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
