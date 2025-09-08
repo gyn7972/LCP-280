@@ -60,6 +60,9 @@ namespace QMC.Common.Motions
         public string Name { get { return Setup.Name; } }
         public int AxisNo { get { return Setup.AxisNo; } }
 
+        // Homed 래치(성공 시 true, 필요 시 ClearHomeLatch로 초기화)
+        public bool IsHomedLatched { get; private set; }
+
         public MotionAxis(MotionAxisSetup setup, MotionAxisConfig config, AjinDriver driver, IPropertyCorrection correction = null)
         {
             if (setup == null) throw new ArgumentNullException(nameof(setup));
@@ -226,7 +229,11 @@ namespace QMC.Common.Motions
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
                 {
-                    if (_driver.IsHomeDone(AxisNo)) return 0;
+                    if (_driver.IsHomeDone(AxisNo))
+                    {
+                        IsHomedLatched = true; // 성공 래치
+                        return 0;
+                    }
                     Thread.Sleep(5);
                 }
             }
@@ -237,7 +244,11 @@ namespace QMC.Common.Motions
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
                 {
-                    if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition()) return 0;
+                    if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition())
+                    {
+                        IsHomedLatched = true; // 성공 래치
+                        return 0;
+                    }
                     Thread.Sleep(5);
                 }
             }
@@ -515,6 +526,68 @@ namespace QMC.Common.Motions
             // 단일 값만 받는 드라이버라면 평균 사용
             return (a + d) / 200.0;
         }
+
+        /// <summary>
+        /// 홈 시퀀스 사전 인터락 체크. 필요한 경우 일부 자동 복구 시도.
+        /// true면 통과, false면 reason에 사유 기입.
+        /// </summary>
+        public bool CheckHomeInterlocks(out string reason, bool tryRecover = true, int settleMs = 200)
+        {
+            reason = null;
+
+            // CKD 드라이버는 최소 체크만(옵션)
+            if (_driver == null)
+            {
+                return true;
+            }
+
+            try
+            {
+                // 1) Servo On
+                if (!_driver.ReadServoOn(AxisNo))
+                {
+                    if (tryRecover) { try { _driver.Servo(AxisNo, true); Thread.Sleep(settleMs); } catch { } }
+                    if (!_driver.ReadServoOn(AxisNo)) { reason = "Servo OFF"; return false; }
+                }
+
+                // 2) Alarm
+                if (_driver.ReadAlarm(AxisNo))
+                {
+                    if (tryRecover) { try { _driver.ClearAlarm(AxisNo); Thread.Sleep(settleMs); } catch { } }
+                    if (_driver.ReadAlarm(AxisNo)) { reason = "Alarm ON"; return false; }
+                }
+
+                // 3) InMotion → Stop and wait
+                if (!_driver.ReadDone(AxisNo))
+                {
+                    if (tryRecover) { try { _driver.Stop(AxisNo); } catch { } }
+                    var sw = Stopwatch.StartNew();
+                    while (sw.ElapsedMilliseconds < 2000)
+                    {
+                        if (_driver.ReadDone(AxisNo)) break;
+                        Thread.Sleep(10);
+                    }
+                    if (!_driver.ReadDone(AxisNo)) { reason = "Axis moving"; return false; }
+                }
+
+                // 4) Limit
+                if (_driver.ReadPositiveLimit(AxisNo)) { reason = "+Limit ON"; return false; }
+                if (_driver.ReadNegativeLimit(AxisNo)) { reason = "-Limit ON"; return false; }
+
+                // 5) Home 센서 상시 ON 경고(정책상 막을지 여부는 추후 옵션화). 여기서는 통과.
+                // bool homeOn = _driver.ReadHomeSensor(AxisNo);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                reason = ex.Message;
+                return false;
+            }
+        }
+
+        /// <summary>홈 래치 클리어</summary>
+        public void ClearHomeLatch() { IsHomedLatched = false; }
 
 
         // ---- 스냅샷 반환(복사본) ----
