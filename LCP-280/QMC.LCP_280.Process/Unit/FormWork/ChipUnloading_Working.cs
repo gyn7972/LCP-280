@@ -229,23 +229,26 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     () => OutputStageUnit.IsVacuum(),
                     "OutStageVacCtrl");
 
-                // Clamp Lift (Extend/Retract)
+                // Clamp Lift (Up/Down) - use dedicated lift methods & sensors
                 dioControl.BindDIOOutput(
                     () => OutputStageUnit.ClampLiftUp(),
                     () => OutputStageUnit.ClampLiftDown(),
-                    "ClampLift EXT/RET",
-                    () => OutputStageUnit.IsClamp(),
+                    "ClampLift UP/DOWN",
+                    () => OutputStageUnit.IsClampLiftUp(),
                     "OutStageClampLift");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClamp(), "ClampLift UP Sns", "OutStageClampUp");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampDown(), "ClampLift DOWN Sns", "OutStageClampDn");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftUp(), "ClampLift UP Sns", "OutStageClampLiftUp");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftDown(), "ClampLift DOWN Sns", "OutStageClampLiftDn");
 
-                // Clamp (On/Off)
+                // Clamp Forward / Backward (Close / Open)
                 dioControl.BindDIOOutput(
-                    () => OutputStageUnit.Clamp(true),
-                    () => OutputStageUnit.Clamp(false),
-                    "Clamp ON/OFF",
-                    () => OutputStageUnit.IsClamp(),
-                    "OutStageClampCtrl");
+                    () => OutputStageUnit.ClampFwd(),
+                    () => OutputStageUnit.ClampBwd(),
+                    "Clamp FWD/BWD",
+                    () => OutputStageUnit.IsClampFwd(),
+                    "OutStageClampFB");
+                // FWD sensor inferred (no physical) -> show logical state
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampFwd(), "Clamp FWD (Logic)", "OutStageClampFwd");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampBwd(), "Clamp BWD Sns", "OutStageClampBwd");
 
                 // Expander (Plate) Up/Down
                 dioControl.BindDIOOutput(
