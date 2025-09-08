@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Windows.Forms;
+using QMC.LCP_280.Process; // AxisNames
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -348,11 +349,54 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        // --- 특정 축(Home 실행 전) 전용 인터락 Rule 동적 등록 Helper ---
+        // InputStage X 축 홈 조건 예시:
+        //  - DOWN 센서 (모듈: "InputStage", 표시번호: "X105") MUST ON
+        //  - UP   센서 (모듈: "InputStage", 표시번호: "X104") MUST OFF
+        // 필요 시 모듈/디스플레이 번호를 실제 IO 명세에 맞게 수정.
+        private void EnsureAxisHomeInterlocks(MotionAxis axis)
+        {
+            if (axis == null) return;
+
+            try
+            {
+                var il = QMC.LCP_280.Process.Component.InterlockManager.Instance;
+                il.Start(); // 이미 시작되어 있으면 내부에서 무시
+
+                // WaferStage X 축 홈 인터락 조건 등록 예시
+                // TODO: 모듈명("WaferStageIO") / 표시번호("X201","X202") 는 실제 IO 맵에 맞게 수정하세요.
+                //  - Vacuum OFF (센서가 1=ON 이라면 expected:false 로 설정하여 OFF 요구)
+                //  - Clamp Open (Open 센서 ON 필요)
+                if (axis.Name.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
+                {
+                    var rules = il.GetRules();
+                    bool Has(string n) => rules.Any(r => r.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
+
+                    if (!Has("WaferStageX_Home_VacuumOff"))
+                        il.AddAxisIoRequire("WaferStageX_Home_VacuumOff", axis, "WaferStageIO", "X201", false); // Vacuum 센서 예상 OFF
+                    if (!Has("WaferStageX_Home_ClampOpen"))
+                        il.AddAxisIoRequire("WaferStageX_Home_ClampOpen", axis, "WaferStageIO", "X202", true);  // Clamp Open 센서 ON
+                }
+
+                // 축 이름 매칭 (프로젝트 실제 축 이름에 맞게 수정 필요)
+                if (axis.Name.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
+                {
+                    var rules = il.GetRules();
+                    bool Has(string n) => rules.Any(r => r.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
+
+                    if (!Has("InputStageX_Home_DownMustOn"))
+                        il.AddAxisIoRequire("InputStageX_Home_DownMustOn", axis, "InputStage", "X105", true);
+                    if (!Has("InputStageX_Home_UpMustOff"))
+                        il.AddAxisIoRequire("InputStageX_Home_UpMustOff", axis, "InputStage", "X104", false);
+                }
+            }
+            catch { /* ignore registration errors to avoid UI block */ }
+        }
+
         private void btnHome_Click(object sender, EventArgs e)
         {
             try
             {
-                // 1) 선택된 축 이름 확인
                 string axisName = selectAxisListBoxItemsView?.SelectedItemName;
                 if (string.IsNullOrWhiteSpace(axisName))
                 {
@@ -361,12 +405,23 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                // 2) 축 객체 조회
                 var axis = _axisManager?.Get(UNIT_NAME, axisName);
                 if (axis == null)
                 {
                     MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // (1) 축 전용 Home 조건 Rule 동적 등록 (중복 등록 방지 내부 처리)
+                EnsureAxisHomeInterlocks(axis);
+
+                // (2) === Interlock Check (Home 전) ===
+                string reason;
+                if (!QMC.LCP_280.Process.Component.InterlockManager.Instance.ValidateAxisForHome(axis, out reason))
+                {
+                    MessageBox.Show($"홈 인터락 차단:\r\n{reason}", "Interlock",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 

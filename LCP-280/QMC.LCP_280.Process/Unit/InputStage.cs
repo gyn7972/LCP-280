@@ -17,6 +17,7 @@ using QMC.Common.Vision; // added
 using QMC.Common.Vision.Tools; // added
 using QMC.Common.Vision.Cognex; // (legacy types)
 using QMC.LCP_280.Process; // PatternMatchingRunner
+using QMC.Common.IOUtil; // for UnitIoHelper 추가
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -360,12 +361,8 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 return false;
             }
-            var hi = InputStageConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
+            bool v;
+            return UnitIoHelper.TryReadInput(name, out v) && v; // 통합 Helper 이용
         }
 
         public bool WriteOutput(string name, bool on)
@@ -382,12 +379,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 return true;
             }
-            var ho = InputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
-            return false;
+            return UnitIoHelper.TryWriteOutput(name, on); // 통합 Helper 이용
         }
         #endregion
 
@@ -395,67 +387,40 @@ namespace QMC.LCP_280.Process.Unit
         private Cylinder _clampLiftCylinder;
         private Cylinder _expanderCylinder;
         private Vacuum _ejectorVacuum;
-        public Vacuum EjectorVacuum => _ejectorVacuum; // added public accessor
-
-        private const string NAME_CLAMP_UP = "WAFER STAGE CLAMP UP";
-        private const string NAME_CLAMP_DOWN = "WAFER STAGE CLAMP DOWN";
-        private const string NAME_CLAMP = "WAFER STAGE CLAMP";
-        private const string NAME_CLAMP_UN = "WAFER STAGE UNCLAMP";
-        private const string NAME_EXP_UP = "WAFER STAGE EXPANDER UP";
-        private const string NAME_EXP_DOWN = "WAFER STAGE EXPANDER DOWN";
-        private const string NAME_VAC_OUT = "EJECTOR VACUUM";
-        private const string NAME_VAC_OK = "EJECTOR VACUUM CHECK";
-        private const string NAME_RING0 = "WAFER STAGE RING CHECK 0";
-        private const string NAME_RING1 = "WAFER STAGE RING CHECK 1";
+        public Vacuum EjectorVacuum => _ejectorVacuum;
 
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            DIO.MapByName(unit, "Stage.ClampUpOut", true, NAME_CLAMP_UP);
-            DIO.MapByName(unit, "Stage.ClampDownOut", true, NAME_CLAMP_DOWN);
-            DIO.MapByName(unit, "Stage.ClampUpIn", false, NAME_CLAMP);
-            DIO.MapByName(unit, "Stage.ClampDownIn", false, NAME_CLAMP_DOWN);
+            DIO.MapByName(unit, "Stage.ClampUpOut", true, InputStageConfig.IO.CLAMP_UP_OUT);
+            DIO.MapByName(unit, "Stage.ClampDownOut", true, InputStageConfig.IO.CLAMP_DOWN_OUT);
+            DIO.MapByName(unit, "Stage.ClampUpIn", false, InputStageConfig.IO.CLAMP_SNS);
+            DIO.MapByName(unit, "Stage.ClampDownIn", false, InputStageConfig.IO.CLAMP_DOWN_SNS);
             _clampLiftCylinder = new Cylinder("StageClampLift", "Stage.ClampUpOut", "Stage.ClampDownOut", "Stage.ClampUpIn", "Stage.ClampDownIn");
 
-            DIO.MapByName(unit, "Stage.ExpUpOut", true, NAME_EXP_UP);
-            DIO.MapByName(unit, "Stage.ExpDownOut", true, NAME_EXP_DOWN);
-            DIO.MapByName(unit, "Stage.ExpUpIn", false, NAME_EXP_UP);
-            DIO.MapByName(unit, "Stage.ExpDownIn", false, NAME_EXP_DOWN);
+            DIO.MapByName(unit, "Stage.ExpUpOut", true, InputStageConfig.IO.EXPANDER_UP_OUT);
+            DIO.MapByName(unit, "Stage.ExpDownOut", true, InputStageConfig.IO.EXPANDER_DOWN_OUT);
+            DIO.MapByName(unit, "Stage.ExpUpIn", false, InputStageConfig.IO.EXPANDER_UP_SNS);
+            DIO.MapByName(unit, "Stage.ExpDownIn", false, InputStageConfig.IO.EXPANDER_DOWN_SNS);
             _expanderCylinder = new Cylinder("StageExpander", "Stage.ExpUpOut", "Stage.ExpDownOut", "Stage.ExpUpIn", "Stage.ExpDownIn");
 
-            DIO.MapByName(unit, "Stage.VacOut", true, NAME_VAC_OUT);
-            DIO.MapByName(unit, "Stage.VacOk", false, NAME_VAC_OK);
+            DIO.MapByName(unit, "Stage.VacOut", true, InputStageConfig.IO.VAC_OUT);
+            DIO.MapByName(unit, "Stage.VacOk", false, InputStageConfig.IO.VAC_OK_SNS);
             _ejectorVacuum = new Vacuum("Stage", "Stage.VacOut", "Stage.VacOk");
 
-            DIO.MapByName(unit, "Stage.ClampOut", true, NAME_CLAMP);
-            DIO.MapByName(unit, "Stage.UnclampOut", true, NAME_CLAMP_UN);
+            DIO.MapByName(unit, "Stage.ClampOut", true, InputStageConfig.IO.CLAMP_OUT);
+            DIO.MapByName(unit, "Stage.UnclampOut", true, InputStageConfig.IO.UNCLAMP_OUT);
         }
 
-        public bool ClampLiftUp(int timeoutMs = 3000)
+        public void SetClamp(bool clamp)
         {
-            if (DryRun) return true;
-            return _clampLiftCylinder?.Extend(timeoutMs) ?? false;
-        }
-        public bool ClampLiftDown(int timeoutMs = 3000)
-        {
-            if (DryRun) return true;
-            return _clampLiftCylinder?.Retract(timeoutMs) ?? false;
-        }
-        public void ClampAllOff()
-        {
-            if (DryRun) return;
-            _clampLiftCylinder?.AllOff();
-        }
-
-        public bool ExpanderUp(int timeoutMs = 3000)
-        {
-            if (DryRun) { _simExpUp = true; return true; }
-            return _expanderCylinder?.Extend(timeoutMs) ?? false;
-        }
-        public bool ExpanderDown(int timeoutMs = 3000)
-        {
-            if (DryRun) { _simExpUp = false; return true; }
-            return _expanderCylinder?.Retract(timeoutMs) ?? false;
+            if (DryRun)
+            {
+                _simClamp = clamp;
+                _simClampDown = !clamp;
+            }
+            WriteOutput(InputStageConfig.IO.CLAMP_OUT, clamp);
+            WriteOutput(InputStageConfig.IO.UNCLAMP_OUT, !clamp);
         }
 
         public bool VacuumOnWait(int timeoutMs = 1500)
@@ -467,30 +432,36 @@ namespace QMC.LCP_280.Process.Unit
         public void VacuumOff() { if (DryRun) { _simVac = false; return; } _ejectorVacuum?.Off(); }
         public bool IsVacuum() => DryRun ? _simVac : (_ejectorVacuum?.IsOk() ?? false);
 
-        public void SetClamp(bool clamp)
-        {
-            if (DryRun)
-            {
-                _simClamp = clamp;
-                _simClampDown = !clamp;
-            }
-            WriteOutput(NAME_CLAMP, clamp);
-            WriteOutput(NAME_CLAMP_UN, !clamp);
-        }
 
-        public void SetSimRingPresent(bool present) { if (DryRun) _simRingPresent = present; }
-
-        public bool IsClamp() => ReadInput(NAME_CLAMP);
-        public bool IsClampDown() => ReadInput(NAME_CLAMP_DOWN);
-        public bool Ring0() => ReadInput(NAME_RING0);
-        public bool Ring1() => ReadInput(NAME_RING1);
+        public bool IsClamp() => ReadInput(InputStageConfig.IO.CLAMP_SNS);
+        public bool IsClampDown() => ReadInput(InputStageConfig.IO.CLAMP_DOWN_SNS);
+        public bool Ring0() => ReadInput(InputStageConfig.IO.RING_CHECK0);
+        public bool Ring1() => ReadInput(InputStageConfig.IO.RING_CHECK1);
         public bool IsRingPresent() => Ring0() || Ring1();
-        public bool VacuumCheck() => ReadInput(NAME_VAC_OK) || IsVacuum();
-
-        // === Added helper methods for Expander cylinder sensors (for DIOControl binding) ===
-        public bool IsExpanderUp() => ReadInput(NAME_EXP_UP);
-        public bool IsExpanderDown() => ReadInput(NAME_EXP_DOWN);
-        // =======================================================
+        public bool VacuumCheck() => ReadInput(InputStageConfig.IO.VAC_OK_SNS) || IsVacuum();
+        public bool IsExpanderUp() => ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
+        public bool IsExpanderDown() => ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
         #endregion
+
+        public bool ClampLiftUp(int timeoutMs = 3000)
+        {
+            if (DryRun) return true;
+            return _clampLiftCylinder?.Extend(timeoutMs) ?? false;
+        }
+        public bool ClampLiftDown(int timeoutMs = 3000)
+        {
+            if (DryRun) return true;
+            return _clampLiftCylinder?.Retract(timeoutMs) ?? false;
+        }
+        public bool ExpanderUp(int timeoutMs = 3000)
+        {
+            if (DryRun) { _simExpUp = true; return true; }
+            return _expanderCylinder?.Extend(timeoutMs) ?? false;
+        }
+        public bool ExpanderDown(int timeoutMs = 3000)
+        {
+            if (DryRun) { _simExpUp = false; return true; }
+            return _expanderCylinder?.Retract(timeoutMs) ?? false;
+        }
     }
 }

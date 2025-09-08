@@ -10,6 +10,31 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class InputDieTransferConfig : BaseConfig
     {
+        internal static class IO // centralized IO names
+        {
+            // Inputs (X032~X037)
+            public const string AIR_TANK_PRESSURE = "LEFT TOOL AIR TANK PRESSURE CHECK";      // X032
+            public const string VAC_TANK_PRESSURE = "LEFT TOOL VACUUM TANK PRESSURE CHECK";   // X033
+            public const string ARM1_FLOW = "LEFT TOOL ARM 1 FLOW CHECK";                     // X034
+            public const string ARM2_FLOW = "LEFT TOOL ARM 2 FLOW CHECK";                     // X035
+            public const string ARM3_FLOW = "LEFT TOOL ARM 3 FLOW CHECK";                     // X036
+            public const string ARM4_FLOW = "LEFT TOOL ARM 4 FLOW CHECK";                     // X037
+
+            // Outputs (Y039~Y050)
+            public const string ARM1_VAC = "LEFT ARM 1 VACUUM"; // Y039
+            public const string ARM2_VAC = "LEFT ARM 2 VACUUM"; // Y040
+            public const string ARM3_VAC = "LEFT ARM 3 VACUUM"; // Y041
+            public const string ARM4_VAC = "LEFT ARM 4 VACUUM"; // Y042
+            public const string ARM1_BLOW = "LEFT ARM 1 BLOW";   // Y043
+            public const string ARM2_BLOW = "LEFT ARM 2 BLOW";   // Y044
+            public const string ARM3_BLOW = "LEFT ARM 3 BLOW";   // Y045
+            public const string ARM4_BLOW = "LEFT ARM 4 BLOW";   // Y046
+            public const string ARM1_VENT = "LEFT ARM 1 VENT";   // Y047
+            public const string ARM2_VENT = "LEFT ARM 2 VENT";   // Y048
+            public const string ARM3_VENT = "LEFT ARM 3 VENT";   // Y049
+            public const string ARM4_VENT = "LEFT ARM 4 VENT";   // Y050
+        }
+
         public enum TeachingPositionName
         {
             Loading,
@@ -22,27 +47,23 @@ namespace QMC.LCP_280.Process.Unit
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        // Offset (X,Y,T or Z axes depending) : positionName -> (t, pickZ, placeZ) but we keep generic dictionary with axis offsets
-        // Use same pattern as InputStage: store (dx, dy, dt) although here axes are T, PickZ, PlaceZ; we map generically by axis name.
-        public Dictionary<string, Dictionary<string, double>> Offsets { get; set; } = new Dictionary<string, Dictionary<string, double>>();
+        // Offsets: positionName -> (t, pickZ, placeZ)
+        public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } = new Dictionary<string, (double t, double pickZ, double placeZ)>();
 
-        // Predictive control flags (mirroring InputStage)
         public bool EnablePredictiveControl { get; set; } = false;
         public double MoveDoneRemainDistance { get; set; } = 0.005;
 
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
         [JsonIgnore]
-        private static readonly HardInputDef[] _hard_inputs_backup = null; // reserved
-        [JsonIgnore]
         private static readonly HardInputDef[] _hardInputs = new[]
         {
-            new HardInputDef { No = 1, Name = "LEFT TOOL AIR TANK PRESSURE CHECK",    Disp = "X032" },
-            new HardInputDef { No = 2, Name = "LEFT TOOL VACUUM TANK PRESSURE CHECK", Disp = "X033" },
-            new HardInputDef { No = 3, Name = "LEFT TOOL ARM 1 FLOW CHECK",           Disp = "X034" },
-            new HardInputDef { No = 4, Name = "LEFT TOOL ARM 2 FLOW CHECK",           Disp = "X035" },
-            new HardInputDef { No = 5, Name = "LEFT TOOL ARM 3 FLOW CHECK",           Disp = "X036" },
-            new HardInputDef { No = 6, Name = "LEFT TOOL ARM 4 FLOW CHECK",           Disp = "X037" }
+            new HardInputDef { No = 1, Name = IO.AIR_TANK_PRESSURE, Disp = "X032" },
+            new HardInputDef { No = 2, Name = IO.VAC_TANK_PRESSURE, Disp = "X033" },
+            new HardInputDef { No = 3, Name = IO.ARM1_FLOW,         Disp = "X034" },
+            new HardInputDef { No = 4, Name = IO.ARM2_FLOW,         Disp = "X035" },
+            new HardInputDef { No = 5, Name = IO.ARM3_FLOW,         Disp = "X036" },
+            new HardInputDef { No = 6, Name = IO.ARM4_FLOW,         Disp = "X037" },
         };
 
         [JsonIgnore]
@@ -50,18 +71,18 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = new[]
         {
-            new HardOutputDef { No = 1,  Name = "LEFT ARM 1 VACUUM", Disp = "Y039" },
-            new HardOutputDef { No = 2,  Name = "LEFT ARM 2 VACUUM", Disp = "Y040" },
-            new HardOutputDef { No = 3,  Name = "LEFT ARM 3 VACUUM", Disp = "Y041" },
-            new HardOutputDef { No = 4,  Name = "LEFT ARM 4 VACUUM", Disp = "Y042" },
-            new HardOutputDef { No = 5,  Name = "LEFT ARM 1 BLOW",   Disp = "Y043" },
-            new HardOutputDef { No = 6,  Name = "LEFT ARM 2 BLOW",   Disp = "Y044" },
-            new HardOutputDef { No = 7,  Name = "LEFT ARM 3 BLOW",   Disp = "Y045" },
-            new HardOutputDef { No = 8,  Name = "LEFT ARM 4 BLOW",   Disp = "Y046" },
-            new HardOutputDef { No = 9,  Name = "LEFT ARM 1 VENT",   Disp = "Y047" },
-            new HardOutputDef { No = 10, Name = "LEFT ARM 2 VENT",   Disp = "Y048" },
-            new HardOutputDef { No = 11, Name = "LEFT ARM 3 VENT",   Disp = "Y049" },
-            new HardOutputDef { No = 12, Name = "LEFT ARM 4 VENT",   Disp = "Y050" }
+            new HardOutputDef { No = 1,  Name = IO.ARM1_VAC,  Disp = "Y039" },
+            new HardOutputDef { No = 2,  Name = IO.ARM2_VAC,  Disp = "Y040" },
+            new HardOutputDef { No = 3,  Name = IO.ARM3_VAC,  Disp = "Y041" },
+            new HardOutputDef { No = 4,  Name = IO.ARM4_VAC,  Disp = "Y042" },
+            new HardOutputDef { No = 5,  Name = IO.ARM1_BLOW, Disp = "Y043" },
+            new HardOutputDef { No = 6,  Name = IO.ARM2_BLOW, Disp = "Y044" },
+            new HardOutputDef { No = 7,  Name = IO.ARM3_BLOW, Disp = "Y045" },
+            new HardOutputDef { No = 8,  Name = IO.ARM4_BLOW, Disp = "Y046" },
+            new HardOutputDef { No = 9,  Name = IO.ARM1_VENT, Disp = "Y047" },
+            new HardOutputDef { No = 10, Name = IO.ARM2_VENT, Disp = "Y048" },
+            new HardOutputDef { No = 11, Name = IO.ARM3_VENT, Disp = "Y049" },
+            new HardOutputDef { No = 12, Name = IO.ARM4_VENT, Disp = "Y050" },
         };
 
         public InputDieTransferConfig() : base("InputDieTransferConfig") { }
@@ -72,7 +93,7 @@ namespace QMC.LCP_280.Process.Unit
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                if (TeachingPositions.Find(p => p.Name == posName) == null)
+                if (TeachingPositions.FirstOrDefault(p => p.Name == posName) == null)
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
@@ -82,10 +103,7 @@ namespace QMC.LCP_280.Process.Unit
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }
-                if (!Offsets.ContainsKey(posName))
-                {
-                    Offsets[posName] = new Dictionary<string, double>();
-                }
+                if (!Offsets.ContainsKey(posName)) Offsets[posName] = (0, 0, 0);
             }
             Saveconfig();
         }
@@ -100,7 +118,7 @@ namespace QMC.LCP_280.Process.Unit
                 exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
-            if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = new Dictionary<string, double>();
+            if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             Saveconfig();
         }
 
@@ -113,19 +131,16 @@ namespace QMC.LCP_280.Process.Unit
             double t = tp.AxisPositions.TryGetValue("Left Tool T Axis", out var vt) ? vt : 0;
             double pz = tp.AxisPositions.TryGetValue("Left Pick Z Axis", out var vpz) ? vpz : 0;
             double plz = tp.AxisPositions.TryGetValue("Left Place Z Axis", out var vplz) ? vplz : 0;
-            if (Offsets.TryGetValue(name, out var offDict))
+            if (Offsets.TryGetValue(name, out var off))
             {
-                if (offDict.TryGetValue("Left Tool T Axis", out var ot)) t += ot;
-                if (offDict.TryGetValue("Left Pick Z Axis", out var opz)) pz += opz;
-                if (offDict.TryGetValue("Left Place Z Axis", out var oplz)) plz += oplz;
+                t += off.t; pz += off.pickZ; plz += off.placeZ;
             }
             return (t, pz, plz);
         }
 
-        public void SetOffset(string name, string axisName, double delta)
+        public void SetOffset(string name, double t, double pickZ, double placeZ)
         {
-            if (!Offsets.ContainsKey(name)) Offsets[name] = new Dictionary<string, double>();
-            Offsets[name][axisName] = delta;
+            Offsets[name] = (t, pickZ, placeZ);
             Saveconfig();
         }
 
@@ -147,7 +162,7 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
             foreach (var tp in TeachingPositions)
-                if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = new Dictionary<string, double>();
+                if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             return 0;
         }
     }

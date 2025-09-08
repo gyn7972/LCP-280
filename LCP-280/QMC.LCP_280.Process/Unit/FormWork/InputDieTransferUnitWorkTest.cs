@@ -9,9 +9,9 @@ using QMC.Common.Spectrometer;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// InputStageUnit_Working Unit의 Config 폼
+    /// InputDieTransferUnit_Working Unit의 Config 폼
     /// </summary>
-    public partial class InputStageUnit_Working : Form
+    public partial class InputDieTransferUnitWorkTest : Form
     {
         private const string UNIT_NAME = "InputCassetteLifterUnit";
         private Equipment Equipment => Equipment.Instance;
@@ -19,7 +19,7 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        public InputStageUnit_Working()
+        public InputDieTransferUnitWorkTest()
         {
             InitializeComponent();
             this.SuspendLayout();
@@ -88,7 +88,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.ResumeLayout(true);
             }
 
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Working)}.SetPanelSize → {width}x{height}");
+            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnitWorkTest)}.SetPanelSize → {width}x{height}");
         }
 
         private void AxispositonListBoxItemsView_Load(object sender, EventArgs e)

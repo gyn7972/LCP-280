@@ -1,6 +1,5 @@
 using QMC.Common;
 using QMC.Common.Component;
-using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
@@ -12,10 +11,29 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class InputStageEjector : BaseUnit
     {
-        public InputStageEjectorConfig InputStageEjectorConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        public class TeachingPositionCollection : List<QMC.LCP_280.Process.Component.TeachingPosition>
+        {
+            public QMC.LCP_280.Process.Component.TeachingPosition this[InputStageEjectorConfig.TeachingPositionName name]
+            {
+                get
+                {
+                    string key = name.ToString();
+                    return this.FirstOrDefault(p => p != null && p.Name.Equals(key, System.StringComparison.OrdinalIgnoreCase));
+                }
+            }
+        }
 
-        public InputStageEjector(InputStageEjectorConfig config = null) : base("InputStageEjectorConfig")
+        public InputStageEjectorConfig InputStageEjectorConfig { get; private set; }
+        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+
+        private MotionAxis _axEjectorZ, _axPinZ;
+        public MotionAxis AxisEjectorZ => _axEjectorZ;
+        public MotionAxis AxisPinZ => _axPinZ;
+
+        public bool DryRun { get; private set; }
+        public void SetDryRun(bool on) => DryRun = on;
+
+        public InputStageEjector(InputStageEjectorConfig config = null) : base("InputStageEjector")
         {
             InputStageEjectorConfig = config ?? new InputStageEjectorConfig();
             AddComponents();
@@ -25,100 +43,104 @@ namespace QMC.LCP_280.Process.Unit
         {
             InputStageEjectorConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
             InputStageEjectorConfig.InitializeDefaultTeachingPositions();
+
             TeachingPositions.Clear();
             foreach (var tp in InputStageEjectorConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
             BindAxes();
-            BindIoDomains();
+        }
+
+        private void BindAxes()
+        {
+            Axes.TryGetValue("EJECTOR_Z", out _axEjectorZ);
+            Axes.TryGetValue("EJECT_PIN_Z", out _axPinZ);
+            bool useInPos = !InputStageEjectorConfig.EnablePredictiveControl;
+            foreach (var ax in new[] { _axEjectorZ, _axPinZ })
+            {
+                if (ax == null) continue;
+                try
+                {
+                    var mi = ax.GetType().GetMethod("SetInPositionEnable");
+                    var mr = ax.GetType().GetMethod("SetInPositionRange");
+                    if (mi != null) mi.Invoke(ax, new object[] { useInPos });
+                    if (mr != null) mr.Invoke(ax, new object[] { InputStageEjectorConfig.MoveDoneRemainDistance });
+                }
+                catch { }
+            }
         }
 
         public override void OnRun() => base.OnRun();
-        public override void OnStop() { base.OnStop(); }
+        public override void OnStop() => base.OnStop();
 
+        #region Teaching helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            var tp = new TeachingPosition(positionName, axisPositions, description);
+            var tp = new QMC.LCP_280.Process.Component.TeachingPosition(positionName, axisPositions, description);
             InputStageEjectorConfig.SetTeachingPosition(tp);
         }
 
-        public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
+        public int MoveToTeachingPosition(string positionName, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
             var tp = InputStageEjectorConfig.GetTeachingPosition(positionName);
             if (tp == null) return -1;
-            int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
-            return result;
+            var (z, pz) = InputStageEjectorConfig.GetPositionWithOffset(positionName);
+            int rc = 0;
+            if (_axEjectorZ != null)
+                rc |= _axEjectorZ.MoveAbs(z, vel > 0 ? vel : _axEjectorZ.Config.MaxVelocity, acc > 0 ? acc : _axEjectorZ.Config.RunAcc, dec > 0 ? dec : _axEjectorZ.Config.RunDec, jerk > 0 ? jerk : _axEjectorZ.Config.AccJerkPercent);
+            if (_axPinZ != null)
+                rc |= _axPinZ.MoveAbs(pz, vel > 0 ? vel : _axPinZ.Config.MaxVelocity, acc > 0 ? acc : _axPinZ.Config.RunAcc, dec > 0 ? dec : _axPinZ.Config.RunDec, jerk > 0 ? jerk : _axPinZ.Config.AccJerkPercent);
+            return rc;
         }
-
-        #region Axis Helpers
-        private MotionAxis _axZ;
-        private MotionAxis _axPinZ;
-        public MotionAxis AxisZ => _axZ;
-        public MotionAxis AxisPinZ => _axPinZ;
-        private void BindAxes()
+        public int MoveToTeachingPosition(QMC.LCP_280.Process.Component.TeachingPosition tp, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
-            Axes.TryGetValue("Eject Pin Z Axis", out _axPinZ);
-            Axes.TryGetValue("Eject Z Axis", out _axZ);
+            if (tp == null) return -1; return MoveToTeachingPosition(tp.Name, vel, acc, dec, jerk);
         }
-        public double GetTP(string tpName, string axisName)
+        public int MoveToTeachingPosition(InputStageEjectorConfig.TeachingPositionName name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
+            => MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
+
+        public bool InPosTeaching(string positionName)
+        {
+            var (z, pz) = InputStageEjectorConfig.GetPositionWithOffset(positionName);
+            return InPos(_axEjectorZ, z) && InPos(_axPinZ, pz);
+        }
+        public bool InPosTeaching(QMC.LCP_280.Process.Component.TeachingPosition tp) => tp != null && InPosTeaching(tp.Name);
+        public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
+
+        public void ApplyOffset(string positionName, double dzEjector, double dzPin)
+            => InputStageEjectorConfig.SetOffset(positionName, dzEjector, dzPin);
+        #endregion
+
+        #region Axis helpers
+        public double GetTP(string tpName, string axisKey)
         {
             var tp = InputStageEjectorConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisKey, out var v)) return v;
             return 0.0;
         }
+        public double GetTP(QMC.LCP_280.Process.Component.TeachingPosition tp, string axisKey)
+        {
+            if (tp == null || string.IsNullOrEmpty(axisKey)) return 0.0;
+            if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisKey, out var v)) return v;
+            return 0.0;
+        }
+        public double GetTP(QMC.LCP_280.Process.Component.TeachingPosition tp, MotionAxis axis)
+        {
+            if (axis == null) return 0.0; return GetTP(tp, axis.Name);
+        }
+
         public void MoveAxisOnce(MotionAxis ax, double target)
         {
             if (ax == null) return;
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
                 ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        #endregion
-
-        #region IO Low-Level
-        public bool ReadInput(string name)
+        public bool InPos(MotionAxis ax, double target)
         {
-            // Hard IO 배열은 현재 주석 처리된 상태이므로 AutoBinding/DIO 직접 매핑 후 키로 접근할 수도 있음.
-            // 여기서는 장비 전체 UnitIO에서 이름 기반 MapByName를 사용할 수 있게 래퍼 제공.
-            var eq = Equipment.Instance; var unitIO = eq?.UnitIO; var dio = eq?.DioScan; if (unitIO == null || dio == null) return false;
-            // 단순 스캔: 설정된 Config에 하드 입력 정의 없는 경우 false
-            return false;
+            if (ax == null) return true; return ax.InPosition(target);
         }
-        public bool WriteOutput(string name, bool on)
-        {
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (eq == null || dio == null) return false;
-            return false;
-        }
-        #endregion
-
-        #region IO Domain (Vacuum Only Example)
-        private Vacuum _vacuum; // eject pin vacuum if exists
-        private const string NAME_VAC_OUT = "EJECTOR VACUUM";
-        private const string NAME_VAC_OK = "EJECTOR VACUUM CHECK";
-
-        private void BindIoDomains()
-        {
-            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            DIO.MapByName(unit, "Ejector.VacOut", true, NAME_VAC_OUT);
-            DIO.MapByName(unit, "Ejector.VacOk", false, NAME_VAC_OK);
-            _vacuum = new Vacuum("Ejector", "Ejector.VacOut", "Ejector.VacOk");
-        }
-
-        public void VacuumOn() => _vacuum?.On();
-        public void VacuumOff() => _vacuum?.Off();
-        public bool VacuumOk() => _vacuum?.IsOk() ?? false;
-        public bool VacuumCheck() => VacuumOk();
         #endregion
     }
 }

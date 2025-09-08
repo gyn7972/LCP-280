@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class InputCassetteLifterUnit_Working
+    partial class InputCassetteLifterUnitWorkTest
     {
         /// <summary>
         /// Required designer variable.

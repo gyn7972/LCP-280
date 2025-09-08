@@ -99,6 +99,7 @@ namespace QMC.LCP_280.Process.Component
 
         #region Fields / Dependency
         private readonly InputStage _stage;
+        private readonly InputStageEjector _ejectorStage;
         private readonly SeqInputChipAlignVision _seqAlign;
         private readonly SeqWaferLocalScan _seqScan;
         private Step _step = Step.Idle;
@@ -132,14 +133,20 @@ namespace QMC.LCP_280.Process.Component
         #endregion
 
         //public SeqInputStage(InputStage stage, SeqInputChipAlignVision alignSeq, SeqWaferLocalScan scanSeq) : base("SeqInputStage")
-        public SeqInputStage(InputStage stage) : base("SeqInputStage")
+        public SeqInputStage(InputStage stage, InputStageEjector inputStageEjector) : base("SeqInputStage")
         {
             _stage = stage ?? throw new ArgumentNullException(nameof(stage));
+            _ejectorStage = inputStageEjector ?? throw new ArgumentNullException(nameof(inputStageEjector));
+
             // 하위 시퀀스가 아직 구현되지 않았거나 reflection 생성 실패 시 No-Op 시퀀스로 대체 (stage 필요)
             _seqAlign = new SeqInputChipAlignVision(stage);
             _seqScan = new SeqWaferLocalScan(stage);
+
             InitAlarms();
         }
+
+        // Backward compatibility (older code instantiates with only InputStage)
+        public SeqInputStage(InputStage stage) : this(stage, new InputStageEjector()) { }
 
         #region Manual / Single Step Support
         /// <summary>
