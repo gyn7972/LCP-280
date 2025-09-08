@@ -31,7 +31,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region IO Domain Members
         private Cylinder _feederLift; // Up/Down
-        // (Clamp 은 단순 On/Off 두 출력 조합으로 처리)
+        private Cylinder _cylClamp;   // Clamp/Unclamp
         #endregion
 
         #region Constructor / Initialization
@@ -122,22 +122,56 @@ namespace QMC.LCP_280.Process.Unit
                 if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
             return false;
         }
+        public bool IsOutputOn(string name)
+        {
+            var ho = InputRingTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            if (ho == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
+            return false;
+        }
         #endregion
 
         #region IO Domain Mapping
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            // Lift
+
+            // Lift (Feeder Up/Down)
             DIO.MapByName(unit, "InFeeder.UpOut",   true,  InputRingTransferConfig.IO.FEEDER_UP_VALVE);
             DIO.MapByName(unit, "InFeeder.DownOut", true,  InputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
             DIO.MapByName(unit, "InFeeder.UpIn",    false, InputRingTransferConfig.IO.FEEDER_UP);
             DIO.MapByName(unit, "InFeeder.DownIn",  false, InputRingTransferConfig.IO.FEEDER_DOWN);
-            _feederLift = new Cylinder("WaferFeederLift", "InFeeder.UpOut", "InFeeder.DownOut", "InFeeder.UpIn", "InFeeder.DownIn");
-            // Clamp / Unclamp
-            DIO.MapByName(unit, "InFeeder.ClampOut",   true, InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
-            DIO.MapByName(unit, "InFeeder.UnclampOut", true, InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
+            _feederLift = new Cylinder(
+                "InFeederLift",
+                "InFeeder.UpOut",
+                "InFeeder.DownOut",
+                "InFeeder.UpIn",
+                "InFeeder.DownIn");
+
+            // Clamp (Close/Open) - Only UNCLAMP sensor 존재
+            DIO.MapByName(unit, "InFeeder.ClampOut",   true,  InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
+            DIO.MapByName(unit, "InFeeder.UnclampOut", true,  InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
+            DIO.MapByName(unit, "InFeeder.UnclampIn",  false, InputRingTransferConfig.IO.FEEDER_UNCLAMP);
+            _cylClamp = new Cylinder(
+                "InFeederClamp",
+                "InFeeder.ClampOut",
+                "InFeeder.UnclampOut",
+                "InFeeder.ClampIn/*NO_SENSOR*/",
+                "InFeeder.UnclampIn");
         }
+        #endregion
+
+        #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
+        public void SetFeederUpValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_UP_VALVE, on);
+        public bool IsFeederUpValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_UP_VALVE);
+        public void SetFeederDownValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_DOWN_VALVE, on);
+        public bool IsFeederDownValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
+        public void SetFeederClampValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, on);
+        public bool IsFeederClampValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
+        public void SetFeederUnclampValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, on);
+        public bool IsFeederUnclampValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
 
         #region High-Level Actuator API
