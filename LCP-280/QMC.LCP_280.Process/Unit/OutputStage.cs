@@ -1,3 +1,4 @@
+using System; // added for Obsolete attribute
 using QMC.Common;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
@@ -140,15 +141,15 @@ namespace QMC.LCP_280.Process.Unit
 
         #region IO Domain Mapping
         private Cylinder _clampLiftCylinder;   // CLAMP UP/DOWN
-        private Cylinder _plateCylinder;       // PLATE UP/DOWN
+        private Cylinder _plateCylinder;       // Treat as Expander for UI
         private Vacuum _vacuum;                // Stage vacuum
 
         private const string NAME_CLAMP_UP = "BIN STAGE CLAMP UP";
         private const string NAME_CLAMP_DOWN = "BIN STAGE CLAMP DOWN";
         private const string NAME_CLAMP = "BIN STAGE CLAMP";
         private const string NAME_UNCLAMP = "BIN STAGE UNCLAMP";
-        private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";
-        private const string NAME_PLATE_DOWN = "BIN STAGE PLATE DOWN";
+        private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";      // used as ExpanderUp
+        private const string NAME_PLATE_DOWN = "BIN STAGE PLATE DOWN";  // used as ExpanderDown
         private const string NAME_VAC = "BIN STAGE VACUUM";
         private const string NAME_VAC_OK = "BIN STAGE VACUUM CHECK"; // input
         private const string NAME_RING0 = "BIN STAGE RING CHECK 0";
@@ -163,12 +164,12 @@ namespace QMC.LCP_280.Process.Unit
             DIO.MapByName(unit, "OutStage.ClampUpIn", false, NAME_CLAMP);
             DIO.MapByName(unit, "OutStage.ClampDownIn", false, NAME_CLAMP_DOWN);
             _clampLiftCylinder = new Cylinder("OutStageClampLift", "OutStage.ClampUpOut", "OutStage.ClampDownOut", "OutStage.ClampUpIn", "OutStage.ClampDownIn");
-            // Plate
+            // Plate (Expander)
             DIO.MapByName(unit, "OutStage.PlateUpOut", true, NAME_PLATE_UP);
             DIO.MapByName(unit, "OutStage.PlateDownOut", true, NAME_PLATE_DOWN);
             DIO.MapByName(unit, "OutStage.PlateUpIn", false, NAME_PLATE_UP);
             DIO.MapByName(unit, "OutStage.PlateDownIn", false, NAME_PLATE_DOWN);
-            _plateCylinder = new Cylinder("OutStagePlate", "OutStage.PlateUpOut", "OutStage.PlateDownOut", "OutStage.PlateUpIn", "OutStage.PlateDownIn");
+            _plateCylinder = new Cylinder("OutStagePlate(Expander)", "OutStage.PlateUpOut", "OutStage.PlateDownOut", "OutStage.PlateUpIn", "OutStage.PlateDownIn");
             // Vacuum
             DIO.MapByName(unit, "OutStage.VacOut", true, NAME_VAC);
             DIO.MapByName(unit, "OutStage.VacOk", false, NAME_VAC_OK);
@@ -178,20 +179,36 @@ namespace QMC.LCP_280.Process.Unit
             DIO.MapByName(unit, "OutStage.UnclampOut", true, NAME_UNCLAMP);
         }
 
+        // Clamp Lift
         public bool ClampLiftUp(int timeoutMs = 3000) => _clampLiftCylinder?.Extend(timeoutMs) ?? false;
         public bool ClampLiftDown(int timeoutMs = 3000) => _clampLiftCylinder?.Retract(timeoutMs) ?? false;
-        public bool PlateUp(int timeoutMs = 3000) => _plateCylinder?.Extend(timeoutMs) ?? false;
-        public bool PlateDown(int timeoutMs = 3000) => _plateCylinder?.Retract(timeoutMs) ?? false;
+
+        // Unified Expander API (uses internal plate cylinder)
+        public bool ExpanderUp(int timeoutMs = 3000) => _plateCylinder?.Extend(timeoutMs) ?? false;
+        public bool ExpanderDown(int timeoutMs = 3000) => _plateCylinder?.Retract(timeoutMs) ?? false;
+        public bool IsExpanderUp() => ReadInput(NAME_PLATE_UP);
+        public bool IsExpanderDown() => ReadInput(NAME_PLATE_DOWN);
+
+        // Backward compatibility (mark old Plate* as obsolete if referenced in legacy code)
+        [Obsolete("Use ExpanderUp() instead")] public bool PlateUp(int timeoutMs = 3000) => ExpanderUp(timeoutMs);
+        [Obsolete("Use ExpanderDown() instead")] public bool PlateDown(int timeoutMs = 3000) => ExpanderDown(timeoutMs);
+
+        // Clamp (simple On/Off outputs)
         public void Clamp(bool on) { WriteOutput(NAME_CLAMP, on); WriteOutput(NAME_UNCLAMP, !on); }
-        public void VacuumOn() => _vacuum?.On();
-        public void VacuumOff() => _vacuum?.Off();
-        public bool VacuumOk() => _vacuum?.IsOk() ?? false;
         public bool IsClamp() => ReadInput(NAME_CLAMP);
         public bool IsClampDown() => ReadInput(NAME_CLAMP_DOWN);
+
+        // Vacuum
+        public void VacuumOn() => _vacuum?.On();
+        public void VacuumOff() => _vacuum?.Off();
+        public bool IsVacuum() => (_vacuum?.IsOk() ?? false) || ReadInput(NAME_VAC_OK);
+        [Obsolete("Use IsVacuum() instead")] public bool VacuumCheck() => IsVacuum();
+        public bool VacuumOk() => _vacuum?.IsOk() ?? false; // keep for potential logic use
+
+        // Ring checks
         public bool Ring0() => ReadInput(NAME_RING0);
         public bool Ring1() => ReadInput(NAME_RING1);
         public bool IsRingPresent() => Ring0() || Ring1();
-        public bool VacuumCheck() => ReadInput(NAME_VAC_OK) || VacuumOk();
         #endregion
     }
 }

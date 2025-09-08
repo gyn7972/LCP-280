@@ -122,11 +122,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             }
             catch
             {
-                // 구버전 호환(미사용시 무시)
-                try
-                {
-                    // teachingPositionControl.SetUnits() 형태가 필요한 구버전은 없다고 가정
-                }
+                try { }
                 catch { }
             }
         }
@@ -137,21 +133,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try
             {
-                // OutputStage (InputStage 와 동일한 메서드 네이밍을 가정 - 없는 경우 reflection fallback)
-                if (OutputStageUnit != null && dioControl != null)
-                {
-                    // Vacuum
-                    SafeBindOutputStageVacuum();
+                if (dioControl == null) return;
 
-                    // Clamp Lift (Up/Down)
-                    SafeBindOutputStageClampLift();
-
-                    // Expander (Up/Down) - 필요 없으면 삭제
-                    SafeBindOutputStageExpander();
-                }
+                // --- OutputStage 강타입 IO 바인딩 ---
+                StrongBindOutputStage();
 
                 // OutputDieTransfer Arm Vacuum/Blow/Vent
-                if (OutputDieTransferUnit != null && dioControl != null)
+                if (OutputDieTransferUnit != null)
                 {
                     for (int arm = 0; arm < 4; arm++)
                     {
@@ -199,9 +187,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         "ODT_AllVentOff");
                 }
 
-                if(RotaryUnit != null && dioControl != null)
+                // Rotary Air / Vacuum (reflection 안전 처리)
+                if (RotaryUnit != null)
                 {
-                    // Rotary Air / Vacuum
                     bool hasAir = Has(RotaryUnit, "AirOn") && Has(RotaryUnit, "AirOff") && Has(RotaryUnit, "IsAirOn");
                     bool hasVac = Has(RotaryUnit, "VacOn") && Has(RotaryUnit, "VacOff") && Has(RotaryUnit, "IsVacOn");
                     if (hasAir)
@@ -227,78 +215,52 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             catch { }
         }
 
-        private void SafeBindOutputStageVacuum()
+        private void StrongBindOutputStage()
         {
+            if (OutputStageUnit == null || dioControl == null) return;
             try
             {
-                bool HasMethod(string name) => OutputStageUnit.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) != null;
+                // Vacuum
+                dioControl.BindDIOInput(() => OutputStageUnit.IsVacuum(), "Vacuum", "OutStageVacOk");
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.VacuumOn(),
+                    () => OutputStageUnit.VacuumOff(),
+                    "Vacuum ON/OFF",
+                    () => OutputStageUnit.IsVacuum(),
+                    "OutStageVacCtrl");
 
-                if (HasMethod("IsVacuum") && HasMethod("VacuumOn") && HasMethod("VacuumOff"))
-                {
-                    dioControl.BindDIOInput(
-                        () => InvokeBool(OutputStageUnit, "IsVacuum"),
-                        "Vacuum",
-                        "OutStageVac");
-                    dioControl.BindDIOOutput(
-                        () => { Invoke(OutputStageUnit, "VacuumOn"); },
-                        () => { Invoke(OutputStageUnit, "VacuumOff"); },
-                        "Vacuum ON/OFF",
-                        () => InvokeBool(OutputStageUnit, "IsVacuum"),
-                        "OutStageVacCtrl");
-                }
-            }
-            catch { }
-        }
+                // Clamp Lift (Extend/Retract)
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.ClampLiftUp(),
+                    () => OutputStageUnit.ClampLiftDown(),
+                    "ClampLift EXT/RET",
+                    () => OutputStageUnit.IsClamp(),
+                    "OutStageClampLift");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClamp(), "ClampLift UP Sns", "OutStageClampUp");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsClampDown(), "ClampLift DOWN Sns", "OutStageClampDn");
 
-        private void SafeBindOutputStageClampLift()
-        {
-            try
-            {
-                // ClampLift Up/Down + Sensors
-                bool hasUp = Has(OutputStageUnit, "ClampLiftUp");
-                bool hasDn = Has(OutputStageUnit, "ClampLiftDown");
-                bool hasIsClamp = Has(OutputStageUnit, "IsClamp");
-                bool hasIsClampDown = Has(OutputStageUnit, "IsClampDown");
+                // Clamp (On/Off)
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.Clamp(true),
+                    () => OutputStageUnit.Clamp(false),
+                    "Clamp ON/OFF",
+                    () => OutputStageUnit.IsClamp(),
+                    "OutStageClampCtrl");
 
-                if (hasUp && hasDn && hasIsClamp)
-                {
-                    dioControl.BindDIOOutput(
-                        () => { Invoke(OutputStageUnit, "ClampLiftUp"); },
-                        () => { Invoke(OutputStageUnit, "ClampLiftDown"); },
-                        "ClampLift EXT/RET",
-                        () => InvokeBool(OutputStageUnit, "IsClamp"),
-                        "OutStageClamp");
-                    if (hasIsClamp)
-                        dioControl.BindDIOInput(() => InvokeBool(OutputStageUnit, "IsClamp"), "ClampLift UP Sns", "OutStageClampUp");
-                    if (hasIsClampDown)
-                        dioControl.BindDIOInput(() => InvokeBool(OutputStageUnit, "IsClampDown"), "ClampLift DOWN Sns", "OutStageClampDn");
-                }
-            }
-            catch { }
-        }
+                // Expander (Plate) Up/Down
+                dioControl.BindDIOOutput(
+                    () => OutputStageUnit.ExpanderUp(),
+                    () => OutputStageUnit.ExpanderDown(),
+                    "Expander UP/DOWN",
+                    () => OutputStageUnit.IsExpanderUp(),
+                    "OutStageExp");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsExpanderUp(), "Expander UP Sns", "OutStageExpUp");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsExpanderDown(), "Expander DOWN Sns", "OutStageExpDn");
 
-        private void SafeBindOutputStageExpander()
-        {
-            try
-            {
-                bool hasUp = Has(OutputStageUnit, "ExpanderUp");
-                bool hasDn = Has(OutputStageUnit, "ExpanderDown");
-                bool hasIsUp = Has(OutputStageUnit, "IsExpanderUp");
-                bool hasIsDn = Has(OutputStageUnit, "IsExpanderDown");
-
-                if (hasUp && hasDn && hasIsUp)
-                {
-                    dioControl.BindDIOOutput(
-                        () => { Invoke(OutputStageUnit, "ExpanderUp"); },
-                        () => { Invoke(OutputStageUnit, "ExpanderDown"); },
-                        "Expander UP/DOWN",
-                        () => InvokeBool(OutputStageUnit, "IsExpanderUp"),
-                        "OutStageExp");
-                    if (hasIsUp)
-                        dioControl.BindDIOInput(() => InvokeBool(OutputStageUnit, "IsExpanderUp"), "Expander UP Sns", "OutStageExpUp");
-                    if (hasIsDn)
-                        dioControl.BindDIOInput(() => InvokeBool(OutputStageUnit, "IsExpanderDown"), "Expander DOWN Sns", "OutStageExpDn");
-                }
+                // Ring Sensors
+                dioControl.BindDIOInput(() => OutputStageUnit.Ring0(), "Ring Sns 0", "OutStageRing0");
+                dioControl.BindDIOInput(() => OutputStageUnit.Ring1(), "Ring Sns 1", "OutStageRing1");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsRingPresent(), "Ring Present", "OutStageRingAny");
             }
             catch { }
         }
@@ -352,10 +314,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 if (manualSequenceControl != null)
                     manualSequenceControl.ClearSequences();
-
-                // 향후 OutputStage / OutputDieTransfer 수동 시퀀스 추가 위치
-                // if (OutputStageUnit != null) { ... }
-                // if (OutputDieTransferUnit != null) { ... }
             }
             catch { }
         }
@@ -365,26 +323,16 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try
             {
-                // _seqOutputStage?.Stop();
-                // _seqDiePick?.Stop();
-                // _seqDiePlace?.Stop();
             }
             catch { }
         }
 
-        // (옵션) 비전 설정 버튼 핸들러 추가 가능
         private void _btnVisionSetting_Click(object sender, EventArgs e)
         {
             try
             {
                 PatternMatchingDialog dlg = new PatternMatchingDialog();
                 dlg.ShowDialog();
-                //var dlgType = Type.GetType("QMC.LCP_280.Process.Unit.PatternMatchingDialog");
-                //if (dlgType != null)
-                //{
-                //    using (var dlg = Activator.CreateInstance(dlgType) as Form)
-                //        dlg?.ShowDialog();
-                //}
             }
             catch { }
         }
