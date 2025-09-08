@@ -127,13 +127,13 @@ namespace QMC.Common.Keithley
                     throw new Exception("Failed to apply parameter.");
                 }
 
-                // Initialize SMU
+                //// Initialize SMU
                 if (Init() != 0)
                 {
                     throw new Exception("Failed to initialize sourcemeter.");
                 }
 
-                // Initialize SMU Channels
+                //// Initialize SMU Channels
                 foreach (var item in Channels)
                 {
                     var channel = item.Value;
@@ -469,10 +469,14 @@ namespace QMC.Common.Keithley
                             continue;
 
                         sb.AppendLine(arrangeText);
+                        if (!Communicator.Write(arrangeText))
+                            throw new Exception("Failed to send user script.");
                     }
 
-                    if (!Communicator.Write(sb.ToString()))
-                        throw new Exception("Failed to send user script.");
+                    //string a = sb.ToString();
+
+                    //if (!Communicator.Write(sb.ToString()))
+                    //    throw new Exception("Failed to send user script.");
                 }
             }
             catch (Exception ex)

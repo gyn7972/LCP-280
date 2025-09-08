@@ -288,7 +288,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             TestConditionItem item = new TestConditionItem("VF_Test");
-            item.SourceValue = 0.1;//A
+            item.SourceValue = 0.001;//A
             item.SourceTime = 10;//ms
             item.SourceLimit = 3;//V
             item.MeasureTime = 10;//ms
