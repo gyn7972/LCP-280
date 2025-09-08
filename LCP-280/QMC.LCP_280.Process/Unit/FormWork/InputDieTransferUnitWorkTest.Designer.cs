@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class InputStageUnit_Working
+    partial class InputDieTransferUnitWorkTest
     {
         /// <summary>
         /// Required designer variable.
@@ -164,13 +164,13 @@ namespace QMC.LCP_280.Process.Unit
             this.sequencePanel.TabIndex = 8;
 
             // 
-            // InputStageUnit_Working
+            // InputCassetteLifterUnit_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 780);
             this.Controls.Add(this.tableLayoutPanel);
-            this.Name = "InputStageUnit_Working";
+            this.Name = "InputCassetteLifterUnit_Working";
             this.Text = "InputCassetteLifter Unit Configuration";
             this.tableLayoutPanel.ResumeLayout(false);
             this.gbModuleUnit.ResumeLayout(false);

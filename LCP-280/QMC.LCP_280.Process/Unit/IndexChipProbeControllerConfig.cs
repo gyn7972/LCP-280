@@ -15,10 +15,9 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum TeachingPositionName
         {
-            Loading,
-            Unloading,
-            Ready,
-            Home
+            TopContact,
+            TopContactWating,
+            Ready
             // 필요시 추가
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

@@ -18,35 +18,36 @@ namespace QMC.LCP_280.Process.Unit
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this._Cameraviewer = new QMC.Common.Vision.VisionImageViewer();
+            this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
             this._btnVisionSetting = new System.Windows.Forms.Button();
-            ((System.ComponentModel.ISupportInitialize)(this._Cameraviewer)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.SuspendLayout();
             // 
             // _Cameraviewer
             // 
-            this._Cameraviewer.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this._Cameraviewer.BackColor = System.Drawing.Color.Black;
-            this._Cameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this._Cameraviewer.Camera = null;
-            this._Cameraviewer.CameraSwitch = null;
-            this._Cameraviewer.FrameRate = 1D;
-            this._Cameraviewer.InputImage = null;
-            this._Cameraviewer.IsViewCustomizedImage = false;
-            this._Cameraviewer.Location = new System.Drawing.Point(535, 12);
-            this._Cameraviewer.Name = "_Cameraviewer";
-            this._Cameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
-            this._Cameraviewer.Simulated = false;
-            this._Cameraviewer.Size = new System.Drawing.Size(370, 350);
-            this._Cameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this._Cameraviewer.TabIndex = 12;
-            this._Cameraviewer.TabStop = false;
-            this._Cameraviewer.UpdateDelayTime = 80;
-            this._Cameraviewer.VisibleCrossLine = true;
+            this._ChipLoadingCameraviewer.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left))); // fixed size
+            this._ChipLoadingCameraviewer.BackColor = System.Drawing.Color.Black;
+            this._ChipLoadingCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._ChipLoadingCameraviewer.Camera = null;
+            this._ChipLoadingCameraviewer.CameraSwitch = null;
+            this._ChipLoadingCameraviewer.FrameRate = 1D;
+            this._ChipLoadingCameraviewer.InputImage = null;
+            this._ChipLoadingCameraviewer.IsViewCustomizedImage = false;
+            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(535, 12);
+            this._ChipLoadingCameraviewer.MinimumSize = new System.Drawing.Size(370, 350);
+            this._ChipLoadingCameraviewer.MaximumSize = new System.Drawing.Size(370, 350);
+            this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
+            this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
+            this._ChipLoadingCameraviewer.Simulated = false;
+            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(370, 350);
+            this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this._ChipLoadingCameraviewer.TabIndex = 12;
+            this._ChipLoadingCameraviewer.TabStop = false;
+            this._ChipLoadingCameraviewer.UpdateDelayTime = 80;
+            this._ChipLoadingCameraviewer.VisibleCrossLine = true;
             // 
             // dioControl
             // 
@@ -95,13 +96,13 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.ClientSize = new System.Drawing.Size(1264, 751);
             this.Controls.Add(this._btnVisionSetting);
-            this.Controls.Add(this._Cameraviewer);
+            this.Controls.Add(this._ChipLoadingCameraviewer);
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
             this.Name = "ChipLoader_Working";
             this.Text = "ChipLoader Working";
-            ((System.ComponentModel.ISupportInitialize)(this._Cameraviewer)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -115,7 +116,7 @@ namespace QMC.LCP_280.Process.Unit
         private ManualSequenceControl manualSequenceControl;
         private TeachingPositionControl teachingPositionControl;
         private DIOControl dioControl;
-        private Common.Vision.VisionImageViewer _Cameraviewer;
+        private Common.Vision.VisionImageViewer _ChipLoadingCameraviewer;
         private Button _btnVisionSetting;
     }
 }

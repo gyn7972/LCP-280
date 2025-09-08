@@ -1,4 +1,6 @@
+using System; // added for Obsolete attribute
 using QMC.Common;
+using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
@@ -12,10 +14,28 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputStage : BaseUnit
     {
-        public OutputStageConfig OutputStageConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        // Wrapper collection to allow enum index access
+        public class TeachingPositionCollection : List<TeachingPosition>
+        {
+            public TeachingPosition this[OutputStageConfig.TeachingPositionName name]
+            {
+                get
+                {
+                    string key = name.ToString();
+                    return this.FirstOrDefault(p => p != null && p.Name.Equals(key, System.StringComparison.OrdinalIgnoreCase));
+                }
+            }
+        }
 
-        public OutputStage(OutputStageConfig config = null) : base("OutputStageConfig")
+        public OutputStageConfig OutputStageConfig { get; private set; }
+        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+
+        // Stage camera
+        public HIKGigECamera StageCamera { get; private set; }
+        public string StageCameraKey { get; set; } = "Out_Stage";
+
+        public OutputStage(OutputStageConfig config = null)
+            : base("OutputStageConfig")
         {
             OutputStageConfig = config ?? new OutputStageConfig();
             AddComponents();
@@ -30,6 +50,17 @@ namespace QMC.LCP_280.Process.Unit
                 TeachingPositions.Add(tp);
             BindAxes();
             BindIoDomains();
+            BindCamera();
+        }
+
+        private void BindCamera()
+        {
+            var eq = Equipment.Instance;
+            if (eq == null) return;
+            if (eq.Cameras != null && eq.Cameras.TryGetValue(StageCameraKey, out var cam))
+                StageCamera = cam as HIKGigECamera;
+            else
+                StageCamera = eq.OutStageCam; // fallback
         }
 
         public override void OnRun() => base.OnRun();
@@ -108,60 +139,97 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        #region IO Domain Mapping
-        private Cylinder _clampLiftCylinder;   // CLAMP UP/DOWN
-        private Cylinder _plateCylinder;       // PLATE UP/DOWN
-        private Vacuum _vacuum;                // Stage vacuum
-
-        private const string NAME_CLAMP_UP = "BIN STAGE CLAMP UP";
-        private const string NAME_CLAMP_DOWN = "BIN STAGE CLAMP DOWN";
-        private const string NAME_CLAMP = "BIN STAGE CLAMP";
-        private const string NAME_UNCLAMP = "BIN STAGE UNCLAMP";
-        private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";
-        private const string NAME_PLATE_DOWN = "BIN STAGE PLATE DOWN";
-        private const string NAME_VAC = "BIN STAGE VACUUM";
-        private const string NAME_VAC_OK = "BIN STAGE VACUUM CHECK"; // input
-        private const string NAME_RING0 = "BIN STAGE RING CHECK 0";
-        private const string NAME_RING1 = "BIN STAGE RING CHECK 1";
+        #region IO Domain Mapping (Reorganized)
+        private Cylinder _cylClampLift;      // Up/Down (Clamp Lift)
+        private Cylinder _cylClampFB;        // FWD/BWD (Clamp Fwd/Bwd)
+        private Cylinder _cylPlate;     // Plate (Expander)
+        private Vacuum _vacuum;         // Vacuum
 
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            // Clamp lift
-            DIO.MapByName(unit, "OutStage.ClampUpOut", true, NAME_CLAMP_UP);
-            DIO.MapByName(unit, "OutStage.ClampDownOut", true, NAME_CLAMP_DOWN);
-            DIO.MapByName(unit, "OutStage.ClampUpIn", false, NAME_CLAMP);
-            DIO.MapByName(unit, "OutStage.ClampDownIn", false, NAME_CLAMP_DOWN);
-            _clampLiftCylinder = new Cylinder("OutStageClampLift", "OutStage.ClampUpOut", "OutStage.ClampDownOut", "OutStage.ClampUpIn", "OutStage.ClampDownIn");
-            // Plate
-            DIO.MapByName(unit, "OutStage.PlateUpOut", true, NAME_PLATE_UP);
-            DIO.MapByName(unit, "OutStage.PlateDownOut", true, NAME_PLATE_DOWN);
-            DIO.MapByName(unit, "OutStage.PlateUpIn", false, NAME_PLATE_UP);
-            DIO.MapByName(unit, "OutStage.PlateDownIn", false, NAME_PLATE_DOWN);
-            _plateCylinder = new Cylinder("OutStagePlate", "OutStage.PlateUpOut", "OutStage.PlateDownOut", "OutStage.PlateUpIn", "OutStage.PlateDownIn");
+
             // Vacuum
-            DIO.MapByName(unit, "OutStage.VacOut", true, NAME_VAC);
-            DIO.MapByName(unit, "OutStage.VacOk", false, NAME_VAC_OK);
-            _vacuum = new Vacuum("OutStage", "OutStage.VacOut", "OutStage.VacOk");
-            // Clamp / Unclamp simple outs (already partially mapped above for sensors)
-            DIO.MapByName(unit, "OutStage.ClampOut", true, NAME_CLAMP);
-            DIO.MapByName(unit, "OutStage.UnclampOut", true, NAME_UNCLAMP);
+            DIO.MapByName(unit, "OutStage.VacOut", true, OutputStageConfig.IO.VACUUM);
+            DIO.MapByName(unit, "OutStage.VacOk", false, OutputStageConfig.IO.VACUUM_CHECK);
+            _vacuum = new Vacuum("OutStageVac", "OutStage.VacOut", "OutStage.VacOk");
+
+            // Plate (Expander)
+            DIO.MapByName(unit, "OutStage.PlateUpOut", true, OutputStageConfig.IO.PLATE_UP_OUT);
+            DIO.MapByName(unit, "OutStage.PlateDownOut", true, OutputStageConfig.IO.PLATE_DOWN_OUT);
+            DIO.MapByName(unit, "OutStage.PlateUpIn", false, OutputStageConfig.IO.PLATE_UP);
+            DIO.MapByName(unit, "OutStage.PlateDownIn", false, OutputStageConfig.IO.PLATE_DOWN);
+            _cylPlate = new Cylinder("OutStagePlate", "OutStage.PlateUpOut", "OutStage.PlateDownOut", "OutStage.PlateUpIn", "OutStage.PlateDownIn");
+
+            // Lift (Up/Down) : Outputs 2개 (UP/DOWN) + Input 1개(DOWN) 만 존재
+            DIO.MapByName(unit, "OutStage.LiftUpOut", true, OutputStageConfig.IO.CLAMP_UP);
+            DIO.MapByName(unit, "OutStage.LiftDownOut", true, OutputStageConfig.IO.CLAMP_DOWN);
+            DIO.MapByName(unit, "OutStage.LiftDownIn", false, OutputStageConfig.IO.CLAMP_DOWN_CHECK);
+            _cylClampLift = new Cylinder(
+                "OutStageLift",
+                "OutStage.LiftUpOut",
+                "OutStage.LiftDownOut",
+                "OutStage.LiftUpIn/*NO_SENSOR*/",
+                "OutStage.LiftDownIn");
+
+            // Clamp FWD/BWD (outputs 2 + FWD sensor 1개)
+            DIO.MapByName(unit, "OutStage.ClampFwdOut", true, OutputStageConfig.IO.CLAMP_FWD);
+            DIO.MapByName(unit, "OutStage.ClampBwdOut", true, OutputStageConfig.IO.CLAMP_BWD);
+            DIO.MapByName(unit, "OutStage.ClampFwdIn", false, OutputStageConfig.IO.CLAMP_FWD_CHECK);
+            _cylClampFB = new Cylinder(
+                "OutStageClampFB",
+                "OutStage.ClampFwdOut",
+                "OutStage.ClampBwdOut",
+                "OutStage.ClampFwdIn",
+                "OutStage.ClampBwdIn/*NO_SENSOR*/");
         }
 
-        public bool ClampLiftUp(int timeoutMs = 3000) => _clampLiftCylinder?.Extend(timeoutMs) ?? false;
-        public bool ClampLiftDown(int timeoutMs = 3000) => _clampLiftCylinder?.Retract(timeoutMs) ?? false;
-        public bool PlateUp(int timeoutMs = 3000) => _plateCylinder?.Extend(timeoutMs) ?? false;
-        public bool PlateDown(int timeoutMs = 3000) => _plateCylinder?.Retract(timeoutMs) ?? false;
-        public void Clamp(bool on) { WriteOutput(NAME_CLAMP, on); WriteOutput(NAME_UNCLAMP, !on); }
+        // --- Vacuum ---
         public void VacuumOn() => _vacuum?.On();
         public void VacuumOff() => _vacuum?.Off();
+        public bool IsVacuum() => (_vacuum?.IsOk() ?? false) || ReadInput(OutputStageConfig.IO.VACUUM_CHECK);
+        [Obsolete("Use IsVacuum() instead")] public bool VacuumCheck() => IsVacuum();
         public bool VacuumOk() => _vacuum?.IsOk() ?? false;
-        public bool IsClamp() => ReadInput(NAME_CLAMP);
-        public bool IsClampDown() => ReadInput(NAME_CLAMP_DOWN);
-        public bool Ring0() => ReadInput(NAME_RING0);
-        public bool Ring1() => ReadInput(NAME_RING1);
+
+        // --- Plate Cylinder API ---
+        public bool PlateUp(int timeoutMs = 3000) => _cylPlate?.Extend(timeoutMs) ?? false;
+        public bool PlateDown(int timeoutMs = 3000) => _cylPlate?.Retract(timeoutMs) ?? false;
+        public bool IsPlateUp() => ReadInput(OutputStageConfig.IO.PLATE_UP);
+        public bool IsPlateDown() => ReadInput(OutputStageConfig.IO.PLATE_DOWN);
+
+        // --- Lift Cylinder API ---
+        public bool ClampLiftUp(int timeoutMs = 3000) => _cylClampLift?.Extend(timeoutMs) ?? false;
+        public bool ClampLiftDown(int timeoutMs = 3000)
+        {
+            if (!IsClampBwd()) return false; // interlock: only when clamp OPEN
+            return _cylClampLift?.Retract(timeoutMs) ?? false;
+        }
+        public bool IsClampLiftUp() => !IsClampLiftDown();
+        public bool IsClampLiftDown() => ReadInput(OutputStageConfig.IO.CLAMP_DOWN_CHECK);
+
+        // --- FB Cylinder API ---
+        public bool ClampFwd(int timeoutMs = 3000)
+        {
+            if (!IsClampLiftUp()) return false; // interlock: lift must be up
+            return _cylClampFB?.Extend(timeoutMs) ?? false;
+        }
+        public bool ClampBwd(int timeoutMs = 3000) => _cylClampFB?.Retract(timeoutMs) ?? false;
+        public bool IsClampFwd() => ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
+        public bool IsClampBwd() => !IsClampFwd();
+
+        // Backward compatibility
+        public void Clamp(bool on) { if (on) ClampFwd(); else ClampBwd(); }
+        public bool IsClamp() => IsClampFwd();
+        public bool IsClampDown() => IsClampBwd();
+        public bool ExpanderUp(int timeoutMs = 3000) => PlateUp(timeoutMs);
+        public bool ExpanderDown(int timeoutMs = 3000) => PlateDown(timeoutMs);
+        public bool IsExpanderUp() => IsPlateUp();
+        public bool IsExpanderDown() => IsPlateDown();
+
+        // Ring sensors
+        public bool Ring0() => ReadInput(OutputStageConfig.IO.RING_CHECK0);
+        public bool Ring1() => ReadInput(OutputStageConfig.IO.RING_CHECK1);
         public bool IsRingPresent() => Ring0() || Ring1();
-        public bool VacuumCheck() => ReadInput(NAME_VAC_OK) || VacuumOk();
         #endregion
     }
 }

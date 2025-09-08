@@ -211,12 +211,12 @@ namespace QMC.LCP_280.Process.Unit
             // Camera viewer binding
             try
             {
-                if (_Cameraviewer != null && InputStageUnit?.StageCamera != null)
+                if (_ChipLoadingCameraviewer != null && InputStageUnit?.StageCamera != null)
                 {
-                    if (_Cameraviewer.Camera != InputStageUnit.StageCamera)
-                        _Cameraviewer.Camera = InputStageUnit.StageCamera;
+                    if (_ChipLoadingCameraviewer.Camera != InputStageUnit.StageCamera)
+                        _ChipLoadingCameraviewer.Camera = InputStageUnit.StageCamera;
                     try { InputStageUnit.StageCamera.StartLive(); } catch { }
-                    try { _Cameraviewer.StartUpdateTask(); } catch { }
+                    try { _ChipLoadingCameraviewer.StartUpdateTask(); } catch { }
                 }
             }
             catch { }
