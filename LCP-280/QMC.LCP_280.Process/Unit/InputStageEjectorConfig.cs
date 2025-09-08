@@ -11,10 +11,12 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum TeachingPositionName
         {
-            Loading,
-            Unloading,
-            Ready,
-            Home
+            EjectBlockUp,
+            EjectBlokReady,
+            EjectPinOffset,
+            EjectPinReady,
+            EjectPinChange
+            // 필요시 추가
         }
 
         public List<QMC.LCP_280.Process.Component.TeachingPosition> TeachingPositions { get; set; } = new List<QMC.LCP_280.Process.Component.TeachingPosition>();

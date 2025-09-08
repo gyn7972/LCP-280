@@ -14,10 +14,11 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum TeachingPositionName
         {
+            HomeOffset, // Positive 를 홈으로 설정(Negative 기구간섭), Negative 에서부터 거리 측정 후 좌표 초기화
             Loading,
             Unloading,
-            Ready,
-            Home
+            BarcodeReading,
+            Ready
             // 필요시 추가
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

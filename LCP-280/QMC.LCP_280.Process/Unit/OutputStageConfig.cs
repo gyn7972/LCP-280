@@ -38,8 +38,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             Loading,
             Unloading,
-            Ready,
-            Home
+            CenterPoint,
+            Ready
             // 필요시 추가
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

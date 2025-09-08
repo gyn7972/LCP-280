@@ -257,11 +257,11 @@ namespace QMC.LCP_280.Process.Component
                     break;
 
                 case Step.MoveCenter:
-                    _stage.MoveToTeachingPosition(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.Align]);
+                    _stage.MoveToTeachingPosition(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint]);
                     _step = Step.MoveCenter_Check; _tick = DateTime.UtcNow; break;
 
                 case Step.MoveCenter_Check:
-                    if (_stage.InPosTeaching(InputStageConfig.TeachingPositionName.Align)) { _step = Step.LightingGrab1; _tick = DateTime.UtcNow; }
+                    if (_stage.InPosTeaching(InputStageConfig.TeachingPositionName.CenterPoint)) { _step = Step.LightingGrab1; _tick = DateTime.UtcNow; }
                     else if (Timeout(MoveTimeoutMs)) GoError("Center move timeout", AlarmKey.CenterMoveTimeout);
                     break;
 
@@ -279,7 +279,7 @@ namespace QMC.LCP_280.Process.Component
                     if (IsDryRun)
                     {
                         _calcTheta = 0.0;
-                        _targetT = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.Align], _stage.AxisT);
+                        _targetT = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint], _stage.AxisT);
                         _multiSearched = true; _step = Step.MoveTAxis; _tick = DateTime.UtcNow; break;
                     }
                     var res = FindMultiMarksFunc?.Invoke();
@@ -293,7 +293,7 @@ namespace QMC.LCP_280.Process.Component
                             double sum = 0; foreach (var v in trimmed) sum += v; _calcTheta = sum / trimmed.Count;
                             if (Math.Abs(_calcTheta) < ThetaApplyLimitDeg)
                             {
-                                double baseT = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.Align], _stage.AxisT);
+                                double baseT = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint], _stage.AxisT);
                                 _targetT = baseT + _calcTheta; _multiSearched = true; _step = Step.MoveTAxis; _tick = DateTime.UtcNow;
                             }
                             else GoError("Theta over limit", AlarmKey.ThetaOverLimit);
@@ -325,15 +325,15 @@ namespace QMC.LCP_280.Process.Component
                 case Step.SearchCenter:
                     if (IsDryRun)
                     {
-                        _targetX = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.Align], _stage.AxisX);
-                        _targetY = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.Align], _stage.AxisY);
+                        _targetX = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint], _stage.AxisX);
+                        _targetY = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint], _stage.AxisY);
                         _centerSearched = true; _step = Step.MoveXYAxis; _tick = DateTime.UtcNow; break;
                     }
                     var rc = FindCenterMarkFunc?.Invoke();
                     if (rc.HasValue && rc.Value.ok)
                     {
-                        double baseX = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.Align], _stage.AxisX);
-                        double baseY = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.Align], _stage.AxisY);
+                        double baseX = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint], _stage.AxisX);
+                        double baseY = _stage.GetTP(_stage.TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint], _stage.AxisY);
                         _targetX = baseX + rc.Value.x; _targetY = baseY + rc.Value.y; _centerSearched = true; _step = Step.MoveXYAxis; _tick = DateTime.UtcNow;
                     }
                     else GoError("Center mark fail", AlarmKey.CenterSearchFail);
