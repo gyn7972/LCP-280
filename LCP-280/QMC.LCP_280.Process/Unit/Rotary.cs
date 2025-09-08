@@ -110,6 +110,11 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        #region Pressure / Flow Inputs
+        public bool AirTankPressureOk() => ReadInput(RotaryConfig.IO.AIR_TANK_PRESSURE);
+        public bool VacTankPressureOk() => ReadInput(RotaryConfig.IO.VAC_TANK_PRESSURE) || ReadInput(RotaryConfig.IO.VAC_TANK_PRESSURE_LEGACY);
+        #endregion
+
         #region Slot Vacuum/Blow/Vent Controls
         private static readonly string[] VAC_NAMES = { RotaryConfig.IO.VAC1, RotaryConfig.IO.VAC2, RotaryConfig.IO.VAC3, RotaryConfig.IO.VAC4, RotaryConfig.IO.VAC5, RotaryConfig.IO.VAC6, RotaryConfig.IO.VAC7, RotaryConfig.IO.VAC8 };
         private static readonly string[] BLOW_NAMES = { RotaryConfig.IO.BLOW1, RotaryConfig.IO.BLOW2, RotaryConfig.IO.BLOW3, RotaryConfig.IO.BLOW4, RotaryConfig.IO.BLOW5, RotaryConfig.IO.BLOW6, RotaryConfig.IO.BLOW7, RotaryConfig.IO.BLOW8 };

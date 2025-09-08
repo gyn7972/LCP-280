@@ -141,7 +141,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // OutputDieTransfer Arm Vacuum/Blow/Vent
                 if (OutputDieTransferUnit != null)
                 {
-                    for (int arm = 0; arm < 4; arm++)
+                    //4개 중에 1개만 사용.
+                    for (int arm = 0; arm < 1; arm++) //for (int arm = 0; arm < 4; arm++)
                     {
                         int idx = arm;
                         dioControl.BindDIOOutput(
@@ -227,7 +228,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     () => OutputStageUnit.VacuumOff(),
                     "Vacuum ON/OFF",
                     () => OutputStageUnit.IsVacuum(),
-                    "OutStageVacCtrl");
+                    "OutStageVac");
 
                 // Clamp Lift (physical sensor: DOWN only, UP = logical)
                 dioControl.BindDIOOutput(
@@ -249,15 +250,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 dioControl.BindDIOInput(() => OutputStageUnit.IsClampFwd(), "Clamp FWD Sns", "OutStageClampFwd");
                 dioControl.BindDIOInput(() => OutputStageUnit.IsClampBwd(), "Clamp BWD (Logic)", "OutStageClampBwd");
 
-                // Expander (Plate) Up/Down
+                // Plate Up/Down
                 dioControl.BindDIOOutput(
-                    () => OutputStageUnit.ExpanderUp(),
-                    () => OutputStageUnit.ExpanderDown(),
-                    "Expander UP/DOWN",
-                    () => OutputStageUnit.IsExpanderUp(),
-                    "OutStageExp");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsExpanderUp(), "Expander UP Sns", "OutStageExpUp");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsExpanderDown(), "Expander DOWN Sns", "OutStageExpDn");
+                    () => OutputStageUnit.PlateUp(),
+                    () => OutputStageUnit.PlateDown(),
+                    "Plate UP/DOWN",
+                    () => OutputStageUnit.IsPlateUp(),
+                    "OutStagePlate");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsPlateUp(), "Plate UP Sns", "OutStagePlateUp");
+                dioControl.BindDIOInput(() => OutputStageUnit.IsPlateDown(), "Plate DOWN Sns", "OutStagePlateDn");
 
                 // Ring Sensors
                 dioControl.BindDIOInput(() => OutputStageUnit.Ring0(), "Ring Sns 0", "OutStageRing0");
