@@ -436,7 +436,6 @@ namespace QMC.Common.Keithley
                 string[] textValue = System.IO.File.ReadAllLines(Config.ScriptFileName);
                 if (textValue.Length > 0)
                 {
-                    StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < textValue.Length; i++)
                     {
                         // 텍스트의 앞 뒤 빈공간 제거
@@ -468,11 +467,9 @@ namespace QMC.Common.Keithley
                         if (arrangeText == "")
                             continue;
 
-                        sb.AppendLine(arrangeText);
-                    }
-
-                    if (!Communicator.Write(sb.ToString()))
-                        throw new Exception("Failed to send user script.");
+                        if (!Communicator.Write(arrangeText))
+                            throw new Exception("Failed to send user script.");
+                    }                    
                 }
             }
             catch (Exception ex)
