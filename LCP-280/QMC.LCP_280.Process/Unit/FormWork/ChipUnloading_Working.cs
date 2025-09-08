@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // 추가: IO 상수 사용
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -138,48 +139,53 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // --- OutputStage 강타입 IO 바인딩 ---
                 StrongBindOutputStage();
 
-                // OutputDieTransfer Arm Vacuum/Blow/Vent
                 if (OutputDieTransferUnit != null)
                 {
-                    //4개 중에 1개만 사용.
-                    for (int arm = 0; arm < 1; arm++) //for (int arm = 0; arm < 4; arm++)
+                    // 현재 1개 Arm만 사용
+                    for (int arm = 0; arm < 1; arm++)
                     {
                         int idx = arm;
+
+                        // VAC
                         dioControl.BindDIOOutput(
                             () => OutputDieTransferUnit.SetArmVac(idx, true),
                             () => OutputDieTransferUnit.SetArmVac(idx, false),
                             $"ODT Arm{idx + 1} VAC ON/OFF",
-                            () => false,
+                            () => OutputDieTransferUnit.IsArmVacOn(idx),           // 출력 상태 사용
                             $"ODT_Arm{idx + 1}_Vac");
 
+                        // BLOW
                         dioControl.BindDIOOutput(
                             () => OutputDieTransferUnit.SetArmBlow(idx, true),
                             () => OutputDieTransferUnit.SetArmBlow(idx, false),
                             $"ODT Arm{idx + 1} BLOW ON/OFF",
-                            () => false,
+                            () => OutputDieTransferUnit.IsArmBlowOn(idx),
                             $"ODT_Arm{idx + 1}_Blow");
 
+                        // VENT
                         dioControl.BindDIOOutput(
                             () => OutputDieTransferUnit.SetArmVent(idx, true),
                             () => OutputDieTransferUnit.SetArmVent(idx, false),
                             $"ODT Arm{idx + 1} VENT ON/OFF",
-                            () => false,
+                            () => OutputDieTransferUnit.IsArmVentOn(idx),
                             $"ODT_Arm{idx + 1}_Vent");
                     }
 
-                    // All OFF
+                    // ALL OFF (토글 개념 아님 → 상태 false 고정 유지)
                     dioControl.BindDIOOutput(
                         () => { OutputDieTransferUnit.AllVacOff(); },
                         () => { OutputDieTransferUnit.AllVacOff(); },
                         "ODT All VAC OFF",
                         () => false,
                         "ODT_AllVacOff");
+
                     dioControl.BindDIOOutput(
                         () => { OutputDieTransferUnit.AllBlowOff(); },
                         () => { OutputDieTransferUnit.AllBlowOff(); },
                         "ODT All BLOW OFF",
                         () => false,
                         "ODT_AllBlowOff");
+
                     dioControl.BindDIOOutput(
                         () => { OutputDieTransferUnit.AllVentOff(); },
                         () => { OutputDieTransferUnit.AllVentOff(); },
