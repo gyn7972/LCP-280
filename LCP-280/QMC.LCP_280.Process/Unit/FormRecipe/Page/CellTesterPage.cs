@@ -26,7 +26,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             if (tester != null)
             {
                 tester.OnConditionSetChanged += Tester_OnConditionSetChanged;
-                tester.OnMeasureCompleted += Tester_OnMeasureCompleted;
+                tester.OnManualMeasureCompleted += Tester_OnMeasureCompleted;
 
                 casSpectrumViewer.AttachSpectrometer(tester.Spectrometer);
             }
@@ -179,7 +179,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private async void btnTestStart_Click(object sender, EventArgs e)
         {
-            int result = await tester.MeasureAsync();
+            int result = await tester.ManualMeasureAsync(10, 500);
         }
 
         private void btnTestStop_Click(object sender, EventArgs e)

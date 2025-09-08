@@ -39,6 +39,9 @@ namespace QMC.Common.PKGTester
 
         public event PKGTesterEventHandler OnConditionSetChanged;
         public event PKGTesterEventHandler OnMeasureCompleted;
+
+        public event PKGTesterEventHandler OnManualMeasureCompleted;
+        public event PKGTesterEventHandler OnMeasureAborted;
         #endregion
 
         #region Methods
@@ -62,6 +65,10 @@ namespace QMC.Common.PKGTester
                 Log.Write(ex);
                 return -1;
             }
+        }
+        public async Task<int> ManualMeasureAsync(int tryCount, int intervalDelay)
+        { 
+            return await DoManualMeasure(tryCount, intervalDelay);
         }
 
         public int LoadTestConditionSet(TestConditionSet conditionSet)
@@ -318,6 +325,28 @@ namespace QMC.Common.PKGTester
                 Log.Write(ex);
                 return -1;
             }
+        }
+        private async Task<int> DoManualMeasure(int tryCount, int intervalDelay)
+        {
+            if (tryCount <= 0)
+                return -1;
+
+            int ret = -1;
+            for (int i = 0; i < tryCount; i++)
+            {
+                ret = await DoMeasure();
+                if (ret >= 0)
+                {
+                    OnManualMeasureCompleted?.Invoke(this);
+                }
+                else
+                {
+                    OnMeasureAborted?.Invoke(this);
+                    break;
+                }
+                await Task.Delay(intervalDelay);
+            }
+            return ret;
         }
         #endregion
         #endregion
