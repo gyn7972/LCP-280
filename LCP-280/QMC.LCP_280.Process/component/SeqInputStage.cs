@@ -301,7 +301,7 @@ namespace QMC.LCP_280.Process.Component
 
                 case Step.WorkingPrep:
                     // 간단: 얼라인 위치에서 Ready 이동
-                    _stage.MoveToTeachingPosition(InputStageConfig.TeachingPositionName.PickUpStart);
+                    _stage.MoveToTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint);
                     _step = Step.WorkingReady; _tick = DateTime.UtcNow; break;
                 case Step.WorkingReady:
                     _step = Step.Unload_Start; _tick = DateTime.UtcNow; break;

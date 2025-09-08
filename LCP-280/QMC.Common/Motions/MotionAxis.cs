@@ -497,7 +497,7 @@ namespace QMC.Common.Motions
                     _driver.ProfileMode = Config.ProfileMode;
                     
                     // 하드웨어 설정 적용
-                    return _driver.ConfigureFromSetupAndConfig(Setup.AxisNo, Setup, Config);
+                    //return _driver.ConfigureFromSetupAndConfig(Setup.AxisNo, Setup, Config);
                 }
                 catch (Exception ex)
                 {

@@ -38,21 +38,21 @@ namespace QMC.Common.Motions
             // TODO: 실제 홈 모드/레벨/속도 등 세팅 필요시 여기서 호출
             // AjinApi.HomeSet(axisNo, ...);
 
-            if (_lastSetup != null && _lastConfig != null)
-            {
-                // 단위 변환 스케일 (기존 구현과 동일하게 ppu=1 유지; 필요 시 _pulsesPerUnit로 조정)
-                double ppu = 1; // _pulsesPerUnit;
+            //if (_lastSetup != null && _lastConfig != null)
+            //{
+            //    // 단위 변환 스케일 (기존 구현과 동일하게 ppu=1 유지; 필요 시 _pulsesPerUnit로 조정)
+            //    double ppu = 1; // _pulsesPerUnit;
 
-                double h1v = _lastConfig.HomeFirstSpeed * ppu;
-                double h2v = _lastConfig.HomeSecondSpeed * ppu;
-                double hlv = _lastConfig.HomeThirdSpeed * ppu;
-                double izv = _lastConfig.HomeLastSpeed * ppu;
-                double h1a = _lastConfig.HomeFirstAcc * ppu;
-                double h2a = _lastConfig.HomeSecondAcc * ppu;
+            //    double h1v = _lastConfig.HomeFirstSpeed * ppu;
+            //    double h2v = _lastConfig.HomeSecondSpeed * ppu;
+            //    double hlv = _lastConfig.HomeThirdSpeed * ppu;
+            //    double izv = _lastConfig.HomeLastSpeed * ppu;
+            //    double h1a = _lastConfig.HomeFirstAcc * ppu;
+            //    double h2a = _lastConfig.HomeSecondAcc * ppu;
 
-                int rc0 = AjinApi.ApplyHomeFromSetup(axisNo, _lastSetup, h1v, h2v, hlv, izv, h1a, h2a);
-                if (rc0 != 0) return rc0;
-            }
+            //    int rc0 = AjinApi.ApplyHomeFromSetup(axisNo, _lastSetup, h1v, h2v, hlv, izv, h1a, h2a);
+            //    if (rc0 != 0) return rc0;
+            //}
 
             // 2) 홈 시작
             return AjinApi.HomeStart(axisNo);
