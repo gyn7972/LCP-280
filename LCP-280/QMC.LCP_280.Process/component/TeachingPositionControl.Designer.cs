@@ -135,7 +135,6 @@
             // 
             this.flowButtonsPanel.Controls.Add(this.btnSave);
             this.flowButtonsPanel.Controls.Add(this.btnCancel);
-            this.flowButtonsPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.flowButtonsPanel.Location = new System.Drawing.Point(3, 153);
             this.flowButtonsPanel.Name = "flowButtonsPanel";
             this.flowButtonsPanel.Padding = new System.Windows.Forms.Padding(2, 8, 2, 2);

@@ -151,10 +151,60 @@ namespace QMC.LCP_280.Process.Unit
                         "StageExp");
                     dioControl?.BindDIOInput(() => InputStageUnit.IsExpanderUp(), "Expander UP Sns", "StageExpUp");
                     dioControl?.BindDIOInput(() => InputStageUnit.IsExpanderDown(), "Expander DOWN Sns", "StageExpDn");
-
                 }
                 else 
                     dioControl?.BindUnits(InputStageUnit, InputStageEjectorUnit, InputDieTransferUnit); 
+
+                // === InputDieTransfer Arm Vacuum / Blow / Vent 바인딩 ===
+                // Arm 별 Vacuum / Blow / Vent ON/OFF 제어 (상태 입력 센서가 없다면 false 반환)
+                if (InputDieTransferUnit != null)
+                {
+                    for (int arm = 0; arm < 4; arm++)
+                    {
+                        int idx = arm; // capture
+                        // Vacuum
+                        dioControl?.BindDIOOutput(
+                            () => InputDieTransferUnit.SetArmVac(idx, true),
+                            () => InputDieTransferUnit.SetArmVac(idx, false),
+                            $"IDT Arm{idx + 1} VAC ON/OFF",
+                            () => false, // 상태 입력 센서 미구현 → 항상 false (필요 시 센서명으로 ReadInput 교체)
+                            $"IDT_Arm{idx + 1}_Vac");
+                        // Blow
+                        dioControl?.BindDIOOutput(
+                            () => InputDieTransferUnit.SetArmBlow(idx, true),
+                            () => InputDieTransferUnit.SetArmBlow(idx, false),
+                            $"IDT Arm{idx + 1} BLOW ON/OFF",
+                            () => false,
+                            $"IDT_Arm{idx + 1}_Blow");
+                        // Vent
+                        dioControl?.BindDIOOutput(
+                            () => InputDieTransferUnit.SetArmVent(idx, true),
+                            () => InputDieTransferUnit.SetArmVent(idx, false),
+                            $"IDT Arm{idx + 1} VENT ON/OFF",
+                            () => false,
+                            $"IDT_Arm{idx + 1}_Vent");
+                    }
+
+                    // 전체 OFF (Vac / Blow / Vent) – 두번째 액션도 동일(토글 버튼 형식이 아니므로 OFF만 수행)
+                    dioControl?.BindDIOOutput(
+                        () => { InputDieTransferUnit.AllVacOff(); },
+                        () => { InputDieTransferUnit.AllVacOff(); },
+                        "IDT All VAC OFF",
+                        () => false,
+                        "IDT_AllVacOff");
+                    dioControl?.BindDIOOutput(
+                        () => { InputDieTransferUnit.AllBlowOff(); },
+                        () => { InputDieTransferUnit.AllBlowOff(); },
+                        "IDT All BLOW OFF",
+                        () => false,
+                        "IDT_AllBlowOff");
+                    dioControl?.BindDIOOutput(
+                        () => { InputDieTransferUnit.AllVentOff(); },
+                        () => { InputDieTransferUnit.AllVentOff(); },
+                        "IDT All VENT OFF",
+                        () => false,
+                        "IDT_AllVentOff");
+                }
             } 
             catch { }
 
@@ -228,7 +278,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputDieTransferUnit != null)
                 {
                     if (_seqDiePick == null)
-                        _seqDiePick = new SeqInputDieTransferChipUp(InputDieTransferUnit);
+                        _seqDiePick = new SeqInputDieTransferChipUp(InputDieTransferUnit, 0, InputStageUnit, InputStageEjectorUnit);
                     manualSequenceControl?.RegisterSequence(
                         "DiePick",
                         _seqDiePick,
@@ -258,6 +308,12 @@ namespace QMC.LCP_280.Process.Unit
         private void ChipLoader_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
             try { SeqInputStage?.Stop(); } catch { }
+        }
+
+        private void _btnVisionSetting_Click(object sender, EventArgs e)
+        {
+            PatternMatchingDialog dlg = new PatternMatchingDialog();
+            dlg.ShowDialog();
         }
     }
 }

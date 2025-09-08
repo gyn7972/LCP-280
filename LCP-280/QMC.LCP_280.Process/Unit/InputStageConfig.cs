@@ -10,6 +10,24 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class InputStageConfig : BaseConfig
     {
+        internal static class IO // centralized IO names (shared with InputStage)
+        {
+            public const string RING_CHECK0 = "WAFER STAGE RING CHECK 0";
+            public const string RING_CHECK1 = "WAFER STAGE RING CHECK 1";
+            public const string CLAMP_DOWN_SNS = "WAFER STAGE CLAMP DOWN";
+            public const string CLAMP_SNS = "WAFER STAGE CLAMP";
+            public const string EXPANDER_UP_SNS = "WAFER STAGE EXPANDER UP";
+            public const string EXPANDER_DOWN_SNS = "WAFER STAGE EXPANDER DOWN";
+            public const string VAC_OK_SNS = "EJECTOR VACUUM CHECK";
+            public const string CLAMP_UP_OUT = "WAFER STAGE CLAMP UP";
+            public const string CLAMP_DOWN_OUT = "WAFER STAGE CLAMP DOWN";
+            public const string CLAMP_OUT = "WAFER STAGE CLAMP";
+            public const string UNCLAMP_OUT = "WAFER STAGE UNCLAMP";
+            public const string EXPANDER_UP_OUT = "WAFER STAGE EXPANDER UP";
+            public const string EXPANDER_DOWN_OUT = "WAFER STAGE EXPANDER DOWN";
+            public const string VAC_OUT = "EJECTOR VACUUM";
+        }
+
         public enum TeachingPositionName
         {
             Loading,
@@ -35,13 +53,13 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly HardInputDef[] _hardInputs = new[]
         {
-            new HardInputDef { No = 1, Name = "WAFER STAGE RING CHECK 0",  Disp = "X025" },
-            new HardInputDef { No = 2, Name = "WAFER STAGE RING CHECK 1",  Disp = "X026" },
-            new HardInputDef { No = 3, Name = "WAFER STAGE CLAMP DOWN",    Disp = "X027" },
-            new HardInputDef { No = 4, Name = "WAFER STAGE CLAMP",         Disp = "X028" },
-            new HardInputDef { No = 5, Name = "WAFER STAGE EXPANDER UP",   Disp = "X029" },
-            new HardInputDef { No = 6, Name = "WAFER STAGE EXPANDER DOWN", Disp = "X030" },
-            new HardInputDef { No = 7, Name = "EJECTOR VACUUM CHECK",      Disp = "X031" },
+            new HardInputDef { No = 1, Name = IO.RING_CHECK0,  Disp = "X025" },
+            new HardInputDef { No = 2, Name = IO.RING_CHECK1,  Disp = "X026" },
+            new HardInputDef { No = 3, Name = IO.CLAMP_DOWN_SNS,    Disp = "X027" },
+            new HardInputDef { No = 4, Name = IO.CLAMP_SNS,         Disp = "X028" },
+            new HardInputDef { No = 5, Name = IO.EXPANDER_UP_SNS,   Disp = "X029" },
+            new HardInputDef { No = 6, Name = IO.EXPANDER_DOWN_SNS, Disp = "X030" },
+            new HardInputDef { No = 7, Name = IO.VAC_OK_SNS,      Disp = "X031" },
         };
 
         [JsonIgnore]
@@ -49,13 +67,13 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = new[]
         {
-            new HardOutputDef { No = 1, Name = "WAFER STAGE CLAMP UP",      Disp = "Y020" },
-            new HardOutputDef { No = 2, Name = "WAFER STAGE CLAMP DOWN",    Disp = "Y021" },
-            new HardOutputDef { No = 3, Name = "WAFER STAGE CLAMP",         Disp = "Y022" },
-            new HardOutputDef { No = 4, Name = "WAFER STAGE UNCLAMP",       Disp = "Y023" },
-            new HardOutputDef { No = 5, Name = "WAFER STAGE EXPANDER UP",   Disp = "Y024" },
-            new HardOutputDef { No = 6, Name = "WAFER STAGE EXPANDER DOWN", Disp = "Y025" },
-            new HardOutputDef { No = 7, Name = "EJECTOR VACUUM",            Disp = "Y038" },
+            new HardOutputDef { No = 1, Name = IO.CLAMP_UP_OUT,      Disp = "Y020" },
+            new HardOutputDef { No = 2, Name = IO.CLAMP_DOWN_OUT,    Disp = "Y021" },
+            new HardOutputDef { No = 3, Name = IO.CLAMP_OUT,         Disp = "Y022" },
+            new HardOutputDef { No = 4, Name = IO.UNCLAMP_OUT,       Disp = "Y023" },
+            new HardOutputDef { No = 5, Name = IO.EXPANDER_UP_OUT,   Disp = "Y024" },
+            new HardOutputDef { No = 6, Name = IO.EXPANDER_DOWN_OUT, Disp = "Y025" },
+            new HardOutputDef { No = 7, Name = IO.VAC_OUT,            Disp = "Y038" },
         };
 
         public InputStageConfig() : base("InputStageConfig") { }

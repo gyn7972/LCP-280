@@ -599,7 +599,7 @@ namespace QMC.LCP_280.Process
                     if (!allStopped)
                     {
                         OnErrorOccurred("일부 Unit 정지에 실패했습니다.");
-                    }
+                      }
                 }
 
                 OnStateChanged(EquipmentState.Stopped);
@@ -1153,43 +1153,16 @@ namespace QMC.LCP_280.Process
             try
             {
                 const string unitName = "Unit";
-                var names = new[]
-                {
-                /* 00 */ "Eject Pin Z Axis",
-                /* 01 */ "Left Tool T Axis",
-                /* 02 */ "Right Tool T Axis",
-                /* 03 */ "Wafer Stage X Axis",
-                /* 04 */ "Wafer Stage Y Axis",
-                /* 05 */ "Wafer Stage T Axis",
-                /* 06 */ "Left Pick Z Axis",
-                /* 07 */ "Left Place Z Axis",
-                /* 08 */ "Index Z Axis",
-                /* 09 */ "Align T Axis",
-                /* 10 */ "Sphere Z Axis",
-                /* 11 */ "Probe Z Axis",
-                /* 12 */ "Probe Card X Axis",
-                /* 13 */ "Probe Card Y Axis",
-                /* 14 */ "Probe Card Z Axis",
-                /* 15 */ "Right Pick Z Axis",
-                /* 16 */ "Right Place Z Axis",
-                /* 17 */ "Bin Stage X Axis",
-                /* 18 */ "Bin Stage Y Axis",
-                /* 19 */ "Bin Stage T Axis",
-                /* 20 */ "Wafer Lifter Z Axis",
-                /* 21 */ "Wafer Feeder Y Axis",
-                /* 22 */ "Ejector Z Axis",
-                /* 23 */ "Bin Feeder Y Axis",
-                /* 24 */ "Bin Lifter Z Axis",
-                /* 25 */ "Index T Axis",
-                };
 
-                var boardNo = 0; // 필요시 보드별로 바꾸세요.
+                var boardNo = 0;
 
-                for (int i = 0; i < names.Length; i++)
+                // AxisNames.AllInOrder 의 인덱스가 AxisNo
+                for (int i = 0; i < AxisNames.AllInOrder.Length; i++)
                 {
-                    var axis = CreateOrLoadAxis(unitName, names[i], axisNo: i, boardNo: boardNo);
+                    var name = AxisNames.AllInOrder[i];
+                    var axis = CreateOrLoadAxis(unitName, name, axisNo: i, boardNo: boardNo);
                     _axisManager.Register(unitName, axis);
-                    AttachAxisToUnit(unitName, "Axis_" + i, axis); // 프로퍼티가 없어도 Axes 딕셔너리에 자동 추가됨
+                    AttachAxisToUnit(unitName, "Axis_" + i, axis);
                 }
             }
             catch (Exception ex)

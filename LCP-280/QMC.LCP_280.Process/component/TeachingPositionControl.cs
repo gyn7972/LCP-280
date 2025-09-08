@@ -11,13 +11,6 @@ using QMC.LCP_280.Process.Unit;
 
 namespace QMC.LCP_280.Process.Component
 {
-    /// <summary>
-    /// 공용 Teaching Position 뷰/편집/이동 컨트롤.
-    /// - 런타임에 다수 Unit 등록/해제(RegisterUnit / UnregisterUnit / ClearUnits)
-    /// - 각 Unit 별 TeachingPosition 제공자 + Move 실행 delegate 사용
-    /// - 기존 SetUnits(InputStage, InputStageEjector, InputDieTransfer) 호환 유지 (내부 RegisterUnit 호출)
-    /// - UnitName 지정 시 단일 필터링, null이면 전체
-    /// </summary>
     public partial class TeachingPositionControl : UserControl
     {
         #region 필드 / 구조
@@ -54,6 +47,99 @@ namespace QMC.LCP_280.Process.Component
 
         private bool _initialized;
         private string _unitName = null; // null => multi (전체)
+        // Always show flag (default false so caller can decide per form)
+        private bool _alwaysShowSaveCancel = false; // 기본 false (폼별 제어)
+        private bool _postCreateReapplyPending = false;
+
+        // === New layout customization fields ===
+        public enum ButtonAlignMode { Left, Center, Right, Stretch }
+        private bool _autoLayoutButtons = true;
+        private ButtonAlignMode _buttonAlignment = ButtonAlignMode.Center;
+        private int _buttonSpacing = 12;
+        private Size _buttonSize = new Size(90, 32);
+
+        [Browsable(true), Category("Teaching Buttons"), Description("자동 중앙/정렬 등 내부 레이아웃 사용 여부. False면 디자이너에서 위치 수동 조정 가능")] 
+        [DefaultValue(true)]
+        public bool AutoLayoutButtons
+        {
+            get => _autoLayoutButtons;
+            set { if (_autoLayoutButtons == value) return; _autoLayoutButtons = value; UpdateButtonPanelLayout(); }
+        }
+
+        [Browsable(true), Category("Teaching Buttons"), Description("Save/Cancel 수평 정렬 방식")] 
+        [DefaultValue(ButtonAlignMode.Center)]
+        public ButtonAlignMode ButtonAlignment
+        {
+            get => _buttonAlignment;
+            set { if (_buttonAlignment == value) return; _buttonAlignment = value; UpdateButtonPanelLayout(); }
+        }
+
+        [Browsable(true), Category("Teaching Buttons"), Description("Save 와 Cancel 사이 간격(px)")] 
+        [DefaultValue(12)]
+        public int ButtonSpacing
+        {
+            get => _buttonSpacing;
+            set { _buttonSpacing = Math.Max(0, value); ApplyButtonSizeAndSpacing(); UpdateButtonPanelLayout(); }
+        }
+
+        [Browsable(true), Category("Teaching Buttons"), Description("Save/Cancel 버튼 크기")] 
+        public Size ButtonSize
+        {
+            get => _buttonSize;
+            set { if (value.Width > 10 && value.Height > 10) { _buttonSize = value; ApplyButtonSizeAndSpacing(); UpdateButtonPanelLayout(); } }
+        }
+
+        private void ApplyButtonSizeAndSpacing()
+        {
+            try
+            {
+                if (btnSave != null) { btnSave.Size = _buttonSize; btnSave.Margin = new Padding(0, 0, _buttonSpacing, 0); }
+                if (btnCancel != null) { btnCancel.Size = _buttonSize; btnCancel.Margin = new Padding(0); }
+            }
+            catch { }
+        }
+
+        // ===== Adjust helpers early definition so calls compile =====
+        private void AdjustButtonRow(bool force = false)
+        {
+            try
+            {
+                if (rightPanel == null) return;
+                if (rightPanel.RowStyles == null || rightPanel.RowStyles.Count < 3)
+                {
+                    if (!force) return;
+                    while (rightPanel.RowStyles.Count < 3)
+                        rightPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 33));
+                }
+                if (_alwaysShowSaveCancel)
+                {
+                    if (btnSave != null) btnSave.Visible = true;
+                    if (btnCancel != null) btnCancel.Visible = true;
+                    if (flowButtonsPanel != null) flowButtonsPanel.Visible = true;
+                }
+                bool any = (btnSave?.Visible ?? false) || (btnCancel?.Visible ?? false);
+                var style = rightPanel.RowStyles[1];
+                if (!any)
+                {
+                    style.Height = 0f; style.SizeType = SizeType.Absolute; if (flowButtonsPanel != null) flowButtonsPanel.Visible = false;
+                }
+                else
+                {
+                    style.Height = 50f; style.SizeType = SizeType.Absolute; if (flowButtonsPanel != null) { flowButtonsPanel.Visible = true; UpdateButtonPanelLayout(); }
+                }
+                rightPanel.PerformLayout();
+                flowButtonsPanel?.PerformLayout();
+                Invalidate();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TPC:{Name}] AdjustButtonRow error: {ex.Message}");
+            }
+            finally
+            {
+                DumpDeep("AdjustButtonRow");
+            }
+        }
         #endregion
 
         #region 프로퍼티
@@ -65,6 +151,25 @@ namespace QMC.LCP_280.Process.Component
             {
                 _unitName = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
                 ReloadTeachingPositions();
+            }
+        }
+
+        [Browsable(true)]
+        [Category("Teaching")]
+        [Description("Save/Cancel 버튼을 항상 강제 표시 (true이면 SetSaveCancelVisible 값 무시)")]
+        [DefaultValue(false)] // 디자이너가 기본값(false)이면 코드 생성 안하도록
+        public bool AlwaysShowSaveCancel
+        {
+            get => _alwaysShowSaveCancel;
+            set
+            {
+                if (_alwaysShowSaveCancel == value) return;
+                _alwaysShowSaveCancel = value;
+                Console.WriteLine($"[TPC:{Name}] AlwaysShowSaveCancel set -> {_alwaysShowSaveCancel} (Created={IsHandleCreated}, btnSaveNull={btnSave==null})");
+                if (IsHandleCreated)
+                    ForceApplyAlwaysFlag();
+                else
+                    _postCreateReapplyPending = true;
             }
         }
         #endregion
@@ -92,9 +197,42 @@ namespace QMC.LCP_280.Process.Component
                 TryBindDefaultUnits(); // 초기 자동 바인딩(기본 3종)
 
             WireEvents();
+            SetupButtonPanelStyle();
             InitMoveMode();
             AdjustButtonRow(); // ensure layout reflects initial visibility
             ReloadTeachingPositions();
+        }
+
+        private void SetupButtonPanelStyle()
+        {
+            try
+            {
+                if (flowButtonsPanel != null)
+                {
+                    flowButtonsPanel.Padding = new Padding(0);
+                    flowButtonsPanel.Margin = new Padding(0);
+                    flowButtonsPanel.AutoSize = false;
+                    flowButtonsPanel.WrapContents = false;
+                    flowButtonsPanel.FlowDirection = FlowDirection.LeftToRight;
+                }
+                ApplyButtonSizeAndSpacing();
+            }
+            catch { }
+        }
+
+        private void TryBindDefaultUnits()
+        {
+            try
+            {
+                if (Equipment?.Units == null) return;
+                BaseUnit unit;
+                if (Equipment.Units.TryGetValue("InputStage", out unit)) _inputStage = unit as InputStage;
+                if (Equipment.Units.TryGetValue("InputStageEjector", out unit)) _ejector = unit as InputStageEjector;
+                if (Equipment.Units.TryGetValue("InputDieTransfer", out unit)) _dieTransfer = unit as InputDieTransfer;
+                if (_inputStage != null || _ejector != null || _dieTransfer != null)
+                    SetUnits(_inputStage, _ejector, _dieTransfer, false);
+            }
+            catch { }
         }
         #endregion
 
@@ -210,67 +348,140 @@ namespace QMC.LCP_280.Process.Component
         /// </summary>
         public void SetSaveCancelVisible(bool showSave, bool showCancel)
         {
+            if (_alwaysShowSaveCancel) { showSave = true; showCancel = true; }
             if (btnSave != null) btnSave.Visible = showSave;
             if (btnCancel != null) btnCancel.Visible = showCancel;
+            if ((showSave || showCancel) && flowButtonsPanel != null) flowButtonsPanel.Visible = true;
+            Console.WriteLine($"[TPC:{Name}] SetSaveCancelVisible -> save:{showSave}, cancel:{showCancel}, always:{_alwaysShowSaveCancel}");
             AdjustButtonRow();
+            DumpDeep("SetSaveCancelVisible");
         }
 
-        private void AdjustButtonRow()
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            Console.WriteLine($"[TPC:{Name}] OnHandleCreated (postReapply={_postCreateReapplyPending}, always={_alwaysShowSaveCancel})");
+            try { AdjustButtonRow(force: true); } catch { }
+            if (_alwaysShowSaveCancel || _postCreateReapplyPending)
+                BeginInvoke(new Action(ForceApplyAlwaysFlag));
+        }
+
+        private void ForceApplyAlwaysFlag()
         {
             try
             {
-                if (rightPanel == null || rightPanel.RowCount < 3) return; // designer table
-                bool any = (btnSave?.Visible ?? false) || (btnCancel?.Visible ?? false);
-                var style = rightPanel.RowStyles[1];
-                if (!any)
+                _postCreateReapplyPending = false;
+                if (btnSave != null) btnSave.Visible = true;
+                if (btnCancel != null) btnCancel.Visible = true;
+                if (flowButtonsPanel != null) flowButtonsPanel.Visible = true;
+                AdjustButtonRow(force: true);
+                DumpDeep("ForceApplyAlwaysFlag");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TPC:{Name}] ForceApplyAlwaysFlag error: {ex.Message}");
+            }
+        }
+
+        // 강한 진단용 추가 상세 덤프
+        private void DumpDeep(string reason)
+        {
+            try
+            {
+                Console.WriteLine($"[TPC:{Name}] ==== DumpDeep ({reason}) ====");
+                Console.WriteLine($"  AlwaysShow={_alwaysShowSaveCancel}, Initialized={_initialized}, HandleCreated={IsHandleCreated}");
+                Console.WriteLine($"  btnSave null={btnSave==null}, Visible={btnSave?.Visible}, Parent={btnSave?.Parent?.Name}");
+                Console.WriteLine($"  btnCancel null={btnCancel==null}, Visible={btnCancel?.Visible}, Parent={btnCancel?.Parent?.Name}");
+                Console.WriteLine($"  flowButtonsPanel null={flowButtonsPanel==null}, Visible={flowButtonsPanel?.Visible}, Parent={flowButtonsPanel?.Parent?.Name}");
+                Console.WriteLine($"  rightPanel null={rightPanel==null}, RowStylesCount={rightPanel?.RowStyles?.Count}");
+                if (rightPanel?.RowStyles != null)
                 {
-                    // collapse
-                    style.Height = 0f;
-                    style.SizeType = System.Windows.Forms.SizeType.Absolute;
-                    flowButtonsPanel.Visible = false;
+                    for (int i = 0; i < rightPanel.RowStyles.Count; i++)
+                        Console.WriteLine($"   Row[{i}] SizeType={rightPanel.RowStyles[i].SizeType} Height={rightPanel.RowStyles[i].Height}");
+                }
+                Console.WriteLine("  Controls in flowButtonsPanel:");
+                if (flowButtonsPanel != null)
+                {
+                    foreach (Control c in flowButtonsPanel.Controls)
+                        Console.WriteLine($"    - {c.Name} Visible={c.Visible} Type={c.GetType().Name}");
+                }
+                Console.WriteLine("==============================");
+            }
+            catch { }
+        }
+
+        // Centering helper: 재계산하여 Save/Cancel 버튼을 가운데 정렬 (또는 선택한 Alignment)
+        private void UpdateButtonPanelLayout()
+        {
+            try
+            {
+                if (flowButtonsPanel == null || rightPanel == null) return;
+                if (!flowButtonsPanel.Visible) return;
+                if (!_autoLayoutButtons) return; // 사용자 수동 배치 허용
+
+                if (flowButtonsPanel.Dock != DockStyle.None)
+                {
+                    flowButtonsPanel.Dock = DockStyle.None;
+                    flowButtonsPanel.Anchor = AnchorStyles.Top;
+                }
+
+                // 총 폭 계산
+                int totalWidth = 0; int visibleCount = 0;
+                foreach (Control c in flowButtonsPanel.Controls)
+                {
+                    if (!c.Visible) continue;
+                    visibleCount++;
+                    totalWidth += c.Width + c.Margin.Left + c.Margin.Right;
+                }
+                if (visibleCount == 0) return;
+                if (totalWidth < 10) totalWidth = 10;
+                int cellWidth = rightPanel.Width - 8;
+                if (totalWidth > cellWidth) totalWidth = cellWidth - 4;
+                flowButtonsPanel.Width = ( _buttonAlignment == ButtonAlignMode.Stretch ? cellWidth - 8 : totalWidth );
+
+                int targetRowHeight = (rightPanel.RowStyles.Count > 1) ? (int)rightPanel.RowStyles[1].Height : flowButtonsPanel.Height;
+                int desiredHeight = _buttonSize.Height + 2;
+                flowButtonsPanel.Height = desiredHeight;
+
+                // 수평 위치
+                switch (_buttonAlignment)
+                {
+                    case ButtonAlignMode.Left:
+                        flowButtonsPanel.Left = 4; break;
+                    case ButtonAlignMode.Center:
+                        flowButtonsPanel.Left = (cellWidth - totalWidth) / 2 + 4; break;
+                    case ButtonAlignMode.Right:
+                        flowButtonsPanel.Left = cellWidth - totalWidth + 4; break;
+                    case ButtonAlignMode.Stretch:
+                        flowButtonsPanel.Left = 4; break;
+                }
+
+                // Stretch 일 때 내부 버튼 가운데 정렬 (FlowLayoutPanel 자체 폭은 크게 유지)
+                if (_buttonAlignment == ButtonAlignMode.Stretch)
+                {
+                    int free = flowButtonsPanel.Width - totalWidth;
+                    int leftPad = free > 0 ? free / 2 : 0;
+                    flowButtonsPanel.Padding = new Padding(leftPad, 0, 0, 0);
                 }
                 else
                 {
-                    style.Height = 50f; // original height
-                    style.SizeType = System.Windows.Forms.SizeType.Absolute;
-                    flowButtonsPanel.Visible = true;
+                    flowButtonsPanel.Padding = new Padding(0);
                 }
-                rightPanel.PerformLayout();
-                rightPanel.Invalidate();
+
+                flowButtonsPanel.Top = targetRowHeight > desiredHeight ? (targetRowHeight - desiredHeight) / 2 : 0;
             }
             catch { }
         }
-        #endregion
 
-        #region 내부 기본(초기) 자동 바인딩
-        private void TryBindDefaultUnits()
-        {
-            try
-            {
-                if (Equipment?.Units == null) return;
-
-                BaseUnit unit; // ConcurrentDictionary<string, BaseUnit> 에 맞는 형식
-                if (Equipment.Units.TryGetValue("InputStage", out unit))
-                    _inputStage = unit as InputStage;
-                if (Equipment.Units.TryGetValue("InputStageEjector", out unit))
-                    _ejector = unit as InputStageEjector;
-                if (Equipment.Units.TryGetValue("InputDieTransfer", out unit))
-                    _dieTransfer = unit as InputDieTransfer;
-
-                // 자동 바인딩도 일반 Register 경로 사용
-                if (_inputStage != null || _ejector != null || _dieTransfer != null)
-                    SetUnits(_inputStage, _ejector, _dieTransfer, false);
-            }
-            catch { }
-        }
-        #endregion
-
-        #region 이벤트 / UI
         private void WireEvents()
         {
             btnMovePosition.Click += (s, e) => MoveSelected();
             btnSave.Click += (s, e) => SaveCurrentEditingPosition();
             btnCancel.Click += (s, e) => CancelEdit();
+
+            // 사이즈 변경 시 버튼 재정렬
+            if (rightPanel != null)
+                rightPanel.SizeChanged += (s, e) => UpdateButtonPanelLayout();
 
             var ev = positionItemView.GetType().GetEvent("ItemSelected");
             if (ev != null)
@@ -511,5 +722,16 @@ namespace QMC.LCP_280.Process.Component
             catch { }
         }
         #endregion
+
+        // 상태 덤프용 헬퍼
+        public void DumpState(string reason = null)
+        {
+            try
+            {
+                string r = string.IsNullOrEmpty(reason) ? "" : ("(" + reason + ") ");
+                Console.WriteLine($"[TPC:{Name}] {r}AlwaysShow={_alwaysShowSaveCancel}, btnSaveVis={btnSave?.Visible}, btnCancelVis={btnCancel?.Visible}, Row1Height={(rightPanel?.RowStyles?.Count>1? rightPanel.RowStyles[1].Height: -1)}");
+            }
+            catch { }
+        }
     }
 }
