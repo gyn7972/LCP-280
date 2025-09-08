@@ -29,7 +29,13 @@ namespace QMC.LCP_280.Process.Component
                 .AddParallelStepByAxisNames(
                     "Left Tool T Axis", "Right Tool T Axis", "Probe Card Y Axis", "Align T Axis")
                 .AddParallelStepByAxisNames(
-                    "Wafer Feeder Y Axis", "Bin Feeder Y Axis");
+                    "Wafer Feeder Y Axis", "Bin Feeder Y Axis")
+                .AddParallelStepByAxisNames(
+                    "Index T Axis", "Wafer Stage Y Axis", "Bin Stage Y Axis", "Wafer Lifter Z Axis", "Bin Lifter Z Axis")
+                .AddParallelStepByAxisNames(
+                    "Wafer Stage X Axis", "Bin Stage X Axis")
+                .AddParallelStepByAxisNames(
+                    "Wafer Stage T Axis", "Bin Stage T Axis");
 
             // 단계별 훅: 도어/실린더 등 전역 인터락과 축 사전 체크, 피더/스테이지 전용 IO 동작
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
