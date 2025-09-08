@@ -144,39 +144,71 @@ namespace QMC.LCP_280.Process.Unit
         private Cylinder _plateCylinder;       // Treat as Expander for UI
         private Vacuum _vacuum;                // Stage vacuum
 
-        private const string NAME_CLAMP_UP = "BIN STAGE CLAMP UP";
-        private const string NAME_CLAMP_DOWN = "BIN STAGE CLAMP DOWN";
-        private const string NAME_CLAMP = "BIN STAGE CLAMP";
-        private const string NAME_UNCLAMP = "BIN STAGE UNCLAMP";
-        private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";      // used as ExpanderUp
-        private const string NAME_PLATE_DOWN = "BIN STAGE PLATE DOWN";  // used as ExpanderDown
-        private const string NAME_VAC = "BIN STAGE VACUUM";
-        private const string NAME_VAC_OK = "BIN STAGE VACUUM CHECK"; // input
+        //private const string NAME_CLAMP_UP = "BIN STAGE CLAMP UP";
+        //private const string NAME_CLAMP_DOWN = "BIN STAGE CLAMP DOWN";
+        //private const string NAME_CLAMP = "BIN STAGE CLAMP";
+        //private const string NAME_UNCLAMP = "BIN STAGE UNCLAMP";
+        //private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";      // used as ExpanderUp
+        //private const string NAME_PLATE_DOWN = "BIN STAGE PLATE DOWN";  // used as ExpanderDown
+        //private const string NAME_VAC = "BIN STAGE VACUUM";
+        //private const string NAME_VAC_OK = "BIN STAGE VACUUM CHECK"; // input
+        //private const string NAME_RING0 = "BIN STAGE RING CHECK 0";
+        //private const string NAME_RING1 = "BIN STAGE RING CHECK 1";
+
+        // === BIN STAGE INPUTS ===
         private const string NAME_RING0 = "BIN STAGE RING CHECK 0";
         private const string NAME_RING1 = "BIN STAGE RING CHECK 1";
+        private const string NAME_CLAMP_UP = "BIN STAGE CLAMP UP";     // input sensor
+        private const string NAME_CLAMP_BWD = "BIN STAGE CLAMP BWD";    // input sensor
+        private const string NAME_PLATE_UP = "BIN STAGE PLATE UP";     // input sensor
+        private const string NAME_PLATE_DN = "BIN STAGE PLATE DOWN";   // input sensor
+        private const string NAME_VAC_OK = "BIN STAGE VACUUM CHECK"; // input sensor
+
+        // === BIN STAGE OUTPUTS ===
+        private const string NAME_CLAMP_UP_OUT = "BIN STAGE CLAMP UP";
+        private const string NAME_CLAMP_DOWN_OUT = "BIN STAGE CLAMP DOWN";
+        private const string NAME_CLAMP_FWD_OUT = "BIN STAGE CLAMP FWD";
+        private const string NAME_CLAMP_BWD_OUT = "BIN STAGE CLAMP BWD";
+        private const string NAME_PLATE_UP_OUT = "BIN STAGE PLATE UP";
+        private const string NAME_PLATE_DN_OUT = "BIN STAGE PLATE DOWN";
+        private const string NAME_VAC_OUT = "BIN STAGE VACUUM";
+
+        // === Alias / Logical grouping ===
+        private const string NAME_CLAMP = "BIN STAGE CLAMP";     // logical alias
+        private const string NAME_UNCLAMP = "BIN STAGE UNCLAMP";   // logical alias
 
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            // Clamp lift
-            DIO.MapByName(unit, "OutStage.ClampUpOut", true, NAME_CLAMP_UP);
-            DIO.MapByName(unit, "OutStage.ClampDownOut", true, NAME_CLAMP_DOWN);
-            DIO.MapByName(unit, "OutStage.ClampUpIn", false, NAME_CLAMP);
-            DIO.MapByName(unit, "OutStage.ClampDownIn", false, NAME_CLAMP_DOWN);
-            _clampLiftCylinder = new Cylinder("OutStageClampLift", "OutStage.ClampUpOut", "OutStage.ClampDownOut", "OutStage.ClampUpIn", "OutStage.ClampDownIn");
-            // Plate (Expander)
-            DIO.MapByName(unit, "OutStage.PlateUpOut", true, NAME_PLATE_UP);
-            DIO.MapByName(unit, "OutStage.PlateDownOut", true, NAME_PLATE_DOWN);
-            DIO.MapByName(unit, "OutStage.PlateUpIn", false, NAME_PLATE_UP);
-            DIO.MapByName(unit, "OutStage.PlateDownIn", false, NAME_PLATE_DOWN);
-            _plateCylinder = new Cylinder("OutStagePlate(Expander)", "OutStage.PlateUpOut", "OutStage.PlateDownOut", "OutStage.PlateUpIn", "OutStage.PlateDownIn");
             // Vacuum
-            DIO.MapByName(unit, "OutStage.VacOut", true, NAME_VAC);
+            DIO.MapByName(unit, "OutStage.VacOut", true, NAME_VAC_OUT);
             DIO.MapByName(unit, "OutStage.VacOk", false, NAME_VAC_OK);
             _vacuum = new Vacuum("OutStage", "OutStage.VacOut", "OutStage.VacOk");
+
+            // Plate (Expander)
+            DIO.MapByName(unit, "OutStage.PlateUpOut", true, NAME_PLATE_UP_OUT);
+            DIO.MapByName(unit, "OutStage.PlateDownOut", true, NAME_PLATE_DN_OUT);
+            DIO.MapByName(unit, "OutStage.PlateUpIn", false, NAME_PLATE_UP);
+            DIO.MapByName(unit, "OutStage.PlateDownIn", false, NAME_PLATE_DN);
+            _plateCylinder = new Cylinder("OutStagePlate(Expander)", "OutStage.PlateUpOut", "OutStage.PlateDownOut", "OutStage.PlateUpIn", "OutStage.PlateDownIn");
+
+            // Clamp Up/Down
+            DIO.MapByName(unit, "OutStage.ClampUpOut", true, NAME_CLAMP_UP_OUT);
+            DIO.MapByName(unit, "OutStage.ClampDownOut", true, NAME_CLAMP_DOWN_OUT);
+            DIO.MapByName(unit, "OutStage.ClampUpIn", false, NAME_CLAMP_UP);
+            DIO.MapByName(unit, "OutStage.ClampDownIn", false, NAME_CLAMP_UP);
+            _clampLiftCylinder = new Cylinder("OutStageClampLift", "OutStage.ClampUpOut", "OutStage.ClampDownOut", "OutStage.ClampUpIn", "OutStage.ClampDownIn");
+
+            // Clamp Fwd/Bwd
+            DIO.MapByName(unit, "OutStage.ClampFwdOut", true, NAME_CLAMP_FWD_OUT);
+            DIO.MapByName(unit, "OutStage.ClampBwdOut", true, NAME_CLAMP_BWD_OUT);
+            DIO.MapByName(unit, "OutStage.ClampFwdIn", false, NAME_CLAMP_BWD);
+            DIO.MapByName(unit, "OutStage.ClampBwdIn", false, NAME_CLAMP_BWD);
+            _clampLiftCylinder = new Cylinder("OutStageClampFB", "OutStage.ClampFwdOut", "OutStage.ClampBwdOut", "OutStage.ClampFwdIn", "OutStage.ClampBwdIn");
+
             // Clamp / Unclamp simple outs (already partially mapped above for sensors)
-            DIO.MapByName(unit, "OutStage.ClampOut", true, NAME_CLAMP);
-            DIO.MapByName(unit, "OutStage.UnclampOut", true, NAME_UNCLAMP);
+            //DIO.MapByName(unit, "OutStage.ClampOut", true, NAME_CLAMP);
+            //DIO.MapByName(unit, "OutStage.UnclampOut", true, NAME_UNCLAMP);
         }
 
         // Clamp Lift
@@ -187,16 +219,16 @@ namespace QMC.LCP_280.Process.Unit
         public bool ExpanderUp(int timeoutMs = 3000) => _plateCylinder?.Extend(timeoutMs) ?? false;
         public bool ExpanderDown(int timeoutMs = 3000) => _plateCylinder?.Retract(timeoutMs) ?? false;
         public bool IsExpanderUp() => ReadInput(NAME_PLATE_UP);
-        public bool IsExpanderDown() => ReadInput(NAME_PLATE_DOWN);
+        public bool IsExpanderDown() => ReadInput(NAME_PLATE_DN);
 
         // Backward compatibility (mark old Plate* as obsolete if referenced in legacy code)
         [Obsolete("Use ExpanderUp() instead")] public bool PlateUp(int timeoutMs = 3000) => ExpanderUp(timeoutMs);
         [Obsolete("Use ExpanderDown() instead")] public bool PlateDown(int timeoutMs = 3000) => ExpanderDown(timeoutMs);
 
-        // Clamp (simple On/Off outputs)
-        public void Clamp(bool on) { WriteOutput(NAME_CLAMP, on); WriteOutput(NAME_UNCLAMP, !on); }
-        public bool IsClamp() => ReadInput(NAME_CLAMP);
-        public bool IsClampDown() => ReadInput(NAME_CLAMP_DOWN);
+        //// Clamp (simple On/Off outputs)
+        //public void Clamp(bool on) { WriteOutput(NAME_CLAMP, on); WriteOutput(NAME_UNCLAMP, !on); }
+        //public bool IsClamp() => ReadInput(NAME_CLAMP);
+        //public bool IsClampDown() => ReadInput(NAME_CLAMP_DOWN);
 
         // Vacuum
         public void VacuumOn() => _vacuum?.On();
