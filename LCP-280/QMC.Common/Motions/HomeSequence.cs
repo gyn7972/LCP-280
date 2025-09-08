@@ -45,6 +45,19 @@ namespace QMC.Common.Motions
         }
 
         /// <summary>
+        /// (유닛 무시) 축 이름만으로 한 단계(병렬)를 추가합니다. 동일 이름이 여러 유닛에 있으면 모두 포함합니다.
+        /// </summary>
+        public HomeSequence AddParallelStepByAxisNames(params string[] axisNames)
+        {
+            if (axisNames == null || axisNames.Length == 0) return this;
+            var set = new HashSet<string>(axisNames, StringComparer.OrdinalIgnoreCase);
+            var picked = _manager.GetAllAxes()?.Where(a => a != null && set.Contains(a.Name)).ToList();
+            if (picked != null && picked.Count > 0)
+                _steps.Add(picked);
+            return this;
+        }
+
+        /// <summary>
         /// 등록된 모든 축을 한 단계(전축 병렬)로 구성하여 실행합니다.
         /// </summary>
         public Task<IReadOnlyList<HomeAxisResult>> HomeAllParallelAsync(CancellationToken token = default(CancellationToken))

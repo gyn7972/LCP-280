@@ -571,8 +571,8 @@ namespace QMC.Common.Motions
                 }
 
                 // 4) Limit
-                if (_driver.ReadPositiveLimit(AxisNo)) { reason = "+Limit ON"; return false; }
-                if (_driver.ReadNegativeLimit(AxisNo)) { reason = "-Limit ON"; return false; }
+                //if (_driver.ReadPositiveLimit(AxisNo)) { reason = "+Limit ON"; return false; }
+                //if (_driver.ReadNegativeLimit(AxisNo)) { reason = "-Limit ON"; return false; }
 
                 // 5) Home 센서 상시 ON 경고(정책상 막을지 여부는 추후 옵션화). 여기서는 통과.
                 // bool homeOn = _driver.ReadHomeSensor(AxisNo);

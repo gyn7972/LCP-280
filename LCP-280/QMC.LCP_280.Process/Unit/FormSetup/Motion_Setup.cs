@@ -8,6 +8,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.ConstrainedExecution;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using QMC.LCP_280.Process; // AxisNames
 
@@ -32,6 +34,8 @@ namespace QMC.LCP_280.Process.Unit
         private Dictionary<(string section, string title), PropertyBase> _configIndex;
         private Dictionary<(string section, string title), PropertyBase> _speedIndex;
 
+        private CancellationTokenSource _homeCts;
+
         public Motion_Setup()
         {
             InitializeComponent();
@@ -53,6 +57,61 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>향후 Unit 초기화가 필요하면 이곳에 작성</summary>
         private void InitializeUnit()
         {
+        }
+
+        private async void btnHome1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // 취소 토큰 준비
+                _homeCts?.Cancel();
+                _homeCts?.Dispose();
+                _homeCts = new CancellationTokenSource();
+                var token = _homeCts.Token;
+
+                // 1) ClearAlarm / Servo On (전체 축)
+                var axes = _axisManager?.GetAll();
+                if (axes == null || axes.Length == 0)
+                {
+                    MessageBox.Show("등록된 축이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                foreach (var ax in axes)
+                {
+                    try { ax.ClearAlarm(); } catch { }
+                    try { ax.Servo(true); } catch { }
+                    //try { ax.ApplyToDriver(); } catch { } // 요청에 따라 주석 처리
+                }
+
+                // 2) 홈 시퀀스 실행: 축 이름만으로 묶기 (유닛 무시)
+                var seq = new HomeSequence(_axisManager)
+                    .AddParallelStepByAxisNames("Eject Pin Z Axis", "Ejector Z Axis", "Left Pick Z Axis", "Left Place Z Axis", "Right Pick Z Axis",
+                    "Right Place Z Axis", "Index Z Axis", "Sphere Z Axis", "Probe Z Axis", "Probe Card Z Axis")
+                    .AddParallelStepByAxisNames("Left Tool T Axis", "Right Tool T Axis", "Probe Card Y Axis", "Align T Axis");
+
+                var results = await seq.RunAsync(token).ConfigureAwait(true);
+
+                // 3) 결과 요약 표시
+                int success = results.Count(r => r.Success);
+                int notStarted = results.Count(r => !r.Started);
+                int fail = results.Count - success - notStarted;
+
+                string msg = $"Home1 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
+                if (fail > 0 || notStarted > 0)
+                {
+                    var detail = string.Join("\r\n", results.Select(r => $"- {r.AxisName}: {(r.Success ? "OK" : r.Started ? (r.Error?.Message ?? $"rc={r.ReturnCode}") : $"NOT STARTED ({r.FailReason})")}"));
+                    msg += "\r\n\r\n" + detail;
+                }
+                MessageBox.Show(msg, "Home1", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Home1 취소됨", "Home1", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Home1 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // =========================
@@ -166,19 +225,19 @@ namespace QMC.LCP_280.Process.Unit
                 string setupPath = Path.Combine(axisRoot, axisName + ".setup.json");
                 axis.Setup.Save(setupPath);
 
-                // 8) ★ 하드웨어에 설정 적용 ★
-                int applyResult = axis.ApplyToDriver();
-                if (applyResult != 0)
-                {
-                    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else
-                {
-                    Console.WriteLine($"축 {axisName}: 하드웨어 설정 적용 성공");
-                }
+                // 8) ★ 하드웨어에 설정 적용 ★ (요청에 따라 주석 처리)
+                //int applyResult = axis.ApplyToDriver();
+                //if (applyResult != 0)
+                //{
+                //    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
+                //        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //}
+                //else
+                //{
+                //    Console.WriteLine($"축 {axisName}: 하드웨어 설정 적용 성공");
+                //}
 
-                MessageBox.Show($"'{axisName}' 설정을 저장하고 하드웨어에 적용했습니다.", "완료",
+                MessageBox.Show($"'{axisName}' 설정을 저장했습니다.", "완료",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
@@ -253,19 +312,19 @@ namespace QMC.LCP_280.Process.Unit
                 string setupPath = Path.Combine(axisRoot, axisName + ".config.json");
                 axis.Config.Save(setupPath);
 
-                // 8) ★ 하드웨어에 설정 적용 ★
-                int applyResult = axis.ApplyToDriver();
-                if (applyResult != 0)
-                {
-                    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-                else
-                {
-                    Console.WriteLine($"축 {axisName}: 하드웨어 속도 설정 적용 성공");
-                }
+                // 8) ★ 하드웨어에 설정 적용 ★ (요청에 따라 주석 처리)
+                //int applyResult = axis.ApplyToDriver();
+                //if (applyResult != 0)
+                //{
+                //    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
+                //        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //}
+                //else
+                //{
+                //    Console.WriteLine($"축 {axisName}: 하드웨어 속도 설정 적용 성공");
+                //}
 
-                MessageBox.Show($"'{axisName}' 속도 설정을 저장하고 하드웨어에 적용했습니다.", "완료",
+                MessageBox.Show($"'{axisName}' 속도 설정을 저장했습니다.", "완료",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
