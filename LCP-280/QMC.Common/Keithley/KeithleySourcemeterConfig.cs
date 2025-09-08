@@ -55,6 +55,7 @@ namespace QMC.Common.Keithley
         public SMUSourceOffmode SourceOffmode { get; set; } // channel
         public SMUMeasureAutoZero MeasureAutoZero { get; set; } // channel
         public int MeasureTimeout { get; set; }
+        public bool IsSimulated { get; set; }
         #endregion
 
         #region Constructor
@@ -76,6 +77,7 @@ namespace QMC.Common.Keithley
             SourceOffmode = SMUSourceOffmode.NORMAL;
             MeasureAutoZero = SMUMeasureAutoZero.AUTO;
             MeasureTimeout = 1000; // ms
+            IsSimulated = false;
         }
 
         public override bool Validate()
@@ -108,6 +110,7 @@ namespace QMC.Common.Keithley
             pc.Add(nameof(SourceOffmode), SourceOffmode);
             pc.Add(nameof(MeasureAutoZero), MeasureAutoZero);
             pc.Add(nameof(MeasureTimeout), MeasureTimeout);
+            pc.Add(nameof(IsSimulated), IsSimulated);
 
             return pc;
         }
@@ -127,6 +130,7 @@ namespace QMC.Common.Keithley
                 SourceOffmode = pc.GetValue<SMUSourceOffmode>(nameof(SourceOffmode));
                 MeasureAutoZero = pc.GetValue<SMUMeasureAutoZero>(nameof(MeasureAutoZero));
                 MeasureTimeout = pc.GetValue<int>(nameof(MeasureTimeout));
+                IsSimulated = pc.GetValue<bool>(nameof(IsSimulated));
             }
             catch (Exception ex)
             {

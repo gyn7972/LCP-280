@@ -264,10 +264,10 @@ namespace QMC.LCP_280.Process.Component
                 case Step.ClampSequence:
                     if (IsDryRun)
                     { ClampDone = true; _step = Step.FileReading; _tick = DateTime.UtcNow; break; }
-                    _stage.SetClamp(true);
+                    _stage.SetClampLiftUpValve(true);
                     _step = Step.ClampSequence_Wait; _tick = DateTime.UtcNow; break;
                 case Step.ClampSequence_Wait:
-                    if (_stage.IsClamp()) { ClampDone = true; _step = Step.FileReading; _tick = DateTime.UtcNow; }
+                    if (_stage.IsClampLiftUp()) { ClampDone = true; _step = Step.FileReading; _tick = DateTime.UtcNow; }
                     else if (Timeout(ClampTimeoutMs)) GoError("Clamp timeout", AlarmKey.ClampTimeout);
                     else Thread.Sleep(5);
                     break;
@@ -311,12 +311,12 @@ namespace QMC.LCP_280.Process.Component
                     _step = Step.Unload_MoveLoadingPos; _tick = DateTime.UtcNow; break;
                 case Step.Unload_MoveLoadingPos:
                     if (_stage.InPosTeaching(InputStageConfig.TeachingPositionName.Unloading))
-                    { _stage.SetClamp(false); _step = Step.Unload_Unclamp; _tick = DateTime.UtcNow; }
+                    { _stage.SetClampLiftUpValve(false); _step = Step.Unload_Unclamp; _tick = DateTime.UtcNow; }
                     else if (Timeout(AxisMoveTimeoutMs)) GoError("Unload move timeout", AlarmKey.UnloadTimeout);
                     else Thread.Sleep(5);
                     break;
                 case Step.Unload_Unclamp:
-                    if (IsDryRun || !_stage.IsClamp()) { _step = Step.Unload_WaitRingOut; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || !_stage.IsClampLiftUp()) { _step = Step.Unload_WaitRingOut; _tick = DateTime.UtcNow; }
                     else if (Timeout(ClampTimeoutMs)) GoError("Unclamp timeout", AlarmKey.UnloadTimeout);
                     else Thread.Sleep(5);
                     break;

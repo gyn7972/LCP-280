@@ -21,11 +21,16 @@ namespace QMC.Common.PKGTester
         // Measure
         public double MeasureTime { get; set; }
 
+        // Pulse
+        public double PulseWidth { get; set; }
+        public double PulsePeriod { get; set; }
+        public int PulseCount { get; set; }
+
         // Data Calibration
-        public bool UseGain { get; set; }
-        public bool UseOffset { get; set; }
-        public double Gain { get; set; }
-        public double Offset { get; set; }
+        //public bool[] UseGain { get; private set; } = new bool[8];
+        //public bool[] UseOffset { get; private set; } = new bool[8];
+        //public double[] Gain { get; private set; } = new double[8];
+        //public double[] Offset { get; private set; } = new double[8];
         #endregion
 
         #region Constructor
@@ -42,26 +47,59 @@ namespace QMC.Common.PKGTester
             SourceTime = 1;
             SourceLimit = 0;
             MeasureTime = 1;
-            UseGain = false;
-            UseOffset = false;
-            Gain = 1;
-            Offset = 0;
+            PulseWidth = 0;
+            PulsePeriod = 0;
+            PulseCount = 0;
+
+            //for (int i = 0; i < 8; i++)
+            //{
+            //    UseGain[i] = false;
+            //    UseOffset[i] = false;
+            //    Gain[i] = 1;
+            //    Offset[i] = 0;
+            //}
         }
         public override bool Validate()
         {
             if (string.IsNullOrWhiteSpace(Name))
                 return false;
-            if (Type.GetCategory() == TestItemCategory.Undefined)
-                return false;
-            if (SourceValue < 0)
-                return false;
-            if (SourceTime <= 0)
-                return false;
-            if (SourceLimit < 0)
-                return false;
-            if (MeasureTime <= 0)
-                return false;
 
+            switch (GetTestItemCategory())
+            { 
+                case TestItemCategory.Optical:
+                    {
+                        // Optical Item
+                    }
+                    break;
+                case TestItemCategory.Electrical:
+                    {
+                        // Electrical Item
+                        if (SourceValue < 0)
+                            return false;
+                        if (SourceTime <= 0)
+                            return false;
+                        if (SourceLimit < 0)
+                            return false;
+                        if (MeasureTime <= 0)
+                            return false;
+                    }
+                    break;
+                case TestItemCategory.ElectricalSource:
+                    {
+                        // Electrical Source Item
+                        if (SourceValue < 0)
+                            return false;
+                        if (PulseWidth <= 0)
+                            return false;
+                        if (PulsePeriod <= 0 || PulsePeriod < PulseWidth)
+                            return false;
+                        if (PulseCount <= 0)
+                            return false;
+                    }
+                    break;
+                default:
+                    return false;
+            }
             return true;
         }
         public override PropertyCollection GetPropertyCollection()
@@ -72,18 +110,48 @@ namespace QMC.Common.PKGTester
 
             pc.Add(nameof(Name), Name);
             pc.Add(nameof(Type), Type);
-            if (Type.GetCategory() == TestItemCategory.Electrical)
-            {
-                pc.Add(nameof(SourceValue), SourceValue);
-                pc.Add(nameof(SourceTime), SourceTime);
-                pc.Add(nameof(SourceLimit), SourceLimit);
-                pc.Add(nameof(MeasureTime), MeasureTime);
-            }
-            pc.Add(nameof(UseGain), UseGain);
-            pc.Add(nameof(UseOffset), UseOffset);
-            pc.Add(nameof(Gain), Gain);
-            pc.Add(nameof(Offset), Offset);
 
+            switch (GetTestItemCategory())
+            {
+                case TestItemCategory.Optical:
+                    {
+                        // Optical Item
+                        //for (int i = 0; i < 8; i++)
+                        //{
+                        //    pc.Add($"UseGain #{i+1}", UseGain[i]);
+                        //    pc.Add($"UseOffset #{i+1}", UseOffset[i]);
+                        //    pc.Add($"Gain #{i+1}", Gain[i]);
+                        //    pc.Add($"Offset #{i+1}", Offset[i]);
+                        //}
+                    }
+                    break;
+                case TestItemCategory.Electrical:
+                    {
+                        // Electrical Item
+                        pc.Add(nameof(SourceValue), SourceValue);
+                        pc.Add(nameof(SourceTime), SourceTime);
+                        pc.Add(nameof(SourceLimit), SourceLimit);
+                        pc.Add(nameof(MeasureTime), MeasureTime);
+
+                        //for (int i = 0; i < 8; i++)
+                        //{
+                        //    pc.Add($"UseGain #{i+1}", UseGain[i]);
+                        //    pc.Add($"UseOffset #{i+1}", UseOffset[i]);
+                        //    pc.Add($"Gain #{i+1}", Gain[i]);
+                        //    pc.Add($"Offset #{i+1}", Offset[i]);
+                        //}
+                    }
+                    break;
+                case TestItemCategory.ElectricalSource:
+                    {
+                        // Electrical Source Item
+                        pc.Add(nameof(SourceValue), SourceValue);
+                        pc.Add(nameof(PulseWidth), PulseWidth);
+                        pc.Add(nameof(PulsePeriod), PulsePeriod);
+                        pc.Add(nameof(PulseCount), PulseCount);            
+                    }
+                    break;
+            }
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -97,17 +165,48 @@ namespace QMC.Common.PKGTester
 
                 Name = pc.GetValue<string>(nameof(Name));
                 Type = pc.GetValue<TestItemType>(nameof(Type));
-                if (Type.GetCategory() == TestItemCategory.Electrical)
+
+                switch (GetTestItemCategory())
                 {
-                    SourceValue = pc.GetValue<double>(nameof(SourceValue));
-                    SourceTime = pc.GetValue<double>(nameof(SourceTime));
-                    SourceLimit = pc.GetValue<double>(nameof(SourceLimit));
-                    MeasureTime = pc.GetValue<double>(nameof(MeasureTime));
+                    case TestItemCategory.Optical:
+                        {
+                            // Optical Item
+                            //for (int i = 0; i < 8; i++)
+                            //{
+                            //    UseGain[i] = pc.GetValue<bool>($"UseGain #{i+1}");
+                            //    UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i+1}");
+                            //    Gain[i] = pc.GetValue<double>($"Gain #{i+1}");
+                            //    Offset[i] = pc.GetValue<double>($"Offset #{i+1}");
+                            //}
+                        }
+                        break;
+                    case TestItemCategory.Electrical:
+                        {
+                            // Electrical Item
+                            SourceValue = pc.GetValue<double>(nameof(SourceValue));
+                            SourceTime = pc.GetValue<double>(nameof(SourceTime));
+                            SourceLimit = pc.GetValue<double>(nameof(SourceLimit));
+                            MeasureTime = pc.GetValue<double>(nameof(MeasureTime));
+
+                            //for (int i = 0; i < 8; i++)
+                            //{
+                            //    UseGain[i] = pc.GetValue<bool>($"UseGain #{i+1}");
+                            //    UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i+1}");
+                            //    Gain[i] = pc.GetValue<double>($"Gain #{i+1}");
+                            //    Offset[i] = pc.GetValue<double>($"Offset #{i+1}");
+                            //}
+                        }
+                        break;
+                    case TestItemCategory.ElectricalSource:
+                        {
+                            // Electrical Source Item
+                            SourceValue = pc.GetValue<double>(nameof(SourceValue));
+                            PulseWidth = pc.GetValue<double>(nameof(PulseWidth));
+                            PulsePeriod = pc.GetValue<double>(nameof(PulsePeriod));
+                            PulseCount = pc.GetValue<int>(nameof(PulseCount));
+                        }
+                        break;
                 }
-                UseGain = pc.GetValue<bool>(nameof(UseGain));
-                UseOffset = pc.GetValue<bool>(nameof(UseOffset));
-                Gain = pc.GetValue<double>(nameof(Gain));
-                Offset = pc.GetValue<double>(nameof(Offset));
             }
             catch (Exception ex)
             {
@@ -119,6 +218,16 @@ namespace QMC.Common.PKGTester
         public TestItemCategory GetTestItemCategory()
         {
             return Type.GetCategory();
+        }
+        public bool IsMeasureItem()
+        {
+            switch (GetTestItemCategory())
+            {
+                case TestItemCategory.Electrical:
+                case TestItemCategory.Optical:
+                    return true;
+            }
+            return false;
         }
         #endregion
     }
@@ -300,6 +409,32 @@ namespace QMC.Common.PKGTester
         public string[] GetItemNameList()
         {
             return items.Select(x => x.Name).ToArray();
+        }
+        public bool Validate()
+        {
+            try
+            {
+                // 아이템은 최소 1개 이상이여야 한다.
+                if (items.Count == 0)
+                    return false;
+
+                // 각 아이템들의 이름은 중복을 허용하지 않는다.
+                if (items.GroupBy(x => x.Name).Any(g => g.Count() > 1))
+                    return false;
+
+                // 모든 아이템들은 유효성 검사를 통과해야 한다.
+                foreach (var item in items)
+                {
+                    if (!item.Validate())
+                        return false;
+                }
+            }
+            catch /*(Exception ex)*/
+            {
+                // 예외가 발생하면 유효하지 않은 것으로 간주
+                return false;
+            }
+            return true;
         }
         #endregion
     }

@@ -10,7 +10,9 @@ namespace QMC.Common.PKGTester
     public enum TestItemCategory
     {
         Electrical,
+        ElectricalSource,
         Optical,
+        UserDefined,
         Undefined
     };
 
@@ -22,7 +24,10 @@ namespace QMC.Common.PKGTester
         [Category("Electrical")] VR,
         [Category("Electrical")] IF,
         [Category("Electrical")] IR,
-        
+
+        [Category("ElectricalSource")] IPulseSweep,
+        [Category("ElectricalSource")] VPulseSweep,
+
         [Category("Optical")] RadInt,
         [Category("Optical")] PhotInt,
         [Category("Optical")] WP,
@@ -102,8 +107,9 @@ namespace QMC.Common.PKGTester
         public override string ToString()
         {
             if (string.IsNullOrEmpty(Unit))
-                return Value.ToString();
-            return Value + " " + Unit;
+                return Value.ToString("F3");
+
+            return Value.ToString("F3") + " " + Unit;
         }
         #endregion
     }

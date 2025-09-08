@@ -1,6 +1,5 @@
 using QMC.Common;
 using QMC.Common.Component;
-using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
@@ -10,11 +9,25 @@ using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// OutputCassetteLifter Unit
+    ///  - Z 축 리프팅 Teaching Position
+    ///  - Cassette / RingJut / Mapping 센서 상태 제공
+    ///  - OutputStage 와 유사한 구조 (Axis / IO / Teaching / Lifecycle)
+    /// </summary>
     public class OutputCassetteLifter : BaseUnit
     {
+        #region Config / Teaching
         public OutputCassetteLifterConfig OutputCassetteLifterConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        #endregion
 
+        #region Axis
+        private MotionAxis _axZ;
+        public MotionAxis AxisZ => _axZ;
+        #endregion
+
+        #region ctor / Initialization
         public OutputCassetteLifter(OutputCassetteLifterConfig config = null) : base("OutputCassetteLifterConfig")
         {
             OutputCassetteLifterConfig = config ?? new OutputCassetteLifterConfig();
@@ -29,12 +42,27 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var tp in OutputCassetteLifterConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
             BindAxes();
-            // No specific IO domain yet (only sensors in config) ? placeholder
         }
+        #endregion
 
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() { base.OnStop(); }
+        #region Axis Binding / Helpers
+        private void BindAxes() => Axes.TryGetValue("Bin Lifter Z Axis", out _axZ);
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = OutputCassetteLifterConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        #endregion
 
+        #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
@@ -60,28 +88,16 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-
-        #region Axis Helpers
-        private MotionAxis _axZ;
-        public MotionAxis AxisZ => _axZ;
-        private void BindAxes() { Axes.TryGetValue("Bin Lifter Z Axis", out _axZ); }
-        public double GetTP(string tpName, string axisName)
+        public bool InPosTeaching(string positionName)
         {
-            var tp = OutputCassetteLifterConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
+            var tp = OutputCassetteLifterConfig.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            double z = tp.AxisPositions.TryGetValue("Bin Lifter Z Axis", out var vz) ? vz : 0;
+            return InPos(_axZ, z);
         }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region IO (Sensors Only Placeholder)
-        // Config has only inputs; if needed later we can map with DIO.MapByName similar to stages.
+        #region IO / Sensors
         public bool ReadInput(string name)
         {
             var hi = OutputCassetteLifterConfig.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
@@ -91,6 +107,17 @@ namespace QMC.LCP_280.Process.Unit
                 if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
             return false;
         }
+
+        public bool CassettePresent0() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+        public bool CassettePresent1() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        public bool AnyCassettePresent() => CassettePresent0() || CassettePresent1();
+        public bool RingJut() => ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);
+        public bool MappingSensor() => ReadInput(OutputCassetteLifterConfig.IO.MAPPING_SENSOR);
+        #endregion
+
+        #region Lifecycle
+        public override void OnRun()  => base.OnRun();
+        public override void OnStop() => base.OnStop();
         #endregion
     }
 }

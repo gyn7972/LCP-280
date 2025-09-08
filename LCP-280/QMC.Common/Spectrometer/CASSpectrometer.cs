@@ -12,80 +12,96 @@ namespace QMC.Common.Spectrometer
 {
     public class CASSpectrometerResult
     {
-        public double WP { get; set; } = 0;
-        public double FWHM { get; set; } = 0;
-        public double CIEX { get; set; } = 0;
-        public double CIEY { get; set; } = 0;
-        public double CIEZ { get; set; } = 0;
-        public double CIEU { get; set; } = 0;
-        public double CIEV1976 { get; set; } = 0;
-        public double CIEV1960 { get; set; } = 0;
-        public double LambdaDom { get; set; } = 0;
-        public double Purity { get; set; } = 0;
-        public double RadInt { get; set; } = 0;
-        public string RadIntUnit { get; set; } = string.Empty;
-        public double PhotInt { get; set; } = 0;
-        public string PhotIntUnit { get; set; } = string.Empty;
-        public double CCT { get; set; } = 0;
-        public double CRI { get; set; } = 0;
-        public double Centroid { get; set; } = 0;
-        public double StimulusX { get; set; } = 0;
-        public double StimulusY { get; set; } = 0;
-        public double StimulusZ { get; set; } = 0;
-        public double PickValue { get; set; } = 0;
-        public int ADC { get; set; } = 0;
+        #region Properties
+        public double WP { get; set; }
+        public double FWHM { get; set; }
+        public double CIEX { get; set; }
+        public double CIEY { get; set; }
+        public double CIEZ { get; set; }
+        public double CIEU { get; set; }
+        public double CIEV1976 { get; set; }
+        public double CIEV1960 { get; set; }
+        public double LambdaDom { get; set; }
+        public double Purity { get; set; }
+        public double RadInt { get; set; }
+        public string RadIntUnit { get; set; }
+        public double PhotInt { get; set; }
+        public string PhotIntUnit { get; set; }
+        public double CCT { get; set; }
+        public double CRI { get; set; }
+        public double Centroid { get; set; }
+        public double StimulusX { get; set; }
+        public double StimulusY { get; set; }
+        public double StimulusZ { get; set; }
+        public double PickValue { get; set; }
+        public int ADC { get; set; }
+        #endregion
 
+        #region Methods
         public void Clear()
         {
-            WP = default;
-            FWHM = default;
-            CIEX = default;
-            CIEY = default;
-            CIEZ = default;
-            CIEU = default;
-            CIEV1976 = default;
-            CIEV1960 = default;
-            LambdaDom = default;
-            Purity = default;
-            RadInt = default;
-            RadIntUnit = default;
-            PhotInt = default;
-            PhotIntUnit = default;
-            CCT = default;
-            CRI = default;
-            Centroid = default;
-            StimulusX = default;
-            StimulusY = default;
-            StimulusZ = default;
-            PickValue = default;
-            ADC = default;
+            WP = 0;
+            FWHM = 0;
+            CIEX = 0;
+            CIEY = 0;
+            CIEZ = 0;
+            CIEU = 0;
+            CIEV1976 = 0;
+            CIEV1960 = 0;
+            LambdaDom = 0;
+            Purity = 0;
+            RadInt = 0;
+            RadIntUnit = "";
+            PhotInt = 0;
+            PhotIntUnit = "";
+            CCT = 0;
+            CRI = 0;
+            Centroid = 0;
+            StimulusX = 0;
+            StimulusY = 0;
+            StimulusZ = 0;
+            PickValue = 0;
+            ADC = 0;
         }
+        #endregion
     }
+    
     public class CASSpectrometerSpectrum
     {
-        public double[] WaveLength { get; set; } = new double[0];
-        public double[] Intensity { get; set; } = new double[0];
-        public double MaximumIntensity { get; set; } = 0;
+        #region Properties
+        public double[] WaveLength { get; set; }
+        public double[] Intensity { get; set; }
+        public double MaximumIntensity { get; set; }
+        #endregion
 
+        #region Methods
         public void Clear()
         {
             WaveLength = null;
+            WaveLength = new double[0];
             Intensity = null;
+            Intensity = new double[0];
             MaximumIntensity = 0;
         }
+        #endregion
     }
+
     public class CASSpectrometerDensityFilter
     {
-        public int Index { get; set; } = -1;
-        public int Value { get; set; } = 0;
-        public string Name { get; set; } = string.Empty;
+        #region Properties
+        public int Index { get; set; }
+        public int Value { get; set; }
+        public string Name { get; set; }
+        #endregion
 
+        #region Methods
         public void Clear()
         {
-            Index = default;
-            Value = default;
-            Name = default;
+            Index = -1;
+            Value = 0;
+            Name = "";
         }
+        #endregion
     }
 
     /// <summary>
@@ -200,7 +216,7 @@ namespace QMC.Common.Spectrometer
         {
             if (item == null)
                 return false;
-            if (item.Type.GetCategory() != TestItemCategory.Optical)
+            if (item.GetTestItemCategory() != TestItemCategory.Optical)
                 return false;
 
             testItems.Add(item);
@@ -385,14 +401,19 @@ namespace QMC.Common.Spectrometer
         }
         public int Measure()
         {
+            if (Config.IsSimulated)
+            {
+                return MeasureSimulation();
+            }
+
             int ret = 0;
             do
             {
-                //if (!IsCreated())
-                //{
-                //    ret = -1;
-                //    break;
-                //}
+                if (!IsCreated())
+                {
+                    ret = -1;
+                    break;
+                }
                 if (Config.UseExternalTrigger)
                 {
                     // Measure with external trigger
@@ -764,30 +785,6 @@ namespace QMC.Common.Spectrometer
                 spectrumData.WaveLength[i] = CAS4DLL.casGetXArray(deviceId, i + deadPixels);
             }
         }
-        private void GetSpectrumDataTest()
-        {
-            // 380 ~ 780, 1 step
-            int n = 780 - 380 + 1;
-            spectrumData.WaveLength = new double[n];
-            spectrumData.Intensity = new double[n];
-            double mean = 550.0;
-            double stddev = 40.0;
-            Random rand = new Random();
-            double max = double.MinValue;
-            for (int i = 0; i < n; i++)
-            {
-                double x = 380 + i;
-                spectrumData.WaveLength[i] = x;
-                // Gaussian: exp(-0.5 * ((x-mean)/stddev)^2)
-                double gauss = Math.Exp(-0.5 * Math.Pow((x - mean) / stddev, 2));
-                // Add noise: [-0.02, 0.02]
-                double noise = (rand.NextDouble() - 0.5) * 0.04;
-                double intensity = gauss + noise;
-                spectrumData.Intensity[i] = intensity;
-                if (intensity > max) max = intensity;
-            }
-            spectrumData.MaximumIntensity = max;
-        }
         #endregion
 
         // Control Methods
@@ -1032,6 +1029,94 @@ namespace QMC.Common.Spectrometer
                 filterNames.Add(filter.Name);
             }
             return filterNames;
+        }
+        #endregion
+
+        #region Simulation Methods
+        private void GetSimulationMeasureData()
+        {
+            var rand = new Random();
+
+            // 파장 관련 (nm)
+            measureData.WP = rand.NextDouble() * (700 - 400) + 400; // 400~700nm
+            measureData.FWHM = rand.NextDouble() * (60 - 10) + 10;  // 10~60nm
+            measureData.LambdaDom = rand.NextDouble() * (700 - 400) + 400; // 400~700nm
+            measureData.Centroid = rand.NextDouble() * (700 - 400) + 400; // 400~700nm
+
+            // 색좌표 (0~1)
+            measureData.CIEX = rand.NextDouble();
+            measureData.CIEY = rand.NextDouble();
+            measureData.CIEZ = rand.NextDouble();
+            measureData.CIEU = rand.NextDouble();
+            measureData.CIEV1976 = rand.NextDouble();
+            measureData.CIEV1960 = rand.NextDouble();
+
+            // 삼자극치 (0~100)
+            measureData.StimulusX = rand.NextDouble() * 100;
+            measureData.StimulusY = rand.NextDouble() * 100;
+            measureData.StimulusZ = rand.NextDouble() * 100;
+
+            // 순도 (0~1)
+            measureData.Purity = rand.NextDouble();
+
+            // 광도, 방사조도 (0~10000)
+            measureData.PhotInt = rand.NextDouble() * 10000;
+            measureData.PhotIntUnit = "lm";
+            measureData.RadInt = rand.NextDouble() * 10000;
+            measureData.RadIntUnit = "W";
+
+            // 색온도 (2000~10000K)
+            measureData.CCT = rand.NextDouble() * (10000 - 2000) + 2000;
+
+            // 연색성 (CRI, 0~100)
+            measureData.CRI = rand.NextDouble() * 100;
+
+            // 최대값 (0~10000)
+            measureData.PickValue = rand.NextDouble() * 10000;
+
+            // ADC (0~65535)
+            measureData.ADC = rand.Next(0, 65536);
+        }
+        private void GetSimulationSpectrumData()
+        {
+            var rand = new Random();
+            int pixelCount = 1024;
+            spectrumData.WaveLength = new double[pixelCount];
+            spectrumData.Intensity = new double[pixelCount];
+            spectrumData.MaximumIntensity = 0;
+            double startWavelength = 200.0; // 시작 파장 (nm)
+            double endWavelength = 1100.0;  // 끝 파장 (nm)
+            double wavelengthStep = (endWavelength - startWavelength) / pixelCount;
+
+            double mean = 550.0; // 중심 파장 (nm)
+            double stddev = 40.0; // 표준편차 (nm)
+            double amplitude = 10000.0; // 최대 세기
+
+            for (int i = 0; i < pixelCount; i++)
+            {
+                double wl = startWavelength + i * wavelengthStep;
+                spectrumData.WaveLength[i] = wl;
+
+                // 가우시안 파형
+                double gauss = amplitude * Math.Exp(-0.5 * Math.Pow((wl - mean) / stddev, 2));
+
+                // 노이즈 추가 (정규분포, 표준편차는 최대값의 2% 수준)
+                double noise = (rand.NextDouble() * 2.0 - 1.0) * amplitude * 0.02;
+
+                double intensity = gauss + noise;
+                if (intensity < 0) intensity = 0;
+
+                spectrumData.Intensity[i] = intensity;
+                if (intensity > spectrumData.MaximumIntensity)
+                    spectrumData.MaximumIntensity = intensity;
+            }
+        }
+        private int MeasureSimulation()
+        {
+            GetSimulationMeasureData();
+            GetSimulationSpectrumData();
+            OnMeasureCompleted?.Invoke(this);
+            return 0;
         }
         #endregion
 

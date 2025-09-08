@@ -242,14 +242,6 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsClampFwd() => ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
         public bool IsClampBwd() => !IsClampFwd();
 
-        public void Clamp(bool on) { if (on) ClampFwd(); else ClampBwd(); }
-        public bool IsClamp() => IsClampFwd();
-        public bool IsClampDown() => IsClampBwd();
-        public bool ExpanderUp(int timeoutMs = 3000) => PlateUp(timeoutMs);
-        public bool ExpanderDown(int timeoutMs = 3000) => PlateDown(timeoutMs);
-        public bool IsExpanderUp() => IsPlateUp();
-        public bool IsExpanderDown() => IsPlateDown();
-
         public bool Ring0() => ReadInput(OutputStageConfig.IO.RING_CHECK0);
         public bool Ring1() => ReadInput(OutputStageConfig.IO.RING_CHECK1);
         public bool IsRingPresent() => Ring0() || Ring1();

@@ -1,14 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
+//using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using QMC.Common;
+using QMC.Common.PKGTester;
 
-namespace QMC.Common.PKGTester
+namespace QMC.LCP_280.Process.Unit
 {
     public partial class TestConditionSetPage : UserControl
     {
@@ -322,6 +324,11 @@ namespace QMC.Common.PKGTester
                     lbSetNameValue.Text = tempSet.Name;
                 }
             }
+        }
+
+        private void individualMenuButton1_Click(object sender, EventArgs e)
+        {
+            
         }
     }
 }
