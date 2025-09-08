@@ -22,6 +22,7 @@ namespace QMC.LCP_280.Process.Unit
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
+            this._btnVisionSetting = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this._Cameraviewer)).BeginInit();
             this.SuspendLayout();
             // 
@@ -61,6 +62,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.teachingPositionControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
+            this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
             this.teachingPositionControl.Location = new System.Drawing.Point(12, 12);
             this.teachingPositionControl.Name = "teachingPositionControl";
             this.teachingPositionControl.ShowCancelButton = true;
@@ -79,9 +81,20 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl.Size = new System.Drawing.Size(341, 350);
             this.manualSequenceControl.TabIndex = 9;
             // 
+            // _btnVisionSetting
+            // 
+            this._btnVisionSetting.Location = new System.Drawing.Point(535, 368);
+            this._btnVisionSetting.Name = "_btnVisionSetting";
+            this._btnVisionSetting.Size = new System.Drawing.Size(110, 35);
+            this._btnVisionSetting.TabIndex = 13;
+            this._btnVisionSetting.Text = "VisionSetting";
+            this._btnVisionSetting.UseVisualStyleBackColor = true;
+            this._btnVisionSetting.Click += new System.EventHandler(this._btnVisionSetting_Click);
+            // 
             // ChipLoader_Working
             // 
             this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.Controls.Add(this._btnVisionSetting);
             this.Controls.Add(this._Cameraviewer);
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
@@ -103,5 +116,6 @@ namespace QMC.LCP_280.Process.Unit
         private TeachingPositionControl teachingPositionControl;
         private DIOControl dioControl;
         private Common.Vision.VisionImageViewer _Cameraviewer;
+        private Button _btnVisionSetting;
     }
 }

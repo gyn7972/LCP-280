@@ -8,27 +8,74 @@ using QMC.LCP_280.Process.Unit;
 namespace QMC.LCP_280.Process.Component
 {
     /// <summary>
-    /// Input Die Transfer Pick (Chip Up) Sequence.
-    /// - Simplified port of legacy Head Pick logic (Vent -> Vacuum -> Down -> Pick -> Up).
-    /// - Axis used: Pick Z (InputDieTransfer.PickZ)
-    /// - IO: Arm Vent / Vacuum (indexed)
-    /// - Provides timing parameters & basic alarms.
+    /// Input Die Transfer Chip Up 시퀀스
+    /// Enum 순서에 맞추어 재작성
+    /// 공통: Vent Off → Vent Delay → Vacuum On → Vacuum On Delay → Vacuum 안정 대기 →
+    /// Wafer Stage Ready 대기 → DoubleChip 검사 → 니들 타입 선택 → 니들 동작(Type1/2/3/3-2Step)
+    /// 간소화된 Double Chip / Stage Ready 검사 (필요 시 실제 센서 연동 코드 교체)
     /// </summary>
     internal class SeqInputDieTransferChipUp : SequenceBase
     {
-        #region Steps
+        #region Step Definition
         public enum Step
         {
             Idle = 0,
-            Init,
-            Vent_Close, Vent_Close_Delay,
-            Vacuum_On, Vacuum_On_Delay,
-            Move_Down, Move_Down_Wait,
-            Stabilize_Down,
-            Move_Up, Move_Up_Wait,
+            // 공통 준비
+            InitVentCheck,
+            VentOffDelayWait,
+            VacuumOnCheck,
+            VacuumOnDelay,
+            VacuumDelayWait,
+            WaitWaferStageReady,
+            DoubleChipCheck,
+            SelectNeedleSeq,
+
+            // Type 1
+            Type1_Start = 100,
+            Type1_MoveDown,
+            Type1_WaitReady,
+            Type1_NeedleUpAssign,
+            Type1_Complete,
+
+            // Type 2
+            Type2_MoveNeedleUp = 200,
+            Type2_MoveDown,
+            Type2_WaitReady,
+            Type2_MoveUp,
+            Type2_AssignWafer,
+            Type2_Complete,
+
+            // Type 3
+            Type3_Start = 300,
+            Type3_MoveDown,
+            Type3_WaitReady,
+            Type3_NeedleUpAssign,
+            Type3_MoveUp,
+            Type3_Complete,
+
+            // Type 3 Two Step
+            Type3_2Step_Start = 400,
+            Type3_2Step_MoveDown,
+            Type3_2Step_WaitReady,
+            Type3_2Step_NeedleUp1,
+            Type3_2Step_NeedleUp2,
+            Type3_2Step_MoveUp,
+            Type3_2Step_Complete,
+
             Finish,
             Error
         }
+        #endregion
+
+        #region Needle Type Selection
+        public enum NeedleType
+        {
+            Type1,
+            Type2,
+            Type3,
+            Type3_TwoStep
+        }
+        public NeedleType SelectedNeedleType { get; set; } = NeedleType.Type1;
         #endregion
 
         #region Alarm
@@ -86,54 +133,75 @@ namespace QMC.LCP_280.Process.Component
         #endregion
 
         #region Fields
-        private readonly InputDieTransfer _unit;
+        private readonly InputDieTransfer _transfer;
+        private readonly InputStage _stage;              // optional, wafer stage ready check
+        private readonly InputStageEjector _ejector;      // optional, 향후 필요시 사용
+
         private Step _step = Step.Idle;
         private Step _prevLoggedStep = Step.Idle;
         private DateTime _tick;
+
+        // Motion targets
         private double _targetDownPos;
         private double _targetUpPos;
-        private bool _vacOnIssued;
+        private double _targetMidPos; // Two step 사용시 중간 위치
+
+        // Action flags
         private bool _ventClosedIssued;
+        private bool _vacOnIssued;
+        private bool _vacDelayStarted;
+        private bool _downMoveIssued;
+        private bool _upMoveIssued;
+        private bool _midMoveIssued;
+
         private int _armIndex;
 
         // Parameters (ms / mm)
-        public int VentCloseDelayMs { get; set; } = 80;          // Legacy VentOffDelay (short)
-        public int VacuumDelayMs { get; set; } = 120;            // Time to allow vacuum stabilization after On
-        public int DownStabilizeDelayMs { get; set; } = 50;      // Hold time at down before up
+        public int VentCloseDelayMs { get; set; } = 80;
+        public int VacuumOnSensorWaitMs { get; set; } = 300;    // VacuumOnDelay 단계 센서/조건 확인 대기 (placeholder)
+        public int VacuumDelayMs { get; set; } = 120;           // Vacuum 안정 대기(VacuumDelayWait)
+        public int DownStabilizeDelayMs { get; set; } = 50;
+        public int MidStabilizeDelayMs { get; set; } = 40;
         public int MoveTimeoutMs { get; set; } = 6000;
-        public int VacuumTimeoutMs { get; set; } = 1500;         // Optional wait if sensor later (placeholder)
+        public int VacuumTimeoutMs { get; set; } = 1500;
 
-        // Teaching position names (optional). If not set, numeric positions can be provided
-        public string UpTeachingName { get; set; } = "Ready";    // Default safe/ready pos
-        public string DownTeachingName { get; set; } = null;     // If null use DownOffset logic
+        // Teaching position names
+        public string UpTeachingName { get; set; } = "Ready";  // 안전 위치
+        public string DownTeachingName { get; set; } = null;    // 없으면 Up - 2mm
+        public string MidTeachingName { get; set; } = null;     // TwoStep 중간 위치 (없으면 Up과 Down 사이 계산)
 
-        // Direct positions override (nullable)
+        // Direct override
         public double? UpPositionOverride { get; set; }
         public double? DownPositionOverride { get; set; }
+        public double? MidPositionOverride { get; set; }
 
         // Result flags
         public bool PickCompleted { get; private set; }
+        public bool DoubleChipDetected { get; private set; }   // placeholder
 
-        private bool IsDryRun => _unit?.DryRun ?? false;
+        private bool IsDryRun => _transfer?.DryRun ?? false;
         public Step CurrentStep => _step;
         #endregion
 
-        public SeqInputDieTransferChipUp(InputDieTransfer unit, int armIndex = 0) : base("SeqInputDieTransferChipUp")
+        public SeqInputDieTransferChipUp(InputDieTransfer transfer, int armIndex = 0, InputStage stage = null, InputStageEjector ejector = null) : base("SeqInputDieTransferChipUp")
         {
-            _unit = unit ?? throw new ArgumentNullException(nameof(unit));
+            _transfer = transfer ?? throw new ArgumentNullException(nameof(transfer));
+            _stage = stage; _ejector = ejector;
             _armIndex = armIndex;
             InitAlarms();
         }
 
         public void SetArmIndex(int idx) { if (idx >= 0) _armIndex = idx; }
 
-        public bool Start(Step first = Step.Init)
+        public bool Start(Step first = Step.InitVentCheck)
         {
             _step = first;
             _prevLoggedStep = Step.Idle;
             _tick = DateTime.UtcNow;
             PickCompleted = false;
-            _vacOnIssued = false; _ventClosedIssued = false;
+            DoubleChipDetected = false;
+            _ventClosedIssued = false; _vacOnIssued = false; _vacDelayStarted = false;
+            _downMoveIssued = false; _upMoveIssued = false; _midMoveIssued = false;
             return base.Start(0);
         }
 
@@ -151,22 +219,24 @@ namespace QMC.LCP_280.Process.Component
         {
             try
             {
-                var pickZ = _unit.PickZ;
+                var pickZ = _transfer.PickZ;
                 if (pickZ == null) { GoError("PickZ axis null", AlarmKey.GenericError); return false; }
 
                 // Up
                 if (UpPositionOverride.HasValue) _targetUpPos = UpPositionOverride.Value;
-                else if (!string.IsNullOrEmpty(UpTeachingName)) _targetUpPos = _unit.GetTP(UpTeachingName, pickZ.Setup.Name);
+                else if (!string.IsNullOrEmpty(UpTeachingName)) _targetUpPos = _transfer.GetTP(UpTeachingName, pickZ.Setup.Name);
                 else { GoError("Up position undefined", AlarmKey.PositionInvalid); return false; }
 
                 // Down
                 if (DownPositionOverride.HasValue) _targetDownPos = DownPositionOverride.Value;
-                else if (!string.IsNullOrEmpty(DownTeachingName)) _targetDownPos = _unit.GetTP(DownTeachingName, pickZ.Setup.Name);
-                else
-                {
-                    // Fallback: relative offset (simple example) -> go 2mm down from up
-                    _targetDownPos = _targetUpPos - 2.0; // negative direction assumed down
-                }
+                else if (!string.IsNullOrEmpty(DownTeachingName)) _targetDownPos = _transfer.GetTP(DownTeachingName, pickZ.Setup.Name);
+                else _targetDownPos = _targetUpPos - 2.0; // fallback
+
+                // Mid (TwoStep)
+                if (MidPositionOverride.HasValue) _targetMidPos = MidPositionOverride.Value;
+                else if (!string.IsNullOrEmpty(MidTeachingName)) _targetMidPos = _transfer.GetTP(MidTeachingName, pickZ.Setup.Name);
+                else _targetMidPos = (_targetUpPos + _targetDownPos) / 2.0;
+
                 return true;
             }
             catch (Exception ex)
@@ -176,6 +246,33 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
+        private bool StageReady()
+        {
+            if (_stage == null) return true; // 없으면 통과
+            // 간단 조건: 링 존재 & 클램프 업(가정) → 실제 조건 필요시 수정
+            try { return _stage.IsRingPresent(); } catch { return true; }
+        }
+
+        private bool CheckDoubleChip()
+        {
+            // TODO: 실제 더블칩 센서 혹은 비전 검사 연동
+            DoubleChipDetected = false; // 기본 false
+            return !DoubleChipDetected;
+        }
+
+        private void CommandPickZ(double target)
+        {
+            var ax = _transfer.PickZ; if (ax == null) return;
+            if (Math.Abs(ax.GetPosition() - target) <= ax.Config.InposTolerance * 3) return;
+            ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+
+        private bool InPos(double target)
+        {
+            var ax = _transfer.PickZ; if (ax == null) return true;
+            return ax.InPosition(target);
+        }
+
         protected override int ExecuteStep(int current, System.Threading.CancellationToken ct)
         {
             var before = _step;
@@ -183,66 +280,193 @@ namespace QMC.LCP_280.Process.Component
             {
                 case Step.Idle: return -1;
 
-                case Step.Init:
+                // 1) Vent Off → Delay
+                case Step.InitVentCheck:
                     if (!ResolvePositions()) break;
-                    // Ensure vent closed state first
-                    _step = Step.Vent_Close; _tick = DateTime.UtcNow; break;
-
-                case Step.Vent_Close:
                     if (!_ventClosedIssued)
                     {
-                        _unit.SetArmVent(_armIndex, false); // Vent Close
+                        _transfer.SetArmVent(_armIndex, false); // Vent Close
                         _ventClosedIssued = true;
-                        _tick = DateTime.UtcNow;
                     }
-                    _step = Step.Vent_Close_Delay; break;
+                    _tick = DateTime.UtcNow; _step = Step.VentOffDelayWait; break;
 
-                case Step.Vent_Close_Delay:
-                    if (IsDryRun || Timeout(VentCloseDelayMs)) { _step = Step.Vacuum_On; _tick = DateTime.UtcNow; }
+                case Step.VentOffDelayWait:
+                    if (IsDryRun || Timeout(VentCloseDelayMs)) { _step = Step.VacuumOnCheck; _tick = DateTime.UtcNow; }
                     break;
 
-                case Step.Vacuum_On:
+                // 2) Vacuum On → On Delay → 안정 딜레이
+                case Step.VacuumOnCheck:
                     if (!_vacOnIssued)
                     {
-                        _unit.SetArmVac(_armIndex, true);
+                        _transfer.SetArmVac(_armIndex, true);
                         _vacOnIssued = true;
                         _tick = DateTime.UtcNow;
                     }
-                    _step = Step.Vacuum_On_Delay; break;
+                    _step = Step.VacuumOnDelay; break;
 
-                case Step.Vacuum_On_Delay:
-                    if (IsDryRun || Timeout(VacuumDelayMs)) { _step = Step.Move_Down; _tick = DateTime.UtcNow; }
+                case Step.VacuumOnDelay:
+                    // 센서 확인 혹은 최소 대기
+                    if (IsDryRun || Timeout(VacuumOnSensorWaitMs)) { _step = Step.VacuumDelayWait; _tick = DateTime.UtcNow; }
                     else if (Timeout(VacuumTimeoutMs)) GoError("Vacuum timeout", AlarmKey.VacuumTimeout);
                     break;
 
-                case Step.Move_Down:
-                    _unit.PickZ?.MoveAbs(_targetDownPos, _unit.PickZ.Config.MaxVelocity, _unit.PickZ.Config.RunAcc, _unit.PickZ.Config.RunDec, _unit.PickZ.Config.AccJerkPercent);
-                    _step = Step.Move_Down_Wait; _tick = DateTime.UtcNow; break;
-
-                case Step.Move_Down_Wait:
-                    if (IsDryRun || _unit.PickZ?.InPosition(_targetDownPos) == true)
-                    { _step = Step.Stabilize_Down; _tick = DateTime.UtcNow; }
-                    else if (Timeout(MoveTimeoutMs)) GoError("Down move timeout", AlarmKey.AxisMoveTimeout);
+                case Step.VacuumDelayWait:
+                    if (IsDryRun || Timeout(VacuumDelayMs)) { _step = Step.WaitWaferStageReady; _tick = DateTime.UtcNow; }
                     break;
 
-                case Step.Stabilize_Down:
-                    if (IsDryRun || Timeout(DownStabilizeDelayMs)) { _step = Step.Move_Up; _tick = DateTime.UtcNow; }
+                // 3) Stage Ready 대기
+                case Step.WaitWaferStageReady:
+                    if (StageReady()) { _step = Step.DoubleChipCheck; _tick = DateTime.UtcNow; }
+                    else if (Timeout(3000)) // 임시 타임아웃
+                    { GoError("Stage not ready timeout", AlarmKey.GenericError); }
                     break;
 
-                case Step.Move_Up:
-                    _unit.PickZ?.MoveAbs(_targetUpPos, _unit.PickZ.Config.MaxVelocity, _unit.PickZ.Config.RunAcc, _unit.PickZ.Config.RunDec, _unit.PickZ.Config.AccJerkPercent);
-                    _step = Step.Move_Up_Wait; _tick = DateTime.UtcNow; break;
+                // 4) 더블칩 검사
+                case Step.DoubleChipCheck:
+                    if (!CheckDoubleChip()) { GoError("Double chip detected", AlarmKey.GenericError); break; }
+                    _step = Step.SelectNeedleSeq; _tick = DateTime.UtcNow; break;
 
-                case Step.Move_Up_Wait:
-                    if (IsDryRun || _unit.PickZ?.InPosition(_targetUpPos) == true)
-                    { PickCompleted = true; _step = Step.Finish; _tick = DateTime.UtcNow; }
-                    else if (Timeout(MoveTimeoutMs)) GoError("Up move timeout", AlarmKey.AxisMoveTimeout);
+                // 5) 니들 시퀀스 선택
+                case Step.SelectNeedleSeq:
+                    switch (SelectedNeedleType)
+                    {
+                        default:
+                        case NeedleType.Type1: _step = Step.Type1_Start; break;
+                        case NeedleType.Type2: _step = Step.Type2_MoveNeedleUp; break;
+                        case NeedleType.Type3: _step = Step.Type3_Start; break;
+                        case NeedleType.Type3_TwoStep: _step = Step.Type3_2Step_Start; break;
+                    }
+                    _tick = DateTime.UtcNow; break;
+
+                #region Type1
+                case Step.Type1_Start:
+                    _downMoveIssued = _upMoveIssued = false;
+                    _step = Step.Type1_MoveDown; _tick = DateTime.UtcNow; break;
+
+                case Step.Type1_MoveDown:
+                    if (!_downMoveIssued)
+                    { CommandPickZ(_targetDownPos); _downMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetDownPos)) { _step = Step.Type1_WaitReady; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type1 down move timeout", AlarmKey.AxisMoveTimeout);
                     break;
 
-                case Step.Finish:
-                    return -1;
-                case Step.Error:
-                    return -1;
+                case Step.Type1_WaitReady:
+                    if (IsDryRun || Timeout(DownStabilizeDelayMs)) { _step = Step.Type1_NeedleUpAssign; _tick = DateTime.UtcNow; }
+                    break;
+
+                case Step.Type1_NeedleUpAssign:
+                    if (!_upMoveIssued)
+                    { CommandPickZ(_targetUpPos); _upMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetUpPos)) { _step = Step.Type1_Complete; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type1 up move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type1_Complete:
+                    PickCompleted = true; _step = Step.Finish; break;
+                #endregion
+
+                #region Type2
+                case Step.Type2_MoveNeedleUp:
+                    if (!_upMoveIssued)
+                    { CommandPickZ(_targetUpPos); _upMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetUpPos)) { _step = Step.Type2_MoveDown; _downMoveIssued = false; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type2 pre-up move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type2_MoveDown:
+                    if (!_downMoveIssued)
+                    { CommandPickZ(_targetDownPos); _downMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetDownPos)) { _step = Step.Type2_WaitReady; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type2 down move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type2_WaitReady:
+                    if (IsDryRun || Timeout(DownStabilizeDelayMs)) { _step = Step.Type2_MoveUp; _upMoveIssued = false; _tick = DateTime.UtcNow; }
+                    break;
+
+                case Step.Type2_MoveUp:
+                    if (!_upMoveIssued)
+                    { CommandPickZ(_targetUpPos); _upMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetUpPos)) { _step = Step.Type2_AssignWafer; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type2 up move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type2_AssignWafer:
+                    // 실제 Wafer 할당/상태 갱신 필요 시 여기서 처리
+                    _step = Step.Type2_Complete; _tick = DateTime.UtcNow; break;
+
+                case Step.Type2_Complete:
+                    PickCompleted = true; _step = Step.Finish; break;
+                #endregion
+
+                #region Type3 (Single)
+                case Step.Type3_Start:
+                    _downMoveIssued = _upMoveIssued = false;
+                    _step = Step.Type3_MoveDown; _tick = DateTime.UtcNow; break;
+
+                case Step.Type3_MoveDown:
+                    if (!_downMoveIssued) { CommandPickZ(_targetDownPos); _downMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetDownPos)) { _step = Step.Type3_WaitReady; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type3 down move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type3_WaitReady:
+                    if (IsDryRun || Timeout(DownStabilizeDelayMs)) { _step = Step.Type3_NeedleUpAssign; _tick = DateTime.UtcNow; }
+                    break;
+
+                case Step.Type3_NeedleUpAssign:
+                    if (!_upMoveIssued) { CommandPickZ(_targetUpPos); _upMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetUpPos)) { _step = Step.Type3_MoveUp; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type3 up move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type3_MoveUp:
+                    // Up 위치 유지 확인 후 완료
+                    if (IsDryRun || InPos(_targetUpPos)) { _step = Step.Type3_Complete; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type3 final up timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type3_Complete:
+                    PickCompleted = true; _step = Step.Finish; break;
+                #endregion
+
+                #region Type3 Two Step
+                case Step.Type3_2Step_Start:
+                    _midMoveIssued = _downMoveIssued = _upMoveIssued = false;
+                    _step = Step.Type3_2Step_MoveDown; _tick = DateTime.UtcNow; break;
+
+                case Step.Type3_2Step_MoveDown:
+                    if (!_downMoveIssued) { CommandPickZ(_targetDownPos); _downMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetDownPos)) { _step = Step.Type3_2Step_WaitReady; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type3_2Step down timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type3_2Step_WaitReady:
+                    if (IsDryRun || Timeout(DownStabilizeDelayMs)) { _step = Step.Type3_2Step_NeedleUp1; _tick = DateTime.UtcNow; }
+                    break;
+
+                case Step.Type3_2Step_NeedleUp1:
+                    if (!_midMoveIssued) { CommandPickZ(_targetMidPos); _midMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetMidPos)) { _step = Step.Type3_2Step_NeedleUp2; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type3_2Step mid move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type3_2Step_NeedleUp2:
+                    if (!_upMoveIssued) { CommandPickZ(_targetUpPos); _upMoveIssued = true; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || InPos(_targetUpPos)) { _step = Step.Type3_2Step_MoveUp; _tick = DateTime.UtcNow; }
+                    else if (Timeout(MoveTimeoutMs)) GoError("Type3_2Step up move timeout", AlarmKey.AxisMoveTimeout);
+                    break;
+
+                case Step.Type3_2Step_MoveUp:
+                    if (IsDryRun || Timeout(MidStabilizeDelayMs)) { _step = Step.Type3_2Step_Complete; _tick = DateTime.UtcNow; }
+                    break;
+
+                case Step.Type3_2Step_Complete:
+                    PickCompleted = true; _step = Step.Finish; break;
+                #endregion
+
+                case Step.Finish: return -1;
+                case Step.Error: return -1;
             }
 
             if (before != _step && _prevLoggedStep != _step)
@@ -250,7 +474,7 @@ namespace QMC.LCP_280.Process.Component
                 try { Log.Write(Name, "Step", Name, $"StepChange {StepCode(before)} -> {StepCode(_step)} Arm={_armIndex}"); } catch { }
                 _prevLoggedStep = _step;
             }
-            return current + 1;
+            return current + 1; // 내부 상태 기반 반복
         }
     }
 }
