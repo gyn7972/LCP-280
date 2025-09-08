@@ -12,80 +12,96 @@ namespace QMC.Common.Spectrometer
 {
     public class CASSpectrometerResult
     {
-        public double WP { get; set; } = 0;
-        public double FWHM { get; set; } = 0;
-        public double CIEX { get; set; } = 0;
-        public double CIEY { get; set; } = 0;
-        public double CIEZ { get; set; } = 0;
-        public double CIEU { get; set; } = 0;
-        public double CIEV1976 { get; set; } = 0;
-        public double CIEV1960 { get; set; } = 0;
-        public double LambdaDom { get; set; } = 0;
-        public double Purity { get; set; } = 0;
-        public double RadInt { get; set; } = 0;
-        public string RadIntUnit { get; set; } = string.Empty;
-        public double PhotInt { get; set; } = 0;
-        public string PhotIntUnit { get; set; } = string.Empty;
-        public double CCT { get; set; } = 0;
-        public double CRI { get; set; } = 0;
-        public double Centroid { get; set; } = 0;
-        public double StimulusX { get; set; } = 0;
-        public double StimulusY { get; set; } = 0;
-        public double StimulusZ { get; set; } = 0;
-        public double PickValue { get; set; } = 0;
-        public int ADC { get; set; } = 0;
+        #region Properties
+        public double WP { get; set; }
+        public double FWHM { get; set; }
+        public double CIEX { get; set; }
+        public double CIEY { get; set; }
+        public double CIEZ { get; set; }
+        public double CIEU { get; set; }
+        public double CIEV1976 { get; set; }
+        public double CIEV1960 { get; set; }
+        public double LambdaDom { get; set; }
+        public double Purity { get; set; }
+        public double RadInt { get; set; }
+        public string RadIntUnit { get; set; }
+        public double PhotInt { get; set; }
+        public string PhotIntUnit { get; set; }
+        public double CCT { get; set; }
+        public double CRI { get; set; }
+        public double Centroid { get; set; }
+        public double StimulusX { get; set; }
+        public double StimulusY { get; set; }
+        public double StimulusZ { get; set; }
+        public double PickValue { get; set; }
+        public int ADC { get; set; }
+        #endregion
 
+        #region Methods
         public void Clear()
         {
-            WP = default;
-            FWHM = default;
-            CIEX = default;
-            CIEY = default;
-            CIEZ = default;
-            CIEU = default;
-            CIEV1976 = default;
-            CIEV1960 = default;
-            LambdaDom = default;
-            Purity = default;
-            RadInt = default;
-            RadIntUnit = default;
-            PhotInt = default;
-            PhotIntUnit = default;
-            CCT = default;
-            CRI = default;
-            Centroid = default;
-            StimulusX = default;
-            StimulusY = default;
-            StimulusZ = default;
-            PickValue = default;
-            ADC = default;
+            WP = 0;
+            FWHM = 0;
+            CIEX = 0;
+            CIEY = 0;
+            CIEZ = 0;
+            CIEU = 0;
+            CIEV1976 = 0;
+            CIEV1960 = 0;
+            LambdaDom = 0;
+            Purity = 0;
+            RadInt = 0;
+            RadIntUnit = "";
+            PhotInt = 0;
+            PhotIntUnit = "";
+            CCT = 0;
+            CRI = 0;
+            Centroid = 0;
+            StimulusX = 0;
+            StimulusY = 0;
+            StimulusZ = 0;
+            PickValue = 0;
+            ADC = 0;
         }
+        #endregion
     }
+    
     public class CASSpectrometerSpectrum
     {
-        public double[] WaveLength { get; set; } = new double[0];
-        public double[] Intensity { get; set; } = new double[0];
-        public double MaximumIntensity { get; set; } = 0;
+        #region Properties
+        public double[] WaveLength { get; set; }
+        public double[] Intensity { get; set; }
+        public double MaximumIntensity { get; set; }
+        #endregion
 
+        #region Methods
         public void Clear()
         {
             WaveLength = null;
+            WaveLength = new double[0];
             Intensity = null;
+            Intensity = new double[0];
             MaximumIntensity = 0;
         }
+        #endregion
     }
+
     public class CASSpectrometerDensityFilter
     {
-        public int Index { get; set; } = -1;
-        public int Value { get; set; } = 0;
-        public string Name { get; set; } = string.Empty;
+        #region Properties
+        public int Index { get; set; }
+        public int Value { get; set; }
+        public string Name { get; set; }
+        #endregion
 
+        #region Methods
         public void Clear()
         {
-            Index = default;
-            Value = default;
-            Name = default;
+            Index = -1;
+            Value = 0;
+            Name = "";
         }
+        #endregion
     }
 
     /// <summary>
@@ -763,30 +779,6 @@ namespace QMC.Common.Spectrometer
 
                 spectrumData.WaveLength[i] = CAS4DLL.casGetXArray(deviceId, i + deadPixels);
             }
-        }
-        private void GetSpectrumDataTest()
-        {
-            // 380 ~ 780, 1 step
-            int n = 780 - 380 + 1;
-            spectrumData.WaveLength = new double[n];
-            spectrumData.Intensity = new double[n];
-            double mean = 550.0;
-            double stddev = 40.0;
-            Random rand = new Random();
-            double max = double.MinValue;
-            for (int i = 0; i < n; i++)
-            {
-                double x = 380 + i;
-                spectrumData.WaveLength[i] = x;
-                // Gaussian: exp(-0.5 * ((x-mean)/stddev)^2)
-                double gauss = Math.Exp(-0.5 * Math.Pow((x - mean) / stddev, 2));
-                // Add noise: [-0.02, 0.02]
-                double noise = (rand.NextDouble() - 0.5) * 0.04;
-                double intensity = gauss + noise;
-                spectrumData.Intensity[i] = intensity;
-                if (intensity > max) max = intensity;
-            }
-            spectrumData.MaximumIntensity = max;
         }
         #endregion
 

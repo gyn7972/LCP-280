@@ -215,8 +215,8 @@ namespace QMC.Common.Keithley
             {
                 string bufferName = $"{Name}.nvbuffer1";
                 string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings";
+                
                 string bufferData = "";
-
                 if (!Owner.Communicator.Query(bufferReadCommand, ref bufferData))
                     throw new Exception($"[{Name}] Failed to read buffer.");
 

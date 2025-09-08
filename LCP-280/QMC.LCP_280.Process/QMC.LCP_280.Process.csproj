@@ -294,6 +294,12 @@
     <Compile Include="Unit\Measurement_Recipe.Designer.cs">
       <DependentUpon>Measurement_Recipe.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\TestConditionSetPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\TestConditionSetPage.Designer.cs">
+      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\Vision_Setup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -403,6 +409,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Measurement_Recipe.resx">
       <DependentUpon>Measurement_Recipe.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\TestConditionSetPage.resx">
+      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\Vision_Setup.resx">
       <DependentUpon>Vision_Setup.cs</DependentUpon>

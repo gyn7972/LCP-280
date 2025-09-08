@@ -11,6 +11,7 @@ namespace QMC.Common.PKGTester
     {
         Electrical,
         Optical,
+        UserDefined,
         Undefined
     };
 
@@ -73,6 +74,7 @@ namespace QMC.Common.PKGTester
         #region Properties
         public double RawData { get; set; }
         public double Value { get; set; }
+        public string Prifix { get; set; }
         public string Unit { get; set; }
         #endregion
 

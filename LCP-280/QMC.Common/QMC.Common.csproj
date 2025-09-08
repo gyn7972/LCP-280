@@ -379,6 +379,7 @@
       <DependentUpon>MultiPatternMatchingParameterControl.cs</DependentUpon>
     </Compile>
     <Compile Include="PKGTester\DataBinning.cs" />
+    <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="VisionPart\MultiPatternMatchingVisionPart.cs" />
     <Compile Include="PatternMatching\PatternMatchingParamControl.cs">
       <SubType>UserControl</SubType>
@@ -399,12 +400,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="PKGTester\TestCondition.cs" />
-    <Compile Include="PKGTester\TestConditionSetPage.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="PKGTester\TestConditionSetPage.Designer.cs">
-      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
-    </Compile>
     <Compile Include="PKGTester\TestItem.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyBase.cs" />
@@ -560,9 +555,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="PatternMatching\PatternMatchingResultControl.resx">
       <DependentUpon>PatternMatchingResultControl.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="PKGTester\TestConditionSetPage.resx">
-      <DependentUpon>TestConditionSetPage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

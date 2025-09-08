@@ -8,6 +8,8 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Xml.Serialization.Advanced;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -264,6 +266,7 @@ namespace QMC.LCP_280.Process.Unit
                         value *= item.Gain;
                     if (item.UseOffset)
                         value += item.Offset;
+
                     itemResult.Value = value;
                 }
             }

@@ -32,7 +32,7 @@
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.testConditionSetPage1 = new QMC.Common.PKGTester.TestConditionSetPage();
+            this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.TestConditionSetPage();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.SuspendLayout();
@@ -110,6 +110,6 @@
         private System.Windows.Forms.TabPage tabPage2;
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.TabPage tabPage1;
-        private Common.PKGTester.TestConditionSetPage testConditionSetPage1;
+        private TestConditionSetPage testConditionSetPage1;
     }
 }
