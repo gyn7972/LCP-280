@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Keithley;
+using QMC.Common.PKGTester;
 using QMC.Common.Spectrometer;
 using System;
 using System.Collections.Generic;
@@ -280,6 +281,20 @@ namespace QMC.LCP_280.Process.Unit
         private void btnChannelTest_Click(object sender, EventArgs e)
         {
             // Do this.
+            if (selectSourcemeterChannel == null)
+            {
+                MessageBox.Show("No sourcemeter channel selected or invalid instance.");
+                return;
+            }
+
+            TestConditionItem item = new TestConditionItem("VF_Test");
+            item.SourceValue = 0.1;//A
+            item.SourceTime = 10;//ms
+            item.SourceLimit = 3;//V
+            item.MeasureTime = 10;//ms
+            selectSourcemeter.ClearTestItems();
+            selectSourcemeter.AddTestItem(item);
+            selectSourcemeter.Measure();
         }
         #endregion
 

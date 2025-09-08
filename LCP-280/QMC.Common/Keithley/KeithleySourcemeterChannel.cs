@@ -15,7 +15,8 @@ namespace QMC.Common.Keithley
         {
             MeasureI,
             MeasureV,
-            MeasureVAndPulseTrigger,
+            PulseSweepIAndTrigger,
+            PulseSweepVAndTrigger,
         }
         public class ChannelCommand
         {
@@ -40,9 +41,9 @@ namespace QMC.Common.Keithley
         #endregion
 
         #region Field
-        private List<ChannelCommand> commands;
-        private StringBuilder stringBuilder;
-        private List<string> bufferDatas;
+        private List<ChannelCommand> commands = new List<ChannelCommand>();
+        private StringBuilder stringBuilder = new StringBuilder();
+        private List<string> bufferDatas = new List<string>();
         #endregion
 
         #region Property
@@ -56,13 +57,24 @@ namespace QMC.Common.Keithley
         {
             Name = name;
             Owner = owner;
-
-            commands = new List<ChannelCommand>();
-            stringBuilder = new StringBuilder();
         }
         #endregion
 
         #region Method
+        public bool Init()
+        {
+            try
+            {
+                stringBuilder.Clear();
+                stringBuilder.AppendLine($"initChannel({Name})");
+                return Owner.Communicator.Write(stringBuilder.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
         public bool ApplyConfig()
         {
             try
@@ -128,7 +140,7 @@ namespace QMC.Common.Keithley
 
             commands.Add(command);
         }
-        public bool RunMeasureCommands()
+        public bool RunCommands()
         {
             bufferDatas.Clear();
             try
@@ -136,7 +148,7 @@ namespace QMC.Common.Keithley
                 stringBuilder.Clear();
 
                 // begin run command
-                stringBuilder.AppendLine("startmeasure()");
+                stringBuilder.AppendLine($"startmeasure({Name})");
 
                 var args = new List<string>();
 
@@ -145,43 +157,54 @@ namespace QMC.Common.Keithley
                     switch (cmd.Action)
                     {
                         case CommandAction.MeasureI:
-                            args.Add(Name);
-                            args.Add(cmd.SourceValue.ToString());
-                            args.Add(cmd.SourceRange.ToString());
-                            args.Add(cmd.MeasureRange.ToString());
-                            args.Add(cmd.MeasureTime.ToString());
-                            args.Add(cmd.SourceLimit.ToString());
-                            args.Add(cmd.SourceTime.ToString());
-                            stringBuilder.AppendLine("vi(" + string.Join(",", args) + ")");
+                            {
+                                args.Add(Name);
+                                args.Add(cmd.SourceValue.ToString());
+                                args.Add(cmd.SourceRange.ToString());
+                                args.Add(cmd.SourceTime.ToString());
+                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureRange.ToString());
+                                args.Add(cmd.MeasureTime.ToString());
+                                stringBuilder.AppendLine("vi(" + string.Join(",", args) + ")");
+                            }
                             break;
                         case CommandAction.MeasureV:
-                            args.Add(Name);
-                            args.Add(cmd.SourceValue.ToString());
-                            args.Add(cmd.SourceRange.ToString());
-                            args.Add(cmd.MeasureRange.ToString());
-                            args.Add(cmd.MeasureTime.ToString());
-                            args.Add(cmd.SourceLimit.ToString());
-                            args.Add(cmd.SourceTime.ToString());
-                            stringBuilder.AppendLine("iv(" + string.Join(",", args) + ")");
+                            {
+                                args.Add(Name);
+                                args.Add(cmd.SourceValue.ToString());
+                                args.Add(cmd.SourceRange.ToString());
+                                args.Add(cmd.SourceTime.ToString());
+                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureRange.ToString());
+                                args.Add(cmd.MeasureTime.ToString());
+                                stringBuilder.AppendLine("iv(" + string.Join(",", args) + ")");
+                            }
                             break;
-                        case CommandAction.MeasureVAndPulseTrigger:
-                            args.Add(Name);
-                            args.Add(cmd.SourceValue.ToString());
-                            args.Add(cmd.SourceRange.ToString());
-                            args.Add(cmd.MeasureRange.ToString());
-                            args.Add(cmd.MeasureTime.ToString());
-                            args.Add(cmd.SourceLimit.ToString());
-                            args.Add(cmd.SourceTime.ToString());
-                            args.Add(cmd.PulsePeriod.ToString());
-                            args.Add(cmd.PulseWidth.ToString());
-                            args.Add(cmd.PulseCount.ToString());
-                            stringBuilder.AppendLine("VF_Pulse(" + string.Join(",", args) + ")");
+                        case CommandAction.PulseSweepIAndTrigger:
+                            {
+                                args.Add(Name);
+                                args.Add(cmd.SourceValue.ToString());
+                                args.Add(cmd.PulseWidth.ToString());
+                                args.Add(cmd.PulsePeriod.ToString());
+                                args.Add(cmd.PulseCount.ToString());
+                                stringBuilder.AppendLine("iPulseAndTrigger(" + string.Join(",", args) + ")");
+                            }
+                            break;
+                        case CommandAction.PulseSweepVAndTrigger:
+                            {
+                                args.Add(Name);
+                                args.Add(cmd.SourceValue.ToString());
+                                args.Add(cmd.PulseWidth.ToString());
+                                args.Add(cmd.PulsePeriod.ToString());
+                                args.Add(cmd.PulseCount.ToString());
+                                stringBuilder.AppendLine("vPulseAndTrigger(" + string.Join(",", args) + ")");
+                            }
                             break;
                     }
                 }
 
                 // end run command
-                stringBuilder.AppendLine("endmeasure()");
+                stringBuilder.AppendLine($"endmeasure({Name})");
 
                 return Owner.Communicator.Write(stringBuilder.ToString());
             }
@@ -215,8 +238,8 @@ namespace QMC.Common.Keithley
             {
                 string bufferName = $"{Name}.nvbuffer1";
                 string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings";
+                
                 string bufferData = "";
-
                 if (!Owner.Communicator.Query(bufferReadCommand, ref bufferData))
                     throw new Exception($"[{Name}] Failed to read buffer.");
 
@@ -236,6 +259,32 @@ namespace QMC.Common.Keithley
                 return false;
             }
             return true;
+        }
+        #endregion
+
+        #region Simulation Method
+        public void SimulateBufferData()
+        {
+            bufferDatas.Clear();
+
+            int measureCount = 0;
+            foreach (var cmd in commands)
+            {
+                switch (cmd.Action)
+                {
+                    case CommandAction.MeasureI:
+                    case CommandAction.MeasureV:
+                        measureCount++;
+                        break;
+                }
+            }
+
+            Random rand = new Random();
+            for (int i = 0; i < measureCount; i++)
+            {
+                double simulatedValue = Math.Round(rand.NextDouble() * 10, 3); // Simulate a value between 0 and 10
+                bufferDatas.Add(simulatedValue.ToString());
+            }
         }
         #endregion
     }

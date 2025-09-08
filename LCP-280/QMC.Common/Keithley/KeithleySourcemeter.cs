@@ -24,7 +24,6 @@ namespace QMC.Common.Keithley
         #endregion
 
         #region Field
-        private string identification = "";
         private List<TestConditionItem> testItems = new List<TestConditionItem>();
         private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
         #endregion
@@ -94,17 +93,18 @@ namespace QMC.Common.Keithley
 
                 if (!Communicator.OpenSession(Config.ResourceName))
                 {
-                    throw new InvalidOperationException($"Failed to open session. (ResourceName: {Config.ResourceName})");
+                    throw new Exception($"Failed to open session. (ResourceName: {Config.ResourceName})");
                 }
 
                 // Query Identification
+                string identification = "";
                 if (!Communicator.Query("*IDN?", ref identification))
                 {
-                    throw new InvalidOperationException($"Failed to get identification.");
+                    throw new Exception($"Failed to get identification.");
                 }
 
                 string[] items = identification.Split(',');
-                if (items.Length == 4 && items[0] == "Keithley Instruments")
+                if (items.Length == 4 && items[0].Contains("Keithley Instruments"))
                 {
                     ModelName = items[1].Trim();
                     SerialNo = items[2].Trim();
@@ -112,22 +112,34 @@ namespace QMC.Common.Keithley
                 }
                 else
                 {
-                    throw new InvalidOperationException($"[{Name}] is not keithley sourcemeter.");
+                    throw new Exception($"[{Name}] is not keithley sourcemeter.");
                 }    
 
                 // Load Script
-                if (!LoadScript())
+                if (SendUserScript() != 0)
                 {
-                    throw new InvalidOperationException($"Failed to load script. (FileName: {Config.ScriptFileName})");
+                    throw new Exception($"Failed to send user script. (FileName: {Config.ScriptFileName})");
                 }
 
                 // Apply Channel Config
+                if (ApplyParameter() != 0)
+                {
+                    throw new Exception("Failed to apply parameter.");
+                }
+
+                // Initialize SMU
+                if (Init() != 0)
+                {
+                    throw new Exception("Failed to initialize sourcemeter.");
+                }
+
+                // Initialize SMU Channels
                 foreach (var item in Channels)
                 {
                     var channel = item.Value;
-                    if (!channel.ApplyConfig())
+                    if (!channel.Init())
                     {
-                        throw new InvalidOperationException($"Failed to apply channel [{channel.Name}] config.");
+                        throw new Exception($"Failed to initialize channel [{channel.Name}].");
                     }
                 }
             }
@@ -144,6 +156,82 @@ namespace QMC.Common.Keithley
         }
         #endregion
 
+        public int ApplyParameter()
+        {
+            try
+            {
+                // Sourcemeter Parameter 적용
+                // -
+
+                // Sourcemeter Channel Parameter 적용
+                foreach (var item in Channels)
+                {
+                    var channel = item.Value;
+                    if (!channel.ApplyConfig())
+                    {
+                        throw new Exception($"Failed to apply channel [{channel.Name}] config.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+
+        public int Init()
+        {
+            try
+            {
+                if (!Communicator.Write("init()"))
+                    throw new Exception("Failed to send init command.");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+
+        public int Measure()
+        {
+            try
+            {
+                KeithleySourcemeterChannel channel = Channels["smua"];
+                if (Config.IsSimulated)
+                {
+                    channel.SimulateBufferData();
+                    return 0;
+                }
+
+                if (!channel.RunCommands())
+                    throw new Exception("Failed to run measure commands.");
+
+                StopWatch sw = new StopWatch();
+                sw.Start();
+
+                while (!channel.WaitComplete())
+                {
+                    if (sw.Elapsed.Milliseconds >= Config.MeasureTimeout)
+                        throw new Exception("Measurement timeout occurred.");
+
+                    Thread.Sleep(10);
+                }
+
+                if (!channel.ReadBufferData())
+                    throw new Exception("Failed to read buffer data.");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            return 0;
+        }
+
         #region Test Item Methods
         public void ClearTestItems()
         {
@@ -154,11 +242,14 @@ namespace QMC.Common.Keithley
         {
             if (item == null)
                 return false;
-            if (item.Type.GetCategory() != TestItemCategory.Electrical)
+
+            TestItemCategory category = item.GetTestItemCategory();
+            if (!(category == TestItemCategory.Electrical || category == TestItemCategory.ElectricalSource))
                 return false;
 
             testItems.Add(item);
-            results.Add(item.Name, new TestItemResult());
+            if (category == TestItemCategory.Electrical)
+                results.Add(item.Name, new TestItemResult());
             return true;
         }
         public bool BuildTestCommands()
@@ -224,6 +315,28 @@ namespace QMC.Common.Keithley
                                 channel.AddCommand(command);
                             }
                             break;
+                        case TestItemType.VPulseSweep:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.PulseSweepVAndTrigger;
+                                command.SourceValue = item.SourceValue;
+                                command.PulseWidth = item.PulseWidth;
+                                command.PulsePeriod = item.PulsePeriod;
+                                command.PulseCount = item.PulseCount;
+                                channel.AddCommand(command);
+                            }
+                            break;
+                        case TestItemType.IPulseSweep:
+                            {
+                                command.Name = item.Name;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.PulseSweepIAndTrigger;
+                                command.SourceValue = item.SourceValue;
+                                command.PulseWidth = item.PulseWidth;
+                                command.PulsePeriod = item.PulsePeriod;
+                                command.PulseCount = item.PulseCount;
+                                channel.AddCommand(command);
+                            }
+                            break;
                         default:
                             throw new InvalidOperationException($"Not supported test item type. (Type: {item.Type})");
                     }
@@ -242,7 +355,14 @@ namespace QMC.Common.Keithley
             {
                 KeithleySourcemeterChannel channel = Channels["smua"]; // 현재 smua 채널만 사용함. 추후 변경 필요.
 
-                if (channel.BufferDatas.Length != testItems.Count)
+                int measureCount = 0;
+                foreach (var item in testItems)
+                {
+                    if (item.IsMeasureItem())
+                        measureCount ++;
+                }
+
+                if (channel.BufferDatas.Length != measureCount)
                 {
                     throw new InvalidOperationException($"Data count mismatch. (Expected: {testItems.Count}, Actual: {channel.BufferDatas.Length})");
                 }
@@ -257,24 +377,32 @@ namespace QMC.Common.Keithley
                     switch (testItems[i].Type)
                     {
                         case TestItemType.VF:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "V";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "V";
+                            }
                             break;
                         case TestItemType.VR:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "V";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "V";
+                            }
                             break;
                         case TestItemType.IF:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "A";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "A";
+                            }
                             break;
                         case TestItemType.IR:
-                            itemResult.RawData = value;
-                            itemResult.Value = value;
-                            itemResult.Unit = "A";
+                            {
+                                itemResult.RawData = value;
+                                itemResult.Value = value;
+                                itemResult.Unit = "A";
+                            }
                             break;
                     }
                 }
@@ -285,7 +413,6 @@ namespace QMC.Common.Keithley
                 {
                     results[key].Reset();
                 }
-
                 Log.Write(ex);
                 return false;
             }
@@ -293,51 +420,13 @@ namespace QMC.Common.Keithley
         }
         #endregion
 
-        public int ApplyParameter()
-        {
-            return 0;
-        }
-        public int Measure()
-        {
-            try
-            {
-                KeithleySourcemeterChannel channel = Channels["smua"];
-
-                if (!channel.RunMeasureCommands())
-                    throw new Exception("Failed to run measure commands.");
-
-                StopWatch sw = new StopWatch();
-                sw.Start();
-
-                while (!channel.WaitComplete())
-                {
-                    if (sw.Elapsed.Milliseconds >= Config.MeasureTimeout)
-                        throw new Exception("Measurement timeout occurred.");
-
-                    Thread.Sleep(10);
-                }
-
-                if (!channel.ReadBufferData())
-                    throw new Exception("Failed to read buffer data.");
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                return -1;
-            }
-            return 0;
-        }
-
         // Script Methods
         #region Script Methods
-        private bool LoadScript()
+        private int SendUserScript()
         {
-            if (!Communicator.IsConnected)
-                return false;
             if (!File.Exists(Config.ScriptFileName))
-                return false;
+                return -1;
 
-            bool result = false;
             try
             {
                 string arrangeText = "";
@@ -382,15 +471,17 @@ namespace QMC.Common.Keithley
                         sb.AppendLine(arrangeText);
                     }
 
-                    Communicator.Write(sb.ToString());
-                    result = true;
+                    if (!Communicator.Write(sb.ToString()))
+                        throw new Exception("Failed to send user script.");
                 }
             }
             catch (Exception ex)
             {
                 // Error handling
+                Log.Write(ex);
+                return -1;
             }
-            return result;
+            return 0;
         }
         #endregion
 
