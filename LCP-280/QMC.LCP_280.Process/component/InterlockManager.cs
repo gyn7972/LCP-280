@@ -274,6 +274,52 @@ namespace QMC.LCP_280.Process.Component
         }
 
         /// <summary>
+        /// 홈 시퀀스 단계 시작 전에, 주어진 축 집합과 관련된(또는 전역) 인터락을 평가합니다.
+        /// - InvolvesAxis가 true인 룰은 선택된 축에 한해 검사
+        /// - InvolvesAxis가 false인 전역 룰도 함께 검사(도어/실린더 같은 설비 상태)
+        /// 위반 시 false와 사유 반환
+        /// </summary>
+        public bool ValidateForHomeStep(IReadOnlyList<MotionAxis> axes, out string reason)
+        {
+            reason = null;
+            var set = new HashSet<MotionAxis>(axes ?? Array.Empty<MotionAxis>());
+            InterlockRule[] copy; lock (_ruleLock) copy = _rules.ToArray();
+
+            foreach (var r in copy)
+            {
+                try
+                {
+                    // 선택된 축과 관련된 룰만 검사하거나, 전역 룰(InvolvesAxis=false)은 항상 검사
+                    bool related = false;
+                    if (set.Count == 0)
+                    {
+                        related = true; // 축이 비어도 전역 체크
+                    }
+                    else
+                    {
+                        foreach (var ax in set)
+                        {
+                            if (r.InvolvesAxis(ax)) { related = true; break; }
+                        }
+                        // 축과 무관한 전역 룰도 검사
+                        if (!related) related = !copy.Any() ? true : !set.Any(ax => r.InvolvesAxis(ax));
+                    }
+
+                    if (related)
+                    {
+                        var msg = r.Evaluate();
+                        if (!string.IsNullOrEmpty(msg)) { reason = msg; return false; }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    reason = r.Name + " EvaluateEx:" + ex.Message; return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
         /// 마지막 스캔 루프에서 위반되었던 메시지 배열 스냅샷.
         /// (UI 폴링 or ViolationsUpdated 이벤트와 조합)
         /// </summary>
