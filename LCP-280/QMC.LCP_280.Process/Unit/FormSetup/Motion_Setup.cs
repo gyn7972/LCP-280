@@ -167,16 +167,16 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.Save(setupPath);
 
                 // 8) ★ 하드웨어에 설정 적용 ★
-                //int applyResult = axis.ApplyToDriver();
-                //if (applyResult != 0)
-                //{
-                //    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
-                //        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //}
-                //else
-                //{
-                //    Console.WriteLine($"축 {axisName}: 하드웨어 설정 적용 성공");
-                //}
+                int applyResult = axis.ApplyToDriver();
+                if (applyResult != 0)
+                {
+                    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    Console.WriteLine($"축 {axisName}: 하드웨어 설정 적용 성공");
+                }
 
                 MessageBox.Show($"'{axisName}' 설정을 저장하고 하드웨어에 적용했습니다.", "완료",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -254,16 +254,16 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Config.Save(setupPath);
 
                 // 8) ★ 하드웨어에 설정 적용 ★
-                //int applyResult = axis.ApplyToDriver();
-                //if (applyResult != 0)
-                //{
-                //    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
-                //        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //}
-                //else
-                //{
-                //    Console.WriteLine($"축 {axisName}: 하드웨어 속도 설정 적용 성공");
-                //}
+                int applyResult = axis.ApplyToDriver();
+                if (applyResult != 0)
+                {
+                    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                {
+                    Console.WriteLine($"축 {axisName}: 하드웨어 속도 설정 적용 성공");
+                }
 
                 MessageBox.Show($"'{axisName}' 속도 설정을 저장하고 하드웨어에 적용했습니다.", "완료",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
