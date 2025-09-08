@@ -262,10 +262,10 @@ namespace QMC.LCP_280.Process.Unit
 
                     // Calibrate
                     double value = itemResult.RawData;
-                    if (item.UseGain)
-                        value *= item.Gain;
-                    if (item.UseOffset)
-                        value += item.Offset;
+                    //if (item.UseGain)
+                    //    value *= item.Gain;
+                    //if (item.UseOffset)
+                    //    value += item.Offset;
 
                     itemResult.Value = value;
                 }

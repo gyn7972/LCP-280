@@ -24,6 +24,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using QMC.Common.PKGTester;
 
 namespace QMC.LCP_280.Process
 {
@@ -156,7 +157,7 @@ namespace QMC.LCP_280.Process
         // Sourcemeter
         public Dictionary<string, KeithleySourcemeter> Sourcemeters { get; } = new Dictionary<string, KeithleySourcemeter>(StringComparer.OrdinalIgnoreCase);
         // == 편의 프로퍼티 추가 ==
-        public KeithleySourcemeter Sourcemeter => GetSourcemeter("Sourcemeter");
+        public KeithleySourcemeter Sourcemeter => GetSourcemeter("Index_Prober_Sourcemeter");
 
         private KeithleySourcemeter GetSourcemeter(string key)
         {
@@ -166,12 +167,15 @@ namespace QMC.LCP_280.Process
         // Spectrometer
         public Dictionary<string, CASSpectrometer> Spectrometers { get; } = new Dictionary<string, CASSpectrometer>(StringComparer.OrdinalIgnoreCase);
         // == 편의 프로퍼티 추가 ==
-        public CASSpectrometer Spectrometer => GetSpectrometer("Spectrometer");
+        public CASSpectrometer Spectrometer => GetSpectrometer("Index_Prober_Spectrometer");
 
         private CASSpectrometer GetSpectrometer(string key)
         {
             return Spectrometers.TryGetValue(key, out var sm) ? sm : null;
         }
+
+        // PKG Tester
+        public PKGTester Tester { get; private set; }
 
         #endregion
 
@@ -217,6 +221,9 @@ namespace QMC.LCP_280.Process
 
                 // === Spectrometer 초기화 ===
                 InitializeSpectrometers();
+
+                // === PKG Tester 초기화 ===
+                InitializePKGTester();
 
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
@@ -1506,6 +1513,20 @@ namespace QMC.LCP_280.Process
                 {
                     Log.Write(ex);
                 }
+            }
+        }
+
+        private void InitializePKGTester()
+        {
+            try
+            {
+                Tester = new PKGTester("PKGTester");
+                Tester.AttachSourcemeter(Sourcemeter);
+                Tester.AttachSpectrometer(Spectrometer);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
             }
         }
     }

@@ -40,9 +40,9 @@ namespace QMC.Common.Keithley
         #endregion
 
         #region Field
-        private List<ChannelCommand> commands;
-        private StringBuilder stringBuilder;
-        private List<string> bufferDatas;
+        private List<ChannelCommand> commands = new List<ChannelCommand>();
+        private StringBuilder stringBuilder = new StringBuilder();
+        private List<string> bufferDatas = new List<string>();
         #endregion
 
         #region Property
@@ -56,9 +56,6 @@ namespace QMC.Common.Keithley
         {
             Name = name;
             Owner = owner;
-
-            commands = new List<ChannelCommand>();
-            stringBuilder = new StringBuilder();
         }
         #endregion
 
@@ -236,6 +233,19 @@ namespace QMC.Common.Keithley
                 return false;
             }
             return true;
+        }
+        #endregion
+
+        #region Simulation Method
+        public void SimulateBufferData()
+        {
+            bufferDatas.Clear();
+            Random rand = new Random();
+            for (int i = 0; i < commands.Count; i++)
+            {
+                double simulatedValue = Math.Round(rand.NextDouble() * 10, 3); // Simulate a value between 0 and 10
+                bufferDatas.Add(simulatedValue.ToString());
+            }
         }
         #endregion
     }

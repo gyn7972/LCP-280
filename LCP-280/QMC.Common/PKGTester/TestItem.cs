@@ -74,7 +74,6 @@ namespace QMC.Common.PKGTester
         #region Properties
         public double RawData { get; set; }
         public double Value { get; set; }
-        public string Prifix { get; set; }
         public string Unit { get; set; }
         #endregion
 
@@ -104,8 +103,9 @@ namespace QMC.Common.PKGTester
         public override string ToString()
         {
             if (string.IsNullOrEmpty(Unit))
-                return Value.ToString();
-            return Value + " " + Unit;
+                return Value.ToString("F3");
+
+            return Value.ToString("F3") + " " + Unit;
         }
         #endregion
     }

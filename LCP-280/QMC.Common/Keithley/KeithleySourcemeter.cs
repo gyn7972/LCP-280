@@ -169,6 +169,11 @@ namespace QMC.Common.Keithley
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"];
+                if (Config.IsSimulated)
+                {
+                    channel.SimulateBufferData();
+                    return 0;
+                }
 
                 if (!channel.RunMeasureCommands())
                     throw new Exception("Failed to run measure commands.");

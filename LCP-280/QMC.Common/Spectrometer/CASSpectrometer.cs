@@ -401,14 +401,19 @@ namespace QMC.Common.Spectrometer
         }
         public int Measure()
         {
+            if (Config.IsSimulated)
+            {
+                return MeasureSimulation();
+            }
+
             int ret = 0;
             do
             {
-                //if (!IsCreated())
-                //{
-                //    ret = -1;
-                //    break;
-                //}
+                if (!IsCreated())
+                {
+                    ret = -1;
+                    break;
+                }
                 if (Config.UseExternalTrigger)
                 {
                     // Measure with external trigger
@@ -1024,6 +1029,94 @@ namespace QMC.Common.Spectrometer
                 filterNames.Add(filter.Name);
             }
             return filterNames;
+        }
+        #endregion
+
+        #region Simulation Methods
+        private void GetSimulationMeasureData()
+        {
+            var rand = new Random();
+
+            // 파장 관련 (nm)
+            measureData.WP = rand.NextDouble() * (700 - 400) + 400; // 400~700nm
+            measureData.FWHM = rand.NextDouble() * (60 - 10) + 10;  // 10~60nm
+            measureData.LambdaDom = rand.NextDouble() * (700 - 400) + 400; // 400~700nm
+            measureData.Centroid = rand.NextDouble() * (700 - 400) + 400; // 400~700nm
+
+            // 색좌표 (0~1)
+            measureData.CIEX = rand.NextDouble();
+            measureData.CIEY = rand.NextDouble();
+            measureData.CIEZ = rand.NextDouble();
+            measureData.CIEU = rand.NextDouble();
+            measureData.CIEV1976 = rand.NextDouble();
+            measureData.CIEV1960 = rand.NextDouble();
+
+            // 삼자극치 (0~100)
+            measureData.StimulusX = rand.NextDouble() * 100;
+            measureData.StimulusY = rand.NextDouble() * 100;
+            measureData.StimulusZ = rand.NextDouble() * 100;
+
+            // 순도 (0~1)
+            measureData.Purity = rand.NextDouble();
+
+            // 광도, 방사조도 (0~10000)
+            measureData.PhotInt = rand.NextDouble() * 10000;
+            measureData.PhotIntUnit = "lm";
+            measureData.RadInt = rand.NextDouble() * 10000;
+            measureData.RadIntUnit = "W";
+
+            // 색온도 (2000~10000K)
+            measureData.CCT = rand.NextDouble() * (10000 - 2000) + 2000;
+
+            // 연색성 (CRI, 0~100)
+            measureData.CRI = rand.NextDouble() * 100;
+
+            // 최대값 (0~10000)
+            measureData.PickValue = rand.NextDouble() * 10000;
+
+            // ADC (0~65535)
+            measureData.ADC = rand.Next(0, 65536);
+        }
+        private void GetSimulationSpectrumData()
+        {
+            var rand = new Random();
+            int pixelCount = 1024;
+            spectrumData.WaveLength = new double[pixelCount];
+            spectrumData.Intensity = new double[pixelCount];
+            spectrumData.MaximumIntensity = 0;
+            double startWavelength = 200.0; // 시작 파장 (nm)
+            double endWavelength = 1100.0;  // 끝 파장 (nm)
+            double wavelengthStep = (endWavelength - startWavelength) / pixelCount;
+
+            double mean = 550.0; // 중심 파장 (nm)
+            double stddev = 40.0; // 표준편차 (nm)
+            double amplitude = 10000.0; // 최대 세기
+
+            for (int i = 0; i < pixelCount; i++)
+            {
+                double wl = startWavelength + i * wavelengthStep;
+                spectrumData.WaveLength[i] = wl;
+
+                // 가우시안 파형
+                double gauss = amplitude * Math.Exp(-0.5 * Math.Pow((wl - mean) / stddev, 2));
+
+                // 노이즈 추가 (정규분포, 표준편차는 최대값의 2% 수준)
+                double noise = (rand.NextDouble() * 2.0 - 1.0) * amplitude * 0.02;
+
+                double intensity = gauss + noise;
+                if (intensity < 0) intensity = 0;
+
+                spectrumData.Intensity[i] = intensity;
+                if (intensity > spectrumData.MaximumIntensity)
+                    spectrumData.MaximumIntensity = intensity;
+            }
+        }
+        private int MeasureSimulation()
+        {
+            GetSimulationMeasureData();
+            GetSimulationSpectrumData();
+            OnMeasureCompleted?.Invoke(this);
+            return 0;
         }
         #endregion
 

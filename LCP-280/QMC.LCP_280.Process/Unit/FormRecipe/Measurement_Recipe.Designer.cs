@@ -30,11 +30,13 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.TestConditionSetPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.TestConditionSetPage();
+            this.cellTesterPage1 = new QMC.LCP_280.Process.Unit.FormRecipe.Page.CellTesterPage();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            this.tabPage3.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -61,6 +63,14 @@
             this.tabPage1.Text = "Test Condition Set";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
+            // testConditionSetPage1
+            // 
+            this.testConditionSetPage1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.testConditionSetPage1.Location = new System.Drawing.Point(3, 3);
+            this.testConditionSetPage1.Name = "testConditionSetPage1";
+            this.testConditionSetPage1.Size = new System.Drawing.Size(1250, 713);
+            this.testConditionSetPage1.TabIndex = 0;
+            // 
             // tabPage2
             // 
             this.tabPage2.Location = new System.Drawing.Point(4, 29);
@@ -73,6 +83,7 @@
             // 
             // tabPage3
             // 
+            this.tabPage3.Controls.Add(this.cellTesterPage1);
             this.tabPage3.Location = new System.Drawing.Point(4, 29);
             this.tabPage3.Name = "tabPage3";
             this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
@@ -81,13 +92,14 @@
             this.tabPage3.Text = "Cell Tester";
             this.tabPage3.UseVisualStyleBackColor = true;
             // 
-            // testConditionSetPage1
+            // cellTesterPage1
             // 
-            this.testConditionSetPage1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.testConditionSetPage1.Location = new System.Drawing.Point(3, 3);
-            this.testConditionSetPage1.Name = "testConditionSetPage1";
-            this.testConditionSetPage1.Size = new System.Drawing.Size(1250, 713);
-            this.testConditionSetPage1.TabIndex = 0;
+            this.cellTesterPage1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cellTesterPage1.Location = new System.Drawing.Point(3, 3);
+            this.cellTesterPage1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.cellTesterPage1.Name = "cellTesterPage1";
+            this.cellTesterPage1.Size = new System.Drawing.Size(1250, 713);
+            this.cellTesterPage1.TabIndex = 0;
             // 
             // Measurement_Recipe
             // 
@@ -100,6 +112,7 @@
             this.Text = "Test_Recipe";
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
+            this.tabPage3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -111,5 +124,6 @@
         private System.Windows.Forms.TabPage tabPage3;
         private System.Windows.Forms.TabPage tabPage1;
         private TestConditionSetPage testConditionSetPage1;
+        private FormRecipe.Page.CellTesterPage cellTesterPage1;
     }
 }

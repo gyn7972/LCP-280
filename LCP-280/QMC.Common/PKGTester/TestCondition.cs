@@ -22,10 +22,10 @@ namespace QMC.Common.PKGTester
         public double MeasureTime { get; set; }
 
         // Data Calibration
-        public bool UseGain { get; set; }
-        public bool UseOffset { get; set; }
-        public double Gain { get; set; }
-        public double Offset { get; set; }
+        //public bool[] UseGain { get; private set; } = new bool[8];
+        //public bool[] UseOffset { get; private set; } = new bool[8];
+        //public double[] Gain { get; private set; } = new double[8];
+        //public double[] Offset { get; private set; } = new double[8];
         #endregion
 
         #region Constructor
@@ -42,10 +42,14 @@ namespace QMC.Common.PKGTester
             SourceTime = 1;
             SourceLimit = 0;
             MeasureTime = 1;
-            UseGain = false;
-            UseOffset = false;
-            Gain = 1;
-            Offset = 0;
+
+            //for (int i = 0; i < 8; i++)
+            //{
+            //    UseGain[i] = false;
+            //    UseOffset[i] = false;
+            //    Gain[i] = 1;
+            //    Offset[i] = 0;
+            //}
         }
         public override bool Validate()
         {
@@ -79,11 +83,13 @@ namespace QMC.Common.PKGTester
                 pc.Add(nameof(SourceLimit), SourceLimit);
                 pc.Add(nameof(MeasureTime), MeasureTime);
             }
-            pc.Add(nameof(UseGain), UseGain);
-            pc.Add(nameof(UseOffset), UseOffset);
-            pc.Add(nameof(Gain), Gain);
-            pc.Add(nameof(Offset), Offset);
-
+            //for (int i = 0; i < 8; i++)
+            //{
+            //    pc.Add($"UseGain #{i+1}", UseGain[i]);
+            //    pc.Add($"UseOffset #{i+1}", UseOffset[i]);
+            //    pc.Add($"Gain #{i+1}", Gain[i]);
+            //    pc.Add($"Offset #{i+1}", Offset[i]);
+            //}
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -104,10 +110,13 @@ namespace QMC.Common.PKGTester
                     SourceLimit = pc.GetValue<double>(nameof(SourceLimit));
                     MeasureTime = pc.GetValue<double>(nameof(MeasureTime));
                 }
-                UseGain = pc.GetValue<bool>(nameof(UseGain));
-                UseOffset = pc.GetValue<bool>(nameof(UseOffset));
-                Gain = pc.GetValue<double>(nameof(Gain));
-                Offset = pc.GetValue<double>(nameof(Offset));
+                //for (int i = 0; i < 8; i++)
+                //{
+                //    UseGain[i] = pc.GetValue<bool>($"UseGain #{i+1}");
+                //    UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i+1}");
+                //    Gain[i] = pc.GetValue<double>($"Gain #{i+1}");
+                //    Offset[i] = pc.GetValue<double>($"Offset #{i+1}");
+                //}
             }
             catch (Exception ex)
             {
