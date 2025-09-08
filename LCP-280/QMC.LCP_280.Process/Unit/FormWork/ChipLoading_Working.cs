@@ -225,49 +225,49 @@ namespace QMC.LCP_280.Process.Unit
                     () => InputStageUnit.SetVacuumValve(true),
                     () => InputStageUnit.SetVacuumValve(false),
                     "Vacuum",
-                    () => false,
+                    () => InputStageUnit.IsVacuumValveOn(),
                     "InStageVac");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetPlateUp(true),
                     () => InputStageUnit.SetPlateUp(false),
                     "PlateUP",
-                    () => false,
+                    () => InputStageUnit.IsPlateUpOn(),
                     "InStagePlateUp");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetPlateDown(true),
                     () => InputStageUnit.SetPlateDown(false),
                     "PlateDOWN",
-                    () => false,
+                    () => InputStageUnit.IsPlateDownOn(),
                     "InStagePlateDn");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetClampLiftUpValve(true),   
                     () => InputStageUnit.SetClampLiftUpValve(false),   
                     "ClampUP",        
-                    () => false, 
+                    () => InputStageUnit.IsClampLiftUpValveOn(), 
                     "InStageClampLiftUp");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetClampLiftDownValve(true), 
                     () => InputStageUnit.SetClampLiftDownValve(false), 
                     "ClampDOWN",      
-                    () => false, 
+                    () => InputStageUnit.IsClampLiftDownValveOn(),
                     "InStageClampLiftDn");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetClampFwdValve(true),      
                     () => InputStageUnit.SetClampFwdValve(false),      
                     "ClampFWD",        
-                    () => false, 
+                    () => InputStageUnit.IsClampFwdValveOn(),
                     "InStageClampFwd");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetClampBwdValve(true),     
                     () => InputStageUnit.SetClampBwdValve(false),      
                     "ClampBWD",       
-                    () => false, 
+                    () => InputStageUnit.IsClampBwdValveOn(),
                     "InStageClampBwd");
 
             }
