@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
 using System.Linq;
+using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO 상수/배열 직접 사용
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -70,7 +71,11 @@ namespace QMC.LCP_280.Process.Unit
             var tp = RotaryConfig.GetTeachingPosition(name); if (tp == null) return -1;
             double t = RotaryConfig.GetPositionWithOffset(name);
             if (_axisT == null) return -2;
-            return _axisT.MoveAbs(t, vel > 0 ? vel : _axisT.Config.MaxVelocity, acc > 0 ? acc : _axisT.Config.RunAcc, dec > 0 ? dec : _axisT.Config.RunDec, jerk > 0 ? jerk : _axisT.Config.AccJerkPercent);
+            return _axisT.MoveAbs(t,
+                vel  > 0 ? vel  : _axisT.Config.MaxVelocity,
+                acc  > 0 ? acc  : _axisT.Config.RunAcc,
+                dec  > 0 ? dec  : _axisT.Config.RunDec,
+                jerk > 0 ? jerk : _axisT.Config.AccJerkPercent);
         }
 
         public bool InPosTeaching(string name)
@@ -86,10 +91,15 @@ namespace QMC.LCP_280.Process.Unit
         public double GetTP(string tpName, string axisName)
         {
             var tp = RotaryConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v; return 0.0;
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
         }
         public void MoveAxisOnce(MotionAxis ax, double target)
-        { if (ax == null) return; if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3) ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent); }
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
@@ -98,49 +108,61 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (DryRun) { bool v; return _simInputs.TryGetValue(name, out v) && v; }
             var hi = RotaryConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false; var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules) if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v; return false;
+            if (hi == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
+            return false;
         }
+
         public bool WriteOutput(string name, bool on)
         {
             if (DryRun) { _simOutputs[name] = on; return true; }
             var ho = RotaryConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false; var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules) if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true; return false;
+            if (ho == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
+            return false;
         }
+
         public bool IsOutputOn(string name)
         {
             if (DryRun) { bool v; return _simOutputs.TryGetValue(name, out v) && v; }
             var ho = RotaryConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false; var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules) if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v; return false;
+            if (ho == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
+            return false;
         }
         #endregion
 
         #region Pressure
-        public bool AirTankPressureOk() => ReadInput(RotaryConfig.IO.AIR_TANK_PRESSURE);
-        public bool VacTankPressureOk() => ReadInput(RotaryConfig.IO.VAC_TANK_PRESSURE) || ReadInput(RotaryConfig.IO.VAC_TANK_PRESSURE_LEGACY);
+        public bool AirTankPressureOk() => ReadInput(AIR_TANK_PRESSURE);
+        public bool VacTankPressureOk() => ReadInput(VAC_TANK_PRESSURE) || ReadInput(VAC_TANK_PRESSURE_LEGACY);
         #endregion
 
         #region Slot Vacuum/Blow/Vent Controls
-        private static readonly string[] VAC_NAMES  = { RotaryConfig.IO.VAC1, RotaryConfig.IO.VAC2, RotaryConfig.IO.VAC3, RotaryConfig.IO.VAC4, RotaryConfig.IO.VAC5, RotaryConfig.IO.VAC6, RotaryConfig.IO.VAC7, RotaryConfig.IO.VAC8 };
-        private static readonly string[] BLOW_NAMES = { RotaryConfig.IO.BLOW1, RotaryConfig.IO.BLOW2, RotaryConfig.IO.BLOW3, RotaryConfig.IO.BLOW4, RotaryConfig.IO.BLOW5, RotaryConfig.IO.BLOW6, RotaryConfig.IO.BLOW7, RotaryConfig.IO.BLOW8 };
-        private static readonly string[] VENT_NAMES = { RotaryConfig.IO.VENT1, RotaryConfig.IO.VENT2, RotaryConfig.IO.VENT3, RotaryConfig.IO.VENT4, RotaryConfig.IO.VENT5, RotaryConfig.IO.VENT6, RotaryConfig.IO.VENT7, RotaryConfig.IO.VENT8 };
+        public void SetSlotVac(int slotIndex, bool on)  => SetIndexedOutput(SLOT_VAC,  slotIndex, on);
+        public void SetSlotBlow(int slotIndex, bool on) => SetIndexedOutput(SLOT_BLOW, slotIndex, on);
+        public void SetSlotVent(int slotIndex, bool on) => SetIndexedOutput(SLOT_VENT, slotIndex, on);
 
-        public void SetSlotVac(int slotIndex, bool on)  => SetIndexedOutput(VAC_NAMES, slotIndex, on);
-        public void SetSlotBlow(int slotIndex, bool on) => SetIndexedOutput(BLOW_NAMES, slotIndex, on);
-        public void SetSlotVent(int slotIndex, bool on) => SetIndexedOutput(VENT_NAMES, slotIndex, on);
+        public bool IsSlotVacOn(int slotIndex)  => slotIndex >= 0 && slotIndex < SLOT_VAC.Length  && IsOutputOn(SLOT_VAC[slotIndex]);
+        public bool IsSlotBlowOn(int slotIndex) => slotIndex >= 0 && slotIndex < SLOT_BLOW.Length && IsOutputOn(SLOT_BLOW[slotIndex]);
+        public bool IsSlotVentOn(int slotIndex) => slotIndex >= 0 && slotIndex < SLOT_VENT.Length && IsOutputOn(SLOT_VENT[slotIndex]);
 
-        public bool IsSlotVacOn(int slotIndex)  => slotIndex >= 0 && slotIndex < VAC_NAMES.Length  && IsOutputOn(VAC_NAMES[slotIndex]);
-        public bool IsSlotBlowOn(int slotIndex) => slotIndex >= 0 && slotIndex < BLOW_NAMES.Length && IsOutputOn(BLOW_NAMES[slotIndex]);
-        public bool IsSlotVentOn(int slotIndex) => slotIndex >= 0 && slotIndex < VENT_NAMES.Length && IsOutputOn(VENT_NAMES[slotIndex]);
+        public bool SlotFlowOk(int slotIndex) => slotIndex >= 0 && slotIndex < FLOW.Length && ReadInput(FLOW[slotIndex]);
 
-        public void AllVacOff()  { for (int i = 0; i < VAC_NAMES.Length; i++)  SetSlotVac(i, false); }
-        public void AllBlowOff() { for (int i = 0; i < BLOW_NAMES.Length; i++) SetSlotBlow(i, false); }
-        public void AllVentOff() { for (int i = 0; i < VENT_NAMES.Length; i++) SetSlotVent(i, false); }
+        public void AllVacOff()  { for (int i = 0; i < SLOT_VAC.Length; i++)  SetSlotVac(i, false); }
+        public void AllBlowOff() { for (int i = 0; i < SLOT_BLOW.Length; i++) SetSlotBlow(i, false); }
+        public void AllVentOff() { for (int i = 0; i < SLOT_VENT.Length; i++) SetSlotVent(i, false); }
 
         private void SetIndexedOutput(string[] arr, int idx, bool on)
-        { if (idx < 0 || idx >= arr.Length) return; WriteOutput(arr[idx], on); }
+        {
+            if (idx < 0 || idx >= arr.Length) return;
+            WriteOutput(arr[idx], on);
+        }
         #endregion
     }
 }

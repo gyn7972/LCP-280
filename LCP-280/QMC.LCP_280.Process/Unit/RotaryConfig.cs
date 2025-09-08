@@ -33,6 +33,14 @@ namespace QMC.LCP_280.Process.Unit
             public const string BLOW5 = "INDEX 5 BLOW"; public const string BLOW6 = "INDEX 6 BLOW"; public const string BLOW7 = "INDEX 7 BLOW"; public const string BLOW8 = "INDEX 8 BLOW";
             public const string VENT1 = "INDEX 1 VENT"; public const string VENT2 = "INDEX 2 VENT"; public const string VENT3 = "INDEX 3 VENT"; public const string VENT4 = "INDEX 4 VENT";
             public const string VENT5 = "INDEX 5 VENT"; public const string VENT6 = "INDEX 6 VENT"; public const string VENT7 = "INDEX 7 VENT"; public const string VENT8 = "INDEX 8 VENT";
+
+            // Flow Inputs (순서: 1~8)
+            public static readonly string[] FLOW = { FLOW1, FLOW2, FLOW3, FLOW4, FLOW5, FLOW6, FLOW7, FLOW8 };
+
+            // Vacuum / Blow / Vent Outputs 배열
+            public static readonly string[] SLOT_VAC  = { VAC1, VAC2, VAC3, VAC4, VAC5, VAC6, VAC7, VAC8 };
+            public static readonly string[] SLOT_BLOW = { BLOW1, BLOW2, BLOW3, BLOW4, BLOW5, BLOW6, BLOW7, BLOW8 };
+            public static readonly string[] SLOT_VENT = { VENT1, VENT2, VENT3, VENT4, VENT5, VENT6, VENT7, VENT8 };
         }
 
         public enum TeachingPositionName

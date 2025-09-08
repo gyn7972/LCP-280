@@ -10,13 +10,42 @@ using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// IndexChipProbeController Unit
+    ///  - Probe Z / Probe Card XYZ / Sphere Z 축 Teaching Positions
+    ///  - Sphere Forward/Backward Cylinder + Probe Card Vacuum IO 바인딩
+    ///  - OutputStage 구조 패턴 적용 (Regions / Helpers / High-Level API)
+    /// </summary>
     public class IndexChipProbeController : BaseUnit
     {
+        #region Config / Teaching
         public IndexChipProbeControllerConfig IndexChipProbeControllerConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        #endregion
 
-        public IndexChipProbeController(IndexChipProbeControllerConfig config = null)
-            : base("IndexChipProbeControllerConfig")
+        #region Axes
+        private MotionAxis _probeZ, _probeCardX, _probeCardY, _probeCardZ, _sphereZ;
+        public MotionAxis ProbeZ => _probeZ;
+        public MotionAxis ProbeCardX => _probeCardX;
+        public MotionAxis ProbeCardY => _probeCardY;
+        public MotionAxis ProbeCardZ => _probeCardZ;
+        public MotionAxis SphereZ => _sphereZ;
+        #endregion
+
+        #region IO Domain Members
+        private Cylinder _sphereCylinder; // FWD / BWD
+        private Vacuum _probeCardVacuum;  // Vacuum
+        #endregion
+
+        #region Constants (Names)
+        private const string NAME_SPHERE_FW = IndexChipProbeControllerConfig.IO.SPHERE_FW_VLV;
+        private const string NAME_SPHERE_BW = IndexChipProbeControllerConfig.IO.SPHERE_BW_VLV;
+        private const string NAME_PROBE_VAC = IndexChipProbeControllerConfig.IO.PROBE_VAC_VLV;
+        private const string NAME_PROBE_VAC_OK = IndexChipProbeControllerConfig.IO.PROBE_VAC_OK;
+        #endregion
+
+        #region ctor / Initialization
+        public IndexChipProbeController(IndexChipProbeControllerConfig config = null) : base("IndexChipProbeControllerConfig")
         {
             IndexChipProbeControllerConfig = config ?? new IndexChipProbeControllerConfig();
             AddComponents();
@@ -32,10 +61,33 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
         }
+        #endregion
 
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        #region Axis Binding / Helpers
+        private void BindAxes()
+        {
+            Axes.TryGetValue("Probe Z Axis", out _probeZ);
+            Axes.TryGetValue("Probe Card X Axis", out _probeCardX);
+            Axes.TryGetValue("Probe Card Y Axis", out _probeCardY);
+            Axes.TryGetValue("Probe Card Z Axis", out _probeCardZ);
+            Axes.TryGetValue("Sphere Z Axis", out _sphereZ);
+        }
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        #endregion
 
+        #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
@@ -56,43 +108,22 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     double pos = tp.AxisPositions[axisKey];
                     int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r; // 마지막 에러 저장
+                    if (r != 0) result = r;
                 }
             }
             return result;
         }
-
-        #region Axis Helpers
-        private MotionAxis _probeZ, _probeCardX, _probeCardY, _probeCardZ, _sphereZ;
-        public MotionAxis ProbeZ => _probeZ;
-        public MotionAxis ProbeCardX => _probeCardX;
-        public MotionAxis ProbeCardY => _probeCardY;
-        public MotionAxis ProbeCardZ => _probeCardZ;
-        public MotionAxis SphereZ => _sphereZ;
-        private void BindAxes()
+        public bool InPosTeaching(string positionName)
         {
-            Axes.TryGetValue("Probe Z Axis", out _probeZ);
-            Axes.TryGetValue("Probe Card X Axis", out _probeCardX);
-            Axes.TryGetValue("Probe Card Y Axis", out _probeCardY);
-            Axes.TryGetValue("Probe Card Z Axis", out _probeCardZ);
-            Axes.TryGetValue("Sphere Z Axis", out _sphereZ);
+            var tp = IndexChipProbeControllerConfig.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            return true;
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region IO Helpers
+        #region Low-Level IO Access
         public bool ReadInput(string name)
         {
             var hi = IndexChipProbeControllerConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
@@ -113,38 +144,36 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        #region IO Domain (Sphere Cylinder / Probe Card Vacuum)
-        private Cylinder _sphereCylinder; // FW/BW
-        private Vacuum _probeCardVacuum;  // Vacuum
-
-        private const string NAME_SPHERE_FW = "SPHERE FW";
-        private const string NAME_SPHERE_BW = "SPHERE BW";
-        private const string NAME_PROBE_VAC = "PROBE CARD VACUUM";
-        private const string NAME_PROBE_VAC_CHECK = "PROBE CARD VACUUM CHECK"; 
-
+        #region IO Domain Binding
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            // Map outputs
-            DIO.MapByName(unit, "Probe.SphereFwOut", true, NAME_SPHERE_FW);
-            DIO.MapByName(unit, "Probe.SphereBwOut", true, NAME_SPHERE_BW);
-            // Map inputs (reuse same names to get sensor state)
-            DIO.MapByName(unit, "Probe.SphereFwIn", false, NAME_SPHERE_FW);
-            DIO.MapByName(unit, "Probe.SphereBwIn", false, NAME_SPHERE_BW);
-            _sphereCylinder = new Cylinder("Sphere", "Probe.SphereFwOut", "Probe.SphereBwOut", "Probe.SphereFwIn", "Probe.SphereBwIn");
+            DIO.MapByName(unit, "ProbeCtrl.SphereFwOut", true,  NAME_SPHERE_FW);
+            DIO.MapByName(unit, "ProbeCtrl.SphereBwOut", true,  NAME_SPHERE_BW);
+            DIO.MapByName(unit, "ProbeCtrl.SphereFwIn",  false, NAME_SPHERE_FW);
+            DIO.MapByName(unit, "ProbeCtrl.SphereBwIn",  false, NAME_SPHERE_BW);
+            _sphereCylinder = new Cylinder("Sphere", "ProbeCtrl.SphereFwOut", "ProbeCtrl.SphereBwOut", "ProbeCtrl.SphereFwIn", "ProbeCtrl.SphereBwIn");
 
-            // Vacuum (use same name for out & ok; if later distinct name added, adjust here)
-            DIO.MapByName(unit, "Probe.VacOut", true, NAME_PROBE_VAC);
-            DIO.MapByName(unit, "Probe.VacOk", false, NAME_PROBE_VAC_CHECK);
-            _probeCardVacuum = new Vacuum("Probe", "Probe.VacOut", "Probe.VacOk");
+            DIO.MapByName(unit, "ProbeCtrl.VacOut", true,  NAME_PROBE_VAC);
+            DIO.MapByName(unit, "ProbeCtrl.VacOk",  false, NAME_PROBE_VAC_OK);
+            _probeCardVacuum = new Vacuum("ProbeCardVac", "ProbeCtrl.VacOut", "ProbeCtrl.VacOk");
         }
+        #endregion
 
-        public bool SphereForward(int timeoutMs = 2000) => _sphereCylinder?.Extend(timeoutMs) ?? false;
+        #region High-Level Actuator API
+        public bool SphereForward(int timeoutMs = 2000)  => _sphereCylinder?.Extend(timeoutMs) ?? false;
         public bool SphereBackward(int timeoutMs = 2000) => _sphereCylinder?.Retract(timeoutMs) ?? false;
         public void SphereAllOff() => _sphereCylinder?.AllOff();
-        public void ProbeVacOn() => _probeCardVacuum?.On();
+        public void ProbeVacOn()  => _probeCardVacuum?.On();
         public void ProbeVacOff() => _probeCardVacuum?.Off();
-        public bool ProbeVacOk() => _probeCardVacuum?.IsOk() ?? false;
+        public bool ProbeVacOk()  => _probeCardVacuum?.IsOk() ?? false;
+        public bool IsSphereForward() => ReadInput(NAME_SPHERE_FW);
+        public bool IsSphereBackward() => ReadInput(NAME_SPHERE_BW);
+        #endregion
+
+        #region Lifecycle
+        public override void OnRun()  => base.OnRun();
+        public override void OnStop() => base.OnStop();
         #endregion
     }
 }

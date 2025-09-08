@@ -1,6 +1,5 @@
 using QMC.Common;
 using QMC.Common.Component;
-using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
@@ -10,13 +9,26 @@ using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// InputCassetteLifter Unit
+    ///  - Wafer Lifter (Input) 단일 축 + Teaching Positions
+    ///  - Cassette / RingJut / Mapping 센서 상태 제공
+    ///  - OutputStage 스타일 Region/메서드 구조
+    /// </summary>
     public class InputCassetteLifter : BaseUnit
     {
+        #region Config / Teaching
         public InputCassetteLifterConfig InputCassetteLifterConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        #endregion
 
-        public InputCassetteLifter(InputCassetteLifterConfig config = null)
-            : base("InputCassetteLifterConfig")
+        #region Axis
+        private MotionAxis _axMain; // 단일 리프터 축 (Y 혹은 Z)
+        public MotionAxis AxisMain => _axMain;
+        #endregion
+
+        #region ctor / Initialization
+        public InputCassetteLifter(InputCassetteLifterConfig config = null) : base("InputCassetteLifterConfig")
         {
             InputCassetteLifterConfig = config ?? new InputCassetteLifterConfig();
             AddComponents();
@@ -31,10 +43,41 @@ namespace QMC.LCP_280.Process.Unit
                 TeachingPositions.Add(tp);
             BindAxes();
         }
+        #endregion
 
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        #region Axis Binding / Helpers
+        private void BindAxes()
+        {
+            // TeachingPosition 에 기록된 첫 번째 축 이름을 이용해 바인딩 (Wafer Stage Y Axis 등)
+            if (TeachingPositions.Count > 0)
+            {
+                var firstTp = TeachingPositions[0];
+                foreach (var axisKey in firstTp.AxisPositions.Keys)
+                {
+                    if (Axes.TryGetValue(axisKey, out _axMain)) break;
+                }
+            }
+            // Fallback: 첫 번째 사전 항목
+            if (_axMain == null && Axes.Count > 0)
+                _axMain = Axes.Values.First();
+        }
 
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = InputCassetteLifterConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        #endregion
+
+        #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
@@ -60,51 +103,37 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-
-        #region Axis Helpers
-        private MotionAxis _ax1; // generic single axis (Z or Y)
-        public MotionAxis Axis1 => _ax1;
-        private void BindAxes()
+        public bool InPosTeaching(string positionName)
         {
-            // Pick first matching axis used in teaching positions
-            if (_ax1 == null)
-            {
-                foreach (var name in Axes.Keys)
-                {
-                    _ax1 = Axes[name]; break;
-                }
-            }
+            var tp = InputCassetteLifterConfig.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            return true;
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = InputCassetteLifterConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region IO Helpers
+        #region IO / Sensors
         public bool ReadInput(string name)
         {
-            var hi = InputCassetteLifterConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = InputCassetteLifterConfig.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
                 if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
             return false;
         }
-        public bool WriteOutput(string name, bool on)
-        {
-            // No HardOutputs defined (commented) → always false
-            return false;
-        }
+
+        public bool CassettePresent0() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+        public bool CassettePresent1() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        public bool AnyCassettePresent() => CassettePresent0() || CassettePresent1();
+        public bool RingJut() => ReadInput(InputCassetteLifterConfig.IO.RING_JUT_CHECK);
+        public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
+        #endregion
+
+        #region Lifecycle
+        public override void OnRun()  => base.OnRun();
+        public override void OnStop() => base.OnStop();
         #endregion
     }
 }

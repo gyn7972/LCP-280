@@ -2,126 +2,137 @@ using Newtonsoft.Json;
 using QMC.Common;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
-using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Component; // added for TeachingPosition / HardInputDef / HardOutputDef
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using static QMC.LCP_280.Process.Unit.IndexChipProbeController;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// InputRingTransferConfig
+    ///  - Teaching Position 정의/저장/로드
+    ///  - Wafer Feeder (Ring Transfer) 관련 IO 이름 상수화
+    ///  - Hard Input / Output 테이블 제공
+    /// </summary>
     public class InputRingTransferConfig : BaseConfig
     {
+        /// <summary>
+        /// 장치 IO 명칭 상수
+        /// </summary>
+        internal static class IO
+        {
+            // Sensors (Inputs)
+            public const string FEEDER_UP            = "WAFER FEEDER UP";              // X020
+            public const string FEEDER_DOWN          = "WAFER FEEDER DOWN";            // X021
+            public const string FEEDER_UNCLAMP       = "WAFER FEEDER UNCLAMP";         // X022 (Open 상태 확인)
+            public const string FEEDER_RING_CHECK    = "WAFER FEEDER RING CHECK";      // X023
+            public const string FEEDER_OVERLOAD      = "WAFER FEEDER OVERLOAD CHECK";  // X024
+
+            // Valves (Outputs)
+            public const string FEEDER_UP_VALVE      = "WAFER FEEDER UP";              // Y016 Up 솔
+            public const string FEEDER_DOWN_VALVE    = "WAFER FEEDER DOWN";            // Y017 Down 솔 (기존 DOWNE 오타 정규화)
+            public const string FEEDER_CLAMP_VALVE   = "WAFER FEEDER CLAMP";           // Y018 Clamp (Close)
+            public const string FEEDER_UNCLAMP_VALVE = "WAFER FEEDER UNCLAMP";         // Y019 Unclamp (Open)
+        }
+
         public enum TeachingPositionName
         {
-            HomeOffset, // Positive 를 홈으로 설정(Negative 기구간섭), Negative 에서부터 거리 측정 후 좌표 초기화
+            HomeOffset,   // Positive 를 홈으로 설정, Negative 기구간섭 영역 제외용 Offset
             Loading,
             Unloading,
             BarcodeReading,
             Ready
-            // 필요시 추가
         }
+
+        /// <summary>Teaching Position 순수 목록</summary>
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
-        // IO 추가 필요시 여기에 정의
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
-        [JsonIgnore]
         private static readonly HardInputDef[] _hardInputs = new[]
         {
-            new HardInputDef { No = 1, Name = "WAFER FEEDER UP",             Disp = "X020" },
-            new HardInputDef { No = 2, Name = "WAFER FEEDER DOWN",           Disp = "X021" },
-            new HardInputDef { No = 3, Name = "WAFER FEEDER UNCLAMP",        Disp = "X022" },
-            new HardInputDef { No = 4, Name = "WAFER FEEDER RING CHECK",     Disp = "X023" },
-            new HardInputDef { No = 5, Name = "WAFER FEEDER OVERLOAD CHECK", Disp = "X024" }
+            new HardInputDef { No = 1, Name = IO.FEEDER_UP,         Disp = "X020" },
+            new HardInputDef { No = 2, Name = IO.FEEDER_DOWN,       Disp = "X021" },
+            new HardInputDef { No = 3, Name = IO.FEEDER_UNCLAMP,    Disp = "X022" },
+            new HardInputDef { No = 4, Name = IO.FEEDER_RING_CHECK, Disp = "X023" },
+            new HardInputDef { No = 5, Name = IO.FEEDER_OVERLOAD,   Disp = "X024" }
         };
 
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs;
-        [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = new[]
         {
-            new HardOutputDef { No = 1, Name = "WAFER FEEDER UP",      Disp = "Y016" },
-            new HardOutputDef { No = 2, Name = "WAFER FEEDER DOWNE",   Disp = "Y017" },
-            new HardOutputDef { No = 3, Name = "WAFER FEEDER CLAMP",   Disp = "Y018" },
-            new HardOutputDef { No = 4, Name = "WAFER FEEDER UNCLAMP", Disp = "Y019" }
+            new HardOutputDef { No = 1, Name = IO.FEEDER_UP_VALVE,      Disp = "Y016" },
+            new HardOutputDef { No = 2, Name = IO.FEEDER_DOWN_VALVE,    Disp = "Y017" }, // 기존 DOWNE 표기를 DOWN 으로 통일
+            new HardOutputDef { No = 3, Name = IO.FEEDER_CLAMP_VALVE,   Disp = "Y018" },
+            new HardOutputDef { No = 4, Name = IO.FEEDER_UNCLAMP_VALVE, Disp = "Y019" }
         };
+        #endregion
 
-        public InputRingTransferConfig() : base("InputRingTransferConfig")
-        {
-            //InitializeDefaultTeachingPositions();
-        }
+        public InputRingTransferConfig() : base("InputRingTransferConfig") { }
 
-        // enum 기반으로 신규 TeachingPosition 생성
+        /// <summary>
+        /// enum 에 정의된 TeachingPositionName 목록을 기준으로 기본 포지션을 채움
+        /// </summary>
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                var tp = TeachingPositions.FirstOrDefault(p => p.Name == posName);
-                if (tp == null)
+                if (!existing.Contains(posName))
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
                         { "Wafer Feeder X Axis", 100.0 }
                     };
-                    tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
-                    TeachingPositions.Add(tp);
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
-                // 축 바인딩은 여기서 하지 않음!
             }
             Saveconfig();
         }
 
-        // 포지션 추가/업데이트
+        /// <summary>Teaching Position 추가 혹은 갱신</summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description = tp.Description;
-                exist.ExtraInfo = tp.ExtraInfo;
+                exist.Description   = tp.Description;
+                exist.ExtraInfo     = tp.ExtraInfo;
             }
-            else
-            {
-                TeachingPositions.Add(tp);
-            }
+            else TeachingPositions.Add(tp);
             Saveconfig();
         }
 
-        // 포지션 조회
-        public TeachingPosition GetTeachingPosition(string name)
-            => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
-        // 저장: 축 정보(Axes) 제외하고 순수 데이터만 저장
+        /// <summary>
+        /// Config 저장 (축 객체 참조 제거 후 직렬화)
+        /// </summary>
         public int Saveconfig()
         {
-            // 축 정보 제외하고 TeachingPositions를 복제
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-
-            // 임시로 TeachingPositions를 교체해서 저장
             var backup = TeachingPositions;
-            TeachingPositions = purePositions;
-            int result = base.Save();
-            TeachingPositions = backup;
-            return result;
+            TeachingPositions = pure;
+            try { return Save(); }
+            finally { TeachingPositions = backup; }
         }
 
-        // 불러오기: 순수 데이터만 불러온 뒤, 런타임에 축 바인딩
+        /// <summary>
+        /// Config 로드 + TeachingPosition 축 바인딩
+        /// </summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = base.Load();
+            int rc = Load(); if (rc != 0) return rc;
             foreach (var tp in TeachingPositions)
-                tp.BindAxes(axisManager);
-            return result;
+                tp.BindAxes(axisManager, "Unit");
+            return 0;
         }
-
-
     }
 }

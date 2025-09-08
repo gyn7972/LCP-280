@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace QMC.Common
 {
@@ -80,11 +81,97 @@ namespace QMC.Common
             workingTabControl.Visible = true;
             workingTabControl.BringToFront();
 
+            // === 모든 Working 폼 미리 생성 & Preload ===
+            PreloadAllWorkingForms();
+
             // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
             EnsureFirstTabLoaded();
 
             Console.WriteLine($"✅ InitializeworkingUI 완료");
             Console.WriteLine($"   최종 TabControl 상태: Visible={workingTabControl.Visible}, TabCount={workingTabControl.TabPages.Count}");
+        }
+
+        /// <summary>
+        /// Working 탭의 모든 Form을 시작 시 한 번에 생성하여 내부 UI(ChipUnloading_Working.PreloadUI 등)를 준비.
+        /// - 이미 생성된 탭만 순회
+        /// - PreloadUI() 메서드가 있으면 호출 (예: ChipUnloading_Working)
+        /// - Show()는 선택된 탭만 수행 (다른 탭은 Handle/컨트롤만 준비)
+        /// </summary>
+        private void PreloadAllWorkingForms()
+        {
+            try
+            {
+                Console.WriteLine("🟢 PreloadAllWorkingForms 시작");
+                foreach (TabPage tab in workingTabControl.TabPages)
+                {
+                    if (!(tab.Tag is FormInfo info)) continue;
+                    if (_tabFormInstances.ContainsKey(tab))
+                    {
+                        Console.WriteLine($"   ▶ 이미 로드됨: {info.DisplayName}");
+                        continue;
+                    }
+                    try
+                    {
+                        var form = FormManager.Instance.CreateFormInstance(info);
+                        if (form == null || form.IsDisposed)
+                        {
+                            Console.WriteLine($"   ⚠️ 폼 인스턴스 실패: {info.DisplayName}");
+                            continue;
+                        }
+                        form.TopLevel = false;
+                        form.FormBorderStyle = FormBorderStyle.None;
+                        form.Dock = DockStyle.Fill;
+
+                        // ChipUnloading_Working 등 PreloadUI 지원 시 호출
+                        var preload = form.GetType().GetMethod("PreloadUI", Type.EmptyTypes);
+                        if (preload != null)
+                        {
+                            try { preload.Invoke(form, null); Console.WriteLine($"   🔧 PreloadUI 호출: {info.DisplayName}"); } catch (Exception px) { Console.WriteLine($"   ❌ PreloadUI 실패: {info.DisplayName} / {px.Message}"); }
+                        }
+                        else
+                        {
+                            // Load 이벤트의 초기화 로직이 Preload로 대체되지 않은 폼은 강제 Handle만 생성
+                            var _ = form.Handle;
+                        }
+
+                        // 탭에 삽입 (Clear는 이전 샘플 레이블 제거용)
+                        tab.Controls.Clear();
+                        tab.Controls.Add(form);
+
+                        // 선택된 탭만 Show (나머지는 초기화만 수행)
+                        if (tab == workingTabControl.SelectedTab)
+                        {
+                            try { form.Show(); } catch (Exception sx) { Console.WriteLine($"   ❌ Show 실패: {info.DisplayName} / {sx.Message}"); }
+                        }
+
+                        _tabFormInstances[tab] = form;
+                        Console.WriteLine($"   ✅ Preloaded: {info.DisplayName}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"   ❌ Preload 실패: {info.DisplayName} / {ex.Message}");
+                        // 오류 라벨 표시
+                        try
+                        {
+                            tab.Controls.Clear();
+                            tab.Controls.Add(new Label
+                            {
+                                Text = $"폼 로드 실패: {info.DisplayName}\r\n{ex.Message}",
+                                Dock = DockStyle.Fill,
+                                TextAlign = ContentAlignment.MiddleCenter,
+                                ForeColor = Color.Red,
+                                Font = new Font("맑은 고딕", 10, FontStyle.Bold)
+                            });
+                        }
+                        catch { }
+                    }
+                }
+                Console.WriteLine("🟢 PreloadAllWorkingForms 완료");
+            }
+            catch (Exception outer)
+            {
+                Console.WriteLine($"❌ PreloadAllWorkingForms 전체 실패: {outer.Message}");
+            }
         }
 
         private void EnsureFirstTabLoaded()
@@ -159,8 +246,19 @@ namespace QMC.Common
             TabPage selectedTab = workingTabControl.SelectedTab;
             if (selectedTab?.Tag is FormInfo formInfo)
             {
-                LoadFormIntoTab(selectedTab, formInfo);
-                // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
+                // Preload 단계에서 이미 생성된 경우 Show만 보장
+                if (_tabFormInstances.TryGetValue(selectedTab, out var inst))
+                {
+                    if (!inst.IsDisposed && !inst.Visible)
+                    {
+                        try { inst.Show(); } catch { }
+                    }
+                }
+                else
+                {
+                    // 혹시 Preload에서 실패한 경우 재시도
+                    LoadFormIntoTab(selectedTab, formInfo);
+                }
                 if (_hostSized)
                     UpdateActiveChildSize();
             }
@@ -170,37 +268,141 @@ namespace QMC.Common
         {
             try
             {
+                // 새 방어 로직: 기본 유효성 검사 및 UI 스레드 보장
+                if (tabPage == null || formInfo == null) return;
+                if (tabPage.IsDisposed || tabPage.Disposing) return;
+                if (this.IsDisposed || this.Disposing) return;
+                if (tabPage.InvokeRequired)
+                {
+                    tabPage.BeginInvoke(new Action(() => LoadFormIntoTab(tabPage, formInfo)));
+                    return;
+                }
+
                 if (!_tabFormInstances.ContainsKey(tabPage))
                 {
-                    Form formInstance = FormManager.Instance.CreateFormInstance(formInfo);
+                    Form formInstance = null;
+                    try
+                    {
+                        formInstance = FormManager.Instance.CreateFormInstance(formInfo);
+                    }
+                    catch (Exception ctorEx)
+                    {
+                        ShowLoadError(tabPage, formInfo, ctorEx);
+                        return;
+                    }
+
+                    if (formInstance == null) { ShowLoadError(tabPage, formInfo, new Exception("Form instance is null")); return; }
+                    if (formInstance.IsDisposed) { ShowLoadError(tabPage, formInfo, new Exception("Form already disposed")); return; }
+
                     formInstance.TopLevel = false;
                     formInstance.FormBorderStyle = FormBorderStyle.None;
                     formInstance.Dock = DockStyle.Fill;
-                    tabPage.Controls.Clear();
+
+                    SafeClearControls(tabPage);
+
                     tabPage.Controls.Add(formInstance);
-                    formInstance.Show();
+
+                    try
+                    {
+                        formInstance.Show();
+                    }
+                    catch (Exception showEx)
+                    {
+                        ShowLoadError(tabPage, formInfo, showEx);
+                        formInstance.Dispose();
+                        return;
+                    }
+
                     _tabFormInstances[tabPage] = formInstance;
                 }
                 else
                 {
                     var existingForm = _tabFormInstances[tabPage];
-                    existingForm.Show();
+                    if (existingForm == null || existingForm.IsDisposed)
+                    {
+                        _tabFormInstances.Remove(tabPage);
+                        LoadFormIntoTab(tabPage, formInfo); // 재시도
+                        return;
+                    }
+                    try
+                    {
+                        if (!existingForm.Visible) existingForm.Show();
+                    }
+                    catch (Exception exShow)
+                    {
+                        ShowLoadError(tabPage, formInfo, exShow);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Label errorLabel = new Label
-                {
-                    Text = $"폼 로드 실패: {formInfo.DisplayName}",
-                    Dock = DockStyle.Fill,
-                    TextAlign = ContentAlignment.MiddleCenter,
-                    Font = new Font("맑은 고딕", 12, FontStyle.Bold),
-                    ForeColor = Color.Red
-                };
-                tabPage.Controls.Clear();
-                tabPage.Controls.Add(errorLabel);
+                ShowLoadError(tabPage, formInfo, ex);
             }
+        }
+
+        // 탭 페이지 컨트롤 안전 제거(핸들 생성 문제 최소화)
+        private void SafeClearControls(TabPage tabPage)
+        {
+            if (tabPage == null) return;
+            if (tabPage.Controls.Count == 0) return;
+
+            try
+            {
+                tabPage.SuspendLayout();
+                // 직접 Dispose 후 Clear (예외 발생 위치 분리)
+                var toDispose = tabPage.Controls.Cast<Control>().ToList();
+                foreach (var c in toDispose)
+                {
+                    try
+                    {
+                        c.Visible = false; // 불필요한 Handle 재생성 억제
+                        c.Dispose();
+                    }
+                    catch { /* 개별 컨트롤 dispose 실패 무시 */ }
+                }
+                tabPage.Controls.Clear();
+            }
+            catch (System.ComponentModel.Win32Exception w32ex)
+            {
+                // 자원 고갈 가능 → GC 유도 & 로그
+                Debug.WriteLine($"[FormWorking] Win32Exception while clearing controls: {w32ex.Message}");
+                Debug.WriteLine($"  HandleCount={Process.GetCurrentProcess().HandleCount}");
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FormWorking] Unexpected exception clearing controls: {ex.Message}");
+            }
+            finally
+            {
+                try { tabPage.ResumeLayout(true); } catch { }
+            }
+        }
+
+        private void ShowLoadError(TabPage tabPage, FormInfo formInfo, Exception ex)
+        {
+            try
+            {
+                string name = formInfo != null ? formInfo.DisplayName : "(Unknown)";
+                Debug.WriteLine($"[FormWorking] Form load error for '{name}': {ex.Message}");
+                // 사용자에게 중복 팝업 방지: 이미 에러 라벨이면 패스
+                if (tabPage != null && (tabPage.Controls.Count == 0 || !(tabPage.Controls[0] is Label lbl && lbl.Tag as string == "__ERR__")))
+                {
+                    SafeClearControls(tabPage);
+                    Label errorLabel = new Label
+                    {
+                        Text = $"폼 로드 실패: {name}\r\n{ex.Message}",
+                        Dock = DockStyle.Fill,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Font = new Font("맑은 고딕", 10, FontStyle.Bold),
+                        ForeColor = Color.Red,
+                        Tag = "__ERR__"
+                    };
+                    try { tabPage.Controls.Add(errorLabel); } catch { }
+                }
+            }
+            catch { }
         }
 
         private void UpdateActiveChildSize()

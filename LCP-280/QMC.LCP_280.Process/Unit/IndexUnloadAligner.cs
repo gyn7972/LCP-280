@@ -1,6 +1,5 @@
 using QMC.Common;
 using QMC.Common.Component;
-using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
@@ -10,13 +9,25 @@ using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    /// <summary>
+    /// IndexUnloadAligner Unit
+    ///  - 다축(Align/Index 등) Teaching Positions
+    ///  - OutputStage 패턴과 유사한 구조 (Axis / Teaching / Lifecycle)
+    /// </summary>
     public class IndexUnloadAligner : BaseUnit
     {
+        #region Config / Teaching
         public IndexUnloadAlignerConfig IndexUnloadAlignerConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        #endregion
 
-        public IndexUnloadAligner(IndexUnloadAlignerConfig config = null)
-            : base("IndexUnloadAlignerConfig")
+        #region Axes
+        private readonly List<MotionAxis> _axes = new List<MotionAxis>();
+        public IReadOnlyList<MotionAxis> BoundAxes => _axes;
+        #endregion
+
+        #region ctor / Initialization
+        public IndexUnloadAligner(IndexUnloadAlignerConfig config = null) : base("IndexUnloadAlignerConfig")
         {
             IndexUnloadAlignerConfig = config ?? new IndexUnloadAlignerConfig();
             AddComponents();
@@ -31,10 +42,31 @@ namespace QMC.LCP_280.Process.Unit
                 TeachingPositions.Add(tp);
             BindAxes();
         }
+        #endregion
 
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        #region Axis Binding / Helpers
+        private void BindAxes()
+        {
+            _axes.Clear();
+            foreach (var kv in Axes)
+                _axes.Add(kv.Value);
+        }
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = IndexUnloadAlignerConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        #endregion
 
+        #region Teaching
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
@@ -60,33 +92,24 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-
-        #region Axis Helpers
-        private readonly List<MotionAxis> _axes = new List<MotionAxis>();
-        public IReadOnlyList<MotionAxis> BoundAxes => _axes;
-        private void BindAxes()
+        public bool InPosTeaching(string positionName)
         {
-            _axes.Clear();
-            foreach (var kv in Axes) _axes.Add(kv.Value);
+            var tp = IndexUnloadAlignerConfig.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            return true;
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = IndexUnloadAlignerConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region IO Helpers (No IO defined)
-        public bool ReadInput(string name) => false;
-        public bool WriteOutput(string name, bool on) => false;
+        #region IO Placeholders
+        public bool ReadInput(string name) => false; // No IO defined yet
+        public bool WriteOutput(string name, bool on) => false; // No IO defined yet
+        #endregion
+
+        #region Lifecycle
+        public override void OnRun() => base.OnRun();
+        public override void OnStop() => base.OnStop();
         #endregion
     }
 }

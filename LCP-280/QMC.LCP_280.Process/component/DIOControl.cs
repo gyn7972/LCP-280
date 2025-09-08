@@ -49,6 +49,22 @@ namespace QMC.LCP_280.Process.Component
         private readonly Dictionary<string, string> _customInputDisplayKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _customOutputDisplayKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        private readonly List<string> _inputSequence = new List<string>();
+        private readonly List<string> _outputSequence = new List<string>();
+
+        // Maintain insertion order for custom IO (Dictionary in .NET Framework 4.8 does not guarantee insertion order)
+        private readonly List<string> _customInputSequence = new List<string>();
+        private readonly List<string> _customOutputSequence = new List<string>();
+
+        public enum SortingMode
+        {
+            Insertion,
+            AlphabeticalKey,
+            AlphabeticalLabel
+        }
+
+        public SortingMode IoSortMode { get; set; } = SortingMode.AlphabeticalKey;
+
         public DIOControl()
         {
             InitializeComponent();
@@ -77,33 +93,15 @@ namespace QMC.LCP_280.Process.Component
             _displayMap.Clear();
             _customInputStates.Clear();
             _customOutputActions.Clear();
+            _inputSequence.Clear();
+            _outputSequence.Clear();
+            _customInputSequence.Clear();
+            _customOutputSequence.Clear();
             if (units != null)
                 foreach (var u in units.Where(x => x != null)) _units.Add(u);
             ScanUnits();
             PopulateListViews(); // fallback (ListBox) 용
             BuildPropertyCollections(); // IOPropertyCollectionView 용
-            SafeRefreshStates();
-        }
-
-        public void BindEjectorVacuum(QMC.LCP_280.Process.Unit.InputStage stage)
-        {
-            if (!IsHandleCreated)
-            {
-                HandleCreated += (s, e) => BindEjectorVacuum(stage);
-                return;
-            }
-            _units.Clear();
-            _inputKeys.Clear();
-            _outputKeys.Clear();
-            _displayMap.Clear();
-            _customInputStates.Clear();
-            _customOutputActions.Clear();
-            if (stage != null && stage.EjectorVacuum != null)
-            {
-                try { AddVacuum(stage.EjectorVacuum, stage.UnitName ?? "InputStage"); } catch { }
-            }
-            PopulateListViews();
-            BuildPropertyCollections();
             SafeRefreshStates();
         }
 
@@ -114,7 +112,9 @@ namespace QMC.LCP_280.Process.Component
             var key = "__custom_in_" + (++_customInSeq);
             _customInputStates[key] = stateFunc;
             _displayMap[key] = label;
+            _customInputSequence.Add(key);
             if (!string.IsNullOrWhiteSpace(displayKey)) _customInputDisplayKeys[key] = displayKey.Trim();
+            if (_batchMode) { _batchDirty = true; return; }
             PopulateListViews();
             BuildPropertyCollections();
         }
@@ -125,9 +125,18 @@ namespace QMC.LCP_280.Process.Component
             var key = "__custom_out_" + (++_customOutSeq);
             _customOutputActions[key] = (onAction ?? (()=>{ }), offAction ?? (()=>{ }), stateFunc);
             _displayMap[key] = label;
+            _customOutputSequence.Add(key);
             if (!string.IsNullOrWhiteSpace(displayKey)) _customOutputDisplayKeys[key] = displayKey.Trim();
+            if (_batchMode) { _batchDirty = true; return; }
             PopulateListViews();
             BuildPropertyCollections();
+        }
+
+        public void RebuildLists()
+        {
+            PopulateListViews();
+            BuildPropertyCollections();
+            SafeRefreshStates();
         }
         #endregion
 
@@ -192,12 +201,20 @@ namespace QMC.LCP_280.Process.Component
         private void RegisterInput(string key, string label)
         {
             if (string.IsNullOrWhiteSpace(key)) return;
-            if (_inputKeys.Add(key)) _displayMap[key] = label;
+            if (_inputKeys.Add(key))
+            {
+                _displayMap[key] = label;
+                _inputSequence.Add(key);
+            }
         }
         private void RegisterOutput(string key, string label)
         {
             if (string.IsNullOrWhiteSpace(key)) return;
-            if (_outputKeys.Add(key)) _displayMap[key] = label;
+            if (_outputKeys.Add(key))
+            {
+                _displayMap[key] = label;
+                _outputSequence.Add(key);
+            }
         }
         #endregion
 
@@ -223,14 +240,37 @@ namespace QMC.LCP_280.Process.Component
                     catch { }
                 }
 
-                foreach (var k in _inputKeys.OrderBy(x => x))
-                    inBox?.Items.Add(new IoItem { Key = k, Label = _displayMap.TryGetValue(k, out var l) ? l : k });
-                foreach (var ck in _customInputStates.Keys.OrderBy(x => x))
-                    inBox?.Items.Add(new IoItem { Key = ck, Label = _displayMap.TryGetValue(ck, out var l) ? l : ck });
+                IEnumerable<string> orderedInputs;
+                IEnumerable<string> orderedOutputs;
 
-                foreach (var k in _outputKeys.OrderBy(x => x))
+                switch (IoSortMode)
+                {
+                    case SortingMode.Insertion:
+                        orderedInputs = _inputSequence;
+                        orderedOutputs = _outputSequence;
+                        break;
+                    case SortingMode.AlphabeticalLabel:
+                        orderedInputs = _inputKeys
+                            .OrderBy(k => _displayMap.TryGetValue(k, out var l) ? l : k, StringComparer.OrdinalIgnoreCase);
+                        orderedOutputs = _outputKeys
+                            .OrderBy(k => _displayMap.TryGetValue(k, out var l) ? l : k, StringComparer.OrdinalIgnoreCase);
+                        break;
+                    case SortingMode.AlphabeticalKey:
+                    default:
+                        orderedInputs = _inputKeys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
+                        orderedOutputs = _outputKeys.OrderBy(x => x, StringComparer.OrdinalIgnoreCase);
+                        break;
+                }
+
+                foreach (var k in orderedInputs)
+                    inBox?.Items.Add(new IoItem { Key = k, Label = _displayMap.TryGetValue(k, out var l) ? l : k, IsSeparator = IsSeparatorLabel(_displayMap.TryGetValue(k, out var lbl) ? lbl : k) });
+                // custom inputs keep insertion order
+                foreach (var ck in _customInputSequence)
+                    inBox?.Items.Add(new IoItem { Key = ck, Label = _displayMap.TryGetValue(ck, out var l) ? l : ck, IsSeparator = IsSeparatorLabel(_displayMap.TryGetValue(ck, out var lbl2) ? lbl2 : ck) });
+
+                foreach (var k in orderedOutputs)
                     outBox?.Items.Add(new IoItem { Key = k, Label = _displayMap.TryGetValue(k, out var l) ? l : k });
-                foreach (var ck in _customOutputActions.Keys.OrderBy(x => x))
+                foreach (var ck in _customOutputSequence)
                     outBox?.Items.Add(new IoItem { Key = ck, Label = _displayMap.TryGetValue(ck, out var l) ? l : ck });
 
                 if (inBox != null) inBox.DisplayMember = nameof(IoItem.Label);
@@ -244,6 +284,9 @@ namespace QMC.LCP_280.Process.Component
             }
             catch (Exception ex) { SafeLog("Populate", ex.Message); }
         }
+
+        private static bool IsSeparatorLabel(string label)
+            => !string.IsNullOrEmpty(label) && label.StartsWith("---- ", StringComparison.OrdinalIgnoreCase);
 
         private ListBox FindInnerListBox(Control parent)
         {
@@ -283,6 +326,8 @@ namespace QMC.LCP_280.Process.Component
         {
             if (!(sender is ListBox lb)) return;
             var sel = lb.SelectedItem as IoItem; if (sel == null) return;
+            // Prevent toggle on separator just in case
+            if (sel.IsSeparator) return;
             try
             {
                 if (sel.Key.StartsWith("__custom_out_", StringComparison.OrdinalIgnoreCase))
@@ -301,7 +346,12 @@ namespace QMC.LCP_280.Process.Component
                 }
                 bool curStd = false;
                 bool hasState = TryReadOutput(sel.Key, ref curStd);
-                if (hasState) DIO.Out(sel.Key, !curStd); else DIO.Out(sel.Key, true);
+                if (!hasState)
+                {
+                    // If not a mapped output, ignore (was previously forcing ON)
+                    return;
+                }
+                DIO.Out(sel.Key, !curStd);
             }
             catch (Exception ex) { SafeLog("Toggle", ex.Message); }
         }
@@ -310,7 +360,6 @@ namespace QMC.LCP_280.Process.Component
         {
             try
             {
-                // 새로운 공식 API 사용 (리플렉션 제거)
                 if (DIO.TryGetOutputState(key, out var v)) { value = v; return true; }
             }
             catch (Exception ex)
@@ -426,6 +475,7 @@ namespace QMC.LCP_280.Process.Component
                 {
                     foreach (var obj in inBox.Items.OfType<IoItem>())
                     {
+                        if (obj.IsSeparator) { obj.State = false; continue; }
                         bool v = false;
                         if (obj.Key.StartsWith("__custom_in_", StringComparison.OrdinalIgnoreCase))
                         {
@@ -437,9 +487,6 @@ namespace QMC.LCP_280.Process.Component
                         }
                         obj.State = ReadInputKey(obj.Key, out v) && v;
                     }
-                    inBox.DrawMode = DrawMode.OwnerDrawFixed;
-                    inBox.DrawItem -= ListBox_DrawItem;
-                    inBox.DrawItem += ListBox_DrawItem;
                     inBox.Refresh();
                 }
                 var outBox = FindInnerListBox(outputView);
@@ -458,9 +505,6 @@ namespace QMC.LCP_280.Process.Component
                         }
                         if (TryReadOutput(obj.Key, ref cur)) obj.State = cur;
                     }
-                    outBox.DrawMode = DrawMode.OwnerDrawFixed;
-                    outBox.DrawItem -= ListBox_DrawItem;
-                    outBox.DrawItem += ListBox_DrawItem;
                     outBox.Refresh();
                 }
             }
@@ -474,6 +518,17 @@ namespace QMC.LCP_280.Process.Component
             var lb = sender as ListBox;
             var item = lb.Items[e.Index] as IoItem;
             var text = item?.Label ?? lb.Items[e.Index].ToString();
+            if (item != null && item.IsSeparator)
+            {
+                using (var b = new SolidBrush(Color.FromArgb(40, 40, 40)))
+                    e.Graphics.FillRectangle(b, e.Bounds);
+                using (var f = new SolidBrush(Color.Gold))
+                {
+                    var font = new Font(e.Font, FontStyle.Bold);
+                    e.Graphics.DrawString(text, font, f, e.Bounds.Location);
+                }
+                return;
+            }
             var on = item != null && item.State;
             var bg = on ? (e.BackColor == SystemColors.Highlight ? Color.LimeGreen : Color.FromArgb(0, 200, 0)) : e.BackColor;
             using (var b = new SolidBrush(on ? bg : e.BackColor))
@@ -501,6 +556,7 @@ namespace QMC.LCP_280.Process.Component
             public string Key { get; set; }
             public string Label { get; set; }
             public bool State { get; set; }
+            public bool IsSeparator { get; set; }
             public override string ToString() => Label;
         }
         #endregion
@@ -531,28 +587,27 @@ namespace QMC.LCP_280.Process.Component
             {
                 if (!DIO.TryGetPointInfo(k, out var isOut, out var module, out var disp) || isOut) continue;
                 var label = _displayMap.TryGetValue(k, out var l) ? l : k;
+                // Skip separators in property view
+                if (IsSeparatorLabel(label)) continue;
                 var text = string.IsNullOrWhiteSpace(disp) ? label : $"{disp} {label}";
                 bool state = false; try { DIO.In(k, out state); } catch { state = false; }
                 inPc.Add(new PropertyState(no.ToString(), text, state) { ShowNoColumn = true });
                 if (!string.IsNullOrEmpty(disp) && !_dispToInputKey.ContainsKey(disp)) _dispToInputKey[disp] = k;
                 no++;
             }
-            // Custom inputs
-            foreach (var kv in _customInputStates.OrderBy(x => x.Key))
+            foreach (var kv in _customInputSequence)
             {
-                bool state = false; try { state = kv.Value(); } catch { }
+                var key = kv;
+                var label = _displayMap.TryGetValue(key, out var l) ? l : key;
+                if (IsSeparatorLabel(label)) continue;
+                bool state = false; try { if (_customInputStates.TryGetValue(key, out var f)) state = f(); } catch { }
                 string desiredDisp;
-                if (!_customInputDisplayKeys.TryGetValue(kv.Key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
-                    desiredDisp = $"CI{no:000}"; // fallback
-                // ensure unique within mapping
-                var uniqueDisp = desiredDisp;
-                int dup = 1;
-                while (_dispToInputKey.ContainsKey(uniqueDisp))
-                {
-                    uniqueDisp = desiredDisp + "_" + (++dup).ToString();
-                }
-                inPc.Add(new PropertyState(no.ToString(), $"{uniqueDisp} {_displayMap[kv.Key]}", state) { ShowNoColumn = true });
-                if (!_dispToInputKey.ContainsKey(uniqueDisp)) _dispToInputKey[uniqueDisp] = kv.Key;
+                if (!_customInputDisplayKeys.TryGetValue(key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
+                    desiredDisp = $"CI{no:000}";
+                var uniqueDisp = desiredDisp; int dup = 1;
+                while (_dispToInputKey.ContainsKey(uniqueDisp)) uniqueDisp = desiredDisp + "_" + (++dup).ToString();
+                inPc.Add(new PropertyState(no.ToString(), $"{uniqueDisp} {label}", state) { ShowNoColumn = true });
+                if (!_dispToInputKey.ContainsKey(uniqueDisp)) _dispToInputKey[uniqueDisp] = key;
                 no++;
             }
 
@@ -567,34 +622,34 @@ namespace QMC.LCP_280.Process.Component
                 if (!string.IsNullOrEmpty(disp) && !_dispToOutputKey.ContainsKey(disp)) _dispToOutputKey[disp] = k;
                 no++;
             }
-            foreach (var kv in _customOutputActions.OrderBy(x => x.Key))
+            foreach (var kv in _customOutputSequence)
             {
-                bool state = false; try { if (kv.Value.state != null) state = kv.Value.state(); } catch { }
+                var key = kv;
+                var label = _displayMap.TryGetValue(key, out var l) ? l : key;
+                bool state = false; try { if (_customOutputActions.TryGetValue(key, out var act) && act.state != null) state = act.state(); } catch { }
                 string desiredDisp;
-                if (!_customOutputDisplayKeys.TryGetValue(kv.Key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
-                    desiredDisp = $"CO{no:000}"; // fallback
-                var uniqueDisp = desiredDisp;
-                int dup = 1;
-                while (_dispToOutputKey.ContainsKey(uniqueDisp))
-                {
-                    uniqueDisp = desiredDisp + "_" + (++dup).ToString();
-                }
-                outPc.Add(new PropertyState(no.ToString(), $"{uniqueDisp} {_displayMap[kv.Key]}", state) { ShowNoColumn = true });
-                if (!_dispToOutputKey.ContainsKey(uniqueDisp)) _dispToOutputKey[uniqueDisp] = kv.Key;
+                if (!_customOutputDisplayKeys.TryGetValue(key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
+                    desiredDisp = $"CO{no:000}";
+                var uniqueDisp = desiredDisp; int dup = 1;
+                while (_dispToOutputKey.ContainsKey(uniqueDisp)) uniqueDisp = desiredDisp + "_" + (++dup).ToString();
+                outPc.Add(new PropertyState(no.ToString(), $"{uniqueDisp} {label}", state) { ShowNoColumn = true });
+                if (!_dispToOutputKey.ContainsKey(uniqueDisp)) _dispToOutputKey[uniqueDisp] = key;
                 no++;
             }
 
             _lastInputPc = inPc;
             _lastOutputPc = outPc;
             try { inputView?.SetProperties(inPc); } catch { }
-            try {
+            try
+            {
                 if (outputView != null)
                 {
-                    outputView.ItemClicked -= OutputView_ItemClicked; // 중복 방지
+                    outputView.ItemClicked -= OutputView_ItemClicked;
                     outputView.ItemClicked += OutputView_ItemClicked;
                     outputView.SetProperties(outPc);
                 }
-            } catch { }
+            }
+            catch { }
         }
 
         private void OutputView_ItemClicked(object sender, string dispKey)
@@ -602,49 +657,48 @@ namespace QMC.LCP_280.Process.Component
             try
             {
                 if (string.IsNullOrWhiteSpace(dispKey)) return;
-                // dispKey 는 Y000 / CO001 등 DisplayNo 또는 가상키
                 if (!_dispToOutputKey.TryGetValue(dispKey, out var logical)) return;
-
-                bool cur = false;
-                bool isCustom = logical.StartsWith("__custom_out_", StringComparison.OrdinalIgnoreCase);
-                if (isCustom)
-                {
-                    if (_customOutputActions.TryGetValue(logical, out var act) && act.state != null)
-                    {
-                        try { cur = act.state(); } catch { cur = false; }
-                    }
-                }
-                else
-                {
-                    DIO.TryGetOutputState(logical, out cur);
-                }
-
-                var label = _displayMap.TryGetValue(logical, out var l) ? l : logical;
-                var targetOn = !cur;
-                var ask = targetOn ? $"'{label}' 출력을 ON 시키겠습니까?" : $"'{label}' 출력을 OFF 시키겠습니까?";
-                var dr = MessageBox.Show(ask, "DIO Output", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (dr != DialogResult.Yes) return;
-
-                bool newState = cur;
-                if (isCustom)
+                if (logical.StartsWith("__custom_out_", StringComparison.OrdinalIgnoreCase))
                 {
                     if (_customOutputActions.TryGetValue(logical, out var act))
                     {
+                        bool cur = false; if (act.state != null) { try { cur = act.state(); } catch { cur = false; } }
+                        var targetOn = !cur;
                         if (targetOn) act.on?.Invoke(); else act.off?.Invoke();
+                        bool newState = targetOn;
                         if (act.state != null) { try { newState = act.state(); } catch { newState = targetOn; } }
-                        else newState = targetOn; // 상태 delegate 없으면 가정
+                        outputView?.SetStateByKey(dispKey, newState);
                     }
+                    return;
                 }
-                else
-                {
-                    try { DIO.Out(logical, targetOn); newState = targetOn; } catch { }
-                }
-                // 즉시 UI 반영
-                outputView?.SetStateByKey(dispKey, newState);
+                bool curStd = false; DIO.TryGetOutputState(logical, out curStd);
+                var target = !curStd;
+                DIO.Out(logical, target);
+                outputView?.SetStateByKey(dispKey, target);
             }
             catch (Exception ex)
             {
                 SafeLog("OutputToggle", ex.Message);
+            }
+        }
+
+        private bool _batchMode;               // batch 등록 모드 여부
+        private bool _batchDirty;              // batch 동안 변경 발생 여부
+
+        // Begin/End batch API
+        public void BeginBatch()
+        {
+            _batchMode = true;
+            _batchDirty = false;
+        }
+        public void EndBatch(bool rebuild = true)
+        {
+            _batchMode = false;
+            if (rebuild && _batchDirty)
+            {
+                PopulateListViews();
+                BuildPropertyCollections();
+                SafeRefreshStates();
             }
         }
     }
