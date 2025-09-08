@@ -86,8 +86,8 @@ namespace QMC.LCP_280.Process.Unit
                 // 2) 홈 시퀀스 실행: 축 이름만으로 묶기 (유닛 무시)
                 var seq = new HomeSequence(_axisManager)
                     .AddParallelStepByAxisNames("Eject Pin Z Axis", "Ejector Z Axis", "Left Pick Z Axis", "Left Place Z Axis", "Right Pick Z Axis",
-                    "Right Place Z Axis", "Index Z Axis", "Sphere Z Axis", "Probe Z Axis");   // 1단계: X, Y 동시
-                                                             //.AddParallelStepByAxisNames(다음 스텝 추가 할것)        // 2단계: 단독
+                    "Right Place Z Axis", "Index Z Axis", "Sphere Z Axis", "Probe Z Axis", "Probe Card Z Axis")
+                    .AddParallelStepByAxisNames("Left Tool T Axis", "Right Tool T Axis", "Probe Card Y Axis", "Align T Axis");
 
                 var results = await seq.RunAsync(token).ConfigureAwait(true);
 
