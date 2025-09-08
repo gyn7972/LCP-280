@@ -33,8 +33,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region IO Domain Members
-        private Cylinder _sphereCylinder; // FWD / BWD
-        private Vacuum _probeCardVacuum;  // Vacuum
+        private Cylinder _cylSphere;        // FWD / BWD Cylinder
+        private Vacuum _vacProbeCard;       // Probe Card Vacuum
         #endregion
 
         #region Constants (Names)
@@ -142,33 +142,54 @@ namespace QMC.LCP_280.Process.Unit
                 if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
             return false;
         }
+        public bool IsOutputOn(string name)
+        {
+            var ho = IndexChipProbeControllerConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            if (ho == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
+            return false;
+        }
         #endregion
 
-        #region IO Domain Binding
+        #region IO Domain Mapping (Reorganized)
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
+
+            // Sphere Cylinder (Forward / Backward)
             DIO.MapByName(unit, "ProbeCtrl.SphereFwOut", true,  NAME_SPHERE_FW);
             DIO.MapByName(unit, "ProbeCtrl.SphereBwOut", true,  NAME_SPHERE_BW);
             DIO.MapByName(unit, "ProbeCtrl.SphereFwIn",  false, NAME_SPHERE_FW);
             DIO.MapByName(unit, "ProbeCtrl.SphereBwIn",  false, NAME_SPHERE_BW);
-            _sphereCylinder = new Cylinder("Sphere", "ProbeCtrl.SphereFwOut", "ProbeCtrl.SphereBwOut", "ProbeCtrl.SphereFwIn", "ProbeCtrl.SphereBwIn");
+            _cylSphere = new Cylinder("ProbeSphere", "ProbeCtrl.SphereFwOut", "ProbeCtrl.SphereBwOut", "ProbeCtrl.SphereFwIn", "ProbeCtrl.SphereBwIn");
 
+            // Probe Card Vacuum
             DIO.MapByName(unit, "ProbeCtrl.VacOut", true,  NAME_PROBE_VAC);
             DIO.MapByName(unit, "ProbeCtrl.VacOk",  false, NAME_PROBE_VAC_OK);
-            _probeCardVacuum = new Vacuum("ProbeCardVac", "ProbeCtrl.VacOut", "ProbeCtrl.VacOk");
+            _vacProbeCard = new Vacuum("ProbeCardVac", "ProbeCtrl.VacOut", "ProbeCtrl.VacOk");
         }
+
+        // === Direct Valve Control (강제 구동) ===
+        public void SetSphereFwdValve(bool on) => WriteOutput(NAME_SPHERE_FW, on);
+        public bool IsSphereFwdValveOn()       => IsOutputOn(NAME_SPHERE_FW);
+        public void SetSphereBwdValve(bool on) => WriteOutput(NAME_SPHERE_BW, on);
+        public bool IsSphereBwdValveOn()       => IsOutputOn(NAME_SPHERE_BW);
+        public void SetProbeVacValve(bool on)  => WriteOutput(NAME_PROBE_VAC, on);
+        public bool IsProbeVacValveOn()        => IsOutputOn(NAME_PROBE_VAC);
         #endregion
 
-        #region High-Level Actuator API
-        public bool SphereForward(int timeoutMs = 2000)  => _sphereCylinder?.Extend(timeoutMs) ?? false;
-        public bool SphereBackward(int timeoutMs = 2000) => _sphereCylinder?.Retract(timeoutMs) ?? false;
-        public void SphereAllOff() => _sphereCylinder?.AllOff();
-        public void ProbeVacOn()  => _probeCardVacuum?.On();
-        public void ProbeVacOff() => _probeCardVacuum?.Off();
-        public bool ProbeVacOk()  => _probeCardVacuum?.IsOk() ?? false;
-        public bool IsSphereForward() => ReadInput(NAME_SPHERE_FW);
-        public bool IsSphereBackward() => ReadInput(NAME_SPHERE_BW);
+        #region High-Level Actuator API (Backward compatible)
+        //public bool SphereForward(int timeoutMs = 2000)  => _cylSphere?.Extend(timeoutMs) ?? false;
+        //public bool SphereBackward(int timeoutMs = 2000) => _cylSphere?.Retract(timeoutMs) ?? false;
+        //public void SphereAllOff() => _cylSphere?.AllOff();
+        //public void ProbeVacOn()  => _vacProbeCard?.On();
+        //public void ProbeVacOff() => _vacProbeCard?.Off();
+
+        public bool ProbeVacOk()  => _vacProbeCard?.IsOk() ?? false;
+        public bool IsSphereForward()  => ReadInput(NAME_SPHERE_FW);   // Forward sensor
+        public bool IsSphereBackward() => ReadInput(NAME_SPHERE_BW);   // Backward sensor
         #endregion
 
         #region Lifecycle

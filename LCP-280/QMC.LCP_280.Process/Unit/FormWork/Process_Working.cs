@@ -2,7 +2,9 @@
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 using QMC.LCP_280.Process.Component; // DIO / teaching controls
+using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -16,7 +18,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
     {
         private Equipment Equipment => Equipment.Instance;
 
-        // 대상 5개 Unit
         private IndexChipProbeController _probeControllerUnit;
         private IndexChipProber _proberUnit;
         private IndexLoadAligner _loadAlignerUnit;
@@ -24,9 +25,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private Rotary _rotaryUnit;
 
         private bool _initialized;
+        private bool _deferredInitDone; // 지연 바인딩 여부
+        private bool _preloadRequested;
 
         #region Constructors
-        // 기본 생성자 (FormManager / 리플렉션 생성 대응)
         public Process_Working() : this(
             TryGetUnit<IndexChipProbeController>("IndexChipProbeController"),
             TryGetUnit<IndexChipProber>("IndexChipProber"),
@@ -35,7 +37,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             TryGetUnit<Rotary>("Rotary"))
         { }
 
-        // 의존성 주입
         public Process_Working(IndexChipProbeController probeController,
                                IndexChipProber prober,
                                IndexLoadAligner loadAligner,
@@ -54,6 +55,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         }
         #endregion
 
+        public void PreloadUI()
+        {
+            if (IsDisposed || Disposing) return;
+            if (_preloadRequested) return;
+            _preloadRequested = true;
+            EnsureInitialized();
+            var h = Handle;
+        }
+
         private static T TryGetUnit<T>(string unitName) where T : class
         {
             try
@@ -68,13 +78,37 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void Process_Working_Load(object sender, EventArgs e)
         {
+            EnsureInitialized();
+        }
+
+        private void EnsureInitialized()
+        {
             if (_initialized) return;
             _initialized = true;
-            Text = "Process Working";
+            try
+            {
+                Text = "Process Working";
+                BeginInvoke(new Action(StartDeferredInit));
+            }
+            catch (Exception ex)
+            {
+                try { Controls.Add(new Label { Dock = DockStyle.Fill, Text = $"Init 실패: {ex.Message}", ForeColor = System.Drawing.Color.Red, TextAlign = System.Drawing.ContentAlignment.MiddleCenter }); } catch { }
+            }
+        }
 
-            BindTeachingPositions();
-            BindDioControls();
-            InitSequences();
+        private async void StartDeferredInit()
+        {
+            if (_deferredInitDone) return;
+            _deferredInitDone = true;
+            await Task.Delay(30);
+            if (IsDisposed || Disposing) return;
+            try
+            {
+                BindTeachingPositions();
+                BindDioControls();
+                InitSequences();
+            }
+            catch { }
         }
 
         #region Teaching Positions
@@ -85,7 +119,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (teachingPositionControl == null) return;
                 teachingPositionControl.ClearUnits();
 
-                // 로드 얼라이너
                 if (_loadAlignerUnit != null)
                 {
                     teachingPositionControl.RegisterUnit(
@@ -97,7 +130,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         autoReload: false);
                 }
 
-                // 언로드 얼라이너
                 if (_unloadAlignerUnit != null)
                 {
                     teachingPositionControl.RegisterUnit(
@@ -109,7 +141,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         autoReload: false);
                 }
 
-                // 프로버 (Chip Z 등)
                 if (_proberUnit != null)
                 {
                     teachingPositionControl.RegisterUnit(
@@ -121,7 +152,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         autoReload: false);
                 }
 
-                // Probe Controller (보정/Offset 위치 등)
                 if (_probeControllerUnit != null)
                 {
                     teachingPositionControl.RegisterUnit(
@@ -133,7 +163,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         autoReload: false);
                 }
 
-                // 로터리 (T 축 위치)
                 if (_rotaryUnit != null)
                 {
                     teachingPositionControl.RegisterUnit(
@@ -157,86 +186,103 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             if (dioControl == null) return;
 
+            dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.Insertion;
+
             try
             {
-                // Load / Unload aligner : Clamp / Vacuum / Expander 패턴
-                BindCommonActuators(_loadAlignerUnit, prefix: "LoadAlign");
-                BindCommonActuators(_unloadAlignerUnit, prefix: "UnloadAlign");
-                // Prober / ProbeController : Chuck Vacuum, Probe Down/Up 등 메서드 패턴 매칭
-                BindProberActuators(_proberUnit, "Prober");
-                BindProberActuators(_probeControllerUnit, "ProbeCtrl");
-                // Rotary: Slot Vacuum/Blow/Vent (명시적 메서드들 SetSlotVac/Blow/Vent, AllVacOff 등)
                 BindRotaryActuators(_rotaryUnit);
+
+                if (_probeControllerUnit != null)
+                {
+                    dioControl.BindDIOInput(() => false, "---- ProbeController ----", "SEP_ProbeCtrl");
+
+                    dioControl.BindDIOInput(() => _probeControllerUnit.ProbeVacOk(), "ProbeVac OK", "ProbeVacOk");
+                    dioControl.BindDIOInput(() => _probeControllerUnit.IsSphereForward(), "Sphere FW Sns", "ProbeSphereFwSns");
+                    dioControl.BindDIOInput(() => _probeControllerUnit.IsSphereBackward(), "Sphere BW Sns", "ProbeSphereBwSns");
+
+                    dioControl.BindDIOOutput(
+                        () => _probeControllerUnit.SetProbeVacValve(true),
+                        () => _probeControllerUnit.SetProbeVacValve(false),
+                        "ProbeVac Valve",
+                        () => _probeControllerUnit.IsProbeVacValveOn(),
+                        "ProbeVac");
+                    dioControl.BindDIOOutput(
+                        () => _probeControllerUnit.SetSphereFwdValve(true),
+                        () => _probeControllerUnit.SetSphereFwdValve(false),
+                        "Sphere FWD Valve",
+                        () => _probeControllerUnit.IsSphereFwdValveOn(),
+                        "ProbeSphereFwd");
+                    dioControl.BindDIOOutput(
+                        () => _probeControllerUnit.SetSphereBwdValve(true),
+                        () => _probeControllerUnit.SetSphereBwdValve(false),
+                        "Sphere BWD Valve",
+                        () => _probeControllerUnit.IsSphereBwdValveOn(),
+                        "ProbeSphereBwd");
+                }
+
+                dioControl.RebuildLists();
             }
             catch { }
         }
 
-        private void BindCommonActuators(object unit, string prefix)
-        {
-            if (unit == null) return;
-            // Vacuum
-            TryBindToggle(unit, "VacuumOn", "VacuumOff", "IsVacuum", prefix + "_Vacuum");
-            // Clamp (ClampLiftUp/Down or ClampOn/Off)
-            if (!TryBindToggle(unit, "ClampLiftUp", "ClampLiftDown", "IsClamp", prefix + "_ClampLift"))
-                TryBindToggle(unit, "ClampOn", "ClampOff", "IsClamp", prefix + "_Clamp");
-            // Expander
-            TryBindToggle(unit, "ExpanderUp", "ExpanderDown", "IsExpanderUp", prefix + "_Expander");
-        }
-
-        private void BindProberActuators(object unit, string prefix)
-        {
-            if (unit == null) return;
-            // Chuck Vacuum
-            TryBindToggle(unit, "ChuckVacuumOn", "ChuckVacuumOff", "IsChuckVacuum", prefix + "_ChuckVac");
-            // Probe Up/Down
-            TryBindToggle(unit, "ProbeDown", "ProbeUp", "IsProbeDown", prefix + "_Probe");
-        }
-
         private void BindRotaryActuators(Rotary rotary)
         {
-            if (rotary == null) return;
-            // 8 Slot Vacuum / Blow / Vent ON/OFF 개별 버튼
-            for (int i = 0; i < 8; i++)
+            if (_rotaryUnit != null)
             {
-                int idx = i;
+                dioControl.BindDIOInput(() => false, "---- Rotary ----", "SEP_Rotary");
+                dioControl.BindDIOInput(() => _rotaryUnit.AirTankPressureOk(), "Rot AirTank OK", "Rot_AirTk");
+                dioControl.BindDIOInput(() => _rotaryUnit.VacTankPressureOk(), "Rot VacTank OK", "Rot_VacTk");
+
+                int slotCount = SLOT_VAC.Length; // 8
+                for (int slot = 0; slot < slotCount; slot++)
+                {
+                    int s = slot;
+                    dioControl.BindDIOInput(
+                        () => _rotaryUnit.SlotFlowOk(s),
+                        $"Rot Slot{s + 1} FLOW",
+                        $"Rot_S{s + 1}_Flow");
+
+                    dioControl.BindDIOOutput(
+                        () => _rotaryUnit.SetSlotVac(s, true),
+                        () => _rotaryUnit.SetSlotVac(s, false),
+                        $"Rot Slot{s + 1} VAC",
+                        () => _rotaryUnit.IsSlotVacOn(s),
+                        $"Rot_S{s + 1}_Vac");
+
+                    dioControl.BindDIOOutput(
+                        () => _rotaryUnit.SetSlotBlow(s, true),
+                        () => _rotaryUnit.SetSlotBlow(s, false),
+                        $"Rot Slot{s + 1} BLOW",
+                        () => _rotaryUnit.IsSlotBlowOn(s),
+                        $"Rot_S{s + 1}_Blow");
+
+                    dioControl.BindDIOOutput(
+                        () => _rotaryUnit.SetSlotVent(s, true),
+                        () => _rotaryUnit.SetSlotVent(s, false),
+                        $"Rot Slot{s + 1} VENT",
+                        () => _rotaryUnit.IsSlotVentOn(s),
+                        $"Rot_S{s + 1}_Vent");
+                }
+
                 dioControl.BindDIOOutput(
-                    () => rotary.SetSlotVac(idx, true),
-                    () => rotary.SetSlotVac(idx, false),
-                    $"Rotary Slot{idx + 1} VAC ON/OFF", () => false, $"Rot_S{idx + 1}_Vac");
+                    () => _rotaryUnit.AllVacOff(),
+                    () => _rotaryUnit.AllVacOff(),
+                    "Rot All VAC OFF",
+                    () => false,
+                    "Rot_AllVacOff");
                 dioControl.BindDIOOutput(
-                    () => rotary.SetSlotBlow(idx, true),
-                    () => rotary.SetSlotBlow(idx, false),
-                    $"Rotary Slot{idx + 1} BLOW ON/OFF", () => false, $"Rot_S{idx + 1}_Blow");
+                    () => _rotaryUnit.AllBlowOff(),
+                    () => _rotaryUnit.AllBlowOff(),
+                    "Rot All BLOW OFF",
+                    () => false,
+                    "Rot_AllBlowOff");
                 dioControl.BindDIOOutput(
-                    () => rotary.SetSlotVent(idx, true),
-                    () => rotary.SetSlotVent(idx, false),
-                    $"Rotary Slot{idx + 1} VENT ON/OFF", () => false, $"Rot_S{idx + 1}_Vent");
+                    () => _rotaryUnit.AllVentOff(),
+                    () => _rotaryUnit.AllVentOff(),
+                    "Rot All VENT OFF",
+                    () => false,
+                    "Rot_AllVentOff");
             }
-            // ALL OFF 버튼들
-            dioControl.BindDIOOutput(() => rotary.AllVacOff(), () => rotary.AllVacOff(), "Rotary All VAC OFF", () => false, "Rot_AllVacOff");
-            dioControl.BindDIOOutput(() => rotary.AllBlowOff(), () => rotary.AllBlowOff(), "Rotary All BLOW OFF", () => false, "Rot_AllBlowOff");
-            dioControl.BindDIOOutput(() => rotary.AllVentOff(), () => rotary.AllVentOff(), "Rotary All VENT OFF", () => false, "Rot_AllVentOff");
-        }
-
-        private bool TryBindToggle(object unit, string onMethod, string offMethod, string stateMethod, string key)
-        {
-            if (unit == null) return false;
-            var t = unit.GetType();
-            var on = t.GetMethod(onMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var off = t.GetMethod(offMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            var st = t.GetMethod(stateMethod, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (on == null || off == null) return false;
-
-            dioControl.BindDIOOutput(
-                () => { try { on.Invoke(unit, null); } catch { } },
-                () => { try { off.Invoke(unit, null); } catch { } },
-                key.Replace('_', ' '),
-                () => {
-                    try { if (st != null) { var v = st.Invoke(unit, null); if (v is bool b) return b; } } catch { }
-                    return false;
-                },
-                key);
-            return true;
         }
         #endregion
 
@@ -247,7 +293,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 if (manualSequenceControl == null) return;
                 manualSequenceControl.ClearSequences();
-                // 추후: Align / Probe / Transfer / Rotate 등 시퀀스 클래스 구현 후 여기서 RegisterSequence 호출
             }
             catch { }
         }
@@ -255,7 +300,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void Process_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // 필요시 실행중 수동 시퀀스 Stop 처리
         }
     }
 }

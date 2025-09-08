@@ -1,9 +1,8 @@
 ﻿using QMC.Common.Cameras;
 using QMC.LCP_280.Process.Component;
 using System;
-using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // ODT IO 상수
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;             // Rotary IO 상수/배열
 
@@ -26,8 +25,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private OutputDieTransfer OutputDieTransferUnit { get; set; }
         private Rotary RotaryUnit { get; set; }
 
-        private bool _initialized;          // 실제 UI 바인딩 완료 여부
-        private bool _preloadRequested;     // PreloadUI 호출되었는지(중복 방지)
+        private bool _initialized;          // Text/핸들 설정 여부
+        private bool _preloadRequested;     // Preload 1회 보장
+        private bool _deferredInitDone;     // 무거운 바인딩 지연 수행 여부
         private bool _isLayoutEditMode;
 
         public ChipUnloading_Working() : this(
@@ -48,19 +48,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             FormClosing += ChipUnloading_Working_FormClosing;
         }
 
-        /// <summary>
-        /// 외부(탭 컨테이너)에서 폼을 Show 하기 전에 UI를 미리 구성하고 핸들을 확보하기 위한 메서드.
-        /// - Teaching/DIO/Camera 바인딩 선행
-        /// - Handle 강제 생성
-        /// </summary>
         public void PreloadUI()
         {
             if (IsDisposed || Disposing) return;
             if (_preloadRequested) return; // 1회만
             _preloadRequested = true;
             EnsureInitialized();
-            // 강제 Handle 생성 (이미 생성되어 있으면 영향 없음)
-            var handle = Handle;
+            var handle = Handle; // 강제 Handle 생성
         }
 
         private void ChipUnloading_Working_Load(object sender, EventArgs e)
@@ -68,9 +62,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             EnsureInitialized();
         }
 
-        /// <summary>
-        /// UI 초기화(Teaching/DIO/Camera) 공용 메서드. 여러 경로(Load/Preload)에서 안전 호출.
-        /// </summary>
         private void EnsureInitialized()
         {
             if (_initialized) return;
@@ -78,16 +69,28 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             try
             {
                 Text = $"{WORK_NAME} Working";
+                BeginInvoke(new Action(StartDeferredInit)); // 무거운 초기화 지연
+            }
+            catch (Exception ex)
+            {
+                try { this.Controls.Add(new Label { Dock = DockStyle.Fill, Text = $"Init 실패: {ex.Message}", ForeColor = System.Drawing.Color.Red, TextAlign = System.Drawing.ContentAlignment.MiddleCenter }); } catch { }
+            }
+        }
+
+        private async void StartDeferredInit()
+        {
+            if (_deferredInitDone) return;
+            _deferredInitDone = true;
+            await Task.Delay(30); // 첫 Paint 후 실행
+            if (IsDisposed || Disposing) return;
+            try
+            {
                 BindTeachingPositions();
                 BindDioControls();
                 BindCamera();
                 InitSequences();
             }
-            catch (Exception ex)
-            {
-                // 심각한 에러라도 폼 생성은 유지
-                try { this.Controls.Add(new Label { Dock = DockStyle.Fill, Text = $"Init 실패: {ex.Message}", ForeColor = System.Drawing.Color.Red, TextAlign = System.Drawing.ContentAlignment.MiddleCenter }); } catch { }
-            }
+            catch { }
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -158,12 +161,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 if (dioControl == null) return;
 
-                // 원하는 정렬 선택:
                 dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.Insertion;
 
                 // 그룹 구분선: OutputStage
                 dioControl.BindDIOInput(() => false, "---- OutputStage ----", "SEP_OutStage");
-                // OutputStage (센서 + 밸브 강제 제어)
                 StrongBindOutputStage();
 
                 // 그룹 구분선: OutputDieTransfer
