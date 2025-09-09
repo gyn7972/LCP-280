@@ -14,9 +14,9 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public partial class InputStageUnit_Config : Form
     {
-        private const string UNIT_NAME = "InputStageUnit";
+        private const string UNIT_NAME = "InputRingTransferUnit";
         private Equipment Equipment => Equipment.Instance;
-        private InputStage InputStageUnit { get; set; }
+        private InputRingTransfer InputRingTransferUnit { get; set; }
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
@@ -37,10 +37,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
                 {
-                    InputStageUnit = unit as InputStage;
+                    InputRingTransferUnit = unit as InputRingTransfer;
                 }
 
-                if (InputStageUnit == null)
+                if (InputRingTransferUnit == null)
                 {
                     MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
