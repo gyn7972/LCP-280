@@ -42,7 +42,6 @@ namespace QMC.Common.Keithley
 
         #region Field
         private List<ChannelCommand> commands = new List<ChannelCommand>();
-        private StringBuilder stringBuilder = new StringBuilder();
         private List<string> bufferDatas = new List<string>();
         #endregion
 
@@ -65,9 +64,18 @@ namespace QMC.Common.Keithley
         {
             try
             {
-                stringBuilder.Clear();
-                stringBuilder.AppendLine($"initChannel({Name})");
-                return Owner.Communicator.Write(stringBuilder.ToString());
+                string[] cmdStrs = new string[]
+                {
+                    $"initChannel({Name})",
+                };
+
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                foreach (var cmd in cmdStrs)
+                {
+                    if (!comm.Write(cmd))
+                        throw new Exception($"[{Name}] Failed to send Command: {cmd}");
+                }
+                return true;
             }
             catch (Exception ex)
             {
@@ -80,14 +88,21 @@ namespace QMC.Common.Keithley
             try
             {
                 KeithelySourcemeterConfig config = Owner.Config;
+                string[] cmdStrs = new string[]
+                {
+                    $"{Name}.sense = {(int)config.SenseMode}",
+                    $"{Name}.source.sink = {(int)config.SourceSink}",
+                    $"{Name}.source.settling = {(int)config.SourceSettling}",
+                    $"{Name}.source.offmode = {(int)config.SourceOffmode}",
+                };
 
-                stringBuilder.Clear();
-                stringBuilder.AppendLine($"{Name}.sense = {(int)config.SenseMode}");
-                stringBuilder.AppendLine($"{Name}.source.sink = {(int)config.SourceSink}");
-                stringBuilder.AppendLine($"{Name}.source.settling = {(int)config.SourceSettling}");
-                stringBuilder.AppendLine($"{Name}.source.offmode = {(int)config.SourceOffmode}");
-
-                return Owner.Communicator.Write(stringBuilder.ToString());
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                foreach (var cmd in cmdStrs)
+                {
+                    if (!comm.Write(cmd))
+                        throw new Exception($"[{Name}] Failed to send Command: {cmd}");
+                }
+                return true;
             }
             catch (Exception ex)
             {
@@ -99,10 +114,18 @@ namespace QMC.Common.Keithley
         {
             try
             {
-                stringBuilder.Clear();
-                stringBuilder.AppendLine($"{Name}.reset()");
+                string[] cmdStrs = new string[]
+                {
+                    $"{Name}.reset()",
+                };
 
-                return Owner.Communicator.Write(stringBuilder.ToString());
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                foreach (var cmd in cmdStrs)
+                {
+                    if (!comm.Write(cmd))
+                        throw new Exception($"[{Name}] Failed to send Command: {cmd}");
+                }
+                return true;
             }
             catch (Exception ex)
             {
@@ -114,11 +137,19 @@ namespace QMC.Common.Keithley
         {
             try
             {
-                stringBuilder.Clear();
                 int value = on ? 1 : 0;
-                stringBuilder.AppendLine($"{Name}.source.output = {value}");
+                string[] cmdStrs = new string[]
+                {
+                    $"{Name}.source.output = {value}",
+                };
 
-                return Owner.Communicator.Write(stringBuilder.ToString());
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                foreach (var cmd in cmdStrs)
+                {
+                    if (!comm.Write(cmd))
+                        throw new Exception($"[{Name}] Failed to send Command: {cmd}");
+                }
+                return true;
             }
             catch (Exception ex)
             {
@@ -145,19 +176,17 @@ namespace QMC.Common.Keithley
             bufferDatas.Clear();
             try
             {
-                stringBuilder.Clear();
-
-                // begin run command
-                stringBuilder.AppendLine($"startmeasure({Name})");
-
+                var cmdStrs = new List<string>();
                 var args = new List<string>();
 
+                cmdStrs.Add($"startmeasure({Name})");
                 foreach (var cmd in commands)
                 {
                     switch (cmd.Action)
                     {
                         case CommandAction.MeasureI:
                             {
+                                args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
@@ -165,11 +194,12 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceLimit.ToString());
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
-                                stringBuilder.AppendLine("vi(" + string.Join(",", args) + ")");
+                                cmdStrs.Add("vi(" + string.Join(",", args) + ")");
                             }
                             break;
                         case CommandAction.MeasureV:
                             {
+                                args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.SourceRange.ToString());
@@ -177,36 +207,42 @@ namespace QMC.Common.Keithley
                                 args.Add(cmd.SourceLimit.ToString());
                                 args.Add(cmd.MeasureRange.ToString());
                                 args.Add(cmd.MeasureTime.ToString());
-                                stringBuilder.AppendLine("iv(" + string.Join(",", args) + ")");
+                                cmdStrs.Add("iv(" + string.Join(",", args) + ")");
                             }
                             break;
                         case CommandAction.PulseSweepIAndTrigger:
                             {
+                                args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.PulseWidth.ToString());
                                 args.Add(cmd.PulsePeriod.ToString());
                                 args.Add(cmd.PulseCount.ToString());
-                                stringBuilder.AppendLine("iPulseAndTrigger(" + string.Join(",", args) + ")");
+                                cmdStrs.Add("iPulseAndTrigger(" + string.Join(",", args) + ")");
                             }
                             break;
                         case CommandAction.PulseSweepVAndTrigger:
                             {
+                                args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
                                 args.Add(cmd.PulseWidth.ToString());
                                 args.Add(cmd.PulsePeriod.ToString());
                                 args.Add(cmd.PulseCount.ToString());
-                                stringBuilder.AppendLine("vPulseAndTrigger(" + string.Join(",", args) + ")");
+                                cmdStrs.Add("vPulseAndTrigger(" + string.Join(",", args) + ")");
                             }
                             break;
                     }
                 }
+                cmdStrs.Add($"endmeasure({Name})");
 
-                // end run command
-                stringBuilder.AppendLine($"endmeasure({Name})");
-
-                return Owner.Communicator.Write(stringBuilder.ToString());
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                foreach (var cmd in cmdStrs)
+                {
+                    if (!comm.Write(cmd))
+                        throw new Exception($"[{Name}] Failed to send Command: {cmd}");
+                }
+                return true;
             }
             catch (Exception ex)
             {
@@ -220,9 +256,14 @@ namespace QMC.Common.Keithley
             try
             {
                 string response = "";
-                if (!Owner.Communicator.Query("*OPC?", ref response))
+
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                if (!comm.Query("*OPC?", ref response))
                     return false;
 
+                //response = response.Trim();
+                response = response.Replace("\n", "");
+                response = response.Replace("\r", "");
                 return (response == "1");
             }
             catch (Exception ex)
@@ -237,10 +278,12 @@ namespace QMC.Common.Keithley
             try
             {
                 string bufferName = $"{Name}.nvbuffer1";
-                string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings";
+                string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings)";
                 
                 string bufferData = "";
-                if (!Owner.Communicator.Query(bufferReadCommand, ref bufferData))
+
+                KeithleyInstrumentCommunicator comm = Owner.Communicator;
+                if (!comm.Query(bufferReadCommand, ref bufferData))
                     throw new Exception($"[{Name}] Failed to read buffer.");
 
                 bufferData = bufferData.Trim();

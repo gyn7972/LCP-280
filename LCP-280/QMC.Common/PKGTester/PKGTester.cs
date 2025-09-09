@@ -120,7 +120,7 @@ namespace QMC.Common.PKGTester
             try
             {
                 if (conditionSet == null)
-                    throw new InvalidOperationException("ConditionSet is not set.");
+                    throw new Exception("ConditionSet is not set.");
 
                 sourcemeter.ClearTestItems();
                 spectrometer.ClearTestItems();
@@ -128,7 +128,7 @@ namespace QMC.Common.PKGTester
                 foreach (var item in conditionSet.Items)
                 {
                     if (item == null)
-                        throw new InvalidOperationException("Invalid TestItem.");
+                        throw new Exception("Invalid TestItem.");
 
                     switch (item.GetTestItemCategory())
                     {
