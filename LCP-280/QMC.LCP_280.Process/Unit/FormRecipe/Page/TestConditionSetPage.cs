@@ -104,7 +104,17 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
+                                            row.Cells[pd.Name].Value = "...";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
                                     }       
                                 }
                                 break;
@@ -123,7 +133,17 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
+                                            row.Cells[pd.Name].Value = "...";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
                                     }
                                 }
                                 break;
@@ -135,7 +155,17 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
+                                            row.Cells[pd.Name].Value = "...";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
                                     }
                                 }
                                 break;
