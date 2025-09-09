@@ -383,12 +383,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void _btnVisionSetting_Click(object sender, EventArgs e)
         {
-            try
-            {
-                PatternMatchingDialog dlg = new PatternMatchingDialog();
-                dlg.ShowDialog();
-            }
-            catch { }
+            
         }
     }
 }

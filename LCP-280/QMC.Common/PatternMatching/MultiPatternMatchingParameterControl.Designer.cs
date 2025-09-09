@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.baseGroupBoxMultiTrainImage = new QMC.Common.SimpleGroupBox();
             this.pictureBoxMultiTraimImage = new QMC.Common.SimpleTrainPictureBox();
             this.baseListBoxTrainList = new System.Windows.Forms.ListBox();
@@ -60,13 +59,17 @@
             this.baseGroupBoxMultiTrainImage.Controls.Add(this.baseButtonClear);
             this.baseGroupBoxMultiTrainImage.Controls.Add(this.baseButtonRemove);
             this.baseGroupBoxMultiTrainImage.Controls.Add(this.baseButtonAdd);
-            this.baseGroupBoxMultiTrainImage.ForeColor = System.Drawing.Color.White;
-            this.baseGroupBoxMultiTrainImage.Location = new System.Drawing.Point(1, -1);
+            this.baseGroupBoxMultiTrainImage.ForeColor = System.Drawing.Color.Black;
+            this.baseGroupBoxMultiTrainImage.Location = new System.Drawing.Point(6, 6);
             this.baseGroupBoxMultiTrainImage.Name = "baseGroupBoxMultiTrainImage";
-            this.baseGroupBoxMultiTrainImage.Size = new System.Drawing.Size(509, 256);
+            this.baseGroupBoxMultiTrainImage.Radious = 0;
+            this.baseGroupBoxMultiTrainImage.Size = new System.Drawing.Size(389, 211);
             this.baseGroupBoxMultiTrainImage.TabIndex = 0;
             this.baseGroupBoxMultiTrainImage.TabStop = false;
             this.baseGroupBoxMultiTrainImage.Text = "MultiTrainImage";
+            this.baseGroupBoxMultiTrainImage.TitleBackColor = System.Drawing.Color.SteelBlue;
+            this.baseGroupBoxMultiTrainImage.TitleFontSize = 9F;
+            this.baseGroupBoxMultiTrainImage.UseExpand = false;
             // 
             // pictureBoxMultiTraimImage
             // 
@@ -74,7 +77,7 @@
             this.pictureBoxMultiTraimImage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pictureBoxMultiTraimImage.Location = new System.Drawing.Point(6, 20);
             this.pictureBoxMultiTraimImage.Name = "pictureBoxMultiTraimImage";
-            this.pictureBoxMultiTraimImage.Size = new System.Drawing.Size(315, 223);
+            this.pictureBoxMultiTraimImage.Size = new System.Drawing.Size(191, 184);
             this.pictureBoxMultiTraimImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBoxMultiTraimImage.TabIndex = 19;
             this.pictureBoxMultiTraimImage.TabStop = false;
@@ -86,9 +89,9 @@
             this.baseListBoxTrainList.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(79)))), ((int)(((byte)(79)))), ((int)(((byte)(79)))));
             this.baseListBoxTrainList.FormattingEnabled = true;
             this.baseListBoxTrainList.ItemHeight = 20;
-            this.baseListBoxTrainList.Location = new System.Drawing.Point(327, 20);
+            this.baseListBoxTrainList.Location = new System.Drawing.Point(203, 20);
             this.baseListBoxTrainList.Name = "baseListBoxTrainList";
-            this.baseListBoxTrainList.Size = new System.Drawing.Size(95, 224);
+            this.baseListBoxTrainList.Size = new System.Drawing.Size(95, 184);
             this.baseListBoxTrainList.TabIndex = 18;
             this.baseListBoxTrainList.SelectedIndexChanged += new System.EventHandler(this.baseListBoxTrainList_SelectedIndexChanged);
             // 
@@ -98,7 +101,7 @@
             this.baseButtonDown.FlatAppearance.BorderSize = 0;
             this.baseButtonDown.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonDown.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonDown.Location = new System.Drawing.Point(428, 168);
+            this.baseButtonDown.Location = new System.Drawing.Point(304, 168);
             this.baseButtonDown.Name = "baseButtonDown";
             this.baseButtonDown.Size = new System.Drawing.Size(75, 31);
             this.baseButtonDown.TabIndex = 17;
@@ -112,7 +115,7 @@
             this.baseButtonUp.FlatAppearance.BorderSize = 0;
             this.baseButtonUp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonUp.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonUp.Location = new System.Drawing.Point(428, 131);
+            this.baseButtonUp.Location = new System.Drawing.Point(304, 131);
             this.baseButtonUp.Name = "baseButtonUp";
             this.baseButtonUp.Size = new System.Drawing.Size(75, 31);
             this.baseButtonUp.TabIndex = 16;
@@ -126,7 +129,7 @@
             this.baseButtonClear.FlatAppearance.BorderSize = 0;
             this.baseButtonClear.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonClear.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonClear.Location = new System.Drawing.Point(428, 94);
+            this.baseButtonClear.Location = new System.Drawing.Point(304, 94);
             this.baseButtonClear.Name = "baseButtonClear";
             this.baseButtonClear.Size = new System.Drawing.Size(75, 31);
             this.baseButtonClear.TabIndex = 15;
@@ -140,7 +143,7 @@
             this.baseButtonRemove.FlatAppearance.BorderSize = 0;
             this.baseButtonRemove.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonRemove.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonRemove.Location = new System.Drawing.Point(428, 57);
+            this.baseButtonRemove.Location = new System.Drawing.Point(304, 57);
             this.baseButtonRemove.Name = "baseButtonRemove";
             this.baseButtonRemove.Size = new System.Drawing.Size(75, 31);
             this.baseButtonRemove.TabIndex = 14;
@@ -154,7 +157,7 @@
             this.baseButtonAdd.FlatAppearance.BorderSize = 0;
             this.baseButtonAdd.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonAdd.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonAdd.Location = new System.Drawing.Point(428, 20);
+            this.baseButtonAdd.Location = new System.Drawing.Point(304, 20);
             this.baseButtonAdd.Name = "baseButtonAdd";
             this.baseButtonAdd.Size = new System.Drawing.Size(75, 31);
             this.baseButtonAdd.TabIndex = 13;
@@ -172,21 +175,25 @@
             this.baseGroupBoxMutiParameter.Controls.Add(this.TextMinScore);
             this.baseGroupBoxMutiParameter.Controls.Add(this.TextMaxInstance);
             this.baseGroupBoxMutiParameter.Controls.Add(this.TextBoxTolerance);
-            this.baseGroupBoxMutiParameter.ForeColor = System.Drawing.Color.White;
-            this.baseGroupBoxMutiParameter.Location = new System.Drawing.Point(5, 261);
+            this.baseGroupBoxMutiParameter.ForeColor = System.Drawing.Color.Black;
+            this.baseGroupBoxMutiParameter.Location = new System.Drawing.Point(6, 223);
             this.baseGroupBoxMutiParameter.Name = "baseGroupBoxMutiParameter";
-            this.baseGroupBoxMutiParameter.Size = new System.Drawing.Size(315, 183);
+            this.baseGroupBoxMutiParameter.Radious = 0;
+            this.baseGroupBoxMutiParameter.Size = new System.Drawing.Size(315, 160);
             this.baseGroupBoxMutiParameter.TabIndex = 1;
             this.baseGroupBoxMutiParameter.TabStop = false;
             this.baseGroupBoxMutiParameter.Text = "Multi Pattern Matching Parameter";
+            this.baseGroupBoxMutiParameter.TitleBackColor = System.Drawing.Color.SteelBlue;
+            this.baseGroupBoxMutiParameter.TitleFontSize = 9F;
+            this.baseGroupBoxMutiParameter.UseExpand = false;
             // 
             // ToggleButtonUseMaskImage
             // 
             this.ToggleButtonUseMaskImage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(78)))), ((int)(((byte)(78)))), ((int)(((byte)(78)))));
             this.ToggleButtonUseMaskImage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.ToggleButtonUseMaskImage.Font = new System.Drawing.Font("굴림", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.ToggleButtonUseMaskImage.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.ToggleButtonUseMaskImage.Location = new System.Drawing.Point(203, 144);
+            this.ToggleButtonUseMaskImage.ForeColor = System.Drawing.Color.Transparent;
+            this.ToggleButtonUseMaskImage.Location = new System.Drawing.Point(204, 123);
             this.ToggleButtonUseMaskImage.Name = "ToggleButtonUseMaskImage";
             this.ToggleButtonUseMaskImage.Size = new System.Drawing.Size(100, 30);
             this.ToggleButtonUseMaskImage.TabIndex = 15;
@@ -197,7 +204,7 @@
             // checkBoxDupCheck
             // 
             this.checkBoxDupCheck.AutoSize = true;
-            this.checkBoxDupCheck.Location = new System.Drawing.Point(175, 117);
+            this.checkBoxDupCheck.Location = new System.Drawing.Point(81, 131);
             this.checkBoxDupCheck.Name = "checkBoxDupCheck";
             this.checkBoxDupCheck.Size = new System.Drawing.Size(116, 16);
             this.checkBoxDupCheck.TabIndex = 14;
@@ -208,7 +215,7 @@
             // LabelMinScore
             // 
             this.LabelMinScore.Font = new System.Drawing.Font("돋움", 11F, System.Drawing.FontStyle.Bold);
-            this.LabelMinScore.ForeColor = System.Drawing.Color.White;
+            this.LabelMinScore.ForeColor = System.Drawing.Color.Black;
             this.LabelMinScore.Location = new System.Drawing.Point(15, 91);
             this.LabelMinScore.Name = "LabelMinScore";
             this.LabelMinScore.Size = new System.Drawing.Size(182, 16);
@@ -219,7 +226,7 @@
             // LabelMaxInstance
             // 
             this.LabelMaxInstance.Font = new System.Drawing.Font("돋움", 11F, System.Drawing.FontStyle.Bold);
-            this.LabelMaxInstance.ForeColor = System.Drawing.Color.White;
+            this.LabelMaxInstance.ForeColor = System.Drawing.Color.Black;
             this.LabelMaxInstance.Location = new System.Drawing.Point(15, 60);
             this.LabelMaxInstance.Name = "LabelMaxInstance";
             this.LabelMaxInstance.Size = new System.Drawing.Size(182, 23);
@@ -230,7 +237,7 @@
             // LabelTolerance
             // 
             this.LabelTolerance.Font = new System.Drawing.Font("돋움", 8F, System.Drawing.FontStyle.Bold);
-            this.LabelTolerance.ForeColor = System.Drawing.Color.White;
+            this.LabelTolerance.ForeColor = System.Drawing.Color.Black;
             this.LabelTolerance.Location = new System.Drawing.Point(16, 26);
             this.LabelTolerance.Name = "LabelTolerance";
             this.LabelTolerance.Size = new System.Drawing.Size(182, 23);
@@ -284,7 +291,7 @@
             this.Controls.Add(this.baseGroupBoxMutiParameter);
             this.Controls.Add(this.baseGroupBoxMultiTrainImage);
             this.Name = "MultiPatternMatchingParameterControl";
-            this.Size = new System.Drawing.Size(513, 449);
+            this.Size = new System.Drawing.Size(403, 391);
             this.baseGroupBoxMultiTrainImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxMultiTraimImage)).EndInit();
             this.baseGroupBoxMutiParameter.ResumeLayout(false);

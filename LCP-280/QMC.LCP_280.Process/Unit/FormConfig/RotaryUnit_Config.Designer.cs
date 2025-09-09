@@ -183,11 +183,13 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // positionEditorView
             // 
+            this.positionEditorView.FastBuild = true;
             this.positionEditorView.GroupName = "Editor";
             this.positionEditorView.Location = new System.Drawing.Point(4, 4);
             this.positionEditorView.Margin = new System.Windows.Forms.Padding(4);
             this.positionEditorView.Name = "positionEditorView";
             this.positionEditorView.Size = new System.Drawing.Size(358, 145);
+            this.positionEditorView.SuppressResizeInvalidation = true;
             this.positionEditorView.TabIndex = 0;
             this.positionEditorView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             // 
@@ -206,9 +208,9 @@ namespace QMC.LCP_280.Process.Unit
             this.btnCancel.Size = new System.Drawing.Size(100, 45);
             this.btnCancel.TabIndex = 4;
             this.btnCancel.TabStop = false;
-            this.btnCancel.Text = "Cancel";
+            this.btnCancel.Text = "CurrentPos";
             this.btnCancel.UseVisualStyleBackColor = false;
-            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            this.btnCancel.Click += new System.EventHandler(this.btnCurrentPos_Click);
             // 
             // btnSave
             // 
@@ -231,13 +233,22 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // positionItemView
             // 
+            this.positionItemView.BorderColor = System.Drawing.Color.White;
             this.positionItemView.BorderWidth = 2;
             this.positionItemView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionItemView.GroupBackColor = System.Drawing.Color.White;
+            this.positionItemView.GroupForeColor = System.Drawing.Color.Black;
             this.positionItemView.GroupName = "Position Item";
+            this.positionItemView.ItemBackColor = System.Drawing.Color.Black;
+            this.positionItemView.ItemForeColor = System.Drawing.Color.Lime;
+            this.positionItemView.ListBackColor = System.Drawing.Color.Black;
+            this.positionItemView.ListForeColor = System.Drawing.Color.Lime;
             this.positionItemView.Location = new System.Drawing.Point(3, 8);
             this.positionItemView.Margin = new System.Windows.Forms.Padding(3, 8, 3, 8);
             this.positionItemView.Name = "positionItemView";
             this.positionTableLayoutPanel.SetRowSpan(this.positionItemView, 2);
+            this.positionItemView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.positionItemView.SelectedForeColor = System.Drawing.Color.Black;
             this.positionItemView.SelectedIndex = -1;
             this.positionItemView.Size = new System.Drawing.Size(242, 344);
             this.positionItemView.TabIndex = 2;
@@ -275,21 +286,35 @@ namespace QMC.LCP_280.Process.Unit
             // inputView
             // 
             this.inputView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.inputView.FastBuild = true;
+            this.inputView.FastInitialPaint = true;
             this.inputView.GroupName = "Input";
+            this.inputView.ListBackColor = System.Drawing.Color.Black;
+            this.inputView.ListForeColor = System.Drawing.Color.Lime;
             this.inputView.Location = new System.Drawing.Point(4, 6);
             this.inputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
             this.inputView.Name = "inputView";
+            this.inputView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.inputView.SelectedForeColor = System.Drawing.Color.Black;
             this.inputView.Size = new System.Drawing.Size(302, 348);
+            this.inputView.SuppressResizeInvalidation = true;
             this.inputView.TabIndex = 1;
             // 
             // outputView
             // 
             this.outputView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.outputView.FastBuild = true;
+            this.outputView.FastInitialPaint = true;
             this.outputView.GroupName = "Output";
+            this.outputView.ListBackColor = System.Drawing.Color.Black;
+            this.outputView.ListForeColor = System.Drawing.Color.Lime;
             this.outputView.Location = new System.Drawing.Point(314, 6);
             this.outputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
             this.outputView.Name = "outputView";
+            this.outputView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.outputView.SelectedForeColor = System.Drawing.Color.Black;
             this.outputView.Size = new System.Drawing.Size(302, 348);
+            this.outputView.SuppressResizeInvalidation = true;
             this.outputView.TabIndex = 1;
             // 
             // gbMoveAxis
@@ -317,22 +342,40 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // axisPositionsView
             // 
+            this.axisPositionsView.BorderColor = System.Drawing.Color.White;
             this.axisPositionsView.BorderWidth = 2;
             this.axisPositionsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.axisPositionsView.GroupBackColor = System.Drawing.Color.White;
+            this.axisPositionsView.GroupForeColor = System.Drawing.Color.Black;
             this.axisPositionsView.GroupName = "Axis Positions";
+            this.axisPositionsView.ItemBackColor = System.Drawing.Color.Black;
+            this.axisPositionsView.ItemForeColor = System.Drawing.Color.Lime;
+            this.axisPositionsView.ListBackColor = System.Drawing.Color.Black;
+            this.axisPositionsView.ListForeColor = System.Drawing.Color.Lime;
             this.axisPositionsView.Location = new System.Drawing.Point(951, 3);
             this.axisPositionsView.Name = "axisPositionsView";
             this.mainTableLayoutPanel.SetRowSpan(this.axisPositionsView, 2);
+            this.axisPositionsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.axisPositionsView.SelectedForeColor = System.Drawing.Color.Black;
             this.axisPositionsView.SelectedIndex = -1;
             this.axisPositionsView.Size = new System.Drawing.Size(310, 774);
             this.axisPositionsView.TabIndex = 11;
             // 
             // axisListBoxItemsView
             // 
+            this.axisListBoxItemsView.BorderColor = System.Drawing.Color.White;
             this.axisListBoxItemsView.BorderWidth = 2;
+            this.axisListBoxItemsView.GroupBackColor = System.Drawing.Color.White;
+            this.axisListBoxItemsView.GroupForeColor = System.Drawing.Color.Black;
             this.axisListBoxItemsView.GroupName = "";
+            this.axisListBoxItemsView.ItemBackColor = System.Drawing.Color.Black;
+            this.axisListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
+            this.axisListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
+            this.axisListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
             this.axisListBoxItemsView.Location = new System.Drawing.Point(8, 18);
             this.axisListBoxItemsView.Name = "axisListBoxItemsView";
+            this.axisListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.axisListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.axisListBoxItemsView.SelectedIndex = -1;
             this.axisListBoxItemsView.Size = new System.Drawing.Size(234, 124);
             this.axisListBoxItemsView.TabIndex = 0;
@@ -963,11 +1006,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 MessageBox.Show("저장 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-
         }
 
 

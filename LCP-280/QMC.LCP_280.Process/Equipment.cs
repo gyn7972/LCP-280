@@ -124,6 +124,7 @@ namespace QMC.LCP_280.Process
 
         // [+] CKD Motor Driver (PDO Mapping) 추가
         private CKDMotorDriver _ckdDriver;
+        public static string _CurrentRecipeName = string.Empty;
 
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, Camera> Cameras { get; } = new Dictionary<string, Camera>(StringComparer.OrdinalIgnoreCase);

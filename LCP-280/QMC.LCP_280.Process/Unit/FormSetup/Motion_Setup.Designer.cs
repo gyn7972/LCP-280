@@ -154,21 +154,25 @@ namespace QMC.LCP_280.Process.Unit
             // speedListBoxItemsView
             // 
             this.speedListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.speedListBoxItemsView.FastBuild = true;
             this.speedListBoxItemsView.GroupName = "Speed";
             this.speedListBoxItemsView.Location = new System.Drawing.Point(338, 4);
             this.speedListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.speedListBoxItemsView.Name = "speedListBoxItemsView";
             this.speedListBoxItemsView.Size = new System.Drawing.Size(330, 657);
+            this.speedListBoxItemsView.SuppressResizeInvalidation = true;
             this.speedListBoxItemsView.TabIndex = 1;
             // 
             // configurationListBoxItemsView
             // 
             this.configurationListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.configurationListBoxItemsView.FastBuild = true;
             this.configurationListBoxItemsView.GroupName = "Configuration";
             this.configurationListBoxItemsView.Location = new System.Drawing.Point(3, 4);
             this.configurationListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.configurationListBoxItemsView.Name = "configurationListBoxItemsView";
             this.configurationListBoxItemsView.Size = new System.Drawing.Size(329, 657);
+            this.configurationListBoxItemsView.SuppressResizeInvalidation = true;
             this.configurationListBoxItemsView.TabIndex = 0;
             // 
             // panel1
@@ -297,6 +301,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // motorStateIoPropertyCollectionView
             // 
+            this.motorStateIoPropertyCollectionView.FastBuild = true;
             this.motorStateIoPropertyCollectionView.GroupName = "Motor State";
             this.motorStateIoPropertyCollectionView.ListBackColor = System.Drawing.Color.Black;
             this.motorStateIoPropertyCollectionView.ListForeColor = System.Drawing.Color.Lime;
@@ -306,10 +311,12 @@ namespace QMC.LCP_280.Process.Unit
             this.motorStateIoPropertyCollectionView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.motorStateIoPropertyCollectionView.SelectedForeColor = System.Drawing.Color.Black;
             this.motorStateIoPropertyCollectionView.Size = new System.Drawing.Size(293, 220);
+            this.motorStateIoPropertyCollectionView.SuppressResizeInvalidation = true;
             this.motorStateIoPropertyCollectionView.TabIndex = 2;
             // 
             // motorIoPropertyCollectionView
             // 
+            this.motorIoPropertyCollectionView.FastBuild = true;
             this.motorIoPropertyCollectionView.GroupName = "Motor I/O";
             this.motorIoPropertyCollectionView.ListBackColor = System.Drawing.Color.Black;
             this.motorIoPropertyCollectionView.ListForeColor = System.Drawing.Color.Lime;
@@ -319,15 +326,18 @@ namespace QMC.LCP_280.Process.Unit
             this.motorIoPropertyCollectionView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.motorIoPropertyCollectionView.SelectedForeColor = System.Drawing.Color.Black;
             this.motorIoPropertyCollectionView.Size = new System.Drawing.Size(293, 198);
+            this.motorIoPropertyCollectionView.SuppressResizeInvalidation = true;
             this.motorIoPropertyCollectionView.TabIndex = 1;
             // 
             // positionVelocityPropertyCollectionView
             // 
+            this.positionVelocityPropertyCollectionView.FastBuild = true;
             this.positionVelocityPropertyCollectionView.GroupName = "Position & Velocity";
             this.positionVelocityPropertyCollectionView.Location = new System.Drawing.Point(6, 25);
             this.positionVelocityPropertyCollectionView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.positionVelocityPropertyCollectionView.Name = "positionVelocityPropertyCollectionView";
             this.positionVelocityPropertyCollectionView.Size = new System.Drawing.Size(293, 220);
+            this.positionVelocityPropertyCollectionView.SuppressResizeInvalidation = true;
             this.positionVelocityPropertyCollectionView.TabIndex = 0;
             // 
             // tableLayoutPanel1

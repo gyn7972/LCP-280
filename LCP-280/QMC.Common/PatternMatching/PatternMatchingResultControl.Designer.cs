@@ -29,10 +29,10 @@
             this.baseGroupBox1.Controls.Add(this.paramTextControlResultX);
             this.baseGroupBox1.Controls.Add(this.baseButtonSearch);
             this.baseGroupBox1.ForeColor = System.Drawing.Color.Black;
-            this.baseGroupBox1.Location = new System.Drawing.Point(0, 0);
+            this.baseGroupBox1.Location = new System.Drawing.Point(5, 5);
             this.baseGroupBox1.Name = "baseGroupBox1";
             this.baseGroupBox1.Radious = 0;
-            this.baseGroupBox1.Size = new System.Drawing.Size(460, 185);
+            this.baseGroupBox1.Size = new System.Drawing.Size(250, 190);
             this.baseGroupBox1.TabIndex = 0;
             this.baseGroupBox1.TabStop = false;
             this.baseGroupBox1.Text = "Search";
@@ -42,17 +42,17 @@
             // 
             // paramTextControlResultT
             // 
-            this.paramTextControlResultT.Location = new System.Drawing.Point(5, 98);
+            this.paramTextControlResultT.Location = new System.Drawing.Point(5, 104);
             this.paramTextControlResultT.Name = "paramTextControlResultT";
-            this.paramTextControlResultT.Size = new System.Drawing.Size(450, 36);
+            this.paramTextControlResultT.Size = new System.Drawing.Size(240, 36);
             this.paramTextControlResultT.TabIndex = 3;
             this.paramTextControlResultT.TitleRatio = 50;
             // 
             // paramTextControlResultY
             // 
-            this.paramTextControlResultY.Location = new System.Drawing.Point(7, 56);
+            this.paramTextControlResultY.Location = new System.Drawing.Point(7, 59);
             this.paramTextControlResultY.Name = "paramTextControlResultY";
-            this.paramTextControlResultY.Size = new System.Drawing.Size(450, 36);
+            this.paramTextControlResultY.Size = new System.Drawing.Size(240, 36);
             this.paramTextControlResultY.TabIndex = 2;
             this.paramTextControlResultY.TitleRatio = 50;
             // 
@@ -60,15 +60,15 @@
             // 
             this.paramTextControlResultX.Location = new System.Drawing.Point(5, 14);
             this.paramTextControlResultX.Name = "paramTextControlResultX";
-            this.paramTextControlResultX.Size = new System.Drawing.Size(450, 36);
+            this.paramTextControlResultX.Size = new System.Drawing.Size(240, 36);
             this.paramTextControlResultX.TabIndex = 1;
             this.paramTextControlResultX.TitleRatio = 50;
             // 
             // baseButtonSearch
             // 
-            this.baseButtonSearch.Location = new System.Drawing.Point(7, 150);
+            this.baseButtonSearch.Location = new System.Drawing.Point(7, 149);
             this.baseButtonSearch.Name = "baseButtonSearch";
-            this.baseButtonSearch.Size = new System.Drawing.Size(450, 30);
+            this.baseButtonSearch.Size = new System.Drawing.Size(240, 36);
             this.baseButtonSearch.TabIndex = 0;
             this.baseButtonSearch.Text = "Search";
             this.baseButtonSearch.UseVisualStyleBackColor = true;
@@ -80,7 +80,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.baseGroupBox1);
             this.Name = "PatternMatchingResultControl";
-            this.Size = new System.Drawing.Size(460, 185);
+            this.Size = new System.Drawing.Size(260, 200);
             this.baseGroupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
 

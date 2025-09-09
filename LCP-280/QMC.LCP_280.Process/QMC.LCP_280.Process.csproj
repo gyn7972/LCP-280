@@ -102,14 +102,28 @@
     <Compile Include="Component\JogControl.Designer.cs">
       <DependentUpon>JogControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Component\PatternMatchingDialog.cs">
-      <SubType>Form</SubType>
+    <Compile Include="Component\Recipe\MeasurementKey.cs" />
+    <Compile Include="Component\PatternMatchingControl.cs">
+      <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Component\PatternMatchingDialog.Designer.cs">
-      <DependentUpon>PatternMatchingDialog.cs</DependentUpon>
+    <Compile Include="Component\PatternMatchingControl.Designer.cs">
+      <DependentUpon>PatternMatchingControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\PatternMatchingRecipeStore.cs" />
     <Compile Include="Component\PatternMatchingRunner.cs" />
+    <Compile Include="Component\ProcessDataManual.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\ProcessDataManual.Designer.cs">
+      <DependentUpon>ProcessDataManual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\ProcessData\CarrierData.cs" />
+    <Compile Include="Component\ProcessData\ChipData.cs" />
+    <Compile Include="Component\ProcessData\WaferDataConfig.cs" />
+    <Compile Include="Component\ProcessData\WaferManager.cs" />
+    <Compile Include="Component\ProcessData\WaferSummary.cs" />
+    <Compile Include="Component\Recipe\MeasurementRecipe.cs" />
+    <Compile Include="Component\Recipe\RecipeManager.cs" />
     <Compile Include="Component\SeqInputChipAlignVision.cs" />
     <Compile Include="Component\SeqInputChipMappingVision.cs" />
     <Compile Include="Component\SeqInputDieTransferChipDown.cs" />
@@ -123,6 +137,7 @@
     <Compile Include="Component\TeachingPositionControl.Designer.cs">
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\ProcessData\WaferData.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
     <Compile Include="Sequence.cs">
@@ -150,6 +165,18 @@
     </Compile>
     <Compile Include="Component\Form_AxisJogPopup.Designer.cs">
       <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\FormRecipe\Main_Recipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\FormRecipe\Main_Recipe.Designer.cs">
+      <DependentUpon>Main_Recipe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\FormRecipe\Vision_Recipe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\FormRecipe\Vision_Recipe.Designer.cs">
+      <DependentUpon>Vision_Recipe.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormWork\ChipUnloading_Working.cs">
       <SubType>Form</SubType>
@@ -369,8 +396,8 @@
     <EmbeddedResource Include="Component\JogControl.resx">
       <DependentUpon>JogControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Component\PatternMatchingDialog.resx">
-      <DependentUpon>PatternMatchingDialog.cs</DependentUpon>
+    <EmbeddedResource Include="Component\PatternMatchingControl.resx">
+      <DependentUpon>PatternMatchingControl.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\TeachingPositionControl.resx">
@@ -392,11 +419,17 @@
     <EmbeddedResource Include="Unit\CommonUnitConfig.resx">
       <DependentUpon>CommonUnitConfig.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormRecipe\Main_Recipe.resx">
+      <DependentUpon>Main_Recipe.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormRecipe\Page\CellTesterPage.resx">
       <DependentUpon>CellTesterPage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormRecipe\Page\TestConditionSetPage.resx">
       <DependentUpon>TestConditionSetPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormRecipe\Vision_Recipe.resx">
+      <DependentUpon>Vision_Recipe.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormSetup\Cylinder_Setup.resx">
       <DependentUpon>Cylinder_Setup.cs</DependentUpon>

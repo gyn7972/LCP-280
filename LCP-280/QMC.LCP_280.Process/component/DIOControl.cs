@@ -38,6 +38,14 @@ namespace QMC.LCP_280.Process.Component
         private PropertyCollection _lastOutputPc;
         private bool UsingPropertyViews => (inputView != null && outputView != null && inputView.GetType().Name.Contains("IOPropertyCollectionView"));
 
+        // ⚡ 구조 동일 여부 빠른 판단용: 마지막 표시 키 순서 캐시
+        private readonly List<string> _lastInputDispOrder = new List<string>();
+        private readonly List<string> _lastOutputDispOrder = new List<string>();
+
+        // 초기 표시 성능 모드: true면 Build 시 상태값 조회 생략(다음 타이머 틱에서 채움)
+        [DefaultValue(true)]
+        public bool FastInitialState { get; set; } = true;
+
         private ListBox _fallbackInput;
         private ListBox _fallbackOutput;
 
@@ -575,70 +583,133 @@ namespace QMC.LCP_280.Process.Component
         {
             if (!UsingPropertyViews) return; // ListBox fallback 모드 유지
 
+            // 1) 새 표시 키 시퀀스 + 매핑 미리 계산 (중복 제거/유니크 처리 포함)
+            var newDispIn = new List<string>();
+            var newMapIn = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var newDispOut = new List<string>();
+            var newMapOut = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            // 입력 표준 키들
+            foreach (var k in _inputKeys.OrderBy(x => x))
+            {
+                if (!DIO.TryGetPointInfo(k, out var isOut, out var module, out var disp) || isOut) continue;
+                var label = _displayMap.TryGetValue(k, out var l) ? l : k;
+                var text = string.IsNullOrWhiteSpace(disp) ? label : disp;
+                if (string.IsNullOrWhiteSpace(text)) text = label;
+                if (!newMapIn.ContainsKey(text))
+                {
+                    newMapIn[text] = k;
+                    newDispIn.Add(text);
+                }
+            }
+            // 입력 커스텀 키들 (고유키 생성)
+            int no = 1;
+            foreach (var key in _customInputSequence)
+            {
+                string desiredDisp;
+                if (!_customInputDisplayKeys.TryGetValue(key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
+                    desiredDisp = $"CI{no:000}";
+                var uniqueDisp = desiredDisp; int dup = 1;
+                while (newMapIn.ContainsKey(uniqueDisp)) uniqueDisp = desiredDisp + "_" + (++dup).ToString();
+                newMapIn[uniqueDisp] = key;
+                newDispIn.Add(uniqueDisp);
+                no++;
+            }
+
+            // 출력 표준 키들
+            foreach (var k in _outputKeys.OrderBy(x => x))
+            {
+                if (!DIO.TryGetPointInfo(k, out var isOut, out var module, out var disp) || !isOut) continue;
+                var label = _displayMap.TryGetValue(k, out var l) ? l : k;
+                var text = string.IsNullOrWhiteSpace(disp) ? label : disp;
+                if (string.IsNullOrWhiteSpace(text)) text = label;
+                if (!newMapOut.ContainsKey(text))
+                {
+                    newMapOut[text] = k;
+                    newDispOut.Add(text);
+                }
+            }
+            // 출력 커스텀 키들
+            no = 1;
+            foreach (var key in _customOutputSequence)
+            {
+                string desiredDisp;
+                if (!_customOutputDisplayKeys.TryGetValue(key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
+                    desiredDisp = $"CO{no:000}";
+                var uniqueDisp = desiredDisp; int dup = 1;
+                while (newMapOut.ContainsKey(uniqueDisp)) uniqueDisp = desiredDisp + "_" + (++dup).ToString();
+                newMapOut[uniqueDisp] = key;
+                newDispOut.Add(uniqueDisp);
+                no++;
+            }
+
+            // 2) 구조 동일하면 컨트롤 재생성 없이 매핑만 교체 후 상태만 갱신
+            bool sameStructure =
+                _lastInputDispOrder.Count == newDispIn.Count &&
+                _lastOutputDispOrder.Count == newDispOut.Count &&
+                !_lastInputDispOrder.Where((t, i) => !string.Equals(t, newDispIn[i], StringComparison.OrdinalIgnoreCase)).Any() &&
+                !_lastOutputDispOrder.Where((t, i) => !string.Equals(t, newDispOut[i], StringComparison.OrdinalIgnoreCase)).Any();
+
+            if (sameStructure)
+            {
+                _dispToInputKey.Clear();
+                foreach (var kv in newMapIn) _dispToInputKey[kv.Key] = kv.Value;
+                _dispToOutputKey.Clear();
+                foreach (var kv in newMapOut) _dispToOutputKey[kv.Key] = kv.Value;
+
+                _lastInputDispOrder.Clear(); _lastInputDispOrder.AddRange(newDispIn);
+                _lastOutputDispOrder.Clear(); _lastOutputDispOrder.AddRange(newDispOut);
+
+                SafeRefreshStates();
+                return;
+            }
+
             _dispToInputKey.Clear();
             _dispToOutputKey.Clear();
+
             var inPc = new PropertyCollection { ShowNoColumn = true };
             var outPc = new PropertyCollection { ShowNoColumn = true };
             inPc.Add(new TitleOnlyProperty("No", "Name", "State"));
             outPc.Add(new TitleOnlyProperty("No", "Name", "State"));
 
-            int no = 1;
-            foreach (var k in _inputKeys.OrderBy(x => x))
+            // 3) 실제 PC 구성 (빠른 초기 로드: 상태 조회 생략 옵션)
+            int noIn = 1;
+            foreach (var disp in newDispIn)
             {
-                if (!DIO.TryGetPointInfo(k, out var isOut, out var module, out var disp) || isOut) continue;
-                var label = _displayMap.TryGetValue(k, out var l) ? l : k;
-                // Skip separators in property view
-                if (IsSeparatorLabel(label)) continue;
-                var text = string.IsNullOrWhiteSpace(disp) ? label : $"{disp} {label}";
-                bool state = false; try { DIO.In(k, out state); } catch { state = false; }
-                inPc.Add(new PropertyState(no.ToString(), text, state) { ShowNoColumn = true });
-                if (!string.IsNullOrEmpty(disp) && !_dispToInputKey.ContainsKey(disp)) _dispToInputKey[disp] = k;
-                no++;
-            }
-            foreach (var kv in _customInputSequence)
-            {
-                var key = kv;
-                var label = _displayMap.TryGetValue(key, out var l) ? l : key;
-                if (IsSeparatorLabel(label)) continue;
-                bool state = false; try { if (_customInputStates.TryGetValue(key, out var f)) state = f(); } catch { }
-                string desiredDisp;
-                if (!_customInputDisplayKeys.TryGetValue(key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
-                    desiredDisp = $"CI{no:000}";
-                var uniqueDisp = desiredDisp; int dup = 1;
-                while (_dispToInputKey.ContainsKey(uniqueDisp)) uniqueDisp = desiredDisp + "_" + (++dup).ToString();
-                inPc.Add(new PropertyState(no.ToString(), $"{uniqueDisp} {label}", state) { ShowNoColumn = true });
-                if (!_dispToInputKey.ContainsKey(uniqueDisp)) _dispToInputKey[uniqueDisp] = key;
-                no++;
+                bool state = false;
+                if (!FastInitialState)
+                {
+                    var k = newMapIn[disp];
+                    if (k.StartsWith("__custom_in_", StringComparison.OrdinalIgnoreCase))
+                    { if (_customInputStates.TryGetValue(k, out var f)) { try { state = f(); } catch { state = false; } } }
+                    else { try { state = DIO.In(k, out var v) && v; } catch { state = false; } }
+                }
+                inPc.Add(new PropertyState(noIn.ToString(), disp, state) { ShowNoColumn = true });
+                _dispToInputKey[disp] = newMapIn[disp];
+                noIn++;
             }
 
-            no = 1;
-            foreach (var k in _outputKeys.OrderBy(x => x))
+            int noOut = 1;
+            foreach (var disp in newDispOut)
             {
-                if (!DIO.TryGetPointInfo(k, out var isOut, out var module, out var disp) || !isOut) continue;
-                var label = _displayMap.TryGetValue(k, out var l) ? l : k;
-                var text = string.IsNullOrWhiteSpace(disp) ? label : $"{disp} {label}";
-                bool state = false; DIO.TryGetOutputState(k, out state);
-                outPc.Add(new PropertyState(no.ToString(), $"{disp} {text}".Trim(), state) { ShowNoColumn = true });
-                if (!string.IsNullOrEmpty(disp) && !_dispToOutputKey.ContainsKey(disp)) _dispToOutputKey[disp] = k;
-                no++;
-            }
-            foreach (var kv in _customOutputSequence)
-            {
-                var key = kv;
-                var label = _displayMap.TryGetValue(key, out var l) ? l : key;
-                bool state = false; try { if (_customOutputActions.TryGetValue(key, out var act) && act.state != null) state = act.state(); } catch { }
-                string desiredDisp;
-                if (!_customOutputDisplayKeys.TryGetValue(key, out desiredDisp) || string.IsNullOrWhiteSpace(desiredDisp))
-                    desiredDisp = $"CO{no:000}";
-                var uniqueDisp = desiredDisp; int dup = 1;
-                while (_dispToOutputKey.ContainsKey(uniqueDisp)) uniqueDisp = desiredDisp + "_" + (++dup).ToString();
-                outPc.Add(new PropertyState(no.ToString(), $"{uniqueDisp} {label}", state) { ShowNoColumn = true });
-                if (!_dispToOutputKey.ContainsKey(uniqueDisp)) _dispToOutputKey[uniqueDisp] = key;
-                no++;
+                bool state = false;
+                if (!FastInitialState)
+                {
+                    var k = newMapOut[disp];
+                    if (k.StartsWith("__custom_out_", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (_customOutputActions.TryGetValue(k, out var act) && act.state != null) { try { state = act.state(); } catch { state = false; } }
+                    }
+                    else { DIO.TryGetOutputState(k, out state); }
+                }
+                outPc.Add(new PropertyState(noOut.ToString(), disp, state) { ShowNoColumn = true });
+                _dispToOutputKey[disp] = newMapOut[disp];
+                noOut++;
             }
 
             _lastInputPc = inPc;
             _lastOutputPc = outPc;
+
             try { inputView?.SetProperties(inPc); } catch { }
             try
             {
@@ -650,6 +721,10 @@ namespace QMC.LCP_280.Process.Component
                 }
             }
             catch { }
+
+            // 캐시 갱신
+            _lastInputDispOrder.Clear(); _lastInputDispOrder.AddRange(newDispIn);
+            _lastOutputDispOrder.Clear(); _lastOutputDispOrder.AddRange(newDispOut);
         }
 
         private void OutputView_ItemClicked(object sender, string dispKey)

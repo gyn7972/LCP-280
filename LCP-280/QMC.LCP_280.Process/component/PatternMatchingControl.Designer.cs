@@ -7,7 +7,7 @@ using QMC.Common;
 
 namespace QMC.LCP_280.Process
 {
-    public partial class PatternMatchingDialog
+    public partial class PatternMatchingControl
     {
         private IContainer components = null;
         private VisionImageViewer _viewer;
@@ -106,7 +106,7 @@ namespace QMC.LCP_280.Process
             // 
             this._btnSearch.Location = new System.Drawing.Point(6, 249);
             this._btnSearch.Name = "_btnSearch";
-            this._btnSearch.Size = new System.Drawing.Size(212, 100);
+            this._btnSearch.Size = new System.Drawing.Size(212, 50);
             this._btnSearch.TabIndex = 1;
             this._btnSearch.Text = "Search";
             this._btnSearch.Click += new System.EventHandler(this.BtnSearch_Click);
@@ -114,7 +114,7 @@ namespace QMC.LCP_280.Process
             // _btnClose
             // 
             this._btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._btnClose.Location = new System.Drawing.Point(814, 2);
+            this._btnClose.Location = new System.Drawing.Point(984, 5);
             this._btnClose.Name = "_btnClose";
             this._btnClose.Size = new System.Drawing.Size(70, 28);
             this._btnClose.TabIndex = 2;
@@ -126,7 +126,7 @@ namespace QMC.LCP_280.Process
             | System.Windows.Forms.AnchorStyles.Right)));
             this._lblStatus.Location = new System.Drawing.Point(6, 5);
             this._lblStatus.Name = "_lblStatus";
-            this._lblStatus.Size = new System.Drawing.Size(610, 22);
+            this._lblStatus.Size = new System.Drawing.Size(960, 22);
             this._lblStatus.TabIndex = 0;
             this._lblStatus.Text = "Ready";
             this._lblStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -139,10 +139,10 @@ namespace QMC.LCP_280.Process
             this.tabControl_Vision.Controls.Add(this.tabPageROI);
             this.tabControl_Vision.Controls.Add(this.tabPageParam);
             this.tabControl_Vision.Controls.Add(this.tabPageResult);
-            this.tabControl_Vision.Location = new System.Drawing.Point(325, 444);
+            this.tabControl_Vision.Location = new System.Drawing.Point(640, 33);
             this.tabControl_Vision.Name = "tabControl_Vision";
             this.tabControl_Vision.SelectedIndex = 0;
-            this.tabControl_Vision.Size = new System.Drawing.Size(530, 500);
+            this.tabControl_Vision.Size = new System.Drawing.Size(414, 524);
             this.tabControl_Vision.TabIndex = 4;
             // 
             // tabPageROI
@@ -151,7 +151,7 @@ namespace QMC.LCP_280.Process
             this.tabPageROI.Location = new System.Drawing.Point(4, 22);
             this.tabPageROI.Name = "tabPageROI";
             this.tabPageROI.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageROI.Size = new System.Drawing.Size(552, 474);
+            this.tabPageROI.Size = new System.Drawing.Size(406, 498);
             this.tabPageROI.TabIndex = 0;
             this.tabPageROI.Text = "ROI";
             this.tabPageROI.UseVisualStyleBackColor = true;
@@ -161,7 +161,7 @@ namespace QMC.LCP_280.Process
             this.maintROIControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.maintROIControl.Location = new System.Drawing.Point(3, 3);
             this.maintROIControl.Name = "maintROIControl";
-            this.maintROIControl.Size = new System.Drawing.Size(546, 468);
+            this.maintROIControl.Size = new System.Drawing.Size(400, 492);
             this.maintROIControl.TabIndex = 0;
             // 
             // tabPageParam
@@ -170,13 +170,14 @@ namespace QMC.LCP_280.Process
             this.tabPageParam.Location = new System.Drawing.Point(4, 22);
             this.tabPageParam.Name = "tabPageParam";
             this.tabPageParam.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageParam.Size = new System.Drawing.Size(522, 474);
+            this.tabPageParam.Size = new System.Drawing.Size(406, 498);
             this.tabPageParam.TabIndex = 1;
             this.tabPageParam.Text = "Parameter";
             this.tabPageParam.UseVisualStyleBackColor = true;
             // 
             // patternMatchingParamControl
             // 
+            this.patternMatchingParamControl.BackColor = System.Drawing.Color.Transparent;
             this.patternMatchingParamControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.patternMatchingParamControl.DuplicateChecked = false;
             this.patternMatchingParamControl.LearnImage = null;
@@ -185,7 +186,7 @@ namespace QMC.LCP_280.Process
             this.patternMatchingParamControl.MinScore = 0D;
             this.patternMatchingParamControl.Name = "patternMatchingParamControl";
             this.patternMatchingParamControl.SelectedIndex = 0;
-            this.patternMatchingParamControl.Size = new System.Drawing.Size(516, 468);
+            this.patternMatchingParamControl.Size = new System.Drawing.Size(400, 492);
             this.patternMatchingParamControl.TabIndex = 0;
             this.patternMatchingParamControl.Tolerance = 0D;
             this.patternMatchingParamControl.TrainImage = null;
@@ -197,7 +198,7 @@ namespace QMC.LCP_280.Process
             this.tabPageResult.Controls.Add(this.patternMatchingResultControl);
             this.tabPageResult.Location = new System.Drawing.Point(4, 22);
             this.tabPageResult.Name = "tabPageResult";
-            this.tabPageResult.Size = new System.Drawing.Size(552, 474);
+            this.tabPageResult.Size = new System.Drawing.Size(406, 498);
             this.tabPageResult.TabIndex = 2;
             this.tabPageResult.Text = "Result";
             this.tabPageResult.UseVisualStyleBackColor = true;
@@ -207,55 +208,57 @@ namespace QMC.LCP_280.Process
             this.patternMatchingResultControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.patternMatchingResultControl.Location = new System.Drawing.Point(0, 0);
             this.patternMatchingResultControl.Name = "patternMatchingResultControl";
-            this.patternMatchingResultControl.Size = new System.Drawing.Size(552, 474);
+            this.patternMatchingResultControl.Size = new System.Drawing.Size(406, 498);
             this.patternMatchingResultControl.TabIndex = 0;
             // 
             // _btnSaveParam
             // 
             this._btnSaveParam.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._btnSaveParam.Location = new System.Drawing.Point(611, 411);
+            this._btnSaveParam.Location = new System.Drawing.Point(850, 563);
             this._btnSaveParam.Name = "_btnSaveParam";
-            this._btnSaveParam.Size = new System.Drawing.Size(240, 28);
+            this._btnSaveParam.Size = new System.Drawing.Size(200, 30);
             this._btnSaveParam.TabIndex = 6;
             this._btnSaveParam.Text = "Save Param";
+            this._btnSaveParam.Click += new System.EventHandler(this._btnSaveParam_Click);
             // 
             // _btnLoadParam
             // 
             this._btnLoadParam.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._btnLoadParam.Location = new System.Drawing.Point(325, 411);
+            this._btnLoadParam.Location = new System.Drawing.Point(640, 563);
             this._btnLoadParam.Name = "_btnLoadParam";
-            this._btnLoadParam.Size = new System.Drawing.Size(240, 28);
+            this._btnLoadParam.Size = new System.Drawing.Size(200, 30);
             this._btnLoadParam.TabIndex = 7;
             this._btnLoadParam.Text = "Load Param";
+            this._btnLoadParam.Click += new System.EventHandler(this._btnLoadParam_Click);
             // 
             // txtResultX
             // 
-            this.txtResultX.Location = new System.Drawing.Point(32, 388);
+            this.txtResultX.Location = new System.Drawing.Point(32, 359);
             this.txtResultX.Name = "txtResultX";
             this.txtResultX.ReadOnly = true;
-            this.txtResultX.Size = new System.Drawing.Size(86, 21);
+            this.txtResultX.Size = new System.Drawing.Size(70, 21);
             this.txtResultX.TabIndex = 5;
             // 
             // txtResultY
             // 
-            this.txtResultY.Location = new System.Drawing.Point(155, 388);
+            this.txtResultY.Location = new System.Drawing.Point(148, 359);
             this.txtResultY.Name = "txtResultY";
             this.txtResultY.ReadOnly = true;
-            this.txtResultY.Size = new System.Drawing.Size(86, 21);
+            this.txtResultY.Size = new System.Drawing.Size(70, 21);
             this.txtResultY.TabIndex = 4;
             // 
             // txtResultT
             // 
-            this.txtResultT.Location = new System.Drawing.Point(32, 415);
+            this.txtResultT.Location = new System.Drawing.Point(32, 386);
             this.txtResultT.Name = "txtResultT";
             this.txtResultT.ReadOnly = true;
-            this.txtResultT.Size = new System.Drawing.Size(86, 21);
+            this.txtResultT.Size = new System.Drawing.Size(70, 21);
             this.txtResultT.TabIndex = 3;
             // 
             // lblRX
             // 
             this.lblRX.AutoSize = true;
-            this.lblRX.Location = new System.Drawing.Point(6, 392);
+            this.lblRX.Location = new System.Drawing.Point(6, 363);
             this.lblRX.Name = "lblRX";
             this.lblRX.Size = new System.Drawing.Size(17, 12);
             this.lblRX.TabIndex = 2;
@@ -264,7 +267,7 @@ namespace QMC.LCP_280.Process
             // lblRY
             // 
             this.lblRY.AutoSize = true;
-            this.lblRY.Location = new System.Drawing.Point(129, 392);
+            this.lblRY.Location = new System.Drawing.Point(122, 363);
             this.lblRY.Name = "lblRY";
             this.lblRY.Size = new System.Drawing.Size(17, 12);
             this.lblRY.TabIndex = 1;
@@ -273,7 +276,7 @@ namespace QMC.LCP_280.Process
             // lblRT
             // 
             this.lblRT.AutoSize = true;
-            this.lblRT.Location = new System.Drawing.Point(6, 419);
+            this.lblRT.Location = new System.Drawing.Point(6, 390);
             this.lblRT.Name = "lblRT";
             this.lblRT.Size = new System.Drawing.Size(17, 12);
             this.lblRT.TabIndex = 0;
@@ -310,7 +313,7 @@ namespace QMC.LCP_280.Process
             this.listViewResults.FullRowSelect = true;
             this.listViewResults.GridLines = true;
             this.listViewResults.HideSelection = false;
-            this.listViewResults.Location = new System.Drawing.Point(6, 444);
+            this.listViewResults.Location = new System.Drawing.Point(6, 413);
             this.listViewResults.MultiSelect = false;
             this.listViewResults.Name = "listViewResults";
             this.listViewResults.Size = new System.Drawing.Size(313, 180);
@@ -355,11 +358,11 @@ namespace QMC.LCP_280.Process
             this._viewer.FrameRate = 1D;
             this._viewer.InputImage = null;
             this._viewer.IsViewCustomizedImage = false;
-            this._viewer.Location = new System.Drawing.Point(325, 33);
+            this._viewer.Location = new System.Drawing.Point(224, 33);
             this._viewer.Name = "_viewer";
             this._viewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._viewer.Simulated = false;
-            this._viewer.Size = new System.Drawing.Size(526, 372);
+            this._viewer.Size = new System.Drawing.Size(410, 322);
             this._viewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._viewer.TabIndex = 0;
             this._viewer.TabStop = false;
@@ -370,9 +373,9 @@ namespace QMC.LCP_280.Process
             // 
             this.groupSearchMode.Controls.Add(this.radioSingle);
             this.groupSearchMode.Controls.Add(this.radioMulti);
-            this.groupSearchMode.Location = new System.Drawing.Point(6, 630);
+            this.groupSearchMode.Location = new System.Drawing.Point(6, 305);
             this.groupSearchMode.Name = "groupSearchMode";
-            this.groupSearchMode.Size = new System.Drawing.Size(313, 50);
+            this.groupSearchMode.Size = new System.Drawing.Size(212, 50);
             this.groupSearchMode.TabIndex = 9;
             this.groupSearchMode.TabStop = false;
             this.groupSearchMode.Text = "Search Mode";
@@ -382,7 +385,7 @@ namespace QMC.LCP_280.Process
             this.radioSingle.AutoSize = true;
             this.radioSingle.Location = new System.Drawing.Point(14, 22);
             this.radioSingle.Name = "radioSingle";
-            this.radioSingle.Size = new System.Drawing.Size(71, 16);
+            this.radioSingle.Size = new System.Drawing.Size(73, 16);
             this.radioSingle.TabIndex = 0;
             this.radioSingle.TabStop = true;
             this.radioSingle.Text = "FirstOnly";
@@ -393,7 +396,7 @@ namespace QMC.LCP_280.Process
             this.radioMulti.AutoSize = true;
             this.radioMulti.Location = new System.Drawing.Point(120, 22);
             this.radioMulti.Name = "radioMulti";
-            this.radioMulti.Size = new System.Drawing.Size(69, 16);
+            this.radioMulti.Size = new System.Drawing.Size(72, 16);
             this.radioMulti.TabIndex = 1;
             this.radioMulti.TabStop = true;
             this.radioMulti.Text = "All (Avg)";
@@ -402,7 +405,7 @@ namespace QMC.LCP_280.Process
             // lblAvgX
             // 
             this.lblAvgX.AutoSize = true;
-            this.lblAvgX.Location = new System.Drawing.Point(6, 690);
+            this.lblAvgX.Location = new System.Drawing.Point(325, 413);
             this.lblAvgX.Name = "lblAvgX";
             this.lblAvgX.Size = new System.Drawing.Size(42, 12);
             this.lblAvgX.TabIndex = 10;
@@ -411,7 +414,7 @@ namespace QMC.LCP_280.Process
             // lblAvgY
             // 
             this.lblAvgY.AutoSize = true;
-            this.lblAvgY.Location = new System.Drawing.Point(6, 717);
+            this.lblAvgY.Location = new System.Drawing.Point(325, 440);
             this.lblAvgY.Name = "lblAvgY";
             this.lblAvgY.Size = new System.Drawing.Size(42, 12);
             this.lblAvgY.TabIndex = 11;
@@ -420,7 +423,7 @@ namespace QMC.LCP_280.Process
             // lblAvgT
             // 
             this.lblAvgT.AutoSize = true;
-            this.lblAvgT.Location = new System.Drawing.Point(6, 744);
+            this.lblAvgT.Location = new System.Drawing.Point(325, 467);
             this.lblAvgT.Name = "lblAvgT";
             this.lblAvgT.Size = new System.Drawing.Size(42, 12);
             this.lblAvgT.TabIndex = 12;
@@ -428,7 +431,7 @@ namespace QMC.LCP_280.Process
             // 
             // txtAvgX
             // 
-            this.txtAvgX.Location = new System.Drawing.Point(60, 686);
+            this.txtAvgX.Location = new System.Drawing.Point(379, 409);
             this.txtAvgX.Name = "txtAvgX";
             this.txtAvgX.ReadOnly = true;
             this.txtAvgX.Size = new System.Drawing.Size(86, 21);
@@ -436,7 +439,7 @@ namespace QMC.LCP_280.Process
             // 
             // txtAvgY
             // 
-            this.txtAvgY.Location = new System.Drawing.Point(60, 713);
+            this.txtAvgY.Location = new System.Drawing.Point(379, 436);
             this.txtAvgY.Name = "txtAvgY";
             this.txtAvgY.ReadOnly = true;
             this.txtAvgY.Size = new System.Drawing.Size(86, 21);
@@ -444,7 +447,7 @@ namespace QMC.LCP_280.Process
             // 
             // txtAvgT
             // 
-            this.txtAvgT.Location = new System.Drawing.Point(60, 740);
+            this.txtAvgT.Location = new System.Drawing.Point(379, 463);
             this.txtAvgT.Name = "txtAvgT";
             this.txtAvgT.ReadOnly = true;
             this.txtAvgT.Size = new System.Drawing.Size(86, 21);
@@ -453,9 +456,9 @@ namespace QMC.LCP_280.Process
             // chkShowIndexes
             // 
             this.chkShowIndexes.AutoSize = true;
-            this.chkShowIndexes.Location = new System.Drawing.Point(6, 770);
+            this.chkShowIndexes.Location = new System.Drawing.Point(325, 493);
             this.chkShowIndexes.Name = "chkShowIndexes";
-            this.chkShowIndexes.Size = new System.Drawing.Size(112, 16);
+            this.chkShowIndexes.Size = new System.Drawing.Size(105, 16);
             this.chkShowIndexes.TabIndex = 16;
             this.chkShowIndexes.Text = "Show Indexes";
             this.chkShowIndexes.UseVisualStyleBackColor = true;
@@ -463,18 +466,16 @@ namespace QMC.LCP_280.Process
             // chkHighlightRef
             // 
             this.chkHighlightRef.AutoSize = true;
-            this.chkHighlightRef.Location = new System.Drawing.Point(140, 770);
+            this.chkHighlightRef.Location = new System.Drawing.Point(459, 493);
             this.chkHighlightRef.Name = "chkHighlightRef";
-            this.chkHighlightRef.Size = new System.Drawing.Size(128, 16);
+            this.chkHighlightRef.Size = new System.Drawing.Size(113, 16);
             this.chkHighlightRef.TabIndex = 17;
             this.chkHighlightRef.Text = "Highlight Center";
             this.chkHighlightRef.UseVisualStyleBackColor = true;
             // 
-            // PatternMatchingDialog
+            // PatternMatchingControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(894, 950);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.Controls.Add(this.chkShowIndexes);
             this.Controls.Add(this.chkHighlightRef);
             this.Controls.Add(this.groupSearchMode);
@@ -499,9 +500,9 @@ namespace QMC.LCP_280.Process
             this.Controls.Add(this._lblStatus);
             this.Controls.Add(this._btnClose);
             this.Controls.Add(this._btnSearch);
-            this.MinimumSize = new System.Drawing.Size(910, 900);
-            this.Name = "PatternMatchingDialog";
-            this.Text = "Pattern Matching";
+            this.Margin = new System.Windows.Forms.Padding(0);
+            this.Name = "PatternMatchingControl";
+            this.Size = new System.Drawing.Size(1244, 611);
             this.tabControl_Vision.ResumeLayout(false);
             this.tabPageROI.ResumeLayout(false);
             this.tabPageParam.ResumeLayout(false);

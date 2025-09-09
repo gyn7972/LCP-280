@@ -17,6 +17,7 @@ using QMC.Common.Cameras;
 using QMC.Common.Vision;
 using QMC.Common.Vision.Tools;
 using QMC.Common.VisionPart;
+using QMC.LCP_280.Process.Component; // added for MeasurementRecipe & RecipeManager
 
 namespace QMC.LCP_280.Process
 {
@@ -277,8 +278,16 @@ namespace QMC.LCP_280.Process
             {
                 try
                 {
-                    string camFolder = Path.Combine(_opt.RecipeRootDirectory, _camera.Name ?? "NoCamera");
-                    string path = Path.Combine(camFolder, _opt.RecipeName + ".pmrecipe.json");
+                    // Resolve recipe path from MeasurementRecipe (Vision settings) first
+                    string path = ResolveVisionRecipePathFromMeasurement();
+
+                    // Fallback to legacy per-camera location if not resolved
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        string camFolder = Path.Combine(_opt.RecipeRootDirectory, _camera.Name ?? "NoCamera");
+                        path = Path.Combine(camFolder, _opt.RecipeName + ".pmrecipe.json");
+                    }
+
                     var container = PatternMatchingRecipeStore.Load(path);
                     if (container == null)
                     {
@@ -315,6 +324,64 @@ namespace QMC.LCP_280.Process
                     return false;
                 }
             }
+        }
+
+        // Try resolve recipe path using MeasurementRecipe.UseVisionRecipe, VisionRecipeName, VisionRecipePath
+        private string ResolveVisionRecipePathFromMeasurement()
+        {
+            try
+            {
+                // Determine currently opened measurement recipe name from Equipment (if available)
+                string currentRecipeName = null;
+                try { currentRecipeName = Equipment._CurrentRecipeName; } catch { currentRecipeName = null; }
+                if (string.IsNullOrWhiteSpace(currentRecipeName)) return null;
+
+                var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), currentRecipeName) as QMC.Common.BaseRecipe;
+                var mr = br as MeasurementRecipe;
+                if (mr == null) return null;
+                if (!mr.UseVisionRecipe) return null;
+
+                string recipeName = mr.VisionRecipeName;
+                string recipePath = mr.VisionRecipePath;
+
+                // If VisionRecipePath directly points to a file, use it
+                if (!string.IsNullOrWhiteSpace(recipePath))
+                {
+                    if (File.Exists(recipePath))
+                    {
+                        return recipePath;
+                    }
+                    // If it's a directory, try typical layouts
+                    if (Directory.Exists(recipePath))
+                    {
+                        // 1) directory/<camera>/<name>.pmrecipe.json
+                        if (!string.IsNullOrWhiteSpace(recipeName))
+                        {
+                            string p1 = Path.Combine(recipePath, _camera?.Name ?? "NoCamera", recipeName + ".pmrecipe.json");
+                            if (File.Exists(p1)) return p1;
+
+                            // 2) directory/<name>.pmrecipe.json
+                            string p2 = Path.Combine(recipePath, recipeName + ".pmrecipe.json");
+                            if (File.Exists(p2)) return p2;
+                        }
+                    }
+                }
+
+                // If only name provided, use default runner root directory structure
+                if (!string.IsNullOrWhiteSpace(recipeName))
+                {
+                    string camFolder = Path.Combine(_opt.RecipeRootDirectory, _camera?.Name ?? "NoCamera");
+                    string p = Path.Combine(camFolder, recipeName + ".pmrecipe.json");
+                    if (File.Exists(p))
+                    {
+                        // Also reflect chosen name for subsequent saves (optional)
+                        _opt.RecipeName = recipeName;
+                        return p;
+                    }
+                }
+            }
+            catch { }
+            return null;
         }
 
         public void SetSearchMode(SearchMode mode)

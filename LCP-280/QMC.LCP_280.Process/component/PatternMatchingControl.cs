@@ -9,10 +9,12 @@ using QMC.Common.Vision;
 using QMC.Common.Vision.Tools;
 using QMC.Common.Cameras;
 using QMC.Common;
+using System.ComponentModel;
+using QMC.LCP_280.Process.Component; // for MeasurementRecipe & RecipeManager
 
 namespace QMC.LCP_280.Process
 {
-    public partial class PatternMatchingDialog : Form
+    public partial class PatternMatchingControl : UserControl
     {
         private string _recipeDirectory;
         private string _currentRecipeName = "Default";
@@ -35,9 +37,34 @@ namespace QMC.LCP_280.Process
         // NEW: 러너가 반환한 마지막 실행 결과 (대표 좌표 포함)
         private PatternMatchingRunner.PatternMatchRunResult _lastRunResult;
 
-        public PatternMatchingDialog()
+        // 디자인 타임 가드
+        private readonly bool _designMode;
+
+        public PatternMatchingControl()
         {
+            _designMode = IsActuallyInDesignMode();
             InitializeComponent();
+
+            // 1) 오토 스케일/도킹/앵커 고정 (디자인/런타임 공통)
+            ApplyFixedLayout();
+
+            // 2) 최소 크기 보장
+            this.MinimumSize = new Size(900, 600);
+
+            if (_designMode)
+            {
+                try
+                {
+                    this.BackColor = Color.White;
+                    if (_viewer != null)
+                    {
+                        _viewer.BackColor = Color.Black;
+                        _viewer.Image = null;
+                    }
+                }
+                catch { }
+                return;
+            }
 
             // 라디오 버튼 직접 참조 (디자이너 partial 클래스의 필드)
             if (radioSingle != null)
@@ -66,8 +93,8 @@ namespace QMC.LCP_280.Process
             AttachEvents();
 
             if (_btnClose != null) _btnClose.Click += (s, e) => Close();
-            if (_btnSaveParam != null) _btnSaveParam.Click += BtnSaveParam_Click;
-            if (_btnLoadParam != null) _btnLoadParam.Click += (s, e) => LoadRecipeForCurrentCamera();
+            //if (_btnSaveParam != null) _btnSaveParam.Click += BtnSaveParam_Click;
+            //if (_btnLoadParam != null) _btnLoadParam.Click += (s, e) => LoadRecipeForCurrentCamera();
 
             if (patternMatchingParamControl != null)
             {
@@ -79,8 +106,6 @@ namespace QMC.LCP_280.Process
             if (_viewer != null)
             {
                 _viewer.Paint -= Viewer_PaintCross;
-                // removed old overlay handler reference (no longer exists)
-                // _viewer.Paint -= Viewer_PaintOverlay;
                 _viewer.Paint -= Viewer_PaintMatches; // avoid duplicate
                 _viewer.Paint += Viewer_PaintMatches; // new unified paint
             }
@@ -106,10 +131,85 @@ namespace QMC.LCP_280.Process
                 };
             }
 
+            // 초기 현재 MeasurementRecipe에 따라 비전 레시피 명/경로 반영
+            ApplyVisionRecipeFromMeasurement();
             LoadRecipe(_currentRecipeName);
             TryBindEquipmentCameras();
             InitializeCameraList();
             UpdateStatus("Ready");
+        }
+
+        // 모든 하위 컨트롤에 Dock=None, Anchor=Top|Left 강제, AutoScale 끔
+        private void ApplyFixedLayout()
+        {
+            try
+            {
+                this.AutoScaleMode = AutoScaleMode.None;
+                this.AutoSize = false;
+                FreezeChildLayout(this);
+            }
+            catch { /* ignore */ }
+        }
+
+        private void FreezeChildLayout(Control root)
+        {
+            if (root == null) return;
+
+            // 루트 자신(패널 포함)도 도킹 제거
+            root.Dock = DockStyle.None;
+
+            foreach (Control c in root.Controls)
+            {
+                try
+                {
+                    c.Dock = DockStyle.None;
+                    c.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+                    // 재귀 적용
+                    FreezeChildLayout(c);
+                }
+                catch { }
+            }
+        }
+
+        private bool IsActuallyInDesignMode()
+        {
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return true;
+            try { return System.Diagnostics.Process.GetCurrentProcess().ProcessName.Equals("devenv", StringComparison.OrdinalIgnoreCase); }
+            catch { return false; }
+        }
+
+        // 현재 열려있는 MeasurementRecipe에서 VisionRecipeName/Path를 읽어 패널 상태(_currentRecipeName 등)에 반영
+        private void ApplyVisionRecipeFromMeasurement()
+        {
+            try
+            {
+                string measName = null;
+                try { measName = Equipment._CurrentRecipeName; } catch { measName = null; }
+                if (string.IsNullOrWhiteSpace(measName)) { _currentRecipeName = _currentRecipeName ?? "Default"; return; }
+
+                var baseRec = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), measName) as QMC.Common.BaseRecipe;
+                var mr = baseRec as MeasurementRecipe;
+                if (mr == null)
+                {
+                    _currentRecipeName = measName; // fallback
+                    return;
+                }
+
+                if (mr.UseVisionRecipe && !string.IsNullOrWhiteSpace(mr.VisionRecipeName))
+                {
+                    _currentRecipeName = mr.VisionRecipeName; // 비전 레시피명 우선
+                }
+                else
+                {
+                    _currentRecipeName = measName; // fallback to measurement recipe name
+                }
+
+                // 디렉토리는 런타임 Resolver에서 사용하므로 여기서 별도 설정 불필요
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         private void BtnSaveParam_Click(object sender, EventArgs e)
@@ -502,8 +602,64 @@ namespace QMC.LCP_280.Process
         #endregion
 
         #region Recipe Save / Load
+        // MeasurementRecipe 기반 VisionRecipe 경로/파일명을 우선적으로 결정한다.
+        private string ResolveVisionRecipePath(string cameraName, string fallbackRecipeName)
+        {
+            try
+            {
+                string measName = null;
+                try { measName = Equipment._CurrentRecipeName; } catch { measName = null; }
+                if (string.IsNullOrWhiteSpace(measName)) return null;
+
+                var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), measName) as QMC.Common.BaseRecipe;
+                var mr = br as MeasurementRecipe;
+                if (mr == null || !mr.UseVisionRecipe) return null;
+
+                string vName = string.IsNullOrWhiteSpace(mr.VisionRecipeName) ? fallbackRecipeName : mr.VisionRecipeName;
+                string vPath = mr.VisionRecipePath;
+
+                if (!string.IsNullOrWhiteSpace(vPath))
+                {
+                    if (File.Exists(vPath))
+                    {
+                        // 명시적 파일
+                        return vPath;
+                    }
+                    if (Directory.Exists(vPath))
+                    {
+                        // dir/<camera>/<name>.pmrecipe.json
+                        if (!string.IsNullOrWhiteSpace(vName))
+                        {
+                            string p1 = Path.Combine(vPath, cameraName ?? "NoCamera", vName + ".pmrecipe.json");
+                            if (File.Exists(p1) || Directory.Exists(Path.GetDirectoryName(p1))) return p1; // 존재 안해도 저장시 사용
+
+                            string p2 = Path.Combine(vPath, vName + ".pmrecipe.json");
+                            if (File.Exists(p2) || Directory.Exists(vPath)) return p2;
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(vName))
+                {
+                    string camFolder = Path.Combine(_recipeDirectory, cameraName ?? "NoCamera");
+                    return Path.Combine(camFolder, vName + ".pmrecipe.json");
+                }
+            }
+            catch { }
+            return null;
+        }
+
         private string GetRecipePath(string cameraName, string recipeName)
         {
+            // 우선 MeasurementRecipe 설정 사용
+            string resolved = ResolveVisionRecipePath(cameraName, recipeName);
+            if (!string.IsNullOrEmpty(resolved))
+            {
+                try { Directory.CreateDirectory(Path.GetDirectoryName(resolved)); } catch { }
+                return resolved;
+            }
+
+            // fallback: 기존 구조
             string dir = Path.Combine(_recipeDirectory, cameraName ?? "NoCamera");
             Directory.CreateDirectory(dir);
             return Path.Combine(dir, recipeName + ".pmrecipe.json");
@@ -830,11 +986,7 @@ namespace QMC.LCP_280.Process
         #region Static API
         public static void ShowDialogModal(IWin32Window owner = null)
         {
-            using (var dlg = new PatternMatchingDialog())
-            {
-                if (owner == null) dlg.ShowDialog();
-                else dlg.ShowDialog(owner);
-            }
+            
         }
         #endregion
 
@@ -859,6 +1011,48 @@ namespace QMC.LCP_280.Process
             if (_runner == null) return;
             if (chkShowIndexes != null) _runner.SetShowMatchIndexes(chkShowIndexes.Checked);
             if (chkHighlightRef != null) _runner.SetHighlightReference(chkHighlightRef.Checked);
+        }
+
+        private void Close()
+        {
+            try
+            {
+                var form = this.FindForm();
+                if (form != null)
+                    form.Close();   // 이 컨트롤을 담고 있는 Form 닫기
+                else
+                    this.Dispose(); // 호스트 Form이 없으면 컨트롤만 정리
+            }
+            catch
+            {
+                // 무시
+            }
+        }
+
+        private void _btnLoadParam_Click(object sender, EventArgs e)
+        {
+            LoadRecipeForCurrentCamera();
+        }
+
+        private void _btnSaveParam_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                maintROIControl?.CommitCurrentRoi();
+                var dr = MessageBox.Show(this, "현재 설정을 저장하시겠습니까?", "저장 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (dr == DialogResult.Yes)
+                {
+                    SaveRecipeForCurrentCamera();
+                }
+                else
+                {
+                    UpdateStatus("Save canceled");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, "저장 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

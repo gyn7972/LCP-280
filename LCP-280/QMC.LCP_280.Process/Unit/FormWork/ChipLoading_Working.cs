@@ -387,13 +387,14 @@ namespace QMC.LCP_280.Process.Unit
 
         private void _btnVisionSetting_Click(object sender, EventArgs e)
         {
-            try
-            {
-                PatternMatchingDialog dlg = new PatternMatchingDialog();
-                dlg.ShowDialog();
-            }
-            catch { }
+           
         }
         #endregion
+
+        private void buttonDataManual_Click(object sender, EventArgs e)
+        {
+            ProcessDataManual dlg = new ProcessDataManual();
+            dlg.ShowDialog();
+        }
     }
 }

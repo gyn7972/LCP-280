@@ -4,11 +4,8 @@ using QMC.Common.VisionPart;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
+using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -46,47 +43,63 @@ namespace QMC.Common
         private RectangleD m_StartRectAngle;
         private RectangleD m_EndRectAngle;
         private RectangleD m_RectAngle;
-        //protected List<int> m_listIndexes;
         private bool m_IsChecked;
+        private readonly bool _designMode;
         #endregion
 
         #region Constructor
         public MultiPatternMatchingParameterControl(MultiPatternMatchingParameters parameters)
         {
-            if (parameters != null)
+            // 디자인 타임 감지
+            _designMode = IsActuallyInDesignMode();
+
+            // 파라미터 준비 (가벼움)
+            Parameters = parameters ?? new MultiPatternMatchingParameters();
+
+            // 디자이너가 먼저 컨트롤 트리를 만들어야 하므로 먼저 InitializeComponent
+            InitializeComponent();
+
+            // 디자인 타임이면 여기서 종료 (나머지 런타임 로직 비활성)
+            if (_designMode)
             {
-                this.Parameters = parameters;
+                try { BackColor = Color.Transparent; } catch { }
+                return;
             }
-            if (Parameters == null)
-            {
-                Parameters = new MultiPatternMatchingParameters();
-            }
+
             this.m_IsChecked = false;
             this.UseMaskImage = false;
             m_StartRectAngle = new RectangleD();
             m_EndRectAngle = new RectangleD();
             m_RectAngle = new RectangleD();
-            //m_listIndexes = new List<int>();
             SelectedIndex = 0;
-            InitializeComponent();
-            this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
-            this.pictureBoxMultiTraimImage.BackColor = Color.White;
-            this.pictureBoxMultiTraimImage.ImageChanged += ChangeTrainImage;
-            //this.pictureBoxMultiTraimImage.ResizeControl(285, 237);
-            this.UpdateStyles();
+
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint, true);
+            if (this.pictureBoxMultiTraimImage != null)
+            {
+                this.pictureBoxMultiTraimImage.BackColor = Color.White;
+                this.pictureBoxMultiTraimImage.ImageChanged += ChangeTrainImage;
+            }
+            UpdateStyles();
 
             UpdateParameters();
         }
 
         public MultiPatternMatchingParameterControl() : this(new MultiPatternMatchingParameters())
         {
+        }
 
+        private bool IsActuallyInDesignMode()
+        {
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return true;
+            try { return Process.GetCurrentProcess().ProcessName.Equals("devenv", StringComparison.OrdinalIgnoreCase); }
+            catch { return false; }
         }
         #endregion
 
         #region Method
         private void ChangeTrainImage()
         {
+            if (_designMode) return;
             int curIndex = this.baseListBoxTrainList.SelectedIndex;
             if (MultiImageChangeEvent != null && curIndex >= 0)
             {
@@ -96,7 +109,9 @@ namespace QMC.Common
 
         public void UpdateParameters()
         {
-            if (Parameters == null) return; // 방어
+            if (_designMode) return;
+            if (Parameters == null) return;
+
             this.UseMaskImage = Parameters.UseMaskImage;
             this.checkBoxDupCheck.Checked = Parameters.DuplicateChecked;
             this.TextBoxTolerance.Text = Parameters.MaxTolerance.ToString();
@@ -106,20 +121,20 @@ namespace QMC.Common
 
             try
             {
-                if (Parameters.TrainImages.Count != 0)
+                if (Parameters.TrainImages != null && Parameters.TrainImages.Count != 0)
                 {
                     UpdateTrainList();
                 }
-                if (SelectedIndex >= 0 && SelectedIndex < Parameters.TrainImages.Count)
+                if (Parameters.TrainImages != null && SelectedIndex >= 0 && SelectedIndex < Parameters.TrainImages.Count)
                 {
-                    this.pictureBoxMultiTraimImage.SetImage(Parameters.TrainImages[SelectedIndex].GetImage());
+                    var vimg = Parameters.TrainImages[SelectedIndex];
+                    if (vimg != null)
+                        this.pictureBoxMultiTraimImage.SetImage(vimg.GetImage());
+                    else
+                        this.pictureBoxMultiTraimImage.SetImage((Image)null);
                 }
             }
-            catch (Exception ex)
-            {
-                //Todo : Log쓰기.
-            }
-
+            catch { /* swallow at runtime */ }
         }
 
         public void UpdateParameters(MultiPatternMatchingParameters parameter)
@@ -130,32 +145,32 @@ namespace QMC.Common
 
         private void UpdateTrainList()
         {
+            if (_designMode) return;
             BindingSource bs = new BindingSource();
-            bs.DataSource = Parameters.TrainImages;
+            bs.DataSource = Parameters?.TrainImages ?? new List<VisionImage>();
             baseListBoxTrainList.DisplayMember = "Tag";
             baseListBoxTrainList.DataSource = bs;
         }
 
         public void SetTrainImage(VisionImage image)
         {
+            if (_designMode) return;
+            if (image == null) { this.pictureBoxMultiTraimImage.SetImage((Image)null); return; }
             this.pictureBoxMultiTraimImage.SetImage(image.GetImage());
         }
 
         public void SetTrainList()
         {
-            if (this.Parameters.TrainImages != null)
+            if (_designMode) return;
+            if (this.Parameters?.TrainImages != null)
             {
-                    UpdateTrainList();
+                UpdateTrainList();
             }
         }
 
         public void SwapList<T>(List<T> list, int from, int to)
         {
-            if (from < 0 || to < 0)
-            {
-                return;
-            }
-
+            if (from < 0 || to < 0) return;
             try
             {
                 if (from < list.Count && to < list.Count)
@@ -165,21 +180,20 @@ namespace QMC.Common
                     list[to] = tmp;
                 }
             }
-            catch (Exception ex)
-            {
-                // Todo: 미래의 성균이가 Log 작성할겁니다.
-            }
+            catch { }
         }
 
         private void OnTrainImageListChanged()
         {
+            if (_designMode) return;
             try
             {
                 if (Parameters?.TrainImages != null)
                 {
                     for (int i = 0; i < Parameters.TrainImages.Count; i++)
                     {
-                        if (Parameters.TrainImages[i] != null && (Parameters.TrainImages[i].Tag == null || string.IsNullOrWhiteSpace(Parameters.TrainImages[i].Tag.ToString())))
+                        if (Parameters.TrainImages[i] != null &&
+                            (Parameters.TrainImages[i].Tag == null || string.IsNullOrWhiteSpace(Parameters.TrainImages[i].Tag.ToString())))
                             Parameters.TrainImages[i].Tag = i.ToString();
                     }
                 }
@@ -192,12 +206,14 @@ namespace QMC.Common
         #region EventHandler
         private void checkBoxDupCheck_CheckedChanged(object sender, EventArgs e)
         {
+            if (_designMode) return;
             m_IsChecked = this.checkBoxDupCheck.Checked;
-            Parameters.DuplicateChecked = m_IsChecked;
+            if (Parameters != null) Parameters.DuplicateChecked = m_IsChecked;
         }
 
         private void ChangeParametersTolerance(object sender, EventArgs e)
         {
+            if (_designMode) return;
             if (Parameters != null)
             {
                 try
@@ -205,31 +221,26 @@ namespace QMC.Common
                     Parameters.MaxTolerance = double.Parse(TextBoxTolerance.Text);
                     Parameters.MinTolerance = double.Parse(TextBoxTolerance.Text) * -1;
                 }
-                catch (Exception ex)
-                {
-
-                }
-
+                catch { }
             }
         }
 
         private void ChangeParametersMaxInstnce(object sender, EventArgs e)
         {
+            if (_designMode) return;
             if (Parameters != null)
             {
                 try
                 {
                     Parameters.MaxInstance = int.Parse(TextMaxInstance.Text);
                 }
-                catch (Exception ex)
-                {
-
-                }
+                catch { }
             }
         }
 
         private void ChangeParametersMinScore(object sender, EventArgs e)
         {
+            if (_designMode) return;
             if (Parameters != null)
             {
                 double dValue = 0.0;
@@ -240,6 +251,8 @@ namespace QMC.Common
 
         private void baseToggleButton_Click(object sender, EventArgs e)
         {
+            if (_designMode) return;
+
             bool bOn = ToggleButtonUseMaskImage.GetButtonStatus();
             if (bOn == false)
             {
@@ -250,45 +263,55 @@ namespace QMC.Common
                 this.pictureBoxMultiTraimImage.MouseMove += pictureBoxMultiTrainImage_MouseMove;
                 this.pictureBoxMultiTraimImage.Paint += pictureBoxMultiTrainImage_Paint;
             }
-
-            else if (bOn == true)
+            else // bOn == true
             {
                 ToggleButtonUseMaskImage.UpdateToggleStatus(false);
-                this.pictureBoxMultiTraimImage.MouseDown += null;
-                this.pictureBoxMultiTraimImage.MouseUp += null;
-                this.pictureBoxMultiTraimImage.MouseMove += null;
-                this.pictureBoxMultiTraimImage.Paint += null;
+
+                // 잘못된 += null 제거, 정확히 해제
+                this.pictureBoxMultiTraimImage.MouseDown -= pictureBoxMultiTrainImage_MouseDown;
+                this.pictureBoxMultiTraimImage.MouseUp -= pictureBoxMultiTrainImage_MouseUp;
+                this.pictureBoxMultiTraimImage.MouseMove -= pictureBoxMultiTrainImage_MouseMove;
+                this.pictureBoxMultiTraimImage.Paint -= pictureBoxMultiTrainImage_Paint;
             }
-            Parameters.UseMaskImage = ToggleButtonUseMaskImage.GetButtonStatus();
+            if (Parameters != null)
+                Parameters.UseMaskImage = ToggleButtonUseMaskImage.GetButtonStatus();
         }
 
         private void pictureBoxMultiTrainImage_MouseDown(object sender, MouseEventArgs e)
         {
+            if (_designMode) return;
             m_StartRectAngle = new RectangleD(e.X, e.Y, 0, 0);
         }
 
         private void pictureBoxMultiTrainImage_MouseUp(object sender, MouseEventArgs e)
         {
+            if (_designMode) return;
             m_EndRectAngle = new RectangleD(e.X, e.Y, 0, 0);
         }
 
         private void pictureBoxMultiTrainImage_MouseMove(object sender, MouseEventArgs e)
         {
+            if (_designMode) return;
             if (e.Button == MouseButtons.Left)
             {
-                m_RectAngle = new RectangleD(m_StartRectAngle.X, m_StartRectAngle.Y,
-                    Math.Max(e.X - m_StartRectAngle.Y, m_EndRectAngle.Y - m_StartRectAngle.Y),
-                    Math.Max(e.Y - m_StartRectAngle.X, m_EndRectAngle.X - m_StartRectAngle.X));
+                // 간단한 드래그 박스 계산
+                double x1 = Math.Min(m_StartRectAngle.X, e.X);
+                double y1 = Math.Min(m_StartRectAngle.Y, e.Y);
+                double x2 = Math.Max(m_StartRectAngle.X, e.X);
+                double y2 = Math.Max(m_StartRectAngle.Y, e.Y);
+                m_RectAngle = new RectangleD(x1, y1, x2 - x1, y2 - y1);
                 this.Refresh();
             }
-            Parameters.MaskRegion = m_RectAngle;
+            if (Parameters != null)
+                Parameters.MaskRegion = m_RectAngle;
         }
 
         private void pictureBoxMultiTrainImage_Paint(object sender, PaintEventArgs e)
         {
+            if (_designMode) return;
             using (Pen pen = new Pen(Color.Red, 2))
+            using (Brush brush = new SolidBrush(Color.FromArgb(64, Color.Red)))
             {
-                Brush brush = new SolidBrush(Color.Red);
                 e.Graphics.DrawRectangle(pen, m_RectAngle);
                 e.Graphics.FillRectangle(brush, m_RectAngle);
             }
@@ -296,17 +319,23 @@ namespace QMC.Common
 
         private void baseButtonAdd_Click(object sender, EventArgs e)
         {
+            if (_designMode) return;
             VisionImage newimage = new VisionImage();
-            newimage.Tag = this.Parameters.TrainImages.Count.ToString();
-            this.Parameters.TrainImages.Add(newimage);
+            newimage.Tag = (this.Parameters?.TrainImages?.Count ?? 0).ToString();
+            if (this.Parameters != null)
+            {
+                if (this.Parameters.TrainImages == null) this.Parameters.TrainImages = new System.Collections.Generic.List<VisionImage>();
+                this.Parameters.TrainImages.Add(newimage);
+            }
             UpdateTrainList();
             OnTrainImageListChanged();
         }
 
         private void baseButtonRemove_Click(object sender, EventArgs e)
         {
+            if (_designMode) return;
             int sel = baseListBoxTrainList.SelectedIndex;
-            if (sel >= 0 && sel < this.Parameters.TrainImages.Count)
+            if (sel >= 0 && this.Parameters != null && this.Parameters.TrainImages != null && sel < this.Parameters.TrainImages.Count)
             {
                 this.Parameters.TrainImages.RemoveAt(sel);
                 UpdateTrainList();
@@ -316,57 +345,56 @@ namespace QMC.Common
 
         private void baseButtonClear_Click(object sender, EventArgs e)
         {
-            this.Parameters.TrainImages.Clear();
+            if (_designMode) return;
+            if (this.Parameters?.TrainImages != null)
+                this.Parameters.TrainImages.Clear();
             UpdateTrainList();
             OnTrainImageListChanged();
         }
 
         private void baseButtonUp_Click(object sender, EventArgs e)
         {
+            if (_designMode) return;
             int sel = baseListBoxTrainList.SelectedIndex;
 
-            if (sel > 0)
+            if (sel > 0 && this.Parameters?.TrainImages != null)
             {
                 SwapList<VisionImage>(this.Parameters.TrainImages, sel, sel - 1);
                 UpdateTrainList();
                 baseListBoxTrainList.SetSelected(sel - 1, true);
                 OnTrainImageListChanged();
             }
-            else
-            {
-                return;
-            }
         }
 
         private void baseButtonDown_Click(object sender, EventArgs e)
         {
+            if (_designMode) return;
             int sel = baseListBoxTrainList.SelectedIndex;
 
-            if (sel < this.Parameters.TrainImages.Count - 1)
+            if (this.Parameters?.TrainImages != null && sel >= 0 && sel < this.Parameters.TrainImages.Count - 1)
             {
                 SwapList<VisionImage>(this.Parameters.TrainImages, sel, sel + 1);
-
                 UpdateTrainList();
                 baseListBoxTrainList.SetSelected(sel + 1, true);
                 OnTrainImageListChanged();
-            }
-            else
-            {
-                return;
             }
         }
 
         private void baseListBoxTrainList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string listBox = sender as string;
-            int curIndex = this.baseListBoxTrainList.SelectedIndex;
+            if (_designMode) return;
+            int curIndex = baseListBoxTrainList.SelectedIndex;
 
             try
             {
-                if (curIndex > -1)
+                if (curIndex > -1 && Parameters?.TrainImages != null)
                 {
                     this.SelectedIndex = curIndex;
-                    this.pictureBoxMultiTraimImage.SetImage(Parameters.TrainImages[SelectedIndex].GetImage());
+                    var img = Parameters.TrainImages[SelectedIndex];
+                    if (img != null)
+                        this.pictureBoxMultiTraimImage.SetImage(img.GetImage());
+                    else
+                        this.pictureBoxMultiTraimImage.SetImage((Image)null);
                 }
                 OnTrainImageListChanged();
             }
@@ -374,7 +402,6 @@ namespace QMC.Common
             {
                 Log.Write(ex);
             }
-                
         }
         #endregion
     }

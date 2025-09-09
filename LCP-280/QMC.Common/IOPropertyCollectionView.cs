@@ -77,6 +77,15 @@ namespace QMC.Common
             }
         }
 
+        // ====== 캐시(빠른 재바인딩) ======
+        private readonly List<Label> _nameLabelsCache = new List<Label>();
+        private readonly List<PictureBox> _statePicsCache = new List<PictureBox>();
+        private readonly List<string> _rowDispCache = new List<string>(); // Name 셀 전체 텍스트(표시용)
+
+        // 빠른 초기 페인트: true면 SetProperties에서 상태색 적용 생략하고 다음 Refresh에서 채움
+        [Browsable(false)]
+        public bool FastInitialPaint { get; set; } = true;
+
         public IOPropertyCollectionView(string groupName = "IO Property Group", int nRow = 10) : base(groupName)
         {
             InitializeComponent();
@@ -182,11 +191,21 @@ namespace QMC.Common
             var textBoxFont = textBoxFontField.GetValue(this) as Font;
             var groupBox = groupBoxField.GetValue(this) as GroupBox;
 
-            // 초기화
+            // Try fast in-place update (구조 동일 시 값/색만 갱신)
+            if (TryUpdateInPlace(properties, tableLayoutPanel, textBoxFont))
+            {
+                scrollPanel.AutoScroll = true;
+                return;
+            }
+
+            // 초기화(풀 리빌드)
             tableLayoutPanel.SuspendLayout();
             tableLayoutPanel.Controls.Clear();
             tableLayoutPanel.RowStyles.Clear();
             tableLayoutPanel.RowCount = 0;
+            _nameLabelsCache.Clear();
+            _statePicsCache.Clear();
+            _rowDispCache.Clear();
 
             if (properties == null)
             {
@@ -229,7 +248,6 @@ namespace QMC.Common
                 foreach (var prop in stateProps)
                 {
                     var txt = (prop.Value?.ToString() ?? "").Trim().ToUpperInvariant();
-                    // "X003 START" / "Y12 LAMP" 등에서 숫자부 길이 추출
                     var m = Regex.Match(txt, @"^(X|Y)\s*0*(\d+)\b");
                     if (m.Success)
                     {
@@ -347,7 +365,6 @@ namespace QMC.Common
                     tableLayoutPanel.Controls.Add(nameLabel, colIdx++, row);
                 }
 
-                // 🔹 채널 키 추출 (Name 셀 텍스트에서 "Xnn"/"Ynn" 또는 비숫자 키)
                 var key = ExtractKey(nameLabel.Text);            // 이미 NormalizeKey 적용됨
                 var normKey = key;                               // 가독성
 
@@ -363,8 +380,10 @@ namespace QMC.Common
                     Height = textBoxHeight
                 };
 
-                // 🔹 색상 적용
-                ApplyStateColor(statePictureBox, normKey, prop.State);
+                if (!FastInitialPaint)
+                {
+                    ApplyStateColor(statePictureBox, normKey, prop.State);
+                }
 
                 // 🔹 맵 등록 + 이벤트
                 if (!string.IsNullOrEmpty(normKey))
@@ -388,6 +407,12 @@ namespace QMC.Common
                 }
 
                 tableLayoutPanel.Controls.Add(statePictureBox, colIdx, row);
+
+                // 캐시
+                _nameLabelsCache.Add(nameLabel);
+                _statePicsCache.Add(statePictureBox);
+                _rowDispCache.Add(nameLabel.Text ?? string.Empty);
+
                 row++;
             }
 
@@ -403,8 +428,6 @@ namespace QMC.Common
             int verticalPadding = IOGroupBoxHeaderHeight + groupBox.Padding.Top + IOGroupBoxPadding;
             scrollPanel.AutoScrollMinSize = new Size(0, tableLayoutPanel.PreferredSize.Height + verticalPadding);
 
-            // 가로 스크롤 방지(기본 PropertyCollectionView에서 width 보정 처리)
-            // 필요 시 최상단으로 스크롤 이동
             if (scrollPanel.VerticalScroll.Maximum > 0)
                 scrollPanel.VerticalScroll.Value = 0;
 
@@ -413,6 +436,58 @@ namespace QMC.Common
             // 부모 컨트롤에게 레이아웃 갱신 알림 (크기는 변경하지 않음)
             this.Invalidate();
             this.Parent?.PerformLayout();
+        }
+
+        // ====== 빠른 재바인딩: 구조 동일 시 컨트롤 재사용 ======
+        private bool TryUpdateInPlace(PropertyCollection properties, TableLayoutPanel tableLayoutPanel, Font textBoxFont)
+        {
+            try
+            {
+                if (properties == null) return false;
+                var stateProps = properties.OfType<PropertyState>().ToList();
+                if (_nameLabelsCache.Count == 0 || _statePicsCache.Count == 0) return false;
+                if (_nameLabelsCache.Count != stateProps.Count) return false;
+
+                // 새 라벨 텍스트 시퀀스
+                var newDisp = stateProps.Select(p => p.Value?.ToString() ?? string.Empty).ToList();
+                if (newDisp.Count != _rowDispCache.Count) return false;
+
+                for (int i = 0; i < newDisp.Count; i++)
+                {
+                    if (!string.Equals(newDisp[i], _rowDispCache[i], StringComparison.Ordinal))
+                    {
+                        // 순서/구성 변경 → 풀 리빌드 필요
+                        return false;
+                    }
+                }
+
+                // 동일 → 색/이벤트/키만 갱신
+                _statePicByKey.Clear();
+
+                for (int i = 0; i < stateProps.Count; i++)
+                {
+                    var p = stateProps[i];
+                    var nameLabel = _nameLabelsCache[i];
+                    var pb = _statePicsCache[i];
+
+                    // 키 재설정 및 맵/이벤트 갱신
+                    var key = ExtractKey(nameLabel.Text);
+                    var normKey = key;
+                    if (!string.IsNullOrEmpty(normKey))
+                    {
+                        pb.Tag = normKey;
+                        _statePicByKey[normKey] = pb;
+                    }
+
+                    // 상태 색상(옵션): FastInitialPaint=true라도 in-place에서는 갱신 허용
+                    ApplyStateColor(pb, normKey, p.State);
+                }
+
+                // 스크롤/레이아웃은 유지
+                tableLayoutPanel.Invalidate();
+                return true;
+            }
+            catch { return false; }
         }
 
         // === 키/상태 헬퍼 ===

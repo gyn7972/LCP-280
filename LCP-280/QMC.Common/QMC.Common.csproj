@@ -141,7 +141,7 @@
     </Compile>
     <Compile Include="BarcodeReader\OpticonBarcodeReader.cs" />
     <Compile Include="BarcodeReader\OpticonBarcodeReaderConfig.cs" />
-    <Compile Include="BaseRecipe.cs" />
+    <Compile Include="BaseRecipe\BaseRecipe.cs" />
     <Compile Include="BaseSetup.cs" />
     <Compile Include="Cameras\Camera.cs" />
     <Compile Include="Cameras\CameraConfig.cs" />
@@ -493,7 +493,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
-    <None Include="PatternMatching\MaintROIControl.cs.orig" />
     <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
       <DependentUpon>Form_Alarm.cs</DependentUpon>

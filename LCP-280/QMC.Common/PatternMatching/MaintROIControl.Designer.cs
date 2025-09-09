@@ -72,18 +72,22 @@
             this.expandableGroupBox1.Controls.Add(this.baseToggleButtonInspect);
             this.expandableGroupBox1.Controls.Add(this.baseToggleButtonTrain);
             this.expandableGroupBox1.ForeColor = System.Drawing.Color.Black;
-            this.expandableGroupBox1.Location = new System.Drawing.Point(0, 0);
+            this.expandableGroupBox1.Location = new System.Drawing.Point(4, 5);
             this.expandableGroupBox1.Name = "expandableGroupBox1";
-            this.expandableGroupBox1.Size = new System.Drawing.Size(460, 450);
+            this.expandableGroupBox1.Radious = 0;
+            this.expandableGroupBox1.Size = new System.Drawing.Size(331, 415);
             this.expandableGroupBox1.TabIndex = 0;
             this.expandableGroupBox1.TabStop = false;
             this.expandableGroupBox1.Text = "ROI";
+            this.expandableGroupBox1.TitleBackColor = System.Drawing.Color.SteelBlue;
+            this.expandableGroupBox1.TitleFontSize = 9F;
+            this.expandableGroupBox1.UseExpand = false;
             // 
             // baseButtonRollBack
             // 
-            this.baseButtonRollBack.Location = new System.Drawing.Point(231, 405);
+            this.baseButtonRollBack.Location = new System.Drawing.Point(160, 377);
             this.baseButtonRollBack.Name = "baseButtonRollBack";
-            this.baseButtonRollBack.Size = new System.Drawing.Size(223, 31);
+            this.baseButtonRollBack.Size = new System.Drawing.Size(161, 31);
             this.baseButtonRollBack.TabIndex = 19;
             this.baseButtonRollBack.Text = "Roll Back";
             this.baseButtonRollBack.UseVisualStyleBackColor = true;
@@ -91,23 +95,25 @@
             // 
             // paramTextControlSizeToke
             // 
-            this.paramTextControlSizeToke.Location = new System.Drawing.Point(7, 272);
+            this.paramTextControlSizeToke.Location = new System.Drawing.Point(6, 251);
             this.paramTextControlSizeToke.Name = "paramTextControlSizeToke";
-            this.paramTextControlSizeToke.Size = new System.Drawing.Size(446, 36);
+            this.paramTextControlSizeToke.Size = new System.Drawing.Size(315, 36);
             this.paramTextControlSizeToke.TabIndex = 18;
+            this.paramTextControlSizeToke.TitleRatio = 50;
             // 
             // paramTextControlMoveToke
             // 
-            this.paramTextControlMoveToke.Location = new System.Drawing.Point(7, 230);
+            this.paramTextControlMoveToke.Location = new System.Drawing.Point(8, 209);
             this.paramTextControlMoveToke.Name = "paramTextControlMoveToke";
-            this.paramTextControlMoveToke.Size = new System.Drawing.Size(446, 36);
+            this.paramTextControlMoveToke.Size = new System.Drawing.Size(313, 36);
             this.paramTextControlMoveToke.TabIndex = 17;
+            this.paramTextControlMoveToke.TitleRatio = 50;
             // 
             // baseButtonSave
             // 
-            this.baseButtonSave.Location = new System.Drawing.Point(5, 405);
+            this.baseButtonSave.Location = new System.Drawing.Point(6, 377);
             this.baseButtonSave.Name = "baseButtonSave";
-            this.baseButtonSave.Size = new System.Drawing.Size(223, 31);
+            this.baseButtonSave.Size = new System.Drawing.Size(141, 31);
             this.baseButtonSave.TabIndex = 15;
             this.baseButtonSave.Text = "Save";
             this.baseButtonSave.UseVisualStyleBackColor = true;
@@ -115,23 +121,25 @@
             // 
             // paramDualTextControlSize
             // 
-            this.paramDualTextControlSize.Location = new System.Drawing.Point(7, 356);
+            this.paramDualTextControlSize.Location = new System.Drawing.Point(6, 335);
             this.paramDualTextControlSize.Name = "paramDualTextControlSize";
-            this.paramDualTextControlSize.Size = new System.Drawing.Size(446, 36);
+            this.paramDualTextControlSize.Size = new System.Drawing.Size(315, 36);
             this.paramDualTextControlSize.TabIndex = 14;
+            this.paramDualTextControlSize.TitleRatio = 50;
             // 
             // paramDualTextControlCenter
             // 
-            this.paramDualTextControlCenter.Location = new System.Drawing.Point(7, 314);
+            this.paramDualTextControlCenter.Location = new System.Drawing.Point(6, 293);
             this.paramDualTextControlCenter.Name = "paramDualTextControlCenter";
-            this.paramDualTextControlCenter.Size = new System.Drawing.Size(446, 36);
+            this.paramDualTextControlCenter.Size = new System.Drawing.Size(315, 36);
             this.paramDualTextControlCenter.TabIndex = 13;
+            this.paramDualTextControlCenter.TitleRatio = 50;
             // 
             // baseButtonFullSize
             // 
-            this.baseButtonFullSize.Location = new System.Drawing.Point(231, 189);
+            this.baseButtonFullSize.Location = new System.Drawing.Point(160, 172);
             this.baseButtonFullSize.Name = "baseButtonFullSize";
-            this.baseButtonFullSize.Size = new System.Drawing.Size(222, 31);
+            this.baseButtonFullSize.Size = new System.Drawing.Size(161, 31);
             this.baseButtonFullSize.TabIndex = 11;
             this.baseButtonFullSize.Text = "Full Size";
             this.baseButtonFullSize.UseVisualStyleBackColor = true;
@@ -139,7 +147,7 @@
             // 
             // baseButtonYSizeDown
             // 
-            this.baseButtonYSizeDown.Location = new System.Drawing.Point(346, 133);
+            this.baseButtonYSizeDown.Location = new System.Drawing.Point(246, 116);
             this.baseButtonYSizeDown.Name = "baseButtonYSizeDown";
             this.baseButtonYSizeDown.Size = new System.Drawing.Size(75, 50);
             this.baseButtonYSizeDown.TabIndex = 10;
@@ -149,7 +157,7 @@
             // 
             // baseButtonYSizeUp
             // 
-            this.baseButtonYSizeUp.Location = new System.Drawing.Point(260, 133);
+            this.baseButtonYSizeUp.Location = new System.Drawing.Point(160, 116);
             this.baseButtonYSizeUp.Name = "baseButtonYSizeUp";
             this.baseButtonYSizeUp.Size = new System.Drawing.Size(75, 50);
             this.baseButtonYSizeUp.TabIndex = 9;
@@ -159,7 +167,7 @@
             // 
             // baseButtonXSizeDown
             // 
-            this.baseButtonXSizeDown.Location = new System.Drawing.Point(346, 76);
+            this.baseButtonXSizeDown.Location = new System.Drawing.Point(246, 59);
             this.baseButtonXSizeDown.Name = "baseButtonXSizeDown";
             this.baseButtonXSizeDown.Size = new System.Drawing.Size(75, 50);
             this.baseButtonXSizeDown.TabIndex = 8;
@@ -169,7 +177,7 @@
             // 
             // baseButtonXSizeUp
             // 
-            this.baseButtonXSizeUp.Location = new System.Drawing.Point(260, 74);
+            this.baseButtonXSizeUp.Location = new System.Drawing.Point(160, 57);
             this.baseButtonXSizeUp.Name = "baseButtonXSizeUp";
             this.baseButtonXSizeUp.Size = new System.Drawing.Size(75, 50);
             this.baseButtonXSizeUp.TabIndex = 7;
@@ -179,7 +187,7 @@
             // 
             // baseButtonLeft
             // 
-            this.baseButtonLeft.Location = new System.Drawing.Point(46, 128);
+            this.baseButtonLeft.Location = new System.Drawing.Point(7, 107);
             this.baseButtonLeft.Name = "baseButtonLeft";
             this.baseButtonLeft.Size = new System.Drawing.Size(40, 40);
             this.baseButtonLeft.TabIndex = 6;
@@ -189,7 +197,7 @@
             // 
             // baseButtonDown
             // 
-            this.baseButtonDown.Location = new System.Drawing.Point(95, 177);
+            this.baseButtonDown.Location = new System.Drawing.Point(56, 156);
             this.baseButtonDown.Name = "baseButtonDown";
             this.baseButtonDown.Size = new System.Drawing.Size(40, 40);
             this.baseButtonDown.TabIndex = 5;
@@ -199,7 +207,7 @@
             // 
             // baseButtonRight
             // 
-            this.baseButtonRight.Location = new System.Drawing.Point(144, 128);
+            this.baseButtonRight.Location = new System.Drawing.Point(105, 107);
             this.baseButtonRight.Name = "baseButtonRight";
             this.baseButtonRight.Size = new System.Drawing.Size(40, 40);
             this.baseButtonRight.TabIndex = 4;
@@ -209,7 +217,7 @@
             // 
             // baseButtonCenter
             // 
-            this.baseButtonCenter.Location = new System.Drawing.Point(95, 128);
+            this.baseButtonCenter.Location = new System.Drawing.Point(56, 107);
             this.baseButtonCenter.Name = "baseButtonCenter";
             this.baseButtonCenter.Size = new System.Drawing.Size(40, 40);
             this.baseButtonCenter.TabIndex = 3;
@@ -219,7 +227,7 @@
             // 
             // baseButtonUp
             // 
-            this.baseButtonUp.Location = new System.Drawing.Point(95, 79);
+            this.baseButtonUp.Location = new System.Drawing.Point(56, 58);
             this.baseButtonUp.Name = "baseButtonUp";
             this.baseButtonUp.Size = new System.Drawing.Size(40, 40);
             this.baseButtonUp.TabIndex = 2;
@@ -229,9 +237,9 @@
             // 
             // baseToggleButtonInspect
             // 
-            this.baseToggleButtonInspect.Location = new System.Drawing.Point(231, 39);
+            this.baseToggleButtonInspect.Location = new System.Drawing.Point(160, 20);
             this.baseToggleButtonInspect.Name = "baseToggleButtonInspect";
-            this.baseToggleButtonInspect.Size = new System.Drawing.Size(222, 31);
+            this.baseToggleButtonInspect.Size = new System.Drawing.Size(161, 31);
             this.baseToggleButtonInspect.TabIndex = 1;
             this.baseToggleButtonInspect.Text = "Inspect";
             this.baseToggleButtonInspect.UseVisualStyleBackColor = true;
@@ -239,9 +247,9 @@
             // 
             // baseToggleButtonTrain
             // 
-            this.baseToggleButtonTrain.Location = new System.Drawing.Point(5, 39);
+            this.baseToggleButtonTrain.Location = new System.Drawing.Point(6, 20);
             this.baseToggleButtonTrain.Name = "baseToggleButtonTrain";
-            this.baseToggleButtonTrain.Size = new System.Drawing.Size(222, 31);
+            this.baseToggleButtonTrain.Size = new System.Drawing.Size(141, 31);
             this.baseToggleButtonTrain.TabIndex = 0;
             this.baseToggleButtonTrain.Text = "Train";
             this.baseToggleButtonTrain.UseVisualStyleBackColor = true;
@@ -253,7 +261,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.expandableGroupBox1);
             this.Name = "MaintROIControl";
-            this.Size = new System.Drawing.Size(460, 450);
+            this.Size = new System.Drawing.Size(342, 425);
             this.expandableGroupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
 

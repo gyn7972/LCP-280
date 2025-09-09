@@ -4,6 +4,9 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace QMC.Common
 {
@@ -11,18 +14,8 @@ namespace QMC.Common
     public partial class PropertyCollectionView : UserControl
     {
         // ----- Performance / Logging Flags -----
-        /// <summary>
-        /// 전역 상세 로그 출력 제어 (디폴트: false). true이면 내부 Console.WriteLine 실행.
-        /// 실행 속도 개선 위해 기본 비활성화.
-        /// </summary>
         public static bool GlobalVerboseLogging = false;
-        /// <summary>
-        /// SetProperties 빌드 중 레이아웃 최소화(기본 true). false면 기존 방식.
-        /// </summary>
         [Browsable(false)] public bool FastBuild { get; set; } = true;
-        /// <summary>
-        /// OnResize 시 잦은 Invalidate 억제 (기본 true).
-        /// </summary>
         [Browsable(false)] public bool SuppressResizeInvalidation { get; set; } = true;
 
         private TableLayoutPanel tableLayoutPanel;
@@ -86,6 +79,12 @@ namespace QMC.Common
         private List<Tuple<TextBox, PropertyBase>> _textBoxPropertyMap = new List<Tuple<TextBox, PropertyBase>>();
         private PropertyCollection _currentProperties;
 
+        // ===== 구조 캐시/에디터 캐시(빠른 재바인딩) =====
+        private readonly List<Label> _titleLabelOrder = new List<Label>();
+        private readonly List<Control> _editorOrder = new List<Control>();
+        private readonly List<Type> _propTypeOrder = new List<Type>();
+        private int _propertyCountWithoutHeaders = 0;
+
         public PropertyCollectionView(string groupName = "Property Group")
         {
             InitializeComponent();
@@ -128,13 +127,17 @@ namespace QMC.Common
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
 
+            // flicker 최소화
+            EnableFlickerFree(this);
+            EnableFlickerFree(scrollPanel);
+            EnableFlickerFree(tableLayoutPanel);
+
             scrollPanel.Controls.Add(tableLayoutPanel);
             groupBox.Controls.Add(scrollPanel);
 
             // 가로 스크롤 안 나오게(패널 폭에 맞춰 width를 따라가게)
             scrollPanel.Resize += (s, e) =>
             {
-                // 세로 스크롤바 폭만큼 여유 주면 H-스크롤 방지
                 var sbw = SystemInformation.VerticalScrollBarWidth;
                 tableLayoutPanel.Width = scrollPanel.ClientSize.Width - sbw;
             };
@@ -151,7 +154,7 @@ namespace QMC.Common
             base.OnResize(e);
             if (GlobalVerboseLogging)
                 Console.WriteLine($"🔧 PropertyCollectionView OnResize: UserControl={this.Size}, DesignMode={this.DesignMode}");
-            if (!SuppressResizeInvalidation) // 기본은 과도한 Invalidate 억제
+            if (!SuppressResizeInvalidation)
             {
                 scrollPanel?.Invalidate();
                 tableLayoutPanel?.Invalidate();
@@ -169,12 +172,18 @@ namespace QMC.Common
 
         /// <summary>
         /// PropertyCollection을 화면에 표시 (최적화 적용).
+        /// 동일한 구조(필드 수/타입 순서)라면 컨트롤 재사용하여 빠르게 값만 갱신합니다.
         /// </summary>
         public virtual void SetProperties(PropertyCollection properties)
         {
+            if (properties != null && TryUpdateInPlace(properties))
+            {
+                _currentProperties = properties; // 구조 동일 → 빠른 갱신
+                return;
+            }
+
             if (FastBuild)
             {
-                // 레이아웃 이벤트 최소화
                 this.SuspendLayout();
                 groupBox?.SuspendLayout();
                 scrollPanel?.SuspendLayout();
@@ -188,6 +197,11 @@ namespace QMC.Common
             tableLayoutPanel.RowCount = 0;
             _textBoxPropertyMap.Clear();
             _currentProperties = properties;
+
+            _titleLabelOrder.Clear();
+            _editorOrder.Clear();
+            _propTypeOrder.Clear();
+            _propertyCountWithoutHeaders = 0;
 
             if (properties == null || properties.Count == 0)
             {
@@ -212,7 +226,6 @@ namespace QMC.Common
             foreach (var prop in properties)
             {
                 tableLayoutPanel.RowCount++;
-                // 빠른 빌드를 위해 RowStyles 추가 최소화 (AutoSize true 시 Absolute 지정)
                 tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, textBoxHeight));
 
                 if (prop is TitleOnlyProperty titleOnlyProp)
@@ -261,8 +274,14 @@ namespace QMC.Common
                     }
                     else comboBox.SelectedIndex = 0;
                     comboBox.SelectedIndexChanged += (sender, args) => comboBoxProperty.SetValue(comboBox.SelectedItem?.ToString());
+
                     controlsToAdd.Add(Tuple.Create((Control)titleLabel, 0, row));
                     controlsToAdd.Add(Tuple.Create((Control)comboBox, 1, row));
+
+                    _titleLabelOrder.Add(titleLabel);
+                    _editorOrder.Add(comboBox);
+                    _propTypeOrder.Add(typeof(ComboBoxProperty));
+                    _propertyCountWithoutHeaders++;
                 }
                 else
                 {
@@ -288,33 +307,59 @@ namespace QMC.Common
                             Visible = true
                         };
                         BindCheckBoxToBool(cb, bp); editor = cb;
+                        _propTypeOrder.Add(typeof(BoolProperty));
                     }
                     else if (prop is IntProperty ip)
-                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToInt(tb, ip); editor = tb; }
+                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToInt(tb, ip); editor = tb; _propTypeOrder.Add(typeof(IntProperty)); }
                     else if (prop is LongProperty lp)
-                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToLong(tb, lp); editor = tb; }
+                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToLong(tb, lp); editor = tb; _propTypeOrder.Add(typeof(LongProperty)); }
                     else if (prop is FloatProperty fp)
-                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToFloat(tb, fp); editor = tb; }
+                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToFloat(tb, fp); editor = tb; _propTypeOrder.Add(typeof(FloatProperty)); }
                     else if (prop is DoubleProperty dp)
-                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToDouble(tb, dp); editor = tb; }
+                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToDouble(tb, dp); editor = tb; _propTypeOrder.Add(typeof(DoubleProperty)); }
                     else if (prop is StringProperty sp)
-                    { var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToString(tb, sp); editor = tb; }
+                    {
+                        var tb = MakeValueTextBox(textBoxHeight); BindTextBoxToString(tb, sp);
+                        if (ShouldUsePathPicker(prop.Title))
+                        {
+                            bool selectFolder = IsFolderTitle(prop.Title);
+                            var panel = MakePathPickerPanel(tb, properties.IsInputParameter, selectFolder);
+                            editor = panel;
+                        }
+                        else
+                        {
+                            editor = tb;
+                        }
+                        _propTypeOrder.Add(typeof(StringProperty));
+                    }
                     else
-                    { var tb = MakeValueTextBox(textBoxHeight); tb.TextChanged += (s, e) => prop.SetValue(tb.Text); tb.Tag = prop; editor = tb; }
+                    { var tb = MakeValueTextBox(textBoxHeight); tb.TextChanged += (s, e) => prop.SetValue(tb.Text); tb.Tag = prop; editor = tb; _propTypeOrder.Add(prop.GetType()); }
 
                     if (properties.IsInputParameter)
                     {
-                        editor.ForeColor = Color.Black;
-                        editor.BackColor = Color.White;
+                        if (!(editor is Panel))
+                        {
+                            editor.ForeColor = Color.Black;
+                            editor.BackColor = Color.White;
+                        }
                     }
                     else
                     {
                         if (editor is TextBox tbRo)
                         { tbRo.ReadOnly = true; tbRo.TabStop = false; tbRo.ForeColor = Color.LimeGreen; tbRo.BackColor = Color.Black; }
+                        else if (editor is Panel pnl && pnl.Controls.Count > 0 && pnl.Controls[0] is TextBox innerTb)
+                        {
+                            innerTb.ReadOnly = true; innerTb.TabStop = false; innerTb.ForeColor = Color.LimeGreen; innerTb.BackColor = Color.Black;
+                            foreach (Control c in pnl.Controls) if (c is Button) c.Enabled = false;
+                        }
                         else editor.Enabled = false;
                     }
                     editor.Visible = true;
                     controlsToAdd.Add(Tuple.Create(editor, 1, row));
+
+                    _titleLabelOrder.Add(titleLabel);
+                    _editorOrder.Add(editor);
+                    _propertyCountWithoutHeaders++;
                 }
                 row++;
             }
@@ -342,6 +387,144 @@ namespace QMC.Common
                 Console.WriteLine($"🔧 SetProperties 완료(FastBuild={FastBuild}): UserControl={this.Size}, Items={properties.Count}");
         }
 
+        // 컨트롤 재사용 빠른 업데이트 시도 (구조 동일 시)
+        private bool TryUpdateInPlace(PropertyCollection properties)
+        {
+            if (_editorOrder.Count == 0 || _propTypeOrder.Count == 0) return false;
+
+            // 새 구조 요약 (TitleOnly 제외한 항목 수/타입 순서)
+            var newTypes = new List<Type>();
+            int cnt = 0;
+            foreach (var p in properties)
+            {
+                if (p is TitleOnlyProperty) continue;
+                cnt++;
+                if (p is ComboBoxProperty) newTypes.Add(typeof(ComboBoxProperty));
+                else if (p is BoolProperty) newTypes.Add(typeof(BoolProperty));
+                else if (p is IntProperty) newTypes.Add(typeof(IntProperty));
+                else if (p is LongProperty) newTypes.Add(typeof(LongProperty));
+                else if (p is FloatProperty) newTypes.Add(typeof(FloatProperty));
+                else if (p is DoubleProperty) newTypes.Add(typeof(DoubleProperty));
+                else if (p is StringProperty) newTypes.Add(typeof(StringProperty));
+                else newTypes.Add(p.GetType());
+            }
+
+            if (cnt != _propertyCountWithoutHeaders) return false;
+            for (int i = 0; i < newTypes.Count; i++)
+            {
+                if (newTypes[i] != _propTypeOrder[i]) return false;
+            }
+
+            // 구조 동일 → 값/라벨 텍스트만 갱신 + 매핑 재바인딩
+            _textBoxPropertyMap.Clear();
+
+            int index = 0;
+            foreach (var p in properties)
+            {
+                if (p is TitleOnlyProperty) continue;
+
+                // 라벨 텍스트 갱신
+                if (index < _titleLabelOrder.Count)
+                    _titleLabelOrder[index].Text = p.Title;
+
+                var editor = _editorOrder[index];
+
+                if (p is ComboBoxProperty cbp)
+                {
+                    var cb = editor as ComboBox;
+                    if (cb != null)
+                    {
+                        // 옵션 차이가 크면 재구성(간단 비교)
+                        if (cb.Items.Count != cbp.Options.Count || cb.Items.Cast<object>().Select(o => o.ToString()).SequenceEqual(cbp.Options) == false)
+                        {
+                            cb.Items.Clear();
+                            cb.Items.AddRange(cbp.Options.ToArray());
+                        }
+                        int idx = cbp.Value != null ? cbp.Options.IndexOf(cbp.Value.ToString()) : -1;
+                        cb.SelectedIndexChanged += (s, e) => cbp.SetValue(cb.SelectedItem?.ToString());
+                        cb.SelectedIndex = idx >= 0 ? idx : (cb.Items.Count > 0 ? 0 : -1);
+                    }
+                }
+                else if (p is BoolProperty bp)
+                {
+                    var cb = editor as CheckBox;
+                    if (cb != null)
+                    {
+                        cb.CheckedChanged += (s, e) => bp.Value = cb.Checked; // 새 p에도 바인딩
+                        cb.Checked = bp.Value;
+                    }
+                }
+                else if (p is StringProperty sp)
+                {
+                    TextBox tb = editor as TextBox;
+                    if (tb == null && editor is Panel pnl)
+                        tb = pnl.Controls.OfType<TextBox>().FirstOrDefault();
+                    if (tb != null)
+                    {
+                        tb.Text = sp.Value ?? string.Empty;
+                        tb.Tag = sp;
+                        _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)sp));
+                    }
+                }
+                else if (p is IntProperty ip)
+                {
+                    var tb = editor as TextBox;
+                    if (tb != null)
+                    {
+                        tb.Text = ip.Value.ToString(CultureInfo.InvariantCulture);
+                        tb.Tag = ip;
+                        _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)ip));
+                    }
+                }
+                else if (p is LongProperty lp)
+                {
+                    var tb = editor as TextBox;
+                    if (tb != null)
+                    {
+                        tb.Text = lp.Value.ToString(CultureInfo.InvariantCulture);
+                        tb.Tag = lp;
+                        _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)lp));
+                    }
+                }
+                else if (p is FloatProperty fp)
+                {
+                    var tb = editor as TextBox;
+                    if (tb != null)
+                    {
+                        tb.Text = fp.Value.ToString(CultureInfo.InvariantCulture);
+                        tb.Tag = fp;
+                        _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)fp));
+                    }
+                }
+                else if (p is DoubleProperty dp)
+                {
+                    var tb = editor as TextBox;
+                    if (tb != null)
+                    {
+                        tb.Text = dp.Value.ToString(CultureInfo.InvariantCulture);
+                        tb.Tag = dp;
+                        _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)dp));
+                    }
+                }
+                else
+                {
+                    var tb = editor as TextBox;
+                    if (tb != null)
+                    {
+                        tb.Text = p.Value != null ? p.Value.ToString() : string.Empty;
+                        tb.Tag = p;
+                        _textBoxPropertyMap.Add(Tuple.Create(tb, p));
+                    }
+                }
+
+                index++;
+            }
+
+            if (GlobalVerboseLogging)
+                Console.WriteLine("⚡ 빠른 재바인딩 완료 (컨트롤 재사용)");
+            return true;
+        }
+
         private TextBox MakeValueTextBox(int textBoxHeight) => new TextBox
         {
             Dock = DockStyle.Fill,
@@ -353,6 +536,93 @@ namespace QMC.Common
             MinimumSize = new Size(0, textBoxHeight),
             Height = textBoxHeight
         };
+
+        // 경로 선택이 필요한 필드명 판단
+        private static bool ShouldUsePathPicker(string title)
+        {
+            if (string.IsNullOrEmpty(title)) return false;
+            return title.IndexOf("path", StringComparison.OrdinalIgnoreCase) >= 0
+                   || title.IndexOf("file", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool IsFolderTitle(string title)
+        {
+            if (string.IsNullOrEmpty(title)) return false;
+            return title.IndexOf("path", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        // 텍스트박스 + ... 버튼을 포함한 패널 생성 (파일/폴더 선택 모두 지원)
+        private Control MakePathPickerPanel(TextBox tb, bool enable, bool selectFolder)
+        {
+            var panel = new Panel { Dock = DockStyle.Fill, Margin = new Padding(0) };
+            var btn = new Button
+            {
+                Text = "...",
+                Width = 28,
+                Dock = DockStyle.Right,
+                Margin = new Padding(2),
+                Enabled = enable
+            };
+            btn.Click += (s, e) =>
+            {
+                try
+                {
+                    if (selectFolder)
+                    {
+                        using (var dlg = new FolderBrowserDialog())
+                        {
+                            try
+                            {
+                                if (!string.IsNullOrWhiteSpace(tb.Text))
+                                {
+                                    var startDir = Directory.Exists(tb.Text) ? tb.Text : Path.GetDirectoryName(tb.Text);
+                                    if (!string.IsNullOrWhiteSpace(startDir) && Directory.Exists(startDir))
+                                        dlg.SelectedPath = startDir;
+                                }
+                            }
+                            catch { }
+                            if (dlg.ShowDialog(this) == DialogResult.OK)
+                            {
+                                tb.Text = dlg.SelectedPath;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (var dlg = new OpenFileDialog())
+                        {
+                            dlg.Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*";
+                            dlg.Multiselect = false;
+                            try
+                            {
+                                if (!string.IsNullOrWhiteSpace(tb.Text))
+                                {
+                                    var dir = Path.GetDirectoryName(tb.Text);
+                                    if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+                                        dlg.InitialDirectory = dir;
+                                    dlg.FileName = Path.GetFileName(tb.Text);
+                                }
+                            }
+                            catch { }
+                            if (dlg.ShowDialog(this) == DialogResult.OK)
+                            {
+                                tb.Text = dlg.FileName;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, "파일/폴더 선택 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            };
+
+            tb.Parent = panel;
+            tb.Dock = DockStyle.Fill;
+            panel.Controls.Add(tb);
+            panel.Controls.Add(btn);
+            return panel;
+        }
 
         /// <summary>
         /// 텍스트박스의 값을 PropertyCollection에 적용합니다.
@@ -368,7 +638,6 @@ namespace QMC.Common
         /// <summary>
         /// 🚀 현재 설정된 PropertyCollection을 반환합니다.
         /// </summary>
-        /// <returns>현재 PropertyCollection</returns>
         public PropertyCollection GetCurrentProperties() => _currentProperties;
 
         /// <summary>
@@ -389,5 +658,22 @@ namespace QMC.Common
         { tb.Text = p.Value ?? string.Empty; tb.TextChanged += (s, e) => p.Value = tb.Text ?? string.Empty; tb.Tag = p; _textBoxPropertyMap.Add(Tuple.Create(tb, (PropertyBase)p)); }
         private void BindCheckBoxToBool(CheckBox cb, BoolProperty p)
         { cb.Checked = p.Value; cb.CheckedChanged += (s, e) => p.Value = cb.Checked; cb.Tag = p; }
+
+        // 깜빡임 최소화 공통 함수 (리플렉션으로 protected 멤버 호출)
+        private static void EnableFlickerFree(Control c)
+        {
+            if (c == null) return;
+            try
+            {
+                var piDB = typeof(Control).GetProperty("DoubleBuffered", BindingFlags.NonPublic | BindingFlags.Instance);
+                piDB?.SetValue(c, true, null);
+                var miSetStyle = typeof(Control).GetMethod("SetStyle", BindingFlags.NonPublic | BindingFlags.Instance);
+                var styles = ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint;
+                miSetStyle?.Invoke(c, new object[] { styles, true });
+                var miUpdateStyles = typeof(Control).GetMethod("UpdateStyles", BindingFlags.NonPublic | BindingFlags.Instance);
+                miUpdateStyles?.Invoke(c, null);
+            }
+            catch { }
+        }
     }
 }
