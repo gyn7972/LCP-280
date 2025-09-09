@@ -288,13 +288,32 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             TestConditionItem item = new TestConditionItem("VF_Test");
+            item.Type = TestItemType.VF;
             item.SourceValue = 0.001;//A
             item.SourceTime = 10;//ms
             item.SourceLimit = 3;//V
             item.MeasureTime = 10;//ms
+
+            StopWatch sw = new StopWatch();
+            sw.Start();
             selectSourcemeter.ClearTestItems();
             selectSourcemeter.AddTestItem(item);
-            selectSourcemeter.Measure();
+            selectSourcemeter.BuildTestCommands();
+            if(selectSourcemeter.Measure() == 0)
+            {
+                selectSourcemeter.GetResultProcess();
+                MessageBox.Show($"Test Result: {selectSourcemeter.Results["VF_Test"].ToString()} / Elapsed Time: {sw.Elapsed.Milliseconds}");
+            }
+            else
+            {
+                MessageBox.Show("Failed to test...");
+            }
+
+            //string response = "";
+            //if(selectSourcemeter.Communicator.Query("*OPC?", ref response))
+            //{
+            //    string a = response;
+            //}
         }
         #endregion
 

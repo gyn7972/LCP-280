@@ -213,9 +213,12 @@ namespace QMC.Common.Keithley
                 StopWatch sw = new StopWatch();
                 sw.Start();
 
+                int tryCount = 0;
+
                 while (!channel.WaitComplete())
                 {
-                    if (sw.Elapsed.Milliseconds >= Config.MeasureTimeout)
+                    tryCount++;
+                    if (tryCount >= 3)
                         throw new Exception("Measurement timeout occurred.");
 
                     Thread.Sleep(10);
