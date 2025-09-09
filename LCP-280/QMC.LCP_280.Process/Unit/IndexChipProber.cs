@@ -18,6 +18,10 @@ namespace QMC.LCP_280.Process.Unit
         public IndexChipProberConfig IndexChipProberConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
 
+        // 측정 관련 ===================================
+        public PKGTester Tester => Equipment.Instance.Tester;
+        // ============================================
+
         public IndexChipProber(IndexChipProberConfig config = null)
             : base("IndexChipProberConfig")
         {

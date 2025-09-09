@@ -33,16 +33,22 @@
             this.dataGridResult = new System.Windows.Forms.DataGridView();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            this.casSpectrumViewer = new QMC.Common.Spectrometer.CASSpectrumViewer();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.lbResultValue = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.radioButtonView1 = new QMC.Common.RadioButtonView();
             this.panel1 = new System.Windows.Forms.Panel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel8 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel9 = new System.Windows.Forms.TableLayoutPanel();
+            this.nudRepeatCount = new System.Windows.Forms.NumericUpDown();
+            this.nudIntervalDelay = new System.Windows.Forms.NumericUpDown();
+            this.casSpectrumViewer = new QMC.Common.Spectrometer.CASSpectrumViewer();
+            this.lbResultValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.rbvOption = new QMC.Common.RadioButtonView();
+            this.customBorderLabel1 = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbStatusCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.btnResultSave = new QMC.Common.IndividualMenuButton();
             this.btnResultClear = new QMC.Common.IndividualMenuButton();
             this.btnLastClear = new QMC.Common.IndividualMenuButton();
-            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btnTestStop = new QMC.Common.IndividualMenuButton();
             this.btnTestStart = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
@@ -54,6 +60,10 @@
             this.panel1.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
             this.tableLayoutPanel7.SuspendLayout();
+            this.tableLayoutPanel8.SuspendLayout();
+            this.tableLayoutPanel9.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudRepeatCount)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIntervalDelay)).BeginInit();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -88,10 +98,14 @@
             // 
             // dataGridResult
             // 
+            this.dataGridResult.AllowUserToResizeColumns = false;
+            this.dataGridResult.AllowUserToResizeRows = false;
             this.dataGridResult.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridResult.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataGridResult.Location = new System.Drawing.Point(3, 3);
+            this.dataGridResult.MultiSelect = false;
             this.dataGridResult.Name = "dataGridResult";
+            this.dataGridResult.ReadOnly = true;
             this.dataGridResult.RowHeadersVisible = false;
             this.dataGridResult.RowTemplate.Height = 23;
             this.dataGridResult.Size = new System.Drawing.Size(1099, 441);
@@ -127,55 +141,20 @@
             this.tableLayoutPanel4.Size = new System.Drawing.Size(755, 235);
             this.tableLayoutPanel4.TabIndex = 0;
             // 
-            // casSpectrumViewer
-            // 
-            this.casSpectrumViewer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.casSpectrumViewer.Location = new System.Drawing.Point(3, 3);
-            this.casSpectrumViewer.Name = "casSpectrumViewer";
-            this.casSpectrumViewer.Size = new System.Drawing.Size(437, 229);
-            this.casSpectrumViewer.TabIndex = 0;
-            // 
             // tableLayoutPanel5
             // 
             this.tableLayoutPanel5.ColumnCount = 1;
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel5.Controls.Add(this.lbResultValue, 0, 0);
-            this.tableLayoutPanel5.Controls.Add(this.radioButtonView1, 0, 1);
+            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel8, 0, 1);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel5.Location = new System.Drawing.Point(446, 3);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25.4386F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 74.5614F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 27.07424F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 72.92577F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(306, 229);
             this.tableLayoutPanel5.TabIndex = 1;
-            // 
-            // lbResultValue
-            // 
-            this.lbResultValue.BackColor = System.Drawing.Color.Black;
-            this.lbResultValue.BorderColor = System.Drawing.Color.Black;
-            this.lbResultValue.BorderWidth = 1;
-            this.lbResultValue.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbResultValue.Font = new System.Drawing.Font("Arial", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lbResultValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbResultValue.Location = new System.Drawing.Point(3, 3);
-            this.lbResultValue.Margin = new System.Windows.Forms.Padding(3);
-            this.lbResultValue.Name = "lbResultValue";
-            this.lbResultValue.Size = new System.Drawing.Size(300, 52);
-            this.lbResultValue.TabIndex = 22;
-            this.lbResultValue.Text = " - ";
-            this.lbResultValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // radioButtonView1
-            // 
-            this.radioButtonView1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.radioButtonView1.GroupName = "Radio Options";
-            this.radioButtonView1.Location = new System.Drawing.Point(3, 61);
-            this.radioButtonView1.Name = "radioButtonView1";
-            this.radioButtonView1.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            this.radioButtonView1.SelectedIndex = -1;
-            this.radioButtonView1.Size = new System.Drawing.Size(300, 165);
-            this.radioButtonView1.TabIndex = 0;
             // 
             // panel1
             // 
@@ -202,6 +181,154 @@
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel6.Size = new System.Drawing.Size(144, 136);
             this.tableLayoutPanel6.TabIndex = 3;
+            // 
+            // tableLayoutPanel7
+            // 
+            this.tableLayoutPanel7.ColumnCount = 1;
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Controls.Add(this.btnTestStop, 0, 1);
+            this.tableLayoutPanel7.Controls.Add(this.btnTestStart, 0, 0);
+            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(1114, 3);
+            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
+            this.tableLayoutPanel7.RowCount = 2;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(133, 101);
+            this.tableLayoutPanel7.TabIndex = 1;
+            // 
+            // tableLayoutPanel8
+            // 
+            this.tableLayoutPanel8.ColumnCount = 1;
+            this.tableLayoutPanel8.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel8.Controls.Add(this.rbvOption, 0, 0);
+            this.tableLayoutPanel8.Controls.Add(this.tableLayoutPanel9, 0, 1);
+            this.tableLayoutPanel8.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel8.Location = new System.Drawing.Point(3, 65);
+            this.tableLayoutPanel8.Name = "tableLayoutPanel8";
+            this.tableLayoutPanel8.RowCount = 2;
+            this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 70F));
+            this.tableLayoutPanel8.Size = new System.Drawing.Size(300, 161);
+            this.tableLayoutPanel8.TabIndex = 23;
+            // 
+            // tableLayoutPanel9
+            // 
+            this.tableLayoutPanel9.ColumnCount = 2;
+            this.tableLayoutPanel9.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 49.33333F));
+            this.tableLayoutPanel9.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.66667F));
+            this.tableLayoutPanel9.Controls.Add(this.nudIntervalDelay, 1, 1);
+            this.tableLayoutPanel9.Controls.Add(this.customBorderLabel1, 0, 1);
+            this.tableLayoutPanel9.Controls.Add(this.lbStatusCaption, 0, 0);
+            this.tableLayoutPanel9.Controls.Add(this.nudRepeatCount, 1, 0);
+            this.tableLayoutPanel9.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel9.Location = new System.Drawing.Point(0, 94);
+            this.tableLayoutPanel9.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.tableLayoutPanel9.Name = "tableLayoutPanel9";
+            this.tableLayoutPanel9.RowCount = 2;
+            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel9.Size = new System.Drawing.Size(300, 64);
+            this.tableLayoutPanel9.TabIndex = 1;
+            // 
+            // nudRepeatCount
+            // 
+            this.nudRepeatCount.AutoSize = true;
+            this.nudRepeatCount.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.nudRepeatCount.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudRepeatCount.Location = new System.Drawing.Point(151, 3);
+            this.nudRepeatCount.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudRepeatCount.Name = "nudRepeatCount";
+            this.nudRepeatCount.Size = new System.Drawing.Size(146, 27);
+            this.nudRepeatCount.TabIndex = 21;
+            this.nudRepeatCount.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            // 
+            // nudIntervalDelay
+            // 
+            this.nudIntervalDelay.AutoSize = true;
+            this.nudIntervalDelay.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.nudIntervalDelay.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.nudIntervalDelay.Location = new System.Drawing.Point(151, 35);
+            this.nudIntervalDelay.Maximum = new decimal(new int[] {
+            5000,
+            0,
+            0,
+            0});
+            this.nudIntervalDelay.Name = "nudIntervalDelay";
+            this.nudIntervalDelay.Size = new System.Drawing.Size(146, 27);
+            this.nudIntervalDelay.TabIndex = 23;
+            // 
+            // casSpectrumViewer
+            // 
+            this.casSpectrumViewer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.casSpectrumViewer.Location = new System.Drawing.Point(3, 3);
+            this.casSpectrumViewer.Name = "casSpectrumViewer";
+            this.casSpectrumViewer.Size = new System.Drawing.Size(437, 229);
+            this.casSpectrumViewer.TabIndex = 0;
+            // 
+            // lbResultValue
+            // 
+            this.lbResultValue.BackColor = System.Drawing.Color.Black;
+            this.lbResultValue.BorderColor = System.Drawing.Color.Black;
+            this.lbResultValue.BorderWidth = 1;
+            this.lbResultValue.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbResultValue.Font = new System.Drawing.Font("Arial", 20.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbResultValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbResultValue.Location = new System.Drawing.Point(3, 3);
+            this.lbResultValue.Margin = new System.Windows.Forms.Padding(3);
+            this.lbResultValue.Name = "lbResultValue";
+            this.lbResultValue.Size = new System.Drawing.Size(300, 56);
+            this.lbResultValue.TabIndex = 22;
+            this.lbResultValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // rbvOption
+            // 
+            this.rbvOption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.rbvOption.Font = new System.Drawing.Font("맑은 고딕", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.rbvOption.GroupName = "Repeat Mode";
+            this.rbvOption.Location = new System.Drawing.Point(4, 5);
+            this.rbvOption.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.rbvOption.Name = "rbvOption";
+            this.rbvOption.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            this.rbvOption.SelectedIndex = -1;
+            this.rbvOption.Size = new System.Drawing.Size(292, 81);
+            this.rbvOption.TabIndex = 0;
+            // 
+            // customBorderLabel1
+            // 
+            this.customBorderLabel1.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.customBorderLabel1.BorderWidth = 1;
+            this.customBorderLabel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.customBorderLabel1.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.customBorderLabel1.Location = new System.Drawing.Point(0, 35);
+            this.customBorderLabel1.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.customBorderLabel1.Name = "customBorderLabel1";
+            this.customBorderLabel1.Size = new System.Drawing.Size(148, 26);
+            this.customBorderLabel1.TabIndex = 22;
+            this.customBorderLabel1.Text = "Interval Delay (ms)";
+            this.customBorderLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // lbStatusCaption
+            // 
+            this.lbStatusCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.lbStatusCaption.BorderWidth = 1;
+            this.lbStatusCaption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbStatusCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lbStatusCaption.Location = new System.Drawing.Point(0, 3);
+            this.lbStatusCaption.Margin = new System.Windows.Forms.Padding(0, 3, 0, 3);
+            this.lbStatusCaption.Name = "lbStatusCaption";
+            this.lbStatusCaption.Size = new System.Drawing.Size(148, 26);
+            this.lbStatusCaption.TabIndex = 20;
+            this.lbStatusCaption.Text = "Repeat Count (cnt)";
+            this.lbStatusCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // btnResultSave
             // 
@@ -263,21 +390,6 @@
             this.btnLastClear.UseVisualStyleBackColor = false;
             this.btnLastClear.Click += new System.EventHandler(this.btnLastClear_Click);
             // 
-            // tableLayoutPanel7
-            // 
-            this.tableLayoutPanel7.ColumnCount = 1;
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Controls.Add(this.btnTestStop, 0, 1);
-            this.tableLayoutPanel7.Controls.Add(this.btnTestStart, 0, 0);
-            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Top;
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(1114, 3);
-            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 2;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(133, 101);
-            this.tableLayoutPanel7.TabIndex = 1;
-            // 
             // btnTestStop
             // 
             this.btnTestStop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -336,6 +448,11 @@
             this.panel1.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
             this.tableLayoutPanel7.ResumeLayout(false);
+            this.tableLayoutPanel8.ResumeLayout(false);
+            this.tableLayoutPanel9.ResumeLayout(false);
+            this.tableLayoutPanel9.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudRepeatCount)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIntervalDelay)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -349,7 +466,7 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
         private Common.Spectrometer.CASSpectrumViewer casSpectrumViewer;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
-        private Common.RadioButtonView radioButtonView1;
+        private Common.RadioButtonView rbvOption;
         private Common.CustomControl.CustomBorderLabel lbResultValue;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel7;
         private Common.IndividualMenuButton btnTestStop;
@@ -359,5 +476,11 @@
         private Common.IndividualMenuButton btnResultSave;
         private Common.IndividualMenuButton btnResultClear;
         private Common.IndividualMenuButton btnLastClear;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel8;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel9;
+        private Common.CustomControl.CustomBorderLabel lbStatusCaption;
+        private System.Windows.Forms.NumericUpDown nudRepeatCount;
+        private System.Windows.Forms.NumericUpDown nudIntervalDelay;
+        private Common.CustomControl.CustomBorderLabel customBorderLabel1;
     }
 }

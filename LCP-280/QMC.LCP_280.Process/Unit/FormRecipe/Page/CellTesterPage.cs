@@ -8,6 +8,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -17,9 +18,14 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
     {
         private PKGTester tester => Equipment.Instance.Tester;
 
+        // Repeat
+        private CancellationTokenSource _ctsRepeat;
+
         public CellTesterPage()
         {
             InitializeComponent();
+
+            rbvOption.SetOptions(false, "Off", "On");
 
             dataGridResult.Font = new Font("맑은 고딕", 8);
             
@@ -34,7 +40,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private void Tester_OnMeasureCompleted(object sender)
         {
-            AddResultToResultGrid();
+            AddNewManualMeasureResult();
         }
 
         private void Tester_OnConditionSetChanged(object sender)
@@ -71,14 +77,17 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             dataGridResult.Rows.Clear();
         }
 
-        private void AddResultToResultGrid()
+        private void AddNewManualMeasureResult()
         {
             int rowIndex = dataGridResult.Rows.Add();
             var row = dataGridResult.Rows[rowIndex];
 
-            foreach (var key in tester.Results.Keys)
+            PKGTesterResult result = tester.Result;
+
+            // 각 항목별 결과 표시
+            foreach (var key in result.Items.Keys)
             {
-                row.Cells[key].Value = tester.Results[key].ToString();
+                row.Cells[key].Value = result.Items[key].ToString();
             }
 
             // 마지막 행으로 스크롤 및 선택
@@ -95,6 +104,18 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     dataGridResult.Rows[lastRowIndex].Selected = true;
                     dataGridResult.FirstDisplayedScrollingRowIndex = lastRowIndex;
                 }
+            }
+
+            // BinNo에 따라 결과 표시
+            if (result.BinNo > 0)
+            {
+                lbResultValue.Text = $"OK {result.BinNo}";
+                lbResultValue.ForeColor = Color.Lime;
+            }
+            else
+            {
+                lbResultValue.Text = $"NG {result.BinNo}";
+                lbResultValue.ForeColor = Color.Red;
             }
         }
 
@@ -178,12 +199,61 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private async void btnTestStart_Click(object sender, EventArgs e)
         {
-            int result = await tester.ManualMeasureAsync(1, 500);
+            if (_ctsRepeat != null)
+            {
+                // 이미 동작 중이면 무시
+                return;
+            }
+
+            _ctsRepeat = new CancellationTokenSource();
+            var token = _ctsRepeat.Token;
+
+            int repeatCount = 1;
+            int intervalMs = 500;
+
+            if (rbvOption.SelectedIndex == 0)
+            {
+                // 단일 측정
+                repeatCount = 1;
+                intervalMs = 500;
+            }
+            else if (rbvOption.SelectedIndex == 1)
+            {
+                repeatCount = (int)nudRepeatCount.Value;
+                intervalMs = (int)nudIntervalDelay.Value;
+            }
+
+            try
+            {
+                for (int i = 0; i < repeatCount; i++)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    int result = await tester.ManualMeasureAsync(1, intervalMs);
+
+                    // 측정 실패 시 반복 중단
+                    if (result < 0)
+                        break;
+
+                    // 마지막 반복이 아니면 interval 대기
+                    if (i < repeatCount - 1)
+                        await Task.Delay(intervalMs, token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("측정이 중단되었습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            finally
+            {
+                _ctsRepeat.Dispose();
+                _ctsRepeat = null;
+            }
         }
 
         private void btnTestStop_Click(object sender, EventArgs e)
         {
-
+            _ctsRepeat?.Cancel();
         }
     }
 }

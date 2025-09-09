@@ -380,6 +380,8 @@ namespace QMC.Common.PKGTester
             if (testConditionSet == null)
                 return -1;
 
+            Name = testConditionSet.Name;
+
             items.Clear();
             items.AddRange(testConditionSet.Items);
             ItemsChanged?.Invoke(this);
