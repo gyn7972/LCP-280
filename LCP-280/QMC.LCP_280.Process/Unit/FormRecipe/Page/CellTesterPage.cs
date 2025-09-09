@@ -37,10 +37,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             AddResultToResultGrid();
         }
 
-        private void CellTesterPage_Load(object sender, EventArgs e)
-        {
-        }
-
         private void Tester_OnConditionSetChanged(object sender)
         {
             UpdateNewResultGrid();

@@ -50,6 +50,11 @@ namespace QMC.Common.Keithley
                 { "smua", new KeithleySourcemeterChannel("smua", this) },
                 //{ "smub", new KeithleySourcemeterChannel("smub", this) },
             };
+
+            // Event Subscribe
+            Communicator.OnSessionOpened += Communicator_OnSessionOpened;
+            Communicator.OnSessionClosed += Communicator_OnSessionClosed;
+            Communicator.OnReceived += Communicator_OnReceived;
         }
         #endregion
 
@@ -73,12 +78,41 @@ namespace QMC.Common.Keithley
                         {
                             Communicator.CloseSession();
                         }
+
+                        Communicator.OnSessionOpened -= Communicator_OnSessionOpened;
+                        Communicator.OnSessionClosed -= Communicator_OnSessionClosed;
+                        Communicator.OnReceived -= Communicator_OnReceived;
                         Communicator = null;
                     }
                 }
                 // Dispose unmanaged resources
                 disposed = true;
             }   
+        }
+        #endregion
+
+        #region Event
+        public event EventHandler OnSessionOpened;
+        public event EventHandler OnSessionClosed;
+        public event EventHandler OnInitialized;
+        public event EventHandler OnReceived;
+
+        // Subscribe Event      
+        private void Communicator_OnSessionOpened(object sender, EventArgs e)
+        {
+            OnSessionOpened?.Invoke(this, EventArgs.Empty);
+        }
+        private void Communicator_OnSessionClosed(object sender, EventArgs e)
+        {
+            ModelName = "";
+            SerialNo = "";
+            FirmwareRevision = "";
+
+            OnSessionClosed?.Invoke(this, EventArgs.Empty);
+        }
+        private void Communicator_OnReceived(object sender, EventArgs e)
+        {
+            OnReceived?.Invoke(this, EventArgs.Empty);
         }
         #endregion
 
@@ -142,6 +176,8 @@ namespace QMC.Common.Keithley
                         throw new Exception($"Failed to initialize channel [{channel.Name}].");
                     }
                 }
+
+                OnInitialized?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
@@ -214,11 +250,9 @@ namespace QMC.Common.Keithley
                 sw.Start();
 
                 int tryCount = 0;
-
                 while (!channel.WaitComplete())
                 {
-                    tryCount++;
-                    if (tryCount >= 3)
+                    if (tryCount++ > (Config.MeasureTimeout/1000))
                         throw new Exception("Measurement timeout occurred.");
 
                     Thread.Sleep(10);

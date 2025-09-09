@@ -46,16 +46,14 @@ namespace QMC.Common.Keithley
             {
                 // Error handling
                 Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
         }
         #endregion
 
         #region Event
-        public event EventHandler OnReceived;
         public event EventHandler OnSessionOpened;
         public event EventHandler OnSessionClosed;
-        public event EventHandler<Exception> OnError;
+        public event EventHandler OnReceived;
         #endregion
 
         #region Methods
@@ -86,7 +84,6 @@ namespace QMC.Common.Keithley
             {
                 // Error handling
                 Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }
@@ -115,7 +112,6 @@ namespace QMC.Common.Keithley
             {
                 // Error handling
                 Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }
@@ -142,7 +138,6 @@ namespace QMC.Common.Keithley
             {
                 // Error handling
                 Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }
@@ -162,7 +157,6 @@ namespace QMC.Common.Keithley
                 // Error handling
                 readText = "";
                 Log.Write(ex);
-                OnError?.Invoke(this, ex);
             }
             return result;
         }

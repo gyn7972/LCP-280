@@ -327,7 +327,6 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "CellTesterPage";
             this.Size = new System.Drawing.Size(1250, 700);
-            this.Load += new System.EventHandler(this.CellTesterPage_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridResult)).EndInit();

@@ -36,6 +36,14 @@ namespace QMC.Common.Spectrometer
             _spectrometer = spectrometer;
             _spectrometer.OnMeasureCompleted += Spectrometer_OnMeasureCompleted;
         }
+        public void DetachSpectrometer()
+        {
+            if (_spectrometer != null)
+            {
+                _spectrometer.OnMeasureCompleted -= Spectrometer_OnMeasureCompleted;
+                _spectrometer = null;
+            }
+        }
 
         private void Spectrometer_OnMeasureCompleted(object sender)
         {
@@ -63,10 +71,12 @@ namespace QMC.Common.Spectrometer
                 return;
             }
 
+            CASSpectrometer.SpectrumData spectrumData = spectrometer.Spectrum;
+
             series.Points.Clear();
-            for (int i = 0; i < spectrometer.SpectrumData.WaveLength.Length; i++)
+            for (int i = 0; i < spectrumData.WaveLength.Length; i++)
             {
-                series.Points.AddXY(spectrometer.SpectrumData.WaveLength[i], spectrometer.SpectrumData.Intensity[i]);
+                series.Points.AddXY(spectrumData.WaveLength[i], spectrumData.Intensity[i]);
             }
         }
     }
