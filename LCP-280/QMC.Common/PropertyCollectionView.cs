@@ -125,8 +125,8 @@ namespace QMC.Common
                 RowCount = 0,
                 CellBorderStyle = TableLayoutPanelCellBorderStyle.Single
             };
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60F));
-            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
 
             scrollPanel.Controls.Add(tableLayoutPanel);
             groupBox.Controls.Add(scrollPanel);

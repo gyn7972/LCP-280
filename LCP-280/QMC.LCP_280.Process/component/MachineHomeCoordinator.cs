@@ -54,10 +54,62 @@ namespace QMC.LCP_280.Process.Component
                     {
                         if (eq.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var u) && u is InputRingTransfer inFeeder)
                         {
+                            // Unclamp → 센서 확인
                             inFeeder.SetClamp(false);
+                            var until = DateTime.UtcNow.AddMilliseconds(1500);
+                            while (DateTime.UtcNow < until)
+                            {
+                                if (inFeeder.IsUnclamped()) break;
+                                await Task.Delay(20, ct).ConfigureAwait(false);
+                            }
+                            if (!inFeeder.IsUnclamped())
+                                return (false, "Wafer Feeder Unclamp 센서 미확인");
+
+                            // 링 존재 시 → +Y 조그로 센서 OFF까지 이동 (Fine Velocity, SensorDetectionTimeoutMs 사용)
+                            try
+                            {
+                                if (inFeeder.IsRingPresent())
+                                {
+                                    var axis = list.FirstOrDefault(a => a != null && a.Name.Equals("Wafer Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
+                                    if (axis != null)
+                                    {
+                                        var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
+                                        var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
+                                        var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+                                        try { axis.JogStart(+vel); } catch { }
+                                        try
+                                        {
+                                            while (DateTime.UtcNow < jogUntil)
+                                            {
+                                                if (ct.IsCancellationRequested) break;
+                                                if (!inFeeder.IsRingPresent()) break;
+                                                await Task.Delay(20, ct).ConfigureAwait(false);
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            try { axis.JogStop(); } catch { }
+                                        }
+                                        if (inFeeder.IsRingPresent())
+                                            return (false, "Wafer Feeder Ring Clear Timeout");
+                                    }
+                                }
+                            }
+                            catch { /* ignore jog errors, fallback to next checks */ }
+
                             await Task.Delay(100, ct).ConfigureAwait(false);
                             if (!inFeeder.FeederUp(3000))
                                 return (false, "Wafer Feeder Up 실패");
+
+                            // Up 센서 확인
+                            until = DateTime.UtcNow.AddMilliseconds(1000);
+                            while (DateTime.UtcNow < until)
+                            {
+                                if (inFeeder.IsFeederUp()) break;
+                                await Task.Delay(20, ct).ConfigureAwait(false);
+                            }
+                            if (!inFeeder.IsFeederUp())
+                                return (false, "Wafer Feeder Up 센서 미확인");
                         }
                     }
                     catch (Exception ex)
@@ -72,10 +124,62 @@ namespace QMC.LCP_280.Process.Component
                     {
                         if (eq.Units != null && eq.Units.TryGetValue("OutputRingTransfer", out var u2) && u2 is OutputRingTransfer outFeeder)
                         {
+                            // Unclamp → 센서 확인
                             outFeeder.SetClamp(false);
+                            var until2 = DateTime.UtcNow.AddMilliseconds(1500);
+                            while (DateTime.UtcNow < until2)
+                            {
+                                if (outFeeder.IsUnclamped()) break;
+                                await Task.Delay(20, ct).ConfigureAwait(false);
+                            }
+                            if (!outFeeder.IsUnclamped())
+                                return (false, "Bin Feeder Unclamp 센서 미확인");
+
+                            // 링 존재 시 → +Y 조그로 센서 OFF까지 이동 (Fine Velocity, SensorDetectionTimeoutMs 사용)
+                            try
+                            {
+                                if (outFeeder.IsRingPresent())
+                                {
+                                    var axis = list.FirstOrDefault(a => a != null && a.Name.Equals("Bin Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
+                                    if (axis != null)
+                                    {
+                                        var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
+                                        var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
+                                        var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+                                        try { axis.JogStart(+vel); } catch { }
+                                        try
+                                        {
+                                            while (DateTime.UtcNow < jogUntil)
+                                            {
+                                                if (ct.IsCancellationRequested) break;
+                                                if (!outFeeder.IsRingPresent()) break;
+                                                await Task.Delay(20, ct).ConfigureAwait(false);
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            try { axis.JogStop(); } catch { }
+                                        }
+                                        if (outFeeder.IsRingPresent())
+                                            return (false, "Wafer Feeder Ring Clear Timeout");
+                                    }
+                                }
+                            }
+                            catch { /* ignore jog errors, fallback to next checks */ }
+
                             await Task.Delay(100, ct).ConfigureAwait(false);
                             if (!outFeeder.FeederUp(3000))
                                 return (false, "Bin Feeder Up 실패");
+
+                            // Up 센서 확인
+                            until2 = DateTime.UtcNow.AddMilliseconds(1000);
+                            while (DateTime.UtcNow < until2)
+                            {
+                                if (outFeeder.IsFeederUp()) break;
+                                await Task.Delay(20, ct).ConfigureAwait(false);
+                            }
+                            if (!outFeeder.IsFeederUp())
+                                return (false, "Bin Feeder Up 센서 미확인");
                         }
                     }
                     catch (Exception ex)

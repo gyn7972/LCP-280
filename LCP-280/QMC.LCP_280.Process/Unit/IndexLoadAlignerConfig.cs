@@ -20,16 +20,22 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            Align_Index1,
-            Align_Index2,
-            Align_Index3,
-            Align_Index4,
-            Align_Index5,
-            Align_Index6,
-            Align_Index7,
-            Align_Index8,
-            Waiting,
-            Ready
+            Align_Index1_Up,
+            Align_Index1_Ready,
+            Align_Index2_Up,
+            Align_Index2_Ready,
+            Align_Index3_Up,
+            Align_Index3_Ready,
+            Align_Index4_Up,
+            Align_Index4_Ready,
+            Align_Index5_Up,
+            Align_Index5_Ready,
+            Align_Index6_Up,
+            Align_Index6_Ready,
+            Align_Index7_Up,
+            Align_Index7_Ready,
+            Align_Index8_Up,
+            Align_Index8_Read,
             // 필요시 확장
         }
 

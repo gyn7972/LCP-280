@@ -17,6 +17,11 @@ namespace QMC.Common.Motions
         // 스텝 종료 후 결과 훅(추가)
         public Func<int, IReadOnlyList<HomeAxisResult>, CancellationToken, Task> PostStepAsync { get; set; }
 
+        // === 중단 상태/사유 노출 ===
+        public bool Aborted { get; private set; }
+        public string AbortReason { get; private set; }
+        public int? AbortStepIndex { get; private set; }
+
         public HomeSequence(MotionAxisManager manager)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
@@ -59,6 +64,9 @@ namespace QMC.Common.Motions
 
         public async Task<IReadOnlyList<HomeAxisResult>> HomeAllSequentialAsync(CancellationToken token = default(CancellationToken))
         {
+            // 중단 플래그 초기화
+            Aborted = false; AbortReason = null; AbortStepIndex = null;
+
             var axes = _manager.GetAllAxes();
             var results = new List<HomeAxisResult>(axes.Count);
             foreach (var axis in axes)
@@ -66,6 +74,7 @@ namespace QMC.Common.Motions
                 if (token.IsCancellationRequested)
                 {
                     TryStop(axis);
+                    Aborted = true; AbortReason = "Canceled"; // 순차 모드에서도 취소 사유 기록
                     break;
                 }
 
@@ -83,21 +92,26 @@ namespace QMC.Common.Motions
 
         public async Task<IReadOnlyList<HomeAxisResult>> RunAsync(CancellationToken token = default(CancellationToken))
         {
+            // 중단 플래그 초기화
+            Aborted = false; AbortReason = null; AbortStepIndex = null;
+
             var all = new List<HomeAxisResult>();
             for (int stepIndex = 0; stepIndex < _steps.Count; stepIndex++)
             {
                 var step = _steps[stepIndex];
                 if (step == null || step.Count == 0) continue;
-                if (token.IsCancellationRequested) break;
+                if (token.IsCancellationRequested) { Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex; break; }
 
                 if (PreStepInterlockAsync != null)
                 {
                     var tuple = await PreStepInterlockAsync(stepIndex, step, token).ConfigureAwait(false);
                     if (!tuple.Ok)
                     {
+                        // 현재 스텝 자체가 시작 불가 → 전체 시퀀스 중단(다음 스텝으로 스킵하지 않음)
                         for (int i = 0; i < step.Count; i++)
                             all.Add(HomeAxisResult.NotStarted(step[i], tuple.Reason));
-                        continue;
+                        Aborted = true; AbortReason = $"Step {stepIndex} PreStep failed: {tuple.Reason}"; AbortStepIndex = stepIndex;
+                        break;
                     }
                 }
 
@@ -115,7 +129,12 @@ namespace QMC.Common.Motions
                     }
                 }
 
-                if (tasks.Count == 0) continue;
+                // 모든 축이 NotStarted로 빠져 실제 실행할 작업이 없다면 스텝 실패로 간주하고 중단
+                if (tasks.Count == 0)
+                {
+                    Aborted = true; AbortReason = $"Step {stepIndex} has no runnable axes (all blocked by interlocks)"; AbortStepIndex = stepIndex;
+                    break;
+                }
 
                 try
                 {
@@ -138,6 +157,7 @@ namespace QMC.Common.Motions
                 catch (OperationCanceledException)
                 {
                     foreach (var axis in step) TryStop(axis);
+                    Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
                     break;
                 }
             }

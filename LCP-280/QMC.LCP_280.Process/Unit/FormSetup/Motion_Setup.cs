@@ -191,6 +191,7 @@ namespace QMC.LCP_280.Process.Unit
                 // --- TimeOut
                 axis.Setup.HomeTimeoutMs = GetInt("Timeout", "Home Timeout(ms)", axis.Setup.HomeTimeoutMs);
                 axis.Setup.MoveTimeoutMs = GetInt("Timeout", "Move Timeout(ms)", axis.Setup.MoveTimeoutMs);
+                axis.Setup.SensorDetectionTimeoutMs = GetInt("Timeout", "Sensor Detection Timeout(ms)", axis.Setup.SensorDetectionTimeoutMs);
 
                 // 6) Speed(우측)도 있으면 반영
                 if (_speedIndex?.Count > 0)
