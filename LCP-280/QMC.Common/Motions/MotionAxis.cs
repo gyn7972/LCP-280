@@ -44,7 +44,8 @@ namespace QMC.Common.Motions
             FirstAlarm = 1000,
             Axis_XXXXXXXXX1_Fail,
             Axis_XXXXXXXXX2_Fail,
-            Axis_XXXXXXXXX3_Fail
+            Axis_XXXXXXXXX3_Fail,
+            AxisHomeTimeout // 홈 타임아웃 추가
         }
         #endregion
 
@@ -135,6 +136,15 @@ namespace QMC.Common.Motions
             alarm.Code = (int)AlarmKey.Axis_XXXXXXXXX3_Fail;
             alarm.Title = "strTemp";
             alarm.Cause = Name + "Axis_XXXXXXXXX1_Fail";
+            alarm.Source = Name;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            // 홈 타임아웃 알람 등록
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKey.AxisHomeTimeout;
+            alarm.Title = Name + " Home Timeout";
+            alarm.Cause = Name + " home operation timed out";
             alarm.Source = Name;
             alarm.Grade = "Error";
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -241,6 +251,10 @@ namespace QMC.Common.Motions
                     }
                     Thread.Sleep(5);
                 }
+
+                // 타임아웃: 안전 정지 및 알람
+                try { _driver.Stop(AxisNo); } catch { }
+                try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
             }
             else if (_ckdDriver != null)
             {
@@ -258,6 +272,10 @@ namespace QMC.Common.Motions
                     }
                     Thread.Sleep(5);
                 }
+
+                // 타임아웃: 안전 정지 및 알람
+                try { _ckdDriver.EmergencyStop(); } catch { }
+                try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
             }
             else
             {
@@ -279,15 +297,23 @@ namespace QMC.Common.Motions
                     try
                     {
                         var sw = Stopwatch.StartNew();
+                        bool ok = false;
                         while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
                         {
                             if (_driver.IsHomeDone(AxisNo))
                             {
                                 IsHomedLatched = true;
                                 try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                                ok = true;
                                 break;
                             }
                             await Task.Delay(5).ConfigureAwait(false);
+                        }
+                        if (!ok)
+                        {
+                            // 타임아웃: 안전 정지 및 알람
+                            try { _driver.Stop(AxisNo); } catch { }
+                            try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
                         }
                     }
                     catch { /* ignore */ }
@@ -304,15 +330,23 @@ namespace QMC.Common.Motions
                     try
                     {
                         var sw = Stopwatch.StartNew();
+                        bool ok = false;
                         while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
                         {
                             if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition())
                             {
                                 IsHomedLatched = true;
                                 try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                                ok = true;
                                 break;
                             }
                             await Task.Delay(5).ConfigureAwait(false);
+                        }
+                        if (!ok)
+                        {
+                            // 타임아웃: 안전 정지 및 알람
+                            try { _ckdDriver.EmergencyStop(); } catch { }
+                            try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
                         }
                     }
                     catch { /* ignore */ }
@@ -582,49 +616,86 @@ namespace QMC.Common.Motions
         {
             reason = null;
 
-            // CKD 드라이버는 최소 체크만(옵션)
-            if (_driver == null)
-            {
-                return true;
-            }
-
             try
             {
-                // 1) Servo On
-                if (!_driver.ReadServoOn(AxisNo))
+                if (_driver != null)
                 {
-                    if (tryRecover) { try { _driver.Servo(AxisNo, true); Thread.Sleep(settleMs); } catch { } }
-                    if (!_driver.ReadServoOn(AxisNo)) { reason = "Servo OFF"; return false; }
-                }
-
-                // 2) Alarm
-                if (_driver.ReadAlarm(AxisNo))
-                {
-                    if (tryRecover) { try { _driver.ClearAlarm(AxisNo); Thread.Sleep(settleMs); } catch { } }
-                    if (_driver.ReadAlarm(AxisNo)) { reason = "Alarm ON"; return false; }
-                }
-
-                // 3) InMotion → Stop and wait
-                if (!_driver.ReadDone(AxisNo))
-                {
-                    if (tryRecover) { try { _driver.Stop(AxisNo); } catch { } }
-                    var sw = Stopwatch.StartNew();
-                    while (sw.ElapsedMilliseconds < 2000)
+                    // ===== Ajin 계열 체크 =====
+                    // 1) Servo On
+                    if (!_driver.ReadServoOn(AxisNo))
                     {
-                        if (_driver.ReadDone(AxisNo)) break;
-                        Thread.Sleep(10);
+                        if (tryRecover) { try { _driver.Servo(AxisNo, true); Thread.Sleep(settleMs); } catch { } }
+                        if (!_driver.ReadServoOn(AxisNo)) { reason = "Servo OFF"; return false; }
                     }
-                    if (!_driver.ReadDone(AxisNo)) { reason = "Axis moving"; return false; }
+
+                    // 2) Alarm
+                    if (_driver.ReadAlarm(AxisNo))
+                    {
+                        if (tryRecover) { try { _driver.ClearAlarm(AxisNo); Thread.Sleep(settleMs); } catch { } }
+                        if (_driver.ReadAlarm(AxisNo)) { reason = "Alarm ON"; return false; }
+                    }
+
+                    // 3) InMotion → Stop and wait
+                    if (!_driver.ReadDone(AxisNo))
+                    {
+                        if (tryRecover) { try { _driver.Stop(AxisNo); } catch { } }
+                        var sw = Stopwatch.StartNew();
+                        while (sw.ElapsedMilliseconds < 2000)
+                        {
+                            if (_driver.ReadDone(AxisNo)) break;
+                            Thread.Sleep(10);
+                        }
+                        if (!_driver.ReadDone(AxisNo)) { reason = "Axis moving"; return false; }
+                    }
+
+                    // 4) Limit (옵션)
+                    //if (_driver.ReadPositiveLimit(AxisNo)) { reason = "+Limit ON"; return false; }
+                    //if (_driver.ReadNegativeLimit(AxisNo)) { reason = "-Limit ON"; return false; }
+
+                    return true;
                 }
+                else if (_ckdDriver != null)
+                {
+                    // ===== CKD 계열 체크 =====
+                    // 1) Servo On
+                    if (!_ckdDriver.IsServoOn())
+                    {
+                        if (tryRecover) { try { _ckdDriver.Servo(true); Thread.Sleep(settleMs); } catch { } }
+                        if (!_ckdDriver.IsServoOn()) { reason = "Servo OFF"; return false; }
+                    }
 
-                // 4) Limit
-                //if (_driver.ReadPositiveLimit(AxisNo)) { reason = "+Limit ON"; return false; }
-                //if (_driver.ReadNegativeLimit(AxisNo)) { reason = "-Limit ON"; return false; }
+                    // 2) Alarm
+                    if (_ckdDriver.IsAlarm())
+                    {
+                        if (tryRecover) { try { _ckdDriver.AlarmReset(); Thread.Sleep(settleMs); } catch { } }
+                        if (_ckdDriver.IsAlarm()) { reason = "Alarm ON"; return false; }
+                    }
 
-                // 5) Home 센서 상시 ON 경고(정책상 막을지 여부는 추후 옵션화). 여기서는 통과.
-                // bool homeOn = _driver.ReadHomeSensor(AxisNo);
+                    // 3) InMotion → Stop(wait) and confirm idle
+                    // CKD는 별도 ReadDone 대신 RunWait 상태가 안전 대기 상태로 간주
+                    if (!_ckdDriver.IsRunWait())
+                    {
+                        if (tryRecover)
+                        {
+                            try { _ckdDriver.EmergencyStop(); } catch { }
+                        }
+                        var sw = Stopwatch.StartNew();
+                        while (sw.ElapsedMilliseconds < 2000)
+                        {
+                            if (_ckdDriver.IsRunWait()) break;
+                            Thread.Sleep(10);
+                        }
+                        if (!_ckdDriver.IsRunWait()) { reason = "Axis moving"; return false; }
+                    }
 
-                return true;
+                    return true;
+                }
+                else
+                {
+                    // 드라이버가 연결되지 않은 경우
+                    reason = "No motion driver";
+                    return false;
+                }
             }
             catch (Exception ex)
             {
@@ -733,7 +804,7 @@ namespace QMC.Common.Motions
             t.EmergencyLevel = s.EmergencyLevel;
             t.StopMode = s.StopMode;
             t.InPosition = s.InPosition;
-            t.SoftwareLimitEnable = s.SoftwareLimitEnable;
+            t.SoftwareLimitEnable = s.SoftLimitEnable;
             t.SoftwareLength = s.SoftwareLength;
             t.HomeSignalLevel = s.HomeSignalLevel;
             t.HomeMode = s.HomeMode;
@@ -751,6 +822,7 @@ namespace QMC.Common.Motions
             t.SoftLimitMax = s.SoftLimitMax;
             t.HomeTimeoutMs = s.HomeTimeoutMs;
             t.MoveTimeoutMs = s.MoveTimeoutMs;
+            t.SensorDetectionTimeoutMs = s.SensorDetectionTimeoutMs;
             return t;
         }
 
@@ -789,6 +861,7 @@ namespace QMC.Common.Motions
             dst.SoftLimitMax = src.SoftLimitMax;
             dst.HomeTimeoutMs = src.HomeTimeoutMs;
             dst.MoveTimeoutMs = src.MoveTimeoutMs;
+            dst.SensorDetectionTimeoutMs = src.SensorDetectionTimeoutMs;
         }
 
         //

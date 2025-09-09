@@ -605,6 +605,7 @@ namespace QMC.LCP_280.Process.Unit
             pc.Add(new TitleOnlyProperty("Timeout"));
             pc.Add(new DoubleProperty("Home Timeout(ms)", (double)axis.Setup.HomeTimeoutMs));
             pc.Add(new DoubleProperty("Move Timeout(ms)", (double)axis.Setup.MoveTimeoutMs));
+            pc.Add(new DoubleProperty("Sensor Detection Timeout(ms)", (double)axis.Setup.SensorDetectionTimeoutMs));
 
             return pc;
         }

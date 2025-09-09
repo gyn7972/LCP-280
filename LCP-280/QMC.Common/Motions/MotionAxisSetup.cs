@@ -151,6 +151,10 @@ namespace QMC.Common.Motions
         [DefaultValue(20000)]
         public int MoveTimeoutMs { get; set; } = 20_000;
 
+        [Category("Timeout"), DisplayName("Sensor Detection Timeout(ms)")]
+        [DefaultValue(20000)]
+        public int SensorDetectionTimeoutMs { get; set; } = 20_000;
+
         // ===== BaseConfig Hooks =====
         public override void Reset()
         {
