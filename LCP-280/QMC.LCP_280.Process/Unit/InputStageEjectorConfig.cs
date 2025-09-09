@@ -23,9 +23,10 @@ namespace QMC.LCP_280.Process.Unit
         public enum TeachingPositionName
         {
             EjectBlockUp,
-            EjectBlokReady,
+            EjectBlockWaiting,
+            EjectBlockReady,
             EjectPinOffset,
-            EjectPinReady,
+            EjectPinWaiting,
             EjectPinChange,
             // 필요시 확장
         }
