@@ -272,11 +272,51 @@ namespace QMC.Common.Motions
             {
                 var rc = _driver.Home(AxisNo);
                 if (rc != 0) return rc;
+
+                // 비동기 홈 완료 감시 후 이벤트 발생
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var sw = Stopwatch.StartNew();
+                        while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
+                        {
+                            if (_driver.IsHomeDone(AxisNo))
+                            {
+                                IsHomedLatched = true;
+                                try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                                break;
+                            }
+                            await Task.Delay(5).ConfigureAwait(false);
+                        }
+                    }
+                    catch { /* ignore */ }
+                });
             }
             else if (_ckdDriver != null)
             {
                 var rc = _ckdDriver.HomeSearch();
                 if (rc != 0) return rc;
+
+                // 비동기 홈 완료 감시 후 이벤트 발생 (CKD)
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var sw = Stopwatch.StartNew();
+                        while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
+                        {
+                            if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition())
+                            {
+                                IsHomedLatched = true;
+                                try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                                break;
+                            }
+                            await Task.Delay(5).ConfigureAwait(false);
+                        }
+                    }
+                    catch { /* ignore */ }
+                });
             }
             else
             {
@@ -815,6 +855,9 @@ namespace QMC.Common.Motions
                 Status.State.InpositionTimeout = false; // 확인 필요.?
                 Status.State.HomeEnd = _ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition() && _ckdDriver.IsRunWait();
                 Status.State.HomeTimeout = false; // 확인 필요.?
+
+                Status.TimestampUtc = DateTime.UtcNow;
+                return Status;
             }
             return Status;
         }
