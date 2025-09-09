@@ -35,11 +35,12 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            HomeOffset,
             Loading,
             Unloading,
             BarcodeReading,
-            Ready
+            Ready,
+            SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
+            // 필요시 확장
         }
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

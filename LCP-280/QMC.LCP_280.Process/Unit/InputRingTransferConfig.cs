@@ -22,26 +22,27 @@ namespace QMC.LCP_280.Process.Unit
         internal static class IO
         {
             // Sensors (Inputs)
-            public const string FEEDER_UP            = "WAFER FEEDER UP";              // X020
-            public const string FEEDER_DOWN          = "WAFER FEEDER DOWN";            // X021
-            public const string FEEDER_UNCLAMP       = "WAFER FEEDER UNCLAMP";         // X022 (Open 상태 확인)
-            public const string FEEDER_RING_CHECK    = "WAFER FEEDER RING CHECK";      // X023
-            public const string FEEDER_OVERLOAD      = "WAFER FEEDER OVERLOAD CHECK";  // X024
+            public const string FEEDER_UP = "WAFER FEEDER UP";              // X020
+            public const string FEEDER_DOWN = "WAFER FEEDER DOWN";            // X021
+            public const string FEEDER_UNCLAMP = "WAFER FEEDER UNCLAMP";         // X022 (Open 상태 확인)
+            public const string FEEDER_RING_CHECK = "WAFER FEEDER RING CHECK";      // X023
+            public const string FEEDER_OVERLOAD = "WAFER FEEDER OVERLOAD CHECK";  // X024
 
             // Valves (Outputs)
-            public const string FEEDER_UP_VALVE      = "WAFER FEEDER UP";              // Y016 Up 솔
-            public const string FEEDER_DOWN_VALVE    = "WAFER FEEDER DOWN";            // Y017 Down 솔 (기존 DOWNE 오타 정규화)
-            public const string FEEDER_CLAMP_VALVE   = "WAFER FEEDER CLAMP";           // Y018 Clamp (Close)
+            public const string FEEDER_UP_VALVE = "WAFER FEEDER UP";              // Y016 Up 솔
+            public const string FEEDER_DOWN_VALVE = "WAFER FEEDER DOWN";            // Y017 Down 솔 (기존 DOWNE 오타 정규화)
+            public const string FEEDER_CLAMP_VALVE = "WAFER FEEDER CLAMP";           // Y018 Clamp (Close)
             public const string FEEDER_UNCLAMP_VALVE = "WAFER FEEDER UNCLAMP";         // Y019 Unclamp (Open)
         }
 
         public enum TeachingPositionName
         {
-            HomeOffset,   // Positive 를 홈으로 설정, Negative 기구간섭 영역 제외용 Offset
             Loading,
             Unloading,
             BarcodeReading,
-            Ready
+            Ready,
+            SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
+            // 필요시 확장
         }
 
         /// <summary>Teaching Position 순수 목록</summary>
@@ -86,7 +87,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Wafer Feeder X Axis", 100.0 }
+                        { "Wafer Feeder Y Axis", 100.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
@@ -101,8 +102,8 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
             Saveconfig();

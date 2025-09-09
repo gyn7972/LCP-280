@@ -48,7 +48,8 @@ namespace QMC.LCP_280.Process.Unit
             Loading,
             Unloading,
             CenterPoint,
-            Ready
+            Ready,
+            SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
             // 필요시 확장
         }
 

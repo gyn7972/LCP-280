@@ -14,11 +14,18 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum TeachingPositionName
         {
-            Pickup,
-            PickupWating,
+            Pickup_Index1,
+            Pickup_Index2,
+            Pickup_Index3,
+            Pickup_Index4,
+            Pickup_Index5,
+            Pickup_Index6,
+            Pickup_Index7,
+            Pickup_Index8,
             Place,
-            PlaceWating,
+            Waiting,
             Ready
+            // 필요시 확장
         }
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

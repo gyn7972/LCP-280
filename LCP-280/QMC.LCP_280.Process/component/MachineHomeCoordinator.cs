@@ -116,6 +116,8 @@ namespace QMC.LCP_280.Process.Component
                 return (true, null);
             };
 
+            // PostStep은 글로벌 이벤트(HomeHooks)에서 처리하므로 여기선 설정하지 않음
+
             return seq;
         }
     }

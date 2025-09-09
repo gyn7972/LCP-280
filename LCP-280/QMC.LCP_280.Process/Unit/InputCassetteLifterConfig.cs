@@ -30,7 +30,8 @@ namespace QMC.LCP_280.Process.Unit
             MappingEnd,
             SlotPitch,
             SlotCount,
-            Ready
+            Ready,
+            // 필요시 확장
         }
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

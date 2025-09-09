@@ -361,7 +361,52 @@ namespace QMC.Common
         {
             foreach (var pair in _textBoxPropertyMap)
             {
-                var textBox = pair.Item1; var property = pair.Item2; property.SetValue(textBox.Text);
+                var textBox = pair.Item1;
+                var property = pair.Item2;
+
+                // 타입 보존 적용: 입력 문자열을 각 타입으로 변환하여 대입
+                try
+                {
+                    var s = textBox.Text ?? string.Empty;
+                    if (property is DoubleProperty dp)
+                    {
+                        if (double.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var v))
+                            dp.Value = v;
+                    }
+                    else if (property is FloatProperty fp)
+                    {
+                        if (float.TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var v))
+                            fp.Value = v;
+                    }
+                    else if (property is IntProperty ip)
+                    {
+                        if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+                            ip.Value = v;
+                    }
+                    else if (property is LongProperty lp)
+                    {
+                        if (long.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var v))
+                            lp.Value = v;
+                    }
+                    else if (property is StringProperty sp)
+                    {
+                        sp.Value = s;
+                    }
+                    else if (property is BoolProperty bp)
+                    {
+                        // 체크박스는 TextBoxMap에 포함되지 않지만 방어적으로 처리
+                        if (bool.TryParse(s, out var v)) bp.Value = v;
+                    }
+                    else
+                    {
+                        // 알 수 없는 타입은 문자열로 저장(기존 동작 유지)
+                        property.SetValue(s);
+                    }
+                }
+                catch
+                {
+                    // 무시: 잘못된 형식은 기존 값 유지
+                }
             }
         }
 

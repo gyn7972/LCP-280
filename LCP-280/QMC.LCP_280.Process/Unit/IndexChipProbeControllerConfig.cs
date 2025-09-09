@@ -31,9 +31,17 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            TopContact,
-            TopContactWating, // typo preserved
+            TopContact_Index1,
+            TopContact_Index2,
+            TopContact_Index3,
+            TopContact_Index4,
+            TopContact_Index5,
+            TopContact_Index6,
+            TopContact_Index7,
+            TopContact_Index8,
+            aiting,
             Ready
+            // 필요시 확장
         }
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
