@@ -48,6 +48,9 @@ namespace QMC.Common.Motions
         }
         #endregion
 
+        // === 홈 성공 알림 이벤트(글로벌) ===
+        public static event Action<MotionAxis> HomeSucceeded;
+
         private readonly object _gate = new object();
         private readonly AjinDriver _driver;
         private readonly CKDMotorDriver _ckdDriver;
@@ -232,6 +235,8 @@ namespace QMC.Common.Motions
                     if (_driver.IsHomeDone(AxisNo))
                     {
                         IsHomedLatched = true; // 성공 래치
+                        // 홈 성공 이벤트 알림
+                        try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
                         return 0;
                     }
                     Thread.Sleep(5);
@@ -247,6 +252,8 @@ namespace QMC.Common.Motions
                     if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition())
                     {
                         IsHomedLatched = true; // 성공 래치
+                        // 홈 성공 이벤트 알림
+                        try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
                         return 0;
                     }
                     Thread.Sleep(5);

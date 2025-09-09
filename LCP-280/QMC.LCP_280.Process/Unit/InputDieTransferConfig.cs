@@ -45,11 +45,18 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>Teaching Position 이름 (기존 오타(Wating) 유지 - 호환 목적)</summary>
         public enum TeachingPositionName
         {
-            Pickup,
-            PickupWating,  // typo preserved
+            Pickup_Index1,
+            Pickup_Index2,
+            Pickup_Index3,
+            Pickup_Index4,
+            Pickup_Index5,
+            Pickup_Index6,
+            Pickup_Index7,
+            Pickup_Index8,
             Place,
-            PlaceWating,   // typo preserved
+            Waiting,
             Ready
+            // 필요시 확장
         }
 
         /// <summary>Teaching Position 순수 목록</summary>

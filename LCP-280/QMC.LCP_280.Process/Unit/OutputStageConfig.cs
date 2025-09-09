@@ -39,8 +39,9 @@ namespace QMC.LCP_280.Process.Unit
             Loading,
             Unloading,
             CenterPoint,
-            Ready
-            // 필요시 추가
+            Ready,
+            SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
+            // 필요시 확장
         }
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
