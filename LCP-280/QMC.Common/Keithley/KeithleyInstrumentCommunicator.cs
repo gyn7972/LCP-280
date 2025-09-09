@@ -176,7 +176,8 @@ namespace QMC.Common.Keithley
                 return s;
             }
 
-            return s.Replace("\\n", "\n").Replace("\\r", "\r");
+            return s;
+            //return s.Replace("\\n", "\n").Replace("\\r", "\r");
         }
         private string InsertCommonEscapeSequences(string s)
         {
@@ -185,7 +186,8 @@ namespace QMC.Common.Keithley
                 return s;
             }
 
-            return s.Replace("\n", "\\n").Replace("\r", "\\r");
+            return s;
+            //return s.Replace("\n", "\\n").Replace("\r", "\\r");
         }
         #endregion
 

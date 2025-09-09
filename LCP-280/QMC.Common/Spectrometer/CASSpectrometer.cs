@@ -186,7 +186,7 @@ namespace QMC.Common.Spectrometer
             int ret = 0;
             do
             {
-                if (!IsCreated())
+                if (IsCreated())
                 {
                     TerminateDevice();
                 }
@@ -687,6 +687,7 @@ namespace QMC.Common.Spectrometer
                 OpenShutter();
                 CheckCASErrorAndThrow(CAS4DLL.casMeasureDarkCurrent(deviceId));
                 CloseShutter();
+                result = true;
             }
             catch (Exception ex)
             {

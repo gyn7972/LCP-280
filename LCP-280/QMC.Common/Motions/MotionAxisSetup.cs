@@ -143,13 +143,17 @@ namespace QMC.Common.Motions
         public double SoftLimitMax { get; set; } = +1000.000;
 
         // ===== Timeout =====
-        [Category("Timeout"), DisplayName("Home Timeout (ms)")]
+        [Category("Timeout"), DisplayName("Home Timeout(ms)")]
         [DefaultValue(30000)]
         public int HomeTimeoutMs { get; set; } = 30_000;
 
-        [Category("Timeout"), DisplayName("Move Timeout (ms)")]
+        [Category("Timeout"), DisplayName("Move Timeout(ms)")]
         [DefaultValue(20000)]
         public int MoveTimeoutMs { get; set; } = 20_000;
+
+        [Category("Timeout"), DisplayName("Sensor Detection Timeout(ms)")]
+        [DefaultValue(20000)]
+        public int SensorDetectionTimeoutMs { get; set; } = 20_000;
 
         // ===== BaseConfig Hooks =====
         public override void Reset()

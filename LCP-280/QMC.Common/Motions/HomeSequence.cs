@@ -6,31 +6,27 @@ using System.Threading.Tasks;
 
 namespace QMC.Common.Motions
 {
-    /// <summary>
-    /// 여러 축의 홈 동작을 순서/병렬로 실행하는 시퀀서.
-    /// - AddParallelStep로 단계별(순차) + 축묶음(동시) 구성
-    /// - RunAsync로 단계 순서대로 실행(각 단계 내 축은 병렬)
-    /// - HomeAllSequentialAsync / HomeAllParallelAsync 헬퍼 제공
-    /// </summary>
     public sealed class HomeSequence
     {
         private readonly MotionAxisManager _manager;
         private readonly List<List<MotionAxis>> _steps = new List<List<MotionAxis>>();
 
-        /// <summary>
-        /// 각 단계 시작 전에 호출되는 인터락 훅. Ok=false면 해당 단계 전체를 시작하지 않고 NotStarted 처리합니다.
-        /// stepIndex: 0부터 시작하는 단계 인덱스.
-        /// </summary>
+        // 스텝 시작 전 인터락 훅(기존)
         public Func<int, IReadOnlyList<MotionAxis>, CancellationToken, Task<(bool Ok, string Reason)>> PreStepInterlockAsync { get; set; }
+
+        // 스텝 종료 후 결과 훅(추가)
+        public Func<int, IReadOnlyList<HomeAxisResult>, CancellationToken, Task> PostStepAsync { get; set; }
+
+        // === 중단 상태/사유 노출 ===
+        public bool Aborted { get; private set; }
+        public string AbortReason { get; private set; }
+        public int? AbortStepIndex { get; private set; }
 
         public HomeSequence(MotionAxisManager manager)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
         }
 
-        /// <summary>
-        /// 동시 실행될 축 묶음을 한 단계로 추가합니다(실행 순서는 추가한 단계 순으로).
-        /// </summary>
         public HomeSequence AddParallelStep(params MotionAxis[] axes)
         {
             if (axes == null || axes.Length == 0) return this;
@@ -38,9 +34,6 @@ namespace QMC.Common.Motions
             return this;
         }
 
-        /// <summary>
-        /// 유닛명과 축명 배열로 한 단계(병렬)를 추가합니다.
-        /// </summary>
         public HomeSequence AddParallelStep(string unitName, params string[] axisNames)
         {
             if (string.IsNullOrEmpty(unitName) || axisNames == null || axisNames.Length == 0) return this;
@@ -50,9 +43,6 @@ namespace QMC.Common.Motions
             return this;
         }
 
-        /// <summary>
-        /// (유닛 무시) 축 이름만으로 한 단계(병렬)를 추가합니다. 동일 이름이 여러 유닛에 있으면 모두 포함합니다.
-        /// </summary>
         public HomeSequence AddParallelStepByAxisNames(params string[] axisNames)
         {
             if (axisNames == null || axisNames.Length == 0) return this;
@@ -63,9 +53,6 @@ namespace QMC.Common.Motions
             return this;
         }
 
-        /// <summary>
-        /// 등록된 모든 축을 한 단계(전축 병렬)로 구성하여 실행합니다.
-        /// </summary>
         public Task<IReadOnlyList<HomeAxisResult>> HomeAllParallelAsync(CancellationToken token = default(CancellationToken))
         {
             var axes = _manager.GetAllAxes();
@@ -75,11 +62,11 @@ namespace QMC.Common.Motions
             return RunAsync(token);
         }
 
-        /// <summary>
-        /// 등록된 모든 축을 순차로 홈합니다(한 축 완료 후 다음 축).
-        /// </summary>
         public async Task<IReadOnlyList<HomeAxisResult>> HomeAllSequentialAsync(CancellationToken token = default(CancellationToken))
         {
+            // 중단 플래그 초기화
+            Aborted = false; AbortReason = null; AbortStepIndex = null;
+
             var axes = _manager.GetAllAxes();
             var results = new List<HomeAxisResult>(axes.Count);
             foreach (var axis in axes)
@@ -87,10 +74,10 @@ namespace QMC.Common.Motions
                 if (token.IsCancellationRequested)
                 {
                     TryStop(axis);
+                    Aborted = true; AbortReason = "Canceled"; // 순차 모드에서도 취소 사유 기록
                     break;
                 }
 
-                // 사전 인터락 체크
                 if (!axis.CheckHomeInterlocks(out var reason))
                 {
                     results.Add(HomeAxisResult.NotStarted(axis, reason));
@@ -103,34 +90,33 @@ namespace QMC.Common.Motions
             return results;
         }
 
-        /// <summary>
-        /// 구성된 단계대로 실행합니다. 각 단계는 병렬, 단계 간은 순차.
-        /// </summary>
         public async Task<IReadOnlyList<HomeAxisResult>> RunAsync(CancellationToken token = default(CancellationToken))
         {
+            // 중단 플래그 초기화
+            Aborted = false; AbortReason = null; AbortStepIndex = null;
+
             var all = new List<HomeAxisResult>();
             for (int stepIndex = 0; stepIndex < _steps.Count; stepIndex++)
             {
                 var step = _steps[stepIndex];
                 if (step == null || step.Count == 0) continue;
-                if (token.IsCancellationRequested) break;
+                if (token.IsCancellationRequested) { Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex; break; }
 
-                // 0) 단계 시작 전 상위 설비 인터락 훅(도어/실린더 등) 확인
                 if (PreStepInterlockAsync != null)
                 {
                     var tuple = await PreStepInterlockAsync(stepIndex, step, token).ConfigureAwait(false);
                     if (!tuple.Ok)
                     {
-                        // 단계 전체 미시작 처리
+                        // 현재 스텝 자체가 시작 불가 → 전체 시퀀스 중단(다음 스텝으로 스킵하지 않음)
                         for (int i = 0; i < step.Count; i++)
                             all.Add(HomeAxisResult.NotStarted(step[i], tuple.Reason));
-                        continue; // 다음 단계로
+                        Aborted = true; AbortReason = $"Step {stepIndex} PreStep failed: {tuple.Reason}"; AbortStepIndex = stepIndex;
+                        break;
                     }
                 }
 
                 var tasks = new List<Task<HomeAxisResult>>(step.Count);
 
-                // 1) 축별 사전 인터락 검사: 통과 축만 시작, 실패 축은 NotStarted로 바로 기록
                 foreach (var axis in step)
                 {
                     if (!axis.CheckHomeInterlocks(out var reason))
@@ -143,17 +129,35 @@ namespace QMC.Common.Motions
                     }
                 }
 
-                if (tasks.Count == 0) continue; // 해당 단계에 시작할 축이 없다면 다음 단계로
+                // 모든 축이 NotStarted로 빠져 실제 실행할 작업이 없다면 스텝 실패로 간주하고 중단
+                if (tasks.Count == 0)
+                {
+                    Aborted = true; AbortReason = $"Step {stepIndex} has no runnable axes (all blocked by interlocks)"; AbortStepIndex = stepIndex;
+                    break;
+                }
 
                 try
                 {
                     var results = await Task.WhenAll(tasks).ConfigureAwait(false);
                     all.AddRange(results);
+
+                    // 스텝 종료 후 콜백 호출(추가)
+                    if (PostStepAsync != null)
+                    {
+                        try
+                        {
+                            await PostStepAsync(stepIndex, results, token).ConfigureAwait(false);
+                        }
+                        catch
+                        {
+                            // 필요 시 로깅 추가
+                        }
+                    }
                 }
                 catch (OperationCanceledException)
                 {
-                    // 취소 시 현재 단계의 축들을 가능한 정지
                     foreach (var axis in step) TryStop(axis);
+                    Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
                     break;
                 }
             }
@@ -169,13 +173,13 @@ namespace QMC.Common.Motions
                 try
                 {
                     token.ThrowIfCancellationRequested();
-                    var rc = axis.HomeSync(); // 각 축의 개별 타임아웃을 활용
+                    var rc = axis.HomeSync();
                     return new HomeAxisResult(axis, rc, null, started: true, failReason: null);
                 }
                 catch (OperationCanceledException)
                 {
                     TryStop(axis);
-                    throw; // 상위에서 처리
+                    throw;
                 }
                 catch (Exception ex)
                 {

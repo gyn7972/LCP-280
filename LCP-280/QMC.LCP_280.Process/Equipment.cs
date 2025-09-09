@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using QMC.Common.PKGTester;
+using QMC.LCP_280.Process.Component; // added for HomeHooks
 
 namespace QMC.LCP_280.Process
 {
@@ -229,6 +230,9 @@ namespace QMC.LCP_280.Process
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
 
+                // 홈 후처리 글로벌 구독(1회)
+                HomeHooks.EnsureSubscribed();
+
                 OnStateChanged(EquipmentState.Ready);
             }
             catch (Exception ex)
@@ -238,6 +242,8 @@ namespace QMC.LCP_280.Process
                 throw;
             }
         }
+
+        #endregion
 
 
         #region Unit Registration
@@ -1644,4 +1650,3 @@ namespace QMC.LCP_280.Process
     #endregion
 
 }
-#endregion

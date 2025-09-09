@@ -88,6 +88,7 @@
     <Compile Include="Component\DIOControl.Designer.cs">
       <DependentUpon>DIOControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\HomeHooks.cs" />
     <Compile Include="Component\InterlockManager.cs" />
     <Compile Include="Component\MachineHomeCoordinator.cs" />
     <Compile Include="Component\ManualSequenceControl.cs">
@@ -177,6 +178,12 @@
     </Compile>
     <Compile Include="Unit\FormRecipe\Vision_Recipe.Designer.cs">
       <DependentUpon>Vision_Recipe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\FormConfig\InputStageUnit_Config.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\FormConfig\InputStageUnit_Config.Designer.cs">
+      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormWork\ChipUnloading_Working.cs">
       <SubType>Form</SubType>
@@ -318,12 +325,6 @@
     <Compile Include="Unit\FormConfig\OutputStageUnit_Config.Designer.cs">
       <DependentUpon>OutputStageUnit_Config.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormConfig\InputStageUnit_Config.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\FormConfig\InputStageUnit_Config.Designer.cs">
-      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
-    </Compile>
     <Compile Include="Unit\FormConfig\InputDieTransferUnit_Config.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -422,6 +423,9 @@
     <EmbeddedResource Include="Unit\FormRecipe\Main_Recipe.resx">
       <DependentUpon>Main_Recipe.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormConfig\InputStageUnit_Config.resx">
+      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormRecipe\Page\CellTesterPage.resx">
       <DependentUpon>CellTesterPage.cs</DependentUpon>
     </EmbeddedResource>
@@ -481,9 +485,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\OutputStageUnit_Config.resx">
       <DependentUpon>OutputStageUnit_Config.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormConfig\InputStageUnit_Config.resx">
-      <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\InputDieTransferUnit_Config.resx">
       <DependentUpon>InputDieTransferUnit_Config.cs</DependentUpon>

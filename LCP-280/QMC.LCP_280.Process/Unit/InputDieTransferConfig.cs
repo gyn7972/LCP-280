@@ -46,10 +46,17 @@ namespace QMC.LCP_280.Process.Unit
         public enum TeachingPositionName
         {
             Pickup,
-            PickupWating,  // typo preserved
-            Place,
-            PlaceWating,   // typo preserved
+            Place_Index1,
+            Place_Index2,
+            Place_Index3,
+            Place_Index4,
+            Place_Index5,
+            Place_Index6,
+            Place_Index7,
+            Place_Index8,
+            Waiting,
             Ready
+            // 필요시 확장
         }
 
         /// <summary>Teaching Position 순수 목록</summary>

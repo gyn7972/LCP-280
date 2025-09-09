@@ -20,9 +20,23 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            Align,
-            AlignWating, // typo preserved for compatibility
-            Ready
+            Align_Index1_Up,
+            Align_Index1_Ready,
+            Align_Index2_Up,
+            Align_Index2_Ready,
+            Align_Index3_Up,
+            Align_Index3_Ready,
+            Align_Index4_Up,
+            Align_Index4_Ready,
+            Align_Index5_Up,
+            Align_Index5_Ready,
+            Align_Index6_Up,
+            Align_Index6_Ready,
+            Align_Index7_Up,
+            Align_Index7_Ready,
+            Align_Index8_Up,
+            Align_Index8_Read,
+            // 필요시 확장
         }
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
@@ -55,8 +69,8 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
             Saveconfig();

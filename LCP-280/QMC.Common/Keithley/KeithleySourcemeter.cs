@@ -127,13 +127,13 @@ namespace QMC.Common.Keithley
                     throw new Exception("Failed to apply parameter.");
                 }
 
-                // Initialize SMU
+                //// Initialize SMU
                 if (Init() != 0)
                 {
                     throw new Exception("Failed to initialize sourcemeter.");
                 }
 
-                // Initialize SMU Channels
+                //// Initialize SMU Channels
                 foreach (var item in Channels)
                 {
                     var channel = item.Value;
@@ -213,9 +213,12 @@ namespace QMC.Common.Keithley
                 StopWatch sw = new StopWatch();
                 sw.Start();
 
+                int tryCount = 0;
+
                 while (!channel.WaitComplete())
                 {
-                    if (sw.Elapsed.Milliseconds >= Config.MeasureTimeout)
+                    tryCount++;
+                    if (tryCount >= 3)
                         throw new Exception("Measurement timeout occurred.");
 
                     Thread.Sleep(10);
@@ -436,7 +439,6 @@ namespace QMC.Common.Keithley
                 string[] textValue = System.IO.File.ReadAllLines(Config.ScriptFileName);
                 if (textValue.Length > 0)
                 {
-                    StringBuilder sb = new StringBuilder();
                     for (int i = 0; i < textValue.Length; i++)
                     {
                         // 텍스트의 앞 뒤 빈공간 제거
@@ -468,11 +470,9 @@ namespace QMC.Common.Keithley
                         if (arrangeText == "")
                             continue;
 
-                        sb.AppendLine(arrangeText);
-                    }
-
-                    if (!Communicator.Write(sb.ToString()))
-                        throw new Exception("Failed to send user script.");
+                        if (!Communicator.Write(arrangeText))
+                            throw new Exception("Failed to send user script.");
+                    }                    
                 }
             }
             catch (Exception ex)
