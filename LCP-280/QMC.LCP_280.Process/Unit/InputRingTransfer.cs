@@ -25,8 +25,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Axes
-        private MotionAxis _feederX;
-        public MotionAxis FeederX => _feederX;
+        private MotionAxis _feederY;
+        public MotionAxis FeederX => _feederY;
         #endregion
 
         #region IO Domain Members
@@ -100,7 +100,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Axis Binding
-        private void BindAxes() => Axes.TryGetValue("Wafer Feeder X Axis", out _feederX);
+        private void BindAxes() => Axes.TryGetValue("Wafer Feeder Y Axis", out _feederY);
         #endregion
 
         #region Low-Level IO (Read/Write by Name)
