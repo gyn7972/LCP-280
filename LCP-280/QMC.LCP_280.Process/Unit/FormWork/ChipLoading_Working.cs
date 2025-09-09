@@ -1,9 +1,8 @@
 ﻿using QMC.LCP_280.Process.Component; // ensure access to DIOControl / TeachingPositionControl
 using QMC.LCP_280.Process.Sequences;
 using System;
-using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -36,6 +35,7 @@ namespace QMC.LCP_280.Process.Unit
         // State
         private bool _initialized;
         private bool _preloadRequested;
+        private bool _deferredInitDone; // 지연 초기화 완료 여부
         private bool _isLayoutEditMode;
 
         #region Constructors
@@ -75,10 +75,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 Text = $"{WORK_NAME} Working";
-                BindTeachingPositions();
-                BindDioControls();
-                BindCamera();
-                InitSequences();
+                BeginInvoke(new Action(StartDeferredInit)); // 무거운 초기화 지연
             }
             catch (Exception ex)
             {
@@ -94,6 +91,22 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch { }
             }
+        }
+
+        private async void StartDeferredInit()
+        {
+            if (_deferredInitDone) return;
+            _deferredInitDone = true;
+            await Task.Delay(30); // 첫 Paint 후 실행 유도
+            if (IsDisposed || Disposing) return;
+            try
+            {
+                BindTeachingPositions();
+                BindDioControls();
+                BindCamera();
+                InitSequences();
+            }
+            catch { }
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -212,14 +225,14 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 // ===== Sensors =====
-                dioControl.BindDIOInput(() => InputStageUnit.IsVacuum(),      "Vacuum OK(Sns)",      "InStageVacOk");
+                dioControl.BindDIOInput(() => InputStageUnit.IsVacuum(), "Vacuum OK(Sns)", "InStageVacOk");
                 dioControl.BindDIOInput(() => InputStageUnit.IsPlateUp(), "Plate UP Sns", "InStagePlateUp");
                 dioControl.BindDIOInput(() => InputStageUnit.IsPlateDown(), "Plate DOWN Sns", "InStagePlateDn");
                 dioControl.BindDIOInput(() => InputStageUnit.IsClampLiftDown(), "ClampLift DOWN Sns", "InStageClampDn");
                 dioControl.BindDIOInput(() => InputStageUnit.IsClampFwd(), "Clamp FWD Sns", "InStageClampFwd");
-                dioControl.BindDIOInput(() => InputStageUnit.Ring0(),         "Ring Sns 0",          "InStageRing0");
-                dioControl.BindDIOInput(() => InputStageUnit.Ring1(),         "Ring Sns 1",          "InStageRing1");
-                dioControl.BindDIOInput(() => InputStageUnit.IsRingPresent(), "Ring Any",            "InStageRingAny");
+                dioControl.BindDIOInput(() => InputStageUnit.Ring0(), "Ring Sns 0", "InStageRing0");
+                dioControl.BindDIOInput(() => InputStageUnit.Ring1(), "Ring Sns 1", "InStageRing1");
+                dioControl.BindDIOInput(() => InputStageUnit.IsRingPresent(), "Ring Any", "InStageRingAny");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetVacuumValve(true),
@@ -243,30 +256,30 @@ namespace QMC.LCP_280.Process.Unit
                     "InStagePlateDn");
 
                 dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampLiftUpValve(true),   
-                    () => InputStageUnit.SetClampLiftUpValve(false),   
-                    "ClampUP",        
-                    () => InputStageUnit.IsClampLiftUpValveOn(), 
+                    () => InputStageUnit.SetClampLiftUpValve(true),
+                    () => InputStageUnit.SetClampLiftUpValve(false),
+                    "ClampUP",
+                    () => InputStageUnit.IsClampLiftUpValveOn(),
                     "InStageClampLiftUp");
 
                 dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampLiftDownValve(true), 
-                    () => InputStageUnit.SetClampLiftDownValve(false), 
-                    "ClampDOWN",      
+                    () => InputStageUnit.SetClampLiftDownValve(true),
+                    () => InputStageUnit.SetClampLiftDownValve(false),
+                    "ClampDOWN",
                     () => InputStageUnit.IsClampLiftDownValveOn(),
                     "InStageClampLiftDn");
 
                 dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampFwdValve(true),      
-                    () => InputStageUnit.SetClampFwdValve(false),      
-                    "ClampFWD",        
+                    () => InputStageUnit.SetClampFwdValve(true),
+                    () => InputStageUnit.SetClampFwdValve(false),
+                    "ClampFWD",
                     () => InputStageUnit.IsClampFwdValveOn(),
                     "InStageClampFwd");
 
                 dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampBwdValve(true),     
-                    () => InputStageUnit.SetClampBwdValve(false),      
-                    "ClampBWD",       
+                    () => InputStageUnit.SetClampBwdValve(true),
+                    () => InputStageUnit.SetClampBwdValve(false),
+                    "ClampBWD",
                     () => InputStageUnit.IsClampBwdValveOn(),
                     "InStageClampBwd");
 

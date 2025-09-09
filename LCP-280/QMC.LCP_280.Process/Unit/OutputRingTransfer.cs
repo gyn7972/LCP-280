@@ -30,6 +30,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region IO Domain Members
         private Cylinder _feederLift; // Up/Down
+        private Cylinder _cylClamp;   // Clamp / Unclamp
         #endregion
 
         #region ctor / Initialization
@@ -102,7 +103,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-        #region Low-Level IO (Read/Write By Name)
+        #region Low-Level IO (Read/Write/State)
         public bool ReadInput(string name)
         {
             var hi = OutputRingTransferConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
@@ -121,22 +122,55 @@ namespace QMC.LCP_280.Process.Unit
                 if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
             return false;
         }
+        public bool IsOutputOn(string name)
+        {
+            var ho = OutputRingTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            if (ho == null) return false;
+            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
+            foreach (var m in eq.UnitIO.Modules)
+                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
+            return false;
+        }
         #endregion
 
         #region IO Domain Mapping
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            // Lift
+            // Lift (Feeder Up/Down)
             DIO.MapByName(unit, "OutFeeder.UpOut",   true,  OutputRingTransferConfig.IO.FEEDER_UP_VALVE);
             DIO.MapByName(unit, "OutFeeder.DownOut", true,  OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
             DIO.MapByName(unit, "OutFeeder.UpIn",    false, OutputRingTransferConfig.IO.FEEDER_UP);
             DIO.MapByName(unit, "OutFeeder.DownIn",  false, OutputRingTransferConfig.IO.FEEDER_DOWN);
-            _feederLift = new Cylinder("BinFeederLift", "OutFeeder.UpOut", "OutFeeder.DownOut", "OutFeeder.UpIn", "OutFeeder.DownIn");
-            // Clamp
-            DIO.MapByName(unit, "OutFeeder.ClampOut",   true, OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
-            DIO.MapByName(unit, "OutFeeder.UnclampOut", true, OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
+            _feederLift = new Cylinder(
+                "OutFeederLift",
+                "OutFeeder.UpOut",
+                "OutFeeder.DownOut",
+                "OutFeeder.UpIn",
+                "OutFeeder.DownIn");
+
+            // Clamp (Close/Open) - Only UNCLAMP sensor 존재
+            DIO.MapByName(unit, "OutFeeder.ClampOut",   true,  OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
+            DIO.MapByName(unit, "OutFeeder.UnclampOut", true,  OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
+            DIO.MapByName(unit, "OutFeeder.UnclampIn",  false, OutputRingTransferConfig.IO.FEEDER_UNCLAMP);
+            _cylClamp = new Cylinder(
+                "OutFeederClamp",
+                "OutFeeder.ClampOut",
+                "OutFeeder.UnclampOut",
+                "OutFeeder.ClampIn/*NO_SENSOR*/",
+                "OutFeeder.UnclampIn");
         }
+        #endregion
+
+        #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
+        public void SetFeederUpValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_UP_VALVE, on);
+        public bool IsFeederUpValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UP_VALVE);
+        public void SetFeederDownValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE, on);
+        public bool IsFeederDownValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
+        public void SetFeederClampValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, on);
+        public bool IsFeederClampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
+        public void SetFeederUnclampValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, on);
+        public bool IsFeederUnclampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
 
         #region High-Level Actuator API

@@ -127,13 +127,13 @@ namespace QMC.Common.Keithley
                     throw new Exception("Failed to apply parameter.");
                 }
 
-                // Initialize SMU
+                //// Initialize SMU
                 if (Init() != 0)
                 {
                     throw new Exception("Failed to initialize sourcemeter.");
                 }
 
-                // Initialize SMU Channels
+                //// Initialize SMU Channels
                 foreach (var item in Channels)
                 {
                     var channel = item.Value;
@@ -213,9 +213,12 @@ namespace QMC.Common.Keithley
                 StopWatch sw = new StopWatch();
                 sw.Start();
 
+                int tryCount = 0;
+
                 while (!channel.WaitComplete())
                 {
-                    if (sw.Elapsed.Milliseconds >= Config.MeasureTimeout)
+                    tryCount++;
+                    if (tryCount >= 3)
                         throw new Exception("Measurement timeout occurred.");
 
                     Thread.Sleep(10);

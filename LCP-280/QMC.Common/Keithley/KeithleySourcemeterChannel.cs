@@ -261,6 +261,9 @@ namespace QMC.Common.Keithley
                 if (!comm.Query("*OPC?", ref response))
                     return false;
 
+                //response = response.Trim();
+                response = response.Replace("\n", "");
+                response = response.Replace("\r", "");
                 return (response == "1");
             }
             catch (Exception ex)
@@ -275,11 +278,10 @@ namespace QMC.Common.Keithley
             try
             {
                 string bufferName = $"{Name}.nvbuffer1";
-                string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings";
+                string bufferReadCommand = $"printbuffer(1, {bufferName}.n, {bufferName}.readings)";
+                
                 string bufferData = "";
-
-                KeithleyInstrumentCommunicator comm = Owner.Communicator;
-                if (!comm.Query(bufferReadCommand, ref bufferData))
+                if (!Owner.Communicator.Query(bufferReadCommand, ref bufferData))
                     throw new Exception($"[{Name}] Failed to read buffer.");
 
                 bufferData = bufferData.Trim();
