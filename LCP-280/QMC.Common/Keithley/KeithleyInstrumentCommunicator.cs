@@ -95,6 +95,8 @@ namespace QMC.Common.Keithley
             {
                 if (session != null)
                 {
+                    session.Clear();
+
                     // Disable Service Request Event
                     session.DiscardEvents(EventType.AllEnabled);
                     session.DisableEvent(EventType.AllEnabled);

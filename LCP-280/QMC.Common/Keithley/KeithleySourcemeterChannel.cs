@@ -258,13 +258,17 @@ namespace QMC.Common.Keithley
                 string response = "";
 
                 KeithleyInstrumentCommunicator comm = Owner.Communicator;
-                if (!comm.Query("*OPC?", ref response))
-                    return false;
+                //if (!comm.Query("*OPC?", ref response))
+                //    return false;
 
-                //response = response.Trim();
-                response = response.Replace("\n", "");
-                response = response.Replace("\r", "");
-                return (response == "1");
+                ////response = response.Trim();
+                //response = response.Replace("\n", "");
+                //response = response.Replace("\r", "");
+                //return (response == "1");
+                if (comm.Read(ref response))
+                {
+                    return (response == "measure_end");
+                }
             }
             catch (Exception ex)
             {
@@ -272,6 +276,7 @@ namespace QMC.Common.Keithley
                 Log.Write(ex);
                 return false;
             }
+            return false;
         }
         public bool ReadBufferData()
         {
