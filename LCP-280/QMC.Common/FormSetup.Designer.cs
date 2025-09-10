@@ -30,20 +30,20 @@ namespace QMC.Common
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            
-            // 🔧 고정 크기 대신 최소 크기만 설정하고, 실제 크기는 SetPanelSize에서 동적으로 설정
-            this.MinimumSize = new System.Drawing.Size(600, 400);
-            this.Size = new System.Drawing.Size(800, 450); // 기본 크기 (SetPanelSize 호출 전까지 임시)
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            
-            this.Text = "FormConfig";
+            this.SuspendLayout();
+            // 
+            // FormSetup
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.BackColor = System.Drawing.Color.White;
+            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.MinimumSize = new System.Drawing.Size(600, 400);
+            this.Name = "FormSetup";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
-            
-            // 🔧 크기 변경 이벤트 추가 (디버깅용)
-            this.Resize += FormConfig_Resize;
+            this.Text = "FormConfig";
+            this.ResumeLayout(false);
+
         }
         
         /// <summary>
