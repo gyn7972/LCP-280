@@ -278,6 +278,20 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                // Rotary 유닛이 있으면 우선 사용(인터락 포함)
+                Rotary rotary = null;
+                if (EquipmentInst?.Units != null && EquipmentInst.Units.TryGetValue("Rotary", out var u))
+                    rotary = u as Rotary;
+
+                if (rotary != null)
+                {
+                    string reason;
+                    if (!rotary.TryMoveIndexPrev(out reason) && !string.IsNullOrEmpty(reason))
+                        MessageBox.Show(this, reason, "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 폴백: 기존 직접 축 호출
                 if (_axisManager == null) return;
                 string axisName = selectAxisListBoxItemsView.SelectedItemName;
                 if (string.IsNullOrEmpty(axisName)) return;
@@ -297,6 +311,20 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                // Rotary 유닛이 있으면 우선 사용(인터락 포함)
+                Rotary rotary = null;
+                if (EquipmentInst?.Units != null && EquipmentInst.Units.TryGetValue("Rotary", out var u))
+                    rotary = u as Rotary;
+
+                if (rotary != null)
+                {
+                    string reason;
+                    if (!rotary.TryMoveIndexNext(out reason) && !string.IsNullOrEmpty(reason))
+                        MessageBox.Show(this, reason, "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 폴백: 기존 직접 축 호출
                 if (_axisManager == null) return;
                 string axisName = selectAxisListBoxItemsView.SelectedItemName;
                 if (string.IsNullOrEmpty(axisName)) return;

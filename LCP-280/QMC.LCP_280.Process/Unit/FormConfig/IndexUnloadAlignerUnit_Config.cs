@@ -74,8 +74,8 @@ namespace QMC.LCP_280.Process.Unit
 #if DEBUG
                 Debug.WriteLine($"[SizeMismatch] {msg}");
 #endif
-                try { MessageBox.Show(this, msg, "크기 불일치", MessageBoxButtons.OK, MessageBoxIcon.Warning); } catch { /* ignore */ }
-                _sizeMismatchWarned = true;
+                //try { MessageBox.Show(this, msg, "크기 불일치", MessageBoxButtons.OK, MessageBoxIcon.Warning); } catch { /* ignore */ }
+                //_sizeMismatchWarned = true;
             }
 
             try
