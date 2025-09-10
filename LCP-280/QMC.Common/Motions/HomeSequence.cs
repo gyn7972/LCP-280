@@ -102,12 +102,13 @@ namespace QMC.Common.Motions
                 if (step == null || step.Count == 0) continue;
                 if (token.IsCancellationRequested) { Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex; break; }
 
+                // 0) PreStep 인터락 실패 시: 현재 스텝 축들 즉시 정지 + 결과 생성 + 중단
                 if (PreStepInterlockAsync != null)
                 {
                     var tuple = await PreStepInterlockAsync(stepIndex, step, token).ConfigureAwait(false);
                     if (!tuple.Ok)
                     {
-                        // 현재 스텝 자체가 시작 불가 → 전체 시퀀스 중단(다음 스텝으로 스킵하지 않음)
+                        foreach (var ax in step) TryStop(ax);
                         for (int i = 0; i < step.Count; i++)
                             all.Add(HomeAxisResult.NotStarted(step[i], tuple.Reason));
                         Aborted = true; AbortReason = $"Step {stepIndex} PreStep failed: {tuple.Reason}"; AbortStepIndex = stepIndex;
@@ -115,42 +116,107 @@ namespace QMC.Common.Motions
                     }
                 }
 
-                var tasks = new List<Task<HomeAxisResult>>(step.Count);
-
+                // 1) 축별 사전 체크: 하나라도 CheckHomeInterlocks 실패하면 스텝 전체 중단(요청사항)
+                var blockedReasons = new Dictionary<MotionAxis, string>();
+                var runnable = new List<MotionAxis>(step.Count);
                 foreach (var axis in step)
                 {
                     if (!axis.CheckHomeInterlocks(out var reason))
                     {
-                        all.Add(HomeAxisResult.NotStarted(axis, reason));
+                        blockedReasons[axis] = reason ?? "CheckHomeInterlocks blocked";
                     }
                     else
                     {
-                        tasks.Add(HomeOneAsync(axis, token));
+                        runnable.Add(axis);
                     }
                 }
 
-                // 모든 축이 NotStarted로 빠져 실제 실행할 작업이 없다면 스텝 실패로 간주하고 중단
-                if (tasks.Count == 0)
+                if (blockedReasons.Count > 0)
                 {
+                    // 스텝 전체 축 정지
+                    foreach (var ax in step) TryStop(ax);
+
+                    // 축별 결과 작성: 실패 축은 개별 사유, 나머지는 전체 차단 사유
+                    foreach (var ax in step)
+                    {
+                        string r;
+                        if (!blockedReasons.TryGetValue(ax, out r)) r = "Blocked by other axis interlock";
+                        all.Add(HomeAxisResult.NotStarted(ax, r));
+                    }
+
+                    Aborted = true; AbortReason = $"Step {stepIndex} blocked by CheckHomeInterlocks"; AbortStepIndex = stepIndex;
+                    break;
+                }
+
+                // 모든 축이 NotStarted로 빠져 실제 실행할 작업이 없다면 스텝 실패로 간주하고 중단
+                if (runnable.Count == 0)
+                {
+                    foreach (var ax in step) TryStop(ax);
                     Aborted = true; AbortReason = $"Step {stepIndex} has no runnable axes (all blocked by interlocks)"; AbortStepIndex = stepIndex;
                     break;
                 }
 
+                // 2) 병렬 홈 실행: 하나라도 실패/타임아웃 발생 시 스텝 내 모든 축 즉시 정지 후 결과 출력
+                var tasks = new List<Task<HomeAxisResult>>(runnable.Count);
+                foreach (var axis in runnable)
+                {
+                    tasks.Add(HomeOneAsync(axis, token));
+                }
+
+                IReadOnlyList<HomeAxisResult> stepResults = null;
+
                 try
                 {
-                    var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                    all.AddRange(results);
+                    // 빠른 실패 감지: WhenAny로 먼저 끝난 축이 실패면 즉시 전 축 정지
+                    var pending = new List<Task<HomeAxisResult>>(tasks);
+                    bool earlyFail = false;
+                    string earlyFailReason = null;
 
-                    // 스텝 종료 후 콜백 호출(추가)
-                    if (PostStepAsync != null)
+                    while (pending.Count > 0)
                     {
-                        try
+                        var finished = await Task.WhenAny(pending).ConfigureAwait(false);
+                        pending.Remove(finished);
+
+                        var res = await finished.ConfigureAwait(false);
+                        if (!res.Success)
                         {
-                            await PostStepAsync(stepIndex, results, token).ConfigureAwait(false);
+                            earlyFail = true;
+                            earlyFailReason = !string.IsNullOrEmpty(res.FailReason)
+                                ? res.FailReason
+                                : ("ReturnCode=" + res.ReturnCode);
+                            break;
                         }
-                        catch
+                    }
+
+                    if (earlyFail)
+                    {
+                        // 스텝 내 전체 축 즉시 정지
+                        foreach (var ax in step) TryStop(ax);
+
+                        // 모든 결과 수집
+                        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                        stepResults = results;
+                        all.AddRange(results);
+
+                        Aborted = true; AbortReason = $"Step {stepIndex} failed early: {earlyFailReason}"; AbortStepIndex = stepIndex;
+
+                        // 실패 스텝이라도 PostStep 콜백으로 알림 (선택)
+                        if (PostStepAsync != null)
                         {
-                            // 필요 시 로깅 추가
+                            try { await PostStepAsync(stepIndex, results, token).ConfigureAwait(false); } catch { }
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        // 전부 성공 또는 오류 없이 완료
+                        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                        stepResults = results;
+                        all.AddRange(results);
+
+                        if (PostStepAsync != null)
+                        {
+                            try { await PostStepAsync(stepIndex, results, token).ConfigureAwait(false); } catch { }
                         }
                     }
                 }
@@ -173,8 +239,8 @@ namespace QMC.Common.Motions
                 try
                 {
                     token.ThrowIfCancellationRequested();
-                    var rc = axis.HomeSync();
-                    return new HomeAxisResult(axis, rc, null, started: true, failReason: null);
+                    var rc = axis.HomeSync(); // 내부에서 HomeTimeout 시 Stop/Alarm 처리 포함
+                    return new HomeAxisResult(axis, rc, null, started: true, failReason: rc == 0 ? null : "Home failed (rc=" + rc + ")");
                 }
                 catch (OperationCanceledException)
                 {
