@@ -65,7 +65,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Wafer Stage Y Axis", 200.0 }
+                        { "Wafer Lifter Z Axis", 200.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }

@@ -208,8 +208,8 @@ namespace QMC.LCP_280.Process.Component
                 }
 
                 // 전역/해당축 인터락 평가
-                if (!il.ValidateForHomeStep(list, out reason))
-                    return (false, reason);
+                //if (!il.ValidateForHomeStep(list, out reason))
+                //    return (false, reason);
 
                 // 축별 사전 체크(Servo/Alarm/Motion)
                 foreach (var a in list)

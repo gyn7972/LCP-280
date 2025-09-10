@@ -598,8 +598,8 @@ namespace QMC.LCP_280.Process.Unit
             pc.Add(new TitleOnlyProperty("Limit"));
             pc.Add(new DoubleProperty("+End Limit", (double)axis.Setup.PositiveLimitLevel));
             pc.Add(new DoubleProperty("-End Limit", (double)axis.Setup.NegativeLimitLevel));
-            pc.Add(new DoubleProperty("Soft Limit -", (double)axis.Setup.SoftLimitMin));
-            pc.Add(new DoubleProperty("Soft Limit +", (double)axis.Setup.SoftLimitMax));
+            pc.Add(new DoubleProperty("Soft Limit-", (double)axis.Setup.SoftLimitMin));
+            pc.Add(new DoubleProperty("Soft Limit+", (double)axis.Setup.SoftLimitMax));
 
             // Home
             pc.Add(new TitleOnlyProperty("Home"));

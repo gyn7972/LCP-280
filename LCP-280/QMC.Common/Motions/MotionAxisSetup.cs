@@ -126,19 +126,19 @@ namespace QMC.Common.Motions
         [DefaultValue(false)]
         public bool SoftLimitEnable { get; set; } = false;
 
-        [Category("Limit"), DisplayName("+ End Limit")]
+        [Category("Limit"), DisplayName("+End Limit")]
         [DefaultValue(ActiveLevel.Low)]
         public ActiveLevel PositiveLimitLevel { get; set; } = ActiveLevel.Low;
 
-        [Category("Limit"), DisplayName("- End Limit")]
+        [Category("Limit"), DisplayName("-End Limit")]
         [DefaultValue(ActiveLevel.Low)]
         public ActiveLevel NegativeLimitLevel { get; set; } = ActiveLevel.Low;
 
-        [Category("Limit"), DisplayName("Soft Limit Min (mm)")]
+        [Category("Limit"), DisplayName("Soft Limit-")]
         [DefaultValue(-1000.0)]
         public double SoftLimitMin { get; set; } = -1000.000;
 
-        [Category("Limit"), DisplayName("Soft Limit Max (mm)")]
+        [Category("Limit"), DisplayName("Soft Limit+")]
         [DefaultValue(1000.0)]
         public double SoftLimitMax { get; set; } = +1000.000;
 
