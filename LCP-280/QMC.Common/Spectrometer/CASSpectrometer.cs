@@ -111,7 +111,6 @@ namespace QMC.Common.Spectrometer
         public class DeviceInformation
         {
             public string Name { get; set; }
-            public string Model { get; set; }
             public string SerialNumber { get; set; }
             public string InterfaceType { get; set; }
             public string InterfaceOption { get; set; }
@@ -124,7 +123,6 @@ namespace QMC.Common.Spectrometer
             public void Clear()
             {
                 Name = "";
-                Model = "";
                 SerialNumber = "";
                 InterfaceType = "";
                 InterfaceOption = "";
@@ -578,7 +576,6 @@ namespace QMC.Common.Spectrometer
             if (!IsCreated())
                 return false;
 
-            bool result = false;
             try
             {
                 // Set parameter
@@ -589,23 +586,19 @@ namespace QMC.Common.Spectrometer
                 // Device Initialize
                 CheckCASErrorAndThrow(CAS4DLL.casInitialize(deviceId, CAS4DLL.InitOnce));
                 GetDeviceParameter(CAS4DLL.dpidCalibrationUnit, ref intensityUnit);
-                result = true;
 
                 // Get Device Information
                 string devName = "";
-                string devModel = "";
                 string devSerial = "";
                 double devInfType = 0;
                 double devInfOption = 0;
 
                 GetDeviceParameter(CAS4DLL.dpidSpectrometerName, ref devName);
-                GetDeviceParameter(CAS4DLL.dpidSpectrometerModel, ref devModel);
                 GetDeviceParameter(CAS4DLL.dpidSerialNo, ref devSerial);
                 GetDeviceParameter(CAS4DLL.dpidInterfaceType, ref devInfType);
                 GetDeviceParameter(CAS4DLL.dpidInterfaceOption, ref devInfOption);
 
                 deviceInfo.Name = devName;
-                deviceInfo.Model = devModel;
                 deviceInfo.SerialNumber = devSerial;
 
                 switch((int)devInfType)
@@ -631,16 +624,16 @@ namespace QMC.Common.Spectrometer
                 }
 
                 deviceInfo.InterfaceOption = devInfOption.ToString();
-
                 OnDeviceCreated?.Invoke(this);
+                return true;
             }
             catch (Exception ex)
             {
                 // Error handling
                 deviceInfo.Clear();
                 Log.Write(ex);
+                return false;
             }
-            return result;
         }
 
         public bool IsCreated()

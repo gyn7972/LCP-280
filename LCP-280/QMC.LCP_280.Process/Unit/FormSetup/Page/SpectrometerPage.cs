@@ -91,11 +91,11 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                 {
                     if (lbSpectrometerModelValue.InvokeRequired)
                     {
-                        lbSpectrometerModelValue.Invoke(new Action(() => lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Model));
+                        lbSpectrometerModelValue.Invoke(new Action(() => lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Name));
                     }
                     else
                     {
-                        lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Model;
+                        lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Name;
                     }
                     if (lbSpectrometerSerialNoValue.InvokeRequired)
                     {
@@ -201,7 +201,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             if (spectrometer != null)
             {
                 // Device Information
-                lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Model;
+                lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Name;
                 lbSpectrometerSerialNoValue.Text = spectrometer.DeviceInfo.SerialNumber;
 
                 // Device Status
