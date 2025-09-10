@@ -261,6 +261,8 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             {
                 if (MessageBox.Show("Would you like to save your settings?", "Save", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
+                    pcvSpectrometerConfig.Apply();
+
                     selectSpectrometer.Config.ApplyValueFromPropertyCollection(pcConfig);
                     if (selectSpectrometer.Config.Save() == 0)
                     {

@@ -129,38 +129,35 @@ namespace QMC.Common.Keithley
             if (session == null || !isConnected)
                 return false;
 
-            bool result = false;
             try
             {
-                string buffer = ReplaceCommonEscapeSequences(writeText);
-                session.RawIO.Write(buffer);
-                result = true;
+                session.RawIO.Write(writeText);
+                return true;
             }
             catch (Exception ex)
             {
                 // Error handling
                 Log.Write(ex);
+                return false;
             }
-            return result;
         }
         public bool Read(ref string readText)
         {
             if (session == null || !isConnected)
                 return false;
 
-            bool result = false;
             try
             {
-                readText = InsertCommonEscapeSequences(session.RawIO.ReadString());
-                result = true;
+                readText = session.RawIO.ReadString();
+                return true;
             }
             catch (Exception ex)
             {
                 // Error handling
                 readText = "";
                 Log.Write(ex);
+                return false;
             }
-            return result;
         }
         #endregion
 
@@ -172,8 +169,7 @@ namespace QMC.Common.Keithley
                 return s;
             }
 
-            return s;
-            //return s.Replace("\\n", "\n").Replace("\\r", "\r");
+            return s.Replace("\\n", "\n").Replace("\\r", "\r");
         }
         private string InsertCommonEscapeSequences(string s)
         {
@@ -182,8 +178,7 @@ namespace QMC.Common.Keithley
                 return s;
             }
 
-            return s;
-            //return s.Replace("\n", "\\n").Replace("\r", "\\r");
+            return s.Replace("\n", "\\n").Replace("\r", "\\r");
         }
         #endregion
 

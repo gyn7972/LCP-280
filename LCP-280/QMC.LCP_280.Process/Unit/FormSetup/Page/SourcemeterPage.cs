@@ -206,6 +206,8 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             {
                 if (MessageBox.Show("Would you like to save your settings?", "Save", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
+                    pcvConfig.Apply();
+
                     selectSourcemeter.Config.ApplyValueFromPropertyCollection(pcSmuConfig);
                     if (selectSourcemeter.Config.Save() == 0)
                     {

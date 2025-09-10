@@ -35,7 +35,30 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 tester.OnManualMeasureCompleted += Tester_OnMeasureCompleted;
 
                 casSpectrumViewer.AttachSpectrometer(tester.Spectrometer);
+
+                tester.Sourcemeter.OnMeasureFailed += Sourcemeter_OnMeasureFailed;
+                tester.Spectrometer.OnMeasureFailed += Spectrometer_OnMeasureFailed;
             }
+        }
+
+        private void Spectrometer_OnMeasureFailed(object sender, string e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => MessageBox.Show(e)));
+                return;
+            }
+            MessageBox.Show(e);
+        }
+
+        private void Sourcemeter_OnMeasureFailed(object sender, string e)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => MessageBox.Show(e)));
+                return;
+            }
+            MessageBox.Show(e);
         }
 
         private void Tester_OnMeasureCompleted(object sender)
