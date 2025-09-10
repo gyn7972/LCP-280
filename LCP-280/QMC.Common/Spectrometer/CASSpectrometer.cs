@@ -10,7 +10,9 @@ using System.Windows.Forms;
 
 namespace QMC.Common.Spectrometer
 {
-    
+    /// <summary>
+    /// Instrument Systems CAS Spectrometer
+    /// </summary>
     public class CASSpectrometer : BaseComponent, IDisposable
     {
         #region Defines
@@ -145,7 +147,6 @@ namespace QMC.Common.Spectrometer
 
         #region Property
         public new CASSpectrometerConfig Config { get; private set; }
-        public int DeviceId => deviceId;
         public DeviceInformation DeviceInfo => deviceInfo;
         public List<DensityFilter> DensityFilterList => densityFilterList;
         public SpectrumData Spectrum => spectrum;
