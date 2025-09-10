@@ -22,9 +22,8 @@ namespace QMC.LCP_280.Process.Unit
             Pickup_Index6,
             Pickup_Index7,
             Pickup_Index8,
-            Place,
-            Waiting,
-            Ready
+            Place_Ready,
+            SafeZone
             // 필요시 확장
         }
 
@@ -34,12 +33,12 @@ namespace QMC.LCP_280.Process.Unit
         internal static class IO
         {
             // Inputs
-            public const string AIR_TANK_PRESS    = "RIGHT TOOL AIR TANK PRESSURE CHECK";
-            public const string VAC_TANK_PRESS    = "RIGHT TOOL VACUUM TANK PRESSURE CHECK";
-            public const string ARM1_FLOW_CHECK   = "RIGHT TOOL ARM 1 FLOW CHECK";
-            public const string ARM2_FLOW_CHECK   = "RIGHT TOOL ARM 2 FLOW CHECK";
-            public const string ARM3_FLOW_CHECK   = "RIGHT TOOL ARM 3 FLOW CHECK";
-            public const string ARM4_FLOW_CHECK   = "RIGHT TOOL ARM 4 FLOW CHECK";
+            public const string AIR_TANK_PRESS = "RIGHT TOOL AIR TANK PRESSURE CHECK";
+            public const string VAC_TANK_PRESS = "RIGHT TOOL VACUUM TANK PRESSURE CHECK";
+            public const string ARM1_FLOW_CHECK = "RIGHT TOOL ARM 1 FLOW CHECK";
+            public const string ARM2_FLOW_CHECK = "RIGHT TOOL ARM 2 FLOW CHECK";
+            public const string ARM3_FLOW_CHECK = "RIGHT TOOL ARM 3 FLOW CHECK";
+            public const string ARM4_FLOW_CHECK = "RIGHT TOOL ARM 4 FLOW CHECK";
 
             // Outputs (Vac / Blow / Vent)
             public const string ARM1_VAC = "RIGHT ARM 1 VACUUM";
@@ -59,7 +58,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // 그룹 배열 (Unit 코드에서 직접 활용)
             public static readonly string[] ARM_FLOW = { ARM1_FLOW_CHECK, ARM2_FLOW_CHECK, ARM3_FLOW_CHECK, ARM4_FLOW_CHECK };
-            public static readonly string[] ARM_VAC  = { ARM1_VAC, ARM2_VAC, ARM3_VAC, ARM4_VAC };
+            public static readonly string[] ARM_VAC = { ARM1_VAC, ARM2_VAC, ARM3_VAC, ARM4_VAC };
             public static readonly string[] ARM_BLOW = { ARM1_BLOW, ARM2_BLOW, ARM3_BLOW, ARM4_BLOW };
             public static readonly string[] ARM_VENT = { ARM1_VENT, ARM2_VENT, ARM3_VENT, ARM4_VENT };
         }

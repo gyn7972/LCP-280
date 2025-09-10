@@ -28,24 +28,32 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.propertyCollectionView3 = new IOPropertyCollectionView();
+            this.propertyCollectionView3 = new QMC.Common.IOPropertyCollectionView();
             this.SuspendLayout();
             // 
             // propertyCollectionView3
             // 
+            this.propertyCollectionView3.FastBuild = true;
+            this.propertyCollectionView3.FastInitialPaint = true;
+            this.propertyCollectionView3.GroupName = "IO Property Group";
+            this.propertyCollectionView3.ListBackColor = System.Drawing.Color.Black;
+            this.propertyCollectionView3.ListForeColor = System.Drawing.Color.Lime;
             this.propertyCollectionView3.Location = new System.Drawing.Point(50, 50);
             this.propertyCollectionView3.Name = "propertyCollectionView3";
+            this.propertyCollectionView3.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.propertyCollectionView3.SelectedForeColor = System.Drawing.Color.Black;
             this.propertyCollectionView3.Size = new System.Drawing.Size(404, 193);
+            this.propertyCollectionView3.SuppressResizeInvalidation = true;
             this.propertyCollectionView3.TabIndex = 1;
             this.propertyCollectionView3.TextBoxFont = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.propertyCollectionView3.TextBoxFontSize = 12F;
             // 
-            // FormMain
+            // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1162, 531);
-            this.Name = "FormMain";
+            this.Name = "MainForm";
             this.Text = "MainForm";
             this.ResumeLayout(false);
 

@@ -220,6 +220,38 @@ namespace QMC.LCP_280.Process.Component
                 return (true, null);
             };
 
+            // 축 단위 훅: 개별 축 홈 직전 전처리/인터락
+            seq.PreAxisInterlockAsync = async (stepIndex, axis, ct) =>
+            {
+                if (axis == null) return (false, "Axis null");
+
+                // 예시: InterlockManager 축 규칙 빠른 검사
+                string reason;
+                var il = InterlockManager.Instance;
+                if (!il.ValidateAxisForHome(axis, out reason))
+                    return (false, reason);
+
+                // 축 이름별 전처리/인터락 샘플
+                switch (axis.Name)
+                {
+                    case "Right Tool T Axis":
+                        if (eq.Units != null && eq.Units.TryGetValue("OutputStage", out var u) && u is OutputStage outStage)
+                        {
+                            if (!outStage.IsPlateDown())
+                            {
+                                if (!outStage.PlateDown(2000) || !outStage.IsPlateDown())
+                                    return (false, "OutputStage PlateDown 필요");
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                if (ct.IsCancellationRequested) return (false, "Canceled");
+                return (true, null);
+            };
+
             // PostStep은 글로벌 이벤트(HomeHooks)에서 처리하므로 여기선 설정하지 않음
 
             return seq;
