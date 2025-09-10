@@ -105,7 +105,7 @@ namespace QMC.Common.HIKVISION
         {
             // 파일에서 누락/잘못 저장된 값 보정
             if (SerialNumber == null) SerialNumber = "";
-            ExposureTime = 5000.0f;
+
             //if (ExposureTime <= 0f) ExposureTime = 5000.0f;
             if (Gain <= 0f) Gain = 1.0f;
 
