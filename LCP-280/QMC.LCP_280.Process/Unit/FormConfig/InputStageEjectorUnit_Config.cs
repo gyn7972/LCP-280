@@ -14,15 +14,19 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public partial class InputStageEjectorUnit_Config : Form
     {
-        private const string UNIT_NAME = "InputStageEjectorUnit";
-        private Equipment Equipment => Equipment.Instance;
-        private InputStageEjector InputStageEjectorUnit { get; set; }
+        private const string _UNIT_NAME = "InputStageEjector";
+        private Equipment _Equipment => Equipment.Instance;
+        private InputStageEjector _InputStageEjector { get; set; }
+        private InputStageEjectorConfig _cfg;
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
         public InputStageEjectorUnit_Config()
         {
             InitializeComponent();
+
+            InitializeUnit();
+
             this.SuspendLayout();
             _designerSize = this.Size;
             InitializeUI();
@@ -35,19 +39,20 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+                if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    InputStageEjectorUnit = unit as InputStageEjector;
+                    _InputStageEjector = unit as InputStageEjector;
+                    _cfg = _InputStageEjector.InputStageEjectorConfig;
                 }
 
-                if (InputStageEjectorUnit == null)
+                if (_InputStageEjector == null)
                 {
-                    MessageBox.Show($"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
+                    MessageBox.Show($"{_UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                Console.WriteLine($"{UNIT_NAME} Unit 연결 완료");
+                Console.WriteLine($"{_UNIT_NAME} Unit 연결 완료");
             }
             catch (Exception ex)
             {
@@ -98,19 +103,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                //const string UNIT = "IndexChipProbeController";
-                //var equipment = Equipment.Instance;
-
-                if (!Equipment.Units.TryGetValue(UNIT_NAME, out var unit))
+                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                var controller = unit as IndexChipProbeController;
-                if (controller == null)
-                {
-                    MessageBox.Show("Unit 형식 오류", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -127,14 +122,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch { selIndex = -1; }
 
-                var cfg = controller.IndexChipProbeControllerConfig;
-                if (selIndex < 0 || cfg == null || cfg.TeachingPositions == null || selIndex >= cfg.TeachingPositions.Count)
+                if (selIndex < 0 || _cfg == null || _cfg.TeachingPositions == null || selIndex >= _cfg.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var tp = cfg.TeachingPositions[selIndex];
+                var tp = _cfg.TeachingPositions[selIndex];
 
                 // 현재 위치 읽어서 AxisPositions 맵 갱신(표시용)
                 var updatedPositions = new Dictionary<string, double>();
@@ -149,17 +143,17 @@ namespace QMC.LCP_280.Process.Unit
                     if (tp.Axes != null) tp.Axes.TryGetValue(axisKey, out axis);
 
                     // 2) Unit의 축 사전 키로 찾기
-                    if (axis == null && controller.Axes != null)
+                    if (axis == null && _InputStageEjector.Axes != null)
                     {
                         QMC.Common.Motions.MotionAxis directAxis;
-                        if (controller.Axes.TryGetValue(axisKey, out directAxis))
+                        if (_InputStageEjector.Axes.TryGetValue(axisKey, out directAxis))
                             axis = directAxis;
                     }
 
                     // 3) 축 Name으로 매칭
-                    if (axis == null && controller.Axes != null)
+                    if (axis == null && _InputStageEjector.Axes != null)
                     {
-                        foreach (var pair in controller.Axes)
+                        foreach (var pair in _InputStageEjector.Axes)
                         {
                             var a = pair.Value;
                             if (a != null && string.Equals(a.Name, axisKey, StringComparison.OrdinalIgnoreCase))
