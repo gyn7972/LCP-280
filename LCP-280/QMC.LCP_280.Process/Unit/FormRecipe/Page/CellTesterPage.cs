@@ -40,11 +40,23 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private void Tester_OnMeasureCompleted(object sender)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => Tester_OnMeasureCompleted(sender)));
+                return;
+            }
+
             AddNewManualMeasureResult();
         }
 
         private void Tester_OnConditionSetChanged(object sender)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => Tester_OnConditionSetChanged(sender)));
+                return;
+            }
+
             UpdateNewResultGrid();
         }
 
@@ -197,31 +209,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
         }
 
-        private async void btnTestStart_Click(object sender, EventArgs e)
+        private async void RunManualMeasureAsync(int repeatCount, int intervalMs)
         {
-            if (_ctsRepeat != null)
-            {
-                // 이미 동작 중이면 무시
-                return;
-            }
-
             _ctsRepeat = new CancellationTokenSource();
             var token = _ctsRepeat.Token;
-
-            int repeatCount = 1;
-            int intervalMs = 500;
-
-            if (rbvOption.SelectedIndex == 0)
-            {
-                // 단일 측정
-                repeatCount = 1;
-                intervalMs = 500;
-            }
-            else if (rbvOption.SelectedIndex == 1)
-            {
-                repeatCount = (int)nudRepeatCount.Value;
-                intervalMs = (int)nudIntervalDelay.Value;
-            }
 
             try
             {
@@ -229,7 +220,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 {
                     token.ThrowIfCancellationRequested();
 
-                    int result = await tester.ManualMeasureAsync(1, intervalMs);
+                    int result = await tester.ManualMeasureAsync();
 
                     // 측정 실패 시 반복 중단
                     if (result < 0)
@@ -242,13 +233,33 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show("측정이 중단되었습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // canceled
             }
             finally
             {
                 _ctsRepeat.Dispose();
                 _ctsRepeat = null;
             }
+        }
+
+        private void btnTestStart_Click(object sender, EventArgs e)
+        {
+            if (_ctsRepeat != null)
+            {
+                // 이미 동작 중이면 무시
+                return;
+            }
+
+            int repeatCount = 1;
+            int intervalMs = 500;
+
+            if (rbvOption.SelectedIndex == 1)
+            {
+                repeatCount = (int)nudRepeatCount.Value;
+                intervalMs = (int)nudIntervalDelay.Value;
+            }
+
+            Task.Run(() => RunManualMeasureAsync(repeatCount, intervalMs));
         }
 
         private void btnTestStop_Click(object sender, EventArgs e)

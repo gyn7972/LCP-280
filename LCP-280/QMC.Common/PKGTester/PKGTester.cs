@@ -131,7 +131,7 @@ namespace QMC.Common.PKGTester
                 isMeasuring = false;
             }
         }
-        public async Task<int> ManualMeasureAsync(int tryCount, int intervalDelay)
+        public async Task<int> ManualMeasureAsync()
         {
             try
             {
