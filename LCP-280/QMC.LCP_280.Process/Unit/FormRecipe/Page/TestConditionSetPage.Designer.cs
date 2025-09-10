@@ -37,30 +37,31 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle5 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle6 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.lbSetNameValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.panel2 = new System.Windows.Forms.Panel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.dataGrid = new System.Windows.Forms.DataGridView();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
+            this.lbSetNameValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.btnApply = new QMC.Common.IndividualMenuButton();
             this.btnSaveSet = new QMC.Common.IndividualMenuButton();
             this.btnNewSet = new QMC.Common.IndividualMenuButton();
             this.btnOpenSet = new QMC.Common.IndividualMenuButton();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.btnItemDelete = new QMC.Common.IndividualMenuButton();
             this.btnItemCopy = new QMC.Common.IndividualMenuButton();
             this.btnItemPaste = new QMC.Common.IndividualMenuButton();
             this.btnItemDown = new QMC.Common.IndividualMenuButton();
             this.btnItemUp = new QMC.Common.IndividualMenuButton();
             this.btnItemInsert = new QMC.Common.IndividualMenuButton();
-            this.dataGrid = new System.Windows.Forms.DataGridView();
-            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.pcvItem = new QMC.Common.PropertyCollectionView();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btnItemClear = new QMC.Common.IndividualMenuButton();
             this.btnItemModify = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
@@ -105,22 +106,6 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.Size = new System.Drawing.Size(919, 694);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
-            // lbSetNameValue
-            // 
-            this.lbSetNameValue.BackColor = System.Drawing.Color.Black;
-            this.lbSetNameValue.BorderColor = System.Drawing.Color.Black;
-            this.lbSetNameValue.BorderWidth = 1;
-            this.lbSetNameValue.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbSetNameValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbSetNameValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbSetNameValue.Location = new System.Drawing.Point(3, 3);
-            this.lbSetNameValue.Margin = new System.Windows.Forms.Padding(3);
-            this.lbSetNameValue.Name = "lbSetNameValue";
-            this.lbSetNameValue.Size = new System.Drawing.Size(913, 30);
-            this.lbSetNameValue.TabIndex = 21;
-            this.lbSetNameValue.Text = " - ";
-            this.lbSetNameValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
             // tableLayoutPanel3
             // 
             this.tableLayoutPanel3.ColumnCount = 2;
@@ -150,78 +135,20 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.tableLayoutPanel6.ColumnCount = 1;
             this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel6.Controls.Add(this.btnApply, 0, 3);
             this.tableLayoutPanel6.Controls.Add(this.btnSaveSet, 0, 2);
             this.tableLayoutPanel6.Controls.Add(this.btnNewSet, 0, 0);
             this.tableLayoutPanel6.Controls.Add(this.btnOpenSet, 0, 1);
             this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(0, 524);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(0, 488);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
-            this.tableLayoutPanel6.RowCount = 3;
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(138, 122);
+            this.tableLayoutPanel6.RowCount = 4;
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(138, 158);
             this.tableLayoutPanel6.TabIndex = 37;
-            // 
-            // btnSaveSet
-            // 
-            this.btnSaveSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnSaveSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnSaveSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnSaveSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSaveSet.CustomForeColor = System.Drawing.Color.Black;
-            this.btnSaveSet.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnSaveSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSaveSet.ForeColor = System.Drawing.Color.Black;
-            this.btnSaveSet.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnSaveSet.Location = new System.Drawing.Point(3, 83);
-            this.btnSaveSet.Name = "btnSaveSet";
-            this.btnSaveSet.Size = new System.Drawing.Size(132, 36);
-            this.btnSaveSet.TabIndex = 36;
-            this.btnSaveSet.TabStop = false;
-            this.btnSaveSet.Text = "Save";
-            this.btnSaveSet.UseVisualStyleBackColor = false;
-            this.btnSaveSet.Click += new System.EventHandler(this.btnSaveSet_Click);
-            // 
-            // btnNewSet
-            // 
-            this.btnNewSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnNewSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnNewSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnNewSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnNewSet.CustomForeColor = System.Drawing.Color.Black;
-            this.btnNewSet.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnNewSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnNewSet.ForeColor = System.Drawing.Color.Black;
-            this.btnNewSet.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnNewSet.Location = new System.Drawing.Point(3, 3);
-            this.btnNewSet.Name = "btnNewSet";
-            this.btnNewSet.Size = new System.Drawing.Size(132, 34);
-            this.btnNewSet.TabIndex = 35;
-            this.btnNewSet.TabStop = false;
-            this.btnNewSet.Text = "New";
-            this.btnNewSet.UseVisualStyleBackColor = false;
-            this.btnNewSet.Click += new System.EventHandler(this.btnNewSet_Click);
-            // 
-            // btnOpenSet
-            // 
-            this.btnOpenSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnOpenSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnOpenSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnOpenSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnOpenSet.CustomForeColor = System.Drawing.Color.Black;
-            this.btnOpenSet.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnOpenSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnOpenSet.ForeColor = System.Drawing.Color.Black;
-            this.btnOpenSet.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnOpenSet.Location = new System.Drawing.Point(3, 43);
-            this.btnOpenSet.Name = "btnOpenSet";
-            this.btnOpenSet.Size = new System.Drawing.Size(132, 34);
-            this.btnOpenSet.TabIndex = 34;
-            this.btnOpenSet.TabStop = false;
-            this.btnOpenSet.Text = "Open";
-            this.btnOpenSet.UseVisualStyleBackColor = false;
-            this.btnOpenSet.Click += new System.EventHandler(this.btnOpenSet_Click);
             // 
             // tableLayoutPanel5
             // 
@@ -245,6 +172,183 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.66667F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(138, 237);
             this.tableLayoutPanel5.TabIndex = 36;
+            // 
+            // dataGrid
+            // 
+            this.dataGrid.AllowUserToAddRows = false;
+            this.dataGrid.AllowUserToDeleteRows = false;
+            this.dataGrid.AllowUserToResizeColumns = false;
+            this.dataGrid.AllowUserToResizeRows = false;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            this.dataGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
+            dataGridViewCellStyle2.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
+            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+            this.dataGrid.DefaultCellStyle = dataGridViewCellStyle2;
+            this.dataGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataGrid.Location = new System.Drawing.Point(147, 3);
+            this.dataGrid.MultiSelect = false;
+            this.dataGrid.Name = "dataGrid";
+            dataGridViewCellStyle3.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle3.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            dataGridViewCellStyle3.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle3.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle3.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle3.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle3;
+            this.dataGrid.RowHeadersVisible = false;
+            this.dataGrid.RowTemplate.Height = 23;
+            this.dataGrid.Size = new System.Drawing.Size(763, 646);
+            this.dataGrid.TabIndex = 0;
+            this.dataGrid.SelectionChanged += new System.EventHandler(this.dataGrid_SelectionChanged);
+            // 
+            // tableLayoutPanel4
+            // 
+            this.tableLayoutPanel4.ColumnCount = 1;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.Controls.Add(this.pcvItem, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.panel1, 0, 1);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(925, 0);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(0);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 2;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 83.30976F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.69024F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(325, 700);
+            this.tableLayoutPanel4.TabIndex = 1;
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.tableLayoutPanel7);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(3, 586);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(319, 111);
+            this.panel1.TabIndex = 1;
+            // 
+            // tableLayoutPanel7
+            // 
+            this.tableLayoutPanel7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.tableLayoutPanel7.ColumnCount = 1;
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Controls.Add(this.btnItemClear, 0, 0);
+            this.tableLayoutPanel7.Controls.Add(this.btnItemModify, 0, 1);
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(170, 3);
+            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
+            this.tableLayoutPanel7.RowCount = 2;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(146, 84);
+            this.tableLayoutPanel7.TabIndex = 27;
+            // 
+            // lbSetNameValue
+            // 
+            this.lbSetNameValue.BackColor = System.Drawing.Color.Black;
+            this.lbSetNameValue.BorderColor = System.Drawing.Color.Black;
+            this.lbSetNameValue.BorderWidth = 1;
+            this.lbSetNameValue.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbSetNameValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbSetNameValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbSetNameValue.Location = new System.Drawing.Point(3, 3);
+            this.lbSetNameValue.Margin = new System.Windows.Forms.Padding(3);
+            this.lbSetNameValue.Name = "lbSetNameValue";
+            this.lbSetNameValue.Size = new System.Drawing.Size(913, 30);
+            this.lbSetNameValue.TabIndex = 21;
+            this.lbSetNameValue.Text = " - ";
+            this.lbSetNameValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // btnApply
+            // 
+            this.btnApply.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnApply.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnApply.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnApply.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnApply.CustomForeColor = System.Drawing.Color.Black;
+            this.btnApply.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnApply.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnApply.ForeColor = System.Drawing.Color.Black;
+            this.btnApply.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnApply.Location = new System.Drawing.Point(3, 120);
+            this.btnApply.Name = "btnApply";
+            this.btnApply.Size = new System.Drawing.Size(132, 35);
+            this.btnApply.TabIndex = 37;
+            this.btnApply.TabStop = false;
+            this.btnApply.Text = "Apply";
+            this.btnApply.UseVisualStyleBackColor = false;
+            this.btnApply.Click += new System.EventHandler(this.btnApply_Click);
+            // 
+            // btnSaveSet
+            // 
+            this.btnSaveSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSaveSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnSaveSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSaveSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSaveSet.CustomForeColor = System.Drawing.Color.Black;
+            this.btnSaveSet.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnSaveSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSaveSet.ForeColor = System.Drawing.Color.Black;
+            this.btnSaveSet.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnSaveSet.Location = new System.Drawing.Point(3, 81);
+            this.btnSaveSet.Name = "btnSaveSet";
+            this.btnSaveSet.Size = new System.Drawing.Size(132, 33);
+            this.btnSaveSet.TabIndex = 36;
+            this.btnSaveSet.TabStop = false;
+            this.btnSaveSet.Text = "Save";
+            this.btnSaveSet.UseVisualStyleBackColor = false;
+            this.btnSaveSet.Click += new System.EventHandler(this.btnSaveSet_Click);
+            // 
+            // btnNewSet
+            // 
+            this.btnNewSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnNewSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnNewSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnNewSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnNewSet.CustomForeColor = System.Drawing.Color.Black;
+            this.btnNewSet.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnNewSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnNewSet.ForeColor = System.Drawing.Color.Black;
+            this.btnNewSet.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnNewSet.Location = new System.Drawing.Point(3, 3);
+            this.btnNewSet.Name = "btnNewSet";
+            this.btnNewSet.Size = new System.Drawing.Size(132, 33);
+            this.btnNewSet.TabIndex = 35;
+            this.btnNewSet.TabStop = false;
+            this.btnNewSet.Text = "New";
+            this.btnNewSet.UseVisualStyleBackColor = false;
+            this.btnNewSet.Click += new System.EventHandler(this.btnNewSet_Click);
+            // 
+            // btnOpenSet
+            // 
+            this.btnOpenSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnOpenSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnOpenSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnOpenSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnOpenSet.CustomForeColor = System.Drawing.Color.Black;
+            this.btnOpenSet.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnOpenSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnOpenSet.ForeColor = System.Drawing.Color.Black;
+            this.btnOpenSet.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnOpenSet.Location = new System.Drawing.Point(3, 42);
+            this.btnOpenSet.Name = "btnOpenSet";
+            this.btnOpenSet.Size = new System.Drawing.Size(132, 33);
+            this.btnOpenSet.TabIndex = 34;
+            this.btnOpenSet.TabStop = false;
+            this.btnOpenSet.Text = "Open";
+            this.btnOpenSet.UseVisualStyleBackColor = false;
+            this.btnOpenSet.Click += new System.EventHandler(this.btnOpenSet_Click);
             // 
             // btnItemDelete
             // 
@@ -366,96 +470,17 @@ namespace QMC.LCP_280.Process.Unit
             this.btnItemInsert.UseVisualStyleBackColor = false;
             this.btnItemInsert.Click += new System.EventHandler(this.btnItemInsert_Click);
             // 
-            // dataGrid
-            // 
-            this.dataGrid.AllowUserToAddRows = false;
-            this.dataGrid.AllowUserToDeleteRows = false;
-            this.dataGrid.AllowUserToResizeColumns = false;
-            this.dataGrid.AllowUserToResizeRows = false;
-            dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle4.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            dataGridViewCellStyle4.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle4.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle4.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle4.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle4;
-            this.dataGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewCellStyle5.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = System.Drawing.SystemColors.Window;
-            dataGridViewCellStyle5.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            dataGridViewCellStyle5.ForeColor = System.Drawing.SystemColors.ControlText;
-            dataGridViewCellStyle5.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle5.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle5.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dataGrid.DefaultCellStyle = dataGridViewCellStyle5;
-            this.dataGrid.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGrid.Location = new System.Drawing.Point(147, 3);
-            this.dataGrid.MultiSelect = false;
-            this.dataGrid.Name = "dataGrid";
-            dataGridViewCellStyle6.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = System.Drawing.SystemColors.Control;
-            dataGridViewCellStyle6.Font = new System.Drawing.Font("맑은 고딕", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            dataGridViewCellStyle6.ForeColor = System.Drawing.SystemColors.WindowText;
-            dataGridViewCellStyle6.SelectionBackColor = System.Drawing.SystemColors.Highlight;
-            dataGridViewCellStyle6.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
-            dataGridViewCellStyle6.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
-            this.dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle6;
-            this.dataGrid.RowHeadersVisible = false;
-            this.dataGrid.RowTemplate.Height = 23;
-            this.dataGrid.Size = new System.Drawing.Size(763, 646);
-            this.dataGrid.TabIndex = 0;
-            this.dataGrid.SelectionChanged += new System.EventHandler(this.dataGrid_SelectionChanged);
-            // 
-            // tableLayoutPanel4
-            // 
-            this.tableLayoutPanel4.ColumnCount = 1;
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.Controls.Add(this.pcvItem, 0, 0);
-            this.tableLayoutPanel4.Controls.Add(this.panel1, 0, 1);
-            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(925, 0);
-            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(0);
-            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
-            this.tableLayoutPanel4.RowCount = 2;
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 83.30976F));
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.69024F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(325, 700);
-            this.tableLayoutPanel4.TabIndex = 1;
-            // 
             // pcvItem
             // 
             this.pcvItem.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pcvItem.FastBuild = true;
             this.pcvItem.GroupName = "Item Editor";
             this.pcvItem.Location = new System.Drawing.Point(0, 0);
             this.pcvItem.Margin = new System.Windows.Forms.Padding(0);
             this.pcvItem.Name = "pcvItem";
             this.pcvItem.Size = new System.Drawing.Size(325, 583);
+            this.pcvItem.SuppressResizeInvalidation = true;
             this.pcvItem.TabIndex = 0;
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.tableLayoutPanel7);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(3, 586);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(319, 111);
-            this.panel1.TabIndex = 1;
-            // 
-            // tableLayoutPanel7
-            // 
-            this.tableLayoutPanel7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel7.ColumnCount = 1;
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Controls.Add(this.btnItemClear, 0, 0);
-            this.tableLayoutPanel7.Controls.Add(this.btnItemModify, 0, 1);
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(170, 3);
-            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 2;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(146, 84);
-            this.tableLayoutPanel7.TabIndex = 27;
             // 
             // btnItemClear
             // 
@@ -504,6 +529,8 @@ namespace QMC.LCP_280.Process.Unit
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "TestConditionSetPage";
             this.Size = new System.Drawing.Size(1250, 700);
+            this.Load += new System.EventHandler(this.TestConditionSetPage_Load);
+            this.VisibleChanged += new System.EventHandler(this.TestConditionSetPage_VisibleChanged);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
@@ -543,5 +570,6 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnSaveSet;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel7;
+        private IndividualMenuButton btnApply;
     }
 }

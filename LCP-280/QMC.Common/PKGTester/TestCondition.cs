@@ -27,10 +27,10 @@ namespace QMC.Common.PKGTester
         public int PulseCount { get; set; }
 
         // Data Calibration
-        //public bool[] UseGain { get; private set; } = new bool[8];
-        //public bool[] UseOffset { get; private set; } = new bool[8];
-        //public double[] Gain { get; private set; } = new double[8];
-        //public double[] Offset { get; private set; } = new double[8];
+        public bool[] UseGain { get; private set; } = new bool[8];
+        public bool[] UseOffset { get; private set; } = new bool[8];
+        public double[] Gain { get; private set; } = new double[8];
+        public double[] Offset { get; private set; } = new double[8];
         #endregion
 
         #region Constructor
@@ -51,13 +51,13 @@ namespace QMC.Common.PKGTester
             PulsePeriod = 0;
             PulseCount = 0;
 
-            //for (int i = 0; i < 8; i++)
-            //{
-            //    UseGain[i] = false;
-            //    UseOffset[i] = false;
-            //    Gain[i] = 1;
-            //    Offset[i] = 0;
-            //}
+            for (int i = 0; i < 8; i++)
+            {
+                UseGain[i] = false;
+                UseOffset[i] = false;
+                Gain[i] = 1;
+                Offset[i] = 0;
+            }
         }
         public override bool Validate()
         {
@@ -116,13 +116,33 @@ namespace QMC.Common.PKGTester
                 case TestItemCategory.Optical:
                     {
                         // Optical Item
-                        //for (int i = 0; i < 8; i++)
-                        //{
-                        //    pc.Add($"UseGain #{i+1}", UseGain[i]);
-                        //    pc.Add($"UseOffset #{i+1}", UseOffset[i]);
-                        //    pc.Add($"Gain #{i+1}", Gain[i]);
-                        //    pc.Add($"Offset #{i+1}", Offset[i]);
-                        //}
+                        title = "Calibration - Use Gain";
+                        pc.Add(title);
+                        for (int i = 0; i < UseGain.Length; i++)
+                        {
+                            pc.Add($"UseGain #{i + 1}", UseGain[i]);
+                        }
+
+                        title = "Calibration - Use Offset";
+                        pc.Add(title);
+                        for (int i = 0; i < UseOffset.Length; i++)
+                        {
+                            pc.Add($"UseOffset #{i + 1}", UseOffset[i]);
+                        }
+
+                        title = "Calibration - Gain";
+                        pc.Add(title);
+                        for (int i = 0; i < Gain.Length; i++)
+                        {
+                            pc.Add($"Gain #{i + 1}", Gain[i]);
+                        }
+
+                        title = "Calibration - Offset";
+                        pc.Add(title);
+                        for (int i = 0; i < Offset.Length; i++)
+                        {
+                            pc.Add($"Offset #{i + 1}", Offset[i]);
+                        }
                     }
                     break;
                 case TestItemCategory.Electrical:
@@ -133,13 +153,33 @@ namespace QMC.Common.PKGTester
                         pc.Add(nameof(SourceLimit), SourceLimit);
                         pc.Add(nameof(MeasureTime), MeasureTime);
 
-                        //for (int i = 0; i < 8; i++)
-                        //{
-                        //    pc.Add($"UseGain #{i+1}", UseGain[i]);
-                        //    pc.Add($"UseOffset #{i+1}", UseOffset[i]);
-                        //    pc.Add($"Gain #{i+1}", Gain[i]);
-                        //    pc.Add($"Offset #{i+1}", Offset[i]);
-                        //}
+                        title = "Calibration - Use Gain";
+                        pc.Add(title);
+                        for (int i = 0; i < UseGain.Length; i++)
+                        {
+                            pc.Add($"UseGain #{i + 1}", UseGain[i]);
+                        }
+
+                        title = "Calibration - Use Offset";
+                        pc.Add(title);
+                        for (int i = 0; i < UseOffset.Length; i++)
+                        {
+                            pc.Add($"UseOffset #{i + 1}", UseOffset[i]);
+                        }
+
+                        title = "Calibration - Gain";
+                        pc.Add(title);
+                        for (int i = 0; i < Gain.Length; i++)
+                        {
+                            pc.Add($"Gain #{i + 1}", Gain[i]);
+                        }
+
+                        title = "Calibration - Offset";
+                        pc.Add(title);
+                        for (int i = 0; i < Offset.Length; i++)
+                        {
+                            pc.Add($"Offset #{i + 1}", Offset[i]);
+                        }
                     }
                     break;
                 case TestItemCategory.ElectricalSource:
@@ -148,7 +188,7 @@ namespace QMC.Common.PKGTester
                         pc.Add(nameof(SourceValue), SourceValue);
                         pc.Add(nameof(PulseWidth), PulseWidth);
                         pc.Add(nameof(PulsePeriod), PulsePeriod);
-                        pc.Add(nameof(PulseCount), PulseCount);            
+                        pc.Add(nameof(PulseCount), PulseCount);
                     }
                     break;
             }
@@ -171,13 +211,13 @@ namespace QMC.Common.PKGTester
                     case TestItemCategory.Optical:
                         {
                             // Optical Item
-                            //for (int i = 0; i < 8; i++)
-                            //{
-                            //    UseGain[i] = pc.GetValue<bool>($"UseGain #{i+1}");
-                            //    UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i+1}");
-                            //    Gain[i] = pc.GetValue<double>($"Gain #{i+1}");
-                            //    Offset[i] = pc.GetValue<double>($"Offset #{i+1}");
-                            //}
+                            for (int i = 0; i < 8; i++)
+                            {
+                                UseGain[i] = pc.GetValue<bool>($"UseGain #{i + 1}");
+                                UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i + 1}");
+                                Gain[i] = pc.GetValue<double>($"Gain #{i + 1}");
+                                Offset[i] = pc.GetValue<double>($"Offset #{i + 1}");
+                            }
                         }
                         break;
                     case TestItemCategory.Electrical:
@@ -188,13 +228,13 @@ namespace QMC.Common.PKGTester
                             SourceLimit = pc.GetValue<double>(nameof(SourceLimit));
                             MeasureTime = pc.GetValue<double>(nameof(MeasureTime));
 
-                            //for (int i = 0; i < 8; i++)
-                            //{
-                            //    UseGain[i] = pc.GetValue<bool>($"UseGain #{i+1}");
-                            //    UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i+1}");
-                            //    Gain[i] = pc.GetValue<double>($"Gain #{i+1}");
-                            //    Offset[i] = pc.GetValue<double>($"Offset #{i+1}");
-                            //}
+                            for (int i = 0; i < 8; i++)
+                            {
+                                UseGain[i] = pc.GetValue<bool>($"UseGain #{i + 1}");
+                                UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i + 1}");
+                                Gain[i] = pc.GetValue<double>($"Gain #{i + 1}");
+                                Offset[i] = pc.GetValue<double>($"Offset #{i + 1}");
+                            }
                         }
                         break;
                     case TestItemCategory.ElectricalSource:
@@ -339,6 +379,8 @@ namespace QMC.Common.PKGTester
         {
             if (testConditionSet == null)
                 return -1;
+
+            Name = testConditionSet.Name;
 
             items.Clear();
             items.AddRange(testConditionSet.Items);

@@ -1527,9 +1527,7 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                Tester = new PKGTester("PKGTester");
-                Tester.AttachSourcemeter(Sourcemeter);
-                Tester.AttachSpectrometer(Spectrometer);
+                Tester = new PKGTester("PKGTester", Sourcemeter, Spectrometer);
             }
             catch (Exception ex)
             {

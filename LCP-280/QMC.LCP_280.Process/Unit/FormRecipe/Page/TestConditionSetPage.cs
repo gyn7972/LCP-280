@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 //using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +15,9 @@ namespace QMC.LCP_280.Process.Unit
 {
     public partial class TestConditionSetPage : UserControl
     {
-        private TestConditionSet tempSet = new TestConditionSet("");
+        private Equipment equipment => Equipment.Instance;
+
+        private TestConditionSet tempSet = new TestConditionSet(""); // 임시 변수
         private TestConditionItem clipboardItem;
         private PropertyCollection pcItem;
 
@@ -26,9 +29,21 @@ namespace QMC.LCP_280.Process.Unit
             tempSet.ItemsChanged += TempSet_ItemsChanged;
         }
 
+        private void TestConditionSetPage_Load(object sender, EventArgs e)
+        {
+            if (equipment != null && equipment.Tester != null)
+            {
+                tempSet.CopyConditionFrom(equipment.Tester.ConditionSet);
+            }
+        }
+
+        private void TestConditionSetPage_VisibleChanged(object sender, EventArgs e)
+        {
+
+        }
+
         private void TempSet_ItemsChanged(object sender)
         {
-            lbSetNameValue.Text = tempSet.Name;
             UpdateConditionSetGrid();
         }
 
@@ -72,6 +87,8 @@ namespace QMC.LCP_280.Process.Unit
 
         private void UpdateConditionSetGrid()
         {
+            lbSetNameValue.Text = tempSet.Name;
+
             ClearConditionSet();
             foreach (var item in tempSet.Items)
             {
@@ -104,7 +121,17 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
+                                            row.Cells[pd.Name].Value = "...";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
                                     }       
                                 }
                                 break;
@@ -123,7 +150,17 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
+                                            row.Cells[pd.Name].Value = "...";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
                                     }
                                 }
                                 break;
@@ -135,7 +172,17 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
+                                            row.Cells[pd.Name].Value = "...";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
                                     }
                                 }
                                 break;
@@ -363,9 +410,38 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         MessageBox.Show("Failed to save the test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-
-                    Equipment.Instance.Tester.LoadTestConditionSet(tempSet);
                     lbSetNameValue.Text = tempSet.Name;
+                }
+            }
+        }
+
+        private void btnApply_Click(object sender, EventArgs e)
+        {
+            // Interlock
+            if (!tempSet.Validate())
+            {
+                MessageBox.Show("Invalid test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var result = MessageBox.Show("Do you want to save it in the Apply and Recipe data?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    if (Equipment.Instance.Tester.LoadTestConditionSet(tempSet) == 0)
+                    {
+                        // 레시피 처리 수정 필요...
+                    }
+                    else
+                    {
+                        MessageBox.Show("Failed to apply the test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
                 }
             }
         }

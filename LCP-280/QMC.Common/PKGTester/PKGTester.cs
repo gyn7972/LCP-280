@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using QMC.Common.Component;
 using QMC.Common.Keithley;
@@ -10,6 +11,59 @@ using QMC.Common.Spectrometer;
 
 namespace QMC.Common.PKGTester
 {
+    public class PKGTesterResult
+    {
+        #region Fields
+        private int binNo = -1;
+        private Dictionary<string, TestItemResult> items = new Dictionary<string, TestItemResult>();
+        #endregion
+
+        #region Properties
+        public int BinNo => binNo;
+        public IReadOnlyDictionary<string, TestItemResult> Items => items;
+        #endregion
+
+        #region Constructor
+        public PKGTesterResult()
+        {
+        }
+        #endregion
+
+        #region Methods
+        public void ClearItems()
+        {
+            binNo = -1;
+            items.Clear();
+        }
+        public void AddItem(string itemName)
+        {
+            items.Add(itemName, new TestItemResult());
+        }
+        public void ResetItems()
+        {
+            binNo = -1;
+            foreach (var key in items.Keys)
+            {
+                items[key].Reset();
+            }
+        }
+        public bool AssignItem(string itemName, TestItemResult result)
+        {
+            if (result == null)
+                return false;
+            if (items.ContainsKey(itemName) == false)
+                return false;
+
+            items[itemName].Assign(result);
+            return true;
+        }
+        public void SetBinNo(int binNo)
+        {
+            this.binNo = binNo;
+        }
+        #endregion
+    }
+
     public class PKGTester : BaseComponent
     {
         #region Fields
@@ -17,20 +71,24 @@ namespace QMC.Common.PKGTester
         private CASSpectrometer spectrometer;
         private TestConditionSet conditionSet;
 
-        private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
+        private PKGTesterResult result = new PKGTesterResult();
+        private bool isMeasuring = false;
         #endregion
 
         #region Properties
         public TestConditionSet ConditionSet { get => conditionSet; }
         public KeithleySourcemeter Sourcemeter { get => sourcemeter; }
         public CASSpectrometer Spectrometer { get => spectrometer; }
-        public IReadOnlyDictionary<string, TestItemResult> Results => results;
+        public PKGTesterResult Result { get => result; }
+        public bool IsMeasuring { get => isMeasuring; }
         #endregion
 
         #region Constructor
-        public PKGTester(string name) : base(name)
+        public PKGTester(string name, KeithleySourcemeter sourcemeter, CASSpectrometer spectrometer) : base(name)
         {
             conditionSet = new TestConditionSet($"{name}_conditionSet");
+            this.sourcemeter = sourcemeter;
+            this.spectrometer = spectrometer;
         }
         #endregion
 
@@ -49,26 +107,57 @@ namespace QMC.Common.PKGTester
         {
             try
             {
+                isMeasuring = true;
                 int ret = await DoMeasure();
-                if (ret >= 0)
+                if (ret == 0)
                 {
                     OnMeasureCompleted?.Invoke(this);
                     return ret;
                 }
                 else
                 {
+                    OnMeasureAborted?.Invoke(this);
                     return -1;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log.Write(ex);
+                // Error handling
+                OnMeasureAborted?.Invoke(this);
                 return -1;
             }
+            finally
+            {
+                isMeasuring = false;
+            }
         }
-        public async Task<int> ManualMeasureAsync(int tryCount, int intervalDelay)
-        { 
-            return await DoManualMeasure(tryCount, intervalDelay);
+        public async Task<int> ManualMeasureAsync()
+        {
+            try
+            {
+                isMeasuring = true;
+                int ret = await DoMeasure();
+                if (ret == 0)
+                {
+                    OnManualMeasureCompleted?.Invoke(this);
+                    return ret;
+                }
+                else
+                {
+                    OnMeasureAborted?.Invoke(this);
+                    return -1;
+                }
+            }
+            catch (Exception)
+            {
+                // Error handling
+                OnMeasureAborted?.Invoke(this);
+                return -1;
+            }
+            finally
+            {
+                isMeasuring = false;
+            }
         }
 
         public int LoadTestConditionSet(TestConditionSet conditionSet)
@@ -83,27 +172,6 @@ namespace QMC.Common.PKGTester
             OnConditionSetChanged?.Invoke(this);
             return 0;
         }
-
-        #region Attach Instrument
-        public int AttachSourcemeter(KeithleySourcemeter sourcemeter)
-        {
-            if (sourcemeter == null)
-                return -1;
-            if (this.sourcemeter == sourcemeter)
-                return 0;
-            this.sourcemeter = sourcemeter;
-            return 0;
-        }
-        public int AttachSpectrometer(CASSpectrometer spectrometer)
-        {
-            if (spectrometer == null)
-                return -1;
-            if (this.spectrometer == spectrometer)
-                return 0;
-            this.spectrometer = spectrometer;
-            return 0;
-        }
-        #endregion
 
         #region Build Mechanism
         private int RebuildTestMechanism()
@@ -166,7 +234,7 @@ namespace QMC.Common.PKGTester
         {
             try
             {
-                results.Clear();
+                result.ClearItems();
                 foreach (var item in conditionSet.Items)
                 {
                     if (item == null)
@@ -174,7 +242,7 @@ namespace QMC.Common.PKGTester
 
                     if (item.IsMeasureItem())
                     {
-                        results.Add(item.Name, new TestItemResult());
+                        result.AddItem(item.Name);
                     }
                 }
             }
@@ -187,10 +255,7 @@ namespace QMC.Common.PKGTester
         }
         private void ResetResultItem()
         {
-            foreach (var key in results.Keys)
-            {
-                results[key].Reset();
-            }
+            result.ResetItems();
         }
         #endregion
 
@@ -205,7 +270,8 @@ namespace QMC.Common.PKGTester
 
                 foreach (var key in sourcemeter.Results.Keys)
                 {
-                    results[key].Assign(sourcemeter.Results[key]);
+                    if (!result.AssignItem(key, sourcemeter.Results[key]))
+                        throw new Exception($"Failed to assign result item from sourcemeter. (key: {key})");
                 }
 
                 // Spectrometer
@@ -214,7 +280,8 @@ namespace QMC.Common.PKGTester
                 
                 foreach (var key in spectrometer.Results.Keys)
                 {
-                    results[key].Assign(spectrometer.Results[key]);
+                    if (!result.AssignItem(key, spectrometer.Results[key]))
+                        throw new Exception($"Failed to assign result item from spectrometer. (key: {key})");
                 }
             }
             catch (Exception ex)
@@ -232,7 +299,7 @@ namespace QMC.Common.PKGTester
                 {
                     if (item.IsMeasureItem())
                     {
-                        TestItemResult itemResult = results[item.Name];
+                        TestItemResult itemResult = result.Items[item.Name];
 
                         // Calibrate
                         double value = itemResult.RawData;
@@ -252,17 +319,22 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
-        private int GetBinFromResult()
+        private bool GetBinFromResult()
         {
             try
             {
-                // Do this.
-                return 0;
+                
+                int binNo = 0;
+                {
+                    // Do this.
+                }
+                result.SetBinNo(binNo);
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
-                return -1;
+                return false;
             }
         }
         #endregion
@@ -306,21 +378,11 @@ namespace QMC.Common.PKGTester
                 }
 
                 // Binning Data
-                int binNo = GetBinFromResult();
-                if (binNo < 0)
+                if (!GetBinFromResult())
                 {
                     throw new Exception("Failed to bin from result data");
                 }
-                else if (binNo == 0)
-                {
-                    // Ng bin
-                    return binNo;
-                }
-                else
-                {
-                    // Good bin
-                    return binNo;
-                }
+                return 0;
             }
             catch (Exception ex)
             {
@@ -328,28 +390,6 @@ namespace QMC.Common.PKGTester
                 Log.Write(ex);
                 return -1;
             }
-        }
-        private async Task<int> DoManualMeasure(int tryCount, int intervalDelay)
-        {
-            if (tryCount <= 0)
-                return -1;
-
-            int ret = -1;
-            for (int i = 0; i < tryCount; i++)
-            {
-                ret = await DoMeasure();
-                if (ret >= 0)
-                {
-                    OnManualMeasureCompleted?.Invoke(this);
-                }
-                else
-                {
-                    OnMeasureAborted?.Invoke(this);
-                    break;
-                }
-                await Task.Delay(intervalDelay);
-            }
-            return ret;
         }
         #endregion
         #endregion
