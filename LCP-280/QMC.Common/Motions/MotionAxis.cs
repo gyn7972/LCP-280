@@ -263,7 +263,7 @@ namespace QMC.Common.Motions
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
                 {
-                    if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition())
+                    if (_ckdDriver.IsHomePosition() && _ckdDriver.IsRunWait())
                     {
                         IsHomedLatched = true; // 성공 래치
                         // 홈 성공 이벤트 알림

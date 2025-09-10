@@ -109,6 +109,20 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        private void ApplyAllPropertyViews()
+        {
+            try
+            {
+                void Recurse(Control c)
+                {
+                    if (c is QMC.Common.PropertyCollectionView pcv) pcv.Apply();
+                    foreach (Control child in c.Controls) Recurse(child);
+                }
+                Recurse(this);
+            }
+            catch { /* 적용 실패는 무시(안전) */ }
+        }
+
         // =========================
         // Save (설정 저장)
         // =========================
@@ -116,6 +130,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                ApplyAllPropertyViews();
+
                 // 1) 선택된 축 이름 확인
                 string axisName = selectAxisListBoxItemsView?.SelectedItemName;
                 if (string.IsNullOrWhiteSpace(axisName))
@@ -155,7 +171,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 // --- Config
                 axis.Setup.PulseOutput = (PulseOutput)GetInt("Config", "Pulse Output", (int)axis.Setup.PulseOutput);
-                axis.Setup.EncoderInput = (EncoderInput)GetInt("Config", "Enconder Input", (int)axis.Setup.EncoderInput);
+                axis.Setup.EncoderInput = (EncoderInput)GetInt("Config", "Encoder Input", (int)axis.Setup.EncoderInput);
                 axis.Setup.InputSource = (InputSource)GetInt("Config", "Input Source", (int)axis.Setup.InputSource);
                 axis.Setup.ZPhaseLevel = (ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
                 axis.Setup.ServoOnLevel = (ActiveLevel)GetInt("Config", "Servo On Level", (int)axis.Setup.ServoOnLevel);
@@ -170,7 +186,7 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.SoftwareLength = GetDouble("InPosition", "Software Length", axis.Setup.SoftwareLength);
 
                 // --- Home
-                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "SignalLevel", (int)axis.Setup.HomeSignalLevel);
+                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal Level", (int)axis.Setup.HomeSignalLevel);
                 axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
                 axis.Setup.HomeDirection = (HomeDirection)GetInt("Home", "Direction", (int)axis.Setup.HomeDirection);
                 axis.Setup.HomeSignal = (HomeSignal)GetInt("Home", "Signal", (int)axis.Setup.HomeSignal);
@@ -185,8 +201,8 @@ namespace QMC.LCP_280.Process.Unit
                 // --- Limit
                 axis.Setup.PositiveLimitLevel = (ActiveLevel)GetInt("Limit", "+End Limit",(int)axis.Setup.PositiveLimitLevel);
                 axis.Setup.NegativeLimitLevel = (ActiveLevel)GetInt("Limit", "-End Limit", (int)axis.Setup.NegativeLimitLevel);
-                axis.Setup.SoftLimitMin = GetDouble("Limit", "Soft Limit -", axis.Setup.SoftLimitMin);
-                axis.Setup.SoftLimitMax = GetDouble("Limit", "Soft Limit +", axis.Setup.SoftLimitMax);
+                axis.Setup.SoftLimitMin = GetDouble("Limit", "Soft Limit-", axis.Setup.SoftLimitMin);
+                axis.Setup.SoftLimitMax = GetDouble("Limit", "Soft Limit+", axis.Setup.SoftLimitMax);
 
                 // --- TimeOut
                 axis.Setup.HomeTimeoutMs = GetInt("Timeout", "Home Timeout(ms)", axis.Setup.HomeTimeoutMs);
@@ -251,6 +267,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                ApplyAllPropertyViews();
                 // 1) 선택된 축 이름 확인
                 string axisName = selectAxisListBoxItemsView?.SelectedItemName;
                 if (string.IsNullOrWhiteSpace(axisName))
