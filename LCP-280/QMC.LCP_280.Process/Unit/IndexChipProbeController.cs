@@ -58,7 +58,9 @@ namespace QMC.LCP_280.Process.Unit
             TeachingPositions.Clear();
             foreach (var tp in IndexChipProbeControllerConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
+
             BindAxes();
+
             BindIoDomains();
         }
         #endregion
@@ -66,12 +68,22 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Binding / Helpers
         private void BindAxes()
         {
-            Axes.TryGetValue("Probe Z Axis", out _probeZ);
-            Axes.TryGetValue("Probe Card X Axis", out _probeCardX);
-            Axes.TryGetValue("Probe Card Y Axis", out _probeCardY);
-            Axes.TryGetValue("Probe Card Z Axis", out _probeCardZ);
-            Axes.TryGetValue("Sphere Z Axis", out _sphereZ);
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("IndexChipProbeController", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // 축 등록 시 사용된 유닛명(Equipment.CreateAxes에서 동일)
+
+            BindAxis(mgr, unitName, AxisNames.ProbeZ, ref _probeZ);
+            BindAxis(mgr, unitName, AxisNames.ProbeCardX, ref _probeCardX);
+            BindAxis(mgr, unitName, AxisNames.ProbeCardY, ref _probeCardY);
+            BindAxis(mgr, unitName, AxisNames.ProbeCardZ, ref _probeCardZ);
+            BindAxis(mgr, unitName, AxisNames.SphereZ, ref _sphereZ);
         }
+
         public void MoveAxisOnce(MotionAxis ax, double target)
         {
             if (ax == null) return;

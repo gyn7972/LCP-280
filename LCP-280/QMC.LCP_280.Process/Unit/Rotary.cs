@@ -40,19 +40,17 @@ namespace QMC.LCP_280.Process.Unit
 
         private void BindAxes()
         {
-            Axes.TryGetValue("Index T Axis", out _axisT);
-            bool useInPos = !RotaryConfig.EnablePredictiveControl;
-            if (_axisT != null)
+            //AxisNames.IndexT
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
             {
-                try
-                {
-                    var mi = _axisT.GetType().GetMethod("SetInPositionEnable");
-                    var mr = _axisT.GetType().GetMethod("SetInPositionRange");
-                    if (mi != null) mi.Invoke(_axisT, new object[] { useInPos });
-                    if (mr != null) mr.Invoke(_axisT, new object[] { RotaryConfig.MoveDoneRemainDistance });
-                }
-                catch { }
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
             }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.IndexT, ref _axisT);
+
         }
 
         public override void OnRun() => base.OnRun();

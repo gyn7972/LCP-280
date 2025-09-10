@@ -87,7 +87,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Wafer Feeder Y Axis", 100.0 }
+                        { AxisNames.WaferFeederY, 00.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }

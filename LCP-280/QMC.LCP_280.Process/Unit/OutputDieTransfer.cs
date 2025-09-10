@@ -70,9 +70,18 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis PlaceZ => _placeZ;
         private void BindAxes()
         {
-            Axes.TryGetValue("Right Tool T Axis", out _toolT);
-            Axes.TryGetValue("Right Pick Z Axis", out _pickZ);
-            Axes.TryGetValue("Right Place Z Axis", out _placeZ);
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.RightToolT, ref _toolT);
+            BindAxis(mgr, unitName, AxisNames.RightPickZ, ref _pickZ);
+            BindAxis(mgr, unitName, AxisNames.RightPlaceZ, ref _placeZ);
+
         }
         public double GetTP(string tpName, string axisName)
         {

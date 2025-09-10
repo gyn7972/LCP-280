@@ -54,8 +54,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Align T Axis", 100.0 },
-                        { "Index Z Axis", 0.0 }
+                        { AxisNames.AlignT, 100.0 },
+                        { AxisNames.IndexZ, 0.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }

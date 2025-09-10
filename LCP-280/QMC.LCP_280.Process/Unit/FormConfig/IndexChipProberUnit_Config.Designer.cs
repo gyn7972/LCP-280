@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
@@ -316,6 +317,9 @@ namespace QMC.LCP_280.Process.Unit
             this.outputView.Size = new System.Drawing.Size(302, 348);
             this.outputView.SuppressResizeInvalidation = true;
             this.outputView.TabIndex = 1;
+            // ★ 출력 항목 클릭 이벤트 연결 (토글)
+            this.outputView.ItemClicked -= new System.EventHandler<string>(this.OnOutputItemClicked);
+            this.outputView.ItemClicked += new System.EventHandler<string>(this.OnOutputItemClicked);
             // 
             // gbMoveAxis
             // 
@@ -1032,35 +1036,126 @@ namespace QMC.LCP_280.Process.Unit
             this.Invalidate();
         }
 
+        private static string NormalizeXYKey(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return raw;
+            raw = raw.Trim().ToUpperInvariant();
+            var m = Regex.Match(raw, @"^(X|Y)0*(\d+)$");
+            if (m.Success)
+            {
+                // X / Y + 숫자 (선행 0 제거)
+                var letter = m.Groups[1].Value;
+                var digits = m.Groups[2].Value;
+                if (string.IsNullOrEmpty(digits)) digits = "0";
+                return letter + digits; // 예: Y026 -> Y26
+            }
+            return raw;
+        }
+
         private void OnOutputItemClicked(object sender, string key)
         {
-            //var m = _lastDoModule;
-            //if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(key)) return;
 
-            //var ask = new MessageBoxYesNo();
-            //if (ask.ShowDialog("Info", "Signal 변경하시겠습니까?") == DialogResult.No) return;
+                // 설비 / 스캐너 참조
+                var eq = Equipment.Instance;
+                var scan = eq?.DioScan;
+                if (scan == null) return;
 
-            //// 1) 지금 캐시값
-            //bool before = false;
-            //_scan.TryGetOutput(m.ModuleName, key, out before);
+                // 패딩 제거된 비교 키 (IOPropertyCollectionView 가 0 패딩 붙여도 매칭 가능하도록)
+                var cmpKey = NormalizeXYKey(key);
 
-            //// 2) 쓰기 (Reverse는 DioScanService에서 자동 반영)
-            //var rc = _scan.WriteOutput(m.ModuleName, key, !before);
-            //if (rc != 0)
-            //{
-            //    // -1: 키 못 찾음(설정/키 불일치), 기타: 드라이버 에러
-            //    new MessageBoxOk().ShowDialog("Error", $"WriteOutput 실패 (rc={rc})");
-            //    return;
-            //}
+                // 출력 목록에서 Display 번호(key)로 모듈 찾기 (직접 일치 또는 정규화 일치)
+                string module = null;
+                string originalDisp = null; // 실제 scan 호출에 사용할 DisplayNo (원본 저장값)
+                for (int i = 0; i < _ioOutputs.Count; i++)
+                {
+                    var storedDisp = _ioOutputs[i].Disp; // Config에서 가져온 원본 (예: Y26)
+                    if (string.Equals(storedDisp, key, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(NormalizeXYKey(storedDisp), cmpKey, StringComparison.OrdinalIgnoreCase))
+                    {
+                        module = _ioOutputs[i].Module;
+                        originalDisp = storedDisp; // WriteOutput / TryGetOutput 시 사용
+                        break;
+                    }
+                }
+                if (string.IsNullOrEmpty(module) || string.IsNullOrEmpty(originalDisp)) return; // 매핑 실패
 
-            //// 3) 보드에서 실제 값 재읽기(출력도 캐시에 반영)
-            //_scan.RefreshOnce();
+                // 현재 캐시 상태 읽기 (원본 Display 사용)
+                bool before = false;
+                scan.TryGetOutput(module, originalDisp, out before);
 
-            //bool after = before;
-            //_scan.TryGetOutput(m.ModuleName, key, out after);
+                // 사용자 확인
+                var dr = MessageBox.Show($"[{module}:{originalDisp}] 현재 상태 = {before}\r\n변경하시겠습니까?", "Output Toggle", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (dr != DialogResult.Yes) return;
 
-            //new MessageBoxOk().ShowDialog("Info!", $"{key}: {before} -> {after}");
+                // 토글 쓰기 (Reverse 처리는 DioScanService 내부에서 처리)
+                int rc = scan.WriteOutput(module, originalDisp, !before);
+                if (rc != 0)
+                {
+                    MessageBox.Show($"WriteOutput 실패 (rc={rc})", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 캐시 동기화
+                scan.RefreshOnce();
+                bool after = before;
+                scan.TryGetOutput(module, originalDisp, out after);
+
+                // UI 키는 클릭된 key 그대로 갱신 시도 (패딩 포함), 실패 시 원본로 재시도
+                try
+                {
+                    if (outputView != null)
+                    {
+                        outputView.SetStateByKey(key, after);      // 패딩 형태
+                        if (!string.Equals(key, originalDisp, StringComparison.OrdinalIgnoreCase))
+                            outputView.SetStateByKey(originalDisp, after); // 원본 형태도 반영
+                        // 정규화된 키(Y26)만 저장되어 있을 가능성 → NormalizeXYKey(key) 재시도
+                        var norm = NormalizeXYKey(key);
+                        if (!string.Equals(norm, key, StringComparison.OrdinalIgnoreCase) && !string.Equals(norm, originalDisp, StringComparison.OrdinalIgnoreCase))
+                            outputView.SetStateByKey(norm, after);
+                    }
+                }
+                catch { }
+
+                MessageBox.Show($"{originalDisp}: {before} -> {after}", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Output 토글 처리 중 오류: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
+
+        //private void OnOutputItemClicked(object sender, string key)
+        //{
+        //    //var m = _lastDoModule;
+        //    //if (_scan == null || m == null || string.IsNullOrEmpty(key)) return;
+
+        //    //var ask = new MessageBoxYesNo();
+        //    //if (ask.ShowDialog("Info", "Signal 변경하시겠습니까?") == DialogResult.No) return;
+
+        //    //// 1) 지금 캐시값
+        //    //bool before = false;
+        //    //_scan.TryGetOutput(m.ModuleName, key, out before);
+
+        //    //// 2) 쓰기 (Reverse는 DioScanService에서 자동 반영)
+        //    //var rc = _scan.WriteOutput(m.ModuleName, key, !before);
+        //    //if (rc != 0)
+        //    //{
+        //    //    // -1: 키 못 찾음(설정/키 불일치), 기타: 드라이버 에러
+        //    //    new MessageBoxOk().ShowDialog("Error", $"WriteOutput 실패 (rc={rc})");
+        //    //    return;
+        //    //}
+
+        //    //// 3) 보드에서 실제 값 재읽기(출력도 캐시에 반영)
+        //    //_scan.RefreshOnce();
+
+        //    //bool after = before;
+        //    //_scan.TryGetOutput(m.ModuleName, key, out after);
+
+        //    //new MessageBoxOk().ShowDialog("Info!", $"{key}: {before} -> {after}");
+        //}
         private ListBoxItemsView axisPositionsView;
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel ioTableLayoutPanel;

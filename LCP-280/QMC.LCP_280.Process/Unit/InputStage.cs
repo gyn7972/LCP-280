@@ -242,23 +242,17 @@ namespace QMC.LCP_280.Process.Unit
 
         private void BindAxes()
         {
-            Axes.TryGetValue("Wafer Stage X Axis", out _axX);
-            Axes.TryGetValue("Wafer Stage Y Axis", out _axY);
-            Axes.TryGetValue("Wafer Stage T Axis", out _axT);
-
-            bool useInPos = !InputStageConfig.EnablePredictiveControl;
-            foreach (var ax in new[] { _axX, _axY, _axT })
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
             {
-                if (ax == null) continue;
-                try
-                {
-                    var mi = ax.GetType().GetMethod("SetInPositionEnable");
-                    var mr = ax.GetType().GetMethod("SetInPositionRange");
-                    if (mi != null) mi.Invoke(ax, new object[] { useInPos });
-                    if (mr != null) mr.Invoke(ax, new object[] { InputStageConfig.MoveDoneRemainDistance });
-                }
-                catch { }
+                Log.Write("UnitAxis", "[BindAxes] AxisManager null");
+                return;
             }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.WaferStageX, ref _axX);
+            BindAxis(mgr, unitName, AxisNames.WaferStageY, ref _axY);
+            BindAxis(mgr, unitName, AxisNames.WaferStageT, ref _axT);
         }
 
         public void TeachCurrentPosition(string positionName, string description = null)

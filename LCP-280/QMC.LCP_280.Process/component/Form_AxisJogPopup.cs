@@ -226,7 +226,30 @@ namespace QMC.LCP_280.Process.Unit
             if (sender == btnTPlus) return new JogCommand { Axis = JogAxis.T, Sign = +1 };
             return new JogCommand();
         }
+        public void SetText(string value)
+        {
+            try
+            {
+                if (this.InvokeRequired)
+                {
+                    this.Invoke(new System.Action(() =>
+                    {
+                        this.SetText(value);
+                    }));
+                }
+                else
+                {
+                    lblPosition.Text = value;
+                }
+            }
+            catch (Exception ex)
+            {
 
+                Log.Write(ex);
+            }
+
+
+        }
         private void JogButton_MouseDown(object sender, MouseEventArgs e)
         {
             try

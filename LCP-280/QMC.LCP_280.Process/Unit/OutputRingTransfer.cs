@@ -53,7 +53,17 @@ namespace QMC.LCP_280.Process.Unit
 
         private void BindAxes()
         {
-            Axes.TryGetValue("Bin Feeder Y Axis", out _feederY);
+            // { AxisNames.WaferFeederY, 0.0 }
+
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.WaferFeederY, ref _feederY);
         }
         #endregion
 

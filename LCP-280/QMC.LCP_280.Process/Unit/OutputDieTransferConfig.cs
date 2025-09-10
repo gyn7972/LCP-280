@@ -115,9 +115,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Right Tool T Axis", 0.0 },
-                        { "Right Pick Z Axis", 100.0 },
-                        { "Right Place Z Axis", 100.0 }
+                        { AxisNames.RightToolT, 0.0 },
+                        { AxisNames.RightPickZ, 0.0 },
+                        { AxisNames.RightPlaceZ,0.0 }
                     };
                     tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
                     TeachingPositions.Add(tp);

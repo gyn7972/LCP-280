@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Motions;
 using QMC.Common.Spectrometer;
 using System;
 using System.Collections.Generic;
@@ -139,7 +140,8 @@ namespace QMC.LCP_280.Process.Unit
                     QMC.Common.Motions.MotionAxis axis = null;
 
                     // 1) TP 내부 바인딩 축
-                    if (tp.Axes != null) tp.Axes.TryGetValue(axisKey, out axis);
+                    if (tp.Axes != null) 
+                        tp.Axes.TryGetValue(axisKey, out axis);
 
                     // 2) Unit의 축 사전 키로 찾기
                     if (axis == null && _Rotary.Axes != null)
