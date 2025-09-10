@@ -23,6 +23,9 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, bool> _simInputs  = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
 
+        // 로컬 Safe 명칭 허용(오타 포함)
+        private static readonly string[] SafeNames = new[] { "SafeZone", "Safe", "SasfeZone", "SAFE", "SAFEZONE", "SAFE_ZONE" };
+
         public Rotary(RotaryConfig config = null) : base("Rotary")
         {
             RotaryConfig = config ?? new RotaryConfig();
@@ -36,6 +39,14 @@ namespace QMC.LCP_280.Process.Unit
             TeachingPositions.Clear();
             foreach (var tp in RotaryConfig.TeachingPositions) TeachingPositions.Add(tp);
             BindAxes();
+
+            var il = InterlockManager.Instance;
+            il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T축 Home 완료 후 동작 가능합니다.");
+            il.AddGlobalRule("EquipStateRunningBlock", () =>
+            {
+                return Equipment.Instance != null && Equipment.Instance.State == EquipmentState.Running
+                    ? "자동운전 중에는 인덱스 수동 이동이 불가합니다." : null;
+            });
         }
 
         private void BindAxes()
@@ -101,6 +112,86 @@ namespace QMC.LCP_280.Process.Unit
                 ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        #endregion
+
+        #region Index Move (with Interlock)
+        public bool TryMoveIndexPrev(out string reason)
+        {
+            return TryMoveIndexStep(-1, out reason);
+        }
+
+        public bool TryMoveIndexNext(out string reason)
+        {
+            return TryMoveIndexStep(+1, out reason);
+        }
+
+        private bool TryMoveIndexStep(int step, out string reason)
+        {
+            reason = null;
+            var axis = _axisT;
+            if (axis == null)
+            {
+                reason = "T축이 바인딩되지 않았습니다.";
+                return false;
+            }
+
+            // 1) 로컬 Safe-Zone 인터락: 4개 유닛이 Safe TeachingPosition에 있어야 함
+            if (!VerifyAllUnitsSafe(out reason))
+                return false;
+
+            // 2) InterlockManager 규칙 검사(전역 + 축 관련)
+            var il = InterlockManager.Instance;
+            if (!il.ValidateAxisForHome(axis, out reason))
+                return false;
+            if (!il.ValidateForHomeStep(new[] { axis }, out reason))
+                return false;
+
+            // 3) 실제 인덱스 이동
+            int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
+            if (rc != 0)
+            {
+                reason = $"Index 이동 실패(rc={rc})";
+                return false;
+            }
+            return true;
+        }
+
+        private bool VerifyAllUnitsSafe(out string reason)
+        {
+            reason = null;
+            var eq = Equipment.Instance;
+            if (eq == null || eq.Units == null) return true; // 설비 미준비 시 차단하지 않음
+
+            // IndexChipProbeController
+            if (eq.Units.TryGetValue("IndexChipProbeController", out var u1) && u1 is IndexChipProbeController prober)
+            {
+                if (!IsUnitInSafe(prober.InPosTeaching)) { reason = "IndexChipProbeController가 Safe Zone이 아닙니다."; return false; }
+            }
+            // IndexLoadAligner
+            if (eq.Units.TryGetValue("IndexLoadAligner", out var u2) && u2 is IndexLoadAligner loadAligner)
+            {
+                if (!IsUnitInSafe(loadAligner.InPosTeaching)) { reason = "IndexLoadAligner가 Safe Zone이 아닙니다."; return false; }
+            }
+            // InputDieTransfer
+            if (eq.Units.TryGetValue("InputDieTransfer", out var u3) && u3 is InputDieTransfer inputDie)
+            {
+                if (!IsUnitInSafe(inputDie.InPosTeaching)) { reason = "InputDieTransfer가 Safe Zone이 아닙니다."; return false; }
+            }
+            // OutputDieTransfer
+            if (eq.Units.TryGetValue("OutputDieTransfer", out var u4) && u4 is OutputDieTransfer outputDie)
+            {
+                if (!IsUnitInSafe(outputDie.InPosTeaching)) { reason = "OutputDieTransfer가 Safe Zone이 아닙니다."; return false; }
+            }
+
+            return true;
+        }
+
+        private bool IsUnitInSafe(System.Func<string, bool> inPosTeaching)
+        {
+            for (int i = 0; i < SafeNames.Length; i++)
+                if (inPosTeaching(SafeNames[i])) return true;
+            return false;
+        }
         #endregion
 
         #region IO Helpers
