@@ -267,7 +267,7 @@ namespace QMC.Common.Keithley
                 //return (response == "1");
                 if (comm.Read(ref response))
                 {
-                    return (response == "measure_end");
+                    return response.Contains("measure_end");
                 }
             }
             catch (Exception ex)
