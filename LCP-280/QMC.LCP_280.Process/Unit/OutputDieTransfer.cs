@@ -63,6 +63,17 @@ namespace QMC.LCP_280.Process.Unit
             return result;
         }
 
+        public bool InPosTeaching(string positionName)
+        {
+            var tp = OutputDieTransferConfig.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+            {
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            }
+            return true;
+        }
+
         #region Axis Helpers
         private MotionAxis _toolT, _pickZ, _placeZ;
         public MotionAxis ToolT => _toolT;
@@ -126,7 +137,6 @@ namespace QMC.LCP_280.Process.Unit
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
             {
-                // TryGetOutput 메서드가 프레임워크에 존재한다고 가정 (InputStage 패턴 유사)
                 if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
             }
             return false;

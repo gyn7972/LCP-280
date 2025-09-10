@@ -36,6 +36,7 @@ namespace QMC.LCP_280.Process.Unit
             Align_Index7_Ready,
             Align_Index8_Up,
             Align_Index8_Read,
+            SasfeZone
             // 필요시 확장
         }
 

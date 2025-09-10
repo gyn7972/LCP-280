@@ -71,7 +71,7 @@ namespace QMC.Common.Spectrometer
             selectedInterfaceOptionIndex = -1;
             lbInterfaceOptionValue.Text = "-";
 
-            foreach (var optionName in supportInterface.GetOptionNameList(selectedInterfaceOptionIndex))
+            foreach (var optionName in supportInterface.GetOptionNameList(selectedInterfaceTypeIndex))
             {
                 lbxIntOption.Items.Add(optionName);
             }

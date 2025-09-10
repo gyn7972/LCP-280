@@ -16,73 +16,72 @@ namespace QMC.Common.Motions
     public sealed class MotionAxisConfig : BaseConfig
     {
         // ===== Home Speed =====
-        [Category("Speed.Home"), DisplayName("Home Speed (mm/s)")]
+        [Category("Home"), DisplayName("Vel. 1st(mm/s)")]
         [DefaultValue(0.0)]
         public double HomeFirstSpeed { get; set; } = 0.000;
 
-        [Category("Speed.Home"), DisplayName("H-Return Speed (mm/s)")]
+        [Category("Home"), DisplayName("Vel. 2nd(mm/s)")]
         [DefaultValue(0.0)]
         public double HomeSecondSpeed { get; set; } = 0.000;
 
-        [Category("Speed.Home"), DisplayName("H-Recursion Speed (mm/s)")]
+        [Category("Home"), DisplayName("Vel. 3rd(mm/s)")]
         [DefaultValue(0.0)]
         public double HomeThirdSpeed { get; set; } = 0.000;
 
-        [Category("Speed.Home"), DisplayName("Z-Phase Speed (mm/s)")]
+        [Category("Home"), DisplayName("Vel. Last(mm/s)")]
         [DefaultValue(0.0)]
         public double HomeLastSpeed { get; set; } = 0.000;
 
-        [Category("Speed.Home"), DisplayName("Home Acc (mm/s^2)")]
+        [Category("Home"), DisplayName("Accel. 1st(mm/s^2)")]
         [DefaultValue(0.0)]
         public double HomeFirstAcc { get; set; } = 0.000;
 
-        [Category("Speed.Home"), DisplayName("H-Return Acc (mm/s^2)")]
+        [Category("Home"), DisplayName("Accel. 2nd(mm/s^2)")]
         [DefaultValue(0.0)]
         public double HomeSecondAcc { get; set; } = 0.000;
 
         // ===== Jog =====
-        [Category("Speed.Jog"), DisplayName("Fine Velocity (mm/s)")]
+        [Category("Jog"), DisplayName("Fine Velocity(mm/s)")]
         [DefaultValue(0.0)]
         public double JogFineVelocity { get; set; } = 0.000;
 
-        [Category("Speed.Jog"), DisplayName("Coarse Velocity (mm/s)")]
+        [Category("Jog"), DisplayName("Coarse Velocity(mm/s)")]
         [DefaultValue(0.0)]
         public double JogCoarseVelocity { get; set; } = 0.000;
 
-        [Category("Speed.Jog"), DisplayName("Accelerator (mm/s^2)")]
+        [Category("Jog"), DisplayName("Accelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double JogAcc { get; set; } = 0.000;
 
-        [Category("Speed.Jog"), DisplayName("Decelerator (mm/s^2)")]
+        [Category("Jog"), DisplayName("Decelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double JogDec { get; set; } = 0.000;
 
         // ===== Run =====
-        [Category("Speed.Run"), DisplayName("Max Velocity (mm/s)")]
+        [Category("Run"), DisplayName("Maximum Velocity(mm/s)")]
         [DefaultValue(0.0)]
         public double MaxVelocity { get; set; } = 0.000;
 
-        [Category("Speed.Run"), DisplayName("Accelerator (mm/s^2)")]
+        [Category("Run"), DisplayName("Accelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double RunAcc { get; set; } = 0.000;
 
-        [Category("Speed.Run"), DisplayName("Decelerator (mm/s^2)")]
+        [Category("Run"), DisplayName("Decelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double RunDec { get; set; } = 0.000;
 
-        // ===== Profile =====
-        [Category("Profile"), DisplayName("Mode")]
+        [Category("Profile"), DisplayName("Profile")]
         [DefaultValue(ProfileMode.SCurve)]
         public ProfileMode ProfileMode { get; set; } = ProfileMode.SCurve;
 
-        [Category("Profile"), DisplayName("Accelerator Jerk (%)")]
+        [Category("Profile"), DisplayName("Accelerator Jerk(%)")]
         [DefaultValue(50)]
         public int AccJerkPercent { get; set; } = 50;
 
-        [Category("Profile"), DisplayName("Decelerator Jerk (%)")]
+        [Category("Profile"), DisplayName("Decelerator Jerk(%)")]
         [DefaultValue(50)]
         public int DecJerkPercent { get; set; } = 50;
-
+        // ===== Profile =====
         // ===== 공통 운전 보정/품질 =====
         [Category("Operation"), DisplayName("Inposition Tolerance (mm)")]
         [DefaultValue(0.002)]

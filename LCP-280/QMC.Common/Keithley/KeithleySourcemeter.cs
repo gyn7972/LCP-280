@@ -24,6 +24,7 @@ namespace QMC.Common.Keithley
         #endregion
 
         #region Field
+        private List<string> script = new List<string>();
         private List<TestConditionItem> testItems = new List<TestConditionItem>();
         private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
         #endregion
@@ -96,6 +97,7 @@ namespace QMC.Common.Keithley
         public event EventHandler OnSessionClosed;
         public event EventHandler OnInitialized;
         public event EventHandler OnReceived;
+        public event EventHandler<string> OnMeasureFailed;
 
         // Subscribe Event      
         private void Communicator_OnSessionOpened(object sender, EventArgs e)
@@ -264,6 +266,7 @@ namespace QMC.Common.Keithley
             catch (Exception ex)
             {
                 Log.Write(ex);
+                OnMeasureFailed?.Invoke(this, ex.Message);
                 return -1;
             }
             return 0;
@@ -459,54 +462,65 @@ namespace QMC.Common.Keithley
 
         // Script Methods
         #region Script Methods
-        private int SendUserScript()
+        private bool LoadScriptFromFile(string filePath)
         {
-            if (!File.Exists(Config.ScriptFileName))
-                return -1;
-
+            if (!File.Exists(filePath))
+                return false;
             try
             {
-                string arrangeText = "";
+                script.Clear();
+                string text = "";
                 int lineCommentPosition = 0;
                 bool comment = false;
-
-                string[] textValue = System.IO.File.ReadAllLines(Config.ScriptFileName);
-                if (textValue.Length > 0)
+                string[] fileTexts = System.IO.File.ReadAllLines(filePath);
+                for (int i = 0; i < fileTexts.Length; i++)
                 {
-                    for (int i = 0; i < textValue.Length; i++)
+                    // 텍스트의 앞 뒤 빈공간 제거
+                    text = fileTexts[i].Trim();
+                    // 빈 텍스트 경우 패스
+                    if (text == "")
+                        continue;
+                    // 범위 주석처리 경우 패스
+                    if (text.Contains("--[[") == true)
                     {
-                        // 텍스트의 앞 뒤 빈공간 제거
-                        arrangeText = textValue[i].Trim();
+                        comment = true;
+                        continue;
+                    }
+                    if (text.Contains("]]--") == true)
+                    {
+                        comment = false;
+                        continue;
+                    }
+                    if (comment == true)
+                        continue;
+                    // 주석처리 경우 주석처리 앞에 텍스트가 있다면 가져온다.
+                    lineCommentPosition = text.IndexOf("--");
+                    if (lineCommentPosition > 0)
+                        text = text.Substring(0, lineCommentPosition).Trim();
+                    if (text == "")
+                        continue;
+                    script.Add(text);
+                }
+            }
+            catch
+            {
+                // Error handling
+                return false;
+            }
+            return true;
+        }
+        private int SendUserScript()
+        {
+            try
+            {
+                if (!LoadScriptFromFile(Config.ScriptFileName))
+                    return -1;
 
-                        // 빈 텍스트 경우 패스
-                        if (arrangeText == "")
-                            continue;
-
-                        // 범위 주석처리 경우 패스
-                        if (arrangeText.Contains("--[[") == true)
-                        {
-                            comment = true;
-                            continue;
-                        }
-                        if (arrangeText.Contains("]]--") == true)
-                        {
-                            comment = false;
-                            continue;
-                        }
-                        if (comment == true)
-                            continue;
-
-                        // 주석처리 경우 주석처리 앞에 텍스트가 있다면 가져온다.
-                        lineCommentPosition = arrangeText.IndexOf("--");
-                        if (lineCommentPosition > 0)
-                            arrangeText = arrangeText.Substring(0, lineCommentPosition).Trim();
-
-                        if (arrangeText == "")
-                            continue;
-
-                        if (!Communicator.Write(arrangeText))
-                            throw new Exception("Failed to send user script.");
-                    }                    
+                // Send Script
+                foreach (var txt in script)
+                {
+                    if (!Communicator.Write(txt))
+                        throw new Exception("Failed to send user script.");
                 }
             }
             catch (Exception ex)
@@ -648,6 +662,36 @@ namespace QMC.Common.Keithley
                     break;
             }
             return measureRange;
+        }
+        #endregion
+
+        // Digital I/O Methods
+        #region Digital I/O Methods
+        public bool[] GetDigitalIOState(int bitCount=14)
+        {
+            bool[] digio = null;
+            try
+            {
+                string response = "";
+                if (Communicator.Query("print(digio.readport())", ref response))
+                {
+                    response = response.Replace("\n", "");
+                    if (double.TryParse(response, out double value))
+                    {
+                        digio = new bool[bitCount];
+                        int v = (int)value;
+                        for (int i = 0; i < bitCount; i++)
+                        {
+                            digio[i] = (v & (1 << i)) != 0;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            return digio;
         }
         #endregion
     }

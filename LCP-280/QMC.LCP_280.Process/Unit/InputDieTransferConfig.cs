@@ -54,8 +54,8 @@ namespace QMC.LCP_280.Process.Unit
             Place_Index6,
             Place_Index7,
             Place_Index8,
-            Waiting,
-            Ready
+            Place_Ready,
+            SafeZone
             // 필요시 확장
         }
 

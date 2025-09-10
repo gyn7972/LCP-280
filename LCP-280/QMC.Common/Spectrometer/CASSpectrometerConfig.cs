@@ -34,7 +34,7 @@ namespace QMC.Common.Spectrometer
         public int ColormetricStart { get; set; }
         public int ColormetricStop { get; set; }
         public int TriggerTimeout { get; set; }
-        public bool UseExternalTrigger { get; set; }
+        public bool UseHardwareTrigger { get; set; }
         public bool IsSimulated { get; set; }
         #endregion
 
@@ -58,7 +58,7 @@ namespace QMC.Common.Spectrometer
             ColormetricStart = 380;
             ColormetricStop = 780;
             TriggerTimeout = 5000;
-            UseExternalTrigger = false;
+            UseHardwareTrigger = false;
             IsSimulated = false;
         }
         public override bool Validate()
@@ -99,7 +99,7 @@ namespace QMC.Common.Spectrometer
             pc.Add(nameof(ColormetricStart), ColormetricStart);
             pc.Add(nameof(ColormetricStop), ColormetricStop);
             pc.Add(nameof(TriggerTimeout), TriggerTimeout);
-            pc.Add(nameof(UseExternalTrigger), UseExternalTrigger);
+            pc.Add(nameof(UseHardwareTrigger), UseHardwareTrigger);
             pc.Add(nameof(IsSimulated), IsSimulated);
             return pc;
         }
@@ -121,7 +121,7 @@ namespace QMC.Common.Spectrometer
                 ColormetricStart = pc.GetValue<int>(nameof(ColormetricStart));
                 ColormetricStop = pc.GetValue<int>(nameof(ColormetricStop));
                 TriggerTimeout = pc.GetValue<int>(nameof(TriggerTimeout));
-                UseExternalTrigger = pc.GetValue<bool>(nameof(UseExternalTrigger));
+                UseHardwareTrigger = pc.GetValue<bool>(nameof(UseHardwareTrigger));
                 IsSimulated = pc.GetValue<bool>(nameof(IsSimulated));
             }
             catch (Exception ex)
