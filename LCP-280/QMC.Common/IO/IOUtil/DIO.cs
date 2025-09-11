@@ -66,11 +66,24 @@ namespace QMC.Common.IOUtil
         public static bool In(string key, out bool value)
         {
             value = false;
-            var eq = EnsureEq();
-            var dio = eq.DioScan ?? throw new InvalidOperationException("Equipment.DioScan이 초기화되지 않았습니다.");
-            if (!_map.TryGetValue(key, out var p) || p.IsOutput)
-                throw new InvalidOperationException($"'{key}'는 입력으로 매핑되지 않았습니다.");
-            return dio.TryGetInput(p.Module, p.Disp, out value);
+            try
+            {
+                var eq = EnsureEq();
+                var dio = eq.DioScan ?? throw new InvalidOperationException("Equipment.DioScan이 초기화되지 않았습니다.");
+                
+                if (!_map.TryGetValue(key, out var p) || p.IsOutput)
+                {
+                    throw new InvalidOperationException($"'{key}'는 입력으로 매핑되지 않았습니다.");
+                }
+                    
+                return dio.TryGetInput(p.Module, p.Disp, out value);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+
+            return false;
         }
 
         /// <summary>출력 현재 상태 읽기 (가능한 장치에서만). 성공 시 true 반환.</summary>
