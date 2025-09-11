@@ -200,17 +200,17 @@ namespace QMC.LCP_280.Process.Component
         #region Sub Sequence Poll
         private void StartAlignSub()
         {
-            if (_seqAlign.IsRunning) return;
-            _seqAlignCurrentResult = SeqResult.None;
-            _seqAlign.Start(SeqInputChipAlignVision.Step.Init);
+            //if (_seqAlign.IsRunning) return;
+            //_seqAlignCurrentResult = SeqResult.None;
+            //_seqAlign.Start(SeqInputChipAlignVision.Step.Init);
         }
         private void PollAlignSub()
         {
-            if (_seqAlign.IsRunning) return;
-            if (_seqAlign.State == SequenceState.Completed)
-                _seqAlignCurrentResult = SeqResult.Success;
-            else if (_seqAlign.State == SequenceState.Error || _seqAlign.CurrentStep == SeqInputChipAlignVision.Step.Error)
-                _seqAlignCurrentResult = SeqResult.Fail;
+            //if (_seqAlign.IsRunning) return;
+            //if (_seqAlign.State == SequenceState.Completed)
+            //    _seqAlignCurrentResult = SeqResult.Success;
+            //else if (_seqAlign.State == SequenceState.Error || _seqAlign.CurrentStep == SeqInputChipAlignVision.Step.Error)
+            //    _seqAlignCurrentResult = SeqResult.Fail;
         }
 
         private void StartScanSub()

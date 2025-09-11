@@ -27,6 +27,7 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
+            this.buttonTest = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxImageView.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
@@ -118,6 +119,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // groupBoxManual
             // 
+            this.groupBoxManual.Controls.Add(this.buttonTest);
             this.groupBoxManual.Controls.Add(this.buttonPickUpNiddle_Move);
             this.groupBoxManual.Location = new System.Drawing.Point(535, 368);
             this.groupBoxManual.Name = "groupBoxManual";
@@ -135,6 +137,16 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
             this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
+            // 
+            // buttonTest
+            // 
+            this.buttonTest.Location = new System.Drawing.Point(6, 76);
+            this.buttonTest.Name = "buttonTest";
+            this.buttonTest.Size = new System.Drawing.Size(191, 35);
+            this.buttonTest.TabIndex = 18;
+            this.buttonTest.Text = "Test";
+            this.buttonTest.UseVisualStyleBackColor = true;
+            this.buttonTest.Click += new System.EventHandler(this.buttonTest_Click);
             // 
             // ChipLoader_Working
             // 
@@ -170,5 +182,6 @@ namespace QMC.LCP_280.Process.Unit
         private GroupBox groupBoxImageView;
         private GroupBox groupBoxManual;
         private Button buttonPickUpNiddle_Move;
+        private Button buttonTest;
     }
 }

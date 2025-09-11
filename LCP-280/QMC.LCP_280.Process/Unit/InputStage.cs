@@ -54,14 +54,6 @@ namespace QMC.LCP_280.Process.Unit
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
 
-        // External strategy delegates (Override 가능)
-        public Func<bool> CamReadyFunc { get; set; }
-        public Action SetLightingMultiAction { get; set; }
-        public Action SetLightingCenterAction { get; set; }
-        public Func<bool> GrabImageFunc { get; set; }
-        public Func<(bool ok, List<double> thetaList)> FindMultiMarksFunc { get; set; }
-        public Func<(bool ok, double x, double y)> FindCenterMarkFunc { get; set; }
-
         // Pattern Matching Runner (간소화: Recipe 자동 관리)
         private PatternMatchingRunner _pmRunner;
         private bool _runnerInitTried;
@@ -106,30 +98,8 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
             BindCamera();
-            EnsureDefaultVisionHooks();
         }
 
-        // 추가: Vision Hook 기본 설정 메서드(누락 복구)
-        private void EnsureDefaultVisionHooks()
-        {
-            if (CamReadyFunc == null)
-                CamReadyFunc = () => StageCamera != null && StageCamera.Opened;
-            if (GrabImageFunc == null)
-            {
-                GrabImageFunc = () =>
-                {
-                    if (StageCamera == null) return false;
-                    var rc = StageCamera.GrabSync(out var img);
-                    if (rc != 0 || img == null) return false;
-                    StageCamera.LatestImage = img;
-                    return true;
-                };
-            }
-            if (FindMultiMarksFunc == null)
-                FindMultiMarksFunc = () => MultiSearchViaRunner();
-            if (FindCenterMarkFunc == null)
-                FindCenterMarkFunc = () => CenterSearchViaRunner();
-        }
         #endregion
 
         #region Camera Binding
@@ -143,94 +113,45 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        #region Vision Runner (Pattern Matching)
-        private void EnsureRunner()
-        {
-            if (_pmRunner != null || _runnerInitTried) return;
-            _runnerInitTried = true;
-            try
-            {
-                if (StageCamera == null) return;
-                var opt = new PatternMatchingRunner.RunnerOptions
-                {
-                    AutoLoadRecipe = true,
-                    RecipeRootDirectory = PatternRecipeRootDir,
-                    RecipeName = PatternRecipeName,
-                    UseInspectRoi = true,
-                    Mode = PatternMatchingRunner.SearchMode.All,
-                    DrawCrossOnViewer = false,
-                    EnableSaveImage = false,
-                };
-                _pmRunner = new PatternMatchingRunner(StageCamera, null, opt);
-            }
-            catch (Exception ex)
-            {
-                try { Log.Write("InputStage", "Runner init failed: " + ex.Message); } catch { }
-                _pmRunner = null;
-            }
-        }
-
-        private VisionImage EnsureLatestImage()
-        {
-            if (StageCamera == null) return null;
-            var img = StageCamera.LatestImage;
-            if (img == null || img.RawData == null)
-            {
-                try { StageCamera.GrabSync(out img); } catch { }
-            }
-            return img;
-        }
+        // ... 클래스 내부 기존 Vision Runner (Pattern Matching) 영역 교체
+        #region Vision Runner (Pattern Matching)  // REFACTORED: Hub 사용
+        private string CameraKey => StageCameraKey; // 통일된 키 사용
 
         private (bool ok, List<double> thetaList) MultiSearchViaRunner()
         {
             if (DryRun)
                 return (true, new List<double> { 0.0, 0.01, -0.005, 0.004, -0.003 });
-            EnsureRunner();
-            if (_pmRunner == null) return (false, null);
-            try
-            {
-                _pmRunner.SetSearchMode(PatternMatchingRunner.SearchMode.All);
-                var res = _pmRunner.Search(false);
-                if (!res.Success || res.Matches == null || res.Matches.Count < 1) return (false, null);
-                return (true, res.Matches.Select(m => m.R).ToList());
-            }
-            catch (Exception ex)
-            {
-                try { Log.Write("InputStage", "MultiSearchViaRunner exception: " + ex.Message); } catch { }
-                return (false, null);
-            }
+
+            var ret = VisionRunnerHub.SearchAngles(CameraKey);
+            if (!ret.ok) return (false, null);
+            return (true, ret.angles);
+        }
+
+        /// <summary>
+        /// 멀티 패턴 매칭 각도 리스트 반환 (Align 시퀀스용 래퍼)
+        /// DryRun 시 모의 데이터 제공
+        /// </summary>
+        public bool TryGetMultiAngles(out List<double> angles)
+        {
+            var (ok, list) = MultiSearchViaRunner();
+            angles = ok ? list : null;
+            return ok && angles != null && angles.Count > 0;
         }
 
         private (bool ok, double x, double y) CenterSearchViaRunner()
         {
             if (DryRun) return (true, 0.0, 0.0);
-            EnsureRunner();
-            if (_pmRunner == null) return (false, 0, 0);
-            try
-            {
-                var img = EnsureLatestImage();
-                if (img == null || img.Header == null || img.Header.Width <= 0 || img.Header.Height <= 0)
-                    return (false, 0, 0);
-                double imgCx, imgCy;
-                if (UseImageCenterAsOrigin || double.IsNaN(ImageOriginX) || double.IsNaN(ImageOriginY))
-                {
-                    imgCx = (img.Header.Width) / 2.0;
-                    imgCy = (img.Header.Height) / 2.0;
-                }
-                else { imgCx = ImageOriginX; imgCy = ImageOriginY; }
-                _pmRunner.SetSearchMode(PatternMatchingRunner.SearchMode.First);
-                var res = _pmRunner.Search(false);
-                if (!res.Success || res.Matches == null || res.Matches.Count == 0) return (false, 0, 0);
-                var rep = res.Matches[(res.ReferenceIndex >= 0 && res.ReferenceIndex < res.Matches.Count) ? res.ReferenceIndex : 0];
-                double dxPixels = rep.X - imgCx;
-                double dyPixels = rep.Y - imgCy;
-                return (true, dxPixels * PixelSizeXmm, dyPixels * PixelSizeYmm);
-            }
-            catch (Exception ex)
-            {
-                try { Log.Write("InputStage", "CenterSearchViaRunner exception: " + ex.Message); } catch { }
-                return (false, 0, 0);
-            }
+
+            var res = VisionRunnerHub.SearchCenterOffset(
+                CameraKey,
+                PixelSizeXmm,
+                PixelSizeYmm,
+                ImageOriginX,
+                ImageOriginY,
+                UseImageCenterAsOrigin);
+
+            if (!res.ok) return (false, 0, 0);
+            return (true, res.dxMm, res.dyMm);
         }
         #endregion
 
@@ -476,10 +397,29 @@ namespace QMC.LCP_280.Process.Unit
         public bool Ring0()           => ReadInput(InputStageConfig.IO.RING_CHECK0);
         public bool Ring1()           => ReadInput(InputStageConfig.IO.RING_CHECK1);
         public bool IsRingPresent()   => Ring0() || Ring1();
+
+
+        public void SetClampUpDown(bool up) 
+        {
+            if (up)
+            {
+                _cylClampLift.Extend(); //ClampLiftUp(); 
+            }
+            else
+            {
+                _cylClampLift.Retract(); //ClampLiftDown(); 
+            }
+        }
+
+
         #endregion
 
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
+
+
+
+
     }
 }

@@ -189,9 +189,9 @@ namespace QMC.LCP_280.Process.Component
         public static string[] GetStepNames() => Enum.GetNames(typeof(Step));
         private void BindStageDelegatesIfNeeded()
         {
-            if (EnsureCameraReadyFunc == null) EnsureCameraReadyFunc = _stage.CamReadyFunc;
-            if (SetLightingForMultiAction == null) SetLightingForMultiAction = _stage.SetLightingMultiAction;
-            if (GrabImageFunc == null) GrabImageFunc = _stage.GrabImageFunc;
+            //if (EnsureCameraReadyFunc == null) EnsureCameraReadyFunc = _stage.CamReadyFunc;
+            //if (SetLightingForMultiAction == null) SetLightingForMultiAction = _stage.SetLightingMultiAction;
+            //if (GrabImageFunc == null) GrabImageFunc = _stage.GrabImageFunc;
             // FindChipsFunc 은 외부(또는 Stage)에서 주입 필요. (없을 경우 DryRun 또는 실패 처리)
         }
         private void ResetFlags()

@@ -234,7 +234,8 @@ namespace QMC.LCP_280.Process.Component
         {
             _visionSearchedThisGrab = false; _lastMatchCount = 0;
             if (IsDryRun) return true;
-            try { return _stage.GrabImageFunc?.Invoke() ?? false; } catch { return false; }
+            //try { return _stage.GrabImageFunc?.Invoke() ?? false; } catch { return false; }
+            return false;
         }
         private bool VisionWorking() => false; // 동기 Grab
 
@@ -248,12 +249,12 @@ namespace QMC.LCP_280.Process.Component
             }
             try
             {
-                var multi = _stage.FindMultiMarksFunc?.Invoke();
-                if (multi.HasValue && multi.Value.ok && multi.Value.thetaList != null && multi.Value.thetaList.Count > 0)
-                {
-                    _lastMatchCount = multi.Value.thetaList.Count; // 단순 개수
-                }
-                else _lastMatchCount = 0;
+                //var multi = _stage.FindMultiMarksFunc?.Invoke();
+                //if (multi.HasValue && multi.Value.ok && multi.Value.thetaList != null && multi.Value.thetaList.Count > 0)
+                //{
+                //    _lastMatchCount = multi.Value.thetaList.Count; // 단순 개수
+                //}
+                //else _lastMatchCount = 0;
             }
             catch { _lastMatchCount = 0; }
         }

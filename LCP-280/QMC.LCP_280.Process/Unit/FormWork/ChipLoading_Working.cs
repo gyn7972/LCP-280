@@ -3,6 +3,7 @@ using QMC.LCP_280.Process.Sequences;
 using System;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -335,14 +336,14 @@ namespace QMC.LCP_280.Process.Unit
                 // Align Vision
                 if (InputStageUnit != null)
                 {
-                    if (_seqAlignVision == null)
-                        _seqAlignVision = new SeqInputChipAlignVision(InputStageUnit); // Unit 재사용
-                    manualSequenceControl?.RegisterSequence(
-                        "AlignVision",
-                        _seqAlignVision,
-                        () => SeqInputChipAlignVision.GetStepNames(),
-                        step => _seqAlignVision.StartSingle(step),
-                        idx => Enum.GetName(typeof(SeqInputChipAlignVision.Step), idx));
+                    //if (_seqAlignVision == null)
+                    //    _seqAlignVision = new SeqInputChipAlignVision(InputStageUnit); // Unit 재사용
+                    //manualSequenceControl?.RegisterSequence(
+                    //    "AlignVision",
+                    //    _seqAlignVision,
+                    //    () => SeqInputChipAlignVision.GetStepNames(),
+                    //    step => _seqAlignVision.StartSingle(step),
+                    //    idx => Enum.GetName(typeof(SeqInputChipAlignVision.Step), idx));
                 }
                 // Mapping Vision
                 if (InputStageUnit != null)
@@ -508,6 +509,15 @@ namespace QMC.LCP_280.Process.Unit
             {
                 try { buttonPickUpNiddle_Move.Enabled = true; } catch { }
             }
+        }
+
+        private void buttonTest_Click(object sender, EventArgs e)
+        {
+            InputStageUnit.SetClampUpDown(true);
+
+            Thread.Sleep(1000);
+
+            InputStageUnit.SetClampUpDown(false);
         }
     }
 }
