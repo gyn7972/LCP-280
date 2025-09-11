@@ -543,9 +543,10 @@ namespace QMC.LCP_280.Process.Unit
         private void buttonTest_Click(object sender, EventArgs e)
         {
             InputStageUnit.SetClampUpDown(true);
+        }
 
-            Thread.Sleep(1000);
-
+        private void buttonTest2_Click(object sender, EventArgs e)
+        {
             InputStageUnit.SetClampUpDown(false);
         }
     }
