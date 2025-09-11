@@ -32,6 +32,10 @@ namespace QMC.LCP_280.Process.Unit
             InitializeUI();
             this.ResumeLayout(true);
 
+            // ★ 출력 항목 클릭 이벤트 연결 (토글)
+            this.outputView.ItemClicked -= new System.EventHandler<string>(this.OnOutputItemClicked);
+            this.outputView.ItemClicked += new System.EventHandler<string>(this.OnOutputItemClicked);
+
             Console.WriteLine($"✅ RotaryUnit_Config 생성자 완료");
         }
 

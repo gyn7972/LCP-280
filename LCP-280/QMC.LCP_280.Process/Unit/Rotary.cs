@@ -385,32 +385,11 @@ namespace QMC.LCP_280.Process.Unit
             return true;
         }
 
+        public bool SlotFlowOk(int slotIndex) => slotIndex >= 0 && slotIndex < FLOW.Length && ReadInput(FLOW[slotIndex]);
 
         #region Pressure
         public bool AirTankPressureOk() => ReadInput(AIR_TANK_PRESSURE);
         public bool VacTankPressureOk() => ReadInput(VAC_TANK_PRESSURE) || ReadInput(VAC_TANK_PRESSURE_LEGACY);
-        #endregion
-
-        #region Slot Vacuum/Blow/Vent Controls
-        public void SetSlotVac(int slotIndex, bool on)  => SetIndexedOutput(SLOT_VAC,  slotIndex, on);
-        public void SetSlotBlow(int slotIndex, bool on) => SetIndexedOutput(SLOT_BLOW, slotIndex, on);
-        public void SetSlotVent(int slotIndex, bool on) => SetIndexedOutput(SLOT_VENT, slotIndex, on);
-
-        public bool IsSlotVacOn(int slotIndex)  => slotIndex >= 0 && slotIndex < SLOT_VAC.Length  && IsOutputOn(SLOT_VAC[slotIndex]);
-        public bool IsSlotBlowOn(int slotIndex) => slotIndex >= 0 && slotIndex < SLOT_BLOW.Length && IsOutputOn(SLOT_BLOW[slotIndex]);
-        public bool IsSlotVentOn(int slotIndex) => slotIndex >= 0 && slotIndex < SLOT_VENT.Length && IsOutputOn(SLOT_VENT[slotIndex]);
-
-        public bool SlotFlowOk(int slotIndex) => slotIndex >= 0 && slotIndex < FLOW.Length && ReadInput(FLOW[slotIndex]);
-
-        public void AllVacOff()  { for (int i = 0; i < SLOT_VAC.Length; i++)  SetSlotVac(i, false); }
-        public void AllBlowOff() { for (int i = 0; i < SLOT_BLOW.Length; i++) SetSlotBlow(i, false); }
-        public void AllVentOff() { for (int i = 0; i < SLOT_VENT.Length; i++) SetSlotVent(i, false); }
-
-        private void SetIndexedOutput(string[] arr, int idx, bool on)
-        {
-            if (idx < 0 || idx >= arr.Length) return;
-            WriteOutput(arr[idx], on);
-        }
         #endregion
     }
 }

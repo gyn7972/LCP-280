@@ -190,7 +190,6 @@ namespace QMC.LCP_280.Process.Unit
             else   _vacProbeCard.Off();
             return true;
         }
-
         public bool SetSphereFB(bool bFwdBwd)
         {
             if (_cylSphere == null) return false;
@@ -204,27 +203,15 @@ namespace QMC.LCP_280.Process.Unit
                 return _cylSphere.Retract();
             }
         }
+        public bool ProbeVacOk() => _vacProbeCard?.IsOk() ?? false;
+        public bool IsSphereForward() => ReadInput(NAME_SPHERE_FW);   // Forward sensor
+        public bool IsSphereBackward() => ReadInput(NAME_SPHERE_BW);   // Backward sensor
         /////////////////////
 
+
         // === Direct Valve Control (강제 구동) ===
-        public void SetSphereFwdValve(bool on) => WriteOutput(NAME_SPHERE_FW, on);
         public bool IsSphereFwdValveOn()       => IsOutputOn(NAME_SPHERE_FW);
-        public void SetSphereBwdValve(bool on) => WriteOutput(NAME_SPHERE_BW, on);
-        public bool IsSphereBwdValveOn()       => IsOutputOn(NAME_SPHERE_BW);
-        public void SetProbeVacValve(bool on)  => WriteOutput(NAME_PROBE_VAC, on);
         public bool IsProbeVacValveOn()        => IsOutputOn(NAME_PROBE_VAC);
-        #endregion
-
-        #region High-Level Actuator API (Backward compatible)
-        //public bool SphereForward(int timeoutMs = 2000)  => _cylSphere?.Extend(timeoutMs) ?? false;
-        //public bool SphereBackward(int timeoutMs = 2000) => _cylSphere?.Retract(timeoutMs) ?? false;
-        //public void SphereAllOff() => _cylSphere?.AllOff();
-        //public void ProbeVacOn()  => _vacProbeCard?.On();
-        //public void ProbeVacOff() => _vacProbeCard?.Off();
-
-        public bool ProbeVacOk()  => _vacProbeCard?.IsOk() ?? false;
-        public bool IsSphereForward()  => ReadInput(NAME_SPHERE_FW);   // Forward sensor
-        public bool IsSphereBackward() => ReadInput(NAME_SPHERE_BW);   // Backward sensor
         #endregion
 
         #region Lifecycle

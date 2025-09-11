@@ -285,7 +285,7 @@ namespace QMC.LCP_280.Process.Component
                     if (!ResolvePositions()) break;
                     if (!_ventClosedIssued)
                     {
-                        _transfer.SetArmVent(_armIndex, false); // Vent Close
+                        _transfer.SetVent(_armIndex, false); // Vent Close
                         _ventClosedIssued = true;
                     }
                     _tick = DateTime.UtcNow; _step = Step.VentOffDelayWait; break;
@@ -298,7 +298,7 @@ namespace QMC.LCP_280.Process.Component
                 case Step.VacuumOnCheck:
                     if (!_vacOnIssued)
                     {
-                        _transfer.SetArmVac(_armIndex, true);
+                        _transfer.SetVacuum(_armIndex, true);
                         _vacOnIssued = true;
                         _tick = DateTime.UtcNow;
                     }

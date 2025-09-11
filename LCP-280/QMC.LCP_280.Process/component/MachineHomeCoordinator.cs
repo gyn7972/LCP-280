@@ -76,7 +76,7 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (!outStage.IsPlateDown())
                             {
-                                if (!outStage.PlateDown(2000) || !outStage.IsPlateDown())
+                                if (!outStage.SetClampPlate(false) || !outStage.IsPlateDown())
                                     return (false, "OutputStage PlateDown 필요");
                             }
                         }
@@ -128,7 +128,7 @@ namespace QMC.LCP_280.Process.Component
                                 catch { /* ignore jog errors */ }
 
                                 await Task.Delay(100, ct).ConfigureAwait(false);
-                                if (!inFeeder.FeederUp(3000))
+                                if (!inFeeder.SetLift(true))
                                     return (false, "Wafer Feeder Up 실패");
 
                                 // Up 센서 확인
@@ -194,7 +194,7 @@ namespace QMC.LCP_280.Process.Component
                                 catch { /* ignore jog errors */ }
 
                                 await Task.Delay(100, ct).ConfigureAwait(false);
-                                if (!outFeeder.FeederUp(3000))
+                                if (!outFeeder.SetLift(true))
                                     return (false, "Bin Feeder Up 실패");
 
                                 // Up 센서 확인

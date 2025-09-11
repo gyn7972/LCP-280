@@ -216,9 +216,6 @@ namespace QMC.LCP_280.Process.Unit
 
             if (bUpDn)
             {
-                //if (IsClampBwd())
-                //    return false; // 기존 인터락 유지
-
                 return _cylClampLift.Extend();
             }
             else
@@ -251,58 +248,21 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public void SetVacuumValve(bool on) => WriteOutput(OutputStageConfig.IO.VACUUM, on);
-        public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
-
-        public void SetPlateUpValve(bool on) => WriteOutput(OutputStageConfig.IO.PLATE_UP_OUT, on);
-        public bool IsPlateUpValveOn() => IsOutputOn(OutputStageConfig.IO.PLATE_UP_OUT);
-        public void SetPlateDownValve(bool on) => WriteOutput(OutputStageConfig.IO.PLATE_DOWN_OUT, on);
-        public bool IsPlateDownValveOn() => IsOutputOn(OutputStageConfig.IO.PLATE_DOWN_OUT);
-
-        public void SetClampLiftUpValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_UP, on);
-        public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
-        public void SetClampLiftDownValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_DOWN, on);
-        public bool IsClampLiftDownValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_DOWN);
-
-        public void SetClampFwdValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_FWD, on);
-        public bool IsClampFwdValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_FWD);
-        public void SetClampBwdValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_BWD, on);
-        public bool IsClampBwdValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_BWD);
-
         // --- Existing High-Level APIs (인터락 포함) ---
-        public void VacuumOn() => _vacuum?.On();
-        public void VacuumOff() => _vacuum?.Off();
         public bool IsVacuum() => (_vacuum?.IsOk() ?? false) || ReadInput(OutputStageConfig.IO.VACUUM_CHECK);
-        [Obsolete("Use IsVacuum() instead")] public bool VacuumCheck() => IsVacuum();
-        public bool VacuumOk() => _vacuum?.IsOk() ?? false;
-
-        public bool PlateUp(int timeoutMs = 3000) => _cylPlate?.Extend(timeoutMs) ?? false;
-        public bool PlateDown(int timeoutMs = 3000) => _cylPlate?.Retract(timeoutMs) ?? false;
         public bool IsPlateUp() => ReadInput(OutputStageConfig.IO.PLATE_UP);
         public bool IsPlateDown() => ReadInput(OutputStageConfig.IO.PLATE_DOWN);
-
-        public bool ClampLiftUp(int timeoutMs = 3000) => _cylClampLift?.Extend(timeoutMs) ?? false;
-        public bool ClampLiftDown(int timeoutMs = 3000)
-        {
-            if (!IsClampBwd()) return false; // 기존 인터락 유지
-            return _cylClampLift?.Retract(timeoutMs) ?? false;
-        }
         public bool IsClampLiftUp() => !IsClampLiftDown();
         public bool IsClampLiftDown() => ReadInput(OutputStageConfig.IO.CLAMP_DOWN_CHECK);
-
-        public bool ClampFwd(int timeoutMs = 3000)
-        {
-            if (!IsClampLiftUp()) return false; // 기존 인터락 유지
-            return _cylClampFB?.Extend(timeoutMs) ?? false;
-        }
-        public bool ClampBwd(int timeoutMs = 3000) => _cylClampFB?.Retract(timeoutMs) ?? false;
         public bool IsClampFwd() => ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
         public bool IsClampBwd() => !IsClampFwd();
-
         public bool Ring0() => ReadInput(OutputStageConfig.IO.RING_CHECK0);
         public bool Ring1() => ReadInput(OutputStageConfig.IO.RING_CHECK1);
         public bool IsRingPresent() => Ring0() || Ring1();
+
+        // === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
+        public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
+        public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
         #endregion
     }
 }

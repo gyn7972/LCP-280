@@ -222,7 +222,6 @@ namespace QMC.LCP_280.Process.Unit
             else _vacuum[nNo].Off();
             return true;
         }
-
         public bool SetBlow(int nNo, bool on)
         {
             if (_blow[nNo] == null) return false;
@@ -230,7 +229,6 @@ namespace QMC.LCP_280.Process.Unit
             else _blow[nNo].Off();
             return true;
         }
-
         public bool SetVent(int nNo, bool on)
         {
             if (_vent[nNo] == null) return false;
@@ -238,31 +236,6 @@ namespace QMC.LCP_280.Process.Unit
             else _vent[nNo].Off();
             return true;
         }
-
-
-        /// //////////////////////////////////////////////////////////////////
-        private void SetIndexedOutput(string[] arr, int idx, bool on)
-        {
-            if (idx < 0 || idx >= arr.Length) 
-                return; 
-            
-            WriteOutput(arr[idx], on);
-        }
-
-        public void SetArmVac(int armIndex, bool on)  => SetIndexedOutput(VAC_NAMES,  armIndex, on);
-        public void SetArmBlow(int armIndex, bool on) => SetIndexedOutput(BLOW_NAMES, armIndex, on);
-        public void SetArmVent(int armIndex, bool on) => SetIndexedOutput(VENT_NAMES, armIndex, on);
-        public void AllVacOff()  { for (int i = 0; i < VAC_NAMES.Length;  i++) SetArmVac(i, false); }
-        public void AllBlowOff() { for (int i = 0; i < BLOW_NAMES.Length; i++) SetArmBlow(i, false); }
-        public void AllVentOff() { for (int i = 0; i < VENT_NAMES.Length; i++) SetArmVent(i, false); }
-
-        // State query helpers (DryRun 고려 - 현재 입력 센서 없음 → false 고정, 필요시 Flow 센서 활용)
-        public bool IsArmVacOn(int armIndex)  => false; // no feedback sensor
-        public bool IsArmBlowOn(int armIndex) => false;
-        public bool IsArmVentOn(int armIndex) => false;
-        #endregion
-
-        #region Status Helpers (Flow / Tank)
         public bool AirTankPressureOk() => ReadInput(InputDieTransferConfig.IO.AIR_TANK_PRESSURE);
         public bool VacTankPressureOk() => ReadInput(InputDieTransferConfig.IO.VAC_TANK_PRESSURE);
         public bool ArmFlowOk(int armIndex)
@@ -276,6 +249,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return false;
         }
+        /// //////////////////////////////////////////////////////////////////
         #endregion
 
         #region Lifecycle
