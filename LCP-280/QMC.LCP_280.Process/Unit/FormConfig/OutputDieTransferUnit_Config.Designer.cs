@@ -434,6 +434,37 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
+        /// <summary>
+        /// JogControl 에 해당 Unit 의 모든 축을 표시 (Position 선택과 무관)
+        /// </summary>
+        private void PopulateAllAxesInJogControl()
+        {
+            try
+            {
+                if (jogControl == null) return;
+                const string UNIT_NAME = "OutputDieTransfer";
+                var eq = Equipment.Instance;
+                if (eq?.Units == null) return;
+                if (!eq.Units.TryGetValue(UNIT_NAME, out var unit)) return;
+                var ejector = unit as OutputDieTransfer;
+                if (ejector?.Axes == null || ejector.Axes.Count == 0)
+                {
+                    jogControl.SetTeachingAxisList(null); // 비움
+                    return;
+                }
+                var axisNames = ejector.Axes.Values
+                    .Where(a => a != null)
+                    .Select(a => a.Name ?? a.Setup?.Name)
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Distinct()
+                    .ToArray();
+                jogControl.SetTeachingAxisList(axisNames);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("PopulateAllAxesInJogControl error: " + ex.Message);
+            }
+        }
         private void InitializeUI()
         {
             try
@@ -446,6 +477,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 InitializeRadioButtonView();
                 InitializeDigitalIO();            // ★ Digital IO 초기화 추가
+                PopulateAllAxesInJogControl();
             }
             catch (Exception ex)
             {
@@ -686,22 +718,6 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 ShowTeachingPositionInPropertyCollectionView(selectedIndex);
-
-                // ★ 선택된 TeachingPosition의 축 이름들을 JogControl에 전달하여 필터링 표시
-                var equipment = Equipment.Instance;
-                const string UNIT_NAME = "OutputDieTransfer";
-                if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
-                {
-                    var transfer = unit as OutputDieTransfer;
-                    if (transfer != null && selectedIndex >= 0 && selectedIndex < transfer.OutputDieTransferConfig.TeachingPositions.Count)
-                    {
-                        var tp = transfer.OutputDieTransferConfig.TeachingPositions[selectedIndex];
-                        if (jogControl != null && tp != null && tp.AxisPositions != null)
-                        {
-                            jogControl.SetTeachingAxisList(tp.AxisPositions.Keys);
-                        }
-                    }
-                }
             }
             catch (Exception ex)
             {

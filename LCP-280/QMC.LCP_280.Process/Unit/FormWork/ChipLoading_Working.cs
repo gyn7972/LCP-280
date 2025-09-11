@@ -424,7 +424,7 @@ namespace QMC.LCP_280.Process.Unit
                 double pinWaiting = 0, pinOffset = 0;
                 try
                 {
-                    var posWaiting = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinWaiting.ToString());
+                    var posWaiting = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString());
                     var posOffset  = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString());
                     if (posWaiting.HasValue) pinWaiting = posWaiting.Value.pinZ;
                     if (posOffset.HasValue)  pinOffset  = posOffset.Value.pinZ;

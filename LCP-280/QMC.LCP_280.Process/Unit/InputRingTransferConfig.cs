@@ -13,6 +13,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Teaching Position 정의/저장/로드
     ///  - Wafer Feeder (Ring Transfer) 관련 IO 이름 상수화
     ///  - Hard Input / Output 테이블 제공
+    ///  - (추가) TeachingPosition 별 허용 축 필터링 기능 적용
     /// </summary>
     public class InputRingTransferConfig : BaseConfig
     {
@@ -45,6 +46,19 @@ namespace QMC.LCP_280.Process.Unit
             // 필요시 확장
         }
 
+        /// <summary>
+        /// Position -> 허용 축 목록
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            { TeachingPositionName.Ready,       new [] { AxisNames.WaferFeederY } },
+            { TeachingPositionName.Stage,       new [] { AxisNames.WaferFeederY } },
+            { TeachingPositionName.Barcode,     new [] { AxisNames.WaferFeederY } },
+            { TeachingPositionName.Cassette,    new [] { AxisNames.WaferFeederY } },
+            { TeachingPositionName.SetPosition, new [] { AxisNames.WaferFeederY } },
+        };
+
         /// <summary>Teaching Position 순수 목록</summary>
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
@@ -74,7 +88,7 @@ namespace QMC.LCP_280.Process.Unit
         public InputRingTransferConfig() : base("InputRingTransferConfig") { }
 
         /// <summary>
-        /// enum 에 정의된 TeachingPositionName 목록을 기준으로 기본 포지션을 채움
+        /// enum 에 정의된 TeachingPositionName 목록을 기준으로 기본 포지션을 채움 (허용 축 매핑 사용)
         /// </summary>
         public void InitializeDefaultTeachingPositions()
         {
@@ -85,19 +99,29 @@ namespace QMC.LCP_280.Process.Unit
                 string posName = name.ToString();
                 if (!existing.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { AxisNames.WaferFeederY, 00.0 }
-                    };
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
-        /// <summary>Teaching Position 추가 혹은 갱신</summary>
+        /// <summary>Teaching Position 추가 혹은 갱신 (허용 축 필터링 적용)</summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var axis in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -126,14 +150,43 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         /// <summary>
-        /// Config 로드 + TeachingPosition 축 바인딩
+        /// Config 로드 + TeachingPosition 축 바인딩 + 축 매핑 적용
         /// </summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int rc = Load(); if (rc != 0) return rc;
+            ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
             return 0;
+        }
+
+        /// <summary>TeachingPositions 의 AxisPositions 를 허용 축만 남기고 누락 축 추가</summary>
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        /// <summary>문자열 Position 이름으로 허용 축 배열 반환</summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            // 기본: 지정 없으면 WaferFeederY 1축
+            return new[] { AxisNames.WaferFeederY };
         }
     }
 }

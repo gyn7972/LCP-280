@@ -23,10 +23,9 @@ namespace QMC.LCP_280.Process.Unit
         public enum TeachingPositionName
         {
             EjectBlockUp,
-            EjectBlockWaiting,
             EjectBlockReady,
             EjectPinOffset,
-            EjectPinWaiting,
+            EjectPinReady,
             EjectPinChange,
             // 필요시 확장
         }
@@ -46,10 +45,26 @@ namespace QMC.LCP_280.Process.Unit
         public bool   EnablePredictiveControl { get; set; } = false;
         public double MoveDoneRemainDistance { get; set; } = 0.005;
 
+        /// <summary>
+        /// Position 별 사용할 축 매핑 (필요시 여기서 조정)
+        ///  - 키: TeachingPositionName
+        ///  - 값: 축 이름 배열 (AxisNames.*)
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            // 기본: 2축 모두 사용. 필요 시 특정 포지션에서 한 축만 사용하도록 배열 수정.
+            { TeachingPositionName.EjectBlockUp,      new [] { AxisNames.EjectorZ } },
+            { TeachingPositionName.EjectBlockReady,   new [] { AxisNames.EjectorZ } },
+            { TeachingPositionName.EjectPinChange,    new [] { AxisNames.EjectorZ } },
+            { TeachingPositionName.EjectPinOffset,    new [] { AxisNames.EjectPinZ } },
+            { TeachingPositionName.EjectPinReady,   new [] { AxisNames.EjectPinZ } },
+        };
+
         public InputStageEjectorConfig() : base("InputStageEjectorConfig") { }
 
         /// <summary>
-        /// enum 기반 기본 Teaching Position 초기화 + Offset 기본값 구성
+        /// enum 기반 기본 Teaching Position 초기화 + Offset 기본값 구성 (축 매핑 반영)
         /// </summary>
         public void InitializeDefaultTeachingPositions()
         {
@@ -59,21 +74,34 @@ namespace QMC.LCP_280.Process.Unit
                 string posName = name.ToString();
                 if (TeachingPositions.FirstOrDefault(p => p.Name == posName) == null)
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { AxisNames.EjectPinZ,   0.0 },
-                        { AxisNames.EjectorZ, 0.0 }
-                    };
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0; // 초기값 0
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }
                 if (!Offsets.ContainsKey(posName)) Offsets[posName] = (0, 0);
             }
+            // 기존 항목도 매핑 필터 적용 (사용하지 않는 축 제거, 누락 축 추가)
+            ApplyAxisMapping();
             Saveconfig();
         }
 
-        /// <summary>Teaching Position 추가 / 갱신</summary>
+        /// <summary>
+        /// TeachingPosition 저장 또는 갱신 (매핑에 따라 축 필터 유지)
+        /// </summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            // 매핑 적용: 허용된 축만 남기고 누락된 축은 0으로 추가
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var key in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(key, out var val)) v = val;
+                filtered[key] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -93,8 +121,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = GetTeachingPosition(name);
             if (tp == null) return (0, 0);
-            double z  = tp.AxisPositions.TryGetValue("EJECTOR_Z", out var vz) ? vz : 0;
-            double pz = tp.AxisPositions.TryGetValue("EJECT_PIN_Z", out var vpz) ? vpz : 0;
+            double z  = tp.AxisPositions.TryGetValue(AxisNames.EjectorZ, out var vz) ? vz : 0;
+            double pz = tp.AxisPositions.TryGetValue(AxisNames.EjectPinZ, out var vpz) ? vpz : 0;
             if (Offsets.TryGetValue(name, out var off)) { z += off.dzEjector; pz += off.dzPin; }
             return (z, pz);
         }
@@ -118,16 +146,50 @@ namespace QMC.LCP_280.Process.Unit
             finally { TeachingPositions = original; }
         }
 
-        /// <summary>Config 로드 + Axis 바인딩 + Offset 키 보정</summary>
+        /// <summary>Config 로드 + Axis 바인딩 + Offset 키 보정 + 매핑 동기화</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int rc = Load();
             if (rc != 0) return rc;
+            ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
             foreach (var tp in TeachingPositions)
                 if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0);
             return 0;
+        }
+
+        /// <summary>
+        /// 매핑에 따라 TeachingPositions 의 AxisPositions 내용 보정 (불필요 축 제거 / 누락 축 추가)
+        /// </summary>
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                // 제거 대상 필터
+                var current = tp.AxisPositions != null ? tp.AxisPositions : new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        /// <summary>
+        /// Position 이름(문자열) 기준 축 이름 목록 반환
+        /// </summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            // 매핑 없는 경우: 현재 사용중인 축(백워드 호환) → 둘 다
+            return new[] { AxisNames.EjectorZ, AxisNames.EjectPinZ };
         }
     }
 }

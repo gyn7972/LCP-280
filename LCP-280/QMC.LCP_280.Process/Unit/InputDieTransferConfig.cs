@@ -13,6 +13,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Teaching Position + Offset 관리 (T / PickZ / PlaceZ)
     ///  - Arm Vacuum / Blow / Vent 및 Flow / Tank Pressure I/O 상수화
     ///  - Hard I/O 테이블과 저장/로드 로직 제공
+    ///  - (추가) TeachingPosition 별 허용 축 필터링 기능
     /// </summary>
     public class InputDieTransferConfig : BaseConfig
     {
@@ -58,6 +59,25 @@ namespace QMC.LCP_280.Process.Unit
             SafeZone
             // 필요시 확장
         }
+
+        /// <summary>
+        /// TeachingPositionName 별 허용 축 목록
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            { TeachingPositionName.Pickup,       new [] { AxisNames.LeftToolT, AxisNames.LeftPickZ } },
+            { TeachingPositionName.Place_Index1, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index2, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index3, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index4, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index5, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index6, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index7, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index8, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Ready,  new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.SafeZone,     new [] { AxisNames.LeftToolT, AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
+        };
 
         /// <summary>Teaching Position 순수 목록</summary>
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
@@ -112,22 +132,31 @@ namespace QMC.LCP_280.Process.Unit
                 string posName = name.ToString();
                 if (TeachingPositions.FirstOrDefault(p => p.Name == posName) == null)
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { AxisNames.LeftToolT, 0.0 },
-                        { AxisNames.LeftPickZ, 0.0 },
-                        { AxisNames.LeftPlaceZ, 0.0 },
-                    };
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0; // 초기값 0
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }
                 if (!Offsets.ContainsKey(posName)) Offsets[posName] = (0, 0, 0);
             }
+            // 축 매핑 정규화 (확장 시 누락/불필요 축 정리)
+            ApplyAxisMapping();
             Saveconfig();
         }
 
-        /// <summary>Teaching Position 추가/갱신</summary>
+        /// <summary>Teaching Position 추가/갱신 (허용 축 필터링 적용)</summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var a in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(a, out var val)) v = val;
+                filtered[a] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -147,9 +176,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = GetTeachingPosition(name);
             if (tp == null) return (0, 0, 0);
-            double t = tp.AxisPositions.TryGetValue("Left Tool T Axis", out var vt) ? vt : 0;
-            double pz = tp.AxisPositions.TryGetValue("Left Pick Z Axis", out var vpz) ? vpz : 0;
-            double plz = tp.AxisPositions.TryGetValue("Left Place Z Axis", out var vplz) ? vplz : 0;
+            double t = tp.AxisPositions.TryGetValue(AxisNames.LeftToolT, out var vt) ? vt : 0;
+            double pz = tp.AxisPositions.TryGetValue(AxisNames.LeftPickZ, out var vpz) ? vpz : 0;
+            double plz = tp.AxisPositions.TryGetValue(AxisNames.LeftPlaceZ, out var vplz) ? vplz : 0;
             if (Offsets.TryGetValue(name, out var off)) { t += off.t; pz += off.pickZ; plz += off.placeZ; }
             return (t, pz, plz);
         }
@@ -171,16 +200,47 @@ namespace QMC.LCP_280.Process.Unit
             finally { TeachingPositions = original; }
         }
 
-        /// <summary>Config 로드 + TeachingPosition 축 바인딩 + Offset 키 보정</summary>
+        /// <summary>Config 로드 + TeachingPosition 축 바인딩 + Offset 키 보정 + 축 매핑 적용</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int result = Load();
             if (result != 0) return result;
+            // 로드 후 축 매핑 정규화
+            ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
             foreach (var tp in TeachingPositions)
                 if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             return 0;
         }
+       
+        /// <summary>각 TeachingPosition의 AxisPositions를 허용 축만 남기고 누락 축 추가</summary>
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        /// <summary>Position 이름(문자열)으로 허용 축 목록 반환</summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            // 기본: 3축 모두 허용
+            return new[] { AxisNames.LeftToolT, AxisNames.LeftPickZ, AxisNames.RightPlaceZ };
+        }
+
     }
 }

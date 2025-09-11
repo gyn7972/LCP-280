@@ -45,18 +45,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            Loading,
-            Unloading,
-            Ready,
-            Home,
-            Index1,
-            Index2,
-            Index3,
-            Index4,
-            Index5,
-            Index6,
-            Index7,
-            Index8
         }
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

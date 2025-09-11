@@ -32,7 +32,7 @@ namespace QMC.LCP_280.Process.Work
             }
             try
             {
-                var waitPos = ejector.InputStageEjectorConfig.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinWaiting.ToString()).pinZ;
+                var waitPos = ejector.InputStageEjectorConfig.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString()).pinZ;
                 double cur = ejector.AxisPinZ.GetPosition();
                 double tol = (ejector.AxisPinZ.Config?.InposTolerance ?? 0.005) * 2;
                 if (Math.Abs(cur - waitPos) <= tol) return true; // already there
@@ -65,7 +65,7 @@ namespace QMC.LCP_280.Process.Work
             }
             try
             {
-                var wait = ejector.InputStageEjectorConfig.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinWaiting.ToString()).pinZ;
+                var wait = ejector.InputStageEjectorConfig.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString()).pinZ;
                 var off = ejector.InputStageEjectorConfig.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString()).pinZ;
                 double delta = off - wait;
 

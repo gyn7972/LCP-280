@@ -5,14 +5,15 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
 using System.Linq;
+using System; // Enum
 
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
     /// InputCassetteLifterConfig
-    ///  - Wafer Lifter (Input side) Teaching Positions 관리
+    ///  - Wafer Lifter (Input side) Teaching Positions 관리 (축 매핑/필터링 적용)
     ///  - Cassette / RingJut / Mapping Sensor 입력 IO 정의
-    ///  - OutputStageConfig 와 동일한 패턴(내부 IO 상수, Hard I/O, Save/Load)
+    ///  - OutputStageConfig 패턴 + Axis filtering (다른 Unit들과 일관성)
     /// </summary>
     public class InputCassetteLifterConfig : BaseConfig
     {
@@ -33,8 +34,24 @@ namespace QMC.LCP_280.Process.Unit
             SlotCount,
             UnloadOffset,
             LoadPort
-            // 필요시 확장
         }
+
+        /// <summary>
+        /// Position → 허용 축 목록 매핑 (필요시 일부 Position만 축 사용하도록 조정 가능)
+        /// 현재는 모든 포지션이 Lifter Z 사용하도록 설정 (SlotPitch/SlotCount 등도 위치 측정 가능성 고려)
+        /// 축이 필요 없는 항목을 비우고 싶다면 해당 배열을 new string[0] 로 변경
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            { TeachingPositionName.CassetteSlot_1, new [] { AxisNames.WaferLifterZ } },
+            { TeachingPositionName.MappingStart,   new [] { AxisNames.WaferLifterZ } },
+            { TeachingPositionName.MappingEnd,     new [] { AxisNames.WaferLifterZ } },
+            { TeachingPositionName.SlotPitch,      new [] { AxisNames.WaferLifterZ } },
+            { TeachingPositionName.SlotCount,      new [] { AxisNames.WaferLifterZ } },
+            { TeachingPositionName.UnloadOffset,   new [] { AxisNames.WaferLifterZ } },
+            { TeachingPositionName.LoadPort,       new [] { AxisNames.WaferLifterZ } },
+        };
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
@@ -56,27 +73,47 @@ namespace QMC.LCP_280.Process.Unit
 
         public InputCassetteLifterConfig() : base("InputCassetteLifterConfig") { }
 
+        /// <summary>
+        /// 기본 Teaching Position 생성 (축 매핑 적용)
+        /// </summary>
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
             var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
-            foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
+            foreach (TeachingPositionName name in Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
                 if (!existing.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes)
                     {
-                        { AxisNames.WaferLifterZ, 200.0 }
-                    };
+                        double init = (a == AxisNames.WaferLifterZ) ? 200.0 : 0.0; // 기존 기본값 유지
+                        axisPositions[a] = init;
+                    }
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
+        /// <summary>
+        /// Position 추가/갱신 (허용된 축만 유지, 누락 축 기본값 삽입)
+        /// </summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            var src = tp.AxisPositions ?? new Dictionary<string, double>();
+            foreach (var a in allowed)
+            {
+                double init = (a == AxisNames.WaferLifterZ) ? 200.0 : 0.0;
+                if (src.TryGetValue(a, out var v)) filtered[a] = v; else filtered[a] = init;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -90,6 +127,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
+        /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
         public int Saveconfig()
         {
             var pure = TeachingPositions
@@ -100,12 +138,47 @@ namespace QMC.LCP_280.Process.Unit
             finally { TeachingPositions = original; }
         }
 
+        /// <summary>로드 + 축 바인딩 + 축 매핑 동기화</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int rc = Load(); if (rc != 0) return rc;
+            ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
             return 0;
+        }
+
+        /// <summary>
+        /// 매핑에 따라 TeachingPositions 보정 (불필요 축 제거 / 누락 축 기본값 추가)
+        /// </summary>
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var a in allowed)
+                {
+                    double init = (a == AxisNames.WaferLifterZ) ? 200.0 : 0.0;
+                    if (current.TryGetValue(a, out var v)) next[a] = v; else next[a] = init;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        /// <summary>
+        /// Position 이름 기반 허용 축 목록 반환
+        /// </summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new string[0];
+            if (Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            // 기본(백워드 호환): Lifter Z 1축
+            return new[] { AxisNames.WaferLifterZ };
         }
     }
 }

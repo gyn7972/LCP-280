@@ -4,9 +4,7 @@ using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -43,6 +41,20 @@ namespace QMC.LCP_280.Process.Unit
             SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
             // 필요시 확장
         }
+
+        /// <summary>
+        /// Position 별 허용되는 축 목록.
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            { TeachingPositionName.Loading,     new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.Unloading,   new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.CenterPoint, new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.Ready,       new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.SetPosition, new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+        };
+
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
         [JsonIgnore]
@@ -84,20 +96,28 @@ namespace QMC.LCP_280.Process.Unit
                 string posName = name.ToString();
                 if (!existingNames.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { AxisNames.BinStageX, 0.0 },
-                        { AxisNames.BinStageY, 0.0 },
-                        { AxisNames.BinStageT, 0.0 }
-                    };
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var axis in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -124,8 +144,36 @@ namespace QMC.LCP_280.Process.Unit
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int result = Load(); if (result != 0) return result;
+            ApplyAxisMapping();
             foreach (var tp in TeachingPositions) tp.BindAxes(axisManager, "Unit");
             return 0;
+        }
+
+        /// <summary>TeachingPositions 의 AxisPositions 를 허용 축만 유지하고 누락 축은 0으로 추가</summary>
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        /// <summary>문자열 Position 이름으로 허용 축 목록 반환 (기본: X/Y/T 3축)</summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            return new[] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT };
         }
     }
 }

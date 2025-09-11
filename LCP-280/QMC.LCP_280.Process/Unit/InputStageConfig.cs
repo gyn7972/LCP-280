@@ -14,6 +14,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - 실제 장치 IO 이름을 상수화 (내부 IO 클래스)
     ///  - Hard I/O 테이블 (스캔/바인딩용) 정의
     ///  - Teaching Position Offset (X/Y/T 보정) 추가 관리 (OutputStageConfig 와의 차별점)
+    ///  - (추가) TeachingPosition 별 허용 축 필터링 기능
     /// </summary>
     public class InputStageConfig : BaseConfig
     {
@@ -26,17 +27,17 @@ namespace QMC.LCP_280.Process.Unit
             // Inputs (Sensor)
             public const string RING_CHECK0     = "WAFER STAGE RING CHECK 0";  // X025
             public const string RING_CHECK1     = "WAFER STAGE RING CHECK 1";  // X026
-            public const string CLAMP_DOWN_SNS  = "WAFER STAGE CLAMP DOWN";    // X027 (클램프 Down 위치 감지)
-            public const string CLAMP_FWD_SNS       = "WAFER STAGE CLAMP";         // X028 (클램프 Up/Clamp 상태)
+            public const string CLAMP_DOWN_SNS  = "WAFER STAGE CLAMP DOWN";    // X027
+            public const string CLAMP_FWD_SNS   = "WAFER STAGE CLAMP";         // X028
             public const string EXPANDER_UP_SNS = "WAFER STAGE EXPANDER UP";   // X029
             public const string EXPANDER_DOWN_SNS = "WAFER STAGE EXPANDER DOWN"; // X030
             public const string VAC_OK_SNS      = "EJECTOR VACUUM CHECK";      // X031
 
             // Outputs (Valve)
-            public const string CLAMP_UP_OUT     = "WAFER STAGE CLAMP UP";      // Y020 (Lift Up)
-            public const string CLAMP_DOWN_OUT   = "WAFER STAGE CLAMP DOWN";    // Y021 (Lift Down)
-            public const string CLAMP_FWD_OUT        = "WAFER STAGE CLAMP";         // Y022 (Clamp Forward / Close)
-            public const string CLAMP_BWD_OUT      = "WAFER STAGE UNCLAMP";       // Y023 (Clamp Back / Open)
+            public const string CLAMP_UP_OUT     = "WAFER STAGE CLAMP UP";      // Y020
+            public const string CLAMP_DOWN_OUT   = "WAFER STAGE CLAMP DOWN";    // Y021
+            public const string CLAMP_FWD_OUT    = "WAFER STAGE CLAMP";         // Y022
+            public const string CLAMP_BWD_OUT    = "WAFER STAGE UNCLAMP";       // Y023
             public const string EXPANDER_UP_OUT  = "WAFER STAGE EXPANDER UP";   // Y024
             public const string EXPANDER_DOWN_OUT= "WAFER STAGE EXPANDER DOWN"; // Y025
             public const string VAC_OUT          = "EJECTOR VACUUM";            // Y038
@@ -53,19 +54,31 @@ namespace QMC.LCP_280.Process.Unit
             // 필요시 확장
         }
 
+        /// <summary>
+        /// Position 이름별 허용 축 목록.
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            { TeachingPositionName.Loading,     new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
+            { TeachingPositionName.Unloading,   new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
+            { TeachingPositionName.CenterPoint, new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
+            { TeachingPositionName.Ready,       new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
+            { TeachingPositionName.SetPosition, new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
+        };
+
         /// <summary>Teaching Position 목록 (순수 위치/설명)</summary>
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
 
         /// <summary>
         /// 개별 Teaching Position 에 적용할 오프셋 (X / Y / T)
-        ///  - OutputStage 와 다르게 InputStage 는 공정 중 교정된 Fine Offset 을 활용하기 위해 별도 유지
         /// </summary>
         public Dictionary<string, (double dx, double dy, double dt)> Offsets { get; set; } = new Dictionary<string, (double dx, double dy, double dt)>();
 
-        // ==== Motion Done 관련 옵션 (예측 제어 등 확장 기능) ====
+        // Motion Done 관련 옵션
         public bool   EnablePredictiveControl   { get; set; } = false;
-        public double MoveDoneRemainDistance    { get; set; } = 0.005; // mm 잔여 허용치
-
+        public double MoveDoneRemainDistance    { get; set; } = 0.005;
+      
         #region Hard I/O 테이블 정의
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
@@ -74,7 +87,7 @@ namespace QMC.LCP_280.Process.Unit
             new HardInputDef { No = 1, Name = IO.RING_CHECK0,       Disp = "X025" },
             new HardInputDef { No = 2, Name = IO.RING_CHECK1,       Disp = "X026" },
             new HardInputDef { No = 3, Name = IO.CLAMP_DOWN_SNS,    Disp = "X027" },
-            new HardInputDef { No = 4, Name = IO.CLAMP_FWD_SNS,         Disp = "X028" },
+            new HardInputDef { No = 4, Name = IO.CLAMP_FWD_SNS,     Disp = "X028" },
             new HardInputDef { No = 5, Name = IO.EXPANDER_UP_SNS,   Disp = "X029" },
             new HardInputDef { No = 6, Name = IO.EXPANDER_DOWN_SNS, Disp = "X030" },
             new HardInputDef { No = 7, Name = IO.VAC_OK_SNS,        Disp = "X031" },
@@ -86,8 +99,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             new HardOutputDef { No = 1, Name = IO.CLAMP_UP_OUT,      Disp = "Y020" },
             new HardOutputDef { No = 2, Name = IO.CLAMP_DOWN_OUT,    Disp = "Y021" },
-            new HardOutputDef { No = 3, Name = IO.CLAMP_FWD_OUT,         Disp = "Y022" },
-            new HardOutputDef { No = 4, Name = IO.CLAMP_BWD_OUT,       Disp = "Y023" },
+            new HardOutputDef { No = 3, Name = IO.CLAMP_FWD_OUT,     Disp = "Y022" },
+            new HardOutputDef { No = 4, Name = IO.CLAMP_BWD_OUT,     Disp = "Y023" },
             new HardOutputDef { No = 5, Name = IO.EXPANDER_UP_OUT,   Disp = "Y024" },
             new HardOutputDef { No = 6, Name = IO.EXPANDER_DOWN_OUT, Disp = "Y025" },
             new HardOutputDef { No = 7, Name = IO.VAC_OUT,           Disp = "Y038" },
@@ -97,8 +110,7 @@ namespace QMC.LCP_280.Process.Unit
         public InputStageConfig() : base("InputStageConfig") { }
 
         /// <summary>
-        /// Teaching Position 기본 세트를 생성 (이미 존재하면 건너뜀)
-        /// + Offsets 초기화
+        /// Teaching Position 기본 세트를 생성 (이미 존재하면 건너뜀) + Offsets 초기화 + 축 매핑 적용
         /// </summary>
         public void InitializeDefaultTeachingPositions()
         {
@@ -109,22 +121,30 @@ namespace QMC.LCP_280.Process.Unit
                 string posName = name.ToString();
                 if (!existing.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { AxisNames.WaferStageX, 0.0 },
-                        { AxisNames.WaferStageY, 0.0 },
-                        { AxisNames.WaferStageT, 0.0 }
-                    };
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0; // 기본 0
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }
                 if (!Offsets.ContainsKey(posName)) Offsets[posName] = (0, 0, 0);
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
-        /// <summary>Teaching Position 추가/갱신 + Offset 기본값 보장</summary>
+        /// <summary>Teaching Position 추가/갱신 (허용 축 필터링) + Offset 기본값 보장</summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var axis in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -146,9 +166,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = GetTeachingPosition(name);
             if (tp == null) return (0, 0, 0);
-            double x = tp.AxisPositions.TryGetValue("Wafer Stage X Axis", out var vx) ? vx : 0;
-            double y = tp.AxisPositions.TryGetValue("Wafer Stage Y Axis", out var vy) ? vy : 0;
-            double t = tp.AxisPositions.TryGetValue("Wafer Stage T Axis", out var vt) ? vt : 0;
+            double x = tp.AxisPositions.TryGetValue(AxisNames.WaferStageX, out var vx) ? vx : 0;
+            double y = tp.AxisPositions.TryGetValue(AxisNames.WaferStageY, out var vy) ? vy : 0;
+            double t = tp.AxisPositions.TryGetValue(AxisNames.WaferStageT, out var vt) ? vt : 0;
             if (Offsets.TryGetValue(name, out var off)) { x += off.dx; y += off.dy; t += off.dt; }
             return (x, y, t);
         }
@@ -175,17 +195,46 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         /// <summary>
-        /// Config 로드 후 Axis Binding 수행 + Offset 키 보정
+        /// Config 로드 후 Axis Binding 수행 + Offset 키 보정 + 축 매핑 적용
         /// </summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int result = Load();
             if (result != 0) return result;
+            ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
             foreach (var tp in TeachingPositions)
                 if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             return 0;
+        }
+
+        /// <summary>TeachingPositions 의 AxisPositions 를 허용 축만 남기고 누락 축 추가</summary>
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        /// <summary>문자열 Position 이름으로 허용 축목록 반환</summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            // 기본: X/Y/T 모두 허용
+            return new[] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT };
         }
     }
 }
