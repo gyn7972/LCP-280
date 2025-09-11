@@ -147,7 +147,14 @@ namespace QMC.Common.Motions
                         var pre = await PreAxisInterlockAsync(stepIndex, axis, token).ConfigureAwait(false);
                         if (!pre.Ok) { blockedReasons[axis] = pre.Reason ?? "PreAxisInterlock blocked"; continue; }
                     }
-                    if (!axis.CheckHomeInterlocks(out var reason)) blockedReasons[axis] = reason ?? "CheckHomeInterlocks blocked"; else runnable.Add(axis);
+                    if (!axis.CheckHomeInterlocks(out var reason))
+                    {
+                        blockedReasons[axis] = reason ?? "CheckHomeInterlocks blocked"; 
+                    }
+                    else
+                    {
+                        runnable.Add(axis);
+                    }
                 }
 
                 if (blockedReasons.Count > 0)

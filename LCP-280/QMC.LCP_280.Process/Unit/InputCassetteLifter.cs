@@ -124,7 +124,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool CassettePresent0() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
         public bool CassettePresent1() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
         public bool AnyCassettePresent() => CassettePresent0() || CassettePresent1();
-        public bool RingJut() => ReadInput(InputCassetteLifterConfig.IO.RING_JUT_CHECK);
+        public bool RingJut() => !ReadInput(InputCassetteLifterConfig.IO.RING_JUT_CHECK);
         public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
 

@@ -41,7 +41,7 @@ namespace QMC.Common.IOUtil
             while (sw.ElapsedMilliseconds < timeout)
             {
                 bool value = IsExtended();
-                if (!value)
+                if (value)
                 {
                     return value;
                 }

@@ -44,16 +44,16 @@ namespace QMC.LCP_280.Process.Component
                 var il = InterlockManager.Instance; 
                 il.Start();
 
-                // 전역/해당축 인터락 평가
-                if (!il.ValidateForHomeStep(list, out reason))
-                    return (false, reason);
+                //// 전역/해당축 인터락 평가
+                //if (!il.ValidateForHomeStep(list, out reason))
+                //    return (false, reason);
 
                 // 축별 사전 체크(Servo/Alarm/Motion)
-                foreach (var a in list)
-                {
-                    if (!a.CheckHomeInterlocks(out reason))
-                        return (false, reason);
-                }
+                //foreach (var a in list)
+                //{
+                //    if (!a.CheckHomeInterlocks(out reason))
+                //        return (false, reason);
+                //}
                 return (true, null);
             };
 
@@ -65,8 +65,11 @@ namespace QMC.LCP_280.Process.Component
                 // InterlockManager 축 규칙 빠른 검사
                 string reason;
                 var il = InterlockManager.Instance;
-                if (!il.ValidateAxisForHome(axis, out reason))
-                    return (false, reason);
+                //if (!il.ValidateAxisForHome(axis, out reason))
+                //    return (false, reason);
+
+                if (!axis.CheckHomeInterlocks(out var reason2))
+                    return (false, reason2);
 
                 // 축 이름별 전처리/인터락
                 switch (axis.Name)

@@ -134,9 +134,17 @@ namespace QMC.LCP_280.Process.Component
         public class AxisHomedRule : InterlockRule
         {
             private readonly MotionAxis _axis; private readonly string _message;
-            public AxisHomedRule(string name, MotionAxis axis, string message = null) : base(name) { _axis = axis; _message = message ?? "축 Home 완료 후 동작 가능합니다."; }
+            public AxisHomedRule(string name, MotionAxis axis, string message = null) : base(name) 
+            { 
+                _axis = axis; 
+                _message = message ?? "축 Home 완료 후 동작 가능합니다."; 
+            }
             public override string Evaluate()
-            { if (_axis == null) return "축이 바인딩되지 않았습니다."; return _axis.IsHomedLatched ? null : _message; }
+            { 
+                if (_axis == null) return "축이 바인딩되지 않았습니다."; 
+                return _axis.IsHomedLatched ? null : _message; 
+            }
+
             public override bool InvolvesAxis(MotionAxis axis) => ReferenceEquals(axis, _axis);
         }
         #endregion
@@ -191,10 +199,21 @@ namespace QMC.LCP_280.Process.Component
             InterlockRule[] copy; lock (_ruleLock) copy = _rules.ToArray();
             foreach (var r in copy)
             {
-                if (!r.InvolvesAxis(axis)) continue;
+                if (!r.InvolvesAxis(axis)) 
+                    continue;
+
                 string msg = null;
-                try { msg = r.Evaluate(); } catch (Exception ex) { msg = r.Name + " EvaluateEx:" + ex.Message; }
-                if (!string.IsNullOrEmpty(msg)) { reason = msg; return false; }
+                try 
+                { 
+                    msg = r.Evaluate();
+                } catch (Exception ex) 
+                { msg = r.Name + " EvaluateEx:" + ex.Message; }
+
+                if (!string.IsNullOrEmpty(msg)) 
+                { 
+                    reason = msg; 
+                    return false; 
+                }
             }
             return true;
         }
@@ -280,7 +299,11 @@ namespace QMC.LCP_280.Process.Component
         public FuncRule AddGlobalRule(string name, Func<string> evaluator)
         { var r = new FuncRule(name, evaluator, null); AddRule(r); return r; }
         public AxisHomedRule AddAxisMustBeHomed(string name, MotionAxis axis, string message = null)
-        { var r = new AxisHomedRule(name, axis, message); AddRule(r); return r; }
+        { 
+            var r = new AxisHomedRule(name, axis, message); 
+            AddRule(r); 
+            return r; 
+        }
         #endregion
     }
 }
