@@ -41,7 +41,8 @@ namespace QMC.LCP_280.Process.Component
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
             {
                 string reason;
-                var il = InterlockManager.Instance; il.Start();
+                var il = InterlockManager.Instance; 
+                il.Start();
 
                 // 이 단계에 포함된 축이 무엇인지 검사하여 해당 유닛의 인터락 동작 수행
                 bool needWaferFeeder = list != null && list.Any(a => a != null && a.Name.Equals("Wafer Feeder Y Axis", StringComparison.OrdinalIgnoreCase));

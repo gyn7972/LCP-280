@@ -366,7 +366,7 @@ namespace QMC.Common.Motions
                 GuardSoftLimit(logicalTarget);
                 var p = _correction.ToHardware(logicalTarget);
                 var jerk = MapJerkPercentToDriver((int)jerkPercent, (int)jerkPercent);
-                return _driver.MoveAbsPulse(AxisNo, p, vel, acc, dec, jerk);
+                return _driver.MoveAbsPosition(AxisNo, p, vel, acc, dec, jerk);
             }
             else
             {

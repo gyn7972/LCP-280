@@ -1201,6 +1201,29 @@ namespace QMC.Common.Motion.Ajin
             if ((ret = AXL.CheckErrorCode("AXM.AxmMotSetMoveUnitPerPulse", AXM.AxmMotSetMoveUnitPerPulse(axis, dUnit, nPulse))) != 0) return ret;
             return ret;
         }
+        public static int GetMoveUnitPerPulse(int axis,ref  double dUnit, ref int nPulse)
+        {
+            int ret = 0;
+          
+            if ((ret = AXL.CheckErrorCode("AXM.AxmMotSetMoveUnitPerPulse", AXM.AxmMotGetMoveUnitPerPulse(axis,ref dUnit,ref nPulse))) != 0) return ret;
+            return ret;
+        }
+        public static int SetAbsRelMode(int axis, bool bAbs = true)
+        {
+            int ret = 0;
+            uint nMode = 0;
+            if(bAbs)
+            {
+                nMode = 0;
+            }
+            else
+            {
+                nMode = 1;
+            }
+            if ((ret = AXL.CheckErrorCode("AXM.AxmMotSetMoveUnitPerPulse", AXM.AxmMotSetAbsRelMode(axis, nMode))) != 0) return ret;
+            return ret;
+        }
+        
 
         public static int SetProfileMode(int axis, AXT_MOTION_PROFILE_MODE mode)
         {
