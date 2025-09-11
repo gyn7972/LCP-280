@@ -140,6 +140,49 @@ namespace QMC.LCP_280.Process.Component
             BuildPropertyCollections();
         }
 
+        // === High-level helpers (Cylinder / Vacuum) ===
+        // Cylinder: extend/retract 도메인 함수 + (선택) 센서 표시
+        public void BindCylinder(string label,
+                                 Action extend,
+                                 Action retract,
+                                 Func<bool> isExtended,
+                                 Func<bool> isRetracted = null,
+                                 string displayKey = null,
+                                 bool showSensors = true)
+        {
+            var keyBase = string.IsNullOrWhiteSpace(displayKey) ? label : displayKey;
+
+            if (showSensors)
+            {
+                if (isExtended != null)
+                    BindDIOInput(isExtended, $"{label} UP Sns", $"{keyBase}_UpSns");
+                if (isRetracted != null)
+                    BindDIOInput(isRetracted, $"{label} DOWN Sns", $"{keyBase}_DnSns");
+            }
+
+            // 토글 상태 판단은 "현재 Up인가?" 기준으로 처리
+            BindDIOOutput(extend, retract, label, isExtended, keyBase);
+        }
+
+        // Vacuum: on/off 도메인 함수 + (선택) OK 센서 표시
+        public void BindVacuum(string label,
+                               Action on,
+                               Action off,
+                               Func<bool> isOk = null,
+                               Func<bool> isOnState = null,
+                               string displayKey = null,
+                               bool showOkSensor = true)
+        {
+            var keyBase = string.IsNullOrWhiteSpace(displayKey) ? label : displayKey;
+
+            if (showOkSensor && isOk != null)
+                BindDIOInput(isOk, $"{label} OK(Sns)", $"{keyBase}_Ok");
+
+            // 토글 상태 판단 함수 전달(없으면 null 가능)
+            BindDIOOutput(on, off, label, isOnState, keyBase);
+        }
+
+
         public void RebuildLists()
         {
             PopulateListViews();
