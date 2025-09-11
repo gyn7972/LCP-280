@@ -1,5 +1,6 @@
 using QMC.Common;
 using QMC.Common.Component;
+using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
@@ -39,6 +40,7 @@ namespace QMC.LCP_280.Process.Unit
             TeachingPositions.Clear();
             foreach (var tp in RotaryConfig.TeachingPositions) TeachingPositions.Add(tp);
             BindAxes();
+            BindIoDomains();
 
             var il = InterlockManager.Instance;
             il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T축 Home 완료 후 동작 가능합니다.");
@@ -226,6 +228,163 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
         #endregion
+
+        private Vacuum[] _vacuum = new Vacuum[8];              // Vacuum + OK sensor
+        public Vacuum[] _blow = new Vacuum[8];
+        public Vacuum[] _vent = new Vacuum[8];
+
+        private void BindIoDomains()
+        {
+            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
+
+            // Vacuum 별칭으로 조회만
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac1", out _vacuum[0]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac1");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac2", out _vacuum[1]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac2");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac3", out _vacuum[2]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac3");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac4", out _vacuum[3]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac4");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac5", out _vacuum[4]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac5");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac6", out _vacuum[5]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac6");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac7", out _vacuum[6]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac7");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac8", out _vacuum[7]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac8");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow1", out _blow[0]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow1");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow2", out _blow[1]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow2");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow3", out _blow[2]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow3");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow4", out _blow[3]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow4");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow5", out _blow[4]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow5");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow6", out _blow[5]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow6");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow7", out _blow[6]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow7");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyBlow8", out _blow[7]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyBlow8");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent1", out _vent[0]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent1");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent2", out _vent[1]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent2");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent3", out _vent[2]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent3");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent4", out _vent[3]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent4");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent5", out _vent[4]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent5");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent6", out _vent[5]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent6");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent7", out _vent[6]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent7");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVent8", out _vent[7]))
+            {
+                Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVent8");
+            }
+
+        }
+
+        // === Domain Control (표준 구동) ===
+        public bool SetVacuum(int nNo, bool on)
+        {
+            if (_vacuum[nNo] == null) return false;
+            if (on) _vacuum[nNo].On();
+            else _vacuum[nNo].Off();
+            return true;
+        }
+
+        public bool SetBlow(int nNo, bool on)
+        {
+            if (_blow[nNo] == null) return false;
+            if (on) _blow[nNo].On();
+            else _blow[nNo].Off();
+            return true;
+        }
+
+        public bool SetVent(int nNo, bool on)
+        {
+            if (_vent[nNo] == null) return false;
+            if (on) _vent[nNo].On();
+            else _vent[nNo].Off();
+            return true;
+        }
+
 
         #region Pressure
         public bool AirTankPressureOk() => ReadInput(AIR_TANK_PRESSURE);

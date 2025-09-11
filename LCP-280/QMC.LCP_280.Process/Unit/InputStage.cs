@@ -306,40 +306,67 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Vacuum
-            DIO.MapByName(unit, "InStage.VacOut", true, InputStageConfig.IO.VAC_OUT);
-            DIO.MapByName(unit, "InStage.VacOk", false, InputStageConfig.IO.VAC_OK_SNS);
-            _vacuum = new Vacuum("InStageVac", "InStage.VacOut", "InStage.VacOk");
+            // Vacuum 별칭으로 조회만
+            if (!IoAutoBindings.Vacuums.TryGetValue("InStageVac", out _vacuum))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Vacuums not found: InStageVac");
+            }
 
-            // Plate (Up/Down)
-            DIO.MapByName(unit, "InStage.ExpUpOut", true, InputStageConfig.IO.EXPANDER_UP_OUT);
-            DIO.MapByName(unit, "InStage.ExpDownOut", true, InputStageConfig.IO.EXPANDER_DOWN_OUT);
-            DIO.MapByName(unit, "InStage.ExpUpIn", false, InputStageConfig.IO.EXPANDER_UP_SNS);
-            DIO.MapByName(unit, "InStage.ExpDownIn", false, InputStageConfig.IO.EXPANDER_DOWN_SNS);
-            _cylPlate = new Cylinder("InStageExpander", "InStage.ExpUpOut", "InStage.ExpDownOut", "InStage.ExpUpIn", "InStage.ExpDownIn");
+            // Cylinder는 중앙 별칭으로 조회만
+            if (!IoAutoBindings.Cylinders.TryGetValue("InStageExpander", out _cylPlate))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageExpander");
+            }
 
-            // Clamp Lift (Up/Down) -> sensors: Up sensor 없음 (Clamp Up 센서 공용 사용), Down 센서 존재
-            DIO.MapByName(unit, "InStage.ClampUpOut",   true,  InputStageConfig.IO.CLAMP_UP_OUT);
-            DIO.MapByName(unit, "InStage.ClampDownOut", true,  InputStageConfig.IO.CLAMP_DOWN_OUT);
-            DIO.MapByName(unit, "InStage.ClampDownIn",  false, InputStageConfig.IO.CLAMP_DOWN_SNS);
-            _cylClampLift = new Cylinder(
-                "InStageClampLift", 
-                "InStage.ClampUpOut", 
-                "InStage.ClampDownOut",
-                "InStage.ClampUpIn/*NO_SENSOR*/",
-                "InStage.ClampDownIn");
-
-            // Clamp FWD/BWD (direct)
-            DIO.MapByName(unit, "InStage.ClampFwdOut", true,  InputStageConfig.IO.CLAMP_FWD_OUT);
-            DIO.MapByName(unit, "InStage.ClampBwdOut", true,  InputStageConfig.IO.CLAMP_BWD_OUT);
-            DIO.MapByName(unit, "InStage.ClampFwdIn", false, InputStageConfig.IO.CLAMP_FWD_SNS);
-            _cylClampFB = new Cylinder(
-                "InStageClampFB",
-                "InStage.ClampFwdOut",
-                "InStage.ClampBwdOut",
-                "InStage.ClampFwdIn",
-                "InStage.ClampBwdIn/*NO_SENSOR*/");
+            if (!IoAutoBindings.Cylinders.TryGetValue("InStageClampLift", out _cylClampLift))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampLift");
+            }
+                
+            if (!IoAutoBindings.Cylinders.TryGetValue("InStageClampFB", out _cylClampFB))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampFB");
+            }
         }
+
+        // === Domain Control (표준 구동) ===
+        public bool SetVacuum(bool on)
+        {
+            if (_vacuum == null) return false;
+            if (on) _vacuum.On();
+            else _vacuum.Off();
+            return true;
+        }
+
+        public bool SetClampPlate(bool bUpDn)
+        {
+            if (_cylPlate == null) return false;
+            if (bUpDn) return _cylPlate.Extend();
+            else return _cylPlate.Retract();
+        }
+
+        public bool SetClampLift(bool bUpDn)
+        {
+            if (_cylClampLift == null) return false;
+            if (bUpDn) return _cylClampLift.Extend();
+            else
+            {
+                if (!IsClampBwd()) return false; // 기존 인터락 유지
+                return _cylClampLift.Retract();
+            }
+        }
+
+        public bool SetClampFB(bool bFwdBwd)
+        {
+            if (_cylClampFB == null) return false;
+            if (bFwdBwd)
+            {
+                if (!IsClampLiftUp()) return false; // 기존 인터락 유지
+                return _cylClampFB.Extend();
+            }
+            else return _cylClampFB.Retract();
+        }
+
 
         // === Direct Valve Control (강제 구동) ===
         public void SetVacuumValve(bool on)         => WriteOutput(InputStageConfig.IO.VAC_OUT, on);

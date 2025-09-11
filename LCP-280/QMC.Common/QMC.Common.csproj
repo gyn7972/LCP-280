@@ -232,6 +232,7 @@
     <Compile Include="IO\IDigitalIO.cs" />
     <Compile Include="IO\IDIODriver.cs" />
     <Compile Include="IO\IOUtil\Cylinder.cs" />
+    <Compile Include="IO\IOUtil\CylinderConfig.cs" />
     <Compile Include="IO\IOUtil\DIO.cs" />
     <Compile Include="IO\IOUtil\IoAutoBindings.cs.cs" />
     <Compile Include="IO\IOUtil\IoBindings.cs" />

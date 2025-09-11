@@ -103,6 +103,10 @@ namespace QMC.Common.Motions
         [DefaultValue(false)]
         public bool SensorLimitPlus { get; set; } = false;
 
+        [Category("Simumlation"), DisplayName("Simulation")]
+        [DefaultValue(false)]
+        public bool IsSimulation { get; set; } = false;
+
         // ===== BaseConfig Hooks =====
         public override void Reset()
         {
