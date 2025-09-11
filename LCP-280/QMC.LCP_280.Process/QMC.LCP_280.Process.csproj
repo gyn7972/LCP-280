@@ -167,6 +167,12 @@
     <Compile Include="Component\Form_AxisJogPopup.Designer.cs">
       <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\FormRecipe\Page\RankSetPage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\FormRecipe\Page\RankSetPage.Designer.cs">
+      <DependentUpon>RankSetPage.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\FormSetup\Page\SourcemeterPage.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -440,6 +446,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormRecipe\Page\CellTesterPage.resx">
       <DependentUpon>CellTesterPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormRecipe\Page\RankSetPage.resx">
+      <DependentUpon>RankSetPage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormRecipe\Page\TestConditionSetPage.resx">
       <DependentUpon>TestConditionSetPage.cs</DependentUpon>

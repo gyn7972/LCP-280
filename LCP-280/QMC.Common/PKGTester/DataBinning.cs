@@ -2,16 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace QMC.Common.PKGTester
 {
-    public enum BinningType
-    {
-        None,
-        GoodBin,
-        NgBin,
-    };
-
     /// <summary>
     /// 데이터 비닝을 위한 범위 설정 클래스
     /// </summary>
@@ -57,7 +51,6 @@ namespace QMC.Common.PKGTester
         {
             var pc = new PropertyCollection();
             pc.Add("Binning Range");
-            pc.Add("Name", Name); 
             pc.Add("Min", Min);
             pc.Add("Max", Max);
             pc.Add("IgnoreOutOfRange", IgnoreOutOfRange);
@@ -69,7 +62,6 @@ namespace QMC.Common.PKGTester
                 return -1;
             try
             {
-                Name = pc.GetValue<string>("Name");
                 Min = pc.GetValue<double>("Min");
                 Max = pc.GetValue<double>("Max");
                 IgnoreOutOfRange = pc.GetValue<bool>("IgnoreOutOfRange");
@@ -87,7 +79,7 @@ namespace QMC.Common.PKGTester
             if (IgnoreOutOfRange)
                 return $"(Ignore)";
             else
-                return $"{Name}: [{Min} ~ {Max}]";
+                return $"[{Min} ~ {Max}]";
         }
         #endregion
     }
@@ -135,10 +127,12 @@ namespace QMC.Common.PKGTester
     {
         #region Fields
         private List<string> headers = new List<string>();
+        private List<string> binLabels = new List<string>();
         private List<BinningSpec> specs = new List<BinningSpec>();
         #endregion
 
         #region Properties
+        public IReadOnlyList<string> Headers => headers;
         public IReadOnlyList<BinningSpec> Specs => specs;
         #endregion
 
@@ -152,6 +146,7 @@ namespace QMC.Common.PKGTester
         public void Clear()
         {
             headers.Clear();
+            binLabels.Clear();
             foreach (var spec in specs)
             {
                 spec.Clear();
@@ -184,8 +179,8 @@ namespace QMC.Common.PKGTester
                     return false;
                 if (binLabel == "NG")
                     return false;
-                if (specs.Exists(s => s.BinLabel == binLabel))
-                    return false;
+                //if (specs.Exists(s => s.BinLabel == binLabel))
+                //    return false;
 
                 var newSpec = new BinningSpec(binLabel);
                 foreach (var header in headers)
@@ -193,6 +188,46 @@ namespace QMC.Common.PKGTester
                     newSpec.Items.Add(header, new BinningRange(""));
                 }
                 specs.Add(newSpec);
+                binLabels.Add(binLabel);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+        public bool RemoveLastBin()
+        {
+            if (specs.Count == 0)
+                return true;
+
+            try
+            {
+                specs.RemoveAt(specs.Count - 1);
+                binLabels.RemoveAt(binLabels.Count - 1);
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+        public bool RemoveBinsFromLastBin(int deleteCount)
+        {
+            if (deleteCount <= 0)
+                return true;
+            if (specs.Count == 0)
+                return true;
+            if (deleteCount >= specs.Count)
+            {
+                specs.Clear();
+                binLabels.Clear();
+                return true;
+            }
+            try
+            {
+                specs.RemoveRange(specs.Count - deleteCount, deleteCount);
+                binLabels.RemoveRange(binLabels.Count - deleteCount, deleteCount);
             }
             catch
             {
@@ -205,6 +240,9 @@ namespace QMC.Common.PKGTester
             if (specs.Count == 0)
                 return false;
             if (headers.Count == 0)
+                return false;
+            // binLabel 중복 검사
+            if (binLabels.Count != binLabels.Distinct().Count())
                 return false;
 
             return true;
@@ -371,108 +409,6 @@ namespace QMC.Common.PKGTester
                 return false;
             }
             return true;
-        }
-        #endregion
-    }
-
-    public class BinningResult
-    {
-        #region Properties
-        public int BinNo { get; set; }
-        public BinningType BinType { get; set; }
-        public string BinLabel { get; set; }
-        #endregion
-
-        #region Constructors
-        public BinningResult()
-        {
-            Reset();
-        }
-        #endregion
-
-        #region Methods
-        public void Reset()
-        {
-            BinNo = -1;
-            BinType = BinningType.None;
-            BinLabel = "";
-        }
-        #endregion
-    }
-
-    /// <summary>
-    /// 사전 정의된 사양에 따라 데이터를 특정 빈에 할당하는 분류기를 나타냅니다.
-    /// </summary>
-    public class BinningClassifier
-    {
-        #region Fields
-        private BinningSpecSheet specSheet = new BinningSpecSheet();
-        #endregion
-
-        #region Properties
-        #endregion
-
-        #region Constructors
-        public BinningClassifier()
-        {
-        }
-        #endregion
-
-        #region Methods
-        public void Clear()
-        {
-            specSheet.Clear();
-        }
-        public bool AssignSpecSheet(BinningSpecSheet sheet)
-        {
-            return specSheet.CopyFrom(sheet);
-        }
-        public BinningResult Classify(IReadOnlyDictionary<string, TestItemResult> data)
-        {
-            BinningResult result = new BinningResult();
-            try
-            {
-                for (int binIndex = 0; binIndex < specSheet.Specs.Count; binIndex++)
-                {
-                    var spec = specSheet.Specs[binIndex];
-                    bool allInRange = true;
-                    foreach (var header in spec.Items.Keys)
-                    {
-                        if (data.ContainsKey(header))
-                        {
-                            var testItemResult = data[header];
-                            var binningRange = spec.Items[header];
-                            if (!binningRange.IsInRange(testItemResult.Value))
-                            {
-                                allInRange = false;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            continue;
-                        }
-                    }
-                    // 사양을 모두 만족하는 경우 해당 빈을 결과로 설정하고 반환
-                    if (allInRange)
-                    {
-                        result.BinNo = binIndex + 1; // 1-based index
-                        result.BinType = BinningType.GoodBin;
-                        result.BinLabel = spec.BinLabel;
-                        return result;
-                    }
-                }
-                // 어떤 빈에도 속하지 않는 경우
-                result.BinNo = -1;
-                result.BinType = BinningType.NgBin;
-                result.BinLabel = "NG";
-                return result;
-            }
-            catch
-            {
-                result.Reset();
-            }
-            return result;
         }
         #endregion
     }

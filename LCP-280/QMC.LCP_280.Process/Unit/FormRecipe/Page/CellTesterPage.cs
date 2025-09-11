@@ -142,15 +142,21 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
 
             // BinNo에 따라 결과 표시
-            if (result.BinNo > 0)
+            BinningResult binningResult = result.BinningResult;
+            switch (binningResult.BinType)
             {
-                lbResultValue.Text = $"OK {result.BinNo}";
-                lbResultValue.ForeColor = Color.Lime;
-            }
-            else
-            {
-                lbResultValue.Text = $"NG {result.BinNo}";
-                lbResultValue.ForeColor = Color.Red;
+                case BinningType.GoodBin:
+                    lbResultValue.Text = $"{binningResult.BinNo}. {binningResult.BinLabel}";
+                    lbResultValue.ForeColor = Color.Lime;
+                    break;
+                case BinningType.NgBin:
+                    lbResultValue.Text = "NG";
+                    lbResultValue.ForeColor = Color.Red;
+                    break;
+                default:
+                    lbResultValue.Text = "UNKNOWN";
+                    lbResultValue.ForeColor = Color.Gray;
+                    break;
             }
         }
 
