@@ -40,9 +40,9 @@ namespace QMC.Common.PKGTester
         public override string ToString()
         {
             if (string.IsNullOrEmpty(Unit))
-                return Value.ToString("F3");
+                return Value.ToString("F6");
 
-            return Value.ToString("F3") + " " + Unit;
+            return Value.ToString("F6") + " " + Unit;
         }
         #endregion
     }

@@ -99,9 +99,17 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis AxisT => _axT;
         private void BindAxes()
         {
-            Axes.TryGetValue("Bin Stage X Axis", out _axX);
-            Axes.TryGetValue("Bin Stage Y Axis", out _axY);
-            Axes.TryGetValue("Bin Stage T Axis", out _axT);
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.BinStageX, ref _axX);
+            BindAxis(mgr, unitName, AxisNames.BinStageY, ref _axY);
+            BindAxis(mgr, unitName, AxisNames.BinStageT, ref _axT);
         }
         public double GetTP(string tpName, string axisName)
         {

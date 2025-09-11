@@ -37,9 +37,9 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Axes
-        private MotionAxis _axEjectorZ, _axPinZ;
+        private MotionAxis _axPinZ, _axEjectorZ;
+        public MotionAxis AxisPinZ => _axPinZ;
         public MotionAxis AxisEjectorZ => _axEjectorZ;
-        public MotionAxis AxisPinZ     => _axPinZ;
         #endregion
 
         #region DryRun
@@ -69,21 +69,16 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Binding / Helpers
         private void BindAxes()
         {
-            Axes.TryGetValue("EJECTOR_Z", out _axEjectorZ);
-            Axes.TryGetValue("EJECT_PIN_Z", out _axPinZ);
-            bool useInPos = !InputStageEjectorConfig.EnablePredictiveControl;
-            foreach (var ax in new[] { _axEjectorZ, _axPinZ })
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
             {
-                if (ax == null) continue;
-                try
-                {
-                    var mi = ax.GetType().GetMethod("SetInPositionEnable");
-                    var mr = ax.GetType().GetMethod("SetInPositionRange");
-                    if (mi != null) mi.Invoke(ax, new object[] { useInPos });
-                    if (mr != null) mr.Invoke(ax, new object[] { InputStageEjectorConfig.MoveDoneRemainDistance });
-                }
-                catch { }
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
             }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.EjectPinZ, ref _axPinZ);
+            BindAxis(mgr, unitName, AxisNames.EjectorZ, ref _axEjectorZ);
         }
         public void MoveAxisOnce(MotionAxis ax, double target)
         {

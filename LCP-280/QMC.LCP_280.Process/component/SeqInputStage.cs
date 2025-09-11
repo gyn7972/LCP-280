@@ -291,7 +291,10 @@ namespace QMC.LCP_280.Process.Component
 
                 case Step.Scan_Start:
                     StartScanSub();
-                    _step = Step.Scan_Wait; _tick = DateTime.UtcNow; break;
+                    _step = Step.Scan_Wait;
+                    _tick = DateTime.UtcNow; 
+                    break;
+
                 case Step.Scan_Wait:
                     PollScanSub();
                     if (_seqScanCurrentResult == SeqResult.Success) { _step = Step.WorkingPrep; _tick = DateTime.UtcNow; }

@@ -46,6 +46,21 @@ namespace QMC.Common.Unit
             return defaultValue;
         }
 
+        public void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
+        {
+            if (mgr.TryGet(unitName, axisName, out var axis) && axis != null)
+            {
+                field = axis;
+                Axes[axisName] = axis; // Axes 딕셔너리에 일관 등록
+            }
+            else
+            {
+                if (Axes.ContainsKey(axisName))
+                    Axes.Remove(axisName);
+                Log.Write("UnitAxis", $"[BindAxes] Axis '{unitName}||{axisName}' 미존재");
+            }
+        }
+
         // Unit 공통 동작 메서드
         public virtual void OnRun() { }
         public virtual void OnStop() { }

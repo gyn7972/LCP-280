@@ -46,7 +46,19 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Axis Binding / Helpers
-        private void BindAxes() => Axes.TryGetValue("Bin Lifter Z Axis", out _axZ);
+        private void BindAxes()
+        {
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.BinLifterZ, ref _axZ);
+        }
+
         public void MoveAxisOnce(MotionAxis ax, double target)
         {
             if (ax == null) return;

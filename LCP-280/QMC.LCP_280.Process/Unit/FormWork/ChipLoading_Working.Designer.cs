@@ -18,14 +18,39 @@ namespace QMC.LCP_280.Process.Unit
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            this._btnVisionSetting = new System.Windows.Forms.Button();
+            this.buttonDataManual = new System.Windows.Forms.Button();
             this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
-            this._btnVisionSetting = new System.Windows.Forms.Button();
-            this.buttonDataManual = new System.Windows.Forms.Button();
+            this.groupBoxImageView = new System.Windows.Forms.GroupBox();
+            this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
+            this.groupBoxImageView.SuspendLayout();
+            this.groupBoxManual.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // _btnVisionSetting
+            // 
+            this._btnVisionSetting.Location = new System.Drawing.Point(1030, 368);
+            this._btnVisionSetting.Name = "_btnVisionSetting";
+            this._btnVisionSetting.Size = new System.Drawing.Size(110, 35);
+            this._btnVisionSetting.TabIndex = 13;
+            this._btnVisionSetting.Text = "VisionSetting";
+            this._btnVisionSetting.UseVisualStyleBackColor = true;
+            this._btnVisionSetting.Click += new System.EventHandler(this._btnVisionSetting_Click);
+            // 
+            // buttonDataManual
+            // 
+            this.buttonDataManual.Location = new System.Drawing.Point(1156, 368);
+            this.buttonDataManual.Name = "buttonDataManual";
+            this.buttonDataManual.Size = new System.Drawing.Size(95, 35);
+            this.buttonDataManual.TabIndex = 14;
+            this.buttonDataManual.Text = "ManualData";
+            this.buttonDataManual.UseVisualStyleBackColor = true;
+            this.buttonDataManual.Click += new System.EventHandler(this.buttonDataManual_Click);
             // 
             // _ChipLoadingCameraviewer
             // 
@@ -36,13 +61,11 @@ namespace QMC.LCP_280.Process.Unit
             this._ChipLoadingCameraviewer.FrameRate = 1D;
             this._ChipLoadingCameraviewer.InputImage = null;
             this._ChipLoadingCameraviewer.IsViewCustomizedImage = false;
-            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(535, 12);
-            this._ChipLoadingCameraviewer.MaximumSize = new System.Drawing.Size(370, 350);
-            this._ChipLoadingCameraviewer.MinimumSize = new System.Drawing.Size(370, 350);
+            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(6, 20);
             this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
             this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._ChipLoadingCameraviewer.Simulated = false;
-            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(370, 350);
+            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(358, 324);
             this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._ChipLoadingCameraviewer.TabIndex = 12;
             this._ChipLoadingCameraviewer.TabStop = false;
@@ -83,38 +106,51 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl.Size = new System.Drawing.Size(341, 350);
             this.manualSequenceControl.TabIndex = 9;
             // 
-            // _btnVisionSetting
+            // groupBoxImageView
             // 
-            this._btnVisionSetting.Location = new System.Drawing.Point(535, 368);
-            this._btnVisionSetting.Name = "_btnVisionSetting";
-            this._btnVisionSetting.Size = new System.Drawing.Size(110, 35);
-            this._btnVisionSetting.TabIndex = 13;
-            this._btnVisionSetting.Text = "VisionSetting";
-            this._btnVisionSetting.UseVisualStyleBackColor = true;
-            this._btnVisionSetting.Click += new System.EventHandler(this._btnVisionSetting_Click);
+            this.groupBoxImageView.Controls.Add(this._ChipLoadingCameraviewer);
+            this.groupBoxImageView.Location = new System.Drawing.Point(535, 12);
+            this.groupBoxImageView.Name = "groupBoxImageView";
+            this.groupBoxImageView.Size = new System.Drawing.Size(370, 350);
+            this.groupBoxImageView.TabIndex = 15;
+            this.groupBoxImageView.TabStop = false;
+            this.groupBoxImageView.Text = "ImageView";
             // 
-            // buttonDataManual
+            // groupBoxManual
             // 
-            this.buttonDataManual.Location = new System.Drawing.Point(661, 368);
-            this.buttonDataManual.Name = "buttonDataManual";
-            this.buttonDataManual.Size = new System.Drawing.Size(95, 35);
-            this.buttonDataManual.TabIndex = 14;
-            this.buttonDataManual.Text = "ManualData";
-            this.buttonDataManual.UseVisualStyleBackColor = true;
-            this.buttonDataManual.Click += new System.EventHandler(this.buttonDataManual_Click);
+            this.groupBoxManual.Controls.Add(this.buttonPickUpNiddle_Move);
+            this.groupBoxManual.Location = new System.Drawing.Point(535, 368);
+            this.groupBoxManual.Name = "groupBoxManual";
+            this.groupBoxManual.Size = new System.Drawing.Size(370, 161);
+            this.groupBoxManual.TabIndex = 16;
+            this.groupBoxManual.TabStop = false;
+            this.groupBoxManual.Text = "Manual";
+            // 
+            // buttonPickUpNiddle_Move
+            // 
+            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(6, 20);
+            this.buttonPickUpNiddle_Move.Name = "buttonPickUpNiddle_Move";
+            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(191, 35);
+            this.buttonPickUpNiddle_Move.TabIndex = 17;
+            this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
+            this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
+            this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
             // 
             // ChipLoader_Working
             // 
             this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.Controls.Add(this.groupBoxManual);
+            this.Controls.Add(this.groupBoxImageView);
             this.Controls.Add(this.buttonDataManual);
             this.Controls.Add(this._btnVisionSetting);
-            this.Controls.Add(this._ChipLoadingCameraviewer);
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
             this.Name = "ChipLoader_Working";
             this.Text = "ChipLoader Working";
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
+            this.groupBoxImageView.ResumeLayout(false);
+            this.groupBoxManual.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -131,5 +167,8 @@ namespace QMC.LCP_280.Process.Unit
         private Common.Vision.VisionImageViewer _ChipLoadingCameraviewer;
         private Button _btnVisionSetting;
         private Button buttonDataManual;
+        private GroupBox groupBoxImageView;
+        private GroupBox groupBoxManual;
+        private Button buttonPickUpNiddle_Move;
     }
 }

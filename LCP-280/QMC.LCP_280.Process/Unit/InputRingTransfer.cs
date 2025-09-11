@@ -58,6 +58,34 @@ namespace QMC.LCP_280.Process.Unit
         public override void OnStop() => base.OnStop();
         #endregion
 
+        #region Axis Binding
+        private void BindAxes()
+        {
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("UnitAxis", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.WaferFeederY, ref _feederY);
+        }
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = InputRingTransferConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        #endregion
+
         #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
@@ -84,23 +112,16 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = InputRingTransferConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        #endregion
 
-        #region Axis Binding
-        private void BindAxes() => Axes.TryGetValue("Wafer Feeder Y Axis", out _feederY);
+        public bool InPosTeaching(string positionName)
+        {
+            var tp = InputRingTransferConfig.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            return true;
+        }
+
         #endregion
 
         #region Low-Level IO (Read/Write by Name)

@@ -111,9 +111,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Wafer Stage X Axis", 0.0 },
-                        { "Wafer Stage Y Axis", 0.0 },
-                        { "Wafer Stage T Axis", 0.0 }
+                        { AxisNames.WaferStageX, 0.0 },
+                        { AxisNames.WaferStageY, 0.0 },
+                        { AxisNames.WaferStageT, 0.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }

@@ -310,6 +310,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                // 최신 Equipment 등록본으로 다시 참조 갱신 (폼 생성 후 재초기화 상황 대비)
+                InputStageUnit        = TryGetUnit<InputStage>("InputStage");
+                InputStageEjectorUnit = TryGetUnit<InputStageEjector>("InputStageEjector");
+                InputDieTransferUnit  = TryGetUnit<InputDieTransfer>("InputDieTransfer");
+
                 if (manualSequenceControl != null)
                     manualSequenceControl.ClearSequences();
 
@@ -317,7 +322,8 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputStageUnit != null)
                 {
                     if (SeqInputStage == null)
-                        SeqInputStage = new SeqInputStage(InputStageUnit);
+                        // 기존: new SeqInputStage(InputStageUnit) -> Ejector 포함 생성자로 변경
+                        SeqInputStage = new SeqInputStage(InputStageUnit, InputStageEjectorUnit);
                     manualSequenceControl?.RegisterSequence(
                         "InputStage",
                         SeqInputStage,
@@ -330,7 +336,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputStageUnit != null)
                 {
                     if (_seqAlignVision == null)
-                        _seqAlignVision = new SeqInputChipAlignVision(InputStageUnit);
+                        _seqAlignVision = new SeqInputChipAlignVision(InputStageUnit); // Unit 재사용
                     manualSequenceControl?.RegisterSequence(
                         "AlignVision",
                         _seqAlignVision,
@@ -342,7 +348,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputStageUnit != null)
                 {
                     if (_seqMappingVision == null)
-                        _seqMappingVision = new SeqInputChipMappingVision(InputStageUnit);
+                        _seqMappingVision = new SeqInputChipMappingVision(InputStageUnit); // Unit 재사용
                     manualSequenceControl?.RegisterSequence(
                         "MappingVision",
                         _seqMappingVision,
@@ -354,7 +360,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputDieTransferUnit != null)
                 {
                     if (_seqDiePick == null)
-                        _seqDiePick = new SeqInputDieTransferChipUp(InputDieTransferUnit, 0, InputStageUnit, InputStageEjectorUnit);
+                        _seqDiePick = new SeqInputDieTransferChipUp(InputDieTransferUnit, 0, InputStageUnit, InputStageEjectorUnit); // 등록된 Unit 전달
                     manualSequenceControl?.RegisterSequence(
                         "DiePick",
                         _seqDiePick,
@@ -366,7 +372,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputDieTransferUnit != null)
                 {
                     if (_seqDiePlace == null)
-                        _seqDiePlace = new SeqInputDieTransferChipDown(InputDieTransferUnit);
+                        _seqDiePlace = new SeqInputDieTransferChipDown(InputDieTransferUnit); // 등록된 Unit 전달
                     manualSequenceControl?.RegisterSequence(
                         "DiePlace",
                         _seqDiePlace,
@@ -395,6 +401,113 @@ namespace QMC.LCP_280.Process.Unit
         {
             ProcessDataManual dlg = new ProcessDataManual();
             dlg.ShowDialog();
+        }
+
+        private async void buttonPickUpNiddle_Move_Click(object sender, EventArgs e)
+        {
+            // 시나리오:
+            // 1) PinZ 를 EjectPinWaiting 위치로 이동(대기).
+            // 2) 그 후 EjectPinOffset 만큼 (Offset - Waiting) 상대 이동.
+            // 3) 동일한 상대 이동량을 PickZ 에 적용 (동기 이동).
+            try
+            {
+                var ejector  = InputStageEjectorUnit;
+                var transfer = InputDieTransferUnit;
+                if (ejector?.AxisPinZ == null || transfer?.PickZ == null)
+                {
+                    MessageBox.Show(this, "축 준비가 되지 않았습니다.", "Axis Not Ready", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Teaching Position 값 가져오기
+                double pinWaiting = 0, pinOffset = 0;
+                try
+                {
+                    var posWaiting = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinWaiting.ToString());
+                    var posOffset  = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString());
+                    if (posWaiting.HasValue) pinWaiting = posWaiting.Value.pinZ;
+                    if (posOffset.HasValue)  pinOffset  = posOffset.Value.pinZ;
+                }
+                catch { }
+
+                double curPinZ  = ejector.AxisPinZ.GetPosition();
+                double curPickZ = transfer.PickZ.GetPosition();
+
+                // 1단계: PinZ Waiting 이동 필요 여부
+                bool needMoveToWaiting = Math.Abs(curPinZ - pinWaiting) > (ejector.AxisPinZ.Config?.InposTolerance ?? 0.005) * 2;
+
+                // 공통 속도 (두 축의 80%)
+                double vPin  = ejector.AxisPinZ.Config?.MaxVelocity  ?? 10;
+                double vPick = transfer.PickZ.Config?.MaxVelocity   ?? 10;
+                double commonVel = Math.Min(vPin, vPick) * 0.8; if (commonVel <= 0) commonVel = Math.Min(vPin, vPick);
+                double accPin  = ejector.AxisPinZ.Config?.RunAcc  ?? 10; double decPin  = ejector.AxisPinZ.Config?.RunDec  ?? accPin; double jerkPin  = ejector.AxisPinZ.Config?.AccJerkPercent  ?? 50;
+                double accPick = transfer.PickZ.Config?.RunAcc    ?? 10; double decPick = transfer.PickZ.Config?.RunDec    ?? accPick; double jerkPick = transfer.PickZ.Config?.AccJerkPercent    ?? 50;
+
+                buttonPickUpNiddle_Move.Enabled = false;
+
+                // 1단계: Waiting 으로 이동
+                if (needMoveToWaiting)
+                {
+                    string msg1 = "PinZ 를 Waiting 위치로 이동하시겠습니까?" +
+                                  "\r\n" +
+                                  $" Current PinZ : {curPinZ:0.###}" +
+                                  "\r\n" +
+                                  $" Waiting PinZ : {pinWaiting:0.###}";
+                    if (MessageBox.Show(this, msg1, "Move To Waiting", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    {
+                        buttonPickUpNiddle_Move.Enabled = true;
+                        return;
+                    }
+
+                    await Task.Run(() =>
+                    {
+                        ejector.AxisPinZ.MoveAbs(pinWaiting, commonVel, accPin, decPin, jerkPin);
+                        ejector.AxisPinZ.WaitMoveDone(-1);
+                    });
+                }
+
+                // PinZ 가 Waiting 에 위치한 후 현재값 갱신
+                curPinZ  = ejector.AxisPinZ.GetPosition();
+                curPickZ = transfer.PickZ.GetPosition();
+
+                // 2단계: Offset 만큼 상대 이동 (delta = Offset - Waiting)
+                double deltaPin = pinOffset - pinWaiting; // 이 상대 이동량을 PickZ 에 동일 적용
+                double finalPinZ = curPinZ + deltaPin;     // PinZ: 현재(Waiting)에서 delta 이동 → Offset 절대 위치
+                double finalPickZ = curPickZ + deltaPin;   // PickZ: 현재 위치에서 delta 이동 (동기)
+
+                string direction = deltaPin >= 0 ? "+" : "-";
+                string msg2 = "Offset 상대 이동을 실행하시겠습니까?" +
+                              "\r\n" +
+                              $" Delta PinZ : {deltaPin:0.###} ({direction})" +
+                              "\r\n" +
+                              $" PinZ  : {curPinZ:0.###} -> {finalPinZ:0.###}" +
+                              "\r\n" +
+                              $" PickZ : {curPickZ:0.###} -> {finalPickZ:0.###}";
+                if (MessageBox.Show(this, msg2, "Delta Move", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                {
+                    buttonPickUpNiddle_Move.Enabled = true;
+                    return;
+                }
+
+                await Task.Run(() =>
+                {
+                    // 동시 이동
+                    transfer.PickZ.MoveAbs(finalPickZ,  commonVel, accPick, decPick, jerkPick);
+                    ejector.AxisPinZ.MoveAbs(finalPinZ, commonVel, accPin,  decPin,  jerkPin);
+                    transfer.PickZ.WaitMoveDone(-1);
+                    ejector.AxisPinZ.WaitMoveDone(-1);
+                });
+
+                MessageBox.Show(this, "동기 이동 완료", "Done", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                try { buttonPickUpNiddle_Move.Enabled = true; } catch { }
+            }
         }
     }
 }

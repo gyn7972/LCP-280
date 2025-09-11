@@ -10,7 +10,9 @@ using System.Windows.Forms;
 
 namespace QMC.Common.Spectrometer
 {
-    
+    /// <summary>
+    /// Instrument Systems CAS Spectrometer
+    /// </summary>
     public class CASSpectrometer : BaseComponent, IDisposable
     {
         #region Defines
@@ -110,16 +112,14 @@ namespace QMC.Common.Spectrometer
 
         public class DeviceInformation
         {
+            #region Properties
             public string Name { get; set; }
             public string SerialNumber { get; set; }
             public string InterfaceType { get; set; }
             public string InterfaceOption { get; set; }
+            #endregion
 
-            public DeviceInformation()
-            {
-                Clear();
-            }
-
+            #region Methods
             public void Clear()
             {
                 Name = "";
@@ -127,6 +127,7 @@ namespace QMC.Common.Spectrometer
                 InterfaceType = "";
                 InterfaceOption = "";
             }
+            #endregion
         }
         #endregion
 
@@ -141,11 +142,11 @@ namespace QMC.Common.Spectrometer
         private string intensityUnit = ""; // 이건 dpidCalibrationUnit 데이터를 받아서 갱신할 필요 있다...
         
         private DeviceInformation deviceInfo = new DeviceInformation();
+        private bool useHardwareTrigger = false;
         #endregion
 
         #region Property
         public new CASSpectrometerConfig Config { get; private set; }
-        public int DeviceId => deviceId;
         public DeviceInformation DeviceInfo => deviceInfo;
         public List<DensityFilter> DensityFilterList => densityFilterList;
         public SpectrumData Spectrum => spectrum;
@@ -197,6 +198,7 @@ namespace QMC.Common.Spectrometer
         public event DeviceEventHandler OnDeviceCreated;
         public event DeviceEventHandler OnDeviceTerminated;
         public event DeviceEventHandler OnMeasureCompleted;
+        public event EventHandler<string> OnMeasureFailed;
         #endregion
 
         #region Override Methods
@@ -433,10 +435,10 @@ namespace QMC.Common.Spectrometer
                     ret = -1;
                     break;
                 }
-                if (Config.UseExternalTrigger)
+                if (useHardwareTrigger)
                 {
                     // Measure with external trigger
-                    if (!SendMeasureCommandAndExternalTrigger())
+                    if (!SendMeasureCommandAndTrigger())
                     {
                         ret = -1;
                         break;
@@ -587,6 +589,20 @@ namespace QMC.Common.Spectrometer
                 CheckCASErrorAndThrow(CAS4DLL.casInitialize(deviceId, CAS4DLL.InitOnce));
                 GetDeviceParameter(CAS4DLL.dpidCalibrationUnit, ref intensityUnit);
 
+                // Set trigger mode
+                if (Config.UseHardwareTrigger)
+                {
+                    SetMeasurementParameter(CAS4DLL.mpidTriggerSource, CAS4DLL.trgFlipFlop);
+                    SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
+                    SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
+                    useHardwareTrigger = true;
+                }
+                else
+                {
+                    SetMeasurementParameter(CAS4DLL.mpidTriggerSource, CAS4DLL.trgSoftware);
+                    useHardwareTrigger = false;
+                }
+
                 // Get Device Information
                 string devName = "";
                 string devSerial = "";
@@ -598,7 +614,7 @@ namespace QMC.Common.Spectrometer
                 GetDeviceParameter(CAS4DLL.dpidInterfaceType, ref devInfType);
                 GetDeviceParameter(CAS4DLL.dpidInterfaceOption, ref devInfOption);
 
-                deviceInfo.Name = devName;
+                deviceInfo.Name = devName + (useHardwareTrigger ? " (with H/W Trigger)" : "");
                 deviceInfo.SerialNumber = devSerial;
 
                 switch((int)devInfType)
@@ -675,6 +691,7 @@ namespace QMC.Common.Spectrometer
                 //ApplyMeasurementCondition();
 
                 // Measure
+                //CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, (IntPtr)null);
                 CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
 
                 // Data Process
@@ -690,10 +707,11 @@ namespace QMC.Common.Spectrometer
                 Log.Write(ex);
                 this.result.Clear();
                 spectrum.Clear();
+                OnMeasureFailed?.Invoke(this, ex.Message);
             }
             return result;
         }
-        private bool SendMeasureCommandAndExternalTrigger()
+        private bool SendMeasureCommandAndTrigger()
         {
             bool result = false;
             try
@@ -705,12 +723,13 @@ namespace QMC.Common.Spectrometer
                 // Apply measurement parameter
                 //ApplyMeasurementCondition();
 
-                // Set trigger source
                 SetMeasurementParameter(CAS4DLL.mpidTriggerSource, CAS4DLL.trgFlipFlop);
+                SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
                 SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
 
                 // Set digital output for triggering & Measure
                 OnDigitalOut(2);
+                //CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, (IntPtr)null);
                 CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
                 OffDigitalOut(2);
 
@@ -727,6 +746,7 @@ namespace QMC.Common.Spectrometer
                 Log.Write(ex);
                 this.result.Clear();
                 spectrum.Clear();
+                OnMeasureFailed?.Invoke(this, ex.Message);
             }
             finally
             {
