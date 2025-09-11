@@ -205,8 +205,8 @@ namespace QMC.LCP_280.Process.Unit
                             label: $"{labelBase} VAC",
                             on: () => InputDieTransferUnit.SetVacuum(idx, true),
                             off: () => InputDieTransferUnit.SetVacuum(idx, false),
-                            isOk: null, // 별도 센서 없음(Flow는 위에서 별도 표시)
-                            isOnState: () => InputDieTransferUnit.IsArmVacOn(idx),
+                            isOk: null,
+                            isOnState: null,
                             displayKey: $"IDT_Arm{idx + 1}_Vac",
                             showOkSensor: false
                         );
@@ -216,7 +216,7 @@ namespace QMC.LCP_280.Process.Unit
                             on: () => InputDieTransferUnit.SetBlow(idx, true),
                             off: () => InputDieTransferUnit.SetBlow(idx, false),
                             isOk: null, // 별도 센서 없음(Flow는 위에서 별도 표시)
-                            isOnState: () => InputDieTransferUnit.IsArmBlowOn(idx),
+                            isOnState: null,
                             displayKey: $"IDT_Arm{idx + 1}_Blow",
                             showOkSensor: false
                         );
@@ -226,7 +226,7 @@ namespace QMC.LCP_280.Process.Unit
                             on: () => InputDieTransferUnit.SetVent(idx, true),
                             off: () => InputDieTransferUnit.SetVent(idx, false),
                             isOk: null, // 별도 센서 없음(Flow는 위에서 별도 표시)
-                            isOnState: () => InputDieTransferUnit.IsArmVentOn(idx),
+                            isOnState: null,
                             displayKey: $"IDT_Arm{idx + 1}_Vent",
                             showOkSensor: false
                         );
