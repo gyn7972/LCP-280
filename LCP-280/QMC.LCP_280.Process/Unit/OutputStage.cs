@@ -173,14 +173,14 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Cylinder는 중앙 별칭으로 조회만
-            if (!IoAutoBindings.Cylinders.TryGetValue("OutStageExpander", out _cylPlate))
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutStagePlate", out _cylPlate))
             {
-                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStageExpander");
+                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStagePlate");
             }
 
-            if (!IoAutoBindings.Cylinders.TryGetValue("OutStageClampLift", out _cylClampLift))
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutStageLift", out _cylClampLift))
             {
-                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStageClampLift");
+                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStageLift");
             }
 
             if (!IoAutoBindings.Cylinders.TryGetValue("OutStageClampFB", out _cylClampFB))
@@ -216,8 +216,8 @@ namespace QMC.LCP_280.Process.Unit
 
             if (bUpDn)
             {
-                if (IsClampBwd())
-                    return false; // 기존 인터락 유지
+                //if (IsClampBwd())
+                //    return false; // 기존 인터락 유지
 
                 return _cylClampLift.Extend();
             }
@@ -244,7 +244,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                if (IsClampLiftUp())
+                if (!IsClampLiftUp())
                     return false; // 기존 인터락 유지
 
                 return _cylClampFB.Retract();
