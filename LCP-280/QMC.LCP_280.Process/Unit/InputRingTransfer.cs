@@ -178,41 +178,27 @@ namespace QMC.LCP_280.Process.Unit
             if (bUpDn) return _feederLift.Extend();
             else return _feederLift.Retract();
         }
-        public bool SetClmp(bool bUpDn)
+        public bool SetClamp(bool bUpDn)
         {
             if (_cylClamp == null) return false;
             if (bUpDn) return _cylClamp.Extend();
             else return _cylClamp.Retract();
         }
+        #region Status Helpers
+        public bool IsFeederUp() => ReadInput(InputRingTransferConfig.IO.FEEDER_UP);
+        public bool IsFeederDown() => ReadInput(InputRingTransferConfig.IO.FEEDER_DOWN);
+        public bool IsUnclamped() => ReadInput(InputRingTransferConfig.IO.FEEDER_UNCLAMP);
+        public bool IsRingPresent() => ReadInput(InputRingTransferConfig.IO.FEEDER_RING_CHECK);
+        public bool IsOverload() => ReadInput(InputRingTransferConfig.IO.FEEDER_OVERLOAD);
+        #endregion
+        /// ////////////////////////////////////////////////////////////////
+        
 
         #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public void SetFeederUpValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_UP_VALVE, on);
         public bool IsFeederUpValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_UP_VALVE);
-        public void SetFeederDownValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_DOWN_VALVE, on);
         public bool IsFeederDownValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
-        public void SetFeederClampValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, on);
         public bool IsFeederClampValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
-        public void SetFeederUnclampValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, on);
         public bool IsFeederUnclampValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
-        #endregion
-
-        #region High-Level Actuator API
-        public bool FeederUp(int timeoutMs = 3000)    => _feederLift?.Extend(timeoutMs) ?? false;
-        public bool FeederDown(int timeoutMs = 3000)  => _feederLift?.Retract(timeoutMs) ?? false;
-        public void FeederAllOff()                    => _feederLift?.AllOff();
-        public void SetClamp(bool clamp)
-        {
-            WriteOutput(InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, clamp);
-            WriteOutput(InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, !clamp);
-        }
-        #endregion
-
-        #region Status Helpers
-        public bool IsFeederUp()        => ReadInput(InputRingTransferConfig.IO.FEEDER_UP);
-        public bool IsFeederDown()      => ReadInput(InputRingTransferConfig.IO.FEEDER_DOWN);
-        public bool IsUnclamped()       => ReadInput(InputRingTransferConfig.IO.FEEDER_UNCLAMP);
-        public bool IsRingPresent()     => ReadInput(InputRingTransferConfig.IO.FEEDER_RING_CHECK);
-        public bool IsOverload()        => ReadInput(InputRingTransferConfig.IO.FEEDER_OVERLOAD);
         #endregion
     }
 }

@@ -239,31 +239,13 @@ namespace QMC.LCP_280.Process.Unit
             return true;
         }
 
-
-        /// //////////////////////////////////////////////////////////////////
-
         #region Arm Vacuum / Blow / Vent Control
-        public void SetArmVac(int armIndex, bool on) => SetIndexedOutput(ARM_VAC, armIndex, on);
-        public void SetArmBlow(int armIndex, bool on) => SetIndexedOutput(ARM_BLOW, armIndex, on);
-        public void SetArmVent(int armIndex, bool on) => SetIndexedOutput(ARM_VENT, armIndex, on);
-
-        public bool IsArmVacOn(int armIndex) => armIndex >= 0 && armIndex < ARM_VAC.Length && IsOutputOn(ARM_VAC[armIndex]);
-        public bool IsArmBlowOn(int armIndex) => armIndex >= 0 && armIndex < ARM_BLOW.Length && IsOutputOn(ARM_BLOW[armIndex]);
-        public bool IsArmVentOn(int armIndex) => armIndex >= 0 && armIndex < ARM_VENT.Length && IsOutputOn(ARM_VENT[armIndex]);
-
-        public void AllVacOff() { for (int i = 0; i < ARM_VAC.Length; i++) SetArmVac(i, false); }
-        public void AllBlowOff() { for (int i = 0; i < ARM_BLOW.Length; i++) SetArmBlow(i, false); }
-        public void AllVentOff() { for (int i = 0; i < ARM_VENT.Length; i++) SetArmVent(i, false); }
-
         public bool ArmFlowOk(int armIndex) => armIndex >= 0 && armIndex < ARM_FLOW.Length && ReadInput(ARM_FLOW[armIndex]);
         public bool AirTankOk() => ReadInput(AIR_TANK_PRESS);
         public bool VacuumTankOk() => ReadInput(VAC_TANK_PRESS);
-
-        private void SetIndexedOutput(string[] arr, int armIdx, bool on)
-        {
-            if (armIdx < 0 || armIdx >= arr.Length) return;
-            WriteOutput(arr[armIdx], on);
-        }
         #endregion
+        /// //////////////////////////////////////////////////////////////////
+
+
     }
 }

@@ -231,10 +231,6 @@ namespace QMC.LCP_280.Process.Unit
                             showOkSensor: false
                         );
                     }
-
-                    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVacOff(), () => InputDieTransferUnit.AllVacOff(), "IDT All VAC OFF", () => false, "IDT_AllVacOff");
-                    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllBlowOff(), () => InputDieTransferUnit.AllBlowOff(), "IDT All BLOW OFF", () => false, "IDT_AllBlowOff");
-                    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVentOff(), () => InputDieTransferUnit.AllVentOff(), "IDT All VENT OFF", () => false, "IDT_AllVentOff");
                 }
 
                 dioControl.RebuildLists();
@@ -535,12 +531,12 @@ namespace QMC.LCP_280.Process.Unit
 
         private void buttonTest_Click(object sender, EventArgs e)
         {
-            InputStageUnit.SetClampUpDown(true);
+            InputStageUnit.SetClampLift(true);
         }
 
         private void buttonTest2_Click(object sender, EventArgs e)
         {
-            InputStageUnit.SetClampUpDown(false);
+            InputStageUnit.SetClampLift(false);
         }
     }
 }

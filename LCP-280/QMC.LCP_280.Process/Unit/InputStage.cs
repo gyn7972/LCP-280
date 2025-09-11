@@ -367,86 +367,28 @@ namespace QMC.LCP_280.Process.Unit
             else return _cylClampFB.Retract();
         }
 
-
-        // === Direct Valve Control (강제 구동) ===
-        public void SetVacuumValve(bool on)         => WriteOutput(InputStageConfig.IO.VAC_OUT, on);
-        public bool IsVacuumValveOn()               => IsOutputOn(InputStageConfig.IO.VAC_OUT);
-
-        public void SetPlateUp(bool on) => WriteOutput(InputStageConfig.IO.EXPANDER_UP_OUT, on);
-        public bool IsPlateUpOn() => IsOutputOn(InputStageConfig.IO.EXPANDER_UP_OUT);
-        public void SetPlateDown(bool on) => WriteOutput(InputStageConfig.IO.EXPANDER_DOWN_OUT, on);
-        public bool IsPlateDownOn() => IsOutputOn(InputStageConfig.IO.EXPANDER_DOWN_OUT);
-
-
-        public void SetClampLiftUpValve(bool on)    => WriteOutput(InputStageConfig.IO.CLAMP_UP_OUT, on);
-        public bool IsClampLiftUpValveOn()          => IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
-        public void SetClampLiftDownValve(bool on)  => WriteOutput(InputStageConfig.IO.CLAMP_DOWN_OUT, on);
-        public bool IsClampLiftDownValveOn()        => IsOutputOn(InputStageConfig.IO.CLAMP_DOWN_OUT);
-
-        public void SetClampFwdValve(bool on)       => WriteOutput(InputStageConfig.IO.CLAMP_FWD_OUT, on);
-        public bool IsClampFwdValveOn()             => IsOutputOn(InputStageConfig.IO.CLAMP_FWD_OUT);
-        public void SetClampBwdValve(bool on)       => WriteOutput(InputStageConfig.IO.CLAMP_BWD_OUT, on);
-        public bool IsClampBwdValveOn()             => IsOutputOn(InputStageConfig.IO.CLAMP_BWD_OUT);
-
-        // Backward compatibility aliases (legacy naming used by existing forms / controls)
-        public void VacuumOn() { if (DryRun) { _simVac = true; return; } _vacuum?.On(); }
-        public void VacuumOff() { if (DryRun) { _simVac = false; return; } _vacuum?.Off(); }
-        public bool VacuumOnWait(int timeoutMs = 1500) { if (DryRun) { _simVac = true; return true; } return _vacuum?.OnWaitOk(timeoutMs) ?? false; }
-
-        public bool IsVacuum() => DryRun ? _simVac : (_vacuum?.IsOk() ?? ReadInput(InputStageConfig.IO.VAC_OK_SNS));
-        public bool VacuumCheck() => IsVacuum(); // legacy
-
-        public bool PlateUp(int timeoutMs = 3000) { if (DryRun) { _simExpUp = true; return true; } return _cylPlate?.Extend(timeoutMs) ?? false; }
-        public bool PlateDown(int timeoutMs = 3000) { if (DryRun) { _simExpUp = false; return true; } return _cylPlate?.Retract(timeoutMs) ?? false; }
-        public bool IsPlateUp() => ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
-        public bool IsPlateDown() => ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
-
         #region High-Level Actuator API (Interlock 포함)
-        public bool ClampLiftUp(int timeoutMs = 3000) => _cylClampLift?.Extend(timeoutMs) ?? false;
-        public bool ClampLiftDown(int timeoutMs = 3000)
-        {
-            if (!IsClampBwd()) return false; // 기존 인터락 유지
-            return _cylClampLift?.Retract(timeoutMs) ?? false;
-        }
-
         public bool IsClampLiftUp() => !IsClampLiftDown();
         public bool IsClampLiftDown() => ReadInput(InputStageConfig.IO.CLAMP_DOWN_SNS);
-
-        public bool ClampFwd(int timeoutMs = 3000)
-        {
-            if (!IsClampLiftUp()) return false; // 기존 인터락 유지
-            return _cylClampFB?.Extend(timeoutMs) ?? false;
-        }
-        public bool ClampBwd(int timeoutMs = 3000) => _cylClampFB?.Retract(timeoutMs) ?? false;
         public bool IsClampFwd() => ReadInput(InputStageConfig.IO.CLAMP_FWD_SNS);
         public bool IsClampBwd() => !IsClampFwd();
-
-        public bool Ring0()           => ReadInput(InputStageConfig.IO.RING_CHECK0);
-        public bool Ring1()           => ReadInput(InputStageConfig.IO.RING_CHECK1);
-        public bool IsRingPresent()   => Ring0() || Ring1();
-
-
-        public void SetClampUpDown(bool up) 
-        {
-            if (up)
-            {
-                _cylClampLift.Extend(); //ClampLiftUp(); 
-            }
-            else
-            {
-                _cylClampLift.Retract(); //ClampLiftDown(); 
-            }
-        }
-
-
+        public bool Ring0() => ReadInput(InputStageConfig.IO.RING_CHECK0);
+        public bool Ring1() => ReadInput(InputStageConfig.IO.RING_CHECK1);
+        public bool IsRingPresent() => Ring0() || Ring1();
         #endregion
 
+
+
+        // === Direct Valve Control (강제 구동) ===
+        public bool IsVacuumValveOn()               => IsOutputOn(InputStageConfig.IO.VAC_OUT);
+        public void SetClampLiftUpValve(bool on)    => WriteOutput(InputStageConfig.IO.CLAMP_UP_OUT, on);
+        public bool IsClampLiftUpValveOn()          => IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
+        public bool IsVacuum() => DryRun ? _simVac : (_vacuum?.IsOk() ?? ReadInput(InputStageConfig.IO.VAC_OK_SNS));
+        public bool IsPlateUp() => ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
+        public bool IsPlateDown() => ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
-
-
-
 
     }
 }

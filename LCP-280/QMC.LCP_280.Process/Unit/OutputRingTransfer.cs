@@ -173,35 +173,22 @@ namespace QMC.LCP_280.Process.Unit
             if (bUpDn) return _cylClamp.Extend();
             else return _cylClamp.Retract();
         }
-        //public void SetClamp(bool clamp) //===.
-        //{
-        //    WriteOutput(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, clamp);
-        //    WriteOutput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, !clamp);
-        //}
-
-        #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public void SetFeederUpValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_UP_VALVE, on);
-        public bool IsFeederUpValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UP_VALVE);
-        public void SetFeederDownValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE, on);
-        public bool IsFeederDownValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
-        public void SetFeederClampValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, on);
-        public bool IsFeederClampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
-        public void SetFeederUnclampValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, on);
-        public bool IsFeederUnclampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
-        #endregion
-
-        #region High-Level Actuator API
-        public bool FeederUp(int timeoutMs = 3000)    => _feederLift?.Extend(timeoutMs) ?? false;
-        public bool FeederDown(int timeoutMs = 3000)  => _feederLift?.Retract(timeoutMs) ?? false;
-        public void FeederAllOff()                    => _feederLift?.AllOff();
-        #endregion
 
         #region Status Helpers
-        public bool IsFeederUp()        => ReadInput(OutputRingTransferConfig.IO.FEEDER_UP);
-        public bool IsFeederDown()      => ReadInput(OutputRingTransferConfig.IO.FEEDER_DOWN);
-        public bool IsUnclamped()       => ReadInput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP);
-        public bool IsRingPresent()     => ReadInput(OutputRingTransferConfig.IO.FEEDER_RING_CHECK);
-        public bool IsOverload()        => ReadInput(OutputRingTransferConfig.IO.FEEDER_OVERLOAD);
+        public bool IsFeederUp() => ReadInput(OutputRingTransferConfig.IO.FEEDER_UP);
+        public bool IsFeederDown() => ReadInput(OutputRingTransferConfig.IO.FEEDER_DOWN);
+        public bool IsUnclamped() => ReadInput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP);
+        public bool IsRingPresent() => ReadInput(OutputRingTransferConfig.IO.FEEDER_RING_CHECK);
+        public bool IsOverload() => ReadInput(OutputRingTransferConfig.IO.FEEDER_OVERLOAD);
+        #endregion
+
+        /// ////////////////////////////////////////////////////////////////////////////////////////
+
+        #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
+        public bool IsFeederUpValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UP_VALVE);
+        public bool IsFeederDownValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
+        public bool IsFeederClampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
+        public bool IsFeederUnclampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
     }
 }

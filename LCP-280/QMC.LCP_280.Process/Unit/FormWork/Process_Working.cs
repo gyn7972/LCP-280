@@ -303,25 +303,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         showOkSensor: false
                     );
                 }
-
-                dioControl.BindDIOOutput(
-                    () => _rotaryUnit.AllVacOff(),
-                    () => _rotaryUnit.AllVacOff(),
-                    "Rot All VAC OFF",
-                    () => false,
-                    "Rot_AllVacOff");
-                dioControl.BindDIOOutput(
-                    () => _rotaryUnit.AllBlowOff(),
-                    () => _rotaryUnit.AllBlowOff(),
-                    "Rot All BLOW OFF",
-                    () => false,
-                    "Rot_AllBlowOff");
-                dioControl.BindDIOOutput(
-                    () => _rotaryUnit.AllVentOff(),
-                    () => _rotaryUnit.AllVentOff(),
-                    "Rot All VENT OFF",
-                    () => false,
-                    "Rot_AllVentOff");
             }
         }
         #endregion

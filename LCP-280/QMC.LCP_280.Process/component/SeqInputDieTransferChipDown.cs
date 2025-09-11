@@ -193,9 +193,9 @@ namespace QMC.LCP_280.Process.Component
 
                 case Step.Init:
                     if (!ResolvePositions()) break;
-                    _unit.SetArmVent(_armIndex, false); // ensure closed
-                    _unit.SetArmBlow(_armIndex, false);
-                    _unit.SetArmVac(_armIndex, true);   // still holding before release
+                    _unit.SetVacuum(_armIndex, false); // ensure closed
+                    _unit.SetBlow(_armIndex, false);
+                    _unit.SetVent(_armIndex, true);   // still holding before release
                     _unit.PlaceZ?.MoveAbs(_targetDownPos, _unit.PlaceZ.Config.MaxVelocity, _unit.PlaceZ.Config.RunAcc, _unit.PlaceZ.Config.RunDec, _unit.PlaceZ.Config.AccJerkPercent);
                     _step = Step.Move_Down_Wait; _tick = DateTime.UtcNow; break;
 
@@ -205,20 +205,20 @@ namespace QMC.LCP_280.Process.Component
                         // Branch by mode
                         if (_mode == PlaceMode.DownAndVacuum)
                         {
-                            _unit.SetArmVac(_armIndex, false); // release
+                            _unit.SetVacuum(_armIndex, false); // release
                             _step = Step.Move_Up; // directly up
                             _unit.PlaceZ?.MoveAbs(_targetUpPos, _unit.PlaceZ.Config.MaxVelocity, _unit.PlaceZ.Config.RunAcc, _unit.PlaceZ.Config.RunDec, _unit.PlaceZ.Config.AccJerkPercent);
                             _tick = DateTime.UtcNow;
                         }
                         else if (_mode == PlaceMode.DownInposVacuum)
                         {
-                            _unit.SetArmVac(_armIndex, false); // vacuum off
-                            _unit.SetArmBlow(_armIndex, true);  // blow on at same time
+                            _unit.SetVacuum(_armIndex, false); // vacuum off
+                            _unit.SetBlow(_armIndex, true);  // blow on at same time
                             _step = Step.Blow_On_Delay; _tick = DateTime.UtcNow;
                         }
                         else // FullCycle
                         {
-                            _unit.SetArmVac(_armIndex, false);
+                            _unit.SetVacuum(_armIndex, false);
                             _step = Step.Vacuum_Off_Delay; _tick = DateTime.UtcNow;
                         }
                     }
@@ -227,15 +227,15 @@ namespace QMC.LCP_280.Process.Component
 
                 // ========== FullCycle path ==========
                 case Step.Vacuum_Off_Delay:
-                    if (IsDryRun || Timeout(VacuumOffDelayMs)) { _unit.SetArmVent(_armIndex, true); _step = Step.Vent_On_Delay; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || Timeout(VacuumOffDelayMs)) { _unit.SetVent(_armIndex, true); _step = Step.Vent_On_Delay; _tick = DateTime.UtcNow; }
                     break;
 
                 case Step.Vent_On_Delay:
-                    if (IsDryRun || Timeout(VentOnDelayMs)) { _unit.SetArmVent(_armIndex, false); _step = Step.Vent_Off_Delay; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || Timeout(VentOnDelayMs)) { _unit.SetVent(_armIndex, false); _step = Step.Vent_Off_Delay; _tick = DateTime.UtcNow; }
                     break;
 
                 case Step.Vent_Off_Delay:
-                    if (IsDryRun || Timeout(VentOffDelayMs)) { _unit.SetArmBlow(_armIndex, true); _step = Step.Blow_On_Delay; _tick = DateTime.UtcNow; }
+                    if (IsDryRun || Timeout(VentOffDelayMs)) { _unit.SetBlow(_armIndex, true); _step = Step.Blow_On_Delay; _tick = DateTime.UtcNow; }
                     break;
 
                 case Step.Blow_On_Delay:
@@ -256,7 +256,7 @@ namespace QMC.LCP_280.Process.Component
                     {
                         if (_mode == PlaceMode.DownInposVacuum)
                         {
-                            _unit.SetArmBlow(_armIndex, false); // blow off immediately
+                            _unit.SetBlow(_armIndex, false); // blow off immediately
                             _step = Step.Vacuum_Restore; _tick = DateTime.UtcNow; break;
                         }
                         if (_mode == PlaceMode.DownAndVacuum)
@@ -270,7 +270,7 @@ namespace QMC.LCP_280.Process.Component
                     break;
 
                 case Step.Blow_Off:
-                    _unit.SetArmBlow(_armIndex, false);
+                    _unit.SetBlow(_armIndex, false);
                     _step = Step.Blow_Off_Delay; _tick = DateTime.UtcNow; break;
 
                 case Step.Blow_Off_Delay:
@@ -279,7 +279,7 @@ namespace QMC.LCP_280.Process.Component
 
                 case Step.Vacuum_Restore:
                     // Restore vacuum ON (idle state expectation)
-                    _unit.SetArmVac(_armIndex, true);
+                    _unit.SetVacuum(_armIndex, true);
                     if (IsDryRun || Timeout(UpExtraDelayMs)) { PlaceCompleted = true; _step = Step.Finish; }
                     break;
 
