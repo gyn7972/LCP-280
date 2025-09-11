@@ -200,6 +200,18 @@ namespace QMC.LCP_280.Process.Unit
                             $"{labelBase} Flow OK(Sns)",
                             $"IDT_Arm{idx + 1}_FlowOk");
 
+                        /*
+                         dioControl.BindVacuum(
+                            label: "Vacuum",
+                            on: () => InputStageUnit.SetVacuum(true),
+                            off: () => InputStageUnit.SetVacuum(false),
+                            isOk: () => InputStageUnit.IsVacuum(),
+                            isOnState: () => InputStageUnit.IsVacuumValveOn(),
+                            displayKey: "StageVac",
+                            showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
+                        );
+                         */
+
                         // VAC: 도메인 + 상태 함수 연결 (출력은 입력과 무관하게 동작)
                         dioControl.BindVacuum(
                             label: $"{labelBase} VAC",
