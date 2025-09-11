@@ -57,8 +57,8 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             const string unitName = "Unit"; // Equipment.CreateAxes 에서 사용한 유닛명과 동일해야 함
-            BindAxis(mgr, unitName, "Align T Axis", ref _alignT);
-            BindAxis(mgr, unitName, "Index Z Axis", ref _indexZ);
+            BindAxis(mgr, unitName, AxisNames.AlignT, ref _alignT);
+            BindAxis(mgr, unitName, AxisNames.IndexZ, ref _indexZ);
         }
 
         private void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)

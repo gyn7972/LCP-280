@@ -52,7 +52,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("IndexChipProbeController", "[BindAxes] AxisManager null");
+                Log.Write("IndexUnloadAligner", "[BindAxes] AxisManager null");
                 return;
             }
 

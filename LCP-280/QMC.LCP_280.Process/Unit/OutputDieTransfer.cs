@@ -84,7 +84,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                Log.Write("OutputDieTransfer", "[BindAxes] AxisManager null");
                 return;
             }
 

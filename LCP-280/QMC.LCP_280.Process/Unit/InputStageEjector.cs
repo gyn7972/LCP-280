@@ -48,7 +48,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public InputStageEjector(InputStageEjectorConfig config = null) : base("InputStageEjector")
+        public InputStageEjector(InputStageEjectorConfig config = null) : base("InputStageEjectorConfig")
         {
             InputStageEjectorConfig = config ?? new InputStageEjectorConfig();
             AddComponents();
@@ -72,7 +72,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                Log.Write("InputStageEjector", "[BindAxes] AxisManager null");
                 return;
             }
 

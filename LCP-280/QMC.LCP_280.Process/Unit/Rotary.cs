@@ -26,7 +26,7 @@ namespace QMC.LCP_280.Process.Unit
         // 로컬 Safe 명칭 허용(오타 포함)
         private static readonly string[] SafeNames = new[] { "SafeZone", "Safe", "SasfeZone", "SAFE", "SAFEZONE", "SAFE_ZONE" };
 
-        public Rotary(RotaryConfig config = null) : base("Rotary")
+        public Rotary(RotaryConfig config = null) : base("RotaryConfig")
         {
             RotaryConfig = config ?? new RotaryConfig();
             AddComponents();
@@ -55,7 +55,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                Log.Write("Rotary", "[BindAxes] AxisManager null");
                 return;
             }
 

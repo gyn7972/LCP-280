@@ -64,7 +64,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("UnitAxis", "[BindAxes] AxisManager null");
+                Log.Write("InputRingTransfer", "[BindAxes] AxisManager null");
                 return;
             }
 
