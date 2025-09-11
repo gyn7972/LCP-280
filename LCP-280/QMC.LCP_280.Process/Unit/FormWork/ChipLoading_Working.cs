@@ -235,12 +235,6 @@ namespace QMC.LCP_280.Process.Unit
                 dioControl.BindDIOInput(() => InputStageUnit.Ring1(), "Ring Sns 1", "InStageRing1");
                 dioControl.BindDIOInput(() => InputStageUnit.IsRingPresent(), "Ring Any", "InStageRingAny");
 
-                //dioControl.BindDIOOutput(
-                //    () => InputStageUnit.SetVacuumValve(true),
-                //    () => InputStageUnit.SetVacuumValve(false),
-                //    "Vacuum",
-                //    () => InputStageUnit.IsVacuumValveOn(),
-                //    "InStageVac");
                 // Vacuum: 도메인 함수 사용 (출력은 입력과 무관하게 동작, 상태 표시는 밸브 상태 함수 사용)
                 dioControl.BindVacuum(
                     label: "Vacuum",
@@ -251,19 +245,6 @@ namespace QMC.LCP_280.Process.Unit
                     displayKey: "InStageVac",
                     showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
                 );
-
-                //dioControl.BindDIOOutput(
-                //    () => InputStageUnit.SetPlateUp(true),
-                //    () => InputStageUnit.SetPlateUp(false),
-                //    "PlateUP",
-                //    () => InputStageUnit.IsPlateUpOn(),
-                //    "InStagePlateUp");
-                //dioControl.BindDIOOutput(
-                //    () => InputStageUnit.SetPlateDown(true),
-                //    () => InputStageUnit.SetPlateDown(false),
-                //    "PlateDOWN",
-                //    () => InputStageUnit.IsPlateDownOn(),
-                //    "InStagePlateDn");
 
                 // Plate Up/Down: 도메인 함수 사용, 상태 판단은 IsPlateUp 기준
                 dioControl.BindCylinder(
@@ -276,35 +257,61 @@ namespace QMC.LCP_280.Process.Unit
                     showSensors: false // 위에서 Up/Down 센서를 이미 표시했으므로 중복 방지
                 );
 
+                // ClampLift Up/Down
+                dioControl.BindCylinder(
+                    label: "ClampLift",
+                    extend: () => InputStageUnit.SetClampLift(true),
+                    retract: () => InputStageUnit.SetClampLift(false),
+                    // Up 센서가 없으면 밸브 상태 사용, Down은 센서 사용
+                    isExtended: () => InputStageUnit.IsClampLiftUpValveOn(),
+                    isRetracted: () => InputStageUnit.IsClampLiftDown(),
+                    displayKey: "InStageClampLiftUpDn",
+                    showSensors: false,
+                    extendedName: "UP",
+                    retractedName: "DOWN"
+                );
 
+                // Clamp FWD/BWD
+                dioControl.BindCylinder(
+                    label: "ClampFB",
+                    extend: () => InputStageUnit.SetClampFB(true),
+                    retract: () => InputStageUnit.SetClampFB(false),
+                    // FWD 센서만 있어도 동작. BWD는 없으면 null 가능(토글은 FWD 센서로 판단)
+                    isExtended: () => InputStageUnit.IsClampFwd(),
+                    isRetracted: null,
+                    displayKey: "InStageClampFB",
+                    showSensors: false,
+                    extendedName: "FWD",
+                    retractedName: "BWD"
+                );
 
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampLiftUpValve(true),
-                    () => InputStageUnit.SetClampLiftUpValve(false),
-                    "ClampUP",
-                    () => InputStageUnit.IsClampLiftUpValveOn(),
-                    "InStageClampLiftUp");
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetClampLiftUpValve(true),
+                //    () => InputStageUnit.SetClampLiftUpValve(false),
+                //    "ClampUP",
+                //    () => InputStageUnit.IsClampLiftUpValveOn(),
+                //    "InStageClampLiftUp");
 
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampLiftDownValve(true),
-                    () => InputStageUnit.SetClampLiftDownValve(false),
-                    "ClampDOWN",
-                    () => InputStageUnit.IsClampLiftDownValveOn(),
-                    "InStageClampLiftDn");
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetClampLiftDownValve(true),
+                //    () => InputStageUnit.SetClampLiftDownValve(false),
+                //    "ClampDOWN",
+                //    () => InputStageUnit.IsClampLiftDownValveOn(),
+                //    "InStageClampLiftDn");
 
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampFwdValve(true),
-                    () => InputStageUnit.SetClampFwdValve(false),
-                    "ClampFWD",
-                    () => InputStageUnit.IsClampFwdValveOn(),
-                    "InStageClampFwd");
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetClampFwdValve(true),
+                //    () => InputStageUnit.SetClampFwdValve(false),
+                //    "ClampFWD",
+                //    () => InputStageUnit.IsClampFwdValveOn(),
+                //    "InStageClampFwd");
 
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampBwdValve(true),
-                    () => InputStageUnit.SetClampBwdValve(false),
-                    "ClampBWD",
-                    () => InputStageUnit.IsClampBwdValveOn(),
-                    "InStageClampBwd");
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetClampBwdValve(true),
+                //    () => InputStageUnit.SetClampBwdValve(false),
+                //    "ClampBWD",
+                //    () => InputStageUnit.IsClampBwdValveOn(),
+                //    "InStageClampBwd");
 
             }
             catch { }

@@ -143,25 +143,31 @@ namespace QMC.LCP_280.Process.Component
         // === High-level helpers (Cylinder / Vacuum) ===
         // Cylinder: extend/retract 도메인 함수 + (선택) 센서 표시
         public void BindCylinder(string label,
-                                 Action extend,
-                                 Action retract,
-                                 Func<bool> isExtended,
-                                 Func<bool> isRetracted = null,
-                                 string displayKey = null,
-                                 bool showSensors = true)
+                         Action extend,
+                         Action retract,
+                         Func<bool> isExtended,
+                         Func<bool> isRetracted = null,
+                         string displayKey = null,
+                         bool showSensors = true,
+                         string extendedName = "UP",
+                         string retractedName = "DOWN")
         {
             var keyBase = string.IsNullOrWhiteSpace(displayKey) ? label : displayKey;
 
+            // 센서 표시 (선택)
             if (showSensors)
             {
                 if (isExtended != null)
-                    BindDIOInput(isExtended, $"{label} UP Sns", $"{keyBase}_UpSns");
+                    BindDIOInput(isExtended, $"{label} {extendedName} Sns", $"{keyBase}_{extendedName}Sns");
                 if (isRetracted != null)
-                    BindDIOInput(isRetracted, $"{label} DOWN Sns", $"{keyBase}_DnSns");
+                    BindDIOInput(isRetracted, $"{label} {retractedName} Sns", $"{keyBase}_{retractedName}Sns");
             }
 
-            // 토글 상태 판단은 "현재 Up인가?" 기준으로 처리
-            BindDIOOutput(extend, retract, label, isExtended, keyBase);
+            // 토글 상태 판단: Up(또는 Fwd/Clamp) 센서가 없으면 Down(또는 Bwd/Unclamp) 센서를 반전해 사용
+            Func<bool> stateFunc = isExtended ?? (isRetracted != null ? (Func<bool>)(() => !isRetracted()) : null);
+
+            // 출력 토글 (상태 함수 제공 필수: 없으면 한쪽만 동작하게 됨)
+            BindDIOOutput(extend, retract, label, stateFunc, keyBase);
         }
 
         // Vacuum: on/off 도메인 함수 + (선택) OK 센서 표시
@@ -178,7 +184,6 @@ namespace QMC.LCP_280.Process.Component
             if (showOkSensor && isOk != null)
                 BindDIOInput(isOk, $"{label} OK(Sns)", $"{keyBase}_Ok");
 
-            // 토글 상태 판단 함수 전달(없으면 null 가능)
             BindDIOOutput(on, off, label, isOnState, keyBase);
         }
 
