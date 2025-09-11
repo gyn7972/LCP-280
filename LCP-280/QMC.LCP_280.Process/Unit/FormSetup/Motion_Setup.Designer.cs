@@ -75,7 +75,7 @@ namespace QMC.LCP_280.Process.Unit
             this.panel1 = new System.Windows.Forms.Panel();
             this.btn_Save_Setup_Motion_Configuration = new QMC.Common.IndividualMenuButton();
             this.gbAxisPositions = new System.Windows.Forms.GroupBox();
-            this.btnHome1 = new QMC.Common.IndividualMenuButton();
+            this.btnHomeAll = new QMC.Common.IndividualMenuButton();
             this.btnServoOn = new QMC.Common.IndividualMenuButton();
             this.btnServoOff = new QMC.Common.IndividualMenuButton();
             this.btnHome = new QMC.Common.IndividualMenuButton();
@@ -206,7 +206,7 @@ namespace QMC.LCP_280.Process.Unit
             // gbAxisPositions
             // 
             this.gbAxisPositions.BackColor = System.Drawing.Color.White;
-            this.gbAxisPositions.Controls.Add(this.btnHome1);
+            this.gbAxisPositions.Controls.Add(this.btnHomeAll);
             this.gbAxisPositions.Controls.Add(this.btnServoOn);
             this.gbAxisPositions.Controls.Add(this.btnServoOff);
             this.gbAxisPositions.Controls.Add(this.btnHome);
@@ -222,24 +222,24 @@ namespace QMC.LCP_280.Process.Unit
             this.gbAxisPositions.TabStop = false;
             this.gbAxisPositions.Text = "Axis Status";
             // 
-            // btnHome1
+            // btnHomeAll
             // 
-            this.btnHome1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnHome1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnHome1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnHome1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnHome1.CustomForeColor = System.Drawing.Color.Black;
-            this.btnHome1.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnHome1.ForeColor = System.Drawing.Color.Black;
-            this.btnHome1.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnHome1.Location = new System.Drawing.Point(6, 716);
-            this.btnHome1.Name = "btnHome1";
-            this.btnHome1.Size = new System.Drawing.Size(93, 24);
-            this.btnHome1.TabIndex = 8;
-            this.btnHome1.TabStop = false;
-            this.btnHome1.Text = "Home1";
-            this.btnHome1.UseVisualStyleBackColor = false;
-            this.btnHome1.Click += new System.EventHandler(this.btnHome1_Click);
+            this.btnHomeAll.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnHomeAll.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnHomeAll.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnHomeAll.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnHomeAll.CustomForeColor = System.Drawing.Color.Black;
+            this.btnHomeAll.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnHomeAll.ForeColor = System.Drawing.Color.Black;
+            this.btnHomeAll.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnHomeAll.Location = new System.Drawing.Point(6, 716);
+            this.btnHomeAll.Name = "btnHomeAll";
+            this.btnHomeAll.Size = new System.Drawing.Size(93, 24);
+            this.btnHomeAll.TabIndex = 8;
+            this.btnHomeAll.TabStop = false;
+            this.btnHomeAll.Text = "Home All";
+            this.btnHomeAll.UseVisualStyleBackColor = false;
+            this.btnHomeAll.Click += new System.EventHandler(this.btnHomeAll_Click);
             // 
             // btnServoOn
             // 
@@ -302,6 +302,7 @@ namespace QMC.LCP_280.Process.Unit
             // motorStateIoPropertyCollectionView
             // 
             this.motorStateIoPropertyCollectionView.FastBuild = true;
+            this.motorStateIoPropertyCollectionView.FastInitialPaint = true;
             this.motorStateIoPropertyCollectionView.GroupName = "Motor State";
             this.motorStateIoPropertyCollectionView.ListBackColor = System.Drawing.Color.Black;
             this.motorStateIoPropertyCollectionView.ListForeColor = System.Drawing.Color.Lime;
@@ -317,6 +318,7 @@ namespace QMC.LCP_280.Process.Unit
             // motorIoPropertyCollectionView
             // 
             this.motorIoPropertyCollectionView.FastBuild = true;
+            this.motorIoPropertyCollectionView.FastInitialPaint = true;
             this.motorIoPropertyCollectionView.GroupName = "Motor I/O";
             this.motorIoPropertyCollectionView.ListBackColor = System.Drawing.Color.Black;
             this.motorIoPropertyCollectionView.ListForeColor = System.Drawing.Color.Lime;
@@ -807,6 +809,6 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnHome;
         private IndividualMenuButton btnServoOn;
         private IndividualMenuButton btnServoOff;
-        private IndividualMenuButton btnHome1;
+        private IndividualMenuButton btnHomeAll;
     }
 }

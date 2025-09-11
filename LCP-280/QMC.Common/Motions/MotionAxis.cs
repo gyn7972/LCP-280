@@ -380,7 +380,34 @@ namespace QMC.Common.Motions
         {
             if (_driver != null)
             {
+                // 1) 소프트리밋 검사
                 GuardSoftLimit(logicalTarget);
+
+                // 2) 하드(물리) 리밋 상태 검사: 이동 방향에 따라 해당 리밋 센서가 이미 Active이면 구동 차단
+                try
+                {
+                    var cur = GetPosition();
+                    if (logicalTarget > cur)
+                    {
+                        // + 방향 이동 예정 → +Limit 센서 Active 여부 검사
+                        if (_driver.ReadPositiveLimit(AxisNo))
+                            throw new InvalidOperationException("[" + Name + "] +Limit Active 상태에서 +방향 이동 불가");
+                    }
+                    else if (logicalTarget < cur)
+                    {
+                        // - 방향 이동 예정 → -Limit 센서 Active 여부 검사
+                        if (_driver.ReadNegativeLimit(AxisNo))
+                            throw new InvalidOperationException("[" + Name + "] -Limit Active 상태에서 -방향 이동 불가");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 인터락 위반을 알람으로도 남기고 예외 전달 (필요시 정책에 따라 변경)
+                    Log.Write("MotionAxis.MoveAbs", ex.Message);
+                    return -1; // 호출측에서 실패 처리; 예외 throw를 원하면 대신 throw;
+                }
+
+                // 3) 펄스 변환 및 구동 수행
                 var p = _correction.ToHardware(logicalTarget);
                 var jerk = MapJerkPercentToDriver((int)jerkPercent, (int)jerkPercent);
                 return _driver.MoveAbsPosition(AxisNo, p, vel, acc, dec, jerk);
@@ -461,6 +488,60 @@ namespace QMC.Common.Motions
         {
             if (_driver != null)
             {
+                if (Math.Abs(signedVel) < double.Epsilon) return; // 0 속도 무시
+
+                // 1) 소프트리밋: 현재 위치 기준으로 진행 방향 제한
+                try
+                {
+                    if (Setup.SoftLimitEnable)
+                    {
+                        var cur = GetPosition();
+                        if (signedVel > 0)
+                        {
+                            if (cur >= Setup.SoftLimitMax)
+                            {
+                                Log.Write("MotionAxis.JogStart", "[" + Name + "] SoftLimitMax 도달 - +방향 조그 차단");
+                                return;
+                            }
+                        }
+                        else if (signedVel < 0)
+                        {
+                            if (cur <= Setup.SoftLimitMin)
+                            {
+                                Log.Write("MotionAxis.JogStart", "[" + Name + "] SoftLimitMin 도달 - -방향 조그 차단");
+                                return;
+                            }
+                        }
+                    }
+
+                    // 2) 하드(물리) 리밋 센서 검사: 해당 방향 리밋 Active면 차단
+                    try
+                    {
+                        if (signedVel > 0 && _driver.ReadPositiveLimit(AxisNo))
+                        {
+                            Log.Write("MotionAxis.JogStart", "[" + Name + "] +Limit Active - +방향 조그 차단");
+                            return;
+                        }
+                        if (signedVel < 0 && _driver.ReadNegativeLimit(AxisNo))
+                        {
+                            Log.Write("MotionAxis.JogStart", "[" + Name + "] -Limit Active - -방향 조그 차단");
+                            return;
+                        }
+                    }
+                    catch (Exception exLim)
+                    {
+                        // 센서 읽기 예외 시 안전 차단
+                        Log.Write("MotionAxis.JogStart", "Limit 센서 읽기 실패 - 차단: " + exLim.Message);
+                        return;
+                    }
+                }
+                catch (Exception exSoft)
+                {
+                    Log.Write("MotionAxis.JogStart", "SoftLimit 체크 실패 - 차단: " + exSoft.Message);
+                    return;
+                }
+
+                // 3) Servo On 보장
                 try { this.Servo(true); } catch (Exception ex) { Log.Write(ex); }
 
                 double dAcc = 10; // Config.JogAcc;

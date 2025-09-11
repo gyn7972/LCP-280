@@ -355,6 +355,21 @@ namespace QMC.Common.Motions
                 convY.MoveAbs(120);
             }
          */
-
+        public void StopAll()
+        {
+            var arr = GetAll();
+            for (int i = 0; i < arr.Length; i++)
+            {
+                try { arr[i]?.Stop(); } catch { }
+            }
+        }
+        public void EmgStopAll()
+        {
+            var arr = GetAll();
+            for (int i = 0; i < arr.Length; i++)
+            {
+                try { arr[i]?.EmgStop(); } catch { }
+            }
+        }
     }
 }

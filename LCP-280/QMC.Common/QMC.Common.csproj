@@ -261,6 +261,9 @@
     <Compile Include="Motions\AjinAxlBoardHost.cs" />
     <Compile Include="Motions\AjinDriver.cs" />
     <Compile Include="Motions\CKD\CKDMotorDriver.cs" />
+    <Compile Include="Motions\HomeProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Motions\HomeSequence.cs" />
     <Compile Include="Motions\IPropertyCorrection.cs" />
     <Compile Include="Motions\MotionAxis.cs" />
@@ -368,6 +371,8 @@
       <DependentUpon>ListBoxItemsView.cs</DependentUpon>
     </Compile>
     <Compile Include="Motions\MotionStatusScanner.cs" />
+    <Compile Include="Motions\OperationProgress.cs" />
+    <Compile Include="Motions\OperationProgress_new.cs" />
     <Compile Include="NavigationService.cs" />
     <Compile Include="PatternMatching\MaintROIControl.cs">
       <SubType>UserControl</SubType>
