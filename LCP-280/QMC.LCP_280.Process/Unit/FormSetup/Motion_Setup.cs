@@ -60,8 +60,9 @@ namespace QMC.LCP_280.Process.Unit
         {
         }
 
-        private async void btnHome1_Click(object sender, EventArgs e)
+        private async void btnHomeAll_Click(object sender, EventArgs e)
         {
+            HomeProgressForm dlg = null;
             try
             {
                 _homeCts?.Cancel();
@@ -75,37 +76,63 @@ namespace QMC.LCP_280.Process.Unit
                     MessageBox.Show("등록된 축이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
+
+                // 기본 준비(알람 클리어/서보온)
                 foreach (var ax in axes)
                 {
                     try { ax.ClearAlarm(); } catch { }
                     try { ax.Servo(true); } catch { }
                 }
 
-                // 시퀀스 구성은 코디네이터로 위임 → 유지보수/재사용성 향상
                 var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(Equipment);
+                dlg = new HomeProgressForm();
+                dlg.InitializeProgress("Machine Home",  seq.TotalSteps);
 
-                var results = await seq.RunAsync(token).ConfigureAwait(true);
+                seq.OnProgress(p => dlg.SafeUpdate(p));
+                dlg.CancelRequested += () => { try { _homeCts.Cancel(); } catch { } };
+                dlg.ForceStopRequested += () => { try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
+
+                // 비동기 실행
+                var runTask = seq.RunAsync(token);
+
+                // 모달 표시 (UI 차단)
+                dlg.Show(this); // 모델리스로 먼저 표시 후
+                dlg.BringToFront();
+                // 진행 중 메시지 루프 유지
+                while (!runTask.IsCompleted)
+                {
+                    Application.DoEvents();
+                    await Task.Delay(50).ConfigureAwait(true);
+                }
+                var results = await runTask.ConfigureAwait(true);
+
+                // 완료 후 Close 가능
+                dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = seq.TotalSteps - 1, TotalSteps = seq.TotalSteps, IsCompleted = true, IsCanceled = token.IsCancellationRequested, IsAborted = seq.Aborted, Message = seq.AbortReason });
 
                 // 3) 결과 요약 표시
                 int success = results.Count(r => r.Success);
                 int notStarted = results.Count(r => !r.Started);
                 int fail = results.Count - success - notStarted;
 
-                string msg = $"Home1 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
+                string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
                 if (fail > 0 || notStarted > 0)
                 {
                     var detail = string.Join("\r\n", results.Select(r => $"- {r.AxisName}: {(r.Success ? "OK" : r.Started ? (r.Error?.Message ?? $"rc={r.ReturnCode}") : $"NOT STARTED ({r.FailReason})")}"));
                     msg += "\r\n\r\n" + detail;
                 }
-                MessageBox.Show(msg, "Home1", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(msg, "Home", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show("Home1 취소됨", "Home1", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Home 취소됨", "Home", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Home1 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Home 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                try { dlg?.Close(); dlg?.Dispose(); } catch { }
             }
         }
 
