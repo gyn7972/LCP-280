@@ -190,15 +190,19 @@ namespace QMC.LCP_280.Process.Unit
             else   _vacProbeCard.Off();
             return true;
         }
-        public bool SetSphereForward(int timeoutMs = 2000)
+
+        public bool SetSphereFB(bool bFwdBwd)
         {
             if (_cylSphere == null) return false;
-            return _cylSphere.Extend(timeoutMs);
-        }
-        public bool SetSphereBackward(int timeoutMs = 2000)
-        {
-            if (_cylSphere == null) return false;
-            return _cylSphere.Retract(timeoutMs);
+
+            if (bFwdBwd)
+            {
+                return _cylSphere.Extend();
+            }
+            else
+            {
+                return _cylSphere.Retract();
+            }
         }
         /////////////////////
 

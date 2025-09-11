@@ -200,24 +200,49 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     dioControl.BindDIOInput(() => _probeControllerUnit.IsSphereForward(), "Sphere FW Sns", "ProbeSphereFwSns");
                     dioControl.BindDIOInput(() => _probeControllerUnit.IsSphereBackward(), "Sphere BW Sns", "ProbeSphereBwSns");
 
-                    dioControl.BindDIOOutput(
-                        () => _probeControllerUnit.SetProbeVacValve(true),
-                        () => _probeControllerUnit.SetProbeVacValve(false),
-                        "ProbeVac Valve",
-                        () => _probeControllerUnit.IsProbeVacValveOn(),
-                        "ProbeVac");
-                    dioControl.BindDIOOutput(
-                        () => _probeControllerUnit.SetSphereFwdValve(true),
-                        () => _probeControllerUnit.SetSphereFwdValve(false),
-                        "Sphere FWD Valve",
-                        () => _probeControllerUnit.IsSphereFwdValveOn(),
-                        "ProbeSphereFwd");
-                    dioControl.BindDIOOutput(
-                        () => _probeControllerUnit.SetSphereBwdValve(true),
-                        () => _probeControllerUnit.SetSphereBwdValve(false),
-                        "Sphere BWD Valve",
-                        () => _probeControllerUnit.IsSphereBwdValveOn(),
-                        "ProbeSphereBwd");
+                    //dioControl.BindDIOOutput(
+                    //    () => _probeControllerUnit.SetProbeVacValve(true),
+                    //    () => _probeControllerUnit.SetProbeVacValve(false),
+                    //    "ProbeVac Valve",
+                    //    () => _probeControllerUnit.IsProbeVacValveOn(),
+                    //    "ProbeVac");
+
+                    dioControl.BindVacuum(
+                        label: "Vacuum",
+                        on: () => _probeControllerUnit.SetProbeVac(true),
+                        off: () => _probeControllerUnit.SetProbeVac(false),
+                        isOk: () => _probeControllerUnit.IsProbeVacValveOn(),
+                        isOnState: () => _probeControllerUnit.IsProbeVacValveOn(),
+                        displayKey: "ProbeVac",
+                        showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
+                    );
+
+                    dioControl.BindCylinder(
+                        label: "SphereFB",
+                        extend: () => _probeControllerUnit.SetSphereFB(true),
+                        retract: () => _probeControllerUnit.SetSphereFB(false),
+                        // FWD 센서만 있어도 동작. BWD는 없으면 null 가능(토글은 FWD 센서로 판단)
+                        isExtended: () => _probeControllerUnit.IsSphereFwdValveOn(),
+                        isRetracted: null,
+                        displayKey: "SphereFB",
+                        showSensors: false,
+                        extendedName: "FWD",
+                        retractedName: "BWD"
+                    );
+
+
+                    //dioControl.BindDIOOutput(
+                    //    () => _probeControllerUnit.SetSphereFwdValve(true),
+                    //    () => _probeControllerUnit.SetSphereFwdValve(false),
+                    //    "Sphere FWD Valve",
+                    //    () => _probeControllerUnit.IsSphereFwdValveOn(),
+                    //    "ProbeSphereFwd");
+                    //dioControl.BindDIOOutput(
+                    //    () => _probeControllerUnit.SetSphereBwdValve(true),
+                    //    () => _probeControllerUnit.SetSphereBwdValve(false),
+                    //    "Sphere BWD Valve",
+                    //    () => _probeControllerUnit.IsSphereBwdValveOn(),
+                    //    "ProbeSphereBwd");
                 }
 
                 dioControl.RebuildLists();
@@ -227,6 +252,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void BindRotaryActuators(Rotary rotary)
         {
+            // 그룹 구분선: Rotary (유지)
             if (_rotaryUnit != null)
             {
                 dioControl.BindDIOInput(() => false, "---- Rotary ----", "SEP_Rotary");
@@ -236,32 +262,46 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 int slotCount = SLOT_VAC.Length; // 8
                 for (int slot = 0; slot < slotCount; slot++)
                 {
-                    int s = slot;
+                    int idx = slot;
+                    string labelBase = $"Index{idx + 1}";
+
                     dioControl.BindDIOInput(
-                        () => _rotaryUnit.SlotFlowOk(s),
-                        $"Rot Slot{s + 1} FLOW",
-                        $"Rot_S{s + 1}_Flow");
+                        () => _rotaryUnit.SlotFlowOk(idx),
+                        $"IndexSlot{idx + 1} FLOW",
+                        $"Index_S{idx + 1}_Flow");
 
-                    dioControl.BindDIOOutput(
-                        () => _rotaryUnit.SetSlotVac(s, true),
-                        () => _rotaryUnit.SetSlotVac(s, false),
-                        $"Rot Slot{s + 1} VAC",
-                        () => _rotaryUnit.IsSlotVacOn(s),
-                        $"Rot_S{s + 1}_Vac");
+                    // VAC: 소프트 래치 토글 사용 (isOnState: null)
+                    dioControl.BindVacuum(
+                        label: $"{labelBase} VAC",
+                        on: () => _rotaryUnit.SetVacuum(idx, true),
+                        off: () => _rotaryUnit.SetVacuum(idx, false),
+                        isOk: null,
+                        isOnState: null,
+                        displayKey: $"IndexSlot{idx + 1}_Vac",
+                        showOkSensor: false
+                    );
 
-                    dioControl.BindDIOOutput(
-                        () => _rotaryUnit.SetSlotBlow(s, true),
-                        () => _rotaryUnit.SetSlotBlow(s, false),
-                        $"Rot Slot{s + 1} BLOW",
-                        () => _rotaryUnit.IsSlotBlowOn(s),
-                        $"Rot_S{s + 1}_Blow");
+                    // BLOW
+                    dioControl.BindVacuum(
+                        label: $"{labelBase} Blow",
+                        on: () => _rotaryUnit.SetBlow(idx, true),
+                        off: () => _rotaryUnit.SetBlow(idx, false),
+                        isOk: null,
+                        isOnState: null,
+                        displayKey: $"IndexSlot{idx + 1}_Blow",
+                        showOkSensor: false
+                    );
 
-                    dioControl.BindDIOOutput(
-                        () => _rotaryUnit.SetSlotVent(s, true),
-                        () => _rotaryUnit.SetSlotVent(s, false),
-                        $"Rot Slot{s + 1} VENT",
-                        () => _rotaryUnit.IsSlotVentOn(s),
-                        $"Rot_S{s + 1}_Vent");
+                    // VENT
+                    dioControl.BindVacuum(
+                        label: $"{labelBase} Vent",
+                        on: () => _rotaryUnit.SetVent(idx, true),
+                        off: () => _rotaryUnit.SetVent(idx, false),
+                        isOk: null,
+                        isOnState: null,
+                        displayKey: $"IndexSlot{idx + 1}_Vent",
+                        showOkSensor: false
+                    );
                 }
 
                 dioControl.BindDIOOutput(

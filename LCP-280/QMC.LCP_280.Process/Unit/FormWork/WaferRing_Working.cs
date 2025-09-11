@@ -175,31 +175,57 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 dioControl.BindDIOInput(() => InputRingTransferUnit.IsRingPresent(), "Feeder RING Sns", "IRT_Ring");
                 dioControl.BindDIOInput(() => InputRingTransferUnit.IsOverload(), "Feeder OVERLOAD Sns", "IRT_Overload");
 
+                // Feeder Up/Down (서로 배타 제어)
+                dioControl.BindCylinder(
+                    label: "Up/Down",
+                    extend: () => InputRingTransferUnit.SetLift(true),
+                    retract: () => InputRingTransferUnit.SetLift(false),
+                    isExtended: () => InputRingTransferUnit.IsFeederUpValveOn(),
+                    isRetracted: () => InputRingTransferUnit.IsFeederDownValveOn(),
+                    displayKey: "FeederUpDn",
+                    showSensors: false,
+                    extendedName: "UP",
+                    retractedName: "DOWN"
+                );
+
+                // Feeder Clamp/Unclamp (서로 배타 제어)
+                dioControl.BindCylinder(
+                    label: "Clamp/Unclamp",
+                    extend: () => InputRingTransferUnit.SetClamp(true),
+                    retract: () => InputRingTransferUnit.SetClamp(false),
+                    isExtended: () => InputRingTransferUnit.IsFeederClampValveOn(),
+                    isRetracted: () => InputRingTransferUnit.IsFeederUnclampValveOn(),
+                    displayKey: "FeederClamp",
+                    showSensors: false,
+                    extendedName: "CLAMP",
+                    retractedName: "UNCLAMP"
+                );
+
                 // Valves
-                dioControl.BindDIOOutput(
-                    () => InputRingTransferUnit.SetFeederUpValve(true),
-                    () => InputRingTransferUnit.SetFeederUpValve(false),
-                    "Feeder UP Valve",
-                    () => InputRingTransferUnit.IsFeederUpValveOn(),
-                    "IRT_FeederUpValve");
-                dioControl.BindDIOOutput(
-                    () => InputRingTransferUnit.SetFeederDownValve(true),
-                    () => InputRingTransferUnit.SetFeederDownValve(false),
-                    "Feeder DOWN Valve",
-                    () => InputRingTransferUnit.IsFeederDownValveOn(),
-                    "IRT_FeederDownValve");
-                dioControl.BindDIOOutput(
-                    () => InputRingTransferUnit.SetFeederClampValve(true),
-                    () => InputRingTransferUnit.SetFeederClampValve(false),
-                    "Feeder CLAMP Valve",
-                    () => InputRingTransferUnit.IsFeederClampValveOn(),
-                    "IRT_FeederClampValve");
-                dioControl.BindDIOOutput(
-                    () => InputRingTransferUnit.SetFeederUnclampValve(true),
-                    () => InputRingTransferUnit.SetFeederUnclampValve(false),
-                    "Feeder UNCLAMP Valve",
-                    () => InputRingTransferUnit.IsFeederUnclampValveOn(),
-                    "IRT_FeederUnclampValve");
+                //dioControl.BindDIOOutput(
+                //    () => InputRingTransferUnit.SetFeederUpValve(true),
+                //    () => InputRingTransferUnit.SetFeederUpValve(false),
+                //    "Feeder UP Valve",
+                //    () => InputRingTransferUnit.IsFeederUpValveOn(),
+                //    "IRT_FeederUpValve");
+                //dioControl.BindDIOOutput(
+                //    () => InputRingTransferUnit.SetFeederDownValve(true),
+                //    () => InputRingTransferUnit.SetFeederDownValve(false),
+                //    "Feeder DOWN Valve",
+                //    () => InputRingTransferUnit.IsFeederDownValveOn(),
+                //    "IRT_FeederDownValve");
+                //dioControl.BindDIOOutput(
+                //    () => InputRingTransferUnit.SetFeederClampValve(true),
+                //    () => InputRingTransferUnit.SetFeederClampValve(false),
+                //    "Feeder CLAMP Valve",
+                //    () => InputRingTransferUnit.IsFeederClampValveOn(),
+                //    "IRT_FeederClampValve");
+                //dioControl.BindDIOOutput(
+                //    () => InputRingTransferUnit.SetFeederUnclampValve(true),
+                //    () => InputRingTransferUnit.SetFeederUnclampValve(false),
+                //    "Feeder UNCLAMP Valve",
+                //    () => InputRingTransferUnit.IsFeederUnclampValveOn(),
+                //    "IRT_FeederUnclampValve");
             }
             catch { }
         }
