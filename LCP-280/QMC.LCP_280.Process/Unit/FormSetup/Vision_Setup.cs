@@ -31,12 +31,28 @@ namespace QMC.LCP_280.Process.Unit
 
         Form_AxisJogPopup _jogPopup = null;
 
+        // === Viewer popup 관리 필드 (추가) ===
+        private Form _viewerPopupForm;                 // 모델리스 팝업 폼
+        private Control _viewerOriginalParent;         // 원래 부모
+        private Rectangle _viewerOriginalBounds;       // 원래 위치/크기
+        private bool _viewerPoppedOut;                 // 팝업 여부
+        private bool _restoringViewer;                 // 복귀 중 플래그
+
         public Vision_Setup()
         {
             InitializeComponent();
             SuspendLayout();
 
             InitializeUI();
+
+            // === 더블클릭 팝업 토글 이벤트 연결 (추가) ===
+            if (visionImageViewer != null)
+            {
+                _viewerOriginalParent = visionImageViewer.Parent;
+                _viewerOriginalBounds = new Rectangle(visionImageViewer.Location, visionImageViewer.Size);
+                visionImageViewer.DoubleClick -= VisionImageViewer_DoubleClick; // 중복 방지
+                visionImageViewer.DoubleClick += VisionImageViewer_DoubleClick;
+            }
 
             _jogPopup = new Form_AxisJogPopup();
             //popupAxisJog.Owner = this;
@@ -274,6 +290,84 @@ namespace QMC.LCP_280.Process.Unit
             _jogPopup.TopMost = false;  // 원복
             _jogPopup.Activate();
             _jogPopup.Focus();
+        }
+
+        // === Viewer 더블클릭: 팝업 토글 구현 (추가) ===
+        private void VisionImageViewer_DoubleClick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (visionImageViewer == null || _restoringViewer) return;
+                if (!_viewerPoppedOut) PopOutViewer(); else RestoreViewer();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Vision_Setup", "Viewer popup toggle error: " + ex.Message);
+            }
+        }
+
+        private void PopOutViewer()
+        {
+            if (visionImageViewer == null || _viewerPoppedOut) return;
+            _viewerOriginalParent = visionImageViewer.Parent;
+            _viewerOriginalBounds = new Rectangle(visionImageViewer.Location, visionImageViewer.Size);
+
+            _viewerPopupForm = new Form
+            {
+                Text = "Camera View",
+                FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                StartPosition = FormStartPosition.CenterParent,
+                ClientSize = new Size(800, 600),
+                ShowInTaskbar = false
+            };
+            _viewerPopupForm.FormClosed += (s, e) =>
+            {
+                if (!_restoringViewer) RestoreViewer();
+            };
+
+            visionImageViewer.SuspendLayout();
+            _viewerOriginalParent.Controls.Remove(visionImageViewer);
+            visionImageViewer.Dock = DockStyle.Fill;
+            _viewerPopupForm.Controls.Add(visionImageViewer);
+            visionImageViewer.ResumeLayout();
+
+            _viewerPoppedOut = true;
+            _viewerPopupForm.Show(this); // 모델리스
+            _viewerPopupForm.BringToFront();
+        }
+
+        private void RestoreViewer()
+        {
+            if (visionImageViewer == null || !_viewerPoppedOut) return;
+            _restoringViewer = true;
+            try
+            {
+                if (_viewerPopupForm != null && !_viewerPopupForm.IsDisposed)
+                {
+                    try { _viewerPopupForm.Controls.Remove(visionImageViewer); } catch { }
+                }
+                if (_viewerOriginalParent != null && !_viewerOriginalParent.IsDisposed)
+                {
+                    visionImageViewer.SuspendLayout();
+                    visionImageViewer.Dock = DockStyle.None;
+                    visionImageViewer.Location = _viewerOriginalBounds.Location;
+                    visionImageViewer.Size = _viewerOriginalBounds.Size;
+                    _viewerOriginalParent.Controls.Add(visionImageViewer);
+                    visionImageViewer.ResumeLayout();
+                    visionImageViewer.BringToFront();
+                }
+                if (_viewerPopupForm != null)
+                {
+                    try { if (!_viewerPopupForm.IsDisposed) _viewerPopupForm.Close(); } catch { }
+                    try { _viewerPopupForm.Dispose(); } catch { }
+                }
+            }
+            finally
+            {
+                _viewerPopupForm = null;
+                _viewerPoppedOut = false;
+                _restoringViewer = false;
+            }
         }
 
         /// <summary>
