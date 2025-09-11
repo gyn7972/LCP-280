@@ -114,9 +114,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Left Tool T Axis", 0.0 },
-                        { "Left Pick Z Axis", 50.0 },
-                        { "Left Place Z Axis", 50.0 },
+                        { AxisNames.LeftToolT, 0.0 },
+                        { AxisNames.LeftPickZ, 0.0 },
+                        { AxisNames.LeftPlaceZ, 0.0 },
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }

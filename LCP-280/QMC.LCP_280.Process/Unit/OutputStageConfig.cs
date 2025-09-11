@@ -86,9 +86,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Bin Stage X Axis", 0.0 },
-                        { "Bin Stage Y Axis", 100.0 },
-                        { "Bin Stage T Axis", 200.0 }
+                        { AxisNames.BinStageX, 0.0 },
+                        { AxisNames.BinStageY, 0.0 },
+                        { AxisNames.BinStageT, 0.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }

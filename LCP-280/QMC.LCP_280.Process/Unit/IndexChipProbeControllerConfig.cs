@@ -87,11 +87,11 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Probe Z Axis", 0.0 },
-                        { "Probe Card X Axis", 0.0 },
-                        { "Probe Card Y Axis", 0.0 },
-                        { "Probe Card Z Axis", 0.0 },
-                        { "Sphere Z Axis", 0.0 }
+                        { AxisNames.ProbeZ, 0.0 },
+                        { AxisNames.ProbeCardX, 0.0 },
+                        { AxisNames.ProbeCardY, 0.0 },
+                        { AxisNames.ProbeCardZ, 0.0 },
+                        { AxisNames.SphereZ, 0.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }

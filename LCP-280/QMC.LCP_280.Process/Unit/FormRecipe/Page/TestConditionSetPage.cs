@@ -363,6 +363,8 @@ namespace QMC.LCP_280.Process.Unit
 
             try
             {
+                pcvItem.Apply();
+
                 int selectIndex = dataGrid.CurrentCell.RowIndex; 
                 tempSet.Items[selectIndex].ApplyValueFromPropertyCollection(pcItem);
                 UpdateConditionSetGrid();

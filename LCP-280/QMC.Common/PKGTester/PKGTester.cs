@@ -351,18 +351,8 @@ namespace QMC.Common.PKGTester
                 ResetResultItem();
                 int[] result = await Task.WhenAll(spcTask, smuTask);
 
-                bool taskComplete = true;
-                for (int i = 0; i < result.Length; i++)
-                {
-                    if (result[i] < 0)
-                    {
-                        taskComplete = false;
-                        break;
-                    }
-                }
-
                 // 두 계측기 중 하나라도 실패하면 예외 처리
-                if (!taskComplete)
+                if (result.Any(r => r != 0))
                 {
                     throw new Exception("The measurement operation of the instrument was not completed normally.");
                 }

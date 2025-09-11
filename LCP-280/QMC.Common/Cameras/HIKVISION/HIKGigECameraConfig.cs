@@ -40,7 +40,7 @@ namespace QMC.Common.HIKVISION
         [DefaultValue("")]
         public string SerialNumber { get; set; }
 
-        [DefaultValue(1000.0f)]
+        [DefaultValue(5000.0f)]
         public float ExposureTime { get; set; }
 
         [DefaultValue(1.0f)]
@@ -105,8 +105,7 @@ namespace QMC.Common.HIKVISION
         {
             // 파일에서 누락/잘못 저장된 값 보정
             if (SerialNumber == null) SerialNumber = "";
-
-            //if (ExposureTime <= 0f) ExposureTime = 5000.0f;
+            if (ExposureTime <= 0f) ExposureTime = 5000.0f;
             if (Gain <= 0f) Gain = 1.0f;
 
             if (OpenDelayTime < 0) OpenDelayTime = 5000;
@@ -161,6 +160,7 @@ namespace QMC.Common.HIKVISION
                 }
             }
 
+            // 여기 확인 필요하다.
             var cfg = new HIKGigECameraConfig(name);
             var ret = cfg.Load();
             if (ret != 0)

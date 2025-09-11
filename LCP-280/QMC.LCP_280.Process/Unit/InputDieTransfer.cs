@@ -61,22 +61,17 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Binding / Helpers
         private void BindAxes()
         {
-            Axes.TryGetValue("Left Tool T Axis", out _toolT);
-            Axes.TryGetValue("Left Pick Z Axis", out _pickZ);
-            Axes.TryGetValue("Left Place Z Axis", out _placeZ);
-            bool useInPos = !InputDieTransferConfig.EnablePredictiveControl;
-            foreach (var ax in new[] { _toolT, _pickZ, _placeZ })
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
             {
-                if (ax == null) continue;
-                try
-                {
-                    var mi = ax.GetType().GetMethod("SetInPositionEnable");
-                    var mr = ax.GetType().GetMethod("SetInPositionRange");
-                    if (mi != null) mi.Invoke(ax, new object[] { useInPos });
-                    if (mr != null) mr.Invoke(ax, new object[] { InputDieTransferConfig.MoveDoneRemainDistance });
-                }
-                catch { }
+                Log.Write("InputDieTransfer", "[BindAxes] AxisManager null");
+                return;
             }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.LeftToolT, ref _toolT);
+            BindAxis(mgr, unitName, AxisNames.LeftPickZ, ref _pickZ);
+            BindAxis(mgr, unitName, AxisNames.LeftPlaceZ, ref _placeZ);
         }
         public void MoveAxisOnce(MotionAxis ax, double target)
         {

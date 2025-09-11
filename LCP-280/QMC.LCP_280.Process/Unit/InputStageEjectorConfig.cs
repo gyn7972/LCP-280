@@ -61,8 +61,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "EJECTOR_Z",   0.0 },
-                        { "EJECT_PIN_Z", 0.0 }
+                        { AxisNames.EjectPinZ,   0.0 },
+                        { AxisNames.EjectorZ, 0.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }

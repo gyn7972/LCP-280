@@ -4,6 +4,7 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,8 +23,9 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Axes
-        private readonly List<MotionAxis> _axes = new List<MotionAxis>();
-        public IReadOnlyList<MotionAxis> BoundAxes => _axes;
+        private MotionAxis _alingT, _indexZ;
+        public MotionAxis AlingT => _alingT;
+        public MotionAxis IndexZ => _indexZ;
         #endregion
 
         #region ctor / Initialization
@@ -47,17 +49,28 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Binding / Helpers
         private void BindAxes()
         {
-            _axes.Clear();
-            foreach (var kv in Axes)
-                _axes.Add(kv.Value);
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("IndexChipProbeController", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // 축 등록 시 사용된 유닛명(Equipment.CreateAxes에서 동일)
+
+            BindAxis(mgr, unitName, AxisNames.AlignT, ref _alingT);
+            BindAxis(mgr, unitName, AxisNames.IndexZ, ref _indexZ);
         }
+
         public void MoveAxisOnce(MotionAxis ax, double target)
         {
             if (ax == null) return;
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
                 ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
+
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+
         public double GetTP(string tpName, string axisName)
         {
             var tp = IndexUnloadAlignerConfig.GetTeachingPosition(tpName);

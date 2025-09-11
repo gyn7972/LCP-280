@@ -35,10 +35,10 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            Loading,
-            Unloading,
-            BarcodeReading,
             Ready,
+            Stage,
+            Barcode,
+            Cassette,
             SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
             // 필요시 확장
         }
@@ -82,7 +82,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axisPositions = new Dictionary<string, double>
                     {
-                        { "Bin Feeder Y Axis", 0.0 }
+                        { AxisNames.WaferFeederY, 0.0 }
                     };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }

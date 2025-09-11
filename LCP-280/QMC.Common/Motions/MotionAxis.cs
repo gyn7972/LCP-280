@@ -244,15 +244,13 @@ namespace QMC.Common.Motions
                 {
                     if (_driver.IsHomeDone(AxisNo))
                     {
-                        IsHomedLatched = true; // 성공 래치
-                        // 홈 성공 이벤트 알림
+                        IsHomedLatched = true;
                         try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
                         return 0;
                     }
                     Thread.Sleep(5);
                 }
 
-                // 타임아웃: 안전 정지 및 알람
                 try { _driver.Stop(AxisNo); } catch { }
                 try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
             }
@@ -260,20 +258,37 @@ namespace QMC.Common.Motions
             {
                 var rc = _ckdDriver.HomeSearch();
                 if (rc != 0) return rc;
+
+                // (선택) 상태 모니터링 시작
+                try { _ckdDriver.StartReadInputDataMonitoring(); } catch { }
+
                 var sw = Stopwatch.StartNew();
+                int stable = 0;
+                const int requiredStable = 3; // 연속 3회
+
                 while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
                 {
-                    if (_ckdDriver.IsHomePosition() && _ckdDriver.IsRunWait())
+                    bool home = _ckdDriver.IsHomePosition();
+                    bool inpos = _ckdDriver.IsInPosition();
+                    bool idle = _ckdDriver.IsRunWait();
+
+                    if (home && inpos && idle)
                     {
-                        IsHomedLatched = true; // 성공 래치
-                        // 홈 성공 이벤트 알림
-                        try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
-                        return 0;
+                        stable++;
+                        if (stable >= requiredStable)
+                        {
+                            IsHomedLatched = true;
+                            try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                            return 0;
+                        }
                     }
-                    Thread.Sleep(5);
+                    else
+                    {
+                        stable = 0;
+                    }
+                    Thread.Sleep(10);
                 }
 
-                // 타임아웃: 안전 정지 및 알람
                 try { _ckdDriver.EmergencyStop(); } catch { }
                 try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
             }
@@ -281,7 +296,7 @@ namespace QMC.Common.Motions
             {
                 throw new InvalidOperationException("This axis does not support HomeSync.");
             }
-            return -1; // timeout
+            return -1;
         }
 
         public int HomeAsync()
@@ -291,7 +306,6 @@ namespace QMC.Common.Motions
                 var rc = _driver.Home(AxisNo);
                 if (rc != 0) return rc;
 
-                // 비동기 홈 완료 감시 후 이벤트 발생
                 Task.Run(async () =>
                 {
                     try
@@ -304,19 +318,13 @@ namespace QMC.Common.Motions
                             {
                                 IsHomedLatched = true;
                                 try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
-                                ok = true;
-                                break;
+                                ok = true; break;
                             }
                             await Task.Delay(5).ConfigureAwait(false);
                         }
-                        if (!ok)
-                        {
-                            // 타임아웃: 안전 정지 및 알람
-                            try { _driver.Stop(AxisNo); } catch { }
-                            try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
-                        }
+                        if (!ok) { try { _driver.Stop(AxisNo); } catch { } try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { } }
                     }
-                    catch { /* ignore */ }
+                    catch { }
                 });
             }
             else if (_ckdDriver != null)
@@ -324,32 +332,41 @@ namespace QMC.Common.Motions
                 var rc = _ckdDriver.HomeSearch();
                 if (rc != 0) return rc;
 
-                // 비동기 홈 완료 감시 후 이벤트 발생 (CKD)
                 Task.Run(async () =>
                 {
                     try
                     {
+                        try { _ckdDriver.StartReadInputDataMonitoring(); } catch { }
                         var sw = Stopwatch.StartNew();
+                        int stable = 0, requiredStable = 3;
                         bool ok = false;
+
                         while (sw.ElapsedMilliseconds < Setup.HomeTimeoutMs)
                         {
-                            if (_ckdDriver.IsHomePosition() && _ckdDriver.IsInPosition())
+                            bool home = _ckdDriver.IsHomePosition();
+                            bool inpos = _ckdDriver.IsInPosition();
+                            bool idle = _ckdDriver.IsRunWait();
+
+                            if (home && inpos && idle)
                             {
-                                IsHomedLatched = true;
-                                try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
-                                ok = true;
-                                break;
+                                stable++;
+                                if (stable >= requiredStable)
+                                {
+                                    IsHomedLatched = true;
+                                    try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                                    ok = true; break;
+                                }
                             }
-                            await Task.Delay(5).ConfigureAwait(false);
+                            else
+                            {
+                                stable = 0;
+                            }
+                            await Task.Delay(10).ConfigureAwait(false);
                         }
-                        if (!ok)
-                        {
-                            // 타임아웃: 안전 정지 및 알람
-                            try { _ckdDriver.EmergencyStop(); } catch { }
-                            try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { }
-                        }
+
+                        if (!ok) { try { _ckdDriver.EmergencyStop(); } catch { } try { AlarmPost(AlarmKey.AxisHomeTimeout); } catch { } }
                     }
-                    catch { /* ignore */ }
+                    catch { }
                 });
             }
             else
@@ -494,6 +511,7 @@ namespace QMC.Common.Motions
             else if(_ckdDriver != null)
             {
                 // CKD에서 정지 Command가 있는지 확인 필요
+                try { _ckdDriver.EmergencyStop(); } catch { }
                 return 0;
             }
             else
@@ -509,7 +527,7 @@ namespace QMC.Common.Motions
             }
             else if(_ckdDriver != null)
             {
-                // CKD에서 Software Emergency Stop Command는 있지만 급정지(E-Stop)은 없음
+                try { _ckdDriver.EmergencyStop(); } catch { }
                 return 0;
             }
             else
