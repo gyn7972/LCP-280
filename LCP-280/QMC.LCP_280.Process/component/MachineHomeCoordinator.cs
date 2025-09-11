@@ -41,7 +41,8 @@ namespace QMC.LCP_280.Process.Component
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
             {
                 string reason;
-                var il = InterlockManager.Instance; il.Start();
+                var il = InterlockManager.Instance; 
+                il.Start();
 
                 // 전역/해당축 인터락 평가
                 if (!il.ValidateForHomeStep(list, out reason))

@@ -76,7 +76,7 @@ namespace QMC.Common.HIKVISION
             if (ExposureTime <= 0f) ExposureTime = 5000.0f;
             if (Gain <= 0f) Gain = 1.0f;
 
-            if (OpenDelayTime < 0) OpenDelayTime = 1000;
+            if (OpenDelayTime < 0) OpenDelayTime = 5000;
             if (RetryCount <= 0) RetryCount = 5;
 
             // OffsetX/OffsetY는 기본 0 유지
@@ -90,10 +90,11 @@ namespace QMC.Common.HIKVISION
 
             // 파일에서 누락/잘못 저장된 값 보정
             if (SerialNumber == null) SerialNumber = "";
-            if (ExposureTime <= 0f) ExposureTime = 5000.0f;
+            ExposureTime = 5000.0f;
+            //if (ExposureTime <= 0f) ExposureTime = 5000.0f;
             if (Gain <= 0f) Gain = 1.0f;
 
-            if (OpenDelayTime < 0) OpenDelayTime = 1000;
+            if (OpenDelayTime < 0) OpenDelayTime = 5000;
             if (RetryCount <= 0) RetryCount = 5;
 
             if (!Enum.IsDefined(typeof(CameraType), CameraType))
@@ -107,7 +108,7 @@ namespace QMC.Common.HIKVISION
             if (ExposureTime <= 0f) ExposureTime = 5000.0f;
             if (Gain <= 0f) Gain = 1.0f;
 
-            if (OpenDelayTime < 0) OpenDelayTime = 1000;
+            if (OpenDelayTime < 0) OpenDelayTime = 5000;
             if (RetryCount <= 0) RetryCount = 5;
 
             if (!Enum.IsDefined(typeof(CameraType), CameraType))
