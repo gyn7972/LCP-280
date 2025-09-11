@@ -55,6 +55,7 @@ namespace QMC.LCP_280.Process.Unit
                 TeachingPositions.Add(tp);
             BindAxes();
             // (Arm IO 는 단순 DO/DI 이름 매핑이므로 별도 Cylinder/Vacuum Domain 구성 생략)
+            BindIoDomains();
         }
         #endregion
 
@@ -143,10 +144,111 @@ namespace QMC.LCP_280.Process.Unit
         private static readonly string[] BLOW_NAMES = { InputDieTransferConfig.IO.ARM1_BLOW, InputDieTransferConfig.IO.ARM2_BLOW, InputDieTransferConfig.IO.ARM3_BLOW, InputDieTransferConfig.IO.ARM4_BLOW };
         private static readonly string[] VENT_NAMES = { InputDieTransferConfig.IO.ARM1_VENT, InputDieTransferConfig.IO.ARM2_VENT, InputDieTransferConfig.IO.ARM3_VENT, InputDieTransferConfig.IO.ARM4_VENT };
 
+        private Vacuum[] _vacuum = new Vacuum[4];              // Vacuum + OK sensor
+        public Vacuum[] _blow = new Vacuum[4];
+        public Vacuum[] _vent = new Vacuum[4];
+
+        private void BindIoDomains()
+        {
+            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
+
+            // Vacuum 별칭으로 조회만
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVac1", out _vacuum[0]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVac1");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVac2", out _vacuum[1]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVac2");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVac3", out _vacuum[2]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVac3");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVac4", out _vacuum[3]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVac4");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferBlow1", out _blow[0]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferBlow1");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferBlow2", out _blow[1]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferBlow2");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferBlow3", out _blow[2]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferBlow3");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferBlow4", out _blow[3]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferBlow4");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVent1", out _vent[0]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVent1");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVent2", out _vent[1]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVent2");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVent3", out _vent[2]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVent3");
+            }
+
+            if (!IoAutoBindings.Vacuums.TryGetValue("InputDieTransferVent4", out _vent[3]))
+            {
+                Log.Write("InputDieTransfer", "BindIoDomains", "Vacuums not found: InputDieTransferVent4");
+            }
+        }
+
+        // === Domain Control (표준 구동) ===
+        public bool SetVacuum(int nNo, bool on)
+        {
+            if (_vacuum[nNo] == null) return false;
+            if (on) _vacuum[nNo].On();
+            else _vacuum[nNo].Off();
+            return true;
+        }
+
+        public bool SetBlow(int nNo, bool on)
+        {
+            if (_blow[nNo] == null) return false;
+            if (on) _blow[nNo].On();
+            else _blow[nNo].Off();
+            return true;
+        }
+
+        public bool SetVent(int nNo, bool on)
+        {
+            if (_vent[nNo] == null) return false;
+            if (on) _vent[nNo].On();
+            else _vent[nNo].Off();
+            return true;
+        }
+
+
+        /// //////////////////////////////////////////////////////////////////
         private void SetIndexedOutput(string[] arr, int idx, bool on)
         {
-            if (idx < 0 || idx >= arr.Length) return; WriteOutput(arr[idx], on);
+            if (idx < 0 || idx >= arr.Length) 
+                return; 
+            
+            WriteOutput(arr[idx], on);
         }
+
         public void SetArmVac(int armIndex, bool on)  => SetIndexedOutput(VAC_NAMES,  armIndex, on);
         public void SetArmBlow(int armIndex, bool on) => SetIndexedOutput(BLOW_NAMES, armIndex, on);
         public void SetArmVent(int armIndex, bool on) => SetIndexedOutput(VENT_NAMES, armIndex, on);

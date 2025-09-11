@@ -19,22 +19,31 @@ namespace QMC.Common.IOUtil
         public static readonly Dictionary<string, Cylinder> Cylinders = new Dictionary<string, Cylinder>(StringComparer.OrdinalIgnoreCase);
         public static readonly Dictionary<string, Vacuum> Vacuums = new Dictionary<string, Vacuum>(StringComparer.OrdinalIgnoreCase);
 
-        public static void RegisterAll()
+        public static void RegisterAll(DIOUnit unit = null)
         {
-            var eq = EquipmentLocator.Instance
-                ?? throw new InvalidOperationException("EquipmentLocator.Initialize(...) 전에 RegisterAll 호출됨.");
-            var unit = eq.UnitIO
-                ?? throw new InvalidOperationException("Equipment.UnitIO가 초기화되지 않았습니다.");
+            var inst = EquipmentLocator.Instance;
+            if (inst == null)
+            {
+                throw new InvalidOperationException("EquipmentLocator.Initialize(...) 이전에 IoBindings.RegisterAll()이 호출되었습니다.");
+            }
+            if (unit == null)
+            {
+                unit = inst.UnitIO;
+                if (unit == null)
+                {
+                    throw new InvalidOperationException("Equipment.UnitIO가 초기화되지 않았습니다.");
+                } 
+            }
 
             // 1) 이름→채널 목록으로 수집
             var inputs = Enumerate(unit, isOutput: false).ToList();
             var outputs = Enumerate(unit, isOutput: true).ToList();
 
+            // 자동으로 안함.
             // 2) Vacuum 바인딩
-            BuildVacuums(unit, inputs, outputs);
-
+            //BuildVacuums(unit, inputs, outputs);
             // 3) Cylinder 바인딩 (UP/DOWN & FWD/BWD)
-            BuildCylinders(unit, inputs, outputs);
+            //BuildCylinders(unit, inputs, outputs);
         }
 
         // ===== Helpers =====

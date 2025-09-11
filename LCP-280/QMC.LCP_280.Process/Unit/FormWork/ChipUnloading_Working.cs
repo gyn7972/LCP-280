@@ -171,29 +171,50 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (OutputDieTransferUnit != null)
                 {
                     dioControl.BindDIOInput(() => false, "---- OutputDieTransfer ----", "SEP_ODT");
-                    for (int arm = 0; arm < 1; arm++)
+
+                    for (int arm = 0; arm < 1; arm++) // 필요 시 4로 변경: arm < 4
                     {
                         int idx = arm;
-                        dioControl.BindDIOOutput(
-                            () => OutputDieTransferUnit.SetArmVac(idx, true),
-                            () => OutputDieTransferUnit.SetArmVac(idx, false),
-                            $"ODT Arm{idx + 1} VAC ON/OFF",
-                            () => OutputDieTransferUnit.IsArmVacOn(idx),
-                            $"ODT_Arm{idx + 1}_Vac");
+                        string labelBase = $"ODT Arm{idx + 1}";
 
-                        dioControl.BindDIOOutput(
-                            () => OutputDieTransferUnit.SetArmBlow(idx, true),
-                            () => OutputDieTransferUnit.SetArmBlow(idx, false),
-                            $"ODT Arm{idx + 1} BLOW ON/OFF",
-                            () => OutputDieTransferUnit.IsArmBlowOn(idx),
-                            $"ODT_Arm{idx + 1}_Blow");
+                        // Flow 센서(입력) 표시
+                        dioControl.BindDIOInput(
+                            () => OutputDieTransferUnit.ArmFlowOk(idx),
+                            $"{labelBase} Flow OK(Sns)",
+                            $"ODT_Arm{idx + 1}_FlowOk");
 
-                        dioControl.BindDIOOutput(
-                            () => OutputDieTransferUnit.SetArmVent(idx, true),
-                            () => OutputDieTransferUnit.SetArmVent(idx, false),
-                            $"ODT Arm{idx + 1} VENT ON/OFF",
-                            () => OutputDieTransferUnit.IsArmVentOn(idx),
-                            $"ODT_Arm{idx + 1}_Vent");
+                        // VAC: 소프트 래치 토글 사용 (isOnState: null)
+                        dioControl.BindVacuum(
+                            label: $"{labelBase} VAC",
+                            on: () => OutputDieTransferUnit.SetArmVac(idx, true),
+                            off: () => OutputDieTransferUnit.SetArmVac(idx, false),
+                            isOk: null,
+                            isOnState: null,
+                            displayKey: $"ODT_Arm{idx + 1}_Vac",
+                            showOkSensor: false
+                        );
+
+                        // BLOW
+                        dioControl.BindVacuum(
+                            label: $"{labelBase} Blow",
+                            on: () => OutputDieTransferUnit.SetArmBlow(idx, true),
+                            off: () => OutputDieTransferUnit.SetArmBlow(idx, false),
+                            isOk: null,
+                            isOnState: null,
+                            displayKey: $"ODT_Arm{idx + 1}_Blow",
+                            showOkSensor: false
+                        );
+
+                        // VENT
+                        dioControl.BindVacuum(
+                            label: $"{labelBase} Vent",
+                            on: () => OutputDieTransferUnit.SetArmVent(idx, true),
+                            off: () => OutputDieTransferUnit.SetArmVent(idx, false),
+                            isOk: null,
+                            isOnState: null,
+                            displayKey: $"ODT_Arm{idx + 1}_Vent",
+                            showOkSensor: false
+                        );
                     }
 
                     dioControl.BindDIOOutput(
@@ -216,63 +237,78 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         "ODT_AllVentOff");
                 }
 
-                // 그룹 구분선: Rotary
-                if (RotaryUnit != null)
-                {
-                    dioControl.BindDIOInput(() => false, "---- Rotary ----", "SEP_Rotary");
-                    dioControl.BindDIOInput(() => RotaryUnit.AirTankPressureOk(), "Rot AirTank OK", "Rot_AirTk");
-                    dioControl.BindDIOInput(() => RotaryUnit.VacTankPressureOk(), "Rot VacTank OK", "Rot_VacTk");
+                //ProcssWorking에 있으니깐 여기서는 우선 막자.
+                //// 그룹 구분선: Rotary (유지)
+                //if (RotaryUnit != null)
+                //{
+                //    dioControl.BindDIOInput(() => false, "---- Rotary ----", "SEP_Rotary");
+                //    dioControl.BindDIOInput(() => RotaryUnit.AirTankPressureOk(), "Rot AirTank OK", "Rot_AirTk");
+                //    dioControl.BindDIOInput(() => RotaryUnit.VacTankPressureOk(), "Rot VacTank OK", "Rot_VacTk");
 
-                    int slotCount = SLOT_VAC.Length; // 8
-                    for (int slot = 0; slot < slotCount; slot++)
-                    {
-                        int s = slot;
-                        dioControl.BindDIOInput(
-                            () => RotaryUnit.SlotFlowOk(s),
-                            $"Rot Slot{s + 1} FLOW",
-                            $"Rot_S{s + 1}_Flow");
+                //    int slotCount = SLOT_VAC.Length; // 8
+                //    for (int slot = 0; slot < slotCount; slot++)
+                //    {
+                //        int idx = slot;
+                //        string labelBase = $"Index{idx + 1}";
 
-                        dioControl.BindDIOOutput(
-                            () => RotaryUnit.SetSlotVac(s, true),
-                            () => RotaryUnit.SetSlotVac(s, false),
-                            $"Rot Slot{s + 1} VAC",
-                            () => RotaryUnit.IsSlotVacOn(s),
-                            $"Rot_S{s + 1}_Vac");
+                //        dioControl.BindDIOInput(
+                //            () => RotaryUnit.SlotFlowOk(idx),
+                //            $"IndexSlot{idx + 1} FLOW",
+                //            $"Index_S{idx + 1}_Flow");
 
-                        dioControl.BindDIOOutput(
-                            () => RotaryUnit.SetSlotBlow(s, true),
-                            () => RotaryUnit.SetSlotBlow(s, false),
-                            $"Rot Slot{s + 1} BLOW",
-                            () => RotaryUnit.IsSlotBlowOn(s),
-                            $"Rot_S{s + 1}_Blow");
+                //        // VAC: 소프트 래치 토글 사용 (isOnState: null)
+                //        dioControl.BindVacuum(
+                //            label: $"{labelBase} VAC",
+                //            on: () => RotaryUnit.SetVacuum(idx, true),
+                //            off: () => RotaryUnit.SetVacuum(idx, false),
+                //            isOk: null,
+                //            isOnState: null,
+                //            displayKey: $"IndexSlot{idx + 1}_Vac",
+                //            showOkSensor: false
+                //        );
 
-                        dioControl.BindDIOOutput(
-                            () => RotaryUnit.SetSlotVent(s, true),
-                            () => RotaryUnit.SetSlotVent(s, false),
-                            $"Rot Slot{s + 1} VENT",
-                            () => RotaryUnit.IsSlotVentOn(s),
-                            $"Rot_S{s + 1}_Vent");
-                    }
+                //        // BLOW
+                //        dioControl.BindVacuum(
+                //            label: $"{labelBase} Blow",
+                //            on: () => RotaryUnit.SetBlow(idx, true),
+                //            off: () => RotaryUnit.SetBlow(idx, false),
+                //            isOk: null,
+                //            isOnState: null,
+                //            displayKey: $"IndexSlot{idx + 1}_Blow",
+                //            showOkSensor: false
+                //        );
 
-                    dioControl.BindDIOOutput(
-                        () => RotaryUnit.AllVacOff(),
-                        () => RotaryUnit.AllVacOff(),
-                        "Rot All VAC OFF",
-                        () => false,
-                        "Rot_AllVacOff");
-                    dioControl.BindDIOOutput(
-                        () => RotaryUnit.AllBlowOff(),
-                        () => RotaryUnit.AllBlowOff(),
-                        "Rot All BLOW OFF",
-                        () => false,
-                        "Rot_AllBlowOff");
-                    dioControl.BindDIOOutput(
-                        () => RotaryUnit.AllVentOff(),
-                        () => RotaryUnit.AllVentOff(),
-                        "Rot All VENT OFF",
-                        () => false,
-                        "Rot_AllVentOff");
-                }
+                //        // VENT
+                //        dioControl.BindVacuum(
+                //            label: $"{labelBase} Vent",
+                //            on: () => RotaryUnit.SetVent(idx, true),
+                //            off: () => RotaryUnit.SetVent(idx, false),
+                //            isOk: null,
+                //            isOnState: null,
+                //            displayKey: $"IndexSlot{idx + 1}_Vent",
+                //            showOkSensor: false
+                //        );
+                //    }
+
+                //    dioControl.BindDIOOutput(
+                //        () => RotaryUnit.AllVacOff(),
+                //        () => RotaryUnit.AllVacOff(),
+                //        "Rot All VAC OFF",
+                //        () => false,
+                //        "Rot_AllVacOff");
+                //    dioControl.BindDIOOutput(
+                //        () => RotaryUnit.AllBlowOff(),
+                //        () => RotaryUnit.AllBlowOff(),
+                //        "Rot All BLOW OFF",
+                //        () => false,
+                //        "Rot_AllBlowOff");
+                //    dioControl.BindDIOOutput(
+                //        () => RotaryUnit.AllVentOff(),
+                //        () => RotaryUnit.AllVentOff(),
+                //        "Rot All VENT OFF",
+                //        () => false,
+                //        "Rot_AllVentOff");
+                //}
 
                 dioControl.RebuildLists();
             }
@@ -284,6 +320,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             if (OutputStageUnit == null || dioControl == null) return;
             try
             {
+                // ===== Sensors =====
                 dioControl.BindDIOInput(() => OutputStageUnit.IsVacuum(), "Vacuum OK(Sns)", "OutStageVacOk");
                 dioControl.BindDIOInput(() => OutputStageUnit.IsPlateUp(), "Plate UP Sns", "OutStagePlateUp");
                 dioControl.BindDIOInput(() => OutputStageUnit.IsPlateDown(), "Plate DOWN Sns", "OutStagePlateDn");
@@ -293,54 +330,55 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 dioControl.BindDIOInput(() => OutputStageUnit.Ring1(), "Ring Sns 1", "OutStageRing1");
                 dioControl.BindDIOInput(() => OutputStageUnit.IsRingPresent(), "Ring Any", "OutStageRingAny");
 
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.SetVacuumValve(true),
-                    () => OutputStageUnit.SetVacuumValve(false),
-                    "Vacuum Valve",
-                    () => OutputStageUnit.IsVacuumValveOn(),
-                    "OutStageVacValve");
+                // Vacuum: 도메인/상태 함수로 표준화 (출력은 입력과 무관하게 동작)
+                dioControl.BindVacuum(
+                    label: "Vacuum",
+                    on: () => OutputStageUnit.SetVacuum(true),
+                    off: () => OutputStageUnit.SetVacuum(false),
+                    isOk: () => OutputStageUnit.IsVacuum(),
+                    isOnState: () => OutputStageUnit.IsVacuumValveOn(),
+                    displayKey: "StageVacValve",
+                    showOkSensor: false // 위에서 OK 센서 이미 표시
+                );
 
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.SetPlateUpValve(true),
-                    () => OutputStageUnit.SetPlateUpValve(false),
-                    "Plate UP Valve",
-                    () => OutputStageUnit.IsPlateUpValveOn(),
-                    "OutStagePlateUp");
+                // Plate Up/Down: 도메인 함수 사용, 상태 판단은 IsPlateUp 기준
+                dioControl.BindCylinder(
+                    label: "PlateUpDn",
+                    extend: () => OutputStageUnit.SetClampPlate(true),
+                    retract: () => OutputStageUnit.SetClampPlate(false),
+                    isExtended: () => OutputStageUnit.IsPlateUp(),
+                    isRetracted: () => OutputStageUnit.IsPlateDown(),
+                    displayKey: "StagePlateUpDn",
+                    showSensors: false // 위에서 Up/Down 센서를 이미 표시했으므로 중복 방지
+                );
 
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.SetPlateDownValve(true),
-                    () => OutputStageUnit.SetPlateDownValve(false),
-                    "Plate DOWN Valve",
-                    () => OutputStageUnit.IsPlateDownValveOn(),
-                    "OutStagePlateDown");
+                // ClampLift Up/Down
+                dioControl.BindCylinder(
+                    label: "ClampLift",
+                    extend: () => OutputStageUnit.SetClampLift(true),
+                    retract: () => OutputStageUnit.SetClampLift(false),
+                    // Up 센서가 없으면 밸브 상태 사용, Down은 센서 사용
+                    isExtended: () => OutputStageUnit.IsClampLiftUpValveOn(),
+                    isRetracted: () => OutputStageUnit.IsClampLiftDown(),
+                    displayKey: "StageClampUpDn",
+                    showSensors: false,
+                    extendedName: "UP",
+                    retractedName: "DOWN"
+                );
 
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.SetClampLiftUpValve(true),
-                    () => OutputStageUnit.SetClampLiftUpValve(false),
-                    "ClampLift UP Valve",
-                    () => OutputStageUnit.IsClampLiftUpValveOn(),
-                    "OutStageLiftUp");
-
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.SetClampLiftDownValve(true),
-                    () => OutputStageUnit.SetClampLiftDownValve(false),
-                    "ClampLift DOWN Valve",
-                    () => OutputStageUnit.IsClampLiftDownValveOn(),
-                    "OutStageLiftDown");
-
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.SetClampFwdValve(true),
-                    () => OutputStageUnit.SetClampFwdValve(false),
-                    "Clamp FWD Valve",
-                    () => OutputStageUnit.IsClampFwdValveOn(),
-                    "OutStageClampFwd");
-
-                dioControl.BindDIOOutput(
-                    () => OutputStageUnit.SetClampBwdValve(true),
-                    () => OutputStageUnit.SetClampBwdValve(false),
-                    "Clamp BWD Valve",
-                    () => OutputStageUnit.IsClampBwdValveOn(),
-                    "OutStageClampBwd");
+                // Clamp FWD/BWD
+                dioControl.BindCylinder(
+                    label: "ClampFB",
+                    extend: () => OutputStageUnit.SetClampFB(true),
+                    retract: () => OutputStageUnit.SetClampFB(false),
+                    // FWD 센서만 있어도 동작. BWD는 없으면 null 가능(토글은 FWD 센서로 판단)
+                    isExtended: () => OutputStageUnit.IsClampFwd(),
+                    isRetracted: null,
+                    displayKey: "StageClampFB",
+                    showSensors: false,
+                    extendedName: "FWD",
+                    retractedName: "BWD"
+                );
             }
             catch { }
         }

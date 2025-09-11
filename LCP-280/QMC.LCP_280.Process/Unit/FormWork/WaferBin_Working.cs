@@ -179,31 +179,60 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 dioControl.BindDIOInput(() => _OutputRingTransferUnit.IsRingPresent(), "Feeder RING Sns", "ORT_Ring");
                 dioControl.BindDIOInput(() => _OutputRingTransferUnit.IsOverload(), "Feeder OVERLOAD Sns", "ORT_Overload");
 
-                // Valves (direct forced control + state feedback)
-                dioControl.BindDIOOutput(
-                    () => _OutputRingTransferUnit.SetFeederUpValve(true),
-                    () => _OutputRingTransferUnit.SetFeederUpValve(false),
-                    "Feeder UP Valve",
-                    () => _OutputRingTransferUnit.IsFeederUpValveOn(),
-                    "ORT_UpValve");
-                dioControl.BindDIOOutput(
-                    () => _OutputRingTransferUnit.SetFeederDownValve(true),
-                    () => _OutputRingTransferUnit.SetFeederDownValve(false),
-                    "Feeder DOWN Valve",
-                    () => _OutputRingTransferUnit.IsFeederDownValveOn(),
-                    "ORT_DownValve");
-                dioControl.BindDIOOutput(
-                    () => _OutputRingTransferUnit.SetFeederClampValve(true),
-                    () => _OutputRingTransferUnit.SetFeederClampValve(false),
-                    "Feeder CLAMP Valve",
-                    () => _OutputRingTransferUnit.IsFeederClampValveOn(),
-                    "ORT_ClampValve");
-                dioControl.BindDIOOutput(
-                    () => _OutputRingTransferUnit.SetFeederUnclampValve(true),
-                    () => _OutputRingTransferUnit.SetFeederUnclampValve(false),
-                    "Feeder UNCLAMP Valve",
-                    () => _OutputRingTransferUnit.IsFeederUnclampValveOn(),
-                    "ORT_UnclampValve");
+                // Feeder Up/Down (서로 배타 제어)
+                dioControl.BindCylinder(
+                    label: "Up/Down",
+                    extend: () => _OutputRingTransferUnit.SetLift(true),
+                    retract: () => _OutputRingTransferUnit.SetLift(false),
+                    isExtended: () => _OutputRingTransferUnit.IsFeederUpValveOn(),
+                    isRetracted: () => _OutputRingTransferUnit.IsFeederDownValveOn(),
+                    displayKey: "FeederUpDn",
+                    showSensors: false,
+                    extendedName: "UP",
+                    retractedName: "DOWN"
+                );
+
+                // Feeder Clamp/Unclamp (서로 배타 제어)
+                dioControl.BindCylinder(
+                    label: "Clamp/Unclamp",
+                    extend: () => _OutputRingTransferUnit.SetClamp(true),
+                    retract: () => _OutputRingTransferUnit.SetClamp(false), 
+                    isExtended: () => _OutputRingTransferUnit.IsFeederClampValveOn(),
+                    isRetracted: () => _OutputRingTransferUnit.IsFeederUnclampValveOn(),
+                    displayKey: "FeederClamp",
+                    showSensors: false,
+                    extendedName: "CLAMP",
+                    retractedName: "UNCLAMP"
+                );
+
+                //// Valves (direct forced control + state feedback)
+                //dioControl.BindDIOOutput(
+                //    () => _OutputRingTransferUnit.SetFeederUpValve(true),
+                //    () => _OutputRingTransferUnit.SetFeederUpValve(false),
+                //    "Feeder UP Valve",
+                //    () => _OutputRingTransferUnit.IsFeederUpValveOn(),
+                //    "ORT_UpValve");
+
+                //dioControl.BindDIOOutput(
+                //    () => _OutputRingTransferUnit.SetFeederDownValve(true),
+                //    () => _OutputRingTransferUnit.SetFeederDownValve(false),
+                //    "Feeder DOWN Valve",
+                //    () => _OutputRingTransferUnit.IsFeederDownValveOn(),
+                //    "ORT_DownValve");
+
+                //dioControl.BindDIOOutput(
+                //    () => _OutputRingTransferUnit.SetFeederClampValve(true),
+                //    () => _OutputRingTransferUnit.SetFeederClampValve(false),
+                //    "Feeder CLAMP Valve",
+                //    () => _OutputRingTransferUnit.IsFeederClampValveOn(),
+                //    "ORT_ClampValve");
+
+                //dioControl.BindDIOOutput(
+                //    () => _OutputRingTransferUnit.SetFeederUnclampValve(true),
+                //    () => _OutputRingTransferUnit.SetFeederUnclampValve(false),
+                //    "Feeder UNCLAMP Valve",
+                //    () => _OutputRingTransferUnit.IsFeederUnclampValveOn(),
+                //    "ORT_UnclampValve");
             }
             catch { }
         }

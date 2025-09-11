@@ -28,6 +28,11 @@ namespace QMC.LCP_280.Process.Component
         private readonly HashSet<string> _inputKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _outputKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, string> _displayMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // key -> label
+
+        // 클래스 필드에 추가
+        private readonly Dictionary<string, bool> _customOutputSoftStates = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+
+
         private Timer _refreshTimer;
         public int RefreshIntervalMs { get; set; } = 400;
 
@@ -139,6 +144,54 @@ namespace QMC.LCP_280.Process.Component
             PopulateListViews();
             BuildPropertyCollections();
         }
+
+        // === High-level helpers (Cylinder / Vacuum) ===
+        // Cylinder: extend/retract 도메인 함수 + (선택) 센서 표시
+        public void BindCylinder(string label,
+                         Action extend,
+                         Action retract,
+                         Func<bool> isExtended,
+                         Func<bool> isRetracted = null,
+                         string displayKey = null,
+                         bool showSensors = true,
+                         string extendedName = "UP",
+                         string retractedName = "DOWN")
+        {
+            var keyBase = string.IsNullOrWhiteSpace(displayKey) ? label : displayKey;
+
+            // 센서 표시 (선택)
+            if (showSensors)
+            {
+                if (isExtended != null)
+                    BindDIOInput(isExtended, $"{label} {extendedName} Sns", $"{keyBase}_{extendedName}Sns");
+                if (isRetracted != null)
+                    BindDIOInput(isRetracted, $"{label} {retractedName} Sns", $"{keyBase}_{retractedName}Sns");
+            }
+
+            // 토글 상태 판단: Up(또는 Fwd/Clamp) 센서가 없으면 Down(또는 Bwd/Unclamp) 센서를 반전해 사용
+            Func<bool> stateFunc = isExtended ?? (isRetracted != null ? (Func<bool>)(() => !isRetracted()) : null);
+
+            // 출력 토글 (상태 함수 제공 필수: 없으면 한쪽만 동작하게 됨)
+            BindDIOOutput(extend, retract, label, stateFunc, keyBase);
+        }
+
+        // Vacuum: on/off 도메인 함수 + (선택) OK 센서 표시
+        public void BindVacuum(string label,
+                               Action on,
+                               Action off,
+                               Func<bool> isOk = null,
+                               Func<bool> isOnState = null,
+                               string displayKey = null,
+                               bool showOkSensor = true)
+        {
+            var keyBase = string.IsNullOrWhiteSpace(displayKey) ? label : displayKey;
+
+            if (showOkSensor && isOk != null)
+                BindDIOInput(isOk, $"{label} OK(Sns)", $"{keyBase}_Ok");
+
+            BindDIOOutput(on, off, label, isOnState, keyBase);
+        }
+
 
         public void RebuildLists()
         {
@@ -330,11 +383,11 @@ namespace QMC.LCP_280.Process.Component
         #endregion
 
         #region Output Toggle
+        // OutputList_DoubleClick 교체
         private void OutputList_DoubleClick(object sender, EventArgs e)
         {
             if (!(sender is ListBox lb)) return;
             var sel = lb.SelectedItem as IoItem; if (sel == null) return;
-            // Prevent toggle on separator just in case
             if (sel.IsSeparator) return;
             try
             {
@@ -342,23 +395,30 @@ namespace QMC.LCP_280.Process.Component
                 {
                     if (_customOutputActions.TryGetValue(sel.Key, out var act))
                     {
-                        bool cur = false;
+                        bool cur;
                         if (act.state != null)
                         {
-                            try { cur = act.state(); } catch { }
+                            try { cur = act.state(); }
+                            catch
+                            {
+                                cur = _customOutputSoftStates.TryGetValue(sel.Key, out var s) ? s : false;
+                            }
                         }
-                        // toggle: if current on -> offAction else onAction
-                        if (cur) act.off?.Invoke(); else act.on?.Invoke();
+                        else
+                        {
+                            cur = _customOutputSoftStates.TryGetValue(sel.Key, out var s) ? s : false;
+                        }
+
+                        bool targetOn = !cur;
+                        if (targetOn) act.on?.Invoke(); else act.off?.Invoke();
+                        _customOutputSoftStates[sel.Key] = targetOn;
                         return;
                     }
                 }
+
                 bool curStd = false;
                 bool hasState = TryReadOutput(sel.Key, ref curStd);
-                if (!hasState)
-                {
-                    // If not a mapped output, ignore (was previously forcing ON)
-                    return;
-                }
+                if (!hasState) return;
                 DIO.Out(sel.Key, !curStd);
             }
             catch (Exception ex) { SafeLog("Toggle", ex.Message); }
@@ -457,15 +517,27 @@ namespace QMC.LCP_280.Process.Component
                         }
                         inputView?.SetStateByKey(kv.Key, on);
                     }
+                    // SafeRefreshStates 내 PropertyCollectionView 경로에서 출력 상태 갱신 부분 교체
                     foreach (var kv in _dispToOutputKey)
                     {
                         bool on = false;
                         var logical = kv.Value;
                         if (logical.StartsWith("__custom_out_", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (_customOutputActions.TryGetValue(logical, out var act) && act.state != null)
+                            if (_customOutputActions.TryGetValue(logical, out var act))
                             {
-                                try { on = act.state(); } catch { on = false; }
+                                if (act.state != null)
+                                {
+                                    try { on = act.state(); }
+                                    catch
+                                    {
+                                        on = _customOutputSoftStates.TryGetValue(logical, out var s) ? s : false;
+                                    }
+                                }
+                                else
+                                {
+                                    on = _customOutputSoftStates.TryGetValue(logical, out var s) ? s : false;
+                                }
                             }
                         }
                         else
@@ -497,6 +569,7 @@ namespace QMC.LCP_280.Process.Component
                     }
                     inBox.Refresh();
                 }
+                // SafeRefreshStates 내 출력 상태 갱신 부분(리스트박스 경로) 교체
                 var outBox = FindInnerListBox(outputView);
                 if (outBox != null)
                 {
@@ -505,10 +578,22 @@ namespace QMC.LCP_280.Process.Component
                         bool cur = false;
                         if (obj.Key.StartsWith("__custom_out_", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (_customOutputActions.TryGetValue(obj.Key, out var act) && act.state != null)
+                            if (_customOutputActions.TryGetValue(obj.Key, out var act))
                             {
-                                try { cur = act.state(); } catch { cur = false; }
-                                obj.State = cur; continue;
+                                if (act.state != null)
+                                {
+                                    try { cur = act.state(); }
+                                    catch
+                                    {
+                                        cur = _customOutputSoftStates.TryGetValue(obj.Key, out var s) ? s : false;
+                                    }
+                                }
+                                else
+                                {
+                                    cur = _customOutputSoftStates.TryGetValue(obj.Key, out var s) ? s : false;
+                                }
+                                obj.State = cur;
+                                continue;
                             }
                         }
                         if (TryReadOutput(obj.Key, ref cur)) obj.State = cur;
@@ -727,25 +812,41 @@ namespace QMC.LCP_280.Process.Component
             _lastOutputDispOrder.Clear(); _lastOutputDispOrder.AddRange(newDispOut);
         }
 
+        // OutputView_ItemClicked 교체 (PropertyCollectionView에서의 토글)
         private void OutputView_ItemClicked(object sender, string dispKey)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(dispKey)) return;
                 if (!_dispToOutputKey.TryGetValue(dispKey, out var logical)) return;
+
                 if (logical.StartsWith("__custom_out_", StringComparison.OrdinalIgnoreCase))
                 {
                     if (_customOutputActions.TryGetValue(logical, out var act))
                     {
-                        bool cur = false; if (act.state != null) { try { cur = act.state(); } catch { cur = false; } }
+                        bool cur;
+                        if (act.state != null)
+                        {
+                            try { cur = act.state(); }
+                            catch
+                            {
+                                cur = _customOutputSoftStates.TryGetValue(logical, out var s) ? s : false;
+                            }
+                        }
+                        else
+                        {
+                            cur = _customOutputSoftStates.TryGetValue(logical, out var s) ? s : false;
+                        }
+
                         var targetOn = !cur;
                         if (targetOn) act.on?.Invoke(); else act.off?.Invoke();
-                        bool newState = targetOn;
-                        if (act.state != null) { try { newState = act.state(); } catch { newState = targetOn; } }
-                        outputView?.SetStateByKey(dispKey, newState);
+                        _customOutputSoftStates[logical] = targetOn;
+
+                        outputView?.SetStateByKey(dispKey, targetOn);
                     }
                     return;
                 }
+
                 bool curStd = false; DIO.TryGetOutputState(logical, out curStd);
                 var target = !curStd;
                 DIO.Out(logical, target);

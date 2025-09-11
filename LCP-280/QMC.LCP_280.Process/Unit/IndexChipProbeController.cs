@@ -170,18 +170,41 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Sphere Cylinder (Forward / Backward)
-            DIO.MapByName(unit, "ProbeCtrl.SphereFwOut", true,  NAME_SPHERE_FW);
-            DIO.MapByName(unit, "ProbeCtrl.SphereBwOut", true,  NAME_SPHERE_BW);
-            DIO.MapByName(unit, "ProbeCtrl.SphereFwIn",  false, NAME_SPHERE_FW);
-            DIO.MapByName(unit, "ProbeCtrl.SphereBwIn",  false, NAME_SPHERE_BW);
-            _cylSphere = new Cylinder("ProbeSphere", "ProbeCtrl.SphereFwOut", "ProbeCtrl.SphereBwOut", "ProbeCtrl.SphereFwIn", "ProbeCtrl.SphereBwIn");
+            // Vacuum 별칭으로 조회만
+            if (!IoAutoBindings.Vacuums.TryGetValue("ProbeCardVac", out _vacProbeCard))
+            {
+                Log.Write("IndexChipProbeController", "BindIoDomains", "Vacuums not found: ProbeCardVac");
+            }
 
-            // Probe Card Vacuum
-            DIO.MapByName(unit, "ProbeCtrl.VacOut", true,  NAME_PROBE_VAC);
-            DIO.MapByName(unit, "ProbeCtrl.VacOk",  false, NAME_PROBE_VAC_OK);
-            _vacProbeCard = new Vacuum("ProbeCardVac", "ProbeCtrl.VacOut", "ProbeCtrl.VacOk");
+            if (!IoAutoBindings.Cylinders.TryGetValue("ProbeSphere", out _cylSphere))
+            {
+                Log.Write("IndexChipProbeController", "BindIoDomains", "Cylinder not found: ProbeSphere");
+            }
         }
+
+        // === Domain Control (표준 구동) ===
+        public bool SetProbeVac(bool on)
+        {
+            if (_vacProbeCard == null) return false;
+            if (on) _vacProbeCard.On();
+            else   _vacProbeCard.Off();
+            return true;
+        }
+
+        public bool SetSphereFB(bool bFwdBwd)
+        {
+            if (_cylSphere == null) return false;
+
+            if (bFwdBwd)
+            {
+                return _cylSphere.Extend();
+            }
+            else
+            {
+                return _cylSphere.Retract();
+            }
+        }
+        /////////////////////
 
         // === Direct Valve Control (강제 구동) ===
         public void SetSphereFwdValve(bool on) => WriteOutput(NAME_SPHERE_FW, on);
