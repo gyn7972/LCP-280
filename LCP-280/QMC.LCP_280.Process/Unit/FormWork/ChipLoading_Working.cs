@@ -242,19 +242,26 @@ namespace QMC.LCP_280.Process.Unit
                     () => InputStageUnit.IsVacuumValveOn(),
                     "InStageVac");
 
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetPlateUp(true),
+                //    () => InputStageUnit.SetPlateUp(false),
+                //    "PlateUP",
+                //    () => InputStageUnit.IsPlateUpOn(),
+                //    "InStagePlateUp");
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetPlateDown(true),
+                //    () => InputStageUnit.SetPlateDown(false),
+                //    "PlateDOWN",
+                //    () => InputStageUnit.IsPlateDownOn(),
+                //    "InStagePlateDn");
                 dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetPlateUp(true),
-                    () => InputStageUnit.SetPlateUp(false),
-                    "PlateUP",
-                    () => InputStageUnit.IsPlateUpOn(),
-                    "InStagePlateUp");
+                    () => InputStageUnit.SetClampPlate(true),
+                    () => InputStageUnit.SetClampPlate(false),
+                    "PlateUpDn",
+                    () => InputStageUnit.IsClampFwd(),
+                    "InStagePlateUpDn");
 
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetPlateDown(true),
-                    () => InputStageUnit.SetPlateDown(false),
-                    "PlateDOWN",
-                    () => InputStageUnit.IsPlateDownOn(),
-                    "InStagePlateDn");
+                
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetClampLiftUpValve(true),

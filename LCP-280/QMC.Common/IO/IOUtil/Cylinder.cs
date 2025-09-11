@@ -62,7 +62,7 @@ namespace QMC.Common.IOUtil
                 {
                     recursiveCount++;
                     if (recursiveCount >= _config.SensorRetryCount) return false;
-                    return !IsRetacted();
+                    return !IsRetacted(recursiveCount);
                 }
             }catch(Exception ex)
             {
