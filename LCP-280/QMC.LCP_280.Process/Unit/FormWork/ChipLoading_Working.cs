@@ -235,31 +235,48 @@ namespace QMC.LCP_280.Process.Unit
                 dioControl.BindDIOInput(() => InputStageUnit.Ring1(), "Ring Sns 1", "InStageRing1");
                 dioControl.BindDIOInput(() => InputStageUnit.IsRingPresent(), "Ring Any", "InStageRingAny");
 
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetVacuumValve(true),
-                    () => InputStageUnit.SetVacuumValve(false),
-                    "Vacuum",
-                    () => InputStageUnit.IsVacuumValveOn(),
-                    "InStageVac");
-
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetPlateUp(true),
-                    () => InputStageUnit.SetPlateUp(false),
-                    "PlateUP",
-                    () => InputStageUnit.IsPlateUpOn(),
-                    "InStagePlateUp");
-                dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetPlateDown(true),
-                    () => InputStageUnit.SetPlateDown(false),
-                    "PlateDOWN",
-                    () => InputStageUnit.IsPlateDownOn(),
-                    "InStagePlateDn");
                 //dioControl.BindDIOOutput(
-                //    () => InputStageUnit.SetClampPlate(true),
-                //    () => InputStageUnit.SetClampPlate(false),
-                //    "PlateUpDn",
-                //    () => InputStageUnit.IsClampFwd(),
-                //    "InStagePlateUpDn");
+                //    () => InputStageUnit.SetVacuumValve(true),
+                //    () => InputStageUnit.SetVacuumValve(false),
+                //    "Vacuum",
+                //    () => InputStageUnit.IsVacuumValveOn(),
+                //    "InStageVac");
+                // Vacuum: 도메인 함수 사용 (출력은 입력과 무관하게 동작, 상태 표시는 밸브 상태 함수 사용)
+                dioControl.BindVacuum(
+                    label: "Vacuum",
+                    on: () => InputStageUnit.SetVacuum(true),
+                    off: () => InputStageUnit.SetVacuum(false),
+                    isOk: () => InputStageUnit.IsVacuum(),
+                    isOnState: () => InputStageUnit.IsVacuumValveOn(),
+                    displayKey: "InStageVac",
+                    showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
+                );
+
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetPlateUp(true),
+                //    () => InputStageUnit.SetPlateUp(false),
+                //    "PlateUP",
+                //    () => InputStageUnit.IsPlateUpOn(),
+                //    "InStagePlateUp");
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetPlateDown(true),
+                //    () => InputStageUnit.SetPlateDown(false),
+                //    "PlateDOWN",
+                //    () => InputStageUnit.IsPlateDownOn(),
+                //    "InStagePlateDn");
+
+                // Plate Up/Down: 도메인 함수 사용, 상태 판단은 IsPlateUp 기준
+                dioControl.BindCylinder(
+                    label: "PlateUpDn",
+                    extend: () => InputStageUnit.SetClampPlate(true),
+                    retract: () => InputStageUnit.SetClampPlate(false),
+                    isExtended: () => InputStageUnit.IsPlateUp(),
+                    isRetracted: () => InputStageUnit.IsPlateDown(),
+                    displayKey: "InStagePlateUpDn",
+                    showSensors: false // 위에서 Up/Down 센서를 이미 표시했으므로 중복 방지
+                );
+
+
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetClampLiftUpValve(true),
