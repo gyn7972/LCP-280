@@ -26,11 +26,13 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
+            CassetteSlot_1,
             MappingStart,
             MappingEnd,
             SlotPitch,
             SlotCount,
-            Ready,
+            UnloadOffset,
+            LoadPort
             // 필요시 확장
         }
 

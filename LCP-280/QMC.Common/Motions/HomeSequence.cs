@@ -278,6 +278,7 @@ namespace QMC.Common.Motions
         private static void TryStop(MotionAxis axis)
         {
             try { axis?.EmgStop(); } catch { /* ignore */ }
+            try { axis?.Stop(); } catch { /* ignore */ }
         }
     }
 

@@ -209,29 +209,23 @@ namespace QMC.LCP_280.Process.Component
             {
                 try
                 {
-                    bool related = false;
-                    if (set.Count == 0)
-                    {
-                        related = true;
-                    }
-                    else
-                    {
-                        foreach (var ax in set)
-                        {
-                            if (r.InvolvesAxis(ax)) { related = true; break; }
-                        }
-                        if (!related) related = !set.Any(ax => r.InvolvesAxis(ax));
-                    }
+                    // 전역 룰은 항상 평가, 그 외는 현재 스텝 축과 연관될 때만 평가
+                    bool isGlobal = (r is FuncRule) || (r is IoIoExclusionRule);
+                    bool related = isGlobal || set.Count == 0 || set.Any(ax => r.InvolvesAxis(ax));
+                    if (!related) continue;
 
-                    if (related)
+                    var msg = r.Evaluate();
+                    if (!string.IsNullOrEmpty(msg))
                     {
-                        var msg = r.Evaluate();
-                        if (!string.IsNullOrEmpty(msg)) { reason = msg; return false; }
+                        // 어떤 룰이 막았는지 추적 가능하도록 이름 포함
+                        reason = string.IsNullOrEmpty(r.Name) ? msg : $"{r.Name}: {msg}";
+                        return false;
                     }
                 }
                 catch (Exception ex)
                 {
-                    reason = r.Name + " EvaluateEx:" + ex.Message; return false;
+                    reason = (string.IsNullOrEmpty(r.Name) ? "Rule" : r.Name) + " EvaluateEx:" + ex.Message;
+                    return false;
                 }
             }
             return true;
