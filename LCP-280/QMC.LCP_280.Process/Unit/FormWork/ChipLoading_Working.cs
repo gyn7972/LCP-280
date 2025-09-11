@@ -242,26 +242,24 @@ namespace QMC.LCP_280.Process.Unit
                     () => InputStageUnit.IsVacuumValveOn(),
                     "InStageVac");
 
-                //dioControl.BindDIOOutput(
-                //    () => InputStageUnit.SetPlateUp(true),
-                //    () => InputStageUnit.SetPlateUp(false),
-                //    "PlateUP",
-                //    () => InputStageUnit.IsPlateUpOn(),
-                //    "InStagePlateUp");
-                //dioControl.BindDIOOutput(
-                //    () => InputStageUnit.SetPlateDown(true),
-                //    () => InputStageUnit.SetPlateDown(false),
-                //    "PlateDOWN",
-                //    () => InputStageUnit.IsPlateDownOn(),
-                //    "InStagePlateDn");
                 dioControl.BindDIOOutput(
-                    () => InputStageUnit.SetClampPlate(true),
-                    () => InputStageUnit.SetClampPlate(false),
-                    "PlateUpDn",
-                    () => InputStageUnit.IsClampFwd(),
-                    "InStagePlateUpDn");
-
-                
+                    () => InputStageUnit.SetPlateUp(true),
+                    () => InputStageUnit.SetPlateUp(false),
+                    "PlateUP",
+                    () => InputStageUnit.IsPlateUpOn(),
+                    "InStagePlateUp");
+                dioControl.BindDIOOutput(
+                    () => InputStageUnit.SetPlateDown(true),
+                    () => InputStageUnit.SetPlateDown(false),
+                    "PlateDOWN",
+                    () => InputStageUnit.IsPlateDownOn(),
+                    "InStagePlateDn");
+                //dioControl.BindDIOOutput(
+                //    () => InputStageUnit.SetClampPlate(true),
+                //    () => InputStageUnit.SetClampPlate(false),
+                //    "PlateUpDn",
+                //    () => InputStageUnit.IsClampFwd(),
+                //    "InStagePlateUpDn");
 
                 dioControl.BindDIOOutput(
                     () => InputStageUnit.SetClampLiftUpValve(true),
@@ -521,9 +519,10 @@ namespace QMC.LCP_280.Process.Unit
         private void buttonTest_Click(object sender, EventArgs e)
         {
             InputStageUnit.SetClampUpDown(true);
+        }
 
-            Thread.Sleep(1000);
-
+        private void buttonTest2_Click(object sender, EventArgs e)
+        {
             InputStageUnit.SetClampUpDown(false);
         }
     }

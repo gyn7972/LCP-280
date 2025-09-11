@@ -26,8 +26,9 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
-            this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
             this.buttonTest = new System.Windows.Forms.Button();
+            this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
+            this.buttonTest2 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxImageView.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
@@ -119,14 +120,25 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // groupBoxManual
             // 
+            this.groupBoxManual.Controls.Add(this.buttonTest2);
             this.groupBoxManual.Controls.Add(this.buttonTest);
             this.groupBoxManual.Controls.Add(this.buttonPickUpNiddle_Move);
             this.groupBoxManual.Location = new System.Drawing.Point(535, 368);
             this.groupBoxManual.Name = "groupBoxManual";
-            this.groupBoxManual.Size = new System.Drawing.Size(370, 161);
+            this.groupBoxManual.Size = new System.Drawing.Size(370, 263);
             this.groupBoxManual.TabIndex = 16;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
+            // 
+            // buttonTest
+            // 
+            this.buttonTest.Location = new System.Drawing.Point(6, 76);
+            this.buttonTest.Name = "buttonTest";
+            this.buttonTest.Size = new System.Drawing.Size(62, 35);
+            this.buttonTest.TabIndex = 18;
+            this.buttonTest.Text = "Test1";
+            this.buttonTest.UseVisualStyleBackColor = true;
+            this.buttonTest.Click += new System.EventHandler(this.buttonTest_Click);
             // 
             // buttonPickUpNiddle_Move
             // 
@@ -138,15 +150,15 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
             this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
             // 
-            // buttonTest
+            // buttonTest2
             // 
-            this.buttonTest.Location = new System.Drawing.Point(6, 76);
-            this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(191, 35);
-            this.buttonTest.TabIndex = 18;
-            this.buttonTest.Text = "Test";
-            this.buttonTest.UseVisualStyleBackColor = true;
-            this.buttonTest.Click += new System.EventHandler(this.buttonTest_Click);
+            this.buttonTest2.Location = new System.Drawing.Point(6, 117);
+            this.buttonTest2.Name = "buttonTest2";
+            this.buttonTest2.Size = new System.Drawing.Size(62, 35);
+            this.buttonTest2.TabIndex = 19;
+            this.buttonTest2.Text = "Test2";
+            this.buttonTest2.UseVisualStyleBackColor = true;
+            this.buttonTest2.Click += new System.EventHandler(this.buttonTest2_Click);
             // 
             // ChipLoader_Working
             // 
@@ -183,5 +195,6 @@ namespace QMC.LCP_280.Process.Unit
         private GroupBox groupBoxManual;
         private Button buttonPickUpNiddle_Move;
         private Button buttonTest;
+        private Button buttonTest2;
     }
 }
