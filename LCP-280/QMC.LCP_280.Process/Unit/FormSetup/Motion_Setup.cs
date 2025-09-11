@@ -469,7 +469,7 @@ namespace QMC.LCP_280.Process.Unit
             catch { /* ignore registration errors to avoid UI block */ }
         }
 
-        private void btnHome_Click(object sender, EventArgs e)
+        private async void btnHome_Click(object sender, EventArgs e)
         {
             try
             {
@@ -492,7 +492,7 @@ namespace QMC.LCP_280.Process.Unit
                 // (1) 축 전용 Home 조건 Rule 동적 등록 (중복 등록 방지 내부 처리)
                 EnsureAxisHomeInterlocks(axis);
 
-                // (2) === Interlock Check (Home 전) ===
+                // (2) InterlockManager 축 규칙 빠른 검사
                 string reason;
                 if (!QMC.LCP_280.Process.Component.InterlockManager.Instance.ValidateAxisForHome(axis, out reason))
                 {
@@ -501,6 +501,17 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
+                // (3) MachineHomeCoordinator의 PreAxisInterlockAsync 조건 평가
+                var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(Equipment);
+                var eval = await seq.PreAxisInterlockAsync(-1, axis, CancellationToken.None).ConfigureAwait(true);
+                if (!eval.Ok)
+                {
+                    MessageBox.Show($"홈 인터락(코디네이터) 차단:\r\n{eval.Reason}", "Interlock",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // (4) 홈 실행
                 int ret = axis.HomeAsync();
                 if (ret != 0)
                 {
