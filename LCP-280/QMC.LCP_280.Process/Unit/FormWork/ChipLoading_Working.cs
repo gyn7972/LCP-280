@@ -200,18 +200,6 @@ namespace QMC.LCP_280.Process.Unit
                             $"{labelBase} Flow OK(Sns)",
                             $"IDT_Arm{idx + 1}_FlowOk");
 
-                        /*
-                         dioControl.BindVacuum(
-                            label: "Vacuum",
-                            on: () => InputStageUnit.SetVacuum(true),
-                            off: () => InputStageUnit.SetVacuum(false),
-                            isOk: () => InputStageUnit.IsVacuum(),
-                            isOnState: () => InputStageUnit.IsVacuumValveOn(),
-                            displayKey: "StageVac",
-                            showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
-                        );
-                         */
-
                         // VAC: 도메인 + 상태 함수 연결 (출력은 입력과 무관하게 동작)
                         dioControl.BindVacuum(
                             label: $"{labelBase} VAC",
@@ -242,59 +230,12 @@ namespace QMC.LCP_280.Process.Unit
                             displayKey: $"IDT_Arm{idx + 1}_Vent",
                             showOkSensor: false
                         );
-
-                        // BLOW: 상태 함수까지 전달해 올바른 토글 동작 보장
-                        //dioControl.BindDIOOutput(
-                        //    () => InputDieTransferUnit.SetArmBlow(idx, true),
-                        //    () => InputDieTransferUnit.SetArmBlow(idx, false),
-                        //    $"{labelBase} BLOW ON/OFF",
-                        //    () => InputDieTransferUnit.IsArmBlowOn(idx),
-                        //    $"IDT_Arm{idx + 1}_Blow");
-
-                        //// VENT: 상태 함수까지 전달
-                        //dioControl.BindDIOOutput(
-                        //    () => InputDieTransferUnit.SetArmVent(idx, true),
-                        //    () => InputDieTransferUnit.SetArmVent(idx, false),
-                        //    $"{labelBase} VENT ON/OFF",
-                        //    () => InputDieTransferUnit.IsArmVentOn(idx),
-                        //    $"IDT_Arm{idx + 1}_Vent");
                     }
 
                     dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVacOff(), () => InputDieTransferUnit.AllVacOff(), "IDT All VAC OFF", () => false, "IDT_AllVacOff");
                     dioControl.BindDIOOutput(() => InputDieTransferUnit.AllBlowOff(), () => InputDieTransferUnit.AllBlowOff(), "IDT All BLOW OFF", () => false, "IDT_AllBlowOff");
                     dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVentOff(), () => InputDieTransferUnit.AllVentOff(), "IDT All VENT OFF", () => false, "IDT_AllVentOff");
                 }
-
-                //// 구분선: InputDieTransfer
-                //if (InputDieTransferUnit != null)
-                //{
-                //    dioControl.BindDIOInput(() => false, "---- InputDieTransfer ----", "SEP_IDT");
-                //    for (int arm = 0; arm < 1; arm++) //for (int arm = 0; arm < 4; arm++)
-                //    {
-                //        int idx = arm;
-                //        dioControl.BindDIOOutput(
-                //            () => InputDieTransferUnit.SetArmVac(idx, true),
-                //            () => InputDieTransferUnit.SetArmVac(idx, false),
-                //            $"IDT Arm{idx + 1} VAC ON/OFF",
-                //            () => false,
-                //            $"IDT_Arm{idx + 1}_Vac");
-                //        dioControl.BindDIOOutput(
-                //            () => InputDieTransferUnit.SetArmBlow(idx, true),
-                //            () => InputDieTransferUnit.SetArmBlow(idx, false),
-                //            $"IDT Arm{idx + 1} BLOW ON/OFF",
-                //            () => false,
-                //            $"IDT_Arm{idx + 1}_Blow");
-                //        dioControl.BindDIOOutput(
-                //            () => InputDieTransferUnit.SetArmVent(idx, true),
-                //            () => InputDieTransferUnit.SetArmVent(idx, false),
-                //            $"IDT Arm{idx + 1} VENT ON/OFF",
-                //            () => false,
-                //            $"IDT_Arm{idx + 1}_Vent");
-                //    }
-                //    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVacOff(), () => InputDieTransferUnit.AllVacOff(), "IDT All VAC OFF", () => false, "IDT_AllVacOff");
-                //    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllBlowOff(), () => InputDieTransferUnit.AllBlowOff(), "IDT All BLOW OFF", () => false, "IDT_AllBlowOff");
-                //    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVentOff(), () => InputDieTransferUnit.AllVentOff(), "IDT All VENT OFF", () => false, "IDT_AllVentOff");
-                //}
 
                 dioControl.RebuildLists();
             }
