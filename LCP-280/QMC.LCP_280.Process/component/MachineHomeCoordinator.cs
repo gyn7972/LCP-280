@@ -37,41 +37,71 @@ namespace QMC.LCP_280.Process.Component
                 .AddParallelStepByAxisNames(
                     "Wafer Stage T Axis", "Bin Stage T Axis");
 
-            // 단계별 훅: 도어/실린더 등 전역 인터락과 축 사전 체크, 피더/스테이지 전용 IO 동작
+            // 단계별 훅: 전역 인터락과 축 사전 체크만 유지 (축/유닛별 조건은 PreAxis로 이동)
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
             {
                 string reason;
                 var il = InterlockManager.Instance; il.Start();
 
-                // 이 단계에 포함된 축이 무엇인지 검사하여 해당 유닛의 인터락 동작 수행
-                bool needWaferFeeder = list != null && list.Any(a => a != null && a.Name.Equals("Wafer Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
-                bool needBinFeeder = list != null && list.Any(a => a != null && a.Name.Equals("Bin Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
-                bool needRightToolT = list != null && list.Any(a => a != null && a.Name.Equals("Right Tool T Axis", StringComparison.OrdinalIgnoreCase));
+                // 전역/해당축 인터락 평가
+                if (!il.ValidateForHomeStep(list, out reason))
+                    return (false, reason);
 
-                if (needWaferFeeder)
+                // 축별 사전 체크(Servo/Alarm/Motion)
+                foreach (var a in list)
                 {
-                    try
-                    {
-                        if (eq.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var u) && u is InputRingTransfer inFeeder)
-                        {
-                            // Unclamp → 센서 확인
-                            inFeeder.SetClamp(false);
-                            var until = DateTime.UtcNow.AddMilliseconds(1500);
-                            while (DateTime.UtcNow < until)
-                            {
-                                if (inFeeder.IsUnclamped()) break;
-                                await Task.Delay(20, ct).ConfigureAwait(false);
-                            }
-                            if (!inFeeder.IsUnclamped())
-                                return (false, "Wafer Feeder Unclamp 센서 미확인");
+                    if (!a.CheckHomeInterlocks(out reason))
+                        return (false, reason);
+                }
+                return (true, null);
+            };
 
-                            // 링 존재 시 → +Y 조그로 센서 OFF까지 이동 (Fine Velocity, SensorDetectionTimeoutMs 사용)
-                            try
+            // 축 단위 훅: 개별 축 홈 직전 전처리/인터락
+            seq.PreAxisInterlockAsync = async (stepIndex, axis, ct) =>
+            {
+                if (axis == null) return (false, "Axis null");
+
+                // InterlockManager 축 규칙 빠른 검사
+                string reason;
+                var il = InterlockManager.Instance;
+                if (!il.ValidateAxisForHome(axis, out reason))
+                    return (false, reason);
+
+                // 축 이름별 전처리/인터락
+                switch (axis.Name)
+                {
+                    case "Right Tool T Axis":
+                        if (eq.Units != null && eq.Units.TryGetValue("OutputStage", out var uRt) && uRt is OutputStage outStage)
+                        {
+                            if (!outStage.IsPlateDown())
                             {
-                                if (inFeeder.IsRingPresent())
+                                if (!outStage.PlateDown(2000) || !outStage.IsPlateDown())
+                                    return (false, "OutputStage PlateDown 필요");
+                            }
+                        }
+                        break;
+
+                    case "Wafer Feeder Y Axis":
+                        // 기존 PreStep의 Wafer Feeder 사전 동작을 축 단위로 옮김
+                        try
+                        {
+                            if (eq.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var uIn) && uIn is InputRingTransfer inFeeder)
+                            {
+                                // Unclamp → 센서 확인
+                                inFeeder.SetClamp(false);
+                                var until = DateTime.UtcNow.AddMilliseconds(1500);
+                                while (DateTime.UtcNow < until)
                                 {
-                                    var axis = list.FirstOrDefault(a => a != null && a.Name.Equals("Wafer Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
-                                    if (axis != null)
+                                    if (inFeeder.IsUnclamped()) break;
+                                    await Task.Delay(20, ct).ConfigureAwait(false);
+                                }
+                                if (!inFeeder.IsUnclamped())
+                                    return (false, "Wafer Feeder Unclamp 센서 미확인");
+
+                                // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
+                                try
+                                {
+                                    if (inFeeder.IsRingPresent())
                                     {
                                         var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
                                         var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
@@ -94,54 +124,50 @@ namespace QMC.LCP_280.Process.Component
                                             return (false, "Wafer Feeder Ring Clear Timeout");
                                     }
                                 }
-                            }
-                            catch { /* ignore jog errors, fallback to next checks */ }
+                                catch { /* ignore jog errors */ }
 
-                            await Task.Delay(100, ct).ConfigureAwait(false);
-                            if (!inFeeder.FeederUp(3000))
-                                return (false, "Wafer Feeder Up 실패");
+                                await Task.Delay(100, ct).ConfigureAwait(false);
+                                if (!inFeeder.FeederUp(3000))
+                                    return (false, "Wafer Feeder Up 실패");
 
-                            // Up 센서 확인
-                            until = DateTime.UtcNow.AddMilliseconds(1000);
-                            while (DateTime.UtcNow < until)
-                            {
-                                if (inFeeder.IsFeederUp()) break;
-                                await Task.Delay(20, ct).ConfigureAwait(false);
-                            }
-                            if (!inFeeder.IsFeederUp())
-                                return (false, "Wafer Feeder Up 센서 미확인");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        return (false, "Wafer Feeder PreStep 실패: " + ex.Message);
-                    }
-                }
-
-                if (needBinFeeder)
-                {
-                    try
-                    {
-                        if (eq.Units != null && eq.Units.TryGetValue("OutputRingTransfer", out var u2) && u2 is OutputRingTransfer outFeeder)
-                        {
-                            // Unclamp → 센서 확인
-                            outFeeder.SetClamp(false);
-                            var until2 = DateTime.UtcNow.AddMilliseconds(1500);
-                            while (DateTime.UtcNow < until2)
-                            {
-                                if (outFeeder.IsUnclamped()) break;
-                                await Task.Delay(20, ct).ConfigureAwait(false);
-                            }
-                            if (!outFeeder.IsUnclamped())
-                                return (false, "Bin Feeder Unclamp 센서 미확인");
-
-                            // 링 존재 시 → +Y 조그로 센서 OFF까지 이동 (Fine Velocity, SensorDetectionTimeoutMs 사용)
-                            try
-                            {
-                                if (outFeeder.IsRingPresent())
+                                // Up 센서 확인
+                                until = DateTime.UtcNow.AddMilliseconds(1000);
+                                while (DateTime.UtcNow < until)
                                 {
-                                    var axis = list.FirstOrDefault(a => a != null && a.Name.Equals("Bin Feeder Y Axis", StringComparison.OrdinalIgnoreCase));
-                                    if (axis != null)
+                                    if (inFeeder.IsFeederUp()) break;
+                                    await Task.Delay(20, ct).ConfigureAwait(false);
+                                }
+                                if (!inFeeder.IsFeederUp())
+                                    return (false, "Wafer Feeder Up 센서 미확인");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "Wafer Feeder PreAxis 실패: " + ex.Message);
+                        }
+                        break;
+
+                    case "Bin Feeder Y Axis":
+                        // 기존 PreStep의 Bin Feeder 사전 동작을 축 단위로 옮김
+                        try
+                        {
+                            if (eq.Units != null && eq.Units.TryGetValue("OutputRingTransfer", out var uOut) && uOut is OutputRingTransfer outFeeder)
+                            {
+                                // Unclamp → 센서 확인
+                                outFeeder.SetClamp(false);
+                                var until2 = DateTime.UtcNow.AddMilliseconds(1500);
+                                while (DateTime.UtcNow < until2)
+                                {
+                                    if (outFeeder.IsUnclamped()) break;
+                                    await Task.Delay(20, ct).ConfigureAwait(false);
+                                }
+                                if (!outFeeder.IsUnclamped())
+                                    return (false, "Bin Feeder Unclamp 센서 미확인");
+
+                                // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
+                                try
+                                {
+                                    if (outFeeder.IsRingPresent())
                                     {
                                         var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
                                         var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
@@ -164,86 +190,61 @@ namespace QMC.LCP_280.Process.Component
                                             return (false, "Wafer Feeder Ring Clear Timeout");
                                     }
                                 }
-                            }
-                            catch { /* ignore jog errors, fallback to next checks */ }
+                                catch { /* ignore jog errors */ }
 
-                            await Task.Delay(100, ct).ConfigureAwait(false);
-                            if (!outFeeder.FeederUp(3000))
-                                return (false, "Bin Feeder Up 실패");
+                                await Task.Delay(100, ct).ConfigureAwait(false);
+                                if (!outFeeder.FeederUp(3000))
+                                    return (false, "Bin Feeder Up 실패");
 
-                            // Up 센서 확인
-                            until2 = DateTime.UtcNow.AddMilliseconds(1000);
-                            while (DateTime.UtcNow < until2)
-                            {
-                                if (outFeeder.IsFeederUp()) break;
-                                await Task.Delay(20, ct).ConfigureAwait(false);
+                                // Up 센서 확인
+                                until2 = DateTime.UtcNow.AddMilliseconds(1000);
+                                while (DateTime.UtcNow < until2)
+                                {
+                                    if (outFeeder.IsFeederUp()) break;
+                                    await Task.Delay(20, ct).ConfigureAwait(false);
+                                }
+                                if (!outFeeder.IsFeederUp())
+                                    return (false, "Bin Feeder Up 센서 미확인");
                             }
-                            if (!outFeeder.IsFeederUp())
-                                return (false, "Bin Feeder Up 센서 미확인");
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        return (false, "Bin Feeder PreStep 실패: " + ex.Message);
-                    }
-                }
-
-                if (needRightToolT)
-                {
-                    try
-                    {
-                        if (eq.Units != null && eq.Units.TryGetValue("OutputStage", out var u3) && u3 is OutputStage outStage)
+                        catch (Exception ex)
                         {
-                            if (!outStage.PlateDown(3000))
-                                return (false, "OutputStage PlateDown 실패");
-                            await Task.Delay(50, ct).ConfigureAwait(false);
-                            if (!outStage.IsPlateDown())
-                                return (false, "OutputStage PlateDown 센서 미확인");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        return (false, "OutputStage PreStep 실패: " + ex.Message);
-                    }
-                }
-
-                // 전역/해당축 인터락 평가
-                //if (!il.ValidateForHomeStep(list, out reason))
-                //    return (false, reason);
-
-                // 축별 사전 체크(Servo/Alarm/Motion)
-                foreach (var a in list)
-                {
-                    if (!a.CheckHomeInterlocks(out reason))
-                        return (false, reason);
-                }
-                return (true, null);
-            };
-
-            // 축 단위 훅: 개별 축 홈 직전 전처리/인터락
-            seq.PreAxisInterlockAsync = async (stepIndex, axis, ct) =>
-            {
-                if (axis == null) return (false, "Axis null");
-
-                // 예시: InterlockManager 축 규칙 빠른 검사
-                string reason;
-                var il = InterlockManager.Instance;
-                if (!il.ValidateAxisForHome(axis, out reason))
-                    return (false, reason);
-
-                // 축 이름별 전처리/인터락 샘플
-                switch (axis.Name)
-                {
-                    case "Right Tool T Axis":
-                        if (eq.Units != null && eq.Units.TryGetValue("OutputStage", out var u) && u is OutputStage outStage)
-                        {
-                            if (!outStage.IsPlateDown())
-                            {
-                                if (!outStage.PlateDown(2000) || !outStage.IsPlateDown())
-                                    return (false, "OutputStage PlateDown 필요");
-                            }
+                            return (false, "Bin Feeder PreAxis 실패: " + ex.Message);
                         }
                         break;
+
+                    case "Wafer Lifter Z Axis":
+                        // InputCassetteLifter: RING_JUT 체크
+                        try
+                        {
+                            if (eq.Units != null && eq.Units.TryGetValue("InputCassetteLifter", out var uL) && uL is InputCassetteLifter lifter)
+                            {
+                                if (lifter.RingJut())
+                                    return (false, "InputCassetteLifter: RING_JUT_CHECK 감지됨 - 홈 중단");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "InputCassetteLifter PreAxis 실패: " + ex.Message);
+                        }
+                        break;
+
+                    case "Bin Lifter Z Axis":
+                        // OutputCassetteLifter: RING_JUT 체크
+                        try
+                        {
+                            if (eq.Units != null && eq.Units.TryGetValue("OutputCassetteLifter", out var uOL) && uOL is OutputCassetteLifter outLifter)
+                            {
+                                if (outLifter.RingJut())
+                                    return (false, "OutputCassetteLifter: RING_JUT_CHECK 감지됨 - 홈 중단");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "OutputCassetteLifter PreAxis 실패: " + ex.Message);
+                        }
+                        break;
+
                     default:
                         break;
                 }
