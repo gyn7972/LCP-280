@@ -1398,6 +1398,16 @@ namespace QMC.LCP_280.Process
                     { "Out_Stage",          "DA7500465" }        // Serial
                 };
 
+                // 카메라별 최소(또는 목표) Exposure 값 (예: µs 혹은 ms – SDK 기준 확인)
+                var exposureTargets = new Dictionary<string, double>
+                {
+                    { "Index_Loader",   5000 },   // 예: 8ms
+                    { "In_Stage",       5000 },
+                    { "Index_Prober",   5000 },
+                    { "Index_Unloader", 5000 },
+                    { "Out_Stage",      5000 }
+                };
+
                 foreach (var kv in map)
                 {
                     var name = kv.Key;
@@ -1428,6 +1438,43 @@ namespace QMC.LCP_280.Process
                         cam.CameraConfig = cfg;
 
                         int ret = cam.OpenBySelectorOrConfig(selector); // 열거→매칭→Open
+
+                        // -------- Exposure 확인 & 조건부 설정 (Live 시작 전 권장) --------
+                        double currentExp = 0;
+                        //ret = cam.GetExposureTime(ref currentExp);
+                        //if (ret != 0)
+                        //{
+                        //    Log.Write("Equipment", $"[Camera] '{name}' GetExposureTime failed, code=0x{ret:X8}");
+                        //}
+                        //else
+                        {
+                            double target;
+                            if (exposureTargets.TryGetValue(name, out target))
+                            {
+                                if (currentExp < target)
+                                {
+                                    int setRet = 0;// cam.SetExposureTime(target);
+                                    if (setRet != 0)
+                                        Log.Write("Equipment", $"[Camera] '{name}' SetExposureTime({target}) failed, code=0x{setRet:X8}");
+                                    else
+                                        Log.Write("Equipment", $"[Camera] '{name}' Exposure adjusted {currentExp} -> {target}");
+                                }
+                                else
+                                {
+                                    Log.Write("Equipment", $"[Camera] '{name}' Exposure OK ({currentExp} >= {target})");
+                                }
+                            }
+                            else
+                            {
+                                Log.Write("Equipment", $"[Camera] '{name}' no exposure target defined (current={currentExp})");
+                            }
+                        }
+                        // ----------------------------------------------------------------
+
+
+
+
+
                         //(ret != 0)
                         {
                             Log.Write("Equipment", $"[Camera] '{name}' open failed ({selector}), code=0x{ret:X8}");

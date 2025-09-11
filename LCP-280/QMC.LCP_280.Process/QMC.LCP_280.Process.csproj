@@ -130,6 +130,7 @@
     <Compile Include="Component\SeqInputDieTransferChipDown.cs" />
     <Compile Include="Component\SeqInputDieTransferChipUp.cs" />
     <Compile Include="Component\SeqInputStage.cs" />
+    <Compile Include="Component\Sequence\InputStageSequence.cs" />
     <Compile Include="Component\SeqWaferLocalScan.cs" />
     <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="Component\TeachingPositionControl.cs">
@@ -139,6 +140,7 @@
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\ProcessData\WaferData.cs" />
+    <Compile Include="Component\VisionRunnerHub.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
     <Compile Include="Sequence.cs">

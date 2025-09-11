@@ -53,7 +53,17 @@ namespace QMC.LCP_280.Process.Unit
 
         private void BindAxes()
         {
-            Axes.TryGetValue("Bin Feeder Y Axis", out _feederY);
+            // { AxisNames.WaferFeederY, 0.0 }
+
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.WaferFeederY, ref _feederY);
         }
         #endregion
 
@@ -137,30 +147,37 @@ namespace QMC.LCP_280.Process.Unit
         private void BindIoDomains()
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            // Lift (Feeder Up/Down)
-            DIO.MapByName(unit, "OutFeeder.UpOut",   true,  OutputRingTransferConfig.IO.FEEDER_UP_VALVE);
-            DIO.MapByName(unit, "OutFeeder.DownOut", true,  OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
-            DIO.MapByName(unit, "OutFeeder.UpIn",    false, OutputRingTransferConfig.IO.FEEDER_UP);
-            DIO.MapByName(unit, "OutFeeder.DownIn",  false, OutputRingTransferConfig.IO.FEEDER_DOWN);
-            _feederLift = new Cylinder(
-                "OutFeederLift",
-                "OutFeeder.UpOut",
-                "OutFeeder.DownOut",
-                "OutFeeder.UpIn",
-                "OutFeeder.DownIn");
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederLift", out _feederLift))
+            {
+                Log.Write("OutputRingTransfer", "BindIoDomains", "Cylinder not found: OutFeederLift");
+            }
 
-            // Clamp (Close/Open) - Only UNCLAMP sensor 존재
-            DIO.MapByName(unit, "OutFeeder.ClampOut",   true,  OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
-            DIO.MapByName(unit, "OutFeeder.UnclampOut", true,  OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
-            DIO.MapByName(unit, "OutFeeder.UnclampIn",  false, OutputRingTransferConfig.IO.FEEDER_UNCLAMP);
-            _cylClamp = new Cylinder(
-                "OutFeederClamp",
-                "OutFeeder.ClampOut",
-                "OutFeeder.UnclampOut",
-                "OutFeeder.ClampIn/*NO_SENSOR*/",
-                "OutFeeder.UnclampIn");
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederClamp", out _cylClamp))
+            {
+                Log.Write("OutputRingTransfer", "BindIoDomains", "Cylinder not found: OutFeederClamp");
+            }
         }
         #endregion
+
+        // === Domain Control (표준 구동) ===
+        public bool SetLift(bool bUpDn)
+        {
+            if (_feederLift == null) return false;
+            if (bUpDn) return _feederLift.Extend();
+            else return _feederLift.Retract();
+        }
+
+        public bool SetClamp(bool bUpDn)
+        {
+            if (_cylClamp == null) return false;
+            if (bUpDn) return _cylClamp.Extend();
+            else return _cylClamp.Retract();
+        }
+        //public void SetClamp(bool clamp) //===.
+        //{
+        //    WriteOutput(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, clamp);
+        //    WriteOutput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, !clamp);
+        //}
 
         #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
         public void SetFeederUpValve(bool on) => WriteOutput(OutputRingTransferConfig.IO.FEEDER_UP_VALVE, on);
@@ -177,11 +194,6 @@ namespace QMC.LCP_280.Process.Unit
         public bool FeederUp(int timeoutMs = 3000)    => _feederLift?.Extend(timeoutMs) ?? false;
         public bool FeederDown(int timeoutMs = 3000)  => _feederLift?.Retract(timeoutMs) ?? false;
         public void FeederAllOff()                    => _feederLift?.AllOff();
-        public void SetClamp(bool clamp)
-        {
-            WriteOutput(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE, clamp);
-            WriteOutput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE, !clamp);
-        }
         #endregion
 
         #region Status Helpers

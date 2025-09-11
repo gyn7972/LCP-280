@@ -23,8 +23,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Axis
-        private MotionAxis _axMain; // 단일 리프터 축 (Y 혹은 Z)
-        public MotionAxis AxisMain => _axMain;
+        private MotionAxis _waferLifterZ; // 단일 리프터 축 (Y 혹은 Z)
+        public MotionAxis WaferLifterZ => _waferLifterZ;
         #endregion
 
         #region ctor / Initialization
@@ -48,18 +48,15 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Binding / Helpers
         private void BindAxes()
         {
-            // TeachingPosition 에 기록된 첫 번째 축 이름을 이용해 바인딩 (Wafer Stage Y Axis 등)
-            if (TeachingPositions.Count > 0)
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
             {
-                var firstTp = TeachingPositions[0];
-                foreach (var axisKey in firstTp.AxisPositions.Keys)
-                {
-                    if (Axes.TryGetValue(axisKey, out _axMain)) break;
-                }
+                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                return;
             }
-            // Fallback: 첫 번째 사전 항목
-            if (_axMain == null && Axes.Count > 0)
-                _axMain = Axes.Values.First();
+           
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.WaferLifterZ, ref _waferLifterZ);
         }
 
         public void MoveAxisOnce(MotionAxis ax, double target)

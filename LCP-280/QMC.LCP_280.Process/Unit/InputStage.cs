@@ -54,14 +54,6 @@ namespace QMC.LCP_280.Process.Unit
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
 
-        // External strategy delegates (Override 가능)
-        public Func<bool> CamReadyFunc { get; set; }
-        public Action SetLightingMultiAction { get; set; }
-        public Action SetLightingCenterAction { get; set; }
-        public Func<bool> GrabImageFunc { get; set; }
-        public Func<(bool ok, List<double> thetaList)> FindMultiMarksFunc { get; set; }
-        public Func<(bool ok, double x, double y)> FindCenterMarkFunc { get; set; }
-
         // Pattern Matching Runner (간소화: Recipe 자동 관리)
         private PatternMatchingRunner _pmRunner;
         private bool _runnerInitTried;
@@ -106,30 +98,8 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
             BindCamera();
-            EnsureDefaultVisionHooks();
         }
 
-        // 추가: Vision Hook 기본 설정 메서드(누락 복구)
-        private void EnsureDefaultVisionHooks()
-        {
-            if (CamReadyFunc == null)
-                CamReadyFunc = () => StageCamera != null && StageCamera.Opened;
-            if (GrabImageFunc == null)
-            {
-                GrabImageFunc = () =>
-                {
-                    if (StageCamera == null) return false;
-                    var rc = StageCamera.GrabSync(out var img);
-                    if (rc != 0 || img == null) return false;
-                    StageCamera.LatestImage = img;
-                    return true;
-                };
-            }
-            if (FindMultiMarksFunc == null)
-                FindMultiMarksFunc = () => MultiSearchViaRunner();
-            if (FindCenterMarkFunc == null)
-                FindCenterMarkFunc = () => CenterSearchViaRunner();
-        }
         #endregion
 
         #region Camera Binding
@@ -143,94 +113,45 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        #region Vision Runner (Pattern Matching)
-        private void EnsureRunner()
-        {
-            if (_pmRunner != null || _runnerInitTried) return;
-            _runnerInitTried = true;
-            try
-            {
-                if (StageCamera == null) return;
-                var opt = new PatternMatchingRunner.RunnerOptions
-                {
-                    AutoLoadRecipe = true,
-                    RecipeRootDirectory = PatternRecipeRootDir,
-                    RecipeName = PatternRecipeName,
-                    UseInspectRoi = true,
-                    Mode = PatternMatchingRunner.SearchMode.All,
-                    DrawCrossOnViewer = false,
-                    EnableSaveImage = false,
-                };
-                _pmRunner = new PatternMatchingRunner(StageCamera, null, opt);
-            }
-            catch (Exception ex)
-            {
-                try { Log.Write("InputStage", "Runner init failed: " + ex.Message); } catch { }
-                _pmRunner = null;
-            }
-        }
-
-        private VisionImage EnsureLatestImage()
-        {
-            if (StageCamera == null) return null;
-            var img = StageCamera.LatestImage;
-            if (img == null || img.RawData == null)
-            {
-                try { StageCamera.GrabSync(out img); } catch { }
-            }
-            return img;
-        }
+        // ... 클래스 내부 기존 Vision Runner (Pattern Matching) 영역 교체
+        #region Vision Runner (Pattern Matching)  // REFACTORED: Hub 사용
+        private string CameraKey => StageCameraKey; // 통일된 키 사용
 
         private (bool ok, List<double> thetaList) MultiSearchViaRunner()
         {
             if (DryRun)
                 return (true, new List<double> { 0.0, 0.01, -0.005, 0.004, -0.003 });
-            EnsureRunner();
-            if (_pmRunner == null) return (false, null);
-            try
-            {
-                _pmRunner.SetSearchMode(PatternMatchingRunner.SearchMode.All);
-                var res = _pmRunner.Search(false);
-                if (!res.Success || res.Matches == null || res.Matches.Count < 1) return (false, null);
-                return (true, res.Matches.Select(m => m.R).ToList());
-            }
-            catch (Exception ex)
-            {
-                try { Log.Write("InputStage", "MultiSearchViaRunner exception: " + ex.Message); } catch { }
-                return (false, null);
-            }
+
+            var ret = VisionRunnerHub.SearchAngles(CameraKey);
+            if (!ret.ok) return (false, null);
+            return (true, ret.angles);
+        }
+
+        /// <summary>
+        /// 멀티 패턴 매칭 각도 리스트 반환 (Align 시퀀스용 래퍼)
+        /// DryRun 시 모의 데이터 제공
+        /// </summary>
+        public bool TryGetMultiAngles(out List<double> angles)
+        {
+            var (ok, list) = MultiSearchViaRunner();
+            angles = ok ? list : null;
+            return ok && angles != null && angles.Count > 0;
         }
 
         private (bool ok, double x, double y) CenterSearchViaRunner()
         {
             if (DryRun) return (true, 0.0, 0.0);
-            EnsureRunner();
-            if (_pmRunner == null) return (false, 0, 0);
-            try
-            {
-                var img = EnsureLatestImage();
-                if (img == null || img.Header == null || img.Header.Width <= 0 || img.Header.Height <= 0)
-                    return (false, 0, 0);
-                double imgCx, imgCy;
-                if (UseImageCenterAsOrigin || double.IsNaN(ImageOriginX) || double.IsNaN(ImageOriginY))
-                {
-                    imgCx = (img.Header.Width) / 2.0;
-                    imgCy = (img.Header.Height) / 2.0;
-                }
-                else { imgCx = ImageOriginX; imgCy = ImageOriginY; }
-                _pmRunner.SetSearchMode(PatternMatchingRunner.SearchMode.First);
-                var res = _pmRunner.Search(false);
-                if (!res.Success || res.Matches == null || res.Matches.Count == 0) return (false, 0, 0);
-                var rep = res.Matches[(res.ReferenceIndex >= 0 && res.ReferenceIndex < res.Matches.Count) ? res.ReferenceIndex : 0];
-                double dxPixels = rep.X - imgCx;
-                double dyPixels = rep.Y - imgCy;
-                return (true, dxPixels * PixelSizeXmm, dyPixels * PixelSizeYmm);
-            }
-            catch (Exception ex)
-            {
-                try { Log.Write("InputStage", "CenterSearchViaRunner exception: " + ex.Message); } catch { }
-                return (false, 0, 0);
-            }
+
+            var res = VisionRunnerHub.SearchCenterOffset(
+                CameraKey,
+                PixelSizeXmm,
+                PixelSizeYmm,
+                ImageOriginX,
+                ImageOriginY,
+                UseImageCenterAsOrigin);
+
+            if (!res.ok) return (false, 0, 0);
+            return (true, res.dxMm, res.dyMm);
         }
         #endregion
 
@@ -242,23 +163,17 @@ namespace QMC.LCP_280.Process.Unit
 
         private void BindAxes()
         {
-            Axes.TryGetValue("Wafer Stage X Axis", out _axX);
-            Axes.TryGetValue("Wafer Stage Y Axis", out _axY);
-            Axes.TryGetValue("Wafer Stage T Axis", out _axT);
-
-            bool useInPos = !InputStageConfig.EnablePredictiveControl;
-            foreach (var ax in new[] { _axX, _axY, _axT })
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
             {
-                if (ax == null) continue;
-                try
-                {
-                    var mi = ax.GetType().GetMethod("SetInPositionEnable");
-                    var mr = ax.GetType().GetMethod("SetInPositionRange");
-                    if (mi != null) mi.Invoke(ax, new object[] { useInPos });
-                    if (mr != null) mr.Invoke(ax, new object[] { InputStageConfig.MoveDoneRemainDistance });
-                }
-                catch { }
+                Log.Write("UnitAxis", "[BindAxes] AxisManager null");
+                return;
             }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.WaferStageX, ref _axX);
+            BindAxis(mgr, unitName, AxisNames.WaferStageY, ref _axY);
+            BindAxis(mgr, unitName, AxisNames.WaferStageT, ref _axT);
         }
 
         public void TeachCurrentPosition(string positionName, string description = null)
@@ -391,40 +306,67 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Vacuum
-            DIO.MapByName(unit, "InStage.VacOut", true, InputStageConfig.IO.VAC_OUT);
-            DIO.MapByName(unit, "InStage.VacOk", false, InputStageConfig.IO.VAC_OK_SNS);
-            _vacuum = new Vacuum("InStageVac", "InStage.VacOut", "InStage.VacOk");
+            // Vacuum 별칭으로 조회만
+            if (!IoAutoBindings.Vacuums.TryGetValue("InStageVac", out _vacuum))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Vacuums not found: InStageVac");
+            }
 
-            // Plate (Up/Down)
-            DIO.MapByName(unit, "InStage.ExpUpOut", true, InputStageConfig.IO.EXPANDER_UP_OUT);
-            DIO.MapByName(unit, "InStage.ExpDownOut", true, InputStageConfig.IO.EXPANDER_DOWN_OUT);
-            DIO.MapByName(unit, "InStage.ExpUpIn", false, InputStageConfig.IO.EXPANDER_UP_SNS);
-            DIO.MapByName(unit, "InStage.ExpDownIn", false, InputStageConfig.IO.EXPANDER_DOWN_SNS);
-            _cylPlate = new Cylinder("InStageExpander", "InStage.ExpUpOut", "InStage.ExpDownOut", "InStage.ExpUpIn", "InStage.ExpDownIn");
+            // Cylinder는 중앙 별칭으로 조회만
+            if (!IoAutoBindings.Cylinders.TryGetValue("InStageExpander", out _cylPlate))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageExpander");
+            }
 
-            // Clamp Lift (Up/Down) -> sensors: Up sensor 없음 (Clamp Up 센서 공용 사용), Down 센서 존재
-            DIO.MapByName(unit, "InStage.ClampUpOut",   true,  InputStageConfig.IO.CLAMP_UP_OUT);
-            DIO.MapByName(unit, "InStage.ClampDownOut", true,  InputStageConfig.IO.CLAMP_DOWN_OUT);
-            DIO.MapByName(unit, "InStage.ClampDownIn",  false, InputStageConfig.IO.CLAMP_DOWN_SNS);
-            _cylClampLift = new Cylinder(
-                "InStageClampLift", 
-                "InStage.ClampUpOut", 
-                "InStage.ClampDownOut",
-                "InStage.ClampUpIn/*NO_SENSOR*/",
-                "InStage.ClampDownIn");
-
-            // Clamp FWD/BWD (direct)
-            DIO.MapByName(unit, "InStage.ClampFwdOut", true,  InputStageConfig.IO.CLAMP_FWD_OUT);
-            DIO.MapByName(unit, "InStage.ClampBwdOut", true,  InputStageConfig.IO.CLAMP_BWD_OUT);
-            DIO.MapByName(unit, "InStage.ClampFwdIn", false, InputStageConfig.IO.CLAMP_FWD_SNS);
-            _cylClampFB = new Cylinder(
-                "InStageClampFB",
-                "InStage.ClampFwdOut",
-                "InStage.ClampBwdOut",
-                "InStage.ClampFwdIn",
-                "InStage.ClampBwdIn/*NO_SENSOR*/");
+            if (!IoAutoBindings.Cylinders.TryGetValue("InStageClampLift", out _cylClampLift))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampLift");
+            }
+                
+            if (!IoAutoBindings.Cylinders.TryGetValue("InStageClampFB", out _cylClampFB))
+            {
+                Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampFB");
+            }
         }
+
+        // === Domain Control (표준 구동) ===
+        public bool SetVacuum(bool on)
+        {
+            if (_vacuum == null) return false;
+            if (on) _vacuum.On();
+            else _vacuum.Off();
+            return true;
+        }
+
+        public bool SetClampPlate(bool bUpDn)
+        {
+            if (_cylPlate == null) return false;
+            if (bUpDn) return _cylPlate.Extend();
+            else return _cylPlate.Retract();
+        }
+
+        public bool SetClampLift(bool bUpDn)
+        {
+            if (_cylClampLift == null) return false;
+            if (bUpDn) return _cylClampLift.Extend();
+            else
+            {
+                if (!IsClampBwd()) return false; // 기존 인터락 유지
+                return _cylClampLift.Retract();
+            }
+        }
+
+        public bool SetClampFB(bool bFwdBwd)
+        {
+            if (_cylClampFB == null) return false;
+            if (bFwdBwd)
+            {
+                if (!IsClampLiftUp()) return false; // 기존 인터락 유지
+                return _cylClampFB.Extend();
+            }
+            else return _cylClampFB.Retract();
+        }
+
 
         // === Direct Valve Control (강제 구동) ===
         public void SetVacuumValve(bool on)         => WriteOutput(InputStageConfig.IO.VAC_OUT, on);
@@ -482,10 +424,29 @@ namespace QMC.LCP_280.Process.Unit
         public bool Ring0()           => ReadInput(InputStageConfig.IO.RING_CHECK0);
         public bool Ring1()           => ReadInput(InputStageConfig.IO.RING_CHECK1);
         public bool IsRingPresent()   => Ring0() || Ring1();
+
+
+        public void SetClampUpDown(bool up) 
+        {
+            if (up)
+            {
+                _cylClampLift.Extend(); //ClampLiftUp(); 
+            }
+            else
+            {
+                _cylClampLift.Retract(); //ClampLiftDown(); 
+            }
+        }
+
+
         #endregion
 
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
+
+
+
+
     }
 }

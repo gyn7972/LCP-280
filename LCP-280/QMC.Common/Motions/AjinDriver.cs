@@ -64,7 +64,7 @@ namespace QMC.Common.Motions
             return AjinApi.HomeIsDone(axisNo);
         }
 
-        public int MoveAbsPulse(int axisNo, double targetPulse, double vel, double acc, double dec, double jerk)
+        public int MoveAbsPosition(int axisNo, double targetPulse, double vel, double acc, double dec, double jerk)
         {
             // 속도/가감속 단위 변환 (필요 시)
             double v = vel, a = acc, d = dec;

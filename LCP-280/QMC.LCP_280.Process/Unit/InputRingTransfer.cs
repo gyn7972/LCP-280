@@ -58,6 +58,34 @@ namespace QMC.LCP_280.Process.Unit
         public override void OnStop() => base.OnStop();
         #endregion
 
+        #region Axis Binding
+        private void BindAxes()
+        {
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("UnitAxis", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, AxisNames.WaferFeederY, ref _feederY);
+        }
+        public void MoveAxisOnce(MotionAxis ax, double target)
+        {
+            if (ax == null) return;
+            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
+                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = InputRingTransferConfig.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+        #endregion
+
         #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
@@ -84,23 +112,16 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = InputRingTransferConfig.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        #endregion
 
-        #region Axis Binding
-        private void BindAxes() => Axes.TryGetValue("Wafer Feeder Y Axis", out _feederY);
+        public bool InPosTeaching(string positionName)
+        {
+            var tp = InputRingTransferConfig.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            return true;
+        }
+
         #endregion
 
         #region Low-Level IO (Read/Write by Name)
@@ -138,30 +159,31 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Lift (Feeder Up/Down)
-            DIO.MapByName(unit, "InFeeder.UpOut",   true,  InputRingTransferConfig.IO.FEEDER_UP_VALVE);
-            DIO.MapByName(unit, "InFeeder.DownOut", true,  InputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
-            DIO.MapByName(unit, "InFeeder.UpIn",    false, InputRingTransferConfig.IO.FEEDER_UP);
-            DIO.MapByName(unit, "InFeeder.DownIn",  false, InputRingTransferConfig.IO.FEEDER_DOWN);
-            _feederLift = new Cylinder(
-                "InFeederLift",
-                "InFeeder.UpOut",
-                "InFeeder.DownOut",
-                "InFeeder.UpIn",
-                "InFeeder.DownIn");
+            if (!IoAutoBindings.Cylinders.TryGetValue("InFeederLift", out _feederLift))
+            {
+                Log.Write("InputRingTransfer", "BindIoDomains", "Cylinder not found: InFeederLift");
+            }
 
-            // Clamp (Close/Open) - Only UNCLAMP sensor 존재
-            DIO.MapByName(unit, "InFeeder.ClampOut",   true,  InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
-            DIO.MapByName(unit, "InFeeder.UnclampOut", true,  InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
-            DIO.MapByName(unit, "InFeeder.UnclampIn",  false, InputRingTransferConfig.IO.FEEDER_UNCLAMP);
-            _cylClamp = new Cylinder(
-                "InFeederClamp",
-                "InFeeder.ClampOut",
-                "InFeeder.UnclampOut",
-                "InFeeder.ClampIn/*NO_SENSOR*/",
-                "InFeeder.UnclampIn");
+            if (!IoAutoBindings.Cylinders.TryGetValue("InFeederClamp", out _cylClamp))
+            {
+                Log.Write("InputRingTransfer", "BindIoDomains", "Cylinder not found: InFeederClamp");
+            }
         }
         #endregion
+
+        // === Domain Control (표준 구동) ===
+        public bool SetLift(bool bUpDn)
+        {
+            if (_feederLift == null) return false;
+            if (bUpDn) return _feederLift.Extend();
+            else return _feederLift.Retract();
+        }
+        public bool SetClmp(bool bUpDn)
+        {
+            if (_cylClamp == null) return false;
+            if (bUpDn) return _cylClamp.Extend();
+            else return _cylClamp.Retract();
+        }
 
         #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
         public void SetFeederUpValve(bool on) => WriteOutput(InputRingTransferConfig.IO.FEEDER_UP_VALVE, on);

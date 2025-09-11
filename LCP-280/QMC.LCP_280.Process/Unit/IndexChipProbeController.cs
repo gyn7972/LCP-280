@@ -58,7 +58,9 @@ namespace QMC.LCP_280.Process.Unit
             TeachingPositions.Clear();
             foreach (var tp in IndexChipProbeControllerConfig.TeachingPositions)
                 TeachingPositions.Add(tp);
+
             BindAxes();
+
             BindIoDomains();
         }
         #endregion
@@ -66,12 +68,22 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Binding / Helpers
         private void BindAxes()
         {
-            Axes.TryGetValue("Probe Z Axis", out _probeZ);
-            Axes.TryGetValue("Probe Card X Axis", out _probeCardX);
-            Axes.TryGetValue("Probe Card Y Axis", out _probeCardY);
-            Axes.TryGetValue("Probe Card Z Axis", out _probeCardZ);
-            Axes.TryGetValue("Sphere Z Axis", out _sphereZ);
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("IndexChipProbeController", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // 축 등록 시 사용된 유닛명(Equipment.CreateAxes에서 동일)
+
+            BindAxis(mgr, unitName, AxisNames.ProbeZ, ref _probeZ);
+            BindAxis(mgr, unitName, AxisNames.ProbeCardX, ref _probeCardX);
+            BindAxis(mgr, unitName, AxisNames.ProbeCardY, ref _probeCardY);
+            BindAxis(mgr, unitName, AxisNames.ProbeCardZ, ref _probeCardZ);
+            BindAxis(mgr, unitName, AxisNames.SphereZ, ref _sphereZ);
         }
+
         public void MoveAxisOnce(MotionAxis ax, double target)
         {
             if (ax == null) return;
@@ -158,18 +170,37 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Sphere Cylinder (Forward / Backward)
-            DIO.MapByName(unit, "ProbeCtrl.SphereFwOut", true,  NAME_SPHERE_FW);
-            DIO.MapByName(unit, "ProbeCtrl.SphereBwOut", true,  NAME_SPHERE_BW);
-            DIO.MapByName(unit, "ProbeCtrl.SphereFwIn",  false, NAME_SPHERE_FW);
-            DIO.MapByName(unit, "ProbeCtrl.SphereBwIn",  false, NAME_SPHERE_BW);
-            _cylSphere = new Cylinder("ProbeSphere", "ProbeCtrl.SphereFwOut", "ProbeCtrl.SphereBwOut", "ProbeCtrl.SphereFwIn", "ProbeCtrl.SphereBwIn");
+            // Vacuum 별칭으로 조회만
+            if (!IoAutoBindings.Vacuums.TryGetValue("ProbeCardVac", out _vacProbeCard))
+            {
+                Log.Write("IndexChipProbeController", "BindIoDomains", "Vacuums not found: ProbeCardVac");
+            }
 
-            // Probe Card Vacuum
-            DIO.MapByName(unit, "ProbeCtrl.VacOut", true,  NAME_PROBE_VAC);
-            DIO.MapByName(unit, "ProbeCtrl.VacOk",  false, NAME_PROBE_VAC_OK);
-            _vacProbeCard = new Vacuum("ProbeCardVac", "ProbeCtrl.VacOut", "ProbeCtrl.VacOk");
+            if (!IoAutoBindings.Cylinders.TryGetValue("ProbeSphere", out _cylSphere))
+            {
+                Log.Write("IndexChipProbeController", "BindIoDomains", "Cylinder not found: ProbeSphere");
+            }
         }
+
+        // === Domain Control (표준 구동) ===
+        public bool SetProbeVac(bool on)
+        {
+            if (_vacProbeCard == null) return false;
+            if (on) _vacProbeCard.On();
+            else   _vacProbeCard.Off();
+            return true;
+        }
+        public bool SetSphereForward(int timeoutMs = 2000)
+        {
+            if (_cylSphere == null) return false;
+            return _cylSphere.Extend(timeoutMs);
+        }
+        public bool SetSphereBackward(int timeoutMs = 2000)
+        {
+            if (_cylSphere == null) return false;
+            return _cylSphere.Retract(timeoutMs);
+        }
+        /////////////////////
 
         // === Direct Valve Control (강제 구동) ===
         public void SetSphereFwdValve(bool on) => WriteOutput(NAME_SPHERE_FW, on);

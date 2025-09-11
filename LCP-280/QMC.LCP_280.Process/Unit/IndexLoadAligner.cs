@@ -49,9 +49,34 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Binding / Helpers
         private void BindAxes()
         {
-            Axes.TryGetValue("Align T Axis", out _alignT);
-            Axes.TryGetValue("Index Z Axis", out _indexZ);
+            var mgr = Equipment.Instance?.AxisManager;
+            if (mgr == null)
+            {
+                Log.Write("IndexLoadAligner", "[BindAxes] AxisManager null");
+                return;
+            }
+
+            const string unitName = "Unit"; // Equipment.CreateAxes 에서 사용한 유닛명과 동일해야 함
+            BindAxis(mgr, unitName, "Align T Axis", ref _alignT);
+            BindAxis(mgr, unitName, "Index Z Axis", ref _indexZ);
         }
+
+        private void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
+        {
+            MotionAxis axis;
+            if (mgr.TryGet(unitName, axisName, out axis) && axis != null)
+            {
+                field = axis;
+                Axes[axisName] = axis; // 사전에 일관 등록(이미 있으면 갱신)
+            }
+            else
+            {
+                if (Axes.ContainsKey(axisName))
+                    Axes.Remove(axisName);
+                Log.Write("IndexLoadAligner", $"[BindAxes] Axis '{unitName}||{axisName}' 미존재");
+            }
+        }
+
         public void MoveAxisOnce(MotionAxis ax, double target)
         {
             if (ax == null) return;

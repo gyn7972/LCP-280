@@ -127,7 +127,7 @@ namespace QMC.LCP_280.Process.Unit
                 string posName = name.ToString();
                 if (TeachingPositions.FirstOrDefault(p => p.Name == posName) == null)
                 {
-                    var axisPositions = new Dictionary<string, double> { { "Index T Axis", 0.0 } };
+                    var axisPositions = new Dictionary<string, double> { { AxisNames.IndexT, 0.0 } };
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
                 }
                 if (!Offsets.ContainsKey(posName)) Offsets[posName] = 0.0;
@@ -154,7 +154,7 @@ namespace QMC.LCP_280.Process.Unit
         public double GetPositionWithOffset(string name)
         {
             var tp = GetTeachingPosition(name); if (tp == null) return 0.0;
-            double t = tp.AxisPositions.TryGetValue("Index T Axis", out var vt) ? vt : 0.0;
+            double t = tp.AxisPositions.TryGetValue(AxisNames.IndexT, out var vt) ? vt : 0.0;
             if (Offsets.TryGetValue(name, out var off)) t += off; return t;
         }
 

@@ -113,10 +113,11 @@ namespace QMC.Common.DIO
             _periodMs = periodMs;
             if (_running) return;
 
+            //Thread.CurrentThread.Name = "DioScanService_WorkLoop";
             _running = true;
             _worker = new Thread(WorkLoop);
             _worker.IsBackground = true;
-            _worker.Name = "DioScanService";
+            _worker.Name = "DioScanService_WorkLoop";
             _worker.Start();
         }
 
@@ -197,6 +198,7 @@ namespace QMC.Common.DIO
             // 초기 1회 스캔
             RefreshOnce();
 
+            
             while (_running)
             {
                 ScanInputs();
