@@ -391,5 +391,14 @@ namespace QMC.LCP_280.Process.Unit
         public bool AirTankPressureOk() => ReadInput(AIR_TANK_PRESSURE);
         public bool VacTankPressureOk() => ReadInput(VAC_TANK_PRESSURE) || ReadInput(VAC_TANK_PRESSURE_LEGACY);
         #endregion
+
+        #region Seq 단위 동작 함수
+        public int Rotate()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }

@@ -1,22 +1,25 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Cameras; // Camera base
+using QMC.Common.Cameras.HIKVISION; // HIK camera
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
+using QMC.Common.Vision;              // VisionImage
+using QMC.Common.Vision.Cognex;       // Legacy compatibility
+using QMC.Common.Vision.Tools;        // Tool base
+using QMC.LCP_280.Process;            // PatternMatchingRunner
 using QMC.LCP_280.Process.Component;
-using QMC.Common.Cameras; // Camera base
-using QMC.Common.Cameras.HIKVISION; // HIK camera
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using System.IO;
-using QMC.Common.Vision;              // VisionImage
-using QMC.Common.Vision.Tools;        // Tool base
-using QMC.Common.Vision.Cognex;       // Legacy compatibility
-using QMC.LCP_280.Process;            // PatternMatchingRunner
-using QMC.Common.IOUtil;              // UnitIoHelper
+using System.Linq;
+using System.Threading;
+using System.Windows;
+using static System.Windows.Forms.AxHost;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -31,6 +34,14 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputStage : BaseUnit
     {
+        private struct AngleStats
+        {
+            public int RawCount;
+            public double Average;
+            public double StdDev;
+            public double Representative;
+        }
+
         #region Nested Teaching Collection (Enum Indexer)
         public class TeachingPositionCollection : List<TeachingPosition>
         {
@@ -68,22 +79,13 @@ namespace QMC.LCP_280.Process.Unit
         public string PatternRecipeName { get; set; } = "Default";
         #endregion
 
-        #region DryRun Simulation Fields
-        public bool DryRun { get; private set; }
-        public void SetDryRun(bool on) => DryRun = on;
-        private bool _simClamp;
-        private bool _simClampDown;
-        private bool _simVac;
-        private bool _simRingPresent;
-        private bool _simExpUp;
-        #endregion
-
         #region Construction / Initialization
         public InputStage(InputStageConfig config = null)
             : base("InputStageConfig")
         {
             InputStageConfig = config ?? new InputStageConfig();
             AddComponents();
+
         }
 
         public override void AddComponents()
@@ -119,9 +121,6 @@ namespace QMC.LCP_280.Process.Unit
 
         private (bool ok, List<double> thetaList) MultiSearchViaRunner()
         {
-            if (DryRun)
-                return (true, new List<double> { 0.0, 0.01, -0.005, 0.004, -0.003 });
-
             var ret = VisionRunnerHub.SearchAngles(CameraKey);
             if (!ret.ok) return (false, null);
             return (true, ret.angles);
@@ -138,10 +137,40 @@ namespace QMC.LCP_280.Process.Unit
             return ok && angles != null && angles.Count > 0;
         }
 
+        private AngleStats ComputeAngleStats(List<double> angles, bool excludeExtremes)
+        {
+            var st = new AngleStats { RawCount = angles?.Count ?? 0 };
+            if (angles == null || angles.Count == 0)
+                return st;
+
+            var ordered = angles.OrderBy(a => a).ToList();
+            IEnumerable<double> work = ordered;
+
+            if (excludeExtremes && ordered.Count >= 3)
+                work = ordered.Skip(1).Take(ordered.Count - 2); // 최솟값/최댓값 1개씩 제거
+
+            var wList = work.ToList();
+            if (wList.Count == 0)
+                return st;
+
+            double avg = wList.Average();
+            double var = 0.0;
+            if (wList.Count > 1)
+                var = wList.Sum(a => (a - avg) * (a - avg)) / (wList.Count - 1);
+            double std = Math.Sqrt(var);
+
+            // 대표값: 평균과 가장 가까운 "원본(전체 angles)" 값
+            double rep = angles.OrderBy(a => Math.Abs(a - avg)).First();
+
+            st.Average = avg;
+            st.StdDev = std;
+            st.Representative = rep;
+            return st;
+        }
+
+
         private (bool ok, double x, double y) CenterSearchViaRunner()
         {
-            if (DryRun) return (true, 0.0, 0.0);
-
             var res = VisionRunnerHub.SearchCenterOffset(
                 CameraKey,
                 PixelSizeXmm,
@@ -189,31 +218,75 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = InputStageConfig.GetTeachingPosition(positionName);
             if (tp == null) return -1;
-            var (x, y, t) = InputStageConfig.GetPositionWithOffset(positionName);
+            var (x, y, t) = InputStageConfig.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
             int rc = 0;
             if (AxisX != null) rc |= AxisX.MoveAbs(x, vel > 0 ? vel : AxisX.Config.MaxVelocity, acc > 0 ? acc : AxisX.Config.RunAcc, dec > 0 ? dec : AxisX.Config.RunDec, jerk > 0 ? jerk : AxisX.Config.AccJerkPercent);
             if (AxisY != null) rc |= AxisY.MoveAbs(y, vel > 0 ? vel : AxisY.Config.MaxVelocity, acc > 0 ? acc : AxisY.Config.RunAcc, dec > 0 ? dec : AxisY.Config.RunDec, jerk > 0 ? jerk : AxisY.Config.AccJerkPercent);
             if (AxisT != null) rc |= AxisT.MoveAbs(t, vel > 0 ? vel : AxisT.Config.MaxVelocity, acc > 0 ? acc : AxisT.Config.RunAcc, dec > 0 ? dec : AxisT.Config.RunDec, jerk > 0 ? jerk : AxisT.Config.AccJerkPercent);
             return rc;
         }
-        public int MoveToTeachingPosition(TeachingPosition tp, double vel = 0, double acc = 0, double dec = 0, double jerk = 0) => tp == null ? -1 : MoveToTeachingPosition(tp.Name, vel, acc, dec, jerk);
-        public int MoveToTeachingPosition(InputStageConfig.TeachingPositionName name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0) => MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
+        public int MoveToTeachingPosition(TeachingPosition tp, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
+        {
+            if (tp == null)
+                return -1;
+            return MoveToTeachingPosition(tp.Name, vel, acc, dec, jerk);
+        }
+
+        public int MoveToTeachingPosition(InputStageConfig.TeachingPositionName name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
+        {
+            return MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
+        }
 
         public bool InPosTeaching(string positionName)
         {
             var (x, y, t) = InputStageConfig.GetPositionWithOffset(positionName);
             return InPos(AxisX, x) && InPos(AxisY, y) && InPos(AxisT, t);
         }
-        public bool InPosTeaching(TeachingPosition tp) => tp != null && InPosTeaching(tp.Name);
-        public bool InPosTeaching(InputStageConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
-
-        public void ApplyOffset(string positionName, double dx, double dy, double dt) => InputStageConfig.SetOffset(positionName, dx, dy, dt);
-
-        public void MoveAxisOnce(MotionAxis ax, double target)
+        public bool InPosTeaching(TeachingPosition tp)
         {
-            if (ax == null) return;
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp.Name);
+        }
+        public bool InPosTeaching(InputStageConfig.TeachingPositionName name)
+        {
+            return InPosTeaching(name.ToString());
+        }
+
+        public int ApplyOffset(string positionName, double dx, double dy, double dt)
+        {
+            int nRtn = -1;
+            // Teaching Position 가져오기
+            var tp = InputStageConfig.GetTeachingPosition(positionName);
+            if (tp == null)
+                return nRtn;
+
+            // 오프셋 적용
+            InputStageConfig.SetOffset(positionName, dx, dy, dt);
+
+            // 이동 명령 수행
+            int rc = MoveToTeachingPosition(positionName);
+            if (rc != 0)
+                return nRtn;
+
+            // In-Position 확인 (타임아웃 대기)
+            nRtn = (int)WaitUntil(() => InPosTeaching(positionName), MoveTimeoutMs);
+            return nRtn;
+        }
+
+        public int MoveAxisOnce(MotionAxis ax, double target)
+        {
+            int nRtn = -1;
+            if (ax == null) 
+                return nRtn;
+
             if (Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+            {
+                nRtn = ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+            }
+
+
+            return nRtn;
         }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
@@ -229,20 +302,6 @@ namespace QMC.LCP_280.Process.Unit
         #region Low-Level IO Access (Refactored to match OutputStage pattern)
         public bool ReadInput(string name)
         {
-            if (DryRun)
-            {
-                switch (name)
-                {
-                    case InputStageConfig.IO.CLAMP_FWD_SNS: return _simClamp; // Up/Clamp
-                    case InputStageConfig.IO.CLAMP_DOWN_SNS: return _simClampDown; // Down
-                    case InputStageConfig.IO.VAC_OK_SNS: return _simVac;
-                    case InputStageConfig.IO.RING_CHECK0:
-                    case InputStageConfig.IO.RING_CHECK1: return _simRingPresent;
-                    case InputStageConfig.IO.EXPANDER_UP_SNS: return _simExpUp;
-                    case InputStageConfig.IO.EXPANDER_DOWN_SNS: return !_simExpUp;
-                }
-                return false;
-            }
             var hi = InputStageConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -252,20 +311,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            if (DryRun)
-            {
-                switch (name)
-                {
-                    case InputStageConfig.IO.CLAMP_FWD_OUT: _simClamp = on; if (on) _simClampDown = false; break;
-                    case InputStageConfig.IO.CLAMP_BWD_OUT: if (on) { _simClamp = false; _simClampDown = true; } break;
-                    case InputStageConfig.IO.VAC_OUT: _simVac = on; break;
-                    case InputStageConfig.IO.EXPANDER_UP_OUT: if (on) _simExpUp = true; break;
-                    case InputStageConfig.IO.EXPANDER_DOWN_OUT: if (on) _simExpUp = false; break;
-                    case InputStageConfig.IO.CLAMP_UP_OUT: /* lift up */ break;
-                    case InputStageConfig.IO.CLAMP_DOWN_OUT: /* lift down */ break;
-                }
-                return true;
-            }
             var ho = InputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -275,18 +320,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOutputOn(string name)
         {
-            if (DryRun)
-            {
-                switch (name)
-                {
-                    case InputStageConfig.IO.CLAMP_FWD_OUT: return _simClamp;
-                    case InputStageConfig.IO.CLAMP_BWD_OUT: return _simClampDown && !_simClamp;
-                    case InputStageConfig.IO.VAC_OUT: return _simVac;
-                    case InputStageConfig.IO.EXPANDER_UP_OUT: return _simExpUp;
-                    case InputStageConfig.IO.EXPANDER_DOWN_OUT: return !_simExpUp;
-                }
-                return false;
-            }
             var ho = InputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -347,11 +380,16 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool SetClampLift(bool bUpDn)
         {
-            if (_cylClampLift == null) return false;
-            if (bUpDn) return _cylClampLift.Extend();
+            if (_cylClampLift == null) 
+                return false;
+
+            if (bUpDn) 
+                return _cylClampLift.Extend();
             else
             {
-                if (!IsClampBwd()) return false; // 기존 인터락 유지
+                if (!IsClampBwd()) 
+                    return false; // 기존 인터락 유지
+                
                 return _cylClampLift.Retract();
             }
         }
@@ -377,18 +415,273 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsRingPresent() => Ring0() || Ring1();
         #endregion
 
-
-
         // === Direct Valve Control (강제 구동) ===
         public bool IsVacuumValveOn()               => IsOutputOn(InputStageConfig.IO.VAC_OUT);
         public void SetClampLiftUpValve(bool on)    => WriteOutput(InputStageConfig.IO.CLAMP_UP_OUT, on);
         public bool IsClampLiftUpValveOn()          => IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
-        public bool IsVacuum() => DryRun ? _simVac : (_vacuum?.IsOk() ?? ReadInput(InputStageConfig.IO.VAC_OK_SNS));
+        public bool IsVacuum() => ReadInput(InputStageConfig.IO.VAC_OK_SNS);
         public bool IsPlateUp() => ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
         public bool IsPlateDown() => ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
 
+
+        // 파라미터로 빼야하는 Data 및 상수
+        public int MoveTimeoutMs { get; set; } = 6000;
+        public int PollIntervalMs { get; set; } = 30;
+        public double AngleIgnoreThresholdDeg { get; set; } = 0.001;
+        public double AngleMaxApplyDeg { get; set; } = 2.0;
+        public double AngleApplyGain { get; set; } = 1.0; // 방향 반전 필요 시 -1 사용
+        public bool UseOffsetForTAxisCorrection { get; set; } = true; // false면 직접 축 이동 방식으로 전환 가능 (추후 확장)
+
+        private int WaitUntil(Func<bool> cond, int timeoutMs)
+        {
+            int nRet = -1;
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                if (cond()) return nRet;
+                Thread.Sleep(PollIntervalMs);
+            }
+
+            nRet = 0;
+            return nRet;
+        }
+        private int WaitUntilInPos(TeachingPosition tp, int timeoutMs)
+        {
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                if (InPosTeaching(tp))
+                    return 0;
+                Thread.Sleep(PollIntervalMs);
+            }
+            return -1;
+        }
+
+
+        #region Seq 단위 동작 함수
+        public int WaferLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
+        /// <summary>
+        /// 공통: Center Teaching 이동, Grab 이미지까지 수행
+        /// </summary>
+        private int PrepareForAlign(out TeachingPosition centerTp, out VisionImage img)
+        {
+            centerTp = null;
+            img = null;
+
+            // === 내부 인터락 확인 ===
+            if (!IsRingPresent())
+            {
+                Log.Write(UnitName, "Align", "Fail: Ring(Wafer) not present");
+                return -1;
+            }
+            if (!IsClampLiftUp())
+            {
+                Log.Write(UnitName, "Align", "Fail: Clamp Lift not Up");
+                return -1;
+            }
+            if (!IsClampFwd())
+            {
+                Log.Write(UnitName, "Align", "Fail: Clamp not FWD");
+                return -1;
+            }
+
+            // === Center Teaching Position 이동 ===
+            centerTp = TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint];
+            if (centerTp == null)
+            {
+                Log.Write(UnitName, "Align", "Fail: CenterPoint teaching not defined");
+                return -1;
+            }
+            if (MoveToTeachingPosition(centerTp) != 0)
+            {
+                Log.Write(UnitName, "Align", "Fail: Move center command");
+                return -1;
+            }
+            if (WaitUntilInPos(centerTp, MoveTimeoutMs) != 0)
+            {
+                Log.Write(UnitName, "Align", "Fail: Move center timeout");
+                return -1;
+            }
+
+            // === 카메라 그랩 ===
+            if (StageCamera == null)
+            {
+                Log.Write(UnitName, "Align", "Fail: Camera null");
+                return -1;
+            }
+            var grabRc = StageCamera.GrabSync(out img);
+            if (grabRc != 0 || img == null || img.RawData == null)
+            {
+                Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
+                return -1;
+            }
+            StageCamera.LatestImage = img;
+            Log.Write(UnitName, "Align", "Grab OK");
+
+            return 0;
+        }
+
+        /// <summary>
+        /// T축 정렬
+        /// </summary>
+        public int T_Align()
+        {
+            int nRet = -1;
+            try
+            {
+                Log.Write(UnitName, "T_Align", "Start");
+
+                // 공통 준비
+                if (PrepareForAlign(out var centerTp, out var img) != 0)
+                    return nRet;
+
+                // Vision Angle 검색
+                if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
+                {
+                    Log.Write(UnitName, "T_Align", "Fail: Vision angle search fail or empty");
+                    return nRet;
+                }
+
+                var stats = ComputeAngleStats(angleList, excludeExtremes: true);
+                if (stats.RawCount == 0)
+                {
+                    Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
+                    return nRet;
+                }
+
+                double rawAngle = stats.Representative;
+                Log.Write(UnitName, "T_Align",
+                    $"Angle Representative={rawAngle:F6} avg={stats.Average:F6} std={stats.StdDev:F6} rawCount={stats.RawCount}");
+
+                // 유효성 체크
+                if (Math.Abs(rawAngle) < AngleIgnoreThresholdDeg)
+                {
+                    Log.Write(UnitName, "T_Align", "Angle below ignore threshold → skip correction");
+                    return nRet;
+                }
+                if (Math.Abs(rawAngle) > AngleMaxApplyDeg)
+                {
+                    Log.Write(UnitName, "T_Align",
+                        $"Fail: Angle {rawAngle:F4} over max limit {AngleMaxApplyDeg}");
+                    return nRet;
+                }
+
+                double applyAngle = rawAngle * AngleApplyGain;
+
+                // 보정 적용
+                int correctionOk = UseOffsetForTAxisCorrection
+                    ? ApplyOffset(centerTp.Name, 0.0, 0.0, applyAngle)
+                    : MoveAxisOnce(AxisT, applyAngle);
+
+                Log.Write(UnitName, "T_Align",
+                    $"{(UseOffsetForTAxisCorrection ? "ApplyOffset" : "DirectMove")}(T) angle={applyAngle:F6} -> {(correctionOk == 0 ? "OK" : "FAIL")}");
+
+                if (correctionOk != 0)
+                    return nRet;
+
+                // 보정 후 재이동
+                if (MoveToTeachingPosition(centerTp) != 0)
+                    return nRet;
+                if (WaitUntil(() => InPosTeaching(centerTp), MoveTimeoutMs) != 0)
+                    return nRet;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return nRet;
+            }
+            nRet = 0;
+            return nRet;
+        }
+
+        /// <summary>
+        /// XY 정렬
+        /// </summary>
+        public int XY_Align()
+        {
+            int nRet = -1;
+            try
+            {
+                Log.Write(UnitName, "XY_Align", "Start");
+
+                // 공통 준비
+                if (PrepareForAlign(out var centerTp, out var img) != 0)
+                    return nRet;
+
+                // Vision XY Offset 검색
+                var res = CenterSearchViaRunner();
+                if (!res.ok)
+                {
+                    Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search fail");
+                    return nRet;
+                }
+
+                double dx = res.x;
+                double dy = res.y;
+
+                Log.Write(UnitName, "XY_Align",
+                    $"XY Offset dx={dx:F6} dy={dy:F6}");
+
+                // 유효성 체크
+                if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
+                {
+                    Log.Write(UnitName, "XY_Align", "Offset below threshold → skip correction");
+                    return nRet;
+                }
+                if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
+                {
+                    Log.Write(UnitName, "XY_Align",
+                        $"Fail: Offset over limit dx={dx:F4}, dy={dy:F4}, limit={MaxXYOffsetMm}");
+                    return nRet;
+                }
+
+                // 보정 적용
+                int correctionOk = ApplyOffset(centerTp.Name, dx, dy, 0.0);
+                Log.Write(UnitName, "XY_Align",
+                    $"ApplyOffset(XY) dx={dx:F6}, dy={dy:F6} -> {(correctionOk == 0 ? "OK" : "FAIL")}");
+
+                if (correctionOk != 0)
+                    return nRet;
+
+                // 보정 후 재이동
+                if (MoveToTeachingPosition(centerTp) != 0)
+                    return nRet;
+                if (WaitUntil(() => InPosTeaching(centerTp), MoveTimeoutMs) != 0)
+                    return nRet;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return nRet;
+            }
+            nRet = 0;
+            return nRet;
+        }
+
+
+        public int ChipPickUp()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int WaferUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }

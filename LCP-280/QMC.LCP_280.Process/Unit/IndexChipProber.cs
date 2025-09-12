@@ -105,5 +105,14 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
         #endregion
+
+        #region Seq 단위 동작 함수
+        public int Measurement()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }

@@ -369,5 +369,28 @@ namespace QMC.LCP_280.Process.Unit
             }
             
         }
+
+        #region Seq 단위 동작 함수
+        public int ChipPickUp()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int RotateArm()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int ChipPlaceDown()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }
