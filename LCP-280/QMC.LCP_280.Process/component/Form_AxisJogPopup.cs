@@ -461,6 +461,34 @@ namespace QMC.LCP_280.Process.Unit
             lblPosition.Text = hasAxis ? "----" : "축 미선택";
         }
 
+        private void btnStep1_Click(object sender, EventArgs e)
+        {
+            nudStep.Value += 1;
+        }
+
+        private void btnStep10_Click(object sender, EventArgs e)
+        {
+            nudStep.Value += 0.1M;  // decimal
+        }
+
+        private void btnStep100_Click(object sender, EventArgs e)
+        {
+            nudStep.Value += 0.01M;
+        }
+
+        private void btnStep1000_Click(object sender, EventArgs e)
+        {
+            nudStep.Value += 0.001M;
+        }
+        private void btnStepClear_Click(object sender, EventArgs e)
+        {
+            // 요청: Clear 시 값을 0으로 설정 (범위를 벗어나지 않도록 클램프)
+            decimal target = 0M;
+            if (target < nudStep.Minimum) target = nudStep.Minimum;
+            if (target > nudStep.Maximum) target = nudStep.Maximum;
+            nudStep.Value = target;
+        }
+
         //private async void DoStepMoveAsync(MotionAxis axis, JogCommand jc, double stepUnit)
         //{
         //    lblStatus.Text = "이동 중...";

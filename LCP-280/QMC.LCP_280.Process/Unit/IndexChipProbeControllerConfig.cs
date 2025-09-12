@@ -66,7 +66,7 @@ namespace QMC.LCP_280.Process.Unit
             Bottom_Index8_Ready,
             SphereZ_Up,
             SphereZ_Ready,
-            SafeZone,
+            SafetyZone,
         }
 
         [JsonIgnore]
@@ -91,7 +91,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.TopContact_Index8_Ready,     new [] { AxisNames.ProbeZ } },
             { TeachingPositionName.SphereZ_Up,                  new [] { AxisNames.SphereZ } },
             { TeachingPositionName.SphereZ_Ready,               new [] { AxisNames.SphereZ } },
-            { TeachingPositionName.SafeZone,                    new [] { AxisNames.ProbeZ } },
+            { TeachingPositionName.SafetyZone,                  new [] { AxisNames.ProbeZ, AxisNames.ProbeCardZ } },
             { TeachingPositionName.Bottom_Index1_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
             { TeachingPositionName.Bottom_Index1_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
             { TeachingPositionName.Bottom_Index2_Up,            new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },

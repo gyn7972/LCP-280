@@ -20,8 +20,9 @@ namespace QMC.LCP_280.Process.Unit
             Pickup_Index6,
             Pickup_Index7,
             Pickup_Index8,
-            Place_Ready,
-            SafeZone
+            Place,
+            Ready,
+            SafetyZone
             // 필요시 확장
         }
 
@@ -39,8 +40,9 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.Pickup_Index6, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
             { TeachingPositionName.Pickup_Index7, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
             { TeachingPositionName.Pickup_Index8, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Place_Ready,   new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.SafeZone,      new [] { AxisNames.RightToolT, AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Ready,         new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
+            { TeachingPositionName.SafetyZone,      new [] { AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
         };
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
