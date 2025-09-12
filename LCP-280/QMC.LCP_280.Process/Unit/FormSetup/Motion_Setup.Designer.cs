@@ -571,6 +571,7 @@ namespace QMC.LCP_280.Process.Unit
             pc.Add(new DoubleProperty("Pulses Per Unit", axis.Setup.PulsesPerUnit));
             pc.Add(new DoubleProperty("Axis Scale", axis.Setup.AxisScale));
             pc.Add(new DoubleProperty("Axis Power", axis.Setup.AxisPowerPercent));
+            pc.Add(new BoolProperty("Simulation", axis.Setup.IsSimulation));
 
             // Config
             pc.Add(new TitleOnlyProperty("Config"));

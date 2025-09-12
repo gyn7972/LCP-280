@@ -389,6 +389,10 @@
     <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="PKGTester\TestItemResult.cs" />
+    <Compile Include="UI\ProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ProgressForm.Designer.cs" />
     <Compile Include="VisionPart\MultiPatternMatchingVisionPart.cs" />
     <Compile Include="PatternMatching\PatternMatchingParamControl.cs">
       <SubType>UserControl</SubType>
@@ -500,6 +504,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
+    <EmbeddedResource Include="UI\ProgressForm.resx" />
     <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
       <DependentUpon>Form_Alarm.cs</DependentUpon>

@@ -33,9 +33,12 @@ namespace QMC.Common.IOUtil
         {
             if (unit == null) throw new ArgumentNullException(nameof(unit));
             if (!TryFindByName(unit, isOutput, channelName, out var moduleName, out var displayNo))
-                throw new InvalidOperationException($"'{channelName}' 채널을 찾을 수 없습니다. (isOutput={isOutput})");
+            {
+                _map[key] = new IoPoint(moduleName, displayNo, isOutput);
+            }
+                
 
-            _map[key] = new IoPoint(moduleName, displayNo, isOutput);
+            
         }
 
         /// <summary>모듈/표시번호를 직접 지정해 매핑</summary>

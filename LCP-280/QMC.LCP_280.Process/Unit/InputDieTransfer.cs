@@ -5,8 +5,11 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -256,5 +259,115 @@ namespace QMC.LCP_280.Process.Unit
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
+
+        public Task<int> MovePickUpPosition()
+        {
+            // 여기서 인터락 체크 존나 철저 하게.
+
+            return MoveTeachingPositionOnceASync((int)InputDieTransferConfig.TeachingPositionName.Pickup,false);
+        }
+        public Task<int> MoveTeachingPositionOnceASync(int selIndex, bool isFine)
+        {
+            return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
+        }
+        public int MoveTeachingPositionOnce(int selIndex, bool isFine)
+        {
+            var tp = this.InputDieTransferConfig.TeachingPositions[selIndex];
+
+
+
+            var moveResults = new List<Tuple<string, int>>();
+
+            foreach (var kv in tp.AxisPositions)
+            {
+
+
+                string axisKey = kv.Key;
+                double targetPos = kv.Value;
+
+                // 축 찾기: TeachingPosition.Axes 사전 우선 → 없으면 Unit.Axes에서 키 또는 Name 으로 재검색
+                MotionAxis axis = null;
+                if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
+                if (axis == null && this.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
+                if (axis == null)
+                {
+                    // Name 매칭 시도
+                    foreach (var aPair in this.Axes)
+                    {
+                        if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            axis = aPair.Value; break;
+                        }
+                    }
+                }
+                if (axis == null) continue; // 해당 축 없음 → 스킵
+
+                // 이동 명령 전송 (비동기 실행; 완료는 WaitMoveDone 사용)
+                int rc = axis.MoveAbs(targetPos, isFine);
+                moveResults.Add(new Tuple<string, int>(axisKey, rc));
+            }
+
+
+            // 이동 완료 대기 (모든 축 대상으로 최대 공통 Timeout 사용: 각 axis.Setup.MoveTimeoutMs)
+            int waitErrors = 0;
+            foreach (var kv in tp.AxisPositions)
+            {
+                MotionAxis axis = null;
+                if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
+                if (axis == null && this.Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
+                if (axis == null) continue;
+
+                int rc = axis.WaitMoveDone(-1); // axis.Setup.MoveTimeoutMs 사용
+                if (rc != 0) waitErrors++;
+            }
+            if(waitErrors == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return -1;
+            }
+                
+        }
+
+        public void StopTeachingPositionOnce(int selIndex)
+        {
+            var tp = this.InputDieTransferConfig.TeachingPositions[selIndex];
+
+
+
+            var moveResults = new List<Tuple<string, int>>();
+
+            foreach (var kv in tp.AxisPositions)
+            {
+
+
+                string axisKey = kv.Key;
+                double targetPos = kv.Value;
+
+                // 축 찾기: TeachingPosition.Axes 사전 우선 → 없으면 Unit.Axes에서 키 또는 Name 으로 재검색
+                MotionAxis axis = null;
+                if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
+                if (axis == null && this.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
+                if (axis == null)
+                {
+                    // Name 매칭 시도
+                    foreach (var aPair in this.Axes)
+                    {
+                        if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            axis = aPair.Value; break;
+                        }
+                    }
+                }
+                if (axis == null) continue; // 해당 축 없음 → 스킵
+
+                // 이동 명령 전송 (비동기 실행; 완료는 WaitMoveDone 사용)
+                int rc = axis.Stop();
+                
+            }
+            
+        }
     }
 }
