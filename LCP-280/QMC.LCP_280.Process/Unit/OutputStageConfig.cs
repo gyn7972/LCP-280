@@ -52,7 +52,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.Unloading,   new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
             { TeachingPositionName.CenterPoint, new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
             { TeachingPositionName.Ready,       new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
-            { TeachingPositionName.SetPosition, new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.SetPosition, new [] { AxisNames.BinStageX, AxisNames.BinStageY } },
         };
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

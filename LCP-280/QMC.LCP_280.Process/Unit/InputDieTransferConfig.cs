@@ -55,8 +55,8 @@ namespace QMC.LCP_280.Process.Unit
             Place_Index6,
             Place_Index7,
             Place_Index8,
-            Place_Ready,
-            SafeZone
+            Ready,
+            SafetyZone
             // 필요시 확장
         }
 
@@ -75,8 +75,8 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.Place_Index6, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
             { TeachingPositionName.Place_Index7, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
             { TeachingPositionName.Place_Index8, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Ready,  new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.SafeZone,     new [] { AxisNames.LeftToolT, AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Ready,        new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.SafetyZone,   new [] { AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
         };
 
         /// <summary>Teaching Position 순수 목록</summary>
