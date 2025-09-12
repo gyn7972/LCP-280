@@ -1,9 +1,9 @@
-﻿using QMC.LCP_280.Process.Component; // ensure access to DIOControl / TeachingPositionControl
+﻿using QMC.LCP_280.Process.Component; 
 using QMC.LCP_280.Process.Sequences;
 using System;
-using System.Windows.Forms;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -25,13 +25,6 @@ namespace QMC.LCP_280.Process.Unit
         private InputStage InputStageUnit { get; set; }
         private InputStageEjector InputStageEjectorUnit { get; set; }
         private InputDieTransfer InputDieTransferUnit { get; set; }
-
-        // Sequences
-        private SeqInputStage SeqInputStage { get; set; }
-        private SeqInputChipAlignVision _seqAlignVision;
-        private SeqInputChipMappingVision _seqMappingVision;
-        private SeqInputDieTransferChipUp _seqDiePick;
-        private SeqInputDieTransferChipDown _seqDiePlace;
 
         // State
         private bool _initialized;
@@ -340,64 +333,34 @@ namespace QMC.LCP_280.Process.Unit
                 // InputStage sequence
                 if (InputStageUnit != null)
                 {
-                    if (SeqInputStage == null)
-                        // 기존: new SeqInputStage(InputStageUnit) -> Ejector 포함 생성자로 변경
-                        SeqInputStage = new SeqInputStage(InputStageUnit, InputStageEjectorUnit);
-                    manualSequenceControl?.RegisterSequence(
-                        "InputStage",
-                        SeqInputStage,
-                        () => Enum.GetNames(typeof(SeqInputStage.Step)),
-                        step => SeqInputStage.StartSingle(step),
-                        idx => Enum.GetName(typeof(SeqInputStage.Step), idx),
-                        autoSelect: true);
-                }
-                // Align Vision
-                if (InputStageUnit != null)
-                {
-                    //if (_seqAlignVision == null)
-                    //    _seqAlignVision = new SeqInputChipAlignVision(InputStageUnit); // Unit 재사용
+                    // T_Align 등록
+                    //manualSequenceControl.RegisterSequence(
+                    //    "Stage_T_Align",
+                    //    InputStageUnit.SeqTAlign,
+                    //    stepNameProvider: () => T_AlignSeq.GetStepNames(),
+                    //    startSingleHandler: (name) => InputStageUnit.SeqTAlign.StartSingle(name),
+                    //    stepIndexNameResolver: (idx) => T_AlignSeq.GetStepName(idx)
+                    //);
+
+                    // XY_Align 등록
+                    //manualSequenceControl.RegisterSequence(
+                    //    "Stage_XY_Align",
+                    //    InputStageUnit.SeqXYAlign,
+                    //    stepNameProvider: () => XY_AlignSeq.GetStepNames(),
+                    //    startSingleHandler: (name) => InputStageUnit.SeqXYAlign.StartSingle(name),
+                    //    stepIndexNameResolver: (idx) => XY_AlignSeq.GetStepName(idx)
+                    //);
+
+                    //if (SeqInputStage == null)
+                    //    // 기존: new SeqInputStage(InputStageUnit) -> Ejector 포함 생성자로 변경
+                    //    SeqInputStage = new SeqInputStage(InputStageUnit, InputStageEjectorUnit);
                     //manualSequenceControl?.RegisterSequence(
-                    //    "AlignVision",
-                    //    _seqAlignVision,
-                    //    () => SeqInputChipAlignVision.GetStepNames(),
-                    //    step => _seqAlignVision.StartSingle(step),
-                    //    idx => Enum.GetName(typeof(SeqInputChipAlignVision.Step), idx));
-                }
-                // Mapping Vision
-                if (InputStageUnit != null)
-                {
-                    if (_seqMappingVision == null)
-                        _seqMappingVision = new SeqInputChipMappingVision(InputStageUnit); // Unit 재사용
-                    manualSequenceControl?.RegisterSequence(
-                        "MappingVision",
-                        _seqMappingVision,
-                        () => SeqInputChipMappingVision.GetStepNames(),
-                        step => _seqMappingVision.StartSingle(step),
-                        idx => Enum.GetName(typeof(SeqInputChipMappingVision.Step), idx));
-                }
-                // Pick Sequence
-                if (InputDieTransferUnit != null)
-                {
-                    if (_seqDiePick == null)
-                        _seqDiePick = new SeqInputDieTransferChipUp(InputDieTransferUnit, 0, InputStageUnit, InputStageEjectorUnit); // 등록된 Unit 전달
-                    manualSequenceControl?.RegisterSequence(
-                        "DiePick",
-                        _seqDiePick,
-                        () => Enum.GetNames(typeof(SeqInputDieTransferChipUp.Step)),
-                        step => { try { return _seqDiePick.Start(); } catch { return false; } },
-                        idx => Enum.GetName(typeof(SeqInputDieTransferChipUp.Step), idx));
-                }
-                // Place Sequence
-                if (InputDieTransferUnit != null)
-                {
-                    if (_seqDiePlace == null)
-                        _seqDiePlace = new SeqInputDieTransferChipDown(InputDieTransferUnit); // 등록된 Unit 전달
-                    manualSequenceControl?.RegisterSequence(
-                        "DiePlace",
-                        _seqDiePlace,
-                        () => Enum.GetNames(typeof(SeqInputDieTransferChipDown.Step)),
-                        step => { try { return _seqDiePlace.Start(); } catch { return false; } },
-                        idx => Enum.GetName(typeof(SeqInputDieTransferChipDown.Step), idx));
+                    //    "InputStage",
+                    //    SeqInputStage,
+                    //    () => Enum.GetNames(typeof(SeqInputStage.Step)),
+                    //    step => SeqInputStage.StartSingle(step),
+                    //    idx => Enum.GetName(typeof(SeqInputStage.Step), idx),
+                    //    autoSelect: true);
                 }
             }
             catch { }
@@ -407,7 +370,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Events
         private void ChipLoader_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
-            try { SeqInputStage?.Stop(); } catch { }
+            
         }
 
         private void _btnVisionSetting_Click(object sender, EventArgs e)

@@ -190,5 +190,42 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsFeederClampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
         public bool IsFeederUnclampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
+
+        #region Seq 단위 동작 함수
+        public int BinLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int BarcodeReading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int StageLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int StageUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int BinUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }

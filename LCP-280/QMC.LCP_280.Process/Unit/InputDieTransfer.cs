@@ -256,5 +256,28 @@ namespace QMC.LCP_280.Process.Unit
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
+
+        #region Seq 단위 동작 함수
+        public int ChipPickUp()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int RotateArm()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int ChipPlaceDown()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }

@@ -300,5 +300,28 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
         public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
         #endregion
+
+        #region Seq 단위 동작 함수
+        public int BinLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int ChipPlaceDown()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int BinUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }
