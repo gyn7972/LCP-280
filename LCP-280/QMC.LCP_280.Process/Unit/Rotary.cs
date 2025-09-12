@@ -165,22 +165,22 @@ namespace QMC.LCP_280.Process.Unit
             // IndexChipProbeController
             if (eq.Units.TryGetValue("IndexChipProbeController", out var u1) && u1 is IndexChipProbeController prober)
             {
-                if (!IsUnitInSafe(prober.InPosTeaching)) { reason = "IndexChipProbeController가 Safe Zone이 아닙니다."; return false; }
+                if (!IsUnitInSafe(prober.InPosTeaching)) { reason = "IndexChipProbeController Not in Safety Zone"; return false; }
             }
             // IndexLoadAligner
             if (eq.Units.TryGetValue("IndexLoadAligner", out var u2) && u2 is IndexLoadAligner loadAligner)
             {
-                if (!IsUnitInSafe(loadAligner.InPosTeaching)) { reason = "IndexLoadAligner가 Safe Zone이 아닙니다."; return false; }
+                if (!IsUnitInSafe(loadAligner.InPosTeaching)) { reason = "IndexLoadAligner Not in Safety Zone"; return false; }
             }
             // InputDieTransfer
             if (eq.Units.TryGetValue("InputDieTransfer", out var u3) && u3 is InputDieTransfer inputDie)
             {
-                if (!IsUnitInSafe(inputDie.InPosTeaching)) { reason = "InputDieTransfer가 Safe Zone이 아닙니다."; return false; }
+                if (!IsUnitInSafe(inputDie.InPosTeaching)) { reason = "InputDieTransfer Not in Safety Zone"; return false; }
             }
             // OutputDieTransfer
             if (eq.Units.TryGetValue("OutputDieTransfer", out var u4) && u4 is OutputDieTransfer outputDie)
             {
-                if (!IsUnitInSafe(outputDie.InPosTeaching)) { reason = "OutputDieTransfer가 Safe Zone이 아닙니다."; return false; }
+                if (!IsUnitInSafe(outputDie.InPosTeaching)) { reason = "OutputDieTransfer Not in Safety Zone"; return false; }
             }
 
             return true;

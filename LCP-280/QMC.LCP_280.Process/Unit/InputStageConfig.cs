@@ -64,7 +64,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.Unloading,   new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
             { TeachingPositionName.CenterPoint, new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
             { TeachingPositionName.Ready,       new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
-            { TeachingPositionName.SetPosition, new [] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT } },
+            { TeachingPositionName.SetPosition, new [] { AxisNames.WaferStageY } },
         };
 
         /// <summary>Teaching Position 목록 (순수 위치/설명)</summary>

@@ -24,6 +24,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             EjectBlockUp,
             EjectBlockReady,
+            EjectBlockSafety,
             EjectPinOffset,
             EjectPinReady,
             EjectPinChange,
@@ -56,6 +57,7 @@ namespace QMC.LCP_280.Process.Unit
             // 기본: 2축 모두 사용. 필요 시 특정 포지션에서 한 축만 사용하도록 배열 수정.
             { TeachingPositionName.EjectBlockUp,      new [] { AxisNames.EjectorZ } },
             { TeachingPositionName.EjectBlockReady,   new [] { AxisNames.EjectorZ } },
+            { TeachingPositionName.EjectBlockSafety,   new [] { AxisNames.EjectorZ } },
             { TeachingPositionName.EjectPinChange,    new [] { AxisNames.EjectorZ } },
             { TeachingPositionName.EjectPinOffset,    new [] { AxisNames.EjectPinZ } },
             { TeachingPositionName.EjectPinReady,   new [] { AxisNames.EjectPinZ } },
