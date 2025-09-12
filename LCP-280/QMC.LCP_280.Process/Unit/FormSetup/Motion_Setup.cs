@@ -195,6 +195,7 @@ namespace QMC.LCP_280.Process.Unit
                 axis.Setup.PulsesPerUnit = GetInt("Common", "Pulses Per Unit", axis.Setup.PulsesPerUnit);
                 axis.Setup.AxisScale = GetInt("Common", "Axis Scale", axis.Setup.AxisScale);
                 axis.Setup.AxisPowerPercent = GetInt("Common", "Axis Power", axis.Setup.AxisPowerPercent);
+                axis.Setup.IsSimulation = GetBool("Common", "Simulation", axis.Setup.IsSimulation);
 
                 // --- Config
                 axis.Setup.PulseOutput = (PulseOutput)GetInt("Config", "Pulse Output", (int)axis.Setup.PulseOutput);

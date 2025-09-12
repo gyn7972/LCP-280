@@ -3,6 +3,7 @@ using QMC.Common.CustomControl;
 using QMC.Common.DIO; // 추가
 using QMC.Common.IO;  // DIOUnit, DIOModuleSetup
 using QMC.Common.Motions;
+using QMC.Common.UI;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit;
@@ -12,6 +13,8 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
@@ -817,10 +820,6 @@ namespace QMC.LCP_280.Process.Unit
                     MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
-
-                var tp = transfer.InputDieTransferConfig.TeachingPositions[selIndex];
-
-                // Fine / Coarse 판단 (RadioButtonView SelectedIndex: 0=Fine, 1=Coarse)
                 bool isFine = true;
                 if (rbTeachingMoveMode != null)
                 {
@@ -835,67 +834,23 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     catch { isFine = true; }
                 }
-
-                // 축 이동 파라미터 수집 및 동시 이동
-                // 기본값 (Config 값 없거나 0일 때 폴백)
-                double defaultFineVel = 5.0;
-                double defaultCoarseVel = 20.0;
-                double defaultAcc = 10.0;
-                double defaultDec = 10.0;
-                double defaultJerk = 50.0;
-
-                var moveResults = new List<Tuple<string, int>>();
-
-                foreach (var kv in tp.AxisPositions)
+                Task<int>t = transfer.MoveTeachingPositionOnceASync(selIndex, isFine);
+                ProgressForm progressForm = new ProgressForm("Input Die Transfer", "Teaching Position 이동 중...",t);
+                progressForm.ShowDialog(this);
+                int ret = 0;
+                if (progressForm.DialogResult == DialogResult.Cancel)
                 {
-                    string axisKey = kv.Key;
-                    double targetPos = kv.Value;
-
-                    // 축 찾기: TeachingPosition.Axes 사전 우선 → 없으면 Unit.Axes에서 키 또는 Name 으로 재검색
-                    MotionAxis axis = null;
-                    if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
-                    if (axis == null && transfer.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
-                    if (axis == null)
-                    {
-                        // Name 매칭 시도
-                        foreach (var aPair in transfer.Axes)
-                        {
-                            if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-                            {
-                                axis = aPair.Value; break;
-                            }
-                        }
-                    }
-                    if (axis == null) continue; // 해당 축 없음 → 스킵
-
-                    // 속도/가감속/jerk 결정
-                    double vel = isFine ? (axis.Config != null && axis.Config.JogFineVelocity > 0 ? axis.Config.JogFineVelocity : defaultFineVel)
-                                        : (axis.Config != null && axis.Config.JogCoarseVelocity > 0 ? axis.Config.JogCoarseVelocity : defaultCoarseVel);
-                    double acc = axis.Config != null && axis.Config.JogAcc > 0 ? axis.Config.JogAcc : defaultAcc;
-                    double dec = axis.Config != null && axis.Config.JogDec > 0 ? axis.Config.JogDec : defaultDec;
-                    double jerk = axis.Config != null ? (axis.Config.AccJerkPercent + axis.Config.DecJerkPercent) / 2.0 : defaultJerk;
-
-                    // 이동 명령 전송 (비동기 실행; 완료는 WaitMoveDone 사용)
-                    int rc = axis.MoveAbs(targetPos, vel, acc, dec, jerk);
-                    moveResults.Add(new Tuple<string, int>(axisKey, rc));
+                    transfer.StopTeachingPositionOnce(selIndex);
+                    return;
                 }
-
-                // 이동 완료 대기 (모든 축 대상으로 최대 공통 Timeout 사용: 각 axis.Setup.MoveTimeoutMs)
-                int waitErrors = 0;
-                foreach (var kv in tp.AxisPositions)
+                else
                 {
-                    MotionAxis axis = null;
-                    if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
-                    if (axis == null && transfer.Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
-                    if (axis == null) continue;
-
-                    int rc = axis.WaitMoveDone(-1); // axis.Setup.MoveTimeoutMs 사용
-                    if (rc != 0) waitErrors++;
+                    ret = t.Result;
                 }
-
+                
                 // 결과 요약
-                bool anyMoveFail = moveResults.Exists(t => t.Item2 != 0) || waitErrors > 0;
-                if (!anyMoveFail)
+
+                if (ret == 0)
                     MessageBox.Show("Teaching Position 이동 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 else
                     MessageBox.Show("일부 축 이동 실패 또는 타임아웃", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
