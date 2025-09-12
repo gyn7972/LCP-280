@@ -1,4 +1,3 @@
-using System; // added for Obsolete attribute
 using QMC.Common;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
@@ -7,8 +6,10 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System; // added for Obsolete attribute
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -189,6 +190,29 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        private bool IsAtTeaching(OutputStageConfig.TeachingPositionName name)
+        {
+            // Config에 저장된 TeachingPosition 조회
+            var tp = OutputStageConfig.GetTeachingPosition(name.ToString());
+            if (tp == null || tp.AxisPositions == null || tp.AxisPositions.Count == 0)
+                return false;
+
+            // TeachingPosition에 포함된 각 축이 모두 In-Position인지 검사
+            foreach (var kv in tp.AxisPositions)
+            {
+                var axisKey = kv.Key;
+                var target = kv.Value;
+
+                MotionAxis ax;
+                if (!Axes.TryGetValue(axisKey, out ax) || ax == null)
+                    return false;
+
+                if (!InPos(ax, target))
+                    return false;
+            }
+            return true;
+        }
+
         // === Domain Control (표준 구동) ===
         public bool SetVacuum(bool on)
         {
@@ -200,18 +224,30 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool SetClampPlate(bool bUpDn)
         {
-            if (_cylPlate == null) 
+            if (_cylPlate == null)
                 return false;
 
-            if (bUpDn) 
+            if (bUpDn)
+            {
+                if (!IsAtTeaching(OutputStageConfig.TeachingPositionName.Loading) &&
+                    !IsAtTeaching(OutputStageConfig.TeachingPositionName.Unloading))
+                {
+                    MessageBox.Show("SetClampPlate Interlock",
+                              "Plate UP blocked: not at Loading/Unloading teaching position.",
+                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
                 return _cylPlate.Extend();
-            else 
+            }
+            else
+            {
                 return _cylPlate.Retract();
+            }
         }
 
         public bool SetClampLift(bool bUpDn)
         {
-            if (_cylClampLift == null) 
+            if (_cylClampLift == null)
                 return false;
 
             if (bUpDn)
@@ -220,7 +256,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                if (!IsClampBwd()) 
+                if (!IsClampBwd())
                     return false; // 기존 인터락 유지
 
                 return _cylClampLift.Retract();
@@ -229,12 +265,12 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool SetClampFB(bool bFwdBwd)
         {
-            if (_cylClampFB == null) 
+            if (_cylClampFB == null)
                 return false;
 
             if (bFwdBwd)
             {
-                if (!IsClampLiftUp()) 
+                if (!IsClampLiftUp())
                     return false; // 기존 인터락 유지
 
                 return _cylClampFB.Extend();

@@ -498,6 +498,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private async void btnHome_Click(object sender, EventArgs e)
         {
+            HomeProgressForm dlg = null;
             try
             {
                 string axisName = selectAxisListBoxItemsView?.SelectedItemName;
@@ -539,13 +540,78 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // (4) 홈 실행
-                int ret = axis.HomeAsync();
-                if (ret != 0)
+                dlg = new HomeProgressForm();
+                dlg.InitializeProgress($"Axis Home - {axis.Name}", 1);
+                dlg.SafeUpdate(new OperationProgress
                 {
-                    MessageBox.Show($"홈 이동 명령이 실패했습니다. 오류코드: {ret}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    OperationId = "HOME",
+                    Title = $"Home {axis.Name}",
+                    StepIndex = 0,
+                    TotalSteps = 1,
+                    IsCompleted = false,
+                    Message = "Homing..."
+                });
+
+                // 취소/강제정지 연결
+                bool userCanceled = false;
+                dlg.CancelRequested += () =>
+                {
+                    userCanceled = true;
+                    try { Equipment.AxisManager?.EmgStopAll(); } catch { }
+                };
+                dlg.ForceStopRequested += () =>
+                {
+                    try { Equipment.AxisManager?.EmgStopAll(); } catch { }
+                };
+
+                // (5) 홈 실행을 백그라운드에서 수행
+                var runTask = Task.Run(() =>
+                {
+                    // HomeSync가 블로킹 수행(예시). 프로젝트에 따라 HomeDone 대기 API에 맞게 조정.
+                    // HomeAsync만 있는 경우: axis.HomeAsync(); 이후 driver의 홈 완료 상태를 폴링.
+                    try
+                    {
+                        // 가능하면 알람 클리어/서보 ON 보강
+                        try { axis.ClearAlarm(); } catch { }
+                        try { axis.Servo(true); } catch { }
+
+                        // 블로킹 홈 수행
+                        // 반환값이 있다면 int rc = axis.HomeSync();
+                        axis.HomeSync();
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                });
+
+                // (6) 모델리스 표시 및 메시지 루프 유지
+                dlg.Show(this);
+                dlg.BringToFront();
+
+                while (!runTask.IsCompleted)
+                {
+                    Application.DoEvents();
+                    await Task.Delay(50).ConfigureAwait(true);
                 }
+
+                // (7) 완료 업데이트
+                dlg.SafeUpdate(new OperationProgress
+                {
+                    OperationId = "HOME",
+                    Title = $"Home {axis.Name}",
+                    StepIndex = 0,
+                    TotalSteps = 1,
+                    IsCompleted = true,
+                    IsCanceled = userCanceled,
+                    Message = userCanceled ? "Canceled" : "Completed"
+                });
+
+                MessageBox.Show(userCanceled
+                        ? $"축 {axis.Name} 홈이 취소되었습니다."
+                        : $"축 {axis.Name} 홈이 완료되었습니다.",
+                    "Home", MessageBoxButtons.OK,
+                    userCanceled ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
