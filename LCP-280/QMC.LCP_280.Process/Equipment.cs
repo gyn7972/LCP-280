@@ -11,21 +11,21 @@ using QMC.Common.Motion.Ajin.HW;
 using QMC.Common.Motion.Ajin.IO;
 using QMC.Common.Motions;
 using QMC.Common.Motions.CKD;
+using QMC.Common.PKGTester;
 using QMC.Common.Spectrometer;
 using QMC.Common.Unit;
+using QMC.LCP_280.Process.Component; // added for HomeHooks
 using QMC.LCP_280.Process.Unit; // ensure unit namespace
-using System.Threading; // CancellationToken
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading; // CancellationToken
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using QMC.Common.PKGTester;
-using QMC.LCP_280.Process.Component; // added for HomeHooks
 
 namespace QMC.LCP_280.Process
 {
@@ -55,7 +55,6 @@ namespace QMC.LCP_280.Process
                 return _instance;
             }
         }
-
         #endregion
 
         #region Fields & Properties

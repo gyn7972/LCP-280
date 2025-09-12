@@ -1,22 +1,21 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Cameras; // Camera base
+using QMC.Common.Cameras.HIKVISION; // HIK camera
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
+using QMC.Common.Vision;              // VisionImage
+using QMC.Common.Vision.Cognex;       // Legacy compatibility
+using QMC.Common.Vision.Tools;        // Tool base
+using QMC.LCP_280.Process;            // PatternMatchingRunner
 using QMC.LCP_280.Process.Component;
-using QMC.Common.Cameras; // Camera base
-using QMC.Common.Cameras.HIKVISION; // HIK camera
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
-using QMC.Common.Vision;              // VisionImage
-using QMC.Common.Vision.Tools;        // Tool base
-using QMC.Common.Vision.Cognex;       // Legacy compatibility
-using QMC.LCP_280.Process;            // PatternMatchingRunner
-using QMC.Common.IOUtil;              // UnitIoHelper
+using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -68,22 +67,13 @@ namespace QMC.LCP_280.Process.Unit
         public string PatternRecipeName { get; set; } = "Default";
         #endregion
 
-        #region DryRun Simulation Fields
-        public bool DryRun { get; private set; }
-        public void SetDryRun(bool on) => DryRun = on;
-        private bool _simClamp;
-        private bool _simClampDown;
-        private bool _simVac;
-        private bool _simRingPresent;
-        private bool _simExpUp;
-        #endregion
-
         #region Construction / Initialization
         public InputStage(InputStageConfig config = null)
             : base("InputStageConfig")
         {
             InputStageConfig = config ?? new InputStageConfig();
             AddComponents();
+
         }
 
         public override void AddComponents()
@@ -119,9 +109,6 @@ namespace QMC.LCP_280.Process.Unit
 
         private (bool ok, List<double> thetaList) MultiSearchViaRunner()
         {
-            if (DryRun)
-                return (true, new List<double> { 0.0, 0.01, -0.005, 0.004, -0.003 });
-
             var ret = VisionRunnerHub.SearchAngles(CameraKey);
             if (!ret.ok) return (false, null);
             return (true, ret.angles);
@@ -140,8 +127,6 @@ namespace QMC.LCP_280.Process.Unit
 
         private (bool ok, double x, double y) CenterSearchViaRunner()
         {
-            if (DryRun) return (true, 0.0, 0.0);
-
             var res = VisionRunnerHub.SearchCenterOffset(
                 CameraKey,
                 PixelSizeXmm,
@@ -229,20 +214,6 @@ namespace QMC.LCP_280.Process.Unit
         #region Low-Level IO Access (Refactored to match OutputStage pattern)
         public bool ReadInput(string name)
         {
-            if (DryRun)
-            {
-                switch (name)
-                {
-                    case InputStageConfig.IO.CLAMP_FWD_SNS: return _simClamp; // Up/Clamp
-                    case InputStageConfig.IO.CLAMP_DOWN_SNS: return _simClampDown; // Down
-                    case InputStageConfig.IO.VAC_OK_SNS: return _simVac;
-                    case InputStageConfig.IO.RING_CHECK0:
-                    case InputStageConfig.IO.RING_CHECK1: return _simRingPresent;
-                    case InputStageConfig.IO.EXPANDER_UP_SNS: return _simExpUp;
-                    case InputStageConfig.IO.EXPANDER_DOWN_SNS: return !_simExpUp;
-                }
-                return false;
-            }
             var hi = InputStageConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -252,20 +223,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            if (DryRun)
-            {
-                switch (name)
-                {
-                    case InputStageConfig.IO.CLAMP_FWD_OUT: _simClamp = on; if (on) _simClampDown = false; break;
-                    case InputStageConfig.IO.CLAMP_BWD_OUT: if (on) { _simClamp = false; _simClampDown = true; } break;
-                    case InputStageConfig.IO.VAC_OUT: _simVac = on; break;
-                    case InputStageConfig.IO.EXPANDER_UP_OUT: if (on) _simExpUp = true; break;
-                    case InputStageConfig.IO.EXPANDER_DOWN_OUT: if (on) _simExpUp = false; break;
-                    case InputStageConfig.IO.CLAMP_UP_OUT: /* lift up */ break;
-                    case InputStageConfig.IO.CLAMP_DOWN_OUT: /* lift down */ break;
-                }
-                return true;
-            }
             var ho = InputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -275,18 +232,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOutputOn(string name)
         {
-            if (DryRun)
-            {
-                switch (name)
-                {
-                    case InputStageConfig.IO.CLAMP_FWD_OUT: return _simClamp;
-                    case InputStageConfig.IO.CLAMP_BWD_OUT: return _simClampDown && !_simClamp;
-                    case InputStageConfig.IO.VAC_OUT: return _simVac;
-                    case InputStageConfig.IO.EXPANDER_UP_OUT: return _simExpUp;
-                    case InputStageConfig.IO.EXPANDER_DOWN_OUT: return !_simExpUp;
-                }
-                return false;
-            }
             var ho = InputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -377,18 +322,53 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsRingPresent() => Ring0() || Ring1();
         #endregion
 
-
-
         // === Direct Valve Control (강제 구동) ===
         public bool IsVacuumValveOn()               => IsOutputOn(InputStageConfig.IO.VAC_OUT);
         public void SetClampLiftUpValve(bool on)    => WriteOutput(InputStageConfig.IO.CLAMP_UP_OUT, on);
         public bool IsClampLiftUpValveOn()          => IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
-        public bool IsVacuum() => DryRun ? _simVac : (_vacuum?.IsOk() ?? ReadInput(InputStageConfig.IO.VAC_OK_SNS));
+        public bool IsVacuum() => ReadInput(InputStageConfig.IO.VAC_OK_SNS);
         public bool IsPlateUp() => ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
         public bool IsPlateDown() => ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
         public override void OnRun() => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
 
+
+        #region Seq 단위 동작 함수
+        public int WaferLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int T_Align()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int XY_Align()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int ChipPickUp()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int WaferUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }

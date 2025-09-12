@@ -125,13 +125,6 @@
     <Compile Include="Component\ProcessData\WaferSummary.cs" />
     <Compile Include="Component\Recipe\MeasurementRecipe.cs" />
     <Compile Include="Component\Recipe\RecipeManager.cs" />
-    <Compile Include="Component\SeqInputChipAlignVision.cs" />
-    <Compile Include="Component\SeqInputChipMappingVision.cs" />
-    <Compile Include="Component\SeqInputDieTransferChipDown.cs" />
-    <Compile Include="Component\SeqInputDieTransferChipUp.cs" />
-    <Compile Include="Component\SeqInputStage.cs" />
-    <Compile Include="Component\Sequence\InputStageSequence.cs" />
-    <Compile Include="Component\SeqWaferLocalScan.cs" />
     <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="Component\TeachingPositionControl.cs">
       <SubType>UserControl</SubType>

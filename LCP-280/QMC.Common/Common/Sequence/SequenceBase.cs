@@ -119,6 +119,8 @@ namespace QMC.Common.Sequence
         private int _currentStep;                               // 현재 Step (ExecuteStep 인자)
         private SequenceState _state = SequenceState.Idle;
         private bool _disposed;
+
+        private static int _threadNameCounter;                  // 시퀀스 실행 쓰레드 이름 고유 카운터
         #endregion
 
         #region Properties
@@ -142,10 +144,43 @@ namespace QMC.Common.Sequence
         /// </summary>
         public bool Start(int initialStep = 0)
         {
+            Task waitTask = null;
+            SequenceState snapshot;
+
             lock (_sync)
             {
                 if (_disposed) throw new ObjectDisposedException(Name);
-                if (_runTask != null && !_runTask.IsCompleted) return false; // already running
+
+                if (_runTask != null && !_runTask.IsCompleted)
+                {
+                    snapshot = _state;
+
+                    // 아직 정상 실행 중이면 재시작 불가
+                    if (snapshot == SequenceState.Running ||
+                        snapshot == SequenceState.Starting ||
+                        snapshot == SequenceState.Pausing ||
+                        snapshot == SequenceState.Paused)
+                    {
+                        return false;
+                    }
+
+                    // Stopping / Stopped / Completed / Error 이면 잠깐 기다려서 정리 완료 유도
+                    waitTask = _runTask;
+                }
+            }
+
+            // 잠깐 (최대 50ms) 이전 task 종료 대기
+            if (waitTask != null)
+            {
+                try { waitTask.Wait(50); } catch { /* ignore */ }
+            }
+
+            lock (_sync)
+            {
+                // 한 번 더 확인
+                if (_runTask != null && !_runTask.IsCompleted)
+                    return false;
+
                 _stopRequested = false;
                 _recoverRequested = false;
                 _pauseEvent.Set();
@@ -233,6 +268,20 @@ namespace QMC.Common.Sequence
         #region Core Loop
         private void RunLoop(CancellationToken ct)
         {
+            var th = Thread.CurrentThread;
+            if (th.Name == null)
+            {
+                try
+                {
+                    int n = Interlocked.Increment(ref _threadNameCounter);
+                    th.Name = $"Seq:{Name}:{n}";
+                }
+                catch
+                {
+                    // 무시 (이미 이름 지정된 경우 등)
+                }
+            }
+
             try
             {
                 ChangeState(SequenceState.Running);
@@ -240,6 +289,8 @@ namespace QMC.Common.Sequence
 
                 while (true)
                 {
+                    Thread.Sleep(1);
+
                     ct.ThrowIfCancellationRequested();
                     if (_stopRequested) break;
 
@@ -253,6 +304,7 @@ namespace QMC.Common.Sequence
                         var next = ExecuteStep(_currentStep, ct);
                         if (next < 0)
                         {
+
                             // 음수: 완료
                             ChangeState(SequenceState.Completed);
                             OnCompleted();
@@ -297,11 +349,25 @@ namespace QMC.Common.Sequence
         #endregion
 
         #region Error Handling
-        private void HandleError(Exception ex)
+        protected void HandleError(Exception ex)
         {
             ChangeState(SequenceState.Error);
             ErrorOccurred?.Invoke(this, ex);
         }
+
+        // 클래스 내부 (필드 _sync, State, HandleError 이미 존재한다고 가정)
+        public bool ForceError(string message, Exception inner = null)
+        {
+            lock (_sync)
+            {
+                if (State == SequenceState.Error) 
+                    return false;
+                var ex = inner ?? new InvalidOperationException(message ?? "Forced sequence error");
+                HandleError(ex);         // 기존 Error 처리(상태 = Error, 이벤트 발생 등)
+                return true;
+            }
+        }
+
         #endregion
 
         #region Step Helpers (파생 클래스에서 사용)

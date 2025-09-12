@@ -131,5 +131,42 @@ namespace QMC.LCP_280.Process.Unit
         public override void OnRun()  => base.OnRun();
         public override void OnStop() => base.OnStop();
         #endregion
+
+        #region Seq 단위 동작 함수
+        public int CassetteLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int BinMapping()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int BinLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int BinUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int CassetteUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+        #endregion
     }
 }
