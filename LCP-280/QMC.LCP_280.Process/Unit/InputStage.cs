@@ -380,11 +380,16 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool SetClampLift(bool bUpDn)
         {
-            if (_cylClampLift == null) return false;
-            if (bUpDn) return _cylClampLift.Extend();
+            if (_cylClampLift == null) 
+                return false;
+
+            if (bUpDn) 
+                return _cylClampLift.Extend();
             else
             {
-                if (!IsClampBwd()) return false; // 기존 인터락 유지
+                if (!IsClampBwd()) 
+                    return false; // 기존 인터락 유지
+                
                 return _cylClampLift.Retract();
             }
         }
