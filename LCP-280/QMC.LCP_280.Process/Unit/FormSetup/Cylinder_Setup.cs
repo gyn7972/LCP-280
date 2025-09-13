@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using QMC.Common;
 using QMC.Common.IOUtil;
@@ -17,6 +18,10 @@ namespace QMC.LCP_280.Process.Unit
         private Cylinder _selectedCylinder;
         private PropertyCollection _ioStateProperties;
         private bool _configDirty = false;
+
+        // === 추가: 맵퍼 & 설정 객체 ===
+        private ConfigReflectionMapper _mapper;
+        private CylinderConfig _config;
 
         public Cylinder_Setup()
         {
@@ -102,9 +107,12 @@ namespace QMC.LCP_280.Process.Unit
                 if (selectedIndex < 0 || selectedIndex >= items.Length)
                 {
                     _selectedCylinder = null;
+                    _mapper = null;
+                    _config = null;
                     cylinderPropertyCollectionView.SetProperties(null);
                     inputStatepropertyCollectionView.SetProperties(null);
                     lbStatusValue.Text = "No Selection";
+                    UpdateControlButtonCaptions(null);
                     return;
                 }
 
@@ -112,24 +120,27 @@ namespace QMC.LCP_280.Process.Unit
                 if (!IoAutoBindings.Cylinders.TryGetValue(name, out var cyl))
                 {
                     _selectedCylinder = null;
+                    _mapper = null;
+                    _config = null;
                     cylinderPropertyCollectionView.SetProperties(null);
                     inputStatepropertyCollectionView.SetProperties(null);
                     lbStatusValue.Text = "Not Found";
+                    UpdateControlButtonCaptions(null);
                     return;
                 }
 
                 _selectedCylinder = cyl;
 
-                // --- 핵심 수정: Config 동기화 (ManualPatch는 cyl.Config만 세팅함) ---
+                // 설정 동기화 후 UI 로드
                 SyncConfigReference(_selectedCylinder, forceReload: false);
+                LoadConfigToUI(_selectedCylinder);
 
-                var cfgProps = BuildCylinderConfigProperties(_selectedCylinder);
-                cylinderPropertyCollectionView.SetProperties(cfgProps);
-
+                // IO 상태 PropertyCollection 구성
                 _ioStateProperties = BuildIoStateProperties(_selectedCylinder);
                 inputStatepropertyCollectionView.SetProperties(_ioStateProperties);
 
                 UpdateStatusLabel();
+                UpdateControlButtonCaptions(_selectedCylinder);
             }
             catch (Exception ex)
             {
@@ -138,20 +149,85 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        #region 버튼 캡션 동적 변경
+        private static readonly (string token, string fwd, string bwd, bool anyDirection)[] _captionPatterns = new[]
+        {
+            ("UP", "Up", "Down", true),
+            ("DOWN", "Up", "Down", true), // DOWN 단독 포함 시에도 Up/Down 페어 유지
+            ("CLAMP", "Clamp", "Unclamp", true),
+            ("UNCLAMP", "Clamp", "Unclamp", true),
+            ("OPEN", "Open", "Close", true),
+            ("CLOSE", "Close", "Open", true),
+            ("LOCK", "Lock", "Unlock", true),
+            ("UNLOCK", "Lock", "Unlock", true),
+            ("EXTEND", "Extend", "Retract", true),
+            ("RETRACT", "Extend", "Retract", true),
+            ("PUSH", "Push", "Return", true),
+            ("IN", "In", "Out", true),
+            ("OUT", "Out", "In", true)
+        };
+
+        private void UpdateControlButtonCaptions(Cylinder cyl)
+        {
+            if (btn_Forward_Move == null || btn_Backward_Move == null)
+                return;
+
+            if (cyl == null)
+            {
+                btn_Forward_Move.Text = "Forward";
+                btn_Backward_Move.Text = "Backward";
+                return;
+            }
+
+            string source = string.Join(" ", new[]
+            {
+                cyl.Name,
+                SafeUpper(cyl.FwdOutKey), SafeUpper(cyl.BwdOutKey),
+                SafeUpper(cyl.FwdInKey), SafeUpper(cyl.BwdInKey)
+            }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+            string forward = null, backward = null;
+
+            // 1) 패턴 매칭 (우선순위: 배열 순서)
+            foreach (var p in _captionPatterns)
+            {
+                if (source.IndexOf(p.token, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    forward = p.fwd;
+                    backward = p.bwd;
+                    break;
+                }
+            }
+
+            // 2) 특수 케이스: 동시에 여러 패턴(예: UP & CLAMP) 있으면 이름 기반 우선
+            if (forward != null && backward != null)
+            {
+                // Cylinder 이름에 명시적으로 Up/Down, Clamp 등 있으면 그것을 우선 (이미 forward/backward 설정됨)
+            }
+            else
+            {
+                // 3) 명시 패턴을 찾지 못한 경우: 기본 Forward/Backward
+                forward = "Forward";
+                backward = "Backward";
+            }
+
+            btn_Forward_Move.Text = forward;
+            btn_Backward_Move.Text = backward;
+        }
+
+        private string SafeUpper(string s) => string.IsNullOrWhiteSpace(s) ? string.Empty : s.ToUpperInvariant();
+        #endregion
+
         #region Config 동기화 & 재로드
         private void SyncConfigReference(Cylinder cyl, bool forceReload)
         {
             if (cyl == null) return;
 
-            // 1. 파일 경로 계산
             var probe = new CylinderConfig { Name = cyl.Name };
             var path = probe.GetFilePath();
 
             CylinderConfig loaded = null;
-
-            bool shouldLoad =
-                forceReload ||
-                File.Exists(path); // 파일 있으면 항상 로드 (기존: _config / Config 존재하면 스킵했던 것이 문제)
+            bool shouldLoad = forceReload || File.Exists(path);
 
             if (shouldLoad)
             {
@@ -165,55 +241,83 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            // 2. 로드 성공 시 그걸로 동기화, 실패 시 기존 것을 유지 / 없으면 새로 생성
             var effective = loaded
                             ?? cyl._config
                             ?? (cyl.Config as CylinderConfig)
                             ?? new CylinderConfig { Name = cyl.Name };
 
-            // 3. 최종 적용(두 레퍼런스 통일)
             cyl._config = effective;
             cyl.Config = effective;
         }
         #endregion
 
-        #region Property Builders
+        #region Config UI 로드 / 저장 (Mapper 사용)
         private CylinderConfig GetEffectiveConfig(Cylinder cyl)
             => cyl?._config ?? (cyl?.Config as CylinderConfig);
 
-        private PropertyCollection BuildCylinderConfigProperties(Cylinder cyl)
+        private void LoadConfigToUI(Cylinder cyl)
         {
-            var pc = new PropertyCollection();
+            _mapper = null;
+            _config = null;
+            cylinderPropertyCollectionView.SetProperties(null);
 
-            pc.Add(new TitleOnlyProperty("Cylinder"));
-            pc.Add(new StringProperty("Name", cyl.Name));
-            pc.Add(new StringProperty("Forward Out Key", cyl.FwdOutKey));
-            pc.Add(new StringProperty("Backward Out Key", cyl.BwdOutKey));
-            pc.Add(new StringProperty("Forward In Key", cyl.FwdInKey));
-            pc.Add(new StringProperty("Backward In Key", cyl.BwdInKey));
+            if (cyl == null) return;
 
             var cfg = GetEffectiveConfig(cyl);
-            if (cfg != null)
-            {
-                pc.Add(new TitleOnlyProperty("Config (Editable)"));
-                pc.Add(new BoolProperty("Simulation", cfg.IsSimulation));
-                pc.Add(new IntProperty("Extend Timeout (ms)", cfg.ExtendTimeout));
-                pc.Add(new IntProperty("Retract Timeout (ms)", cfg.RetractTimeout));
-                pc.Add(new IntProperty("Settle Delay (ms)", cfg.SettleDelay));
-                pc.Add(new IntProperty("Sensor Retry Count", cfg.SensorRetryCount));
-            }
+            if (cfg == null) return;
 
-            pc.IsInputParameter = true;
-            HookDirtyTracking(pc);
-            return pc;
+            // 파일 최신 로드 (선택)
+            try { cfg.Load(); } catch { }
+
+            _config = cfg;
+            _mapper = cfg.CreateMapper();
+
+            // 병합 PropertyCollection 생성 (Cylinder 기본 정보 + Config 속성 그룹)
+            var merged = new PropertyCollection { IsInputParameter = true };
+            merged.Add(new TitleOnlyProperty("Cylinder Info"));
+            merged.Add(new StringProperty("Name", cyl.Name));
+            merged.Add(new StringProperty("Forward Out Key", cyl.FwdOutKey));
+            merged.Add(new StringProperty("Backward Out Key", cyl.BwdOutKey));
+            merged.Add(new StringProperty("Forward In Key", cyl.FwdInKey));
+            merged.Add(new StringProperty("Backward In Key", cyl.BwdInKey));
+            merged.Add(new TitleOnlyProperty("Config"));
+
+            foreach (var p in _mapper.PropertyCollection)
+                merged.Add(p);
+
+            cylinderPropertyCollectionView.GroupName = $"{cyl.Name} Config";
+            cylinderPropertyCollectionView.SetProperties(merged);
         }
 
-        private void HookDirtyTracking(PropertyCollection pc)
+        private void SaveConfigFromUI()
         {
-            _configDirty = false;
-            // 필요 시 TextBox 변경 시 이벤트로 플래그 세팅 (PropertyCollectionView 개선 후 가능)
-        }
+            if (_mapper == null || _config == null) return;
 
+            try
+            {
+                cylinderPropertyCollectionView.Apply();
+                var pc = cylinderPropertyCollectionView.GetCurrentProperties();
+                if (pc == null) return;
+
+                _mapper.ApplyToObject(pc);
+                _config.Save();
+                _configDirty = false;
+
+                MessageBox.Show("저장 완료", "Success",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // 저장 후 다시 로드(정규화 반영)
+                LoadConfigToUI(_selectedCylinder);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"저장 실패: {ex.Message}", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        #endregion
+
+        #region IO 상태 Property
         private PropertyCollection BuildIoStateProperties(Cylinder cyl)
         {
             var pc = new PropertyCollection();
@@ -410,49 +514,11 @@ namespace QMC.LCP_280.Process.Unit
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
-            try
-            {
-                cylinderPropertyCollectionView.Apply();
-                var pc = cylinderPropertyCollectionView.GetCurrentProperties();
-                if (pc == null)
-                {
-                    MessageBox.Show("저장할 속성이 없습니다.", "Info",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                var cfg = GetEffectiveConfig(_selectedCylinder) ?? new CylinderConfig { Name = _selectedCylinder.Name };
-
-                cfg.IsSimulation = SafeGetBool(pc, "Simulation", cfg.IsSimulation);
-                cfg.ExtendTimeout = SafeGetInt(pc, "Extend Timeout (ms)", cfg.ExtendTimeout);
-                cfg.RetractTimeout = SafeGetInt(pc, "Retract Timeout (ms)", cfg.RetractTimeout);
-                cfg.SettleDelay = SafeGetInt(pc, "Settle Delay (ms)", cfg.SettleDelay);
-                cfg.SensorRetryCount = SafeGetInt(pc, "Sensor Retry Count", cfg.SensorRetryCount);
-
-                cfg.Validate();
-                var path = cfg.GetFilePath();
-                cfg.Save(path, true);
-
-                // 저장 후 두 참조 모두 갱신
-                _selectedCylinder._config = cfg;
-                _selectedCylinder.Config = cfg;
-
-                _configDirty = false;
-
-                MessageBox.Show($"저장 완료\n{path}", "Success",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                cylinderPropertyCollectionView.SetProperties(BuildCylinderConfigProperties(_selectedCylinder));
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"저장 중 오류: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            SaveConfigFromUI();
         }
         #endregion
 
-        #region 값 읽기 Helper
+        #region (이전) 값 읽기 Helper (현재 자동 매퍼 사용으로 미사용 – 필요시 제거 가능)
         private bool SafeGetBool(PropertyCollection pc, string title, bool fallback)
         {
             try { return pc.GetValue<bool>(title); } catch { return fallback; }

@@ -142,7 +142,9 @@
     <Compile Include="BarcodeReader\OpticonBarcodeReader.cs" />
     <Compile Include="BarcodeReader\OpticonBarcodeReaderConfig.cs" />
     <Compile Include="BaseConfig.Auto.cs" />
+    <Compile Include="BaseRecipe\BaseRecipe.Autp.cs" />
     <Compile Include="BaseRecipe\BaseRecipe.cs" />
+    <Compile Include="BaseSetup.Auto.cs" />
     <Compile Include="BaseSetup.cs" />
     <Compile Include="Cameras\Camera.cs" />
     <Compile Include="Cameras\CameraConfig.cs" />

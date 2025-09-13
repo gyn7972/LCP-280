@@ -9,9 +9,14 @@ namespace QMC.Common.IOUtil
     [Serializable]
     public sealed class CylinderConfig : BaseConfig
     {
-        [Category("Simulation"), DisplayName("Simulation")]
+        [Category("Common"), DisplayName("Simulation")]
         [DefaultValue(false)]
         public bool IsSimulation { get; set; } = false;
+
+        [Category("Common"), DisplayName("Test")]
+        [DefaultValue(false)]
+        public bool IsTest { get; set; } = false;
+
 
         [Category("Operation"), DisplayName("Extend Timeout (ms)")]
         [DefaultValue(5000)]

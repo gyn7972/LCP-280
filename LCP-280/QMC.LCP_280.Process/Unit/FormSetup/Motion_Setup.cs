@@ -7,7 +7,6 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -17,47 +16,323 @@ using QMC.LCP_280.Process.Component; // InterlockManager, MachineHomeCoordinator
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// Equipment와 연동하여 Config 및 Recipe 관리
+    /// Motion Setup: UI event + data/logic (Designer partial holds only GUI declarations)
+    /// Config / Setup 자동 매핑 (ConfigReflectionMapper 사용)
     /// </summary>
     public partial class Motion_Setup : Form
     {
-        // AxisManager에서 사용하던 키 케이스에 맞춰 소문자 통일
-        private const string UNIT_NAME = "unit";
-
-        /// <summary>Equipment 인스턴스 참조</summary>
+        private const string UNIT_NAME = "unit"; // axis manager key unit
         private Equipment Equipment => Equipment.Instance;
 
-        // 에디터 컬렉션(좌: configuration / 우: speed)
-        //private PropertyCollection _editorPropertiesConfig;
-        //private PropertyCollection _editorPropertiesSpeed;
+        // runtime references
+        private MotionAxisManager _axisManager;
+        private MotionAxis _axis; // currently selected axis
 
-        // 저장 시 빠른 조회용 인덱스: (section,title) → Property
-        private Dictionary<(string section, string title), PropertyBase> _configIndex;
-        private Dictionary<(string section, string title), PropertyBase> _speedIndex;
+        // position viewer collection
+        private PropertyCollection _editorProrertiesPosition;
 
+        // reflection mappers (자동 UI ↔ 객체 동기화)
+        private ConfigReflectionMapper _setupMapper;
+        private ConfigReflectionMapper _configMapper;
+
+        // timers / tasks
+        private System.Windows.Forms.Timer _axisPosTimer; // disambiguated
         private CancellationTokenSource _homeCts;
 
         public Motion_Setup()
         {
             InitializeComponent();
             SuspendLayout();
-
             _axisManager = Equipment.AxisManager;
-
-            InitializeUI();
-
+            InitializeLogic();
             ResumeLayout(true);
-            Console.WriteLine("Motion_Setup 생성자 완료");
         }
 
-        private void Motion_Setup_Load(object sender, EventArgs e)
+        private void Motion_Setup_Load(object sender, EventArgs e) { }
+
+        #region Init Logic / Wiring
+        private void InitializeLogic()
         {
-            // 필요시 폼 로드시 초기 바인딩 추가
+            try
+            {
+                WireAxisSelectionEvent();
+                BindAxisList();
+                InitializeStatusTimer();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("MotionSetup", "Init", ex.ToString());
+            }
         }
 
-        /// <summary>향후 Unit 초기화가 필요하면 이곳에 작성</summary>
-        private void InitializeUnit()
+        private void WireAxisSelectionEvent()
         {
+            if (selectAxisListBoxItemsView != null)
+            {
+                selectAxisListBoxItemsView.ItemSelected -= OnAxisSelected; // ensure single subscription
+                selectAxisListBoxItemsView.ItemSelected += OnAxisSelected;
+            }
+            if (motorIoPropertyCollectionView != null)
+            {
+                motorIoPropertyCollectionView.ItemClicked -= OnMotorIOItemClicked;
+                motorIoPropertyCollectionView.ItemClicked += OnMotorIOItemClicked;
+            }
+        }
+
+        private void BindAxisList()
+        {
+            try
+            {
+                var axes = _axisManager?.GetAll();
+                if (axes == null || axes.Length == 0)
+                {
+                    selectAxisListBoxItemsView?.SetItems("(No Axes)");
+                    return;
+                }
+                var names = axes.Where(a => a != null)
+                                 .Select(a => a.Name)
+                                 .Distinct(StringComparer.OrdinalIgnoreCase)
+                                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                                 .ToArray();
+                selectAxisListBoxItemsView.GroupName = "Select Axis";
+                selectAxisListBoxItemsView.SetItems(names);
+                if (names.Length > 0) selectAxisListBoxItemsView.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write("MotionSetup", "BindAxisList", ex.ToString());
+                selectAxisListBoxItemsView?.SetItems("(Error)");
+            }
+        }
+        #endregion
+
+        #region Axis Selection → Build PropertyCollections & Load Files
+        private void OnAxisSelected(object sender, int selectedIndex)
+        {
+            try
+            {
+                if (selectedIndex < 0)
+                {
+                    _axis = null;
+                    positionVelocityPropertyCollectionView?.SetProperties(null);
+                    configurationListBoxItemsView?.SetProperties(null);
+                    speedListBoxItemsView?.SetProperties(null);
+                    _setupMapper = null;
+                    _configMapper = null;
+                    return;
+                }
+
+                var axisName = selectAxisListBoxItemsView?.SelectedItemName;
+                if (string.IsNullOrWhiteSpace(axisName)) return;
+
+                _axis = _axisManager?.GetAll()?.FirstOrDefault(a => a.Name.Equals(axisName, StringComparison.OrdinalIgnoreCase));
+                if (_axis == null)
+                {
+                    configurationListBoxItemsView?.SetProperties(null);
+                    speedListBoxItemsView?.SetProperties(null);
+                    _setupMapper = null; _configMapper = null; return;
+                }
+
+                // load persisted files
+                LoadAxisFiles(_axis);
+
+                // reflection mappers (자동 속성 스캔)
+                _setupMapper = new ConfigReflectionMapper(_axis.Setup);
+                _configMapper = new ConfigReflectionMapper(_axis.Config);
+
+                _editorProrertiesPosition = BuildPositionProperties(_axis);
+                positionVelocityPropertyCollectionView?.SetProperties(_editorProrertiesPosition);
+                configurationListBoxItemsView?.SetProperties(_setupMapper.PropertyCollection);
+                speedListBoxItemsView?.SetProperties(_configMapper.PropertyCollection);
+
+                BuildAndSetIOCollections(_axis);
+                btnHome.Enabled = true; // enable per-axis home
+            }
+            catch (Exception ex)
+            {
+                Log.Write("MotionSetup", "OnAxisSelected", ex.ToString());
+            }
+        }
+
+        private void LoadAxisFiles(MotionAxis axis)
+        {
+            if (axis == null) return;
+            try
+            {
+                string axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes", UNIT_NAME);
+                Directory.CreateDirectory(axisRoot);
+                string setupPath = Path.Combine(axisRoot, axis.Name + ".setup.json");
+                string configPath = Path.Combine(axisRoot, axis.Name + ".config.json");
+
+                if (File.Exists(setupPath))
+                {
+                    try { var loadedSetup = MotionAxisSetup.LoadOrCreate(setupPath, true, true); if (loadedSetup != null) axis.Setup = loadedSetup; } catch (Exception ex) { Log.Write("MotionSetup", $"Setup load failed {axis.Name}: {ex.Message}"); }
+                }
+                else { try { axis.Setup.Save(setupPath); } catch { } }
+
+                if (File.Exists(configPath))
+                {
+                    try { var loadedCfg = MotionAxisConfig.LoadOrCreate(configPath, true, true); if (loadedCfg != null) axis.Config = loadedCfg; } catch (Exception ex) { Log.Write("MotionSetup", $"Config load failed {axis.Name}: {ex.Message}"); }
+                }
+                else { try { axis.Config.Save(configPath); } catch { } }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("MotionSetup", "LoadAxisFiles", ex.ToString());
+            }
+        }
+        #endregion
+
+        #region Build PropertyCollections (Position Only)
+        private PropertyCollection BuildPositionProperties(MotionAxis axis)
+        {
+            var pc = new PropertyCollection();
+            pc.Add(new DoubleProperty("Command Position", axis.Status.PV.CommandPosition));
+            pc.Add(new DoubleProperty("Actual Position", axis.Status.PV.ActualPosition));
+            pc.Add(new DoubleProperty("Error Position", axis.Status.PV.ErrorPosition));
+            pc.Add(new DoubleProperty("Command Velocity", axis.Status.PV.CommandVelocity));
+            pc.Add(new DoubleProperty("Actual Velocity", axis.Status.PV.ActualVelocity));
+            pc.IsInputParameter = false; // output only
+            return pc;
+        }
+        #endregion
+
+        #region IO collections
+        private void BuildAndSetIOCollections(MotionAxis axis)
+        {
+            if (axis == null) return;
+            var ioProperties = new PropertyCollection { ShowNoColumn = false };
+            ioProperties.Add(new PropertyState("01", "Servo On", axis.Status.IO.ServoOn));
+            ioProperties.Add(new PropertyState("02", "Alarm", axis.Status.IO.Alarm));
+            ioProperties.Add(new PropertyState("03", "Negative Limit Sensor", axis.Status.IO.NegativeLimitSensor));
+            ioProperties.Add(new PropertyState("04", "Positive Limit Sensor", axis.Status.IO.PositiveLimitSensor));
+            ioProperties.Add(new PropertyState("05", "Home Sensor", axis.Status.IO.HomeSensor));
+            motorIoPropertyCollectionView?.SetProperties(ioProperties);
+
+            var state = new PropertyCollection { ShowNoColumn = false };
+            state.Add(new PropertyState("01", "Done", axis.Status.State.Done));
+            state.Add(new PropertyState("02", "Inposition", axis.Status.State.Inposition));
+            state.Add(new PropertyState("03", "Inposition Done", axis.Status.State.InpositionDone));
+            state.Add(new PropertyState("04", "Inposition Timeout", axis.Status.State.InpositionTimeout));
+            state.Add(new PropertyState("05", "Home End", axis.Status.State.HomeEnd));
+            state.Add(new PropertyState("06", "Home Timeout", axis.Status.State.HomeTimeout));
+            state.IsInputParameter = false;
+            motorStateIoPropertyCollectionView?.SetProperties(state);
+        }
+        #endregion
+
+        #region Timer update
+        private void InitializeStatusTimer()
+        {
+            _axisPosTimer?.Stop();
+            if (_axisPosTimer != null) _axisPosTimer.Tick -= AxisPosTimer_Tick;
+            _axisPosTimer = new System.Windows.Forms.Timer { Interval = 300 }; // disambiguated
+            _axisPosTimer.Tick += AxisPosTimer_Tick;
+            _axisPosTimer.Start();
+        }
+
+        private void AxisPosTimer_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axis == null) return;
+                // refresh runtime values
+                _editorProrertiesPosition = BuildPositionProperties(_axis);
+                positionVelocityPropertyCollectionView?.SetProperties(_editorProrertiesPosition);
+                BuildAndSetIOCollections(_axis);
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Save Helpers
+        private void ApplyAllPropertyViews()
+        {
+            try
+            {
+                configurationListBoxItemsView?.Apply();
+                speedListBoxItemsView?.Apply();
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Button Events (Save / Servo / Home / HomeAll)
+        private void btn_Save_Setup_Motion_Configuration_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axis == null) { MessageBox.Show("축을 선택하세요."); return; }
+                if (_setupMapper == null) { MessageBox.Show("Setup 매퍼가 없습니다."); return; }
+
+                ApplyAllPropertyViews();
+                var pc = configurationListBoxItemsView?.GetCurrentProperties();
+                if (pc != null) _setupMapper.ApplyToObject(pc);
+
+                string axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes", UNIT_NAME);
+                Directory.CreateDirectory(axisRoot);
+                string setupPath = Path.Combine(axisRoot, _axis.Name + ".setup.json");
+                _axis.Setup.Save(setupPath);
+
+                // Reload to reflect normalization/backfill
+                LoadAxisFiles(_axis);
+                _setupMapper = new ConfigReflectionMapper(_axis.Setup);
+                configurationListBoxItemsView?.SetProperties(_setupMapper.PropertyCollection);
+                MessageBox.Show($"'{_axis.Name}' 설정 저장 완료.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("저장 오류: " + ex.Message);
+            }
+        }
+
+        private void btn_Save_Setup_Motion_Speed_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axis == null) { MessageBox.Show("축을 선택하세요."); return; }
+                if (_configMapper == null) { MessageBox.Show("Config 매퍼가 없습니다."); return; }
+
+                ApplyAllPropertyViews();
+                var pc = speedListBoxItemsView?.GetCurrentProperties();
+                if (pc != null) _configMapper.ApplyToObject(pc);
+
+                string axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes", UNIT_NAME);
+                Directory.CreateDirectory(axisRoot);
+                string cfgPath = Path.Combine(axisRoot, _axis.Name + ".config.json");
+                _axis.Config.Save(cfgPath);
+
+                LoadAxisFiles(_axis);
+                _configMapper = new ConfigReflectionMapper(_axis.Config);
+                speedListBoxItemsView?.SetProperties(_configMapper.PropertyCollection);
+                MessageBox.Show($"'{_axis.Name}' 속도 설정 저장 완료.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("속도 저장 오류: " + ex.Message);
+            }
+        }
+
+        private void btnServoOn_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axis == null) { MessageBox.Show("축 선택 필요"); return; }
+                int rc = _axis.Servo(true);
+                if (rc != 0) MessageBox.Show($"Servo ON 실패(rc={rc})");
+            }
+            catch (Exception ex) { MessageBox.Show("Servo On 오류: " + ex.Message); }
+        }
+
+        private void btnServoOff_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_axis == null) { MessageBox.Show("축 선택 필요"); return; }
+                int rc = _axis.Servo(false);
+                if (rc != 0) MessageBox.Show($"Servo OFF 실패(rc={rc})");
+            }
+            catch (Exception ex) { MessageBox.Show("Servo Off 오류: " + ex.Message); }
         }
 
         private async void btnHomeAll_Click(object sender, EventArgs e)
@@ -69,66 +344,51 @@ namespace QMC.LCP_280.Process.Unit
                 _homeCts?.Dispose();
                 _homeCts = new CancellationTokenSource();
                 var token = _homeCts.Token;
-
                 var axes = _axisManager?.GetAll();
                 if (axes == null || axes.Length == 0)
                 {
-                    MessageBox.Show("등록된 축이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show("등록된 축이 없습니다.");
                     return;
                 }
-
-                // 기본 준비(알람 클리어/서보온)
                 foreach (var ax in axes)
                 {
                     try { ax.ClearAlarm(); } catch { }
                     try { ax.Servo(true); } catch { }
                 }
-
                 var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(Equipment);
                 dlg = new HomeProgressForm();
-                dlg.InitializeProgress("Machine Home",  seq.TotalSteps);
-
+                dlg.InitializeProgress("Machine Home", seq.TotalSteps);
                 seq.OnProgress(p => dlg.SafeUpdate(p));
                 dlg.CancelRequested += () => { try { _homeCts.Cancel(); } catch { } };
                 dlg.ForceStopRequested += () => { try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
-
-                // 비동기 실행
                 var runTask = seq.RunAsync(token);
-
-                // 모달 표시 (UI 차단)
-                dlg.Show(this); // 모델리스로 먼저 표시 후
+                dlg.Show(this);
                 dlg.BringToFront();
-                // 진행 중 메시지 루프 유지
                 while (!runTask.IsCompleted)
                 {
                     Application.DoEvents();
                     await Task.Delay(50).ConfigureAwait(true);
                 }
                 var results = await runTask.ConfigureAwait(true);
-
-                // 완료 후 Close 가능
                 dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = seq.TotalSteps - 1, TotalSteps = seq.TotalSteps, IsCompleted = true, IsCanceled = token.IsCancellationRequested, IsAborted = seq.Aborted, Message = seq.AbortReason });
-
-                // 3) 결과 요약 표시
                 int success = results.Count(r => r.Success);
                 int notStarted = results.Count(r => !r.Started);
                 int fail = results.Count - success - notStarted;
-
                 string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
                 if (fail > 0 || notStarted > 0)
                 {
                     var detail = string.Join("\r\n", results.Select(r => $"- {r.AxisName}: {(r.Success ? "OK" : r.Started ? (r.Error?.Message ?? $"rc={r.ReturnCode}") : $"NOT STARTED ({r.FailReason})")}"));
                     msg += "\r\n\r\n" + detail;
                 }
-                MessageBox.Show(msg, "Home", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(msg, "Home");
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show("Home 취소됨", "Home", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Home 취소됨");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Home 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Home 오류: " + ex.Message);
             }
             finally
             {
@@ -136,678 +396,126 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        private void ApplyAllPropertyViews()
-        {
-            try
-            {
-                void Recurse(Control c)
-                {
-                    if (c is QMC.Common.PropertyCollectionView pcv) pcv.Apply();
-                    foreach (Control child in c.Controls) Recurse(child);
-                }
-                Recurse(this);
-            }
-            catch { /* 적용 실패는 무시(안전) */ }
-        }
-
-        // =========================
-        // Save (설정 저장)
-        // =========================
-        private void btn_Save_Setup_Motion_Configuration_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                ApplyAllPropertyViews();
-
-                // 1) 선택된 축 이름 확인
-                string axisName = selectAxisListBoxItemsView?.SelectedItemName;
-                if (string.IsNullOrWhiteSpace(axisName))
-                {
-                    MessageBox.Show("저장할 축을 먼저 선택하세요.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 2) 축 객체 조회
-                var axis = _axisManager?.Get(UNIT_NAME, axisName);
-                if (axis == null)
-                {
-                    MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // 3) 에디터 컬렉션 유효성
-                if ((_editorPropertiesConfig == null || _editorPropertiesConfig.Count == 0) &&
-                    (_editorPropertiesSpeed == null || _editorPropertiesSpeed.Count == 0))
-                {
-                    MessageBox.Show("저장할 항목이 없습니다.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 4) 인덱스 빌드(한 번만 스캔 → O(1) 조회)
-                _configIndex = BuildIndex(_editorPropertiesConfig);
-                _speedIndex = BuildIndex(_editorPropertiesSpeed);
-
-                // 5) 에디터 값 → axis.Setup 반영 (섹션 기준으로 안전 매핑)
-                // --- Common
-                axis.Setup.PulsesPerUnit = GetInt("Common", "Pulses Per Unit", axis.Setup.PulsesPerUnit);
-                axis.Setup.AxisScale = GetInt("Common", "Axis Scale", axis.Setup.AxisScale);
-                axis.Setup.AxisPowerPercent = GetInt("Common", "Axis Power", axis.Setup.AxisPowerPercent);
-                axis.Setup.IsSimulation = GetBool("Common", "Simulation", axis.Setup.IsSimulation);
-
-                // --- Config
-                axis.Setup.PulseOutput = (PulseOutput)GetInt("Config", "Pulse Output", (int)axis.Setup.PulseOutput);
-                axis.Setup.EncoderInput = (EncoderInput)GetInt("Config", "Encoder Input", (int)axis.Setup.EncoderInput);
-                axis.Setup.InputSource = (InputSource)GetInt("Config", "Input Source", (int)axis.Setup.InputSource);
-                axis.Setup.ZPhaseLevel = (ActiveLevel)GetInt("Config", "Z Phase Level", (int)axis.Setup.ZPhaseLevel);
-                axis.Setup.ServoOnLevel = (ActiveLevel)GetInt("Config", "Servo On Level", (int)axis.Setup.ServoOnLevel);
-
-                // --- Emergency Signal
-                axis.Setup.EmergencyLevel = (ActiveLevel)GetInt("Emergency Signal", "Level", (int)axis.Setup.EmergencyLevel);
-                axis.Setup.StopMode = (StopMode)GetInt("Emergency Signal", "Stop Mode", (int)axis.Setup.StopMode);
-
-                // --- InPosition
-                axis.Setup.InPosition = (InPosition)GetInt("InPosition", "Level", (int)axis.Setup.InPosition);
-                axis.Setup.SoftwareLimitEnable = GetBool("InPosition", "Software", axis.Setup.SoftwareLimitEnable);
-                axis.Setup.SoftwareLength = GetDouble("InPosition", "Software Length", axis.Setup.SoftwareLength);
-
-                // --- Home
-                axis.Setup.HomeSignalLevel = (ActiveLevel)GetInt("Home", "Signal Level", (int)axis.Setup.HomeSignalLevel);
-                axis.Setup.HomeMode = (HomeMode)GetInt("Home", "Mode", (int)axis.Setup.HomeMode);
-                axis.Setup.HomeDirection = (HomeDirection)GetInt("Home", "Direction", (int)axis.Setup.HomeDirection);
-                axis.Setup.HomeSignal = (HomeSignal)GetInt("Home", "Signal", (int)axis.Setup.HomeSignal);
-                axis.Setup.HomeZPhase = (HomeZPhase)GetInt("Home", "Z Phase", (int)axis.Setup.HomeZPhase);
-                axis.Setup.HomeClearTime = GetDouble("Home", "Clear Time(ms)", axis.Setup.HomeClearTime);
-                axis.Setup.HomeOffset = GetDouble("Home", "Offset(mm)", axis.Setup.HomeOffset);
-
-                // --- Alarm
-                axis.Setup.AlarmResetLevel = (ActiveLevel)GetInt("Alarm", "Reset Signal", (int)axis.Setup.AlarmResetLevel);
-                axis.Setup.AlarmLevel = (ActiveLevel)GetInt("Alarm", "Level", (int)axis.Setup.AlarmLevel);
-
-                // --- Limit
-                axis.Setup.PositiveLimitLevel = (ActiveLevel)GetInt("Limit", "+End Limit",(int)axis.Setup.PositiveLimitLevel);
-                axis.Setup.NegativeLimitLevel = (ActiveLevel)GetInt("Limit", "-End Limit", (int)axis.Setup.NegativeLimitLevel);
-                axis.Setup.SoftLimitMin = GetDouble("Limit", "Soft Limit-", axis.Setup.SoftLimitMin);
-                axis.Setup.SoftLimitMax = GetDouble("Limit", "Soft Limit+", axis.Setup.SoftLimitMax);
-
-                // --- TimeOut
-                axis.Setup.HomeTimeoutMs = GetInt("Timeout", "Home Timeout(ms)", axis.Setup.HomeTimeoutMs);
-                axis.Setup.MoveTimeoutMs = GetInt("Timeout", "Move Timeout(ms)", axis.Setup.MoveTimeoutMs);
-                axis.Setup.SensorDetectionTimeoutMs = GetInt("Timeout", "Sensor Detection Timeout(ms)", axis.Setup.SensorDetectionTimeoutMs);
-
-                // 6) Speed(우측)도 있으면 반영
-                if (_speedIndex?.Count > 0)
-                {
-                    // Home
-                    axis.Config.HomeFirstSpeed = GetDoubleS("Home", "Vel. 1st(mm/s)", axis.Config.HomeFirstSpeed);
-                    axis.Config.HomeSecondSpeed = GetDoubleS("Home", "Vel. 2nd(mm/s)", axis.Config.HomeSecondSpeed);
-                    axis.Config.HomeThirdSpeed = GetDoubleS("Home", "Vel. 3rd(mm/s)", axis.Config.HomeThirdSpeed);
-                    axis.Config.HomeLastSpeed = GetDoubleS("Home", "Vel. Last(mm/s)", axis.Config.HomeLastSpeed);
-                    axis.Config.HomeFirstAcc = GetDoubleS("Home", "Accel. 1st(mm/s^2)", axis.Config.HomeFirstAcc);
-                    axis.Config.HomeSecondAcc = GetDoubleS("Home", "Accel. 2nd(mm/s^2)", axis.Config.HomeSecondAcc);
-
-                    // Jog
-                    axis.Config.JogFineVelocity = GetDoubleS("Jog", "Fine Velocity(mm/s)", axis.Config.JogFineVelocity);
-                    axis.Config.JogCoarseVelocity = GetDoubleS("Jog", "Coarse Velocity(mm/s)", axis.Config.JogCoarseVelocity);
-                    axis.Config.JogAcc = GetDoubleS("Jog", "Accelerator(mm/s^2)", axis.Config.JogAcc);
-                    axis.Config.JogDec = GetDoubleS("Jog", "Decelerator(mm/s^2)", axis.Config.JogDec);
-
-                    // Run
-                    axis.Config.MaxVelocity = GetDoubleS("Run", "Maximum Velocity(mm/s)", axis.Config.MaxVelocity);
-                    axis.Config.RunAcc = GetDoubleS("Run", "Accelerator(mm/s^2)", axis.Config.RunAcc);
-                    axis.Config.RunDec = GetDoubleS("Run", "Decelerator(mm/s^2)", axis.Config.RunDec);
-                    axis.Config.ProfileMode = (ProfileMode)GetIntS("Run", "Profile", (int)axis.Config.ProfileMode);
-                    axis.Config.AccJerkPercent = GetInt("Run", "Accelerator Jerk(%)", axis.Config.AccJerkPercent);
-                    axis.Config.DecJerkPercent = GetInt("Run", "Decelerator Jerk(%)", axis.Config.DecJerkPercent);
-                }
-
-                // 7) 저장
-                string axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes", UNIT_NAME);
-                Directory.CreateDirectory(axisRoot);
-                string setupPath = Path.Combine(axisRoot, axisName + ".setup.json");
-                axis.Setup.Save(setupPath);
-
-                // 8) ★ 하드웨어에 설정 적용 ★ (요청에 따라 주석 처리)
-                //int applyResult = axis.ApplyToDriver();
-                //if (applyResult != 0)
-                //{
-                //    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
-                //        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //}
-                //else
-                //{
-                //    Console.WriteLine($"축 {axisName}: 하드웨어 설정 적용 성공");
-                //}
-
-                MessageBox.Show($"'{axisName}' 설정을 저장했습니다.", "완료",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"저장 중 오류: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btn_Save_Setup_Motion_Speed_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                ApplyAllPropertyViews();
-                // 1) 선택된 축 이름 확인
-                string axisName = selectAxisListBoxItemsView?.SelectedItemName;
-                if (string.IsNullOrWhiteSpace(axisName))
-                {
-                    MessageBox.Show("저장할 축을 먼저 선택하세요.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 2) 축 객체 조회
-                var axis = _axisManager?.Get(UNIT_NAME, axisName);
-                if (axis == null)
-                {
-                    MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // 3) 에디터 컬렉션 유효성
-                if ((_editorPropertiesSpeed == null || _editorPropertiesSpeed.Count == 0))
-                {
-                    MessageBox.Show("저장할 항목이 없습니다.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 4) 인덱스 빌드(한 번만 스캔 → O(1) 조회)
-                _speedIndex = BuildIndex(_editorPropertiesSpeed);
-
-                // 6) Speed(우측)도 있으면 반영
-                if (_speedIndex?.Count > 0)
-                {
-                    // Home
-                    axis.Config.HomeFirstSpeed = GetDoubleS("Home", "Vel. 1st(mm/s)", axis.Config.HomeFirstSpeed);
-                    axis.Config.HomeSecondSpeed = GetDoubleS("Home", "Vel. 2nd(mm/s)", axis.Config.HomeSecondSpeed);
-                    axis.Config.HomeThirdSpeed = GetDoubleS("Home", "Vel. 3rd(mm/s)", axis.Config.HomeThirdSpeed);
-                    axis.Config.HomeLastSpeed = GetDoubleS("Home", "Vel. Last(mm/s)", axis.Config.HomeLastSpeed);
-                    axis.Config.HomeFirstAcc = GetDoubleS("Home", "Accel. 1st(mm/s^2)", axis.Config.HomeFirstAcc);
-                    axis.Config.HomeSecondAcc = GetDoubleS("Home", "Accel. 2nd(mm/s^2)", axis.Config.HomeSecondAcc);
-
-                    // Jog
-                    axis.Config.JogFineVelocity = GetDoubleS("Jog", "Fine Velocity(mm/s)", axis.Config.JogFineVelocity);
-                    axis.Config.JogCoarseVelocity = GetDoubleS("Jog", "Coarse Velocity(mm/s)", axis.Config.JogCoarseVelocity);
-                    axis.Config.JogAcc = GetDoubleS("Jog", "Accelerator(mm/s^2)", axis.Config.JogAcc);
-                    axis.Config.JogDec = GetDoubleS("Jog", "Decelerator(mm/s^2)", axis.Config.JogDec);
-
-                    // Run
-                    axis.Config.MaxVelocity = GetDoubleS("Run", "Maximum Velocity(mm/s)", axis.Config.MaxVelocity);
-                    axis.Config.RunAcc = GetDoubleS("Run", "Accelerator(mm/s^2)", axis.Config.RunAcc);
-                    axis.Config.RunDec = GetDoubleS("Run", "Decelerator(mm/s^2)", axis.Config.RunDec);
-                    axis.Config.ProfileMode = (ProfileMode)GetIntS("Run", "Profile", (int)axis.Config.ProfileMode);
-                    axis.Config.AccJerkPercent = GetInt("Run", "Accelerator Jerk(%)", axis.Config.AccJerkPercent);
-                    axis.Config.DecJerkPercent = GetInt("Run", "Decelerator Jerk(%)", axis.Config.DecJerkPercent);
-                }
-
-                // 7) 저장
-                string axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Axes", UNIT_NAME);
-                Directory.CreateDirectory(axisRoot);
-                string setupPath = Path.Combine(axisRoot, axisName + ".config.json");
-                axis.Config.Save(setupPath);
-
-                // 8) ★ 하드웨어에 설정 적용 ★ (요청에 따라 주석 처리)
-                //int applyResult = axis.ApplyToDriver();
-                //if (applyResult != 0)
-                //{
-                //    MessageBox.Show($"설정 저장은 완료했으나 하드웨어 적용이 실패했습니다.\n오류코드: {applyResult}", "경고",
-                //        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                //}
-                //else
-                //{
-                //    Console.WriteLine($"축 {axisName}: 하드웨어 속도 설정 적용 성공");
-                //}
-
-                MessageBox.Show($"'{axisName}' 속도 설정을 저장했습니다.", "완료",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"저장 중 오류: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnServoOff_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                // 1) 선택된 축 이름 확인
-                string axisName = selectAxisListBoxItemsView?.SelectedItemName;
-                if (string.IsNullOrWhiteSpace(axisName))
-                {
-                    MessageBox.Show("저장할 축을 먼저 선택하세요.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 2) 축 객체 조회
-                var axis = _axisManager?.Get(UNIT_NAME, axisName);
-                if (axis == null)
-                {
-                    MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                int ret = axis.Servo(false);
-                if (ret != 0)
-                {
-                    MessageBox.Show($"서버 OFF 명령이 실패했습니다. 오류코드: {ret}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"서보 OFF 오류: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnServoOn_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                // 1) 선택된 축 이름 확인
-                string axisName = selectAxisListBoxItemsView?.SelectedItemName;
-                if (string.IsNullOrWhiteSpace(axisName))
-                {
-                    MessageBox.Show("저장할 축을 먼저 선택하세요.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                // 2) 축 객체 조회
-                var axis = _axisManager?.Get(UNIT_NAME, axisName);
-                if (axis == null)
-                {
-                    MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                int ret = axis.Servo(true);
-                if (ret != 0)
-                {
-                    MessageBox.Show($"서보 ON 명령이 실패했습니다. 오류코드: {ret}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"서보 ON 오류: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        // --- 특정 축(Home 실행 전) 전용 인터락 Rule 동적 등록 Helper ---
-        // InputStage X 축 홈 조건 예시:
-        //  - DOWN 센서 (모듈: "InputStage", 표시번호: "X105") MUST ON
-        //  - UP   센서 (모듈: "InputStage", 표시번호: "X104") MUST OFF
-        // 필요 시 모듈/디스플레이 번호를 실제 IO 명세에 맞게 수정.
-        private void EnsureAxisHomeInterlocks(MotionAxis axis)
-        {
-            if (axis == null) return;
-
-            try
-            {
-                var il = QMC.LCP_280.Process.Component.InterlockManager.Instance;
-                il.Start(); // 이미 시작되어 있으면 내부에서 무시
-
-                // WaferStage X 축 홈 인터락 조건 등록 예시
-                // TODO: 모듈명("WaferStageIO") / 표시번호("X201","X202") 는 실제 IO 맵에 맞게 수정하세요.
-                //  - Vacuum OFF (센서가 1=ON 이라면 expected:false 로 설정하여 OFF 요구)
-                //  - Clamp Open (Open 센서 ON 필요)
-                if (axis.Name.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
-                {
-                    var rules = il.GetRules();
-                    bool Has(string n) => rules.Any(r => r.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
-
-                    if (!Has("WaferStageX_Home_VacuumOff"))
-                        il.AddAxisIoRequire("WaferStageX_Home_VacuumOff", axis, "WaferStageIO", "X201", false); // Vacuum 센서 예상 OFF
-                    if (!Has("WaferStageX_Home_ClampOpen"))
-                        il.AddAxisIoRequire("WaferStageX_Home_ClampOpen", axis, "WaferStageIO", "X202", true);  // Clamp Open 센서 ON
-                }
-
-                // 축 이름 매칭 (프로젝트 실제 축 이름에 맞게 수정 필요)
-                if (axis.Name.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
-                {
-                    var rules = il.GetRules();
-                    bool Has(string n) => rules.Any(r => r.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
-
-                    if (!Has("InputStageX_Home_DownMustOn"))
-                        il.AddAxisIoRequire("InputStageX_Home_DownMustOn", axis, "InputStage", "X105", true);
-                    if (!Has("InputStageX_Home_UpMustOff"))
-                        il.AddAxisIoRequire("InputStageX_Home_UpMustOff", axis, "InputStage", "X104", false);
-                }
-            }
-            catch { /* ignore registration errors to avoid UI block */ }
-        }
-
         private async void btnHome_Click(object sender, EventArgs e)
         {
             HomeProgressForm dlg = null;
             try
             {
-                string axisName = selectAxisListBoxItemsView?.SelectedItemName;
-                if (string.IsNullOrWhiteSpace(axisName))
-                {
-                    MessageBox.Show("저장할 축을 먼저 선택하세요.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                var axis = _axisManager?.Get(UNIT_NAME, axisName);
-                if (axis == null)
-                {
-                    MessageBox.Show($"축 객체를 찾을 수 없습니다: {axisName}", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // (1) 축 전용 Home 조건 Rule 동적 등록 (중복 등록 방지 내부 처리)
-                EnsureAxisHomeInterlocks(axis);
-
-                // (2) InterlockManager 축 규칙 빠른 검사
+                if (_axis == null) { MessageBox.Show("축 선택 필요"); return; }
+                EnsureAxisHomeInterlocks(_axis);
                 string reason;
-                if (!QMC.LCP_280.Process.Component.InterlockManager.Instance.ValidateAxisForHome(axis, out reason))
+                if (!InterlockManager.Instance.ValidateAxisForHome(_axis, out reason))
                 {
-                    MessageBox.Show($"홈 인터락 차단:\r\n{reason}", "Interlock",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("홈 인터락 차단:\r\n" + reason);
                     return;
                 }
-
-                // (3) MachineHomeCoordinator의 PreAxisInterlockAsync 조건 평가
                 var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(Equipment);
-                var eval = await seq.PreAxisInterlockAsync(-1, axis, CancellationToken.None).ConfigureAwait(true);
+                var eval = await seq.PreAxisInterlockAsync(-1, _axis, CancellationToken.None).ConfigureAwait(true);
                 if (!eval.Ok)
                 {
-                    MessageBox.Show($"홈 인터락(코디네이터) 차단:\r\n{eval.Reason}", "Interlock",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("홈 인터락(코디네이터) 차단:\r\n" + eval.Reason);
                     return;
                 }
-
-                // (4) 홈 실행
                 dlg = new HomeProgressForm();
-                dlg.InitializeProgress($"Axis Home - {axis.Name}", 1);
-                dlg.SafeUpdate(new OperationProgress
-                {
-                    OperationId = "HOME",
-                    Title = $"Home {axis.Name}",
-                    StepIndex = 0,
-                    TotalSteps = 1,
-                    IsCompleted = false,
-                    Message = "Homing..."
-                });
-
-                // 취소/강제정지 연결
+                dlg.InitializeProgress($"Axis Home - {_axis.Name}", 1);
+                dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = $"Home {_axis.Name}", StepIndex = 0, TotalSteps = 1, IsCompleted = false, Message = "Homing..." });
                 bool userCanceled = false;
-                dlg.CancelRequested += () =>
-                {
-                    userCanceled = true;
-                    try { Equipment.AxisManager?.EmgStopAll(); } catch { }
-                };
-                dlg.ForceStopRequested += () =>
-                {
-                    try { Equipment.AxisManager?.EmgStopAll(); } catch { }
-                };
-
-                // (5) 홈 실행을 백그라운드에서 수행
-                var runTask = Task.Run(() =>
-                {
-                    // HomeSync가 블로킹 수행(예시). 프로젝트에 따라 HomeDone 대기 API에 맞게 조정.
-                    // HomeAsync만 있는 경우: axis.HomeAsync(); 이후 driver의 홈 완료 상태를 폴링.
-                    try
-                    {
-                        // 가능하면 알람 클리어/서보 ON 보강
-                        try { axis.ClearAlarm(); } catch { }
-                        try { axis.Servo(true); } catch { }
-
-                        // 블로킹 홈 수행
-                        // 반환값이 있다면 int rc = axis.HomeSync();
-                        axis.HomeSync();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw ex;
-                    }
-                });
-
-                // (6) 모델리스 표시 및 메시지 루프 유지
-                dlg.Show(this);
-                dlg.BringToFront();
-
+                dlg.CancelRequested += () => { userCanceled = true; try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
+                dlg.ForceStopRequested += () => { try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
+                var runTask = Task.Run(() => { try { _axis.ClearAlarm(); _axis.Servo(true); _axis.HomeSync(); } catch (Exception ex) { throw ex; } });
+                dlg.Show(this); dlg.BringToFront();
                 while (!runTask.IsCompleted)
                 {
                     Application.DoEvents();
                     await Task.Delay(50).ConfigureAwait(true);
                 }
-
-                // (7) 완료 업데이트
-                dlg.SafeUpdate(new OperationProgress
-                {
-                    OperationId = "HOME",
-                    Title = $"Home {axis.Name}",
-                    StepIndex = 0,
-                    TotalSteps = 1,
-                    IsCompleted = true,
-                    IsCanceled = userCanceled,
-                    Message = userCanceled ? "Canceled" : "Completed"
-                });
-
-                MessageBox.Show(userCanceled
-                        ? $"축 {axis.Name} 홈이 취소되었습니다."
-                        : $"축 {axis.Name} 홈이 완료되었습니다.",
-                    "Home", MessageBoxButtons.OK,
-                    userCanceled ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+                dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = $"Home {_axis.Name}", StepIndex = 0, TotalSteps = 1, IsCompleted = true, IsCanceled = userCanceled, Message = userCanceled ? "Canceled" : "Completed" });
+                MessageBox.Show(userCanceled ? $"축 {_axis.Name} 홈 취소" : $"축 {_axis.Name} 홈 완료");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"원점 구동 오류: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("원점 구동 오류: " + ex.Message);
+            }
+            finally
+            {
+                try { dlg?.Close(); dlg?.Dispose(); } catch { }
             }
         }
+        #endregion
 
-        // =========================
-        // 인덱스 빌드 & 조회 유틸
-        // =========================
-
-        /// <summary>
-        /// TitleOnlyProperty로 섹션을 추적하면서 (section,title) 키로 인덱스 생성
-        /// </summary>
-        private static Dictionary<(string section, string title), PropertyBase> BuildIndex(PropertyCollection pc)
+        #region Interlock helper
+        private void EnsureAxisHomeInterlocks(MotionAxis axis)
         {
-            var map = new Dictionary<(string section, string title), PropertyBase>(StringTupleComparer.OrdinalIgnoreCase);
-            if (pc == null || pc.Count == 0) return map;
-
-            string currentSection = string.Empty;
-            foreach (var p in pc)
+            if (axis == null) return;
+            try
             {
-                if (p == null) continue;
-                if (p is TitleOnlyProperty)
+                var il = InterlockManager.Instance; il.Start();
+                if (axis.Name.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase))
                 {
-                    currentSection = GetName(p) ?? string.Empty;
-                    continue;
-                }
-                var title = GetName(p);
-                if (string.IsNullOrEmpty(title)) continue;
-                var key = (currentSection, title);
-                if (!map.ContainsKey(key)) map[key] = p;
-            }
-            return map;
-        }
-
-        private PropertyBase Find(string section, string title)
-        {
-            if (_configIndex != null && _configIndex.TryGetValue((section ?? string.Empty, title), out var p1))
-                return p1;
-            return null;
-        }
-
-        private PropertyBase FindS(string section, string title)
-        {
-            if (_speedIndex != null && _speedIndex.TryGetValue((section ?? string.Empty, title), out var p1))
-                return p1;
-            return null;
-        }
-
-        private double GetDouble(string section, string title, double fallback)
-            => ReadDouble(Find(section, title), fallback);
-
-        private double GetDoubleS(string section, string title, double fallback)
-            => ReadDouble(FindS(section, title), fallback);
-
-        private bool GetBool(string section, string title, bool fallback)
-            => ReadBool(Find(section, title), fallback);
-
-        private int GetInt(string section, string title, int fallback)
-            => ReadInt(Find(section, title), fallback);
-
-        private int GetIntS(string section, string title, int fallback)
-            => ReadInt(FindS(section, title), fallback);
-
-        private static double ReadDouble(PropertyBase p, double fallback)
-        {
-            if (p == null) return fallback;
-
-            if (p is DoubleProperty dp) return dp.Value;
-            if (p is BoolProperty bp) return bp.Value ? 1.0 : 0.0;
-
-            var vProp = p.GetType().GetProperty("Value");
-            if (vProp != null)
-            {
-                var v = vProp.GetValue(p);
-                if (v is IConvertible)
-                {
-                    try { return Convert.ToDouble(v, CultureInfo.InvariantCulture); }
-                    catch { }
+                    var rules = il.GetRules();
+                    bool Has(string n) => rules.Any(r => r.Name.Equals(n, StringComparison.OrdinalIgnoreCase));
+                    if (!Has("WaferStageX_Home_VacuumOff")) il.AddAxisIoRequire("WaferStageX_Home_VacuumOff", axis, "WaferStageIO", "X201", false);
+                    if (!Has("WaferStageX_Home_ClampOpen")) il.AddAxisIoRequire("WaferStageX_Home_ClampOpen", axis, "WaferStageIO", "X202", true);
                 }
             }
-            return fallback;
+            catch { }
         }
+        #endregion
 
-        private static bool ReadBool(PropertyBase p, bool fallback)
+        #region IO click
+        private void OnMotorIOItemClicked(object sender, string key)
         {
-            if (p == null) return fallback;
-
-            if (p is BoolProperty bp) return bp.Value;
-
-            var vProp = p.GetType().GetProperty("Value");
-            if (vProp != null)
+            var k = key?.Trim().ToUpperInvariant();
+            if (string.IsNullOrEmpty(k) || _axis == null) return;
+            try
             {
-                var v = vProp.GetValue(p);
-                if (v is bool b) return b;
-                if (v is IConvertible)
+                if (k == "SERVO")
                 {
-                    try { return Convert.ToDouble(v, CultureInfo.InvariantCulture) != 0.0; }
-                    catch { }
+                    bool wantOn = !_axis.Status.IO.ServoOn;
+                    int rc = _axis.Servo(wantOn);
+                    if (rc != 0) MessageBox.Show($"Servo {(wantOn ? "On" : "Off")} 실패(rc={rc})");
+                }
+                else if (k == "ALARM")
+                {
+                    int rc = _axis.ClearAlarm();
+                    if (rc != 0) MessageBox.Show($"Alarm Reset 실패(rc={rc})");
                 }
             }
-            return fallback;
+            catch (Exception ex) { Log.Write(ex); }
         }
+        #endregion
 
-        private static int ReadInt(PropertyBase p, int fallback)
+        #region Paint/Resize
+        protected override void OnPaint(PaintEventArgs e)
         {
-            if (p == null) return fallback;
-
-            switch (p)
+            base.OnPaint(e);
+            int centerX = this.ClientSize.Width / 2;
+            using (Pen blackPen = new Pen(Color.Black, 2))
             {
-                case IntProperty ip: return ip.Value;
-                case LongProperty lp: try { checked { return (int)lp.Value; } } catch { return fallback; }
-                case FloatProperty fp: return (int)Math.Round(fp.Value);
-                case DoubleProperty dp: return (int)Math.Round(dp.Value);
-                case BoolProperty bp: return bp.Value ? 1 : 0;
-                case StringProperty sp:
-                    if (int.TryParse(sp.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var i)) return i;
-                    if (double.TryParse(sp.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)) return (int)Math.Round(d);
-                    return fallback;
+                e.Graphics.DrawLine(blackPen, centerX, 0, centerX, this.ClientSize.Height);
             }
-
-            var vProp = p.GetType().GetProperty("Value");
-            if (vProp != null)
-            {
-                var v = vProp.GetValue(p);
-                if (v is int i) return i;
-                if (v is long l) { try { checked { return (int)l; } } catch { return fallback; } }
-                if (v is float f) return (int)Math.Round(f);
-                if (v is double d) return (int)Math.Round(d);
-                if (v is bool b) return b ? 1 : 0;
-                if (v is string s)
-                {
-                    if (int.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var i2)) return i2;
-                    if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d2)) return (int)Math.Round(d2);
-                }
-                if (v is IConvertible)
-                {
-                    try { return Convert.ToInt32(v, CultureInfo.InvariantCulture); } catch { }
-                }
-            }
-            return fallback;
         }
-
-        private static string GetName(PropertyBase p)
+        protected override void OnResize(EventArgs e)
         {
-            if (p == null) return null;
-
-            // Name 우선, 없으면 Title 시도
-            var nameProp = p.GetType().GetProperty("Name");
-            var titleProp = p.GetType().GetProperty("Title");
-            var key = nameProp?.GetValue(p)?.ToString() ?? titleProp?.GetValue(p)?.ToString();
-            return key;
+            base.OnResize(e);
+            Invalidate();
         }
+        #endregion
 
-        // 섹션/타이틀 키의 대소문자 무시 튜플 비교자
-        private sealed class StringTupleComparer : IEqualityComparer<(string section, string title)>
-        {
-            public static readonly StringTupleComparer OrdinalIgnoreCase = new StringTupleComparer();
-            private readonly StringComparer _cmp = StringComparer.OrdinalIgnoreCase;
-
-            public bool Equals((string section, string title) x, (string section, string title) y)
-                => _cmp.Equals(x.section, y.section) && _cmp.Equals(x.title, y.title);
-
-            public int GetHashCode((string section, string title) obj)
-                => HashCode.Combine(_cmp.GetHashCode(obj.section ?? string.Empty), _cmp.GetHashCode(obj.title ?? string.Empty));
-        }
-        /// <summary>
-        /// FormConfig 탭 호스트가 전달하는 가용 크기에 맞춰 자동으로 폼 크기를 조정합니다.
-        /// </summary>
-        /// <param name="width">가용 너비</param>
-        /// <param name="height">가용 높이 (탭 헤더 제외)</param>
+        #region Panel Resize API
         public void SetPanelSize(int width, int height)
         {
             try
             {
-                this.SuspendLayout();
-
-                // 호스트(TabPage)의 클라이언트 영역을 그대로 사용
-                this.Size = new Size(width, height);
-                this.ClientSize = new Size(width, height);
-
-                // 포함된 컨트롤들이 Dock=Fill 등으로 배치되었다면 자동으로 맞춰짐
-                // 필요 시 내부 루트 컨테이너가 있다면 여기에서 Size/Dock 조정 가능
-
-                this.Invalidate();
-                this.Update();
+                SuspendLayout();
+                Size = new Size(width, height);
+                ClientSize = new Size(width, height);
+                Invalidate();
+                Update();
             }
-            finally
-            {
-                this.ResumeLayout(true);
-            }
-
-            Console.WriteLine($"📐 {nameof(InputCassetteLifterUnit_Config)}.SetPanelSize → {width}x{height}");
+            finally { ResumeLayout(true); }
+            Console.WriteLine($"Motion_Setup.SetPanelSize → {width}x{height}");
         }
+        #endregion
     }
 }

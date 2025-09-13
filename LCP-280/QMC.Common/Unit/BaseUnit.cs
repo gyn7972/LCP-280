@@ -47,6 +47,7 @@ namespace QMC.Common.Unit
         protected BaseUnit(string unitName = null)
         {
             UnitName = unitName;
+            m_dicAlarms = new Dictionary<int, AlarmInfo>(); // <-- Add this line
             MakeAlarm();
         }
 

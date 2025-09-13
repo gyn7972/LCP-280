@@ -8,7 +8,7 @@ using System.Text;
 
 namespace QMC.Common
 {
-    public abstract class BaseSetup
+    public abstract partial class BaseSetup
     {
         // ===== 공통 메타 속성 =====
         [DefaultValue(null)]

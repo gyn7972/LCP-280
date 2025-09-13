@@ -25,65 +25,19 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitializeComponent()
         {
-            this.selectItemListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.cylinderPropertyCollectionView = new QMC.Common.PropertyCollectionView();
-            this.btn_Save_Setup_Cylinder = new QMC.Common.IndividualMenuButton();
-            this.inputStatepropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.gbCylinderControl = new System.Windows.Forms.GroupBox();
+            this.gbCylinderState = new System.Windows.Forms.GroupBox();
             this.btn_Backward_Move = new QMC.Common.IndividualMenuButton();
             this.btn_Forward_Move = new QMC.Common.IndividualMenuButton();
-            this.gbCylinderState = new System.Windows.Forms.GroupBox();
+            this.selectItemListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.btn_Save_Setup_Cylinder = new QMC.Common.IndividualMenuButton();
+            this.cylinderPropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.lbStatusCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.lbStatusValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.inputStatepropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.gbCylinderControl.SuspendLayout();
             this.gbCylinderState.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // selectItemListBoxItemsView
-            // 
-            this.selectItemListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.selectItemListBoxItemsView.BorderWidth = 2;
-            this.selectItemListBoxItemsView.GroupName = "Select Item";
-            this.selectItemListBoxItemsView.Location = new System.Drawing.Point(12, 12);
-            this.selectItemListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
-            this.selectItemListBoxItemsView.Name = "selectItemListBoxItemsView";
-            this.selectItemListBoxItemsView.SelectedIndex = -1;
-            this.selectItemListBoxItemsView.Size = new System.Drawing.Size(305, 722);
-            this.selectItemListBoxItemsView.TabIndex = 2;
-            // 
-            // cylinderPropertyCollectionView
-            // 
-            this.cylinderPropertyCollectionView.GroupName = "Property";
-            this.cylinderPropertyCollectionView.Location = new System.Drawing.Point(333, 233);
-            this.cylinderPropertyCollectionView.Name = "cylinderPropertyCollectionView";
-            this.cylinderPropertyCollectionView.Size = new System.Drawing.Size(440, 387);
-            this.cylinderPropertyCollectionView.TabIndex = 13;
-            // 
-            // btn_Save_Setup_Cylinder
-            // 
-            this.btn_Save_Setup_Cylinder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Setup_Cylinder.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Setup_Cylinder.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Setup_Cylinder.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Setup_Cylinder.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Setup_Cylinder.ForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Setup_Cylinder.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Setup_Cylinder.Location = new System.Drawing.Point(663, 570);
-            this.btn_Save_Setup_Cylinder.Name = "btn_Save_Setup_Cylinder";
-            this.btn_Save_Setup_Cylinder.Size = new System.Drawing.Size(100, 40);
-            this.btn_Save_Setup_Cylinder.TabIndex = 5;
-            this.btn_Save_Setup_Cylinder.TabStop = false;
-            this.btn_Save_Setup_Cylinder.Text = "Save";
-            this.btn_Save_Setup_Cylinder.UseVisualStyleBackColor = false;
-            this.btn_Save_Setup_Cylinder.Click += new System.EventHandler(this.btn_Save_Setup_Cylinder_Click);
-            // 
-            // inputStatepropertyCollectionView
-            // 
-            this.inputStatepropertyCollectionView.GroupName = "Input State";
-            this.inputStatepropertyCollectionView.Location = new System.Drawing.Point(9, 68);
-            this.inputStatepropertyCollectionView.Name = "inputStatepropertyCollectionView";
-            this.inputStatepropertyCollectionView.Size = new System.Drawing.Size(422, 141);
-            this.inputStatepropertyCollectionView.TabIndex = 14;
             // 
             // gbCylinderControl
             // 
@@ -97,9 +51,23 @@ namespace QMC.LCP_280.Process.Unit
             this.gbCylinderControl.TabStop = false;
             this.gbCylinderControl.Text = "Control";
             // 
+            // gbCylinderState
+            // 
+            this.gbCylinderState.BackColor = System.Drawing.Color.White;
+            this.gbCylinderState.Controls.Add(this.lbStatusCaption);
+            this.gbCylinderState.Controls.Add(this.lbStatusValue);
+            this.gbCylinderState.Controls.Add(this.inputStatepropertyCollectionView);
+            this.gbCylinderState.Location = new System.Drawing.Point(333, 12);
+            this.gbCylinderState.Name = "gbCylinderState";
+            this.gbCylinderState.Size = new System.Drawing.Size(440, 215);
+            this.gbCylinderState.TabIndex = 16;
+            this.gbCylinderState.TabStop = false;
+            this.gbCylinderState.Text = "State";
+            // 
             // btn_Backward_Move
             // 
             this.btn_Backward_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Backward_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.btn_Backward_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btn_Backward_Move.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Backward_Move.CustomForeColor = System.Drawing.Color.Black;
@@ -118,6 +86,7 @@ namespace QMC.LCP_280.Process.Unit
             // btn_Forward_Move
             // 
             this.btn_Forward_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Forward_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.btn_Forward_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btn_Forward_Move.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Forward_Move.CustomForeColor = System.Drawing.Color.Black;
@@ -133,18 +102,55 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Forward_Move.UseVisualStyleBackColor = false;
             this.btn_Forward_Move.Click += new System.EventHandler(this.btn_Forward_Move_Click);
             // 
-            // gbCylinderState
+            // selectItemListBoxItemsView
             // 
-            this.gbCylinderState.BackColor = System.Drawing.Color.White;
-            this.gbCylinderState.Controls.Add(this.lbStatusCaption);
-            this.gbCylinderState.Controls.Add(this.lbStatusValue);
-            this.gbCylinderState.Controls.Add(this.inputStatepropertyCollectionView);
-            this.gbCylinderState.Location = new System.Drawing.Point(333, 12);
-            this.gbCylinderState.Name = "gbCylinderState";
-            this.gbCylinderState.Size = new System.Drawing.Size(440, 215);
-            this.gbCylinderState.TabIndex = 16;
-            this.gbCylinderState.TabStop = false;
-            this.gbCylinderState.Text = "State";
+            this.selectItemListBoxItemsView.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.selectItemListBoxItemsView.BorderColor = System.Drawing.Color.White;
+            this.selectItemListBoxItemsView.BorderWidth = 2;
+            this.selectItemListBoxItemsView.GroupBackColor = System.Drawing.Color.White;
+            this.selectItemListBoxItemsView.GroupForeColor = System.Drawing.Color.Black;
+            this.selectItemListBoxItemsView.GroupName = "Select Item";
+            this.selectItemListBoxItemsView.ItemBackColor = System.Drawing.Color.Black;
+            this.selectItemListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
+            this.selectItemListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
+            this.selectItemListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
+            this.selectItemListBoxItemsView.Location = new System.Drawing.Point(12, 12);
+            this.selectItemListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
+            this.selectItemListBoxItemsView.Name = "selectItemListBoxItemsView";
+            this.selectItemListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.selectItemListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
+            this.selectItemListBoxItemsView.SelectedIndex = -1;
+            this.selectItemListBoxItemsView.Size = new System.Drawing.Size(305, 722);
+            this.selectItemListBoxItemsView.TabIndex = 2;
+            // 
+            // btn_Save_Setup_Cylinder
+            // 
+            this.btn_Save_Setup_Cylinder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Cylinder.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Setup_Cylinder.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Setup_Cylinder.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Cylinder.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Cylinder.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Setup_Cylinder.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Setup_Cylinder.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Setup_Cylinder.Location = new System.Drawing.Point(663, 570);
+            this.btn_Save_Setup_Cylinder.Name = "btn_Save_Setup_Cylinder";
+            this.btn_Save_Setup_Cylinder.Size = new System.Drawing.Size(100, 40);
+            this.btn_Save_Setup_Cylinder.TabIndex = 5;
+            this.btn_Save_Setup_Cylinder.TabStop = false;
+            this.btn_Save_Setup_Cylinder.Text = "Save";
+            this.btn_Save_Setup_Cylinder.UseVisualStyleBackColor = false;
+            this.btn_Save_Setup_Cylinder.Click += new System.EventHandler(this.btn_Save_Setup_Cylinder_Click);
+            // 
+            // cylinderPropertyCollectionView
+            // 
+            this.cylinderPropertyCollectionView.FastBuild = true;
+            this.cylinderPropertyCollectionView.GroupName = "Property";
+            this.cylinderPropertyCollectionView.Location = new System.Drawing.Point(333, 233);
+            this.cylinderPropertyCollectionView.Name = "cylinderPropertyCollectionView";
+            this.cylinderPropertyCollectionView.Size = new System.Drawing.Size(440, 331);
+            this.cylinderPropertyCollectionView.SuppressResizeInvalidation = true;
+            this.cylinderPropertyCollectionView.TabIndex = 13;
             // 
             // lbStatusCaption
             // 
@@ -171,6 +177,16 @@ namespace QMC.LCP_280.Process.Unit
             this.lbStatusValue.TabIndex = 16;
             this.lbStatusValue.Text = "Forward";
             this.lbStatusValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // inputStatepropertyCollectionView
+            // 
+            this.inputStatepropertyCollectionView.FastBuild = true;
+            this.inputStatepropertyCollectionView.GroupName = "Input State";
+            this.inputStatepropertyCollectionView.Location = new System.Drawing.Point(9, 68);
+            this.inputStatepropertyCollectionView.Name = "inputStatepropertyCollectionView";
+            this.inputStatepropertyCollectionView.Size = new System.Drawing.Size(422, 141);
+            this.inputStatepropertyCollectionView.SuppressResizeInvalidation = true;
+            this.inputStatepropertyCollectionView.TabIndex = 14;
             // 
             // Cylinder_Setup
             // 

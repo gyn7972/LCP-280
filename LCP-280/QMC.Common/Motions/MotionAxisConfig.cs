@@ -103,6 +103,11 @@ namespace QMC.Common.Motions
         [DefaultValue(false)]
         public bool SensorLimitPlus { get; set; } = false;
 
+        //Test
+        //[Category("Operation"), DisplayName("구영남")]
+        //[DefaultValue(false)]
+        //public bool bRich { get; set; } = false;
+
         public MotionAxisConfig()
         {
 
