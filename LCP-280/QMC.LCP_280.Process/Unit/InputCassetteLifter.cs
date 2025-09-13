@@ -129,8 +129,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Lifecycle
-        public override void OnRun()  => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()  { int ret = 0; return ret; }
+        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
         #endregion
 
         #region Seq 단위 동작 함수

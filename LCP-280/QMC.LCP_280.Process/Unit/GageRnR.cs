@@ -34,14 +34,17 @@ namespace QMC.LCP_280.Process.Unit
                 TeachingPositions.Add(tp);
         }
 
-        public override void OnRun()
+        public override int OnRun()
         {
-            base.OnRun();
+            int ret = 0;
+            return ret;
         }
 
-        public override void OnStop()
+        public override int OnStop()
         {
+            int ret = 0;
             base.OnStop();
+            return ret;
         }
 
         public void TeachCurrentPosition(string positionName, string description = null)

@@ -61,6 +61,10 @@ namespace QMC.Common.PKGTester
         {
             this.binNo = binNo;
         }
+        public bool IsMeasured()
+        {
+            return this.binNo >= 0;
+        }
         #endregion
     }
 

@@ -35,8 +35,16 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
         }
 
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()
+        {
+            return base.OnRun();
+        }
+        
+        public override int OnStop()
+        {
+            return base.OnStop();
+        }
+        
 
         public void TeachCurrentPosition(string positionName, string description = null)
         {

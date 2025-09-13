@@ -68,8 +68,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Runtime
-        public override void OnRun()  => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()  { int ret = 0; return ret; }
+        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
         #endregion
 
         #region Teaching Helpers

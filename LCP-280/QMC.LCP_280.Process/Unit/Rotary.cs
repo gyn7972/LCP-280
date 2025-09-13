@@ -7,7 +7,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
 using System.Linq;
-using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO 상수/배열 직접 사용
+using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO ???/?迭 ???? ???
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -24,7 +24,7 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, bool> _simInputs  = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
 
-        // 로컬 Safe 명칭 허용(오타 포함)
+        // ???? Safe ??? ???(??? ????)
         private static readonly string[] SafeNames = new[] { "SafeZone", "Safe", "SasfeZone", "SAFE", "SAFEZONE", "SAFE_ZONE" };
 
         public Rotary(RotaryConfig config = null) : base("RotaryConfig")
@@ -43,11 +43,11 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
 
             var il = InterlockManager.Instance;
-            il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T축 Home 완료 후 동작 가능합니다.");
+            il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T?? Home ??? ?? ???? ????????.");
             il.AddGlobalRule("EquipStateRunningBlock", () =>
             {
                 return Equipment.Instance != null && Equipment.Instance.State == EquipmentState.Running
-                    ? "자동운전 중에는 인덱스 수동 이동이 불가합니다." : null;
+                    ? "??????? ????? ?ε??? ???? ????? ???????." : null;
             });
         }
 
@@ -61,13 +61,22 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            const string unitName = "Unit"; // Equipment???? ?? ??? ?? ????? ?????? ??????? ??
             BindAxis(mgr, unitName, AxisNames.IndexT, ref _axisT);
 
         }
 
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()
+        {
+            int ret = 0;
+            return ret;
+        }
+        public override int OnStop()
+        {
+            int ret = 0;
+            base.OnStop();
+            return ret;
+        }
 
         #region Teaching
         public void TeachCurrentPosition(string name, string description = null)
@@ -131,26 +140,26 @@ namespace QMC.LCP_280.Process.Unit
             var axis = _axisT;
             if (axis == null)
             {
-                reason = "T축이 바인딩되지 않았습니다.";
+                reason = "T???? ???ε????? ???????.";
                 return false;
             }
 
-            // 1) 로컬 Safe-Zone 인터락: 4개 유닛이 Safe TeachingPosition에 있어야 함
+            // 1) ???? Safe-Zone ?????: 4?? ?????? Safe TeachingPosition?? ???? ??
             if (!VerifyAllUnitsSafe(out reason))
                 return false;
 
-            // 2) InterlockManager 규칙 검사(전역 + 축 관련)
+            // 2) InterlockManager ??? ???(???? + ?? ????)
             var il = InterlockManager.Instance;
             if (!il.ValidateAxisForHome(axis, out reason))
                 return false;
             if (!il.ValidateForHomeStep(new[] { axis }, out reason))
                 return false;
 
-            // 3) 실제 인덱스 이동
+            // 3) ???? ?ε??? ???
             int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
             if (rc != 0)
             {
-                reason = $"Index 이동 실패(rc={rc})";
+                reason = $"Index ??? ????(rc={rc})";
                 return false;
             }
             return true;
@@ -160,7 +169,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             reason = null;
             var eq = Equipment.Instance;
-            if (eq == null || eq.Units == null) return true; // 설비 미준비 시 차단하지 않음
+            if (eq == null || eq.Units == null) return true; // ???? ????? ?? ???????? ????
 
             // IndexChipProbeController
             if (eq.Units.TryGetValue("IndexChipProbeController", out var u1) && u1 is IndexChipProbeController prober)
@@ -237,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Vacuum 별칭으로 조회만
+            // Vacuum ??????? ?????
             if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac1", out _vacuum[0]))
             {
                 Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac1");
@@ -360,7 +369,7 @@ namespace QMC.LCP_280.Process.Unit
 
         }
 
-        // === Domain Control (표준 구동) ===
+        // === Domain Control (??? ????) ===
         public bool SetVacuum(int nNo, bool on)
         {
             if (_vacuum[nNo] == null) return false;
@@ -392,7 +401,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool VacTankPressureOk() => ReadInput(VAC_TANK_PRESSURE) || ReadInput(VAC_TANK_PRESSURE_LEGACY);
         #endregion
 
-        #region Seq 단위 동작 함수
+        #region Seq ???? ???? ???
         public int Rotate()
         {
             int nRet = -1;

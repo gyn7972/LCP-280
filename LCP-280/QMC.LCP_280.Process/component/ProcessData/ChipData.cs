@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QMC.LCP_280.Process.Component.ProcessData;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -17,7 +18,7 @@ namespace QMC.LCP_280.Process.Component
     }
 
     [Serializable]
-    public sealed class ChipData
+    public class ChipData : Material
     {
         // ===== 식별 =====
         [DefaultValue(-1)] public int Index { get; set; } = -1;

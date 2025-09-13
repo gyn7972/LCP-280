@@ -103,6 +103,7 @@
     <Compile Include="Component\JogControl.Designer.cs">
       <DependentUpon>JogControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\ProcessData\Material.cs" />
     <Compile Include="Component\Recipe\MeasurementKey.cs" />
     <Compile Include="Component\PatternMatchingControl.cs">
       <SubType>UserControl</SubType>

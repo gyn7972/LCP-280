@@ -135,8 +135,8 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        public override void OnRun() { }
-        public override void OnStop() { }
+        public override int OnRun() { int ret = 0; return ret; }
+        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
     }
 
     public enum TowerLampPattern { Idle, Running, Warning, Alarm, AllOff }

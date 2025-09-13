@@ -1,14 +1,25 @@
 // QMC.Common\Unit\BaseUnit.cs
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
+using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace QMC.Common.Unit
 {
-    public abstract class BaseUnit
+    public class BaseUnit
     {
+        public enum AlarmKeys
+        {
+            ePrepareFailed = 1000,
+            
+        }
+        protected Dictionary<int, AlarmInfo> m_dicAlarms;
+        private bool m_bExit;
+
         public string UnitName { get; set; }
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
@@ -60,9 +71,79 @@ namespace QMC.Common.Unit
                 Log.Write("UnitAxis", $"[BindAxes] Axis '{unitName}||{axisName}' 미존재");
             }
         }
+        public int Start()
+        {
+            return OnStart();
+        }
 
+        protected virtual int OnStart()
+        {
+            int ret = 0;
+            return ret;
+        }
+        public int Stop()
+        {
+            return OnStop();
+        }
         // Unit 공통 동작 메서드
-        public virtual void OnRun() { }
-        public virtual void OnStop() { }
+        public virtual int OnRun() 
+        {
+            int ret = 0;
+            return ret;
+        }
+        public virtual int OnStop() 
+        { 
+            int ret = 0;
+            m_bExit = true;
+            return ret;
+        }
+
+        protected void OnMainProcedure()
+        {
+            //int ret = 0;
+            int ret = OnPrepareToMainProcedure();
+            if (ret != 0)
+            {
+                AlarmInfo alarm = this.GetAlarm((int)AlarmKeys.ePrepareFailed);
+                AlarmManager.Instance.ShowAlarm(alarm);
+
+                return;
+            }
+            while (true)
+            {
+                if (m_bExit)
+                {
+                    break;
+                }
+                if ((ret = OnRun()) != 0)
+                {
+                    Log.Write(this, string.Format("OnRun Return Value : {0}", ret));
+                    break;
+                }
+                Thread.Sleep(1);
+            }
+
+            OnStop();
+        }
+
+       
+        protected AlarmInfo GetAlarm(int nCode)
+        {
+            AlarmInfo alarm = null;
+            if (m_dicAlarms.ContainsKey(nCode))
+            {
+                alarm = m_dicAlarms[nCode];
+            }
+            else
+            {
+                alarm = m_dicAlarms[999];
+            }
+
+            return alarm;
+        }
+        protected virtual int OnPrepareToMainProcedure()
+        {
+            return 0;
+        }
     }
 }
