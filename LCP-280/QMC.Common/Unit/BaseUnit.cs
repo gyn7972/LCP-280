@@ -7,6 +7,7 @@ using QMC.Common.Motions;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Xml.Linq;
 
 namespace QMC.Common.Unit
 {
@@ -42,7 +43,27 @@ namespace QMC.Common.Unit
         protected BaseUnit(string unitName = null)
         {
             UnitName = unitName;
+            MakeAlarm();
         }
+
+        private void MakeAlarm()
+        {
+            InitAlarm();
+
+        }
+
+        protected virtual void InitAlarm()
+        {
+            
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.ePrepareFailed;
+            alarm.Title = "PrepareFialed";
+            alarm.Cause = "PrepareFialed";
+            alarm.Source = this.UnitName;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
+
         private Material m_currentMaterial = null;
 
 
