@@ -8,7 +8,7 @@ using System.Text;
 
 namespace QMC.Common
 {
-    public abstract class BaseConfig : ICloneable
+    public abstract partial class BaseConfig : ICloneable
     {
         // ===== 공통 메타 속성 =====
         [DefaultValue(null)]
