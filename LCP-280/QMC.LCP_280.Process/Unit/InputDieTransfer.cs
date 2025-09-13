@@ -266,6 +266,8 @@ namespace QMC.LCP_280.Process.Unit
 
             return MoveTeachingPositionOnceASync((int)InputDieTransferConfig.TeachingPositionName.Pickup,false);
         }
+
+
         public Task<int> MoveTeachingPositionOnceASync(int selIndex, bool isFine)
         {
             return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
