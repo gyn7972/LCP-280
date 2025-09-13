@@ -1,4 +1,5 @@
 // QMC.Common\Unit\BaseUnit.cs
+using Ivi.Visa;
 using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
@@ -23,11 +24,16 @@ namespace QMC.Common.Unit
             
         }
 
-        public enum RunStatus
+        public enum UnitRunStatus
         {
             Run,
             Stop,
             CycleStop,
+        }
+        public enum UnitRunMode
+        {
+            Manual,
+            Auto,
         }
 
 
@@ -37,6 +43,13 @@ namespace QMC.Common.Unit
         public string UnitName { get; set; }
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
+        public Thread m_workThread { get; set; }
+        public UnitRunStatus RunStatus { get; set; } = UnitRunStatus.Stop;
+        public UnitRunMode RunMode { get; set; } = UnitRunMode.Manual;
+        public bool IsRunning => RunStatus == UnitRunStatus.Run;
+        public bool IsAutoMode => RunMode == UnitRunMode.Auto;
+        public bool IsManualMode => RunMode == UnitRunMode.Manual;
+        public bool IsCycleStop => RunStatus == UnitRunStatus.CycleStop;
 
         // 축 등록 딕셔너리
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
@@ -52,6 +65,7 @@ namespace QMC.Common.Unit
 
         private void MakeAlarm()
         {
+            m_dicAlarms = new Dictionary<int, AlarmInfo>();
             InitAlarm();
 
         }
@@ -76,7 +90,7 @@ namespace QMC.Common.Unit
 
         private static readonly object _alarmLogLock = new object();
         // 알람 발생시 사용.
-        public int AlarmPost(AlarmKey AlarmCode)
+        public int AlarmPost(int AlarmCode)
         {
             try
             {
@@ -160,12 +174,23 @@ namespace QMC.Common.Unit
         }
         public int Start()
         {
+            SetRunMode(UnitRunMode.Auto);
+            m_bExit = false;
+            m_workThread = new Thread(new ThreadStart(OnMainProcedure));
+            m_workThread.Start();
+
             return OnStart();
+        }
+
+        private void SetRunMode(UnitRunMode auto)
+        {
+            this.RunMode = auto;
         }
 
         protected virtual int OnStart()
         {
             int ret = 0;
+
             return ret;
         }
         public int Stop()
@@ -192,6 +217,16 @@ namespace QMC.Common.Unit
 
         protected void OnMainProcedure()
         {
+            // 현재 워커 스레드 이름을 유닛 이름으로 설정 (이미 설정되어 있으면 유지)
+            try
+            {
+                if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                {
+                    Thread.CurrentThread.Name = string.IsNullOrWhiteSpace(UnitName) ? GetType().Name : UnitName;
+                }
+            }
+            catch { /* ignore if thread name already set */ }
+
             //int ret = 0;
             int ret = OnPrepareToMainProcedure();
             if (ret != 0)
@@ -218,6 +253,10 @@ namespace QMC.Common.Unit
             OnStop();
         }
 
+        public string GetUnitName()
+        {   
+            return UnitName;
+        }
         public Material GetMaterial()
         {
             return m_currentMaterial;

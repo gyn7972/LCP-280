@@ -9,6 +9,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using static System.Windows.Forms.AxHost;
 
@@ -43,7 +44,7 @@ namespace QMC.LCP_280.Process.Unit
         private MotionAxis _waferLifterZ; // 단일 리프터 축 (Y 혹은 Z)
         public MotionAxis WaferLifterZ => _waferLifterZ;
 
-        public RunStatus Status { get; private set; }
+        public UnitRunStatus Status { get; private set; }
         public CassetteLifterState State { get; private set; }
         #endregion
         #region InitAlarm
@@ -168,7 +169,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (this.Status == RunStatus.Stop || this.Status == RunStatus.CycleStop)
+            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
             {
                 this.State = CassetteLifterState.Stop;
                 return 1;
@@ -232,7 +233,7 @@ namespace QMC.LCP_280.Process.Unit
             if(material.Presence == Material.MaterialPresence.Exist)
             {
                 State = CassetteLifterState.Work;
-                if(material.ProcessSatate == CassetteMaterial.CassetteProcessSatate.Unknown)
+                if(material.ProcessSatate == CassetteMaterial.MaterialProcessSatate.Unknown)
                 {
                     ret = ScanWafer();
                     if (ret != 0)
@@ -248,7 +249,10 @@ namespace QMC.LCP_280.Process.Unit
             }
             return 0;
         }
-
+        public bool IsEndTask(Task<int> task)
+        {
+            return task.IsCompleted || task.IsFaulted || task.IsCanceled;
+        }
         public int ScanWafer()
         {
             int ret = 0;
@@ -256,11 +260,61 @@ namespace QMC.LCP_280.Process.Unit
             if (IsWaferProtrusionDetectionSensor())
             {
                 Log.Write(this, "Wafer Protrusion Detected");
-                
+                AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
                 return -1;
             }
+            
             CassetteMaterial material = GetCassetteMaterial();
+            for(int iter = 0; iter <  material.Slots.Count; iter ++)
+            {
+                material.Slots[iter] = new MaterialWafer();
+
+            }
             MoveToScanStartPosition();
+            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync();
+            while(true)
+            {
+                if(IsEndTask(taskMoveEndPos))
+                {
+                    ret = taskMoveEndPos.Result;
+                    if (ret != 0)
+                    {
+                        Log.Write(this, "MoveToScanEndPositionAsync Failed");
+                        return -1;
+                    }
+                    break;
+                }
+                if(IsWaferProtrusionDetectionSensor())
+                {
+                    Log.Write(this, "Wafer Protrusion Detected");
+                    AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                    return -1;
+                }
+                if (MappingSensor())
+                {
+                    double dPos = WaferLifterZ.GetPosition();
+                    double dSlotPitch = InputCassetteLifterConfig.SlotPitch;
+                    int slot = (int)((dPos - GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ)) / InputCassetteLifterConfig.SlotPitch);
+                    if (slot >= 0 && slot < material.Slots.Count)
+                    {
+                        MaterialWafer wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
+                        wafer.SlotIndex = slot;
+                        material.SetWafer(slot, wafer);
+                        Log.Write(this, $"Mapping Sensor Detected at Slot {slot + 1} Position {dPos:F3}");
+                    }
+                    else
+                    {
+                        Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
+                    }
+
+
+                }
+
+                Thread.Sleep(0);
+
+
+
+            }
             Log.Write(this, "End ScanWafer");
             return ret;
         }
@@ -269,15 +323,30 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int) InputCassetteLifterConfig.TeachingPositionName.MappingStart,isFine);
         }
+        public Task<int> MoveToScanStartPositionAsync()
+        {
+            return Task.Run(() => 
+            { 
+                
+                MoveToScanStartPosition(); 
+                return 0; 
+            });
+        }
 
+        public int MoveToScanEndPosition(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingEnd, isFine);
+        }
+
+        public Task<int> MoveToScanEndPositionAsync()
+        {
+            return Task.Run(() => { MoveToScanEndPosition(); return 0; });
+        }
         public int  MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos,bool isCouseSpeed )
         {
             return MoveToTeachingPosition(pos.ToString());
         }
-        public Task<int> MoveToScanStartPositionAsync()
-        {
-            return Task.Run(() => { MoveToScanStartPosition(); return 0; });
-        }
+       
         public Task<int> ScanWaferAsync()
         {
             return Task.Run(() => ScanWafer());
