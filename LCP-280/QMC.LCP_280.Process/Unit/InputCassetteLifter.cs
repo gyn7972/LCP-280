@@ -252,21 +252,22 @@ namespace QMC.LCP_280.Process.Unit
         public int ScanWafer()
         {
             int ret = 0;
-            
-            if(IsWaferProtrusionDetectionSensor())
+            Log.Write(this, "Start ScanWafer");
+            if (IsWaferProtrusionDetectionSensor())
             {
                 Log.Write(this, "Wafer Protrusion Detected");
-                AlarmKeys alarmKey = AlarmKeys.eWaferProtrusionDetected;
+                
                 return -1;
             }
             CassetteMaterial material = GetCassetteMaterial();
             MoveToScanStartPosition();
+            Log.Write(this, "End ScanWafer");
             return ret;
         }
 
-        public int MoveToScanStartPosition()
+        public int MoveToScanStartPosition(bool isFine = false)
         {
-            return MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString());
+            return MoveTeachingPositionOnce((int) InputCassetteLifterConfig.TeachingPositionName.MappingStart,isFine);
         }
 
         public int  MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos,bool isCouseSpeed )
