@@ -8,13 +8,7 @@ namespace QMC.LCP_280.Process.Component
     [Serializable]
     public sealed class CassetteMaterial : QMC.Common.Material
     {
-        public enum CassetteProcessSatate : byte
-        {
-            Unknown = byte.MaxValue,
-            Ready = 0,
-            Processing = 1,
-            Completed = 2,
-        }
+        
         [DefaultValue("")] public string CarrierId { get; set; } = "";
         [DefaultValue(25)] public int SlotCount { get; set; } = 25;
 
@@ -25,11 +19,9 @@ namespace QMC.LCP_280.Process.Component
             Slots = Enumerable.Repeat<MaterialWafer>(null, SlotCount).ToList();
             //for (int i = 0; i < SlotCount; i++)
             //    Slots.Add(null);
-            ProcessSatate = CassetteProcessSatate.Unknown;
+            ProcessSatate = MaterialProcessSatate.Unknown;
 
         }
-
-        public CassetteProcessSatate ProcessSatate { get; set; } = CassetteProcessSatate.Unknown;
 
         public MaterialWafer GetWafer(int slot)
         {
@@ -42,6 +34,7 @@ namespace QMC.LCP_280.Process.Component
             if (slot < 0 || slot >= Slots.Count) return;
             wafer.CarrierId = CarrierId;
             wafer.SlotIndex = slot;
+            
             Slots[slot] = wafer;
         }
 

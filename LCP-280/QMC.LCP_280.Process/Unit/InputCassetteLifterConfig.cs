@@ -70,6 +70,27 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs; // currently none
         private static readonly HardOutputDef[] _hardOutputs = new HardOutputDef[0];
+        public double SlotPitch
+        {
+            get
+            {
+                var tp = GetTeachingPosition(TeachingPositionName.SlotPitch.ToString());
+                if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(AxisNames.WaferLifterZ, out var v))
+                    return v;
+                return 0.0;
+            }
+            set
+            {
+                var tp = GetTeachingPosition(TeachingPositionName.SlotPitch.ToString());
+                if (tp == null)
+                {
+                    tp = new TeachingPosition(TeachingPositionName.SlotPitch.ToString(), new Dictionary<string, double>(), "Slot Pitch");
+                    TeachingPositions.Add(tp);
+                }
+                if (tp.AxisPositions == null) tp.AxisPositions = new Dictionary<string, double>();
+                tp.AxisPositions[AxisNames.WaferLifterZ] = value;
+            }
+        }
         #endregion
 
         public InputCassetteLifterConfig() : base("InputCassetteLifterConfig") { }
