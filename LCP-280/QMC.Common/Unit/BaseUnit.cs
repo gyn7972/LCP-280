@@ -7,6 +7,8 @@ using QMC.Common.Motions;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace QMC.Common.Unit
 {
@@ -33,10 +35,10 @@ namespace QMC.Common.Unit
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
 
-        // 공용 축 컴포넌트
+        // 축 등록 딕셔너리
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
         
-        // 공용 티칭 위치 관리
+        // 단순 키-값 Teaching 포지션 (기존 호환용)
         public Dictionary<string, double> TeachingPositions { get; } = new Dictionary<string, double>();
 
         protected BaseUnit(string unitName = null)
@@ -73,13 +75,13 @@ namespace QMC.Common.Unit
             if (mgr.TryGet(unitName, axisName, out var axis) && axis != null)
             {
                 field = axis;
-                Axes[axisName] = axis; // Axes 딕셔너리에 일관 등록
+                Axes[axisName] = axis; // Axes 사전에도 추가
             }
             else
             {
                 if (Axes.ContainsKey(axisName))
                     Axes.Remove(axisName);
-                Log.Write("UnitAxis", $"[BindAxes] Axis '{unitName}||{axisName}' 미존재");
+                Log.Write("UnitAxis", $"[BindAxes] Axis '{unitName}||{axisName}' 바인딩 실패");
             }
         }
         public int Start()
@@ -96,7 +98,7 @@ namespace QMC.Common.Unit
         {
             return OnStop();
         }
-        // Unit 공통 동작 메서드
+        // Unit 메인 실행 루프 진입 전 호출
         public virtual int OnRun() 
         {
             int ret = 0;
@@ -109,7 +111,7 @@ namespace QMC.Common.Unit
             return ret;
         }
 
-        // 추가: 상태 단계별 훅
+        // 추가: 준비/작업/완료 스텝
         protected virtual int OnRunReady() { return 0; }
         protected virtual int OnRunWork() { return 0; }
         protected virtual int OnRunComplete() { return 0; }
@@ -169,5 +171,121 @@ namespace QMC.Common.Unit
         {
             throw new NotImplementedException();
         }
+
+        #region Generic TeachingPosition Move Helpers (Reflection Based)
+        // 파생 Unit Override 가능 (index 기반 인터락)
+        public virtual bool IsInterlockOK(int selIndex) => true;
+
+        // TeachingPositions (List 형태/파생 컬렉션) 리플렉션 추출
+        protected IList<object> ResolveTeachingPositionObjectList()
+        {
+            try
+            {
+                var prop = GetType().GetProperty("TeachingPositions");
+                if (prop == null) return null;
+                var val = prop.GetValue(this, null);
+                if (val is System.Collections.IEnumerable en)
+                {
+                    var list = new List<object>();
+                    foreach (var item in en)
+                        list.Add(item);
+                    return list;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        private static IDictionary<string, double> GetAxisPositions(object tp)
+        {
+            if (tp == null) return null;
+            var pi = tp.GetType().GetProperty("AxisPositions");
+            if (pi == null) return null;
+            var val = pi.GetValue(tp, null);
+            return val as IDictionary<string, double>;
+        }
+        private static IDictionary<string, MotionAxis> GetAxisObjects(object tp)
+        {
+            if (tp == null) return null;
+            var pi = tp.GetType().GetProperty("Axes");
+            if (pi == null) return null;
+            var val = pi.GetValue(tp, null);
+            return val as IDictionary<string, MotionAxis>;
+        }
+        private static string GetTpName(object tp)
+        {
+            if (tp == null) return string.Empty;
+            var pi = tp.GetType().GetProperty("Name");
+            if (pi == null) return string.Empty;
+            try { return pi.GetValue(tp, null) as string ?? string.Empty; } catch { return string.Empty; }
+        }
+
+        public virtual int MoveTeachingPositionOnce(int selIndex, bool isFine)
+        {
+            var list = ResolveTeachingPositionObjectList();
+            if (list == null) return -1;
+            if (selIndex < 0 || selIndex >= list.Count) return -1;
+            if (!IsInterlockOK(selIndex)) return -1;
+
+            var tp = list[selIndex];
+            var axisPos = GetAxisPositions(tp);
+            if (axisPos == null) return -1;
+            var axisObj = GetAxisObjects(tp);
+
+            // 이동 명령
+            foreach (var kv in axisPos)
+            {
+                string axisKey = kv.Key; double targetPos = kv.Value;
+                MotionAxis axis = null;
+                if (axisObj != null && axisObj.TryGetValue(axisKey, out axis)) { }
+                if (axis == null && Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
+                if (axis == null)
+                {
+                    foreach (var aPair in Axes)
+                    {
+                        if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                        { axis = aPair.Value; break; }
+                    }
+                }
+                if (axis == null) continue;
+                axis.MoveAbs(targetPos, isFine);
+            }
+
+            // 완료 대기
+            int waitErrors = 0;
+            foreach (var kv in axisPos)
+            {
+                MotionAxis axis = null;
+                if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
+                if (axis == null) continue;
+                if (axis.WaitMoveDone(-1) != 0) waitErrors++;
+            }
+            return waitErrors == 0 ? 0 : -1;
+        }
+
+        public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
+            => Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
+
+        public virtual void StopTeachingPositionOnce(int selIndex)
+        {
+            var list = ResolveTeachingPositionObjectList();
+            if (list == null) return;
+            if (selIndex < 0 || selIndex >= list.Count) return;
+            var tp = list[selIndex];
+            var axisPos = GetAxisPositions(tp);
+            if (axisPos == null) return;
+            var axisObj = GetAxisObjects(tp);
+
+            foreach (var kv in axisPos)
+            {
+                MotionAxis axis = null;
+                if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
+                if (axis == null) continue;
+                try { axis.Stop(); } catch { }
+            }
+        }
+        #endregion
     }
 }

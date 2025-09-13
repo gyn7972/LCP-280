@@ -179,6 +179,7 @@
     <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
     <Compile Include="Common\TypeUtility.cs" />
     <Compile Include="Component\ProcessData\Material.cs" />
+    <Compile Include="ConfigPropertyAttributes.cs" />
     <Compile Include="ConfigStore.cs" />
     <Compile Include="Coordinate\IActor.cs" />
     <Compile Include="Coordinate\SettingParameter.cs" />
