@@ -4,61 +4,445 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 using QMC.Common;
-using QMC.Common.Motions;
+using QMC.Common.IOUtil;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    /// <summary>
-    /// Equipment와 연동하여 Config 및 Recipe 관리
-    /// </summary>
     public partial class Cylinder_Setup : Form
     {
-        // AxisManager에서 사용하던 키 케이스에 맞춰 소문자 통일
-        private const string UNIT_NAME = "unit";
-
-        /// <summary>Equipment 인스턴스 참조</summary>
-        private Equipment Equipment => Equipment.Instance;
-
-        // 에디터 컬렉션(좌: configuration / 우: speed)
-        //private PropertyCollection _editorPropertiesConfig;
-        //private PropertyCollection _editorPropertiesSpeed;
-
-        // 저장 시 빠른 조회용 인덱스: (section,title) → Property
-        private Dictionary<(string section, string title), PropertyBase> _configIndex;
-        private Dictionary<(string section, string title), PropertyBase> _speedIndex;
+        private Timer _axisPosTimer;
+        private Cylinder _selectedCylinder;
+        private PropertyCollection _ioStateProperties;
+        private bool _configDirty = false;
 
         public Cylinder_Setup()
         {
             InitializeComponent();
             SuspendLayout();
-
             InitializeUI();
-
             ResumeLayout(true);
-            Console.WriteLine("DigitalIO_Setup 생성자 완료");
         }
 
-        private void DigitalIO_Setup_Load(object sender, EventArgs e)
+        protected override void Dispose(bool disposing)
         {
-            // 필요시 폼 로드시 초기 바인딩 추가
+            if (disposing)
+            {
+                _axisPosTimer?.Stop();
+                if (_axisPosTimer != null)
+                {
+                    _axisPosTimer.Tick -= AxisPosTimer_Tick;
+                    _axisPosTimer.Dispose();
+                    _axisPosTimer = null;
+                }
+            }
+            base.Dispose(disposing);
         }
 
-        /// <summary>향후 Unit 초기화가 필요하면 이곳에 작성</summary>
-        private void InitializeUnit()
-        {
-        }
-
-        // =========================
-        // Save (설정 저장)
-        // =========================
-
-        private void btn_Save_Setup_Cylinder_Click(object sender, EventArgs e)
+        #region 초기화
+        private void InitializeUI()
         {
             try
             {
-               
+                WireSelectionEvent();
+                BindCylinderList();
+                InitializeStatusTimer();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("CylinderSetup", "Init", ex.ToString());
+            }
+        }
+
+        private void WireSelectionEvent()
+        {
+            if (selectItemListBoxItemsView == null) return;
+            selectItemListBoxItemsView.ItemSelected -= OnCylinderSelected;
+            selectItemListBoxItemsView.ItemSelected += OnCylinderSelected;
+        }
+
+        private void BindCylinderList()
+        {
+            try
+            {
+                if (IoAutoBindings.Cylinders == null || IoAutoBindings.Cylinders.Count == 0)
+                {
+                    selectItemListBoxItemsView.SetItems("(No Cylinders)");
+                    return;
+                }
+
+                var names = IoAutoBindings.Cylinders.Keys
+                    .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                selectItemListBoxItemsView.GroupName = "Cylinders";
+                selectItemListBoxItemsView.SetItems(names);
+
+                if (names.Length > 0)
+                    selectItemListBoxItemsView.SelectedIndex = 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write("CylinderSetup", "BindList", ex.ToString());
+                selectItemListBoxItemsView.SetItems("(Error)");
+            }
+        }
+        #endregion
+
+        #region 선택 처리
+        private void OnCylinderSelected(object sender, int selectedIndex)
+        {
+            try
+            {
+                _configDirty = false;
+
+                var items = selectItemListBoxItemsView.GetItems();
+                if (selectedIndex < 0 || selectedIndex >= items.Length)
+                {
+                    _selectedCylinder = null;
+                    cylinderPropertyCollectionView.SetProperties(null);
+                    inputStatepropertyCollectionView.SetProperties(null);
+                    lbStatusValue.Text = "No Selection";
+                    return;
+                }
+
+                var name = items[selectedIndex];
+                if (!IoAutoBindings.Cylinders.TryGetValue(name, out var cyl))
+                {
+                    _selectedCylinder = null;
+                    cylinderPropertyCollectionView.SetProperties(null);
+                    inputStatepropertyCollectionView.SetProperties(null);
+                    lbStatusValue.Text = "Not Found";
+                    return;
+                }
+
+                _selectedCylinder = cyl;
+
+                // --- 핵심 수정: Config 동기화 (ManualPatch는 cyl.Config만 세팅함) ---
+                SyncConfigReference(_selectedCylinder, forceReload: false);
+
+                var cfgProps = BuildCylinderConfigProperties(_selectedCylinder);
+                cylinderPropertyCollectionView.SetProperties(cfgProps);
+
+                _ioStateProperties = BuildIoStateProperties(_selectedCylinder);
+                inputStatepropertyCollectionView.SetProperties(_ioStateProperties);
+
+                UpdateStatusLabel();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("CylinderSetup", "OnSelect", ex.ToString());
+            }
+        }
+        #endregion
+
+        #region Config 동기화 & 재로드
+        private void SyncConfigReference(Cylinder cyl, bool forceReload)
+        {
+            if (cyl == null) return;
+
+            // 1. 파일 경로 계산
+            var probe = new CylinderConfig { Name = cyl.Name };
+            var path = probe.GetFilePath();
+
+            CylinderConfig loaded = null;
+
+            bool shouldLoad =
+                forceReload ||
+                File.Exists(path); // 파일 있으면 항상 로드 (기존: _config / Config 존재하면 스킵했던 것이 문제)
+
+            if (shouldLoad)
+            {
+                try
+                {
+                    loaded = CylinderConfig.LoadOrCreate(path, true, true);
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("CylinderSetup", $"Config load failed: {cyl.Name} - {ex.Message}");
+                }
+            }
+
+            // 2. 로드 성공 시 그걸로 동기화, 실패 시 기존 것을 유지 / 없으면 새로 생성
+            var effective = loaded
+                            ?? cyl._config
+                            ?? (cyl.Config as CylinderConfig)
+                            ?? new CylinderConfig { Name = cyl.Name };
+
+            // 3. 최종 적용(두 레퍼런스 통일)
+            cyl._config = effective;
+            cyl.Config = effective;
+        }
+        #endregion
+
+        #region Property Builders
+        private CylinderConfig GetEffectiveConfig(Cylinder cyl)
+            => cyl?._config ?? (cyl?.Config as CylinderConfig);
+
+        private PropertyCollection BuildCylinderConfigProperties(Cylinder cyl)
+        {
+            var pc = new PropertyCollection();
+
+            pc.Add(new TitleOnlyProperty("Cylinder"));
+            pc.Add(new StringProperty("Name", cyl.Name));
+            pc.Add(new StringProperty("Forward Out Key", cyl.FwdOutKey));
+            pc.Add(new StringProperty("Backward Out Key", cyl.BwdOutKey));
+            pc.Add(new StringProperty("Forward In Key", cyl.FwdInKey));
+            pc.Add(new StringProperty("Backward In Key", cyl.BwdInKey));
+
+            var cfg = GetEffectiveConfig(cyl);
+            if (cfg != null)
+            {
+                pc.Add(new TitleOnlyProperty("Config (Editable)"));
+                pc.Add(new BoolProperty("Simulation", cfg.IsSimulation));
+                pc.Add(new IntProperty("Extend Timeout (ms)", cfg.ExtendTimeout));
+                pc.Add(new IntProperty("Retract Timeout (ms)", cfg.RetractTimeout));
+                pc.Add(new IntProperty("Settle Delay (ms)", cfg.SettleDelay));
+                pc.Add(new IntProperty("Sensor Retry Count", cfg.SensorRetryCount));
+            }
+
+            pc.IsInputParameter = true;
+            HookDirtyTracking(pc);
+            return pc;
+        }
+
+        private void HookDirtyTracking(PropertyCollection pc)
+        {
+            _configDirty = false;
+            // 필요 시 TextBox 변경 시 이벤트로 플래그 세팅 (PropertyCollectionView 개선 후 가능)
+        }
+
+        private PropertyCollection BuildIoStateProperties(Cylinder cyl)
+        {
+            var pc = new PropertyCollection();
+            pc.Add(new TitleOnlyProperty("IO State"));
+            pc.Add(CreateStateProperty("Forward Out", false));
+            pc.Add(CreateStateProperty("Backward Out", false));
+            pc.Add(CreateStateProperty("Forward Sensor", false));
+            pc.Add(CreateStateProperty("Backward Sensor", false));
+            pc.IsInputParameter = false;
+            return pc;
+        }
+
+        private PropertyBase CreateStateProperty(string title, bool value)
+        {
+            var stateType = AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Select(a => a.GetType("QMC.Common.PropertyState", false))
+                .FirstOrDefault(t => t != null);
+
+            if (stateType != null)
+            {
+                try
+                {
+                    var ctor = stateType.GetConstructors()
+                        .FirstOrDefault(c =>
+                        {
+                            var p = c.GetParameters();
+                            return p.Length == 3 &&
+                                   p[0].ParameterType == typeof(string) &&
+                                   p[1].ParameterType == typeof(string) &&
+                                   p[2].ParameterType == typeof(bool);
+                        });
+                    if (ctor != null)
+                        return (PropertyBase)ctor.Invoke(new object[] { title, title, value });
+                }
+                catch { }
+            }
+            return new BoolProperty(title, value);
+        }
+        #endregion
+
+        #region 상태 타이머 & 갱신
+        private void InitializeStatusTimer()
+        {
+            _axisPosTimer?.Stop();
+            if (_axisPosTimer != null)
+                _axisPosTimer.Tick -= AxisPosTimer_Tick;
+
+            _axisPosTimer = new Timer { Interval = 500 };
+            _axisPosTimer.Tick += AxisPosTimer_Tick;
+            _axisPosTimer.Start();
+        }
+
+        private void AxisPosTimer_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                UpdateIoStates();
+                UpdateStatusLabel();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("CylinderSetup", "Timer", ex.ToString());
+            }
+        }
+
+        private void UpdateIoStates()
+        {
+            if (_selectedCylinder == null || _ioStateProperties == null) return;
+
+            bool? fwdOut = TryReadDIO(_selectedCylinder.FwdOutKey);
+            bool? bwdOut = TryReadDIO(_selectedCylinder.BwdOutKey);
+
+            bool? fwdIn = (!_selectedCylinder.FwdInKey?.Contains("/*NO_SENSOR*/") ?? false)
+                ? TryReadDIO(_selectedCylinder.FwdInKey) : null;
+            bool? bwdIn = (!_selectedCylinder.BwdInKey?.Contains("/*NO_SENSOR*/") ?? false)
+                ? TryReadDIO(_selectedCylinder.BwdInKey) : null;
+
+            SetStateValue(_ioStateProperties, "Forward Out", fwdOut);
+            SetStateValue(_ioStateProperties, "Backward Out", bwdOut);
+            SetStateValue(_ioStateProperties, "Forward Sensor", fwdIn, isSensor: true);
+            SetStateValue(_ioStateProperties, "Backward Sensor", bwdIn, isSensor: true);
+
+            inputStatepropertyCollectionView.SetProperties(_ioStateProperties);
+        }
+
+        private bool? TryReadDIO(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return null;
+            try { if (DIO.In(key, out var on)) return on; } catch { }
+            return null;
+        }
+
+        private void SetStateValue(PropertyCollection pc, string title, bool? value, bool isSensor = false)
+        {
+            if (pc == null) return;
+            var listField = typeof(PropertyCollection).GetField("_properties", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (listField == null) return;
+            var list = listField.GetValue(pc) as System.Collections.IList;
+            if (list == null) return;
+
+            foreach (var obj in list)
+            {
+                if (obj is PropertyBase pb)
+                {
+                    var tProp = pb.GetType().GetProperty("Title") ?? pb.GetType().GetProperty("Name");
+                    var vProp = pb.GetType().GetProperty("Value");
+                    if (tProp == null || vProp == null) continue;
+
+                    var tVal = tProp.GetValue(pb)?.ToString();
+                    if (string.Equals(tVal, title, StringComparison.OrdinalIgnoreCase))
+                    {
+                        vProp.SetValue(pb, value ?? false);
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void UpdateStatusLabel()
+        {
+            if (_selectedCylinder == null)
+            {
+                lbStatusValue.Text = "No Selection";
+                lbStatusValue.ForeColor = Color.Gray;
+                return;
+            }
+
+            bool fwdOn = false;
+            bool bwdOn = false;
+            bool hasFwd = !_selectedCylinder.FwdInKey?.Contains("/*NO_SENSOR*/") ?? false;
+            bool hasBwd = !_selectedCylinder.BwdInKey?.Contains("/*NO_SENSOR*/") ?? false;
+
+            if (hasFwd) DIO.In(_selectedCylinder.FwdInKey, out fwdOn);
+            if (hasBwd) DIO.In(_selectedCylinder.BwdInKey, out bwdOn);
+
+            string txt;
+            Color color;
+
+            if (hasFwd || hasBwd)
+            {
+                if (fwdOn && !bwdOn) { txt = "Forward/Up"; color = Color.Lime; }
+                else if (!fwdOn && bwdOn) { txt = "Backward/Down"; color = Color.DeepSkyBlue; }
+                else if (fwdOn && bwdOn) { txt = "Sensor Conflict"; color = Color.OrangeRed; }
+                else { txt = "Intermediate"; color = Color.Yellow; }
+            }
+            else
+            {
+                txt = "No Sensors";
+                color = Color.LightGray;
+            }
+
+            lbStatusValue.Text = $"{_selectedCylinder.Name} : {txt}";
+            lbStatusValue.ForeColor = color;
+        }
+        #endregion
+
+        #region 버튼 이벤트
+        private void btn_Forward_Move_Click(object sender, EventArgs e)
+        {
+            if (_selectedCylinder == null) return;
+            try
+            {
+                var cfg = GetEffectiveConfig(_selectedCylinder);
+                _selectedCylinder.Extend(cfg?.ExtendTimeout ?? 1000, cfg?.SettleDelay ?? 50);
+                UpdateStatusLabel();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("CylinderSetup", "Forward", ex.ToString());
+            }
+        }
+
+        private void btn_Backward_Move_Click(object sender, EventArgs e)
+        {
+            if (_selectedCylinder == null) return;
+            try
+            {
+                var cfg = GetEffectiveConfig(_selectedCylinder);
+                _selectedCylinder.Retract(cfg?.RetractTimeout ?? 1000, cfg?.SettleDelay ?? 50);
+                UpdateStatusLabel();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("CylinderSetup", "Backward", ex.ToString());
+            }
+        }
+
+        private void btn_Save_Setup_Cylinder_Click(object sender, EventArgs e)
+        {
+            if (_selectedCylinder == null)
+            {
+                MessageBox.Show("선택된 실린더가 없습니다.", "Info",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            try
+            {
+                cylinderPropertyCollectionView.Apply();
+                var pc = cylinderPropertyCollectionView.GetCurrentProperties();
+                if (pc == null)
+                {
+                    MessageBox.Show("저장할 속성이 없습니다.", "Info",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var cfg = GetEffectiveConfig(_selectedCylinder) ?? new CylinderConfig { Name = _selectedCylinder.Name };
+
+                cfg.IsSimulation = SafeGetBool(pc, "Simulation", cfg.IsSimulation);
+                cfg.ExtendTimeout = SafeGetInt(pc, "Extend Timeout (ms)", cfg.ExtendTimeout);
+                cfg.RetractTimeout = SafeGetInt(pc, "Retract Timeout (ms)", cfg.RetractTimeout);
+                cfg.SettleDelay = SafeGetInt(pc, "Settle Delay (ms)", cfg.SettleDelay);
+                cfg.SensorRetryCount = SafeGetInt(pc, "Sensor Retry Count", cfg.SensorRetryCount);
+
+                cfg.Validate();
+                var path = cfg.GetFilePath();
+                cfg.Save(path, true);
+
+                // 저장 후 두 참조 모두 갱신
+                _selectedCylinder._config = cfg;
+                _selectedCylinder.Config = cfg;
+
+                _configDirty = false;
+
+                MessageBox.Show($"저장 완료\n{path}", "Success",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                cylinderPropertyCollectionView.SetProperties(BuildCylinderConfigProperties(_selectedCylinder));
             }
             catch (Exception ex)
             {
@@ -66,182 +450,38 @@ namespace QMC.LCP_280.Process.Unit
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+        #endregion
 
-        // =========================
-        // 인덱스 빌드 & 조회 유틸
-        // =========================
-
-        /// <summary>
-        /// TitleOnlyProperty로 섹션을 추적하면서 (section,title) 키로 인덱스 생성
-        /// </summary>
-        private static Dictionary<(string section, string title), PropertyBase> BuildIndex(PropertyCollection pc)
+        #region 값 읽기 Helper
+        private bool SafeGetBool(PropertyCollection pc, string title, bool fallback)
         {
-            var map = new Dictionary<(string section, string title), PropertyBase>(StringTupleComparer.OrdinalIgnoreCase);
-            if (pc == null || pc.Count == 0) return map;
+            try { return pc.GetValue<bool>(title); } catch { return fallback; }
+        }
 
-            string currentSection = string.Empty;
-            foreach (var p in pc)
+        private int SafeGetInt(PropertyCollection pc, string title, int fallback)
+        {
+            try { return pc.GetValue<int>(title); }
+            catch
             {
-                if (p == null) continue;
-
-                // 섹션 헤더(TitleOnlyProperty)는 섹션명으로만 사용
-                if (p is TitleOnlyProperty)
+                try
                 {
-                    currentSection = GetName(p) ?? string.Empty;
-                    continue;
+                    var str = pc.GetValue<string>(title);
+                    if (int.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var i))
+                        return i;
                 }
-
-                var title = GetName(p);
-                if (string.IsNullOrEmpty(title)) continue;
-
-                var key = (currentSection, title);
-                // 뒤에 같은 타이틀이 있어도 최초 1개를 신뢰(중복 방지)
-                if (!map.ContainsKey(key))
-                    map[key] = p;
+                catch { }
+                return fallback;
             }
-            return map;
         }
+        #endregion
 
-        private PropertyBase Find(string section, string title)
+        #region Paint / Resize
+        protected override void OnPaint(PaintEventArgs e) => base.OnPaint(e);
+        protected override void OnResize(EventArgs e)
         {
-            if (_configIndex != null && _configIndex.TryGetValue((section ?? string.Empty, title), out var p1))
-                return p1;
-            return null;
+            base.OnResize(e);
+            Invalidate();
         }
-
-        private PropertyBase FindS(string section, string title)
-        {
-            if (_speedIndex != null && _speedIndex.TryGetValue((section ?? string.Empty, title), out var p1))
-                return p1;
-            return null;
-        }
-
-        private double GetDouble(string section, string title, double fallback)
-            => ReadDouble(Find(section, title), fallback);
-
-        private double GetDoubleS(string section, string title, double fallback)
-            => ReadDouble(FindS(section, title), fallback);
-
-        private bool GetBool(string section, string title, bool fallback)
-            => ReadBool(Find(section, title), fallback);
-
-        private int GetInt(string section, string title, int fallback)
-            => ReadInt(Find(section, title), fallback);
-
-        private int GetIntS(string section, string title, int fallback)
-            => ReadInt(FindS(section, title), fallback);
-
-        private static double ReadDouble(PropertyBase p, double fallback)
-        {
-            if (p == null) return fallback;
-
-            if (p is DoubleProperty dp) return dp.Value;
-            if (p is BoolProperty bp) return bp.Value ? 1.0 : 0.0;
-
-            var vProp = p.GetType().GetProperty("Value");
-            if (vProp != null)
-            {
-                var v = vProp.GetValue(p);
-                if (v is IConvertible)
-                {
-                    try { return Convert.ToDouble(v, CultureInfo.InvariantCulture); }
-                    catch { }
-                }
-            }
-            return fallback;
-        }
-
-        private static bool ReadBool(PropertyBase p, bool fallback)
-        {
-            if (p == null) return fallback;
-
-            if (p is BoolProperty bp) return bp.Value;
-
-            var vProp = p.GetType().GetProperty("Value");
-            if (vProp != null)
-            {
-                var v = vProp.GetValue(p);
-                if (v is bool b) return b;
-                if (v is IConvertible)
-                {
-                    try { return Convert.ToDouble(v, CultureInfo.InvariantCulture) != 0.0; }
-                    catch { }
-                }
-            }
-            return fallback;
-        }
-
-        private static int ReadInt(PropertyBase p, int fallback)
-        {
-            if (p == null) return fallback;
-
-            switch (p)
-            {
-                case IntProperty ip: return ip.Value;
-                case LongProperty lp: try { checked { return (int)lp.Value; } } catch { return fallback; }
-                case FloatProperty fp: return (int)Math.Round(fp.Value);
-                case DoubleProperty dp: return (int)Math.Round(dp.Value);
-                case BoolProperty bp: return bp.Value ? 1 : 0;
-                case StringProperty sp:
-                    if (int.TryParse(sp.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var i)) return i;
-                    if (double.TryParse(sp.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)) return (int)Math.Round(d);
-                    return fallback;
-            }
-
-            var vProp = p.GetType().GetProperty("Value");
-            if (vProp != null)
-            {
-                var v = vProp.GetValue(p);
-                if (v is int i) return i;
-                if (v is long l) { try { checked { return (int)l; } } catch { return fallback; } }
-                if (v is float f) return (int)Math.Round(f);
-                if (v is double d) return (int)Math.Round(d);
-                if (v is bool b) return b ? 1 : 0;
-                if (v is string s)
-                {
-                    if (int.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var i2)) return i2;
-                    if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var d2)) return (int)Math.Round(d2);
-                }
-                if (v is IConvertible)
-                {
-                    try { return Convert.ToInt32(v, CultureInfo.InvariantCulture); } catch { }
-                }
-            }
-            return fallback;
-        }
-
-        private static string GetName(PropertyBase p)
-        {
-            if (p == null) return null;
-
-            // Name 우선, 없으면 Title 시도
-            var nameProp = p.GetType().GetProperty("Name");
-            var titleProp = p.GetType().GetProperty("Title");
-            var key = nameProp?.GetValue(p)?.ToString() ?? titleProp?.GetValue(p)?.ToString();
-            return key;
-        }
-
-        // 섹션/타이틀 키의 대소문자 무시 튜플 비교자
-        private sealed class StringTupleComparer : IEqualityComparer<(string section, string title)>
-        {
-            public static readonly StringTupleComparer OrdinalIgnoreCase = new StringTupleComparer();
-            private readonly StringComparer _cmp = StringComparer.OrdinalIgnoreCase;
-
-            public bool Equals((string section, string title) x, (string section, string title) y)
-                => _cmp.Equals(x.section, y.section) && _cmp.Equals(x.title, y.title);
-
-            public int GetHashCode((string section, string title) obj)
-                => HashCode.Combine(_cmp.GetHashCode(obj.section ?? string.Empty), _cmp.GetHashCode(obj.title ?? string.Empty));
-        }
-
-        private void btn_Forward_Move_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void btn_Backward_Move_Click(object sender, EventArgs e)
-        {
-
-        }
+        #endregion
     }
 }

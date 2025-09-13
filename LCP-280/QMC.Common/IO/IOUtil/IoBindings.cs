@@ -653,36 +653,6 @@ namespace QMC.Common.IOUtil
             {
                 Log.Write("IoBindings", "ManualPatch", "Central cylinder config injection error: " + ex.Message);
             }
-
-
-            // ============ 필요 시: 키 별칭(별도 표준 키 제공) ============
-            // 현장 채널명 스캔으로 생성된 키가 제각각일 수 있어,
-            // 유닛 코드에서 쉽게 찾도록 표준 키를 추가 등록(별칭)합니다.
-            // 예) InputStage:
-            //  - InStageExpander / InStageClampLift / InStageClampFB
-            //try
-            //{
-            //    foreach (var kv in IoAutoBindings.Cylinders)
-            //    {
-            //        var k = kv.Key.ToUpperInvariant();
-
-            //        // Expander
-            //        if (k.Contains("INSTAGE") && (k.Contains("EXPAND") || k.Contains("PLATE")))
-            //            IoAutoBindings.Cylinders["InStageExpander"] = kv.Value;
-
-            //        // Clamp Lift (Up/Down)
-            //        if (k.Contains("INSTAGE") && k.Contains("CLAMP") && (k.Contains("LIFT") || k.Contains("UP") || k.Contains("DOWN")))
-            //            IoAutoBindings.Cylinders["InStageClampLift"] = kv.Value;
-
-            //        // Clamp FWD/BWD
-            //        if (k.Contains("INSTAGE") && k.Contains("CLAMP") && (k.Contains("FWD") || k.Contains("FORWARD") || k.Contains("BWD") || k.Contains("BACK")))
-            //            IoAutoBindings.Cylinders["InStageClampFB"] = kv.Value;
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Write("IoBindings", "ManualPatch", "Alias mapping failed: " + ex.Message);
-            //}
         }
     }
 }

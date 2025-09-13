@@ -262,16 +262,14 @@ namespace QMC.LCP_280.Process.Unit
 
         public Task<int> MovePickUpPosition()
         {
-            
-
             return MoveTeachingPositionOnceASync((int)InputDieTransferConfig.TeachingPositionName.Pickup,false);
         }
-
 
         public Task<int> MoveTeachingPositionOnceASync(int selIndex, bool isFine)
         {
             return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
         }
+
         public bool IsInterlockOK(int selIndex)
         {
             switch((InputDieTransferConfig.TeachingPositionName)selIndex)
@@ -280,9 +278,7 @@ namespace QMC.LCP_280.Process.Unit
                     return IsInterlockOKPickup();
                 default:
                     return true;
-                
             }
-            
         }
 
         private bool IsInterlockOKPickup()
@@ -295,8 +291,6 @@ namespace QMC.LCP_280.Process.Unit
             if(IsInterlockOK(selIndex))
             {
                 var tp = this.InputDieTransferConfig.TeachingPositions[selIndex];
-
-
 
                 var moveResults = new List<Tuple<string, int>>();
 
@@ -355,22 +349,16 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-            
-                
         }
 
         public void StopTeachingPositionOnce(int selIndex)
         {
             var tp = this.InputDieTransferConfig.TeachingPositions[selIndex];
 
-
-
             var moveResults = new List<Tuple<string, int>>();
 
             foreach (var kv in tp.AxisPositions)
             {
-
-
                 string axisKey = kv.Key;
                 double targetPos = kv.Value;
 

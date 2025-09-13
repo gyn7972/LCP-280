@@ -35,6 +35,26 @@ namespace QMC.LCP_280.Process
     /// </summary>
     public class Equipment : IDisposable, IEquipment
     {
+        public static class UnitKeys
+        {
+            public const string IndexChipProbeController = "IndexChipProbeController";
+            public const string IndexChipProber = "IndexChipProber";
+            public const string IndexLoadAligner = "IndexLoadAligner";
+            public const string IndexUnloadAligner = "IndexUnloadAligner";
+            public const string InputCassetteLifter = "InputCassetteLifter";
+            public const string InputDieTransfer = "InputDieTransfer";
+            public const string InputRingTransfer = "InputRingTransfer";
+            public const string InputStage = "InputStage";
+            public const string InputStageEjector = "InputStageEjector";
+            public const string OutputCassetteLifter = "OutputCassetteLifter";
+            public const string OutputDieTransfer = "OutputDieTransfer";
+            public const string OutputRingTransfer = "OutputRingTransfer";
+            public const string OutputStage = "OutputStage";
+            public const string Rotary = "Rotary";
+            public const string GageRnR = "GageRnR";
+            //"EquipmentStatusUnit"; // 신규 상태 유닛
+        }
+
         #region Singleton Pattern
 
         private static Equipment _instance;
