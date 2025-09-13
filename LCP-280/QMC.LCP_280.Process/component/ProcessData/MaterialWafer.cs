@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Windows.Media.Media3D;
 
 namespace QMC.LCP_280.Process.Component
 {
     [Serializable]
-    public sealed class WaferData
+    public sealed class MaterialWafer : QMC.Common.Material
     {
         // ===== Identification =====
         [DefaultValue("")] public string LotId { get; set; } = "";

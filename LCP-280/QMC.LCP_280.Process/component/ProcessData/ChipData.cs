@@ -1,4 +1,5 @@
-﻿using QMC.LCP_280.Process.Component.ProcessData;
+﻿
+using QMC.Common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

@@ -17,9 +17,18 @@ namespace QMC.Common.Unit
             ePrepareFailed = 1000,
             
         }
+
+        public enum RunStatus
+        {
+            Run,
+            Stop,
+            CycleStop,
+        }
+
+
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
         private bool m_bExit;
-
+        
         public string UnitName { get; set; }
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
@@ -34,6 +43,8 @@ namespace QMC.Common.Unit
         {
             UnitName = unitName;
         }
+        private Material m_currentMaterial = null;
+
 
         public virtual void AddComponents() { }
 
@@ -98,6 +109,11 @@ namespace QMC.Common.Unit
             return ret;
         }
 
+        // 추가: 상태 단계별 훅
+        protected virtual int OnRunReady() { return 0; }
+        protected virtual int OnRunWork() { return 0; }
+        protected virtual int OnRunComplete() { return 0; }
+
         protected void OnMainProcedure()
         {
             //int ret = 0;
@@ -126,7 +142,15 @@ namespace QMC.Common.Unit
             OnStop();
         }
 
-       
+        public Material GetMaterial()
+        {
+            return m_currentMaterial;
+        }
+
+        protected void SetMaterial(Material wd)
+        {
+            m_currentMaterial = wd;
+        }
         protected AlarmInfo GetAlarm(int nCode)
         {
             AlarmInfo alarm = null;
@@ -141,9 +165,9 @@ namespace QMC.Common.Unit
 
             return alarm;
         }
-        protected virtual int OnPrepareToMainProcedure()
+        private int OnPrepareToMainProcedure()
         {
-            return 0;
+            throw new NotImplementedException();
         }
     }
 }

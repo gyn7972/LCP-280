@@ -77,6 +77,9 @@ namespace QMC.LCP_280.Process.Unit
             base.OnStop();
             return ret;
         }
+        protected override int OnRunReady() { return 0; }
+        protected override int OnRunWork() { return 0; }
+        protected override int OnRunComplete() { return 0; }
 
         #region Teaching
         public void TeachCurrentPosition(string name, string description = null)

@@ -47,6 +47,10 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
+        protected override int OnRunReady() { return 0; }
+        protected override int OnRunWork() { return 0; }
+        protected override int OnRunComplete() { return 0; }
+
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();

@@ -234,7 +234,7 @@ namespace QMC.LCP_280.Process.Component
             // reserved for future detail view
         }
 
-        private WaferData CurrentWafer()
+        private MaterialWafer CurrentWafer()
         {
             var carrierId = txtCarrierId.Text?.Trim();
             var slot = (int)nudSlot.Value;

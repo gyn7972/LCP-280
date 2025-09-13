@@ -123,9 +123,12 @@ namespace QMC.LCP_280.Process.Unit
         #region Lifecycle
         public override int OnRun() { int ret = 0; return ret; }
         public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        protected override int OnRunReady() { return 0; }
+        protected override int OnRunWork() { return 0; }
+        protected override int OnRunComplete() { return 0; }
         #endregion
 
-        #region Seq 단위 동작 함수
+        #region Seq ???? ???? ???
         public int VisionAlign()
         {
             int nRet = -1;
