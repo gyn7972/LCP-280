@@ -47,7 +47,27 @@ namespace QMC.Common.Unit
         protected BaseUnit(string unitName = null)
         {
             UnitName = unitName;
+            MakeAlarm();
         }
+
+        private void MakeAlarm()
+        {
+            InitAlarm();
+
+        }
+
+        protected virtual void InitAlarm()
+        {
+            
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.ePrepareFailed;
+            alarm.Title = "PrepareFialed";
+            alarm.Cause = "PrepareFialed";
+            alarm.Source = this.UnitName;
+            alarm.Grade = "Error";
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
+
         private Material m_currentMaterial = null;
 
 

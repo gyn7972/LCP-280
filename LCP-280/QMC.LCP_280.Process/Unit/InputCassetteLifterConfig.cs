@@ -21,9 +21,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             public const string CASSETTE_CHECK0 = "WAFER LIFTER CASSETTE CHECK 0"; // X016
             public const string CASSETTE_CHECK1 = "WAFER LIFTER CASSETTE CHECK 1"; // X017
-            public const string RING_JUT_CHECK  = "WAFER LIFTER RING JUT CHECK";   // X018
+            public const string WAFER_PROTRUSION_DETECTION_SENSOR  = "WAFER LIFTER RING JUT CHECK";   // X018
             public const string MAPPING_SENSOR  = "WAFER MAPPING";                 // X019
         }
+        
 
         public enum TeachingPositionName
         {
@@ -62,7 +63,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             new HardInputDef { No = 1, Name = IO.CASSETTE_CHECK0, Disp = "X016" },
             new HardInputDef { No = 2, Name = IO.CASSETTE_CHECK1, Disp = "X017" },
-            new HardInputDef { No = 3, Name = IO.RING_JUT_CHECK,  Disp = "X018" },
+            new HardInputDef { No = 3, Name = IO.WAFER_PROTRUSION_DETECTION_SENSOR,  Disp = "X018" },
             new HardInputDef { No = 4, Name = IO.MAPPING_SENSOR,  Disp = "X019" },
         };
 

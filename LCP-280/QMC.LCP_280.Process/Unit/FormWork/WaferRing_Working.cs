@@ -151,10 +151,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 if (InputCassetteLifterUnit != null)
                 {
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.CassettePresent0(), "Cassette Present 0", "ICL_Cass0");
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.CassettePresent1(), "Cassette Present 1", "ICL_Cass1");
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.AnyCassettePresent(), "Cassette Any", "ICL_CassAny");
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.RingJut(), "Ring Jut", "ICL_RingJut");
+                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsCassettePresent0(), "Cassette Present 0", "ICL_Cass0");
+                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsCassettePresent1(), "Cassette Present 1", "ICL_Cass1");
+                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsAnyCassettePresent(), "Cassette Any", "ICL_CassAny");
+                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsWaferProtrusionDetectionSensor(), "Ring Jut", "ICL_RingJut");
                     dioControl.BindDIOInput(() => InputCassetteLifterUnit.MappingSensor(), "Mapping Sensor", "ICL_Mapping");
                 }
 

@@ -223,7 +223,7 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (eq.Units != null && eq.Units.TryGetValue("InputCassetteLifter", out var uL) && uL is InputCassetteLifter lifter)
                             {
-                                if (lifter.RingJut())
+                                if (lifter.IsWaferProtrusionDetectionSensor())
                                     return (false, "InputCassetteLifter Ring JUT Detected");
                             }
                         }

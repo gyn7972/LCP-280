@@ -1,5 +1,6 @@
 using LCP_280;
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
@@ -8,6 +9,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using static System.Windows.Forms.AxHost;
 
 namespace QMC.LCP_280.Process.Unit
@@ -20,6 +22,10 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputCassetteLifter : BaseUnit
     {
+        public enum AlarmKeys
+        {   
+            eWaferProtrusionDetected = 1001,
+        }
         public enum CassetteLifterState
         {
             None = 0,
@@ -40,7 +46,20 @@ namespace QMC.LCP_280.Process.Unit
         public RunStatus Status { get; private set; }
         public CassetteLifterState State { get; private set; }
         #endregion
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eWaferProtrusionDetected;
+            alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
+            alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
 
+        }
+        #endregion
         #region ctor / Initialization
         public InputCassetteLifter(InputCassetteLifterConfig config = null) : base("InputCassetteLifterConfig")
         {
@@ -135,11 +154,12 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
 
-        public bool CassettePresent0() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
-        public bool CassettePresent1() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
-        public bool CassettePresentAll() => CassettePresent0() && CassettePresent1();
-        public bool AnyCassettePresent() => CassettePresent0() || CassettePresent1();
-        public bool RingJut() => !ReadInput(InputCassetteLifterConfig.IO.RING_JUT_CHECK);
+        public bool IsCassettePresent0() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+        public bool IsCassettePresent1() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
+        public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
+        public bool IsWaferProtrusionDetectionSensor() => !ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+        
         public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
 
@@ -179,7 +199,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 cd = new CassetteMaterial();
                 SetMaterial((Material)cd);
-                if(CassettePresentAll())
+                if(IsCassettePresentAll())
                 {
                     cd.Presence = Material.MaterialPresence.Exist;
                     cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
@@ -229,17 +249,37 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
-        private int ScanWafer()
+        public int ScanWafer()
         {
             int ret = 0;
-            CassetteMaterial material = GetCassetteMaterial();
-            //material.WaferList.Clear();
-            if (!MappingSensor())
+            
+            if(IsWaferProtrusionDetectionSensor())
             {
-                Log.Write(this, "Mapping Sensor Not Detected");
+                Log.Write(this, "Wafer Protrusion Detected");
+                AlarmKeys alarmKey = AlarmKeys.eWaferProtrusionDetected;
                 return -1;
             }
+            CassetteMaterial material = GetCassetteMaterial();
+            MoveToScanStartPosition();
             return ret;
+        }
+
+        public int MoveToScanStartPosition()
+        {
+            return MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString());
+        }
+
+        public int  MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos,bool isCouseSpeed )
+        {
+            return MoveToTeachingPosition(pos.ToString());
+        }
+        public Task<int> MoveToScanStartPositionAsync()
+        {
+            return Task.Run(() => { MoveToScanStartPosition(); return 0; });
+        }
+        public Task<int> ScanWaferAsync()
+        {
+            return Task.Run(() => ScanWafer());
         }
 
         public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
