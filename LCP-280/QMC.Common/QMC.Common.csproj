@@ -141,6 +141,7 @@
     </Compile>
     <Compile Include="BarcodeReader\OpticonBarcodeReader.cs" />
     <Compile Include="BarcodeReader\OpticonBarcodeReaderConfig.cs" />
+    <Compile Include="BaseConfig.Auto.cs" />
     <Compile Include="BaseRecipe\BaseRecipe.cs" />
     <Compile Include="BaseSetup.cs" />
     <Compile Include="Cameras\Camera.cs" />
@@ -180,6 +181,7 @@
     <Compile Include="Common\TypeUtility.cs" />
     <Compile Include="Component\ProcessData\Material.cs" />
     <Compile Include="ConfigPropertyAttributes.cs" />
+    <Compile Include="ConfigReflectionMapper.cs" />
     <Compile Include="ConfigStore.cs" />
     <Compile Include="Coordinate\IActor.cs" />
     <Compile Include="Coordinate\SettingParameter.cs" />

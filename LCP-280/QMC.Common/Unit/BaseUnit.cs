@@ -6,9 +6,12 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Linq;
+using static QMC.Common.Motions.MotionAxis;
 
 namespace QMC.Common.Unit
 {
@@ -49,6 +52,57 @@ namespace QMC.Common.Unit
 
 
         public virtual void AddComponents() { }
+
+
+        private static readonly object _alarmLogLock = new object();
+        // 알람 발생시 사용.
+        public int AlarmPost(AlarmKey AlarmCode)
+        {
+            try
+            {
+                AlarmInfo alarm = GetAlarm((int)AlarmCode);
+                alarm.GeneratedTime = DateTime.Now;
+
+                // 중복 알람 방지 인터락
+                if (AlarmManager.Instance.Alarms.Any(a => a.Code == alarm.Code))
+                {
+                    //Log.Write("AlarmPost", $"[ALARM 무시 - 중복] Code: {(int)AlarmCode}, 이미 발생 중인 알람입니다.");
+                    return (int)AlarmCode;
+                }
+
+                // 알람 정보 로그 기록
+                Log.Write("AlarmPost", $"[ALARM 발생] Code: {(int)AlarmCode}, Grade: {alarm.Grade}, Cause: {alarm.Cause}");
+
+                string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
+                string logFile = Path.Combine(logFolder, $"AlarmLog_{DateTime.Now:yyyyMMdd}.csv");
+                Directory.CreateDirectory(logFolder);
+
+                // UTF-8 with BOM로 저장 (동시 접근 안전하게 lock 처리)
+                lock (_alarmLogLock)
+                {
+                    using (var fs = new FileStream(logFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                    using (var writer = new StreamWriter(fs, new UTF8Encoding(true)))
+                    {
+                        string logLine = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss},{alarm.Title},{alarm.Grade},{alarm.Source},{alarm.Cause},{(int)AlarmCode}";
+                        writer.WriteLine(logLine);
+                    }
+                }
+
+                if (alarm.Grade.Equals("Error"))
+                {
+                    // 장비 내부 멈춰야 하는 이것저것
+                    //this.m_LoaderWork_Start = false;
+                }
+                AlarmManager.Instance.ShowAlarm(alarm);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+
+            return (int)AlarmCode;
+        }
+
 
         // 축 이동
         public virtual int MoveAxis(string axisKey, double pos, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
