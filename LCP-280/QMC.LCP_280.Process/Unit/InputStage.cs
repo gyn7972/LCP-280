@@ -19,6 +19,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
+using static QMC.LCP_280.Process.Equipment;
 using static System.Windows.Forms.AxHost;
 
 namespace QMC.LCP_280.Process.Unit
@@ -57,6 +58,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Config / Teaching
+        Equipment _equipment => Equipment.Instance;
         public InputStageConfig InputStageConfig { get; private set; }
         public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
         #endregion
@@ -79,11 +81,30 @@ namespace QMC.LCP_280.Process.Unit
         public string PatternRecipeName { get; set; } = "Default";
         #endregion
 
+
+        InputDieTransfer _dieTr;
+        InputRingTransfer _ringTr;
+        InputStageEjector _stageEjector;
+
         #region Construction / Initialization
         public InputStage(InputStageConfig config = null)
             : base("InputStageConfig")
         {
             InputStageConfig = config ?? new InputStageConfig();
+
+            if (_equipment.Units.TryGetValue(UnitKeys.InputDieTransfer, out var unit))
+            {
+                _dieTr = unit as InputDieTransfer;
+            }
+            if (_equipment.Units.TryGetValue(UnitKeys.InputRingTransfer, out var unit2))
+            {
+                _ringTr = unit2 as InputRingTransfer;
+            }
+            if (_equipment.Units.TryGetValue(UnitKeys.InputStageEjector, out var unit3))
+            {
+                _stageEjector = unit3 as InputStageEjector;
+            }
+
             AddComponents();
 
         }
@@ -168,7 +189,6 @@ namespace QMC.LCP_280.Process.Unit
             return st;
         }
 
-
         private (bool ok, double x, double y) CenterSearchViaRunner()
         {
             var res = VisionRunnerHub.SearchCenterOffset(
@@ -237,6 +257,107 @@ namespace QMC.LCP_280.Process.Unit
             return MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
         }
 
+        #region Teaching Position Move (Batch Style)
+        public int MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName name, bool isFine)
+        {
+            return MoveTeachingPositionOnce((int)name, isFine);
+        }
+
+        public int MoveTeachingPositionOnce(int selIndex, bool isFine)
+        {
+            if (!IsInterlockOK(selIndex))
+            {
+                Log.Write(UnitName, "MoveTP", $"Interlock Fail index={selIndex}");
+                return -1;
+            }
+
+            if (selIndex < 0 || selIndex >= InputStageConfig.TeachingPositions.Count)
+                return -1;
+
+            var tp = InputStageConfig.TeachingPositions[selIndex];
+            if (tp == null || tp.AxisPositions == null) return -1;
+
+            // 축 이동 명령
+            foreach (var kv in tp.AxisPositions)
+            {
+                string axisKey = kv.Key;
+                double target = kv.Value;
+
+                MotionAxis axis = null;
+
+                if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
+                if (axis == null && Axes.TryGetValue(axisKey, out var a2)) axis = a2;
+                if (axis == null)
+                {
+                    foreach (var pair in Axes)
+                    {
+                        if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            axis = pair.Value; break;
+                        }
+                    }
+                }
+                if (axis == null) continue;
+
+                axis.MoveAbs(target, isFine);
+            }
+
+            // 완료 대기
+            int waitErrors = 0;
+            foreach (var kv in tp.AxisPositions)
+            {
+                MotionAxis axis = null;
+                if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
+                if (axis == null) continue;
+
+                if (axis.WaitMoveDone(-1) != 0)
+                    waitErrors++;
+            }
+            return waitErrors == 0 ? 0 : -1;
+        }
+
+        public void StopTeachingPositionOnce(int selIndex)
+        {
+            if (selIndex < 0 || selIndex >= InputStageConfig.TeachingPositions.Count)
+                return;
+
+            var tp = InputStageConfig.TeachingPositions[selIndex];
+            if (tp?.AxisPositions == null) return;
+
+            foreach (var kv in tp.AxisPositions)
+            {
+                MotionAxis axis = null;
+                if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
+                if (axis == null) continue;
+                axis.Stop();
+            }
+        }
+
+        private int WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName name, int timeoutMs)
+        {
+            var tp = TeachingPositions[name];
+            if (tp == null) return -1;
+            return WaitUntilInPos(tp, timeoutMs);
+        }
+        #endregion
+
+        private bool ActAndWait(string tag, Func<bool> act, Func<bool> cond)
+        {
+            if (!act())
+            {
+                Log.Write(UnitName, "Seq", $"Fail Act {tag}");
+                return false;
+            }
+            if (!WaitIO(cond, MoveTimeoutMs))
+            {
+                Log.Write(UnitName, "Seq", $"Timeout {tag}");
+                return false;
+            }
+            return true;
+        }
+
         public bool InPosTeaching(string positionName)
         {
             var (x, y, t) = InputStageConfig.GetPositionWithOffset(positionName);
@@ -277,7 +398,7 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveAxisOnce(MotionAxis ax, double target)
         {
             int nRtn = -1;
-            if (ax == null) 
+            if (ax == null)
                 return nRtn;
 
             if (Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
@@ -355,7 +476,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampLift");
             }
-                
+
             if (!IoAutoBindings.Cylinders.TryGetValue("InStageClampFB", out _cylClampFB))
             {
                 Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampFB");
@@ -380,16 +501,16 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool SetClampLift(bool bUpDn)
         {
-            if (_cylClampLift == null) 
+            if (_cylClampLift == null)
                 return false;
 
-            if (bUpDn) 
+            if (bUpDn)
                 return _cylClampLift.Extend();
             else
             {
-                if (!IsClampBwd()) 
+                if (!IsClampBwd())
                     return false; // 기존 인터락 유지
-                
+
                 return _cylClampLift.Retract();
             }
         }
@@ -416,9 +537,9 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         // === Direct Valve Control (강제 구동) ===
-        public bool IsVacuumValveOn()               => IsOutputOn(InputStageConfig.IO.VAC_OUT);
-        public void SetClampLiftUpValve(bool on)    => WriteOutput(InputStageConfig.IO.CLAMP_UP_OUT, on);
-        public bool IsClampLiftUpValveOn()          => IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
+        public bool IsVacuumValveOn() => IsOutputOn(InputStageConfig.IO.VAC_OUT);
+        public void SetClampLiftUpValve(bool on) => WriteOutput(InputStageConfig.IO.CLAMP_UP_OUT, on);
+        public bool IsClampLiftUpValveOn() => IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
         public bool IsVacuum() => ReadInput(InputStageConfig.IO.VAC_OK_SNS);
         public bool IsPlateUp() => ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
         public bool IsPlateDown() => ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
@@ -447,6 +568,86 @@ namespace QMC.LCP_280.Process.Unit
         public double AngleApplyGain { get; set; } = 1.0; // 방향 반전 필요 시 -1 사용
         public bool UseOffsetForTAxisCorrection { get; set; } = true; // false면 직접 축 이동 방식으로 전환 가능 (추후 확장)
 
+
+        public bool IsInterlockOK(int selIndex)
+        {
+            switch ((InputStageConfig.TeachingPositionName)selIndex)
+            {
+                case InputStageConfig.TeachingPositionName.Loading:
+                    return IsInterlockOKLoading();
+                case InputStageConfig.TeachingPositionName.CenterPoint:
+                    return IsInterlockOKCenterPoint();
+                case InputStageConfig.TeachingPositionName.Unloading:
+                    return IsInterlockOKUnloading();
+                case InputStageConfig.TeachingPositionName.Ready:
+                    return IsInterlockOKReady();
+                default:
+                    return true;
+            }
+        }
+
+        /// <summary>
+        /// DieTransfer PickZ 가 SafetyZone Teaching 위치(Offset 포함)와 거의 일치(또는 InposTolerance 내)하는지 확인.
+        /// 필요 시 Z 방향(예: 더 위/아래) 비교로 바꿀 수 있도록 주석 참고.
+        /// </summary>
+        private bool IsDieTransferPickZSafe(double fallbackTolerance = 0.01, bool useAxisInposTolerance = true)
+        {
+            if (_dieTr?.PickZ == null)
+                return true; // 장치 없음 → 안전으로 간주 (원하면 false 처리 가능)
+
+            var cfg = _dieTr.InputDieTransferConfig;
+            if (cfg == null) return false;
+
+            string safetyName = InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString();
+
+            // SafetyZone Teaching 존재 여부 확인
+            var tp = cfg.GetTeachingPosition(safetyName);
+            if (tp == null) return false;
+
+            // Offset 적용된 PickZ 목표값
+            var (_, pickZSafety, _) = cfg.GetPositionWithOffset(safetyName);
+
+            double cur = _dieTr.PickZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (_dieTr.PickZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            // (변형 예시) 만약 “SafetyZone 이상(위)” 이면: return cur >= pickZSafety - tol;
+            return System.Math.Abs(cur - pickZSafety) <= tol;
+        }
+
+        private bool IsInterlockOKReady()
+        {
+            // 1) DieTransfer PickZ 안전 위치 확인
+            if (!IsDieTransferPickZSafe())
+            {
+                Log.Write(UnitName, "Interlock", "Fail: DieTransfer PickZ not in SafetyZone");
+                return false;
+            }
+
+            // 2) 필요 시 다른 유닛(_ringTr, _stageEjector) 인터락 추가
+            // 예) 링 트랜스퍼 실린더 Up 여부 등
+
+            return true;
+
+            return true;
+        }
+
+        private bool IsInterlockOKUnloading()
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool IsInterlockOKCenterPoint()
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool IsInterlockOKLoading()
+        {
+            throw new NotImplementedException();
+        }
+
         private int WaitUntil(Func<bool> cond, int timeoutMs)
         {
             int nRtn = -1;
@@ -473,13 +674,156 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-        #region Seq 단위 동작 함수
-        public int WaferLoading()
+        // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
+        public bool StageLoadingReady { get; private set; }
+        public bool StageLoadingDone { get; private set; }
+
+        private bool WaitIO(Func<bool> cond, int timeoutMs)
         {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                if (cond()) return true;
+                Thread.Sleep(PollIntervalMs);
+            }
+            return false;
         }
+
+        private bool IsExternalLoadInterlockOk()
+        {
+            // DieTransfer PickZ Safety
+            if (!IsDieTransferPickZSafe())
+            {
+                Log.Write(UnitName, "Loading", "Interlock Fail : DieTransfer PickZ not safe");
+                return false;
+            }
+
+            // TODO: StageEjector Z 안전 위치 확인 (관련 API 확인 후 추가)
+            // if (_stageEjector != null && !_stageEjector.IsSafeZ()) { ... }
+
+            // TODO: RingTransfer 실린더 Up 상태 / 안전 위치 확인 (관련 센서/함수 필요 시 추가)
+            // if (_ringTr != null && !_ringTr.IsFeederUp()) { ... }
+
+            return true;
+        }
+
+        #region Seq 단위 동작 함수
+
+        // 주석   
+        /* TODO */
+        //웨이퍼 있냐 없냐? 
+        // Ring check
+        //있으면
+        //나가는거고. 
+        //없으면
+        //인터락 - 외부 유닛 위치 확인
+        //스테이지이젝터핀 Z축
+        //다이트렌스퍼 Z축
+        //링피커 - 실린더 Up 유무
+        //웨이퍼 로딩 위치 이동.
+        //실린더 Plate Down
+        //실린더 백 -> 다운
+        //웨이퍼 로딩 준비 완료 플래그 ON
+        // 링피커가 로딩 했다는 신호 주면 
+        // Plate Up
+        // 실린더 Up
+        // 실린더 전진
+        //인터락 - 외부 유닛 위치 확인
+        //스테이지이젝터핀 Z축
+        //다이트렌스퍼 Z축
+        //링피커 - 실린더 Up 유무
+        //스테이지 센터 이동.
+        //스테이지 로딩 완료 플래그 ON ?
+        // 반환 코드 규약 (선택적): 0 = OK, 1 = 대기(조건 미충족), -1 = 오류
+        public int LoadingWaferPrepare()
+        {
+            Log.Write(UnitName, "LoadingPrep", "Start");
+            StageLoadingDone = false;
+            StageLoadingReady = false;
+
+            // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
+            if (IsRingPresent())
+            {
+                Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
+                return 0;
+            }
+
+            // 외부 인터락
+            if (!IsExternalLoadInterlockOk())
+                return -1;
+
+            // 로딩 Teaching 이동
+            if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.Loading, false) != 0 ||
+                WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName.Loading, MoveTimeoutMs) != 0)
+            {
+                Log.Write(UnitName, "LoadingPrep", "Fail: Move Loading");
+                return -1;
+            }
+
+            // Plate Down → Clamp Back → Lift Down
+            if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) return -1;
+            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd())) return -1;
+            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown())) return -1;
+
+            StageLoadingReady = true;
+            Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
+            return 0;
+        }
+
+        public int LoadingWaferComplete()
+        {
+            // 이미 완료
+            if (StageLoadingDone)
+                return 0;
+
+            // 준비 안 되었으면 호출 순서 오류
+            if (!StageLoadingReady && !IsRingPresent())
+            {
+                Log.Write(UnitName, "LoadingComp", "Not prepared (call LoadingWaferPrepare first)");
+                return -1;
+            }
+
+            // 아직 Wafer 안 올라옴 → 대기
+            if (!IsRingPresent())
+                return 1;
+
+            Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
+
+            // Plate Up → Lift Up → Clamp Fwd
+            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp())) return -1;
+            if (!ActAndWait("ClampLiftUp", () => SetClampLift(true), () => IsClampLiftUp())) return -1;
+            if (!ActAndWait("ClampForward", () => SetClampFB(true), () => IsClampFwd())) return -1;
+
+            // 2차 외부 인터락
+            if (!IsExternalLoadInterlockOk())
+                return -1;
+
+            // CenterPoint 이동
+            if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.CenterPoint, false) != 0 ||
+                WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName.CenterPoint, MoveTimeoutMs) != 0)
+                return -1;
+
+            StageLoadingDone = true;
+            StageLoadingReady = false;
+            Log.Write(UnitName, "LoadingComp", "Done");
+            return 0;
+        }
+
+        // 기존 일괄 함수(호환 유지 용). 필요 없으면 제거 가능.
+        public int LoadingWafer()
+        {
+            int rc = LoadingWaferPrepare();
+            if (rc != 0 && rc != 0)
+                return rc; // rc !=0 이면 오류. (준비단계는 OK=0 외 다른 코드 없음)
+            // Ring 대기
+            if (!IsRingPresent())
+            {
+                if (!WaitIO(() => IsRingPresent(), MoveTimeoutMs))
+                    return -1;
+            }
+            return LoadingWaferComplete();
+        }
+
 
         public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
         /// <summary>
@@ -489,6 +833,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             centerTp = null;
             img = null;
+
+            //외부 인터락. 
+
 
             // === 내부 인터락 확인 ===
             if (!IsRingPresent())
@@ -546,7 +893,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// T축 정렬
         /// </summary>
-        public int T_Align()
+        public int AlignT()
         {
             int nRet = -1;
             try
@@ -619,7 +966,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// XY 정렬
         /// </summary>
-        public int XY_Align()
+        public int AlignXY()
         {
             int nRet = -1;
             try
@@ -684,16 +1031,46 @@ namespace QMC.LCP_280.Process.Unit
         public int ChipPickUp()
         {
             int nRet = -1;
+
+            // Die Tr이 주인
             /* TODO */
+
+            // Die Tr이 주는 명령대로 움직이는 함수 필요. 
+            // Chip Position 위치 이동 함수. 
+            // 인터락. 공정 범위 넘어가는지 확인 필요.
+
             return nRet;
         }
 
-        public int WaferUnloading()
+        public int UnloadingWafer()
         {
             int nRet = -1;
             /* TODO */
+            //웨이퍼 있냐 없냐? 
+            // Ring check
+            //없으면
+            //나가는거고. 
+
+            //있으면
+            //인터락 - 외부 유닛 위치 확인
+            //스테이지이젝터핀 Z축
+            //다이트렌스퍼 Z축
+            //링피커 - 실린더 Up 유무
+
+            //웨이퍼 언로딩 위치 이동.
+            //실린더 Plate Up
+            //실린더 백 -> 다운
+
+            //웨이퍼 언로딩 준비 완료 플래그 ON
+
+            // 링피커가 언로딩 했다는 신호 주면 
+            // Plate Down
+
+            //스테이지 언로딩 완료 플래그 ON ?
+
             return nRet;
         }
+
         #endregion
     }
 }
