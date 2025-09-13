@@ -24,7 +24,7 @@ namespace QMC.LCP_280.Process.Unit
     public class InputCassetteLifter : BaseUnit
     {
         public enum AlarmKeys
-        {   
+        {
             eWaferProtrusionDetected = 1001,
         }
         public enum CassetteLifterState
@@ -40,12 +40,14 @@ namespace QMC.LCP_280.Process.Unit
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
         #endregion
 
+        public InputStage InputStage { get; private set; }
         #region Axis
         private MotionAxis _waferLifterZ; // 단일 리프터 축 (Y 혹은 Z)
         public MotionAxis WaferLifterZ => _waferLifterZ;
 
         public UnitRunStatus Status { get; private set; }
         public CassetteLifterState State { get; private set; }
+        public bool IsRequestReturnWafer { get; private set; }
         #endregion
         #region InitAlarm
         protected override void InitAlarm()
@@ -66,6 +68,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             InputCassetteLifterConfig = config ?? new InputCassetteLifterConfig();
             AddComponents();
+
+        }
+
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+            InputStage = Equipment.Instance.GetUnit("InputStage") as InputStage;
         }
 
         public override void AddComponents()
@@ -88,7 +97,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
                 return;
             }
-           
+
             const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
             BindAxis(mgr, unitName, AxisNames.WaferLifterZ, ref _waferLifterZ);
         }
@@ -160,12 +169,12 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
         public bool IsWaferProtrusionDetectionSensor() => !ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
-        
+
         public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
 
         #region Lifecycle
-        public override int OnRun()  
+        public override int OnRun()
         {
             int ret = 0;
 
@@ -196,11 +205,11 @@ namespace QMC.LCP_280.Process.Unit
         public CassetteMaterial GetCassetteMaterial()
         {
             CassetteMaterial cd = GetMaterial() as CassetteMaterial;
-            if(cd == null)
+            if (cd == null)
             {
                 cd = new CassetteMaterial();
                 SetMaterial((Material)cd);
-                if(IsCassettePresentAll())
+                if (IsCassettePresentAll())
                 {
                     cd.Presence = Material.MaterialPresence.Exist;
                     cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
@@ -214,7 +223,7 @@ namespace QMC.LCP_280.Process.Unit
             return cd;
         }
 
-       
+
 
         protected override int OnRunComplete()
         {
@@ -223,17 +232,144 @@ namespace QMC.LCP_280.Process.Unit
 
         protected override int OnRunWork()
         {
+            CassetteMaterial material = GetCassetteMaterial();
+            if (material.Presence == Material.MaterialPresence.NotExist)
+            {
+                State = CassetteLifterState.Complete;
+                return 0;
+            }
+            else if (material.Presence == Material.MaterialPresence.Exist)
+            {
+                if (material.ProcessSatate == Material.MaterialProcessSatate.Unknown)
+                {
+                    Log.Write(this, "Material Process State Unknown in Work State");
+                    return -1;
+                }
+                else if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                {
+                    foreach (var wafer in material.Slots)
+                    {
+                        if (wafer == null || wafer.Presence == Material.MaterialPresence.NotExist)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                if (InputStage.IsRequestWafer)
+                                {
+                                    MoveToNextSlot();
+                                }
+                                else
+                                {
+                                    MaterialWafer Stagewafer = InputStage.GetWaferMaterial();
+                                    if (Stagewafer == null || Stagewafer.Presence == Material.MaterialPresence.NotExist)
+                                    {
+                                        // Stage wafer is not exist
+                                        return 0;
+                                    }
+                                    else
+                                    {
+                                        if (Stagewafer.SlotIndex != wafer.SlotIndex)
+                                        {
+                                            // Stage wafer slot index is different
+                                            return 0;
+                                        }
+                                    }
+                                    if (Stagewafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
+                                    {
+                                        return 0;
+                                    }
+                                    else if (Stagewafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+                                    {
+                                        MoveToSlot(Stagewafer.SlotIndex);
+
+                                    }
+                                    else
+                                    {
+                                        // Stage wafer is not ready
+                                        return 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }
+
+            }
             return 0;
+        }
+        
+        private int MoveToSlot(int slotIndex)
+        {
+            if(IsWaferProtrusionDetectionSensor())
+            {
+                Log.Write(this, "Wafer Protrusion Detected");
+                AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                return -1;
+            }
+            double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
+            dPos += InputCassetteLifterConfig.SlotPitch * slotIndex;
+            MoveAxisOnce(WaferLifterZ, dPos);
+            while (!InPos(WaferLifterZ, dPos))
+            {
+                if (IsWaferProtrusionDetectionSensor())
+                {
+                    WaferLifterZ.EmgStop();
+                    Log.Write(this, "Wafer Protrusion Detected");
+                    AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return 0;
+
+        }
+        public Task<int> MoveToSlotAsync(int slotIndex)
+        {
+            return Task.Run(() =>
+            {
+                MoveToSlot(slotIndex);
+                return 0;
+            });
+        }
+
+        private void MoveToNextSlot()
+        {
+            CassetteMaterial material = GetCassetteMaterial();
+            if(material != null)
+            {
+
+                foreach (var v in GetCassetteMaterial().Slots)
+                {
+                    if(v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
+                    {
+                        continue;
+                    }
+
+                    if (v.ProcessSatate != MaterialWafer.MaterialProcessSatate.Completed)
+                    {
+                        MoveToSlot(v.SlotIndex);
+                        return;
+                    }
+                }
+            }
         }
 
         protected override int OnRunReady()
         {
             int ret = 0;
             CassetteMaterial material = GetCassetteMaterial();
-            if(material.Presence == Material.MaterialPresence.Exist)
+            if (material.Presence == Material.MaterialPresence.Exist)
             {
                 State = CassetteLifterState.Work;
-                if(material.ProcessSatate == CassetteMaterial.MaterialProcessSatate.Unknown)
+                if (material.ProcessSatate == CassetteMaterial.MaterialProcessSatate.Unknown)
                 {
                     ret = ScanWafer();
                     if (ret != 0)
@@ -263,18 +399,18 @@ namespace QMC.LCP_280.Process.Unit
                 AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
                 return -1;
             }
-            
+
             CassetteMaterial material = GetCassetteMaterial();
-            for(int iter = 0; iter <  material.Slots.Count; iter ++)
+            for (int iter = 0; iter < material.Slots.Count; iter++)
             {
                 material.Slots[iter] = new MaterialWafer();
 
             }
             MoveToScanStartPosition();
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync();
-            while(true)
+            while (true)
             {
-                if(IsEndTask(taskMoveEndPos))
+                if (IsEndTask(taskMoveEndPos))
                 {
                     ret = taskMoveEndPos.Result;
                     if (ret != 0)
@@ -284,7 +420,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     break;
                 }
-                if(IsWaferProtrusionDetectionSensor())
+                if (IsWaferProtrusionDetectionSensor())
                 {
                     Log.Write(this, "Wafer Protrusion Detected");
                     AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
@@ -298,6 +434,7 @@ namespace QMC.LCP_280.Process.Unit
                     if (slot >= 0 && slot < material.Slots.Count)
                     {
                         MaterialWafer wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
+                        wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
                         wafer.SlotIndex = slot;
                         material.SetWafer(slot, wafer);
                         Log.Write(this, $"Mapping Sensor Detected at Slot {slot + 1} Position {dPos:F3}");
@@ -321,15 +458,15 @@ namespace QMC.LCP_280.Process.Unit
 
         public int MoveToScanStartPosition(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int) InputCassetteLifterConfig.TeachingPositionName.MappingStart,isFine);
+            return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingStart, isFine);
         }
         public Task<int> MoveToScanStartPositionAsync()
         {
-            return Task.Run(() => 
-            { 
-                
-                MoveToScanStartPosition(); 
-                return 0; 
+            return Task.Run(() =>
+            {
+
+                MoveToScanStartPosition();
+                return 0;
             });
         }
 
@@ -342,11 +479,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             return Task.Run(() => { MoveToScanEndPosition(); return 0; });
         }
-        public int  MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos,bool isCouseSpeed )
+        public int MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos, bool isCouseSpeed)
         {
             return MoveToTeachingPosition(pos.ToString());
         }
-       
+
         public Task<int> ScanWaferAsync()
         {
             return Task.Run(() => ScanWafer());

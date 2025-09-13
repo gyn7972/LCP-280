@@ -92,6 +92,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             InputStageConfig = config ?? new InputStageConfig();
 
+            
+
+            AddComponents();
+
+        }
+
+        protected override void OnBindUnit()
+        {
             if (_equipment.Units.TryGetValue(UnitKeys.InputDieTransfer, out var unit))
             {
                 _dieTr = unit as InputDieTransfer;
@@ -104,9 +112,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 _stageEjector = unit3 as InputStageEjector;
             }
-
-            AddComponents();
-
         }
 
         public override void AddComponents()
@@ -826,6 +831,8 @@ namespace QMC.LCP_280.Process.Unit
 
 
         public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
+        public bool IsRequestWafer { get; internal set; } = false;
+
         /// <summary>
         /// 공통: Center Teaching 이동, Grab 이미지까지 수행
         /// </summary>
@@ -1069,6 +1076,12 @@ namespace QMC.LCP_280.Process.Unit
             //스테이지 언로딩 완료 플래그 ON ?
 
             return nRet;
+        }
+
+        public MaterialWafer GetWaferMaterial()
+        {
+            var mat = GetMaterial();
+            return mat as MaterialWafer;
         }
 
         #endregion

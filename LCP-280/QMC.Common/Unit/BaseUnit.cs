@@ -172,6 +172,16 @@ namespace QMC.Common.Unit
                 Log.Write("UnitAxis", $"[BindAxes] Axis '{unitName}||{axisName}' 바인딩 실패");
             }
         }
+        public void BindUnit()
+        {
+            OnBindUnit();
+        }
+
+        protected virtual void OnBindUnit()
+        {
+            
+        }
+
         public int Start()
         {
             SetRunMode(UnitRunMode.Auto);

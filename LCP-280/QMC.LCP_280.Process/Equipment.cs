@@ -249,6 +249,8 @@ namespace QMC.LCP_280.Process
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
 
+                BindUnit();
+
                 // 홈 후처리 글로벌 구독(1회)
                 HomeHooks.EnsureSubscribed();
 
@@ -259,6 +261,14 @@ namespace QMC.LCP_280.Process
                 OnStateChanged(EquipmentState.Error);
                 OnErrorOccurred($"설비 초기화 중 오류 발생: {ex.Message}");
                 throw;
+            }
+        }
+
+        private void BindUnit()
+        {
+            foreach(var v in Units)
+            {
+                v.Value.BindUnit();
             }
         }
 
@@ -1599,6 +1609,12 @@ namespace QMC.LCP_280.Process
             {
                 Log.Write(ex);
             }
+        }
+
+        public BaseUnit GetUnit(string v)
+        {
+            this.Units.TryGetValue(UnitKeys.InputDieTransfer, out var unit);
+            return unit;
         }
     }
 
