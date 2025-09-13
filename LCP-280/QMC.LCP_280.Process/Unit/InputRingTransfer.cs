@@ -12,10 +12,10 @@ namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
     /// InputRingTransfer (Wafer Feeder / Ring Transfer Unit)
-    ///  - X 축 이송 + Lift + Clamp (Ring 존재 검사 / Overload 검사)
-    ///  - Teaching Position 관리 (InputRingTransferConfig)
-    ///  - Cylinder 기반 동작 API (FeederUp/Down, Clamp)
-    ///  - OutputStage / InputStage 와 동일한 Region/패턴 구성
+    ///  - X ?? ??? + Lift + Clamp (Ring ???? ??? / Overload ???)
+    ///  - Teaching Position ???? (InputRingTransferConfig)
+    ///  - Cylinder ??? ???? API (FeederUp/Down, Clamp)
+    ///  - OutputStage / InputStage ?? ?????? Region/???? ????
     /// </summary>
     public class InputRingTransfer : BaseUnit
     {
@@ -54,8 +54,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Runtime Hooks
-        public override void OnRun()  => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()  { int ret = 0; return ret; }
+        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
         #endregion
 
         #region Axis Binding
@@ -68,7 +68,7 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
+            const string unitName = "Unit"; // Equipment???? ?? ??? ?? ????? ?????? ??????? ??
             BindAxis(mgr, unitName, AxisNames.WaferFeederY, ref _feederY);
         }
         public void MoveAxisOnce(MotionAxis ax, double target)
@@ -171,7 +171,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        // === Domain Control (표준 구동) ===
+        // === Domain Control (??? ????) ===
         public bool SetLift(bool bUpDn)
         {
             if (_feederLift == null) return false;
@@ -194,14 +194,14 @@ namespace QMC.LCP_280.Process.Unit
         /// ////////////////////////////////////////////////////////////////
         
 
-        #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
+        #region === Direct Valve Control (??? ???/????? ???? ???? ??????) ===
         public bool IsFeederUpValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_UP_VALVE);
         public bool IsFeederDownValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
         public bool IsFeederClampValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
         public bool IsFeederUnclampValveOn() => IsOutputOn(InputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
 
-        #region Seq 단위 동작 함수
+        #region Seq ???? ???? ???
         public int WaferLoading()
         {
             int nRet = -1;

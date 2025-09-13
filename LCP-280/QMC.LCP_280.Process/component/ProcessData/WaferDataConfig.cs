@@ -10,7 +10,7 @@ namespace QMC.LCP_280.Process.Component
     [Serializable]
     public sealed class WaferDataConfig : BaseConfig
     {
-        public List<CarrierData> Carriers { get; set; } = new List<CarrierData>();
+        public List<CassetteMaterial> Carriers { get; set; } = new List<CassetteMaterial>();
 
         public override void Reset()
         {
@@ -19,7 +19,7 @@ namespace QMC.LCP_280.Process.Component
 
         protected override void OnLoaded()
         {
-            if (Carriers == null) Carriers = new List<CarrierData>();
+            if (Carriers == null) Carriers = new List<CassetteMaterial>();
         }
 
         public override bool Validate()

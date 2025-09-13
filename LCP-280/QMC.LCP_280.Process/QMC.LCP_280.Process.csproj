@@ -118,7 +118,7 @@
     <Compile Include="Component\ProcessDataManual.Designer.cs">
       <DependentUpon>ProcessDataManual.cs</DependentUpon>
     </Compile>
-    <Compile Include="Component\ProcessData\CarrierData.cs" />
+    <Compile Include="Component\ProcessData\CassetteMaterial.cs" />
     <Compile Include="Component\ProcessData\ChipData.cs" />
     <Compile Include="Component\ProcessData\WaferDataConfig.cs" />
     <Compile Include="Component\ProcessData\WaferManager.cs" />
@@ -132,7 +132,7 @@
     <Compile Include="Component\TeachingPositionControl.Designer.cs">
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Component\ProcessData\WaferData.cs" />
+    <Compile Include="Component\ProcessData\MaterialWafer.cs" />
     <Compile Include="Component\VisionRunnerHub.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />

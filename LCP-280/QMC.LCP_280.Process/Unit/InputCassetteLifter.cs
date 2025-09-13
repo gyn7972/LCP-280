@@ -1,11 +1,14 @@
+using LCP_280;
 using QMC.Common;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using static System.Windows.Forms.AxHost;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -17,6 +20,14 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputCassetteLifter : BaseUnit
     {
+        public enum CassetteLifterState
+        {
+            None = 0,
+            Stop = 1,
+            Ready = 2,
+            Work = 3,
+            Complete = 4,
+        }
         #region Config / Teaching
         public InputCassetteLifterConfig InputCassetteLifterConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
@@ -25,6 +36,9 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis
         private MotionAxis _waferLifterZ; // 단일 리프터 축 (Y 혹은 Z)
         public MotionAxis WaferLifterZ => _waferLifterZ;
+
+        public RunStatus Status { get; private set; }
+        public CassetteLifterState State { get; private set; }
         #endregion
 
         #region ctor / Initialization
@@ -123,14 +137,112 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool CassettePresent0() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
         public bool CassettePresent1() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        public bool CassettePresentAll() => CassettePresent0() && CassettePresent1();
         public bool AnyCassettePresent() => CassettePresent0() || CassettePresent1();
         public bool RingJut() => !ReadInput(InputCassetteLifterConfig.IO.RING_JUT_CHECK);
         public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
 
         #region Lifecycle
-        public override void OnRun()  => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()  
+        {
+            int ret = 0;
+
+            if (this.Status == RunStatus.Stop || this.Status == RunStatus.CycleStop)
+            {
+                this.State = CassetteLifterState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case CassetteLifterState.Ready:
+                    ret = OnRunReady();
+                    break;
+                case CassetteLifterState.Work:
+                    ret = OnRunWork();
+                    break;
+                case CassetteLifterState.Complete:
+                    ret = OnRunComplete();
+                    break;
+                default:
+                    break;
+            }
+
+            return ret;
+        }
+
+        public CassetteMaterial GetCassetteMaterial()
+        {
+            CassetteMaterial cd = GetMaterial() as CassetteMaterial;
+            if(cd == null)
+            {
+                cd = new CassetteMaterial();
+                SetMaterial((Material)cd);
+                if(CassettePresentAll())
+                {
+                    cd.Presence = Material.MaterialPresence.Exist;
+                    cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
+                    cd.ArrivedTime = DateTime.Now;
+                }
+                else
+                {
+                    cd.Presence = Material.MaterialPresence.NotExist;
+                }
+            }
+            return cd;
+        }
+
+       
+
+        protected override int OnRunComplete()
+        {
+            return 0;
+        }
+
+        protected override int OnRunWork()
+        {
+            return 0;
+        }
+
+        protected override int OnRunReady()
+        {
+            int ret = 0;
+            CassetteMaterial material = GetCassetteMaterial();
+            if(material.Presence == Material.MaterialPresence.Exist)
+            {
+                State = CassetteLifterState.Work;
+                if(material.ProcessSatate == CassetteMaterial.CassetteProcessSatate.Unknown)
+                {
+                    ret = ScanWafer();
+                    if (ret != 0)
+                    {
+                        Log.Write(this, "ScanWafer Failed");
+                        return -1;
+                    }
+                }
+            }
+            else
+            {
+                State = CassetteLifterState.None;
+            }
+            return 0;
+        }
+
+        private int ScanWafer()
+        {
+            int ret = 0;
+            CassetteMaterial material = GetCassetteMaterial();
+            //material.WaferList.Clear();
+            if (!MappingSensor())
+            {
+                Log.Write(this, "Mapping Sensor Not Detected");
+                return -1;
+            }
+            return ret;
+        }
+
+        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
         #endregion
 
         #region Seq 단위 동작 함수
@@ -172,5 +284,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #endregion
+
+
     }
 }

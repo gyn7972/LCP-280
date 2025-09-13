@@ -1,6 +1,8 @@
 ﻿using QMC.Common.Component;
+using QMC.Common.Unit;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -60,6 +62,11 @@ namespace QMC.Common
         public static void WriteWorkLog(string strMessage)
         {
             LogManager.Instance.WriteWorkLog(strMessage);
+        }
+
+        public static void Write(BaseUnit baseUnit, string strMessage)
+        {
+            LogManager.Instance.Write(LogLevel.Normal, baseUnit.UnitName, baseUnit.UnitName, strMessage);
         }
     }
 }

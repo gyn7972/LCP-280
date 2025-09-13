@@ -543,8 +543,20 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsVacuum() => ReadInput(InputStageConfig.IO.VAC_OK_SNS);
         public bool IsPlateUp() => ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
         public bool IsPlateDown() => ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()
+        {
+            int ret = 0;
+            return ret;
+        }
+        public override int OnStop()
+        {
+            int ret = 0;
+            base.OnStop();
+            return ret;
+        }
+        protected override int OnRunReady() { return 0; }
+        protected override int OnRunWork() { return 0; }
+        protected override int OnRunComplete() { return 0; }
         #endregion
 
 
@@ -638,16 +650,16 @@ namespace QMC.LCP_280.Process.Unit
 
         private int WaitUntil(Func<bool> cond, int timeoutMs)
         {
-            int nRet = -1;
+            int nRtn = -1;
             var sw = Stopwatch.StartNew();
             while (sw.ElapsedMilliseconds < timeoutMs)
             {
-                if (cond()) return nRet;
+                if (cond()) return nRtn;
                 Thread.Sleep(PollIntervalMs);
             }
 
-            nRet = 0;
-            return nRet;
+            nRtn = 0;
+            return nRtn;
         }
         private int WaitUntilInPos(TeachingPosition tp, int timeoutMs)
         {
