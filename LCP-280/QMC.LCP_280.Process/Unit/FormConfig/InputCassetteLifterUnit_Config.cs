@@ -29,8 +29,6 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        
-
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
