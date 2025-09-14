@@ -61,7 +61,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Config / Teaching
         Equipment _equipment => Equipment.Instance;
-        public InputStageConfig Config { get; private set; }
+        
         public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
         #endregion
 

@@ -18,7 +18,7 @@ namespace QMC.LCP_280.Process.Unit
     public class IndexUnloadAligner : BaseUnit<IndexUnloadAlignerConfig>
     {
         #region Config / Teaching
-        public IndexUnloadAlignerConfig Config { get; private set; }
+        
         
         #endregion
 

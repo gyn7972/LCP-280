@@ -19,6 +19,7 @@ namespace QMC.Common.Unit
     public interface IUnit : IDisposable 
     { 
         BaseConfig Config { get; }
+        void SetName(string name);
     }
 
     public class BaseUnit : IUnit
@@ -87,8 +88,7 @@ namespace QMC.Common.Unit
 
 
         protected BaseUnit(string unitName)
-        {
-            
+        {   
             UnitName = unitName;
             m_dicAlarms = new Dictionary<int, AlarmInfo>(); // <-- Add this line
             MakeAlarm();
@@ -476,6 +476,12 @@ namespace QMC.Common.Unit
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        public void SetName(string name)
+        {
+            this.UnitName = name;
+        }
+
         ~BaseUnit()
         {
             Dispose(false);
