@@ -85,7 +85,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
         InputDieTransfer _dieTr;
-        InputRingTransfer _ringTr;
+        InputFeeder _ringTr;
         InputStageEjector _stageEjector;
 
         #region Construction / Initialization
@@ -108,7 +108,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             if (_equipment.Units.TryGetValue(UnitKeys.InputRingTransfer, out var unit2))
             {
-                _ringTr = unit2 as InputRingTransfer;
+                _ringTr = unit2 as InputFeeder;
             }
             if (_equipment.Units.TryGetValue(UnitKeys.InputStageEjector, out var unit3))
             {
@@ -1300,6 +1300,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             return UnloadingWaferComplete();
+        }
+
+        public bool IsWaferLoadingPosition()
+        {
+            var tp = TeachingPositions[InputStageConfig.TeachingPositionName.Loading];
+            if (tp == null) return false;
+            return InPosTeaching(tp);
         }
 
         #endregion

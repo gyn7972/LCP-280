@@ -41,6 +41,9 @@ namespace QMC.LCP_280.Process.Unit
         
         
         public bool IsRequestReturnWafer { get; private set; }
+        public bool IsWaferReadyForUnloding { get; private set; } = false;
+        public bool IsWaferReadyForloading { get; private set; } = false;
+
         #endregion
         #region InitAlarm
         protected override void InitAlarm()
@@ -189,6 +192,7 @@ namespace QMC.LCP_280.Process.Unit
                     ret = OnRunComplete();
                     break;
                 default:
+                    this.IsWaferReadyForUnloding = false;
                     this.State = ProcessState.Ready;
                     break;
             }
@@ -196,12 +200,12 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
-        public CassetteMaterial GetCassetteMaterial()
+        public MaterialCassette GetMaterialCassette()
         {
-            CassetteMaterial cd = GetMaterial() as CassetteMaterial;
+            MaterialCassette cd = GetMaterial() as MaterialCassette;
             if (cd == null)
             {
-                cd = new CassetteMaterial();
+                cd = new MaterialCassette();
                 SetMaterial((Material)cd);
                 if (IsCassettePresentAll())
                 {
@@ -226,7 +230,7 @@ namespace QMC.LCP_280.Process.Unit
 
         protected override int OnRunWork()
         {
-            CassetteMaterial material = GetCassetteMaterial();
+            MaterialCassette material = GetMaterialCassette();
             if (material.Presence == Material.MaterialPresence.NotExist)
             {
                 State = ProcessState.Complete;
@@ -322,6 +326,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(0);
             }
+            this.IsWaferReadyForUnloding = true;
             return 0;
 
         }
@@ -336,11 +341,11 @@ namespace QMC.LCP_280.Process.Unit
 
         private void MoveToNextSlot()
         {
-            CassetteMaterial material = GetCassetteMaterial();
+            MaterialCassette material = GetMaterialCassette();
             if(material != null)
             {
 
-                foreach (var v in GetCassetteMaterial().Slots)
+                foreach (var v in GetMaterialCassette().Slots)
                 {
                     if(v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
                     {
@@ -359,11 +364,11 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunReady()
         {
             int ret = 0;
-            CassetteMaterial material = GetCassetteMaterial();
+            MaterialCassette material = GetMaterialCassette();
             if (material.Presence == Material.MaterialPresence.Exist)
             {
                 State = ProcessState.Work;
-                if (material.ProcessSatate == CassetteMaterial.MaterialProcessSatate.Unknown)
+                if (material.ProcessSatate == MaterialCassette.MaterialProcessSatate.Unknown)
                 {
                     ret = ScanWafer();
                     if (ret != 0)
@@ -379,10 +384,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return 0;
         }
-        public bool IsEndTask(Task<int> task)
-        {
-            return task.IsCompleted || task.IsFaulted || task.IsCanceled;
-        }
+       
         public int ScanWafer()
         {
             int ret = 0;
@@ -394,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            CassetteMaterial material = GetCassetteMaterial();
+            MaterialCassette material = GetMaterialCassette();
             for (int iter = 0; iter < material.Slots.Count; iter++)
             {
                 material.Slots[iter] = new MaterialWafer();
@@ -540,6 +542,11 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = -1;
             /* TODO */
             return nRet;
+        }
+
+        public bool IsWaferReadyForLoading()
+        {
+            return this.IsWaferReadyForloading;
         }
 
 

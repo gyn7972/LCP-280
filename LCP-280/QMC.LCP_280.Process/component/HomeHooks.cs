@@ -30,10 +30,10 @@ namespace QMC.LCP_280.Process.Component
                 if (name.Equals("Wafer Feeder Y Axis", StringComparison.OrdinalIgnoreCase))
                 {
                     var eq = Equipment.Instance;
-                    if (eq?.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var u) && u is InputRingTransfer inFeeder)
+                    if (eq?.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var u) && u is InputFeeder inFeeder)
                     {
                         double logical = inFeeder.GetTP(
-                            InputRingTransferConfig.TeachingPositionName.SetPosition.ToString(),
+                            InputFeederConfig.TeachingPositionName.SetPosition.ToString(),
                             "Wafer Feeder Y Axis");
 
                         AjinApi.SetActualPositionPulse(axis.AxisNo, logical);

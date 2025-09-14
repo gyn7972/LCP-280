@@ -57,7 +57,7 @@ namespace QMC.LCP_280.Process.Component
         }
 
         // ===== 조회 =====
-        public CassetteMaterial GetCarrier(string carrierId)
+        public MaterialCassette GetCarrier(string carrierId)
         {
             lock (_gate)
             {
@@ -73,14 +73,14 @@ namespace QMC.LCP_280.Process.Component
         }
 
         // ===== Carrier 관리 =====
-        public CassetteMaterial AddCarrier(string carrierId, int slotCount = 25)
+        public MaterialCassette AddCarrier(string carrierId, int slotCount = 25)
         {
             lock (_gate)
             {
                 var existing = GetCarrier(carrierId);
                 if (existing != null) return existing;
 
-                var carrier = new CassetteMaterial
+                var carrier = new MaterialCassette
                 {
                     CarrierId = carrierId,
                     SlotCount = slotCount

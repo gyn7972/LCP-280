@@ -43,6 +43,7 @@ namespace QMC.Common.Unit
             Ready = 2,
             Work = 3,
             Complete = 4,
+            Error = 5,
         }
 
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
@@ -84,13 +85,18 @@ namespace QMC.Common.Unit
 
         protected virtual void InitAlarm()
         {
-            
+
+            AlarmRegister(AlarmPost((int)AlarmKeys.ePrepareFailed), "PrepareFialed", "PrepareFialed", "Error");
+        }
+
+        protected void AlarmRegister(int alarmCode, string title, string cause,string grade)
+        {
             AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.ePrepareFailed;
-            alarm.Title = "PrepareFialed";
-            alarm.Cause = "PrepareFialed";
+            alarm.Code = (int)alarmCode;
+            alarm.Title = title;
+            alarm.Cause = cause;
             alarm.Source = this.UnitName;
-            alarm.Grade = "Error";
+            alarm.Grade = grade;
             m_dicAlarms.Add(alarm.Code, alarm);
         }
 
@@ -98,7 +104,10 @@ namespace QMC.Common.Unit
 
 
         public virtual void AddComponents() { }
-
+        public bool IsEndTask(Task<int> task)
+        {
+            return task.IsCompleted || task.IsFaulted || task.IsCanceled;
+        }
 
         private static readonly object _alarmLogLock = new object();
         // 알람 발생시 사용.
