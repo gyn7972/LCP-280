@@ -519,6 +519,10 @@ namespace QMC.LCP_280.Process
                 unit.Start();
                 //unit.OnRun();
 
+                execInfo.IsRunning = true;
+                execInfo.StartTime = DateTime.Now;
+                OnUnitStateChanged(unitName, UnitState.Running);
+
                 //// Unit 실행 Task 생성 및 시작
                 //execInfo.ExecutionTask = Task.Run(async () =>
                 //    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
@@ -727,6 +731,18 @@ namespace QMC.LCP_280.Process
             try
             {
                 unit.Stop();
+                OnUnitStateChanged(unitName, UnitState.Stopping);
+
+
+                if (execInfo.IsRunning)
+                {
+                    OnUnitStateChanged(unitName, UnitState.Stopping);
+
+                    execInfo.CancellationTokenSource?.Cancel();
+                    execInfo.IsRunning = false;
+                    execInfo.StopTime = DateTime.Now;
+                }
+                
                 Console.WriteLine($"Unit '{unitName}' 정지 완료");
                 return true;
             }
@@ -879,9 +895,14 @@ namespace QMC.LCP_280.Process
         {
             if (_unitExecutions.TryGetValue(unitName, out var exec))
             {
-                if (exec.IsRunning) return UnitState.Running;
-                else if (exec.ExecutionTask?.IsFaulted == true) return UnitState.Error;
-                else return UnitState.Stopped;
+                if (exec.IsRunning) 
+                    return UnitState.Running;
+
+                else if (exec.ExecutionTask?.IsFaulted == true) 
+                    return UnitState.Error;
+
+                else 
+                    return UnitState.Stopped;
             }
             return UnitState.Unknown;
         }
