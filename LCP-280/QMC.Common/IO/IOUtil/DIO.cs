@@ -11,6 +11,34 @@ namespace QMC.Common.IOUtil
     /// "논리 키" ↔ (ModuleName, DisplayNo) 매핑 + 입력/출력/펄스 API.
     /// EquipmentLocator.Instance를 통해 DioScan/UnitIO에 접근합니다.
     /// </summary>
+    /// 
+    public class IoRef
+    {
+        public string Module;
+        public string Disp;
+        public PropertyState Prop;
+        public IoRef()
+        {
+            Module = "";
+            Disp = "";
+            Prop = null;
+        }
+        public bool IsSameIO(string module, string disp)
+        {
+            return string.Equals(Module, module, StringComparison.OrdinalIgnoreCase) && IsSameIO(disp);
+        }
+        public bool IsSameIO(string disp)
+        {
+            int IoNO = -1;
+            int.TryParse(this.Disp.Substring(1), out IoNO);
+            int cmpIoNO = 0;
+            int.TryParse(disp.Substring(1), out cmpIoNO);
+
+            return IoNO == cmpIoNO;
+        }
+
+    }
+
     public static class DIO
     {
         private sealed class IoPoint

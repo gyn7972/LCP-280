@@ -1,9 +1,10 @@
 ﻿using QMC.Common;
-using QMC.Common.Spectrometer;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
+using QMC.Common.Spectrometer;
 using QMC.LCP_280.Process.Component; // TeachingPosition
 using System;
 using System.Collections.Generic;
@@ -32,15 +33,9 @@ namespace QMC.LCP_280.Process.Unit
         private bool _sizeMismatchWarned;
 
         // Digital IO 목록 표시용 내부 구조
-        private struct _IoRef
-        {
-            public string Module;
-            public string Disp;
-            public PropertyState Prop;
-        }
-
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+     
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
         #endregion
 
         #region Ctor
@@ -355,7 +350,7 @@ namespace QMC.LCP_280.Process.Unit
                         var ps = new PropertyState(no.ToString(), nameCell, cur);
 
                         pcIn.Add(ps);
-                        _ioInputs.Add(new _IoRef
+                        _ioInputs.Add(new IoRef
                         {
                             Module = map.Item1,
                             Disp = map.Item2,
@@ -394,7 +389,7 @@ namespace QMC.LCP_280.Process.Unit
                         var ps = new PropertyState(no.ToString(), nameCell, cur);
 
                         pcOut.Add(ps);
-                        _ioOutputs.Add(new _IoRef
+                        _ioOutputs.Add(new IoRef
                         {
                             Module = map.Item1,
                             Disp = map.Item2,
@@ -422,12 +417,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                foreach (var io in _ioInputs)
+                foreach (var item in _ioInputs)
                 {
-                    if (io.Module == module &&
-                        string.Equals(io.Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    if (item.IsSameIO(module, disp))
                     {
-                        io.Prop.State = value;
+                        item.Prop.State = value;
                         inputView.SetStateByKey(disp, value);
                         break;
                     }

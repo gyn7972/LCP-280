@@ -2,6 +2,7 @@
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.Common.UI;
 using QMC.LCP_280.Process.Component; // Added for TeachingPosition
@@ -27,15 +28,10 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        private struct _IoRef
-        {
-            public string Module;
-            public string Disp;
-            public PropertyState Prop;
-        }
+        
 
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
         private Timer _axisPosTimer; // reserved
         private Timer _ioTimer;      // reserved
@@ -757,7 +753,7 @@ namespace QMC.LCP_280.Process.Unit
                         string nameCell = item.Disp + " " + item.Name;
                         var ps = new PropertyState(item.No.ToString(), nameCell, cur);
                         pcIn.Add(ps);
-                        _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                        _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
                     }
                     inputView.SetProperties(pcIn);
                 }
@@ -777,7 +773,7 @@ namespace QMC.LCP_280.Process.Unit
                         string nameCell = item.Disp + " " + item.Name;
                         var ps = new PropertyState(item.No.ToString(), nameCell, cur);
                         pcOut.Add(ps);
-                        _ioOutputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                        _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
                     }
                     outputView.SetProperties(pcOut);
                 }
@@ -801,10 +797,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 for (int i = 0; i < _ioInputs.Count; i++)
                 {
-                    var entry = _ioInputs[i];
-                    if (entry.Module == module && string.Equals(entry.Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    var item = _ioInputs[i];
+                    if (item.Module == module && item.IsSameIO(module, disp))
                     {
-                        entry.Prop.State = value;
+                        item.Prop.State = value;
                         inputView.SetStateByKey(disp, value);
                         break;
                     }
