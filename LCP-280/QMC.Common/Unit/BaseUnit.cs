@@ -332,7 +332,7 @@ namespace QMC.Common.Unit
             return null;
         }
 
-        private static IDictionary<string, double> GetAxisPositions(object tp)
+        protected static IDictionary<string, double> GetAxisPositions(object tp)
         {
             if (tp == null) return null;
             var pi = tp.GetType().GetProperty("AxisPositions");

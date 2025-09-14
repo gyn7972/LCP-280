@@ -466,12 +466,22 @@ namespace QMC.LCP_280.Process.Unit
 
         public int MoveToScanEndPosition(bool isFine = false)
         {
+
+            int selIndex = (int)InputCassetteLifterConfig.TeachingPositionName.MappingEnd;
+            var list = ResolveTeachingPositionObjectList();
+            var tp = list[selIndex];
+            var axisPos = GetAxisPositions(tp);
+            
             return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingEnd, isFine);
         }
 
         public Task<int> MoveToScanEndPositionAsync()
         {
-            return Task.Run(() => { MoveToScanEndPosition(); return 0; });
+            return Task.Run(() => 
+            { 
+                MoveToScanEndPosition(); 
+                return 0; 
+            });
         }
         public int MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos, bool isCouseSpeed)
         {
