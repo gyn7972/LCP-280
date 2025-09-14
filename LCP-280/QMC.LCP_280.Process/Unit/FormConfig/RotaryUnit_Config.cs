@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process.Component;
 using System;
@@ -25,9 +26,9 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        private struct _IoRef { public string Module; public string Disp; public PropertyState Prop; }
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
         public RotaryUnit_Config()
         {
@@ -280,14 +281,14 @@ namespace QMC.LCP_280.Process.Unit
                 if (hardInputs.Count > 0)
                 {
                     var pcIn = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false }; pcIn.Add(new TitleOnlyProperty("No", "Name", "State"));
-                    foreach (var it in hardInputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveIn(disp); bool cur = false; if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur); var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcIn.Add(ps); _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
+                    foreach (var it in hardInputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveIn(disp); bool cur = false; if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur); var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcIn.Add(ps); _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
                     inputView.SetProperties(pcIn);
                 }
                 else inputView.SetProperties(new PropertyCollection());
                 if (hardOutputs.Count > 0)
                 {
                     var pcOut = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false }; pcOut.Add(new TitleOnlyProperty("No", "Name", "State"));
-                    foreach (var it in hardOutputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveOut(disp); bool cur = false; var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcOut.Add(ps); _ioOutputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
+                    foreach (var it in hardOutputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveOut(disp); bool cur = false; var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcOut.Add(ps); _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
                     outputView.SetProperties(pcOut);
                 }
                 else outputView.SetProperties(new PropertyCollection());
@@ -297,7 +298,23 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         private void OnDioInputChanged(string module, string disp, bool value)
-        { try { foreach (var r in _ioInputs) if (r.Module == module && string.Equals(r.Disp, disp, StringComparison.OrdinalIgnoreCase)) { r.Prop.State = value; inputView.SetStateByKey(disp, value); break; } } catch { } }
+        { 
+            try 
+            {
+                foreach (var item in _ioInputs)
+                {
+                    if (item.IsSameIO(module, disp))
+                    {
+                        item.Prop.State = value;
+                        inputView.SetStateByKey(disp, value);
+                        break;
+                    }
+                }
+            } 
+            catch 
+            { 
+            }
+        }
 
         private static string NormalizeXYKey(string raw)
         { if (string.IsNullOrWhiteSpace(raw)) return raw; raw = raw.Trim().ToUpperInvariant(); var m = Regex.Match(raw, @"^(X|Y)0*(\d+)$"); if (m.Success) { var letter = m.Groups[1].Value; var digits = m.Groups[2].Value; if (string.IsNullOrEmpty(digits)) digits = "0"; return letter + digits; } return raw; }

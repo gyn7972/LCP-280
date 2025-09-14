@@ -2,6 +2,7 @@
 using QMC.Common.CustomControl;
 using QMC.Common.DIO; // 추가
 using QMC.Common.IO;  // DIOUnit, DIOModuleSetup
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Component;
@@ -38,10 +39,10 @@ namespace QMC.LCP_280.Process.Unit
         private Timer _axisPosTimer;
 
         // === Digital IO 표시용 내부 구조 추가 (기존 코드 유지) ===
-        private struct _IoRef { public string Module; public string Disp; public PropertyState Prop; }
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
+        
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
         // 출력 사용 안함
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
         // 타이머 제거 (실시간 스캔 이벤트 사용)
         private Timer _ioTimer; // 남겨두되 사용 안함
 
@@ -596,7 +597,7 @@ namespace QMC.LCP_280.Process.Unit
                         string nameCell = $"{item.Disp} {item.Name}";
                         var ps = new PropertyState(item.No.ToString(), nameCell, cur);
                         pcIn.Add(ps);
-                        _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                        _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
                     }
                     inputView.SetProperties(pcIn);
                 }
@@ -616,7 +617,7 @@ namespace QMC.LCP_280.Process.Unit
                         string nameCell = $"{item.Disp} {item.Name}";
                         var ps = new PropertyState(item.No.ToString(), nameCell, cur);
                         pcOut.Add(ps);
-                        _ioOutputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                        _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
                     }
                     outputView.SetProperties(pcOut);
                 }
@@ -641,7 +642,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 for (int i = 0; i < _ioInputs.Count; i++)
                 {
-                    if (_ioInputs[i].Module == module && string.Equals(_ioInputs[i].Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    var item = _ioInputs[i];
+                    if (item.IsSameIO(module, disp))
                     {
                         _ioInputs[i].Prop.State = value; // 모델 업데이트
                         // 색상 갱신

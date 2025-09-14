@@ -1,6 +1,7 @@
 ﻿using QMC.Common;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process.Component;
 using System;
@@ -25,13 +26,7 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        private struct IoRef
-        {
-            public string Module;
-            public string Disp;
-            public PropertyState Prop;
-        }
-
+        
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
@@ -451,7 +446,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 foreach (var item in _ioInputs)
                 {
-                    if (item.Module == module && string.Equals(item.Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    if (item.IsSameIO(module,disp))
                     {
                         item.Prop.State = value;
                         inputView.SetStateByKey(disp, value);

@@ -1,8 +1,9 @@
 ﻿using QMC.Common;
-using QMC.Common.Motions;
-using QMC.LCP_280.Process.Component;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
+using QMC.Common.Motions;
+using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,15 +22,9 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        private struct _IoRef
-        {
-            public string Module;
-            public string Disp;
-            public PropertyState Prop;
-        }
-
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
         public OutputRingTransferUnit_Config()
         {
@@ -413,7 +408,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 var ps = new PropertyState(no.ToString(), disp + " " + name, state);
                 pc.Add(ps);
-                _ioInputs.Add(new _IoRef { Module = moduleName, Disp = display, Prop = ps });
+                _ioInputs.Add(new IoRef { Module = moduleName, Disp = display, Prop = ps });
             }
 
             inputView.SetProperties(pc);
@@ -447,7 +442,7 @@ namespace QMC.LCP_280.Process.Unit
                 bool state = false; // 필요 시 실제 출력 상태 조회
                 var ps = new PropertyState(no.ToString(), disp + " " + name, state);
                 pc.Add(ps);
-                _ioOutputs.Add(new _IoRef { Module = moduleName, Disp = display, Prop = ps });
+                _ioOutputs.Add(new IoRef { Module = moduleName, Disp = display, Prop = ps });
             }
 
             outputView.SetProperties(pc);
@@ -505,7 +500,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 for (int i = 0; i < _ioInputs.Count; i++)
                 {
-                    if (_ioInputs[i].Module == module && string.Equals(_ioInputs[i].Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    var item = _ioInputs[i];
+                    if (item.IsSameIO(module, disp))
                     {
                         _ioInputs[i].Prop.State = value;
                         inputView.SetStateByKey(disp, value);
