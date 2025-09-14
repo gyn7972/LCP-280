@@ -32,17 +32,17 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
         {
-            { TeachingPositionName.Pickup_Index1, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index2, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index3, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index4, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index5, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index6, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index7, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index8, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
+            { TeachingPositionName.Pickup_Index1, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index2, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index3, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index4, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index5, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index6, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index7, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index8, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
             { TeachingPositionName.Place,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
-            { TeachingPositionName.Ready,         new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.SafetyZone,      new [] { AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Ready,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.SafetyZone,      new [] { AxisNames.RightPickZ, AxisNames.RightPlaceZ } },
         };
 
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

@@ -340,6 +340,11 @@ namespace QMC.LCP_280.Process.Unit
             HomeProgressForm dlg = null;
             try
             {
+                // 홈 진행 전 사용자 확인
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("확인", "축 홈을 진행하시겠습니까?") != DialogResult.Yes)
+                    return;
+
                 _homeCts?.Cancel();
                 _homeCts?.Dispose();
                 _homeCts = new CancellationTokenSource();
@@ -358,12 +363,42 @@ namespace QMC.LCP_280.Process.Unit
                 var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(Equipment);
                 dlg = new HomeProgressForm();
                 dlg.InitializeProgress("Machine Home", seq.TotalSteps);
-                seq.OnProgress(p => dlg.SafeUpdate(p));
-                dlg.CancelRequested += () => { try { _homeCts.Cancel(); } catch { } };
-                dlg.ForceStopRequested += () => { try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
+
+                seq.OnProgress(p =>
+                {
+                    dlg.SafeUpdate(p);
+                });
+
+                dlg.CancelRequested += () =>
+                {
+                    try
+                    {
+                        _homeCts.Cancel();
+                    }
+                    catch
+                    {
+                        // 예외 무시
+                    }
+                };
+
+                dlg.ForceStopRequested += () =>
+                {
+                    try
+                    {
+                        Equipment.AxisManager?.EmgStopAll();
+                    }
+                    catch
+                    {
+                        // 예외 무시
+                    }
+                };
+
                 var runTask = seq.RunAsync(token);
+
                 dlg.Show(this);
+
                 dlg.BringToFront();
+
                 while (!runTask.IsCompleted)
                 {
                     Application.DoEvents();
@@ -377,7 +412,34 @@ namespace QMC.LCP_280.Process.Unit
                 string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
                 if (fail > 0 || notStarted > 0)
                 {
-                    var detail = string.Join("\r\n", results.Select(r => $"- {r.AxisName}: {(r.Success ? "OK" : r.Started ? (r.Error?.Message ?? $"rc={r.ReturnCode}") : $"NOT STARTED ({r.FailReason})")}"));
+                    var detailList = new List<string>();
+                    foreach (var r in results)
+                    {
+                        string status;
+                        if (r.Success)
+                        {
+                            status = "OK";
+                        }
+                        else if (r.Started)
+                        {
+                            if (r.Error != null && r.Error.Message != null)
+                            {
+                                status = r.Error.Message;
+                            }
+                            else
+                            {
+                                status = "rc=" + r.ReturnCode;
+                            }
+                        }
+                        else
+                        {
+                            status = "NOT STARTED (" + r.FailReason + ")";
+                        }
+
+                        detailList.Add("- " + r.AxisName + ": " + status);
+                    }
+                    var detail = string.Join("\r\n", detailList);
+
                     msg += "\r\n\r\n" + detail;
                 }
                 MessageBox.Show(msg, "Home");
@@ -401,7 +463,18 @@ namespace QMC.LCP_280.Process.Unit
             HomeProgressForm dlg = null;
             try
             {
-                if (_axis == null) { MessageBox.Show("축 선택 필요"); return; }
+                if (_axis == null) 
+                { 
+                    MessageBox.Show("축 선택 필요"); 
+                    return; 
+                }
+
+                // 홈 진행 전 사용자 확인 (축 이름 포함)
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("확인", $"[{_axis.Name}] 축을 홈 진행할까요?") != DialogResult.Yes)
+                    return;
+
+
                 EnsureAxisHomeInterlocks(_axis);
                 string reason;
                 if (!InterlockManager.Instance.ValidateAxisForHome(_axis, out reason))
