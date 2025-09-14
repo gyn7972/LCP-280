@@ -1,13 +1,14 @@
-﻿using System;
+﻿using QMC.Common;
+using QMC.Common.Unit;
+using QMC.LCP_280.Process;
+using QMC.LCP_280.Process.Unit;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Unit;
-using QMC.LCP_280.Process.Unit;
 
 namespace QMC.LCP_280.Process.Component
 {
@@ -281,17 +282,21 @@ namespace QMC.LCP_280.Process.Component
         }
 
         /// <summary>
-        /// Unit 해제
+        /// Unit 해제 - 내부 Equipment 인스턴스에 위임.
+        /// (컨트롤에서 Equipment 내부 상태 컬렉션 직접 접근하지 않음)
         /// </summary>
-        public void UnregisterUnit(string unitKey, bool autoReload = true)
+        public bool UnregisterUnit(string unitName)
         {
-            if (string.IsNullOrWhiteSpace(unitKey)) return;
-            _tpProviders.Remove(unitKey);
-            _moveExecutors.Remove(unitKey);
-            _saveExecutors.Remove(unitKey);
-            _unitRefs.Remove(unitKey);
-            if (autoReload)
-                ReloadTeachingPositions();
+            if (string.IsNullOrWhiteSpace(unitName)) return false;
+            try
+            {
+                return Equipment.UnregisterUnit(unitName);
+            }
+            catch (Exception ex)
+            {
+                try { Log.Write("TeachingPositionControl", "UnregisterUnit", ex.Message); } catch { }
+                return false;
+            }
         }
 
         /// <summary>
