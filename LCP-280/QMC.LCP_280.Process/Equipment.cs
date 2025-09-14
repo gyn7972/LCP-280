@@ -1137,9 +1137,9 @@ namespace QMC.LCP_280.Process
             if (!File.Exists(setupPath)) setup.TrySave(setupPath, out _);
             MotionAxisConfig config = File.Exists(configPath) ? MotionAxisConfig.LoadOrCreate(configPath, indented: true, backfill: true) : new MotionAxisConfig
             {
-                MaxVelocity = 200,
-                RunAcc = 800,
-                RunDec = 800,
+                MaxVelocity = 10,
+                RunAcc = 20,
+                RunDec = 20,
                 InposTolerance = 0.002,
                 ProfileMode = ProfileMode.SCurve,
                 AccJerkPercent = 50,
