@@ -495,13 +495,27 @@ namespace QMC.LCP_280.Process.Unit
         {
             return GetTP(pos.ToString(), axis);
         }
-        public int MoveToScanEndPosition(bool isFine = false)
+        public int MoveTeachingPositionOnce(int selIndex, bool isFine = false)
+        {
+            Task<int> task = MoveToScanEndPositionAsync();
+            while(!IsEndTask(task))
+            {
+                if(IsInterlockOK(selIndex) == false)
+                {   
+                    return -1;
+                    
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public int OnMoveToScanEndPosition(bool isFine = false)
         {   
             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingEnd,this.WaferLifterZ.Name);
             int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
             if (ret == 0)
             {
-                while (!this.WaferLifterZ.InPosition(axisPos))
+                while (this.WaferLifterZ.IsMoveDone())
                 {
                     Thread.Sleep(0);
                 }
@@ -513,10 +527,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             return Task.Run(() => 
             { 
-                MoveToScanEndPosition(); 
+                OnMoveToScanEndPosition(); 
                 return 0; 
             });
         }
+
         public int MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos, bool isCouseSpeed)
         {
             return MoveToTeachingPosition(pos.ToString());
