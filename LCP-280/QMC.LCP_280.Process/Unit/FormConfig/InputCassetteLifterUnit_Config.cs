@@ -57,7 +57,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     _InputCassetteLifter = unit as InputCassetteLifter;
-                    _cfg = _InputCassetteLifter?.InputCassetteLifterConfig;
+                    _cfg = _InputCassetteLifter?.Config;
                 }
 
                 if (_InputCassetteLifter == null)
@@ -177,7 +177,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             var lifter = unit as InputCassetteLifter;
-            var config = lifter?.InputCassetteLifterConfig;
+            var config = lifter?.Config;
 
             if (config?.TeachingPositions == null)
             {
@@ -242,7 +242,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 int selIndex = GetSelectedTeachingIndex();
 
-                if (selIndex < 0 || selIndex >= lifter.InputCassetteLifterConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= lifter.Config.TeachingPositions.Count)
                 {
                     MessageBox.Show(
                         "선택된 Teaching Position이 없습니다.",
@@ -253,7 +253,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var tp = lifter.InputCassetteLifterConfig.TeachingPositions[selIndex];
+                var tp = lifter.Config.TeachingPositions[selIndex];
                 bool isFine = GetSelectedMoveModeIsFine();
 
                 double defaultFineVel = 5.0;
@@ -473,7 +473,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.AxisPositions = newAxisPositions;
                 target.ExtraInfo = newExtra;
 
-                lifter.InputCassetteLifterConfig.SetTeachingPosition(
+                lifter.Config.SetTeachingPosition(
                     new TeachingPosition(
                         target.Name,
                         new Dictionary<string, double>(target.AxisPositions),
@@ -484,10 +484,10 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 );
 
-                lifter.InputCassetteLifterConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                lifter.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
                 lifter.TeachingPositions.Clear();
 
-                foreach (var tp in lifter.InputCassetteLifterConfig.TeachingPositions)
+                foreach (var tp in lifter.Config.TeachingPositions)
                 {
                     lifter.TeachingPositions.Add(tp);
                 }
@@ -691,9 +691,9 @@ namespace QMC.LCP_280.Process.Unit
                 HardInputDef[] hardInputs;
                 HardOutputDef[] hardOutputs;
 
-                if (eq?.Units != null && eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputCassetteLifter lifter && lifter.InputCassetteLifterConfig != null)
+                if (eq?.Units != null && eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputCassetteLifter lifter && lifter.Config != null)
                 {
-                    var cfg = lifter.InputCassetteLifterConfig;
+                    var cfg = lifter.Config;
                     var cfgType = cfg.GetType();
                     var piIn = cfgType.GetProperty("HardInputs");
                     var piOut = cfgType.GetProperty("HardOutputs");

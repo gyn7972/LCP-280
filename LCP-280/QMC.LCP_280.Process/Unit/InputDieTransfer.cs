@@ -52,9 +52,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in Config.TeachingPositions)
-                TeachingPositions.Add(tp);
+            
             BindAxes();
             // (Arm IO 는 단순 DO/DI 이름 관리이므로, 별도 Cylinder/Vacuum Domain 매핑은 선택)
             BindIoDomains();

@@ -121,10 +121,7 @@ namespace QMC.LCP_280.Process.Unit
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
 
-            TeachingPositions.Clear();
-            foreach (var tp in Config.TeachingPositions)
-                TeachingPositions.Add(tp);
-
+            
             BindAxes();
             BindIoDomains();
             BindCamera();
@@ -1181,7 +1178,27 @@ namespace QMC.LCP_280.Process.Unit
         // === Unloading 상태 플래그 ===
         public bool StageUnloadingReady { get; private set; }
         public bool StageUnloadingDone { get; private set; }
-        
+        public bool IsCompleteWorking 
+        {
+            get
+            {
+                MaterialWafer mat = GetWaferMaterial();
+                if(mat==null)
+                { 
+                    return false;
+                }
+                if(mat.Presence == Material.MaterialPresence.Exist)
+                {
+                    return mat.ProcessSatate == Material.MaterialProcessSatate.Completed;
+                }
+                return false;
+                
+
+            }
+            internal set
+            {
+            } 
+        }
 
         private bool IsExternalUnloadInterlockOk()
         {

@@ -80,9 +80,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in Config.TeachingPositions)
-                TeachingPositions.Add(tp);
+            
             BindAxes();
             BindIoDomains();
         }
@@ -265,9 +263,13 @@ namespace QMC.LCP_280.Process.Unit
         protected override  int OnRunReady()
         {
             int ret = 0;
-            if(this.InputStage.IsRequestWafer && this.InputCassetteLifter.IsWaferReadyForUnloding)
+            if (this.InputStage.IsRequestWafer && this.InputCassetteLifter.IsWaferReadyForUnloding)
             {
                 this.State = ProcessState.Work;
+            }
+            else if (this.InputStage.IsCompleteWorking)
+            {
+                this.State = ProcessState.Complete;
             }
             return ret;
         }
@@ -417,6 +419,26 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToReay(bool isFine)
         {
             int nRet = 0;
+            Task<int> task = MoveToReayAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                if (IsInterlockOKWaferLoading() == false)
+                {
+                    foreach (var ax in Axes.Values)
+                    {
+                        ax.EmgStop();
+                    }
+                    AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                    return -1;
+                }
+                System.Threading.Thread.Sleep(1);
+            }
+            return nRet;
+        }
+
+        public int OnMoveToReay(bool isFine)
+        {
+            int nRet = 0;
             if (IsInterlockOKWaferLoading() == false)
             {
                 AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
@@ -433,9 +455,11 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
+      
+
         public Task<int> MoveToReayAsync(bool isFine)
         {
-            return Task.Run(() => MoveToReay(isFine));
+            return Task.Run(() => OnMoveToReay(isFine));
         }
 
         public int MoveToCassette(bool isFine)
