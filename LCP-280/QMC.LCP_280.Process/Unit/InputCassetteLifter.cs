@@ -427,7 +427,11 @@ namespace QMC.LCP_280.Process.Unit
                     int slot = (int)((dPos - GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ)) / InputCassetteLifterConfig.SlotPitch);
                     if (slot >= 0 && slot < material.Slots.Count)
                     {
-                        MaterialWafer wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
+                        MaterialWafer wafer = material.Slots[slot];
+                        if (wafer == null || wafer.Presence == Material.MaterialPresence.NotExist)
+                        {
+                            wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
+                        }
                         wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
                         wafer.SlotIndex = slot;
                         material.SetWafer(slot, wafer);
@@ -463,16 +467,22 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             });
         }
-
-        public int MoveToScanEndPosition(bool isFine = false)
+        public double GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName pos, string axis)
         {
-
-            int selIndex = (int)InputCassetteLifterConfig.TeachingPositionName.MappingEnd;
-            var list = ResolveTeachingPositionObjectList();
-            var tp = list[selIndex];
-            var axisPos = GetAxisPositions(tp);
-            
-            return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingEnd, isFine);
+            return GetTP(pos.ToString(), axis);
+        }
+        public int MoveToScanEndPosition(bool isFine = false)
+        {   
+            var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingEnd,this.WaferLifterZ.Name);
+            int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
+            if (ret == 0)
+            {
+                while (!this.WaferLifterZ.InPosition(axisPos))
+                {
+                    Thread.Sleep(0);
+                }
+            }
+            return ret;
         }
 
         public Task<int> MoveToScanEndPositionAsync()
