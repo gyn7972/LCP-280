@@ -118,7 +118,7 @@
     <Compile Include="Component\ProcessDataManual.Designer.cs">
       <DependentUpon>ProcessDataManual.cs</DependentUpon>
     </Compile>
-    <Compile Include="Component\ProcessData\CassetteMaterial.cs" />
+    <Compile Include="Component\ProcessData\MaterialCassette.cs" />
     <Compile Include="Component\ProcessData\ChipData.cs" />
     <Compile Include="Component\ProcessData\WaferDataConfig.cs" />
     <Compile Include="Component\ProcessData\WaferManager.cs" />
@@ -247,8 +247,8 @@
     <Compile Include="Unit\FormWork\ChipLoading_Working.Designer.cs">
       <DependentUpon>ChipLoading_Working.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\InputRingTransferConfig.cs" />
-    <Compile Include="Unit\InputRingTransfer.cs" />
+    <Compile Include="Unit\InputFeederConfig.cs" />
+    <Compile Include="Unit\InputFeeder.cs" />
     <Compile Include="Unit\InputCassetteLifterConfig.cs" />
     <Compile Include="Unit\InputCassetteLifter.cs" />
     <Compile Include="Unit\FormSetup\Cylinder_Setup.cs">

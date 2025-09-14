@@ -310,7 +310,7 @@ namespace QMC.LCP_280.Process
             }
 
             TryAdd(new InputCassetteLifter(), "InputCassetteLifter");
-            TryAdd(new InputRingTransfer(), "InputRingTransfer");
+            TryAdd(new InputFeeder(), "InputRingTransfer");
             TryAdd(new InputStage(), "InputStage");
             TryAdd(new InputStageEjector(), "InputStageEjector");
             TryAdd(new InputDieTransfer(), "InputDieTransfer");

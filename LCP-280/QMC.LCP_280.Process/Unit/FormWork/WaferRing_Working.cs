@@ -17,7 +17,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private const string WORK_NAME = "WaferRing";
         private Equipment Equipment => Equipment.Instance;
 
-        private InputRingTransfer InputRingTransferUnit { get; set; }
+        private InputFeeder InputRingTransferUnit { get; set; }
         private InputCassetteLifter InputCassetteLifterUnit { get; set; }
 
         private bool _initialized;
@@ -25,12 +25,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private bool _deferredInitDone; // 지연 초기화 완료 여부
 
         public WaferRing_Working() : this(
-            TryGetUnit<InputRingTransfer>("InputRingTransfer"),
+            TryGetUnit<InputFeeder>("InputRingTransfer"),
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"))
         {
         }
 
-        public WaferRing_Working(InputRingTransfer ringTransfer, InputCassetteLifter cassetteLifter)
+        public WaferRing_Working(InputFeeder ringTransfer, InputCassetteLifter cassetteLifter)
         {
             InitializeComponent();
             InputRingTransferUnit = ringTransfer;
@@ -112,9 +112,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "InputRingTransfer",
                         InputRingTransferUnit,
-                        () => InputRingTransferUnit.InputRingTransferConfig?.TeachingPositions,
+                        () => InputRingTransferUnit.InputFeederConfig?.TeachingPositions,
                         (name, vel) => InputRingTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputRingTransferUnit.InputRingTransferConfig?.SetTeachingPosition(tp),
+                        tp => InputRingTransferUnit.InputFeederConfig?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 

@@ -24,8 +24,8 @@ namespace QMC.LCP_280.Process.Unit
         private const string _UNIT_NAME = "InputRingTransfer";
 
         private Equipment _Equipment => Equipment.Instance;
-        private InputRingTransfer _InputRingTransfer;
-        private InputRingTransferConfig _cfg;
+        private InputFeeder _InputRingTransfer;
+        private InputFeederConfig _cfg;
 
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
@@ -60,8 +60,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _InputRingTransfer = unit as InputRingTransfer;
-                    _cfg = _InputRingTransfer?.InputRingTransferConfig;
+                    _InputRingTransfer = unit as InputFeeder;
+                    _cfg = _InputRingTransfer?.InputFeederConfig;
                 }
 
                 if (_InputRingTransfer == null)
@@ -183,12 +183,12 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPosition(int selectedIndex)
         {
-            if (_InputRingTransfer?.InputRingTransferConfig?.TeachingPositions == null)
+            if (_InputRingTransfer?.InputFeederConfig?.TeachingPositions == null)
             {
                 return;
             }
 
-            var list = _InputRingTransfer.InputRingTransferConfig.TeachingPositions;
+            var list = _InputRingTransfer.InputFeederConfig.TeachingPositions;
             if (selectedIndex < 0 || selectedIndex >= list.Count)
             {
                 return;
@@ -289,9 +289,9 @@ namespace QMC.LCP_280.Process.Unit
                 Array hardInputsArr = Array.CreateInstance(typeof(object), 0);
                 Array hardOutputsArr = Array.CreateInstance(typeof(object), 0);
 
-                if (_InputRingTransfer?.InputRingTransferConfig != null)
+                if (_InputRingTransfer?.InputFeederConfig != null)
                 {
-                    var cfg = _InputRingTransfer.InputRingTransferConfig;
+                    var cfg = _InputRingTransfer.InputFeederConfig;
                     var cfgType = cfg.GetType();
 
                     var piIn = cfgType.GetProperty("HardInputs");
@@ -487,7 +487,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= _InputRingTransfer.InputRingTransferConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _InputRingTransfer.InputFeederConfig.TeachingPositions.Count)
                 {
                     MessageBox.Show(
                         "선택된 Teaching Position이 없습니다.",
@@ -497,7 +497,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var tp = _InputRingTransfer.InputRingTransferConfig.TeachingPositions[selIndex];
+                var tp = _InputRingTransfer.InputFeederConfig.TeachingPositions[selIndex];
                 bool isFine = IsFineSelected();
 
                 double defaultFineVel = 5.0;
@@ -755,7 +755,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.ExtraInfo = newExtra;
 
                 _InputRingTransfer
-                    .InputRingTransferConfig
+                    .InputFeederConfig
                     .SetTeachingPosition(
                         new TeachingPosition(
                             target.Name,
@@ -766,11 +766,11 @@ namespace QMC.LCP_280.Process.Unit
                         });
 
                 _InputRingTransfer
-                    .InputRingTransferConfig
+                    .InputFeederConfig
                     .LoadAndBindAxes(Equipment.Instance.AxisManager);
 
                 _InputRingTransfer.TeachingPositions.Clear();
-                foreach (var tp in _InputRingTransfer.InputRingTransferConfig.TeachingPositions)
+                foreach (var tp in _InputRingTransfer.InputFeederConfig.TeachingPositions)
                 {
                     _InputRingTransfer.TeachingPositions.Add(tp);
                 }

@@ -6,7 +6,7 @@ using System.Linq;
 namespace QMC.LCP_280.Process.Component
 {
     [Serializable]
-    public sealed class CassetteMaterial : QMC.Common.Material
+    public sealed class MaterialCassette : QMC.Common.Material
     {
         
         [DefaultValue("")] public string CarrierId { get; set; } = "";
@@ -14,7 +14,7 @@ namespace QMC.LCP_280.Process.Component
 
         public List<MaterialWafer> Slots { get; set; } = new List<MaterialWafer>();
 
-        public CassetteMaterial()
+        public MaterialCassette()
         {
             Slots = Enumerable.Repeat<MaterialWafer>(null, SlotCount).ToList();
             //for (int i = 0; i < SlotCount; i++)

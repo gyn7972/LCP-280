@@ -15,7 +15,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Hard Input / Output 테이블 제공
     ///  - (추가) TeachingPosition 별 허용 축 필터링 기능 적용
     /// </summary>
-    public class InputRingTransferConfig : BaseConfig
+    public class InputFeederConfig : BaseConfig
     {
         /// <summary>
         /// 장치 IO 명칭 상수
@@ -85,7 +85,7 @@ namespace QMC.LCP_280.Process.Unit
         };
         #endregion
 
-        public InputRingTransferConfig() : base("InputRingTransferConfig") { }
+        public InputFeederConfig() : base("InputRingTransferConfig") { }
 
         /// <summary>
         /// enum 에 정의된 TeachingPositionName 목록을 기준으로 기본 포지션을 채움 (허용 축 매핑 사용)
