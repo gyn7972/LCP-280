@@ -91,6 +91,28 @@ namespace QMC.LCP_280.Process.Unit
                 tp.AxisPositions[AxisNames.WaferLifterZ] = value;
             }
         }
+
+        public int SlotCount
+        {
+            get
+            {
+                var tp = GetTeachingPosition(TeachingPositionName.SlotCount.ToString());
+                if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(AxisNames.WaferLifterZ, out var v))
+                    return (int)v;
+                return 0;
+            }
+            set
+            {
+                var tp = GetTeachingPosition(TeachingPositionName.SlotCount.ToString());
+                if (tp == null)
+                {
+                    tp = new TeachingPosition(TeachingPositionName.SlotCount.ToString(), new Dictionary<string, double>(), "Slot Count");
+                    TeachingPositions.Add(tp);
+                }
+                if (tp.AxisPositions == null) tp.AxisPositions = new Dictionary<string, double>();
+                tp.AxisPositions[AxisNames.WaferLifterZ] = value;
+            }
+        }
         #endregion
 
         public InputCassetteLifterConfig() : base("InputCassetteLifterConfig") { }
