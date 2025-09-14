@@ -1470,5 +1470,26 @@ namespace QMC.Common.Motions
         {
             try { if (_simMoveCts != null) { _simMoveCts.Cancel(); _simMoveCts.Dispose(); _simMoveCts = null; } } catch { }
         }
+
+        public bool IsMoveDone()
+        {
+            if(IsSim)
+            {
+                lock(_simLock)
+                {
+                    return !_simIsMoving;
+                }
+            }
+            else if(_driver != null)
+            {
+                return _driver.ReadDone(AxisNo);
+            }
+            else if(_ckdDriver != null)
+            {
+                // CKD는 별도 ReadDone 대신 RunWait 상태가 안전 대기 상태로 간주
+                return _ckdDriver.IsRunWait();
+            }
+            return false;
+        }
     }
 }
