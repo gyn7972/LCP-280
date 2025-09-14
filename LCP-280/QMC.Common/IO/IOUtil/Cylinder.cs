@@ -13,6 +13,15 @@ namespace QMC.Common.IOUtil
 
         public CylinderConfig _config { get; set; }
 
+        public new CylinderConfig Config
+        {
+            get => _config;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                _config = value;
+            }
+        }
         // 키 직접 접근 프로퍼티 (리플렉션 제거 목적)
         public string FwdOutKey => _fwdOutKey;
         public string BwdOutKey => _bwdOutKey;
@@ -37,16 +46,25 @@ namespace QMC.Common.IOUtil
             int timeout = (timeoutMs != 0) ? timeoutMs : _config.ExtendTimeout;
             int settle = (settleMs != 0) ? settleMs : _config.SettleDelay;
 
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeout)
+            if(this.Config.IsSimulation)
             {
-                bool value = IsExtended();
-                if (value)
-                {
-                    return value;
-                }
-                Thread.Sleep(settle);
+                Thread.Sleep(200);
+                return true;
             }
+            else
+            {
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeout)
+                {
+                    bool value = IsExtended();
+                    if (value)
+                    {
+                        return value;
+                    }
+                    Thread.Sleep(settle);
+                }
+            }
+                
             return false;
         }
 
@@ -102,15 +120,23 @@ namespace QMC.Common.IOUtil
             int timeout = (timeoutMs != 0) ? timeoutMs : _config.RetractTimeout;
             int settle = (settleMs != 0) ? settleMs : _config.SettleDelay;
 
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeout)
+            if (this.Config.IsSimulation)
             {
-                bool value = IsRetacted();
-                if (!value)
+                Thread.Sleep(200);
+                return true;
+            }
+            else
+            {
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeout)
                 {
-                    return value;
+                    bool value = IsRetacted();
+                    if (!value)
+                    {
+                        return value;
+                    }
+                    Thread.Sleep(settle);
                 }
-                Thread.Sleep(settle);
             }
             return false;
 

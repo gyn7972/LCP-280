@@ -302,9 +302,10 @@ namespace QMC.Common.Unit
 
             return alarm;
         }
-        private int OnPrepareToMainProcedure()
+        protected virtual int OnPrepareToMainProcedure()
         {
-            throw new NotImplementedException();
+            
+            return 0;
         }
 
         #region Generic TeachingPosition Move Helpers (Reflection Based)

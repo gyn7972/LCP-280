@@ -516,18 +516,19 @@ namespace QMC.LCP_280.Process
                     : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
 
                 // Unit 시작
-                unit.OnRun();
+                unit.Start();
+                //unit.OnRun();
 
-                // Unit 실행 Task 생성 및 시작
-                execInfo.ExecutionTask = Task.Run(async () =>
-                    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
-                    execInfo.CancellationTokenSource.Token);
+                //// Unit 실행 Task 생성 및 시작
+                //execInfo.ExecutionTask = Task.Run(async () =>
+                //    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
+                //    execInfo.CancellationTokenSource.Token);
 
-                execInfo.IsRunning = true;
-                execInfo.StartTime = DateTime.Now;
+                //execInfo.IsRunning = true;
+                //execInfo.StartTime = DateTime.Now;
 
-                OnUnitStateChanged(unitName, UnitState.Running);
-                Console.WriteLine($"Unit '{unitName}' 시작됨");
+                //OnUnitStateChanged(unitName, UnitState.Running);
+                //Console.WriteLine($"Unit '{unitName}' 시작됨");
                 return true;
             }
             catch (Exception ex)
@@ -705,6 +706,12 @@ namespace QMC.LCP_280.Process
         /// <param name="unitName">정지할 Unit 이름</param>
         public async Task<bool> StopUnitAsync(string unitName)
         {
+            if (!Units.TryGetValue(unitName, out var unit))
+            {
+                OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
+                return false;
+            }
+
             if (IsProtectedUnit(unitName))
             {
                 Console.WriteLine("EquipmentStatus 는 정지 대상에서 제외 (요청 무시).");
@@ -719,36 +726,7 @@ namespace QMC.LCP_280.Process
 
             try
             {
-                if (!execInfo.IsRunning)
-                {
-                    Console.WriteLine($"Unit '{unitName}'는 이미 정지되어 있습니다.");
-                    return true;
-                }
-
-                OnUnitStateChanged(unitName, UnitState.Stopping);
-
-                // Unit 정지 요청
-                execInfo.CancellationTokenSource?.Cancel();
-
-                // 즉시 실행 상태를 false로 변경 (UI 업데이트용)
-                execInfo.IsRunning = false;
-                execInfo.StopTime = DateTime.Now;
-
-                // Task 완료 대기 (최대 5초)
-                if (execInfo.ExecutionTask != null)
-                {
-                    var timeoutTask = Task.Delay(5000);
-                    var completedTask = await Task.WhenAny(execInfo.ExecutionTask, timeoutTask);
-
-                    if (completedTask == timeoutTask)
-                    {
-                        OnErrorOccurred($"Unit '{unitName}' 정지 타임아웃");
-                        OnUnitStateChanged(unitName, UnitState.Error);
-                        return false;
-                    }
-                }
-
-                OnUnitStateChanged(unitName, UnitState.Stopped);
+                unit.Stop();
                 Console.WriteLine($"Unit '{unitName}' 정지 완료");
                 return true;
             }

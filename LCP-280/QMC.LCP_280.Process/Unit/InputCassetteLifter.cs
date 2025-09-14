@@ -189,6 +189,7 @@ namespace QMC.LCP_280.Process.Unit
                     ret = OnRunComplete();
                     break;
                 default:
+                    this.State = ProcessState.Ready;
                     break;
             }
 
