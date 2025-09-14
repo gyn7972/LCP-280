@@ -113,26 +113,67 @@ namespace QMC.Common.Motions
 
         public async Task<IReadOnlyList<HomeAxisResult>> RunAsync(CancellationToken token = default(CancellationToken))
         {
-            Aborted = false; AbortReason = null; AbortStepIndex = null;
+            Aborted = false;
+            AbortReason = null;
+            AbortStepIndex = null;
+
             var all = new List<HomeAxisResult>();
+
             for (int stepIndex = 0; stepIndex < _steps.Count; stepIndex++)
             {
                 var step = _steps[stepIndex];
-                if (step == null || step.Count == 0) continue;
-                if (token.IsCancellationRequested) { Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex; break; }
+                if (step == null || step.Count == 0)
+                {
+                    continue;
+                }
 
-                RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = stepIndex, TotalSteps = _steps.Count, StepAxisCount = step.Count, StepName = string.Join(", ", step.Select(a => a.Name)) });
+                if (token.IsCancellationRequested)
+                {
+                    Aborted = true;
+                    AbortReason = "Canceled";
+                    AbortStepIndex = stepIndex;
+                    break;
+                }
+
+                var progress = new OperationProgress();
+                progress.OperationId = "HOME";
+                progress.Title = "Home";
+                progress.StepIndex = stepIndex;
+                progress.TotalSteps = _steps.Count;
+                progress.StepAxisCount = step.Count;
+                progress.StepName = string.Join(", ", step.Select(a => a.Name));
+                RaiseProgress(progress);
 
                 if (PreStepInterlockAsync != null)
                 {
                     var tuple = await PreStepInterlockAsync(stepIndex, step, token).ConfigureAwait(false);
                     if (!tuple.Ok)
                     {
-                        foreach (var ax in step) TryStop(ax);
+                        foreach (var ax in step)
+                        {
+                            TryStop(ax);
+                        }
                         for (int i = 0; i < step.Count; i++)
+                        {
                             all.Add(HomeAxisResult.NotStarted(step[i], tuple.Reason));
-                        Aborted = true; AbortReason = $"Step {stepIndex} PreStep failed: {tuple.Reason}"; AbortStepIndex = stepIndex;
-                        RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = stepIndex, TotalSteps = _steps.Count, StepAxisCount = step.Count, StepFailCount = step.Count, StepName = string.Join(", ", step.Select(a => a.Name)), IsStepCompleted = true, IsAborted = true, Message = tuple.Reason });
+                        }
+                        Aborted = true;
+                        AbortReason = $"Step {stepIndex} PreStep failed: {tuple.Reason}";
+                        AbortStepIndex = stepIndex;
+
+                        var failProgress = new OperationProgress();
+                        failProgress.OperationId = "HOME";
+                        failProgress.Title = "Home";
+                        failProgress.StepIndex = stepIndex;
+                        failProgress.TotalSteps = _steps.Count;
+                        failProgress.StepAxisCount = step.Count;
+                        failProgress.StepFailCount = step.Count;
+                        failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                        failProgress.IsStepCompleted = true;
+                        failProgress.IsAborted = true;
+                        failProgress.Message = tuple.Reason;
+                        RaiseProgress(failProgress);
+
                         break;
                     }
                 }
@@ -145,11 +186,17 @@ namespace QMC.Common.Motions
                     if (PreAxisInterlockAsync != null)
                     {
                         var pre = await PreAxisInterlockAsync(stepIndex, axis, token).ConfigureAwait(false);
-                        if (!pre.Ok) { blockedReasons[axis] = pre.Reason ?? "PreAxisInterlock blocked"; continue; }
+                        if (!pre.Ok)
+                        {
+                            blockedReasons[axis] = pre.Reason ?? "PreAxisInterlock blocked";
+                            continue;
+                        }
                     }
-                    if (!axis.CheckHomeInterlocks(out var reason))
+                    string reason;
+                    bool interlockOk = axis.CheckHomeInterlocks(out reason);
+                    if (!interlockOk)
                     {
-                        blockedReasons[axis] = reason ?? "CheckHomeInterlocks blocked"; 
+                        blockedReasons[axis] = reason ?? "CheckHomeInterlocks blocked";
                     }
                     else
                     {
@@ -159,66 +206,200 @@ namespace QMC.Common.Motions
 
                 if (blockedReasons.Count > 0)
                 {
-                    foreach (var ax in step) TryStop(ax);
                     foreach (var ax in step)
                     {
-                        string r; if (!blockedReasons.TryGetValue(ax, out r)) r = "Blocked by other axis interlock";
+                        TryStop(ax);
+                    }
+                    foreach (var ax in step)
+                    {
+                        string r;
+                        bool found = blockedReasons.TryGetValue(ax, out r);
+                        if (!found)
+                        {
+                            r = "Blocked by other axis interlock";
+                        }
                         all.Add(HomeAxisResult.NotStarted(ax, r));
                     }
-                    Aborted = true; AbortReason = $"Step {stepIndex} blocked by axis interlock"; AbortStepIndex = stepIndex;
-                    RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = stepIndex, TotalSteps = _steps.Count, StepAxisCount = step.Count, StepFailCount = step.Count, StepName = string.Join(", ", step.Select(a => a.Name)), IsStepCompleted = true, IsAborted = true, Message = AbortReason });
+                    Aborted = true;
+                    AbortReason = $"Step {stepIndex} blocked by axis interlock";
+                    AbortStepIndex = stepIndex;
+
+                    var failProgress = new OperationProgress();
+                    failProgress.OperationId = "HOME";
+                    failProgress.Title = "Home";
+                    failProgress.StepIndex = stepIndex;
+                    failProgress.TotalSteps = _steps.Count;
+                    failProgress.StepAxisCount = step.Count;
+                    failProgress.StepFailCount = step.Count;
+                    failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                    failProgress.IsStepCompleted = true;
+                    failProgress.IsAborted = true;
+                    failProgress.Message = AbortReason;
+                    RaiseProgress(failProgress);
+
                     break;
                 }
 
                 if (runnable.Count == 0)
                 {
-                    foreach (var ax in step) TryStop(ax);
-                    Aborted = true; AbortReason = $"Step {stepIndex} has no runnable axes"; AbortStepIndex = stepIndex;
-                    RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = stepIndex, TotalSteps = _steps.Count, StepAxisCount = step.Count, StepFailCount = step.Count, StepName = string.Join(", ", step.Select(a => a.Name)), IsStepCompleted = true, IsAborted = true, Message = AbortReason });
+                    foreach (var ax in step)
+                    {
+                        TryStop(ax);
+                    }
+                    Aborted = true;
+                    AbortReason = $"Step {stepIndex} has no runnable axes";
+                    AbortStepIndex = stepIndex;
+
+                    var failProgress = new OperationProgress();
+                    failProgress.OperationId = "HOME";
+                    failProgress.Title = "Home";
+                    failProgress.StepIndex = stepIndex;
+                    failProgress.TotalSteps = _steps.Count;
+                    failProgress.StepAxisCount = step.Count;
+                    failProgress.StepFailCount = step.Count;
+                    failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                    failProgress.IsStepCompleted = true;
+                    failProgress.IsAborted = true;
+                    failProgress.Message = AbortReason;
+                    RaiseProgress(failProgress);
+
                     break;
                 }
 
                 var tasks = new List<Task<HomeAxisResult>>(runnable.Count);
-                foreach (var axis in runnable) tasks.Add(HomeOneAsync(axis, token));
+                foreach (var axis in runnable)
+                {
+                    var t = HomeOneAsync(axis, token);
+                    tasks.Add(t);
+                }
 
                 try
                 {
                     var pending = new List<Task<HomeAxisResult>>(tasks);
-                    bool earlyFail = false; string earlyFailReason = null;
+                    bool earlyFail = false;
+                    string earlyFailReason = null;
                     while (pending.Count > 0)
                     {
                         var finished = await Task.WhenAny(pending).ConfigureAwait(false);
                         pending.Remove(finished);
                         var res = await finished.ConfigureAwait(false);
-                        if (!res.Success) { earlyFail = true; earlyFailReason = res.FailReason ?? ("ReturnCode=" + res.ReturnCode); break; }
+                        if (!res.Success)
+                        {
+                            earlyFail = true;
+                            earlyFailReason = res.FailReason ?? ("ReturnCode=" + res.ReturnCode);
+                            break;
+                        }
                     }
                     if (earlyFail)
                     {
-                        foreach (var ax in step) TryStop(ax);
+                        foreach (var ax in step)
+                        {
+                            TryStop(ax);
+                        }
                         var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                        all.AddRange(results);
-                        Aborted = true; AbortReason = $"Step {stepIndex} failed early: {earlyFailReason}"; AbortStepIndex = stepIndex;
-                        RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = stepIndex, TotalSteps = _steps.Count, StepAxisCount = step.Count, StepFailCount = results.Count(r => !r.Success), StepName = string.Join(", ", step.Select(a => a.Name)), IsStepCompleted = true, IsAborted = true, Message = AbortReason });
-                        if (PostStepAsync != null) { try { await PostStepAsync(stepIndex, results, token).ConfigureAwait(false); } catch { } }
+                        foreach (var r in results)
+                        {
+                            all.Add(r);
+                        }
+                        Aborted = true;
+                        AbortReason = $"Step {stepIndex} failed early: {earlyFailReason}";
+                        AbortStepIndex = stepIndex;
+
+                        var failProgress = new OperationProgress();
+                        failProgress.OperationId = "HOME";
+                        failProgress.Title = "Home";
+                        failProgress.StepIndex = stepIndex;
+                        failProgress.TotalSteps = _steps.Count;
+                        failProgress.StepAxisCount = step.Count;
+                        failProgress.StepFailCount = results.Count(r => !r.Success);
+                        failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                        failProgress.IsStepCompleted = true;
+                        failProgress.IsAborted = true;
+                        failProgress.Message = AbortReason;
+                        RaiseProgress(failProgress);
+
+                        if (PostStepAsync != null)
+                        {
+                            try
+                            {
+                                await PostStepAsync(stepIndex, results, token).ConfigureAwait(false);
+                            }
+                            catch
+                            {
+                                // 예외 무시
+                            }
+                        }
                         break;
                     }
                     else
                     {
                         var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                        all.AddRange(results);
-                        RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = stepIndex, TotalSteps = _steps.Count, StepAxisCount = step.Count, StepFailCount = results.Count(r => !r.Success), StepName = string.Join(", ", step.Select(a => a.Name)), IsStepCompleted = true });
-                        if (PostStepAsync != null) { try { await PostStepAsync(stepIndex, results, token).ConfigureAwait(false); } catch { } }
+                        foreach (var r in results)
+                        {
+                            all.Add(r);
+                        }
+                        var doneProgress = new OperationProgress();
+                        doneProgress.OperationId = "HOME";
+                        doneProgress.Title = "Home";
+                        doneProgress.StepIndex = stepIndex;
+                        doneProgress.TotalSteps = _steps.Count;
+                        doneProgress.StepAxisCount = step.Count;
+                        doneProgress.StepFailCount = results.Count(r => !r.Success);
+                        doneProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                        doneProgress.IsStepCompleted = true;
+                        RaiseProgress(doneProgress);
+
+                        if (PostStepAsync != null)
+                        {
+                            try
+                            {
+                                await PostStepAsync(stepIndex, results, token).ConfigureAwait(false);
+                            }
+                            catch
+                            {
+                                // 예외 무시
+                            }
+                        }
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    foreach (var ax in step) TryStop(ax);
-                    Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
-                    RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = stepIndex, TotalSteps = _steps.Count, StepAxisCount = step.Count, StepFailCount = step.Count, StepName = string.Join(", ", step.Select(a => a.Name)), IsStepCompleted = true, IsCanceled = true, Message = "Canceled" });
+                    foreach (var ax in step)
+                    {
+                        TryStop(ax);
+                    }
+                    Aborted = true;
+                    AbortReason = "Canceled";
+                    AbortStepIndex = stepIndex;
+
+                    var cancelProgress = new OperationProgress();
+                    cancelProgress.OperationId = "HOME";
+                    cancelProgress.Title = "Home";
+                    cancelProgress.StepIndex = stepIndex;
+                    cancelProgress.TotalSteps = _steps.Count;
+                    cancelProgress.StepAxisCount = step.Count;
+                    cancelProgress.StepFailCount = step.Count;
+                    cancelProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                    cancelProgress.IsStepCompleted = true;
+                    cancelProgress.IsCanceled = true;
+                    cancelProgress.Message = "Canceled";
+                    RaiseProgress(cancelProgress);
+
                     break;
                 }
             }
-            RaiseProgress(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = _steps.Count - 1, TotalSteps = _steps.Count, IsCompleted = true, IsCanceled = Aborted && AbortReason == "Canceled", IsAborted = Aborted, Message = AbortReason });
+
+            var finalProgress = new OperationProgress();
+            finalProgress.OperationId = "HOME";
+            finalProgress.Title = "Home";
+            finalProgress.StepIndex = _steps.Count - 1;
+            finalProgress.TotalSteps = _steps.Count;
+            finalProgress.IsCompleted = true;
+            finalProgress.IsCanceled = Aborted && AbortReason == "Canceled";
+            finalProgress.IsAborted = Aborted;
+            finalProgress.Message = AbortReason;
+            RaiseProgress(finalProgress);
+
             return all;
         }
 

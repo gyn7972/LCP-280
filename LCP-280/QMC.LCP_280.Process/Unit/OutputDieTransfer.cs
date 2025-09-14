@@ -81,7 +81,8 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return false;
             foreach (var kv in tp.AxisPositions)
             {
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) 
+                    return false;
             }
             return true;
         }
