@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class ChipLoader_Working
+    partial class ChipLoading_Working
     {
         private IContainer components = null;
 
@@ -244,7 +244,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btnWaferUnloading.UseVisualStyleBackColor = false;
             this.btnWaferUnloading.Click += new System.EventHandler(this.btnWaferUnloading_Click);
             // 
-            // ChipLoader_Working
+            // ChipLoading_Working
             // 
             this.ClientSize = new System.Drawing.Size(1264, 751);
             this.Controls.Add(this.groupBoxManual);
@@ -254,8 +254,8 @@ namespace QMC.LCP_280.Process.Unit
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
-            this.Name = "ChipLoader_Working";
-            this.Text = "ChipLoader Working";
+            this.Name = "ChipLoading_Working";
+            this.Text = "ChipLoading Working";
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.groupBoxImageView.ResumeLayout(false);
             this.groupBoxManual.ResumeLayout(false);

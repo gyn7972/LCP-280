@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace QMC.LCP_280.Process.Work
 {
-    internal class ChipUnloder
+    internal class ChipUnloading
     {
     }
 }

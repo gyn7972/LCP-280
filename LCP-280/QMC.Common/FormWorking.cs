@@ -12,10 +12,10 @@ namespace QMC.Common
         private Dictionary<TabPage, Form> _tabFormInstances;
 
         // Theme fields
-        private int _tabHeight = 28;
+        private int _tabHeight = 32;
         private Color _tabBorderColor = Color.Black;
         private int _tabBorderWidth = 2;
-        private Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
+        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Regular);
 
         // 호스트에서 유효 크기를 한 번이라도 전달받았는지
         private bool _hostSized;
@@ -115,26 +115,88 @@ namespace QMC.Common
                 Console.WriteLine("🔍 Formworking.LoadFormsFromManager() 시작");
 
                 var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
-                Console.WriteLine($"   등록된 working 폼 개수: {workingForms.Count}");
 
-                foreach (var formInfo in workingForms)
+                var desiredOrder = new[]
                 {
-                    Console.WriteLine($"   working 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
-                    CreateTabFromFormInfo(formInfo);
+                    "InputWafer",
+                    "ChipLoading",
+                    "Process",
+                    "ChipUnloading",
+                    "OutputWafer"
+                };
+
+                // 정규화 함수 (앞뒤 공백 제거 + null 보호)
+                string Normalize(string s) => (s ?? string.Empty).Trim();
+
+                // 원본 목록 진단 로그
+                Console.WriteLine("   ▶ 등록된 폼(DisplayName 원본): " +
+                    string.Join(", ", workingForms.Select(f => $"[{f.DisplayName}]")));
+
+                // DisplayName 정규화된 Lookup (동일 이름 여러 개일 수도 있으므로)
+                var lookup = workingForms
+                    .GroupBy(f => Normalize(f.DisplayName), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+                var ordered = new List<FormInfo>();
+                var used = new HashSet<FormInfo>();
+
+                // 1) 원하는 순서대로 추가
+                foreach (var rawName in desiredOrder)
+                {
+                    var key = Normalize(rawName);
+                    if (lookup.TryGetValue(key, out var list) && list.Count > 0)
+                    {
+                        // 동일 DisplayName 여러 개면 모두 순서대로(필요 시 첫 것만 사용하려면 list[0] 만 추가)
+                        foreach (var fi in list)
+                        {
+                            if (used.Add(fi))
+                            {
+                                ordered.Add(fi);
+                                Console.WriteLine($"   ✅ 순서 반영: {fi.DisplayName}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"   ⚠️ 미존재: {rawName}");
+                    }
                 }
 
-                if (workingForms.Count == 0)
+                // 2) desiredOrder 에 없었던 나머지 (원래 등록 순서 보존)
+                foreach (var fi in workingForms)
+                {
+                    if (!used.Contains(fi))
+                    {
+                        ordered.Add(fi);
+                        used.Add(fi);
+                        Console.WriteLine($"   ➕ 잔여 추가: {fi.DisplayName}");
+                    }
+                }
+
+                // 3) 탭 생성 (기존 탭 초기화가 이미 이 함수 호출 전에 되었는지 확인)
+                foreach (var fi in ordered)
+                    CreateTabFromFormInfo(fi);
+
+                if (ordered.Count == 0)
                 {
                     Console.WriteLine("⚠️ 등록된 working 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
 
-                Console.WriteLine($"✅ 최종 탭 개수: {workingTabControl.TabPages.Count}");
-                Console.WriteLine($"   workingTabControl.Visible: {workingTabControl.Visible}");
-                Console.WriteLine($"   workingTabControl.Size: {workingTabControl.Size}");
-                Console.WriteLine($"   workingTabControl.Dock: {workingTabControl.Dock}");
-                Console.WriteLine($"   Formworking.Visible: {this.Visible}");
-                Console.WriteLine($"   Formworking.Size: {this.Size}");
+                // 최종 진단
+                Console.WriteLine("   ▶ 최종 탭 순서: " +
+                    string.Join(" > ", ordered.Select(f => f.DisplayName)));
+
+                // desiredOrder 대비 실제 매칭 안된 이름 추출
+                var missing = desiredOrder
+                    .Where(d => !ordered.Any(o =>
+                        string.Equals(Normalize(o.DisplayName), Normalize(d), StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+
+                if (missing.Count > 0)
+                {
+                    Console.WriteLine("   ❗ desiredOrder 미매칭 목록: " + string.Join(", ", missing));
+                }
             }
             catch (Exception ex)
             {
@@ -142,6 +204,57 @@ namespace QMC.Common
                 MessageBox.Show($"working 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 CreateSampleTabs();
             }
+
+            //try
+            //{
+            //    Console.WriteLine("🔍 Formworking.LoadFormsFromManager() 시작");
+
+            //    var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
+            //    //Console.WriteLine($"   등록된 working 폼 개수: {workingForms.Count}");
+
+            //    var desiredOrder = new[]
+            //    {
+            //        "InputWafer",
+            //        "ChipLoading",
+            //        "Process",
+            //        "ChipUnloading",
+            //        "OutputWafer"
+            //    };
+
+            //    var indexMap = desiredOrder
+            //        .Select((name, idx) => new { name, idx })
+            //        .ToDictionary(x => x.name, x => x.idx);
+
+            //    workingForms = workingForms
+            //        .OrderBy(f => indexMap.ContainsKey(f.DisplayName) ? indexMap[f.DisplayName] : int.MaxValue)
+            //        .ThenBy(f => f.DisplayName)
+            //        .ToList();
+
+            //    foreach (var formInfo in workingForms)
+            //        CreateTabFromFormInfo(formInfo);
+
+            //    if (workingForms.Count == 0)
+            //        CreateSampleTabs();
+
+            //    // 기존 코드 백업
+            //    //var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
+            //    //foreach (var formInfo in workingForms)
+            //    //{
+            //    //    Console.WriteLine($"   working 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
+            //    //    CreateTabFromFormInfo(formInfo);
+            //    //}
+            //    //if (workingForms.Count == 0)
+            //    //{
+            //    //    Console.WriteLine("⚠️ 등록된 working 폼이 없어서 기본 샘플 탭 생성");
+            //    //    CreateSampleTabs();
+            //    //}
+            //}
+            //catch (Exception ex)
+            //{
+            //    Console.WriteLine($"❌ working 폼 로드 중 오류: {ex.Message}");
+            //    MessageBox.Show($"working 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //    CreateSampleTabs();
+            //}
         }
 
         private void CreateTabFromFormInfo(FormInfo formInfo)

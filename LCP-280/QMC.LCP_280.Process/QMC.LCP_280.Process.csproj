@@ -395,8 +395,8 @@
     <Compile Include="Component\ProcessData\WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Work\ChipLoader.cs" />
-    <Compile Include="Work\ChipUnloder.cs" />
+    <Compile Include="Work\ChipLoading.cs" />
+    <Compile Include="Work\ChipUnloading.cs" />
     <Compile Include="Work\Process.cs" />
     <Compile Include="Work\InputWafer.cs" />
     <Compile Include="Work\WaferBin.cs" />

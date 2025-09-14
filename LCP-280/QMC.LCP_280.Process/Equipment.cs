@@ -193,6 +193,18 @@ namespace QMC.LCP_280.Process
         // PKG Tester
         public PKGTester Tester { get; private set; }
 
+        // [ADD] 생성여부 노출 (ProcessExit 등에서 강제 생성 방지)
+        public static bool IsCreated => _instance != null;
+        public static bool TryGet(out Equipment inst) 
+        { 
+            inst = _instance; 
+            return inst != null; 
+        }
+        // [ADD] MotionStatusScanner 보관 (정상 Stop 위해)
+        private MotionStatusScanner _motionStatusScanner;
+        // [ADD] Dispose 재진입 방지
+        private bool _disposed;
+
         #endregion
 
         #region Constructor & Initialization
@@ -469,7 +481,8 @@ namespace QMC.LCP_280.Process
                 else
                 {
                     // [MOD] 실패 시에도 EquipmentStatus 는 유지 (StopAllUnitsAsync 호출 시 보호)
-                    await StopAllUnitsAsync(includeEquipmentStatus: false);
+                    //await StopAllUnitsAsync(includeEquipmentStatus: false);
+                    await StopAllUnitsAsync(includeEquipmentStatus: false).ConfigureAwait(false);
                     OnStateChanged(EquipmentState.Error);
                     OnErrorOccurred("설비 시작 중 일부 Unit 실패");
                     return false;
@@ -510,33 +523,18 @@ namespace QMC.LCP_280.Process
 
                 OnUnitStateChanged(unitName, UnitState.Starting);
 
-                // Equipment 취소 토큰이 없으면 생성
                 if (_equipmentCancellationTokenSource == null)
                     _equipmentCancellationTokenSource = new CancellationTokenSource();
 
-                // [MOD] 보호 유닛은 글로벌 토큰과 링크하지 않음
                 execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
                     ? new CancellationTokenSource()
                     : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
 
-                // Unit 시작
                 (unitObj as BaseUnit)?.Start();
-                //unit.OnRun();
 
                 execInfo.IsRunning = true;
                 execInfo.StartTime = DateTime.Now;
                 OnUnitStateChanged(unitName, UnitState.Running);
-
-                //// Unit 실행 Task 생성 및 시작
-                //execInfo.ExecutionTask = Task.Run(async () =>
-                //    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
-                //    execInfo.CancellationTokenSource.Token);
-
-                //execInfo.IsRunning = true;
-                //execInfo.StartTime = DateTime.Now;
-
-                //OnUnitStateChanged(unitName, UnitState.Running);
-                //Console.WriteLine($"Unit '{unitName}' 시작됨");
                 return true;
             }
             catch (Exception ex)
@@ -546,6 +544,65 @@ namespace QMC.LCP_280.Process
                 return false;
             }
         }
+        //public async Task<bool> StartUnitAsync(string unitName)
+        //{
+        //    if (!Units.TryGetValue(unitName, out var unitObj))
+        //    {
+        //        OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
+        //        return false;
+        //    }
+        //    if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
+        //    {
+        //        OnErrorOccurred($"Unit '{unitName}' 실행 정보를 찾을 수 없습니다.");
+        //        return false;
+        //    }
+
+        //    try
+        //    {
+        //        if (execInfo.IsRunning)
+        //        {
+        //            Console.WriteLine($"Unit '{unitName}'는 이미 실행 중입니다.");
+        //            return true;
+        //        }
+
+        //        OnUnitStateChanged(unitName, UnitState.Starting);
+
+        //        // Equipment 취소 토큰이 없으면 생성
+        //        if (_equipmentCancellationTokenSource == null)
+        //            _equipmentCancellationTokenSource = new CancellationTokenSource();
+
+        //        // [MOD] 보호 유닛은 글로벌 토큰과 링크하지 않음
+        //        execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
+        //            ? new CancellationTokenSource()
+        //            : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
+
+        //        // Unit 시작
+        //        (unitObj as BaseUnit)?.Start();
+        //        //unit.OnRun();
+
+        //        execInfo.IsRunning = true;
+        //        execInfo.StartTime = DateTime.Now;
+        //        OnUnitStateChanged(unitName, UnitState.Running);
+
+        //        //// Unit 실행 Task 생성 및 시작
+        //        //execInfo.ExecutionTask = Task.Run(async () =>
+        //        //    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
+        //        //    execInfo.CancellationTokenSource.Token);
+
+        //        //execInfo.IsRunning = true;
+        //        //execInfo.StartTime = DateTime.Now;
+
+        //        //OnUnitStateChanged(unitName, UnitState.Running);
+        //        //Console.WriteLine($"Unit '{unitName}' 시작됨");
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnUnitStateChanged(unitName, UnitState.Error);
+        //        OnErrorOccurred($"Unit '{unitName}' 시작 중 오류: {ex.Message}");
+        //        return false;
+        //    }
+        //}
 
         /// <summary>
         /// Unit 실행 루프
@@ -643,17 +700,16 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true)
         {
-            if (State == EquipmentState.Stopped)
-            {
-                Console.WriteLine("설비가 이미 정지되어 있습니다.");
-                return true;
-            }
+            //if (State == EquipmentState.Stopped)
+            //{
+            //    Console.WriteLine("설비가 이미 정지되어 있습니다.");
+            //    return true;
+            //}
 
             try
             {
                 OnStateChanged(EquipmentState.Stopping);
 
-                // 전체 시퀀스 취소 토큰 취소
                 _equipmentCancellationTokenSource?.Cancel();
 
                 var stopTasks = new List<Task<bool>>();
@@ -663,34 +719,23 @@ namespace QMC.LCP_280.Process
                     var unitName = kvp.Key;
                     var execInfo = kvp.Value;
 
-                    // 보호 유닛 처리
-                    if (IsProtectedUnit(unitName))
-                    {
-                        if (!includeEquipmentStatus)
-                        {
-                            continue; // 유지
-                        }
-                    }
+                    if (IsProtectedUnit(unitName) && !includeEquipmentStatus)
+                        continue;
 
                     if (execInfo.IsRunning)
                     {
                         OnUnitStateChanged(unitName, UnitState.Stopping);
-
                         execInfo.CancellationTokenSource?.Cancel();
                         execInfo.IsRunning = false;
                         execInfo.StopTime = DateTime.Now;
 
                         if (execInfo.ExecutionTask != null)
-                        {
                             stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
-                        }
                     }
                 }
 
                 if (stopTasks.Count > 0)
-                {
-                    await Task.WhenAll(stopTasks);
-                }
+                    await Task.WhenAll(stopTasks).ConfigureAwait(false);
 
                 OnStateChanged(EquipmentState.Stopped);
                 Console.WriteLine("설비 전체 정지 완료");
@@ -703,6 +748,68 @@ namespace QMC.LCP_280.Process
                 return false;
             }
         }
+        //public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true)
+        //{
+        //    if (State == EquipmentState.Stopped)
+        //    {
+        //        Console.WriteLine("설비가 이미 정지되어 있습니다.");
+        //        return true;
+        //    }
+
+        //    try
+        //    {
+        //        OnStateChanged(EquipmentState.Stopping);
+
+        //        // 전체 시퀀스 취소 토큰 취소
+        //        _equipmentCancellationTokenSource?.Cancel();
+
+        //        var stopTasks = new List<Task<bool>>();
+
+        //        foreach (var kvp in _unitExecutions)
+        //        {
+        //            var unitName = kvp.Key;
+        //            var execInfo = kvp.Value;
+
+        //            // 보호 유닛 처리
+        //            if (IsProtectedUnit(unitName))
+        //            {
+        //                if (!includeEquipmentStatus)
+        //                {
+        //                    continue; // 유지
+        //                }
+        //            }
+
+        //            if (execInfo.IsRunning)
+        //            {
+        //                OnUnitStateChanged(unitName, UnitState.Stopping);
+
+        //                execInfo.CancellationTokenSource?.Cancel();
+        //                execInfo.IsRunning = false;
+        //                execInfo.StopTime = DateTime.Now;
+
+        //                if (execInfo.ExecutionTask != null)
+        //                {
+        //                    stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
+        //                }
+        //            }
+        //        }
+
+        //        if (stopTasks.Count > 0)
+        //        {
+        //            await Task.WhenAll(stopTasks);
+        //        }
+
+        //        OnStateChanged(EquipmentState.Stopped);
+        //        Console.WriteLine("설비 전체 정지 완료");
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnStateChanged(EquipmentState.Error);
+        //        OnErrorOccurred($"설비 정지 중 오류 발생: {ex.Message}");
+        //        return false;
+        //    }
+        //}
 
         // 기존 Equipment 구현(이미 public) + IDisposable
         //public async System.Threading.Tasks.Task<bool> StopAllUnitsAsync() => await StopAllUnitsAsync(); // 기존 메서드 연결
@@ -909,9 +1016,129 @@ namespace QMC.LCP_280.Process
             GC.SuppressFinalize(this);
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposing) return;
+            //if (!_disposed) return;
+            _disposed = true;
+
+            try
+            {
+                // 1) 일반 유닛 정지 (EquipmentStatus 제외)
+                try 
+                { 
+                    StopAllUnitsAsync(includeEquipmentStatus: true).GetAwaiter().GetResult(); 
+                } 
+                catch { }
+                // 2) 보호 유닛 강제 정지
+                ForceStopEquipmentStatus();
+
+                // MotionStatusScanner 중지
+                try { _motionStatusScanner?.Stop(); } catch { }
+                _motionStatusScanner = null;
+
+                // CKD Driver
+                try { _ckdDriver?.Dispose(); } catch { }
+                _ckdDriver = null;
+
+                // DIO Scan
+                try
+                {
+                    _dioScan?.Stop();
+                    _dioScan?.Dispose();
+                }
+                catch { }
+                _dioScan = null;
+
+                // DIO Driver
+                if (_dio is IDisposable dioDisp)
+                {
+                    try { dioDisp.Dispose(); } catch { }
+                }
+                _dio = null;
+
+                // Ajin Host
+                try { _axlHost?.Close(); } catch { }
+                _axlHost = null;
+
+                // Cameras
+                try
+                {
+                    foreach (var cam in Cameras.Values)
+                    {
+                        try { cam.StopLive(); cam.Close(); } catch { }
+                    }
+                }
+                catch { }
+                Cameras.Clear();
+
+                // Sourcemeters
+                try
+                {
+                    foreach (var sm in Sourcemeters.Values)
+                        try { (sm as IDisposable)?.Dispose(); } catch { }
+                }
+                catch { }
+                Sourcemeters.Clear();
+
+                // Spectrometers
+                try
+                {
+                    foreach (var spc in Spectrometers.Values)
+                        try { (spc as IDisposable)?.Dispose(); } catch { }
+                }
+                catch { }
+                Spectrometers.Clear();
+
+                // Units
+                try
+                {
+                    if (Units != null)
+                    {
+                        foreach (var u in Units.Values)
+                            if (u is IDisposable du) { try { du.Dispose(); } catch { } }
+                        Units.Clear();
+                    }
+                }
+                catch { }
+
+                // Cancellation
+                try
+                {
+                    _equipmentCancellationTokenSource?.Cancel();
+                    _equipmentCancellationTokenSource?.Dispose();
+                }
+                catch { }
+                _equipmentCancellationTokenSource = null;
+
+                // Execution infos
+                try
+                {
+                    if (_unitExecutions != null)
+                    {
+                        foreach (var exec in _unitExecutions.Values)
+                        {
+                            try { exec.CancellationTokenSource?.Cancel(); } catch { }
+                            try { exec.CancellationTokenSource?.Dispose(); } catch { }
+                            try { exec.ExecutionTask?.Dispose(); } catch { }
+                        }
+                        _unitExecutions.Clear();
+                    }
+                }
+                catch { }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
         // [MOD] 보호 유닛 강제 종료 전용
         private void ForceStopEquipmentStatus()
         {
+            if (_unitExecutions == null) 
+                return;
+
             if (_unitExecutions.TryGetValue(UnitKeys.EquipmentStatus, out var exec))
             {
                 try
@@ -926,60 +1153,6 @@ namespace QMC.LCP_280.Process
                     exec.CancellationTokenSource?.Dispose();
                     exec.CancellationTokenSource = null;
                 }
-            }
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposing) return;
-            try
-            {
-                // 1) 일반 유닛 정지 (EquipmentStatus 유지)
-                StopAllUnitsAsync(includeEquipmentStatus: false).GetAwaiter().GetResult();
-                // 2) 보호 유닛 강제 정지
-                ForceStopEquipmentStatus();
-
-                _ckdDriver?.Dispose();
-
-                _dioScan?.Stop();
-                _dioScan?.Dispose();
-                _dioScan = null;
-
-                if (_dio is IDisposable d) d.Dispose();
-                _dio = null;
-
-                _axlHost?.Close();
-                _axlHost = null;
-
-                foreach (var cam in Cameras.Values)
-                {
-                    try { cam.StopLive(); cam.Close(); } catch { }
-                }
-                Cameras.Clear();
-
-                foreach (var sm in Sourcemeters.Values)
-                    try { (sm as IDisposable)?.Dispose(); } catch { }
-
-                foreach (var spc in Spectrometers.Values)
-                    try { (spc as IDisposable)?.Dispose(); } catch { }
-
-                foreach (var unit in Units.Values)
-                    if (unit is IDisposable du) du.Dispose();
-                Units.Clear();
-
-                _equipmentCancellationTokenSource?.Dispose();
-                _equipmentCancellationTokenSource = null;
-
-                foreach (var exec in _unitExecutions.Values)
-                {
-                    exec.CancellationTokenSource?.Dispose();
-                    exec.ExecutionTask?.Dispose();
-                }
-                _unitExecutions.Clear();
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
             }
         }
 
@@ -1004,9 +1177,17 @@ namespace QMC.LCP_280.Process
             ClearAllMotionAlarmsOnStartup();
             ServoOnAllAxesOnStartup();
             ApplyMotionParamsForAllAxes();
-            var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
-            scanner.AxisStatusUpdated += (axis, status) => { };
-            scanner.Start();
+
+            // [MOD] 기존 지역 변수 scanner → 필드 보관
+            if (_motionStatusScanner == null)
+            {
+                _motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+                _motionStatusScanner.AxisStatusUpdated += (axis, status) => { /* 필요 시 이벤트 처리 */ };
+                _motionStatusScanner.Start();
+            }
+            //var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+            //scanner.AxisStatusUpdated += (axis, status) => { };
+            //scanner.Start();
         }
 
         private void ClearAllMotionAlarmsOnStartup()
