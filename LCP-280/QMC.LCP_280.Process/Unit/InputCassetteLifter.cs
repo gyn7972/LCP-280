@@ -27,14 +27,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             eWaferProtrusionDetected = 1001,
         }
-        public enum CassetteLifterState
-        {
-            None = 0,
-            Stop = 1,
-            Ready = 2,
-            Work = 3,
-            Complete = 4,
-        }
+       
         #region Config / Teaching
         public InputCassetteLifterConfig InputCassetteLifterConfig { get; private set; }
         public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
@@ -45,8 +38,8 @@ namespace QMC.LCP_280.Process.Unit
         private MotionAxis _waferLifterZ; // 단일 리프터 축 (Y 혹은 Z)
         public MotionAxis WaferLifterZ => _waferLifterZ;
 
-        public UnitRunStatus Status { get; private set; }
-        public CassetteLifterState State { get; private set; }
+        
+        
         public bool IsRequestReturnWafer { get; private set; }
         #endregion
         #region InitAlarm
@@ -180,19 +173,19 @@ namespace QMC.LCP_280.Process.Unit
 
             if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
             {
-                this.State = CassetteLifterState.Stop;
+                this.State = ProcessState.Stop;
                 return 1;
             }
 
             switch (State)
             {
-                case CassetteLifterState.Ready:
+                case ProcessState.Ready:
                     ret = OnRunReady();
                     break;
-                case CassetteLifterState.Work:
+                case ProcessState.Work:
                     ret = OnRunWork();
                     break;
-                case CassetteLifterState.Complete:
+                case ProcessState.Complete:
                     ret = OnRunComplete();
                     break;
                 default:
@@ -235,7 +228,7 @@ namespace QMC.LCP_280.Process.Unit
             CassetteMaterial material = GetCassetteMaterial();
             if (material.Presence == Material.MaterialPresence.NotExist)
             {
-                State = CassetteLifterState.Complete;
+                State = ProcessState.Complete;
                 return 0;
             }
             else if (material.Presence == Material.MaterialPresence.Exist)
@@ -368,7 +361,7 @@ namespace QMC.LCP_280.Process.Unit
             CassetteMaterial material = GetCassetteMaterial();
             if (material.Presence == Material.MaterialPresence.Exist)
             {
-                State = CassetteLifterState.Work;
+                State = ProcessState.Work;
                 if (material.ProcessSatate == CassetteMaterial.MaterialProcessSatate.Unknown)
                 {
                     ret = ScanWafer();
@@ -381,7 +374,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                State = CassetteLifterState.None;
+                State = ProcessState.None;
             }
             return 0;
         }

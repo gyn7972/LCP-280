@@ -20,6 +20,7 @@ using System.Linq;
 using System.Threading;
 using System.Windows;
 using static QMC.LCP_280.Process.Equipment;
+using static QMC.LCP_280.Process.Unit.InputCassetteLifter;
 using static System.Windows.Forms.AxHost;
 
 namespace QMC.LCP_280.Process.Unit
@@ -42,6 +43,7 @@ namespace QMC.LCP_280.Process.Unit
             public double StdDev;
             public double Representative;
         }
+
 
         #region Nested Teaching Collection (Enum Indexer)
         public class TeachingPositionCollection : List<TeachingPosition>
@@ -551,6 +553,28 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnRun()
         {
             int ret = 0;
+
+            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    ret = OnRunReady();
+                    break;
+                case ProcessState.Work:
+                    ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    ret = OnRunComplete();
+                    break;
+                default:
+                    break;
+            }
+
             return ret;
         }
         public override int OnStop()
@@ -1157,6 +1181,7 @@ namespace QMC.LCP_280.Process.Unit
         // === Unloading 상태 플래그 ===
         public bool StageUnloadingReady { get; private set; }
         public bool StageUnloadingDone { get; private set; }
+        
 
         private bool IsExternalUnloadInterlockOk()
         {

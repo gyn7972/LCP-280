@@ -36,6 +36,14 @@ namespace QMC.Common.Unit
             Auto,
         }
 
+        public enum ProcessState
+        {
+            None = 0,
+            Stop = 1,
+            Ready = 2,
+            Work = 3,
+            Complete = 4,
+        }
 
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
         private bool m_bExit;
@@ -50,6 +58,9 @@ namespace QMC.Common.Unit
         public bool IsAutoMode => RunMode == UnitRunMode.Auto;
         public bool IsManualMode => RunMode == UnitRunMode.Manual;
         public bool IsCycleStop => RunStatus == UnitRunStatus.CycleStop;
+
+        public UnitRunStatus Status { get; protected set; }
+        public ProcessState State { get; protected set; }
 
         // √‡ µÓ∑œ µÒº≈≥ ∏Æ
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
