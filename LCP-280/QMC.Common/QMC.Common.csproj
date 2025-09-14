@@ -399,6 +399,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="UI\ProgressForm.Designer.cs" />
+    <Compile Include="Unit\BaseUnit.IOExtensions.cs" />
     <Compile Include="VisionPart\MultiPatternMatchingVisionPart.cs" />
     <Compile Include="PatternMatching\PatternMatchingParamControl.cs">
       <SubType>UserControl</SubType>

@@ -23,7 +23,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading; // CancellationToken
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -642,7 +641,7 @@ namespace QMC.LCP_280.Process
                     if (!allStopped)
                     {
                         OnErrorOccurred("일부 Unit 정지에 실패했습니다.");
-                      }
+                    }
                 }
 
                 OnStateChanged(EquipmentState.Stopped);
@@ -657,9 +656,14 @@ namespace QMC.LCP_280.Process
             }
         }
 
-        // 기존 Equipment 구현(이미 public) + IDisposable
-        //public async System.Threading.Tasks.Task<bool> StopAllUnitsAsync() => await StopAllUnitsAsync(); // 기존 메서드 연결
-        // Dispose()는 기존 구현 사용
+        // IEquipment 확장: 강제(비정상) 정지 플래그를 받을 수 있는 오버로드.
+        // 현재 구현에서는 force 플래그를 별도 처리하지 않고 일반 정지와 동일하게 동작.
+        public Task<bool> StopAllUnitsAsync(bool force)
+        {
+            // 향후 force == true 일 때 즉시 Thread.Abort / Driver Emergency Stop 등
+            // 추가 로직을 넣을 수 있도록 확장 포인트로 유지.
+            return StopAllUnitsAsync();
+        }
 
         /// <summary>
         /// 개별 Unit 정지

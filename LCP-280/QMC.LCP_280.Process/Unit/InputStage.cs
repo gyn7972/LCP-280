@@ -714,6 +714,15 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq 단위 동작 함수
 
+        public MaterialWafer GetWaferMaterial()
+        {
+            var mat = GetMaterial();
+            return mat as MaterialWafer;
+        }
+
+        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
+        public bool IsRequestWafer { get; internal set; } = false;
+
         // 주석   
         /* TODO */
         //웨이퍼 있냐 없냐? 
@@ -830,21 +839,28 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
-        public bool IsRequestWafer { get; internal set; } = false;
+        // ====== Align Refactor: 상태/결과 보관 필드 ======
+        public bool TAlignPrepared { get; private set; }
+        public bool TAlignDone { get; private set; }
+        public double LastFoundTRawAngle { get; private set; }
+        public double LastAppliedTAngle { get; private set; }
+
+        public bool XYAlignPrepared { get; private set; }
+        public bool XYAlignDone { get; private set; }
+        public double LastFoundDx { get; private set; }
+        public double LastFoundDy { get; private set; }
+
+        private TeachingPosition _lastCenterAlignTp;
 
         /// <summary>
-        /// 공통: Center Teaching 이동, Grab 이미지까지 수행
+        /// 공통 Center 이동 + Grab (기존 함수 그대로 사용)
         /// </summary>
         private int PrepareForAlign(out TeachingPosition centerTp, out VisionImage img)
         {
             centerTp = null;
             img = null;
 
-            //외부 인터락. 
-
-
-            // === 내부 인터락 확인 ===
+            // 1) 인터락
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "Align", "Fail: Ring(Wafer) not present");
@@ -861,179 +877,245 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            // === Center Teaching Position 이동 ===
+            // 2) CenterPoint Teaching 확보
             centerTp = TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint];
             if (centerTp == null)
             {
                 Log.Write(UnitName, "Align", "Fail: CenterPoint teaching not defined");
                 return -1;
             }
-            if (MoveToTeachingPosition(centerTp) != 0)
+
+            // 3) 위치 이동 (이미 InPos 면 스킵)
+            if (!InPosTeaching(centerTp))
             {
-                Log.Write(UnitName, "Align", "Fail: Move center command");
-                return -1;
-            }
-            if (WaitUntilInPos(centerTp, MoveTimeoutMs) != 0)
-            {
-                Log.Write(UnitName, "Align", "Fail: Move center timeout");
-                return -1;
+                if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.CenterPoint, false) != 0 ||
+                    WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName.CenterPoint, MoveTimeoutMs) != 0)
+                {
+                    Log.Write(UnitName, "Align", "Fail: Move center (command/timeout)");
+                    return -1;
+                }
             }
 
-            // === 카메라 그랩 ===
+            // 4) 카메라 그랩
             if (StageCamera == null)
             {
                 Log.Write(UnitName, "Align", "Fail: Camera null");
                 return -1;
             }
-            var grabRc = StageCamera.GrabSync(out img);
+
+            int grabRc;
+            try
+            {
+                grabRc = StageCamera.GrabSync(out img);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "Align", "Exception: " + ex.Message);
+                return -1;
+            }
+
             if (grabRc != 0 || img == null || img.RawData == null)
             {
                 Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
+                img?.Dispose();
+                img = null;
                 return -1;
             }
+
             StageCamera.LatestImage = img;
             Log.Write(UnitName, "Align", "Grab OK");
+            return 0;
+        }
 
+        // ===================== T ALIGN 분리 =====================
+
+        /// <summary>
+        /// T 정렬 준비 + Vision 각도 리스트 획득/통계 산출
+        /// </summary>
+        public int AlignTPrepare()
+        {
+            TAlignPrepared = false;
+            TAlignDone = false;
+            LastFoundTRawAngle = 0;
+            LastAppliedTAngle = 0;
+            _lastCenterAlignTp = null;
+
+            Log.Write(UnitName, "T_Align", "Prepare Start");
+
+            if (PrepareForAlign(out var centerTp, out var _img) != 0)
+                return -1;
+
+            if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
+            {
+                Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
+                return -1;
+            }
+
+            var stats = ComputeAngleStats(angleList, excludeExtremes: true);
+            if (stats.RawCount == 0)
+            {
+                Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
+                return -1;
+            }
+
+            double rawAngle = stats.Representative;
+            LastFoundTRawAngle = rawAngle;
+            _lastCenterAlignTp = centerTp;
+
+            Log.Write(UnitName, "T_Align",
+                $"Angle Representative={rawAngle:F6} avg={stats.Average:F6} std={stats.StdDev:F6} rawCount={stats.RawCount}");
+
+            TAlignPrepared = true;
             return 0;
         }
 
         /// <summary>
-        /// T축 정렬
+        /// T 정렬 적용 (AlignTPrepare 먼저 호출)
         /// </summary>
-        public int AlignT()
+        public int AlignTApply()
         {
-            int nRet = -1;
-            try
+            if (!TAlignPrepared || _lastCenterAlignTp == null)
             {
-                Log.Write(UnitName, "T_Align", "Start");
-
-                // 공통 준비
-                if (PrepareForAlign(out var centerTp, out var img) != 0)
-                    return nRet;
-
-                // Vision Angle 검색
-                if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
-                {
-                    Log.Write(UnitName, "T_Align", "Fail: Vision angle search fail or empty");
-                    return nRet;
-                }
-
-                var stats = ComputeAngleStats(angleList, excludeExtremes: true);
-                if (stats.RawCount == 0)
-                {
-                    Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
-                    return nRet;
-                }
-
-                double rawAngle = stats.Representative;
-                Log.Write(UnitName, "T_Align",
-                    $"Angle Representative={rawAngle:F6} avg={stats.Average:F6} std={stats.StdDev:F6} rawCount={stats.RawCount}");
-
-                // 유효성 체크
-                if (Math.Abs(rawAngle) < AngleIgnoreThresholdDeg)
-                {
-                    Log.Write(UnitName, "T_Align", "Angle below ignore threshold → skip correction");
-                    return nRet;
-                }
-                if (Math.Abs(rawAngle) > AngleMaxApplyDeg)
-                {
-                    Log.Write(UnitName, "T_Align",
-                        $"Fail: Angle {rawAngle:F4} over max limit {AngleMaxApplyDeg}");
-                    return nRet;
-                }
-
-                double applyAngle = rawAngle * AngleApplyGain;
-
-                // 보정 적용
-                int correctionOk = UseOffsetForTAxisCorrection
-                    ? ApplyOffset(centerTp.Name, 0.0, 0.0, applyAngle)
-                    : MoveAxisOnce(AxisT, applyAngle);
-
-                Log.Write(UnitName, "T_Align",
-                    $"{(UseOffsetForTAxisCorrection ? "ApplyOffset" : "DirectMove")}(T) angle={applyAngle:F6} -> {(correctionOk == 0 ? "OK" : "FAIL")}");
-
-                if (correctionOk != 0)
-                    return nRet;
-
-                // 보정 후 재이동
-                if (MoveToTeachingPosition(centerTp) != 0)
-                    return nRet;
-                if (WaitUntil(() => InPosTeaching(centerTp), MoveTimeoutMs) != 0)
-                    return nRet;
+                Log.Write(UnitName, "T_Align", "Not prepared");
+                return -1;
             }
-            catch (Exception ex)
+
+            double rawAngle = LastFoundTRawAngle;
+
+            if (Math.Abs(rawAngle) < AngleIgnoreThresholdDeg)
             {
-                Log.Write(ex);
-                return nRet;
+                Log.Write(UnitName, "T_Align", $"Skip: |{rawAngle:F6}| < Ignore({AngleIgnoreThresholdDeg})");
+                TAlignDone = true;
+                return 0;
             }
-            nRet = 0;
-            return nRet;
+            if (Math.Abs(rawAngle) > AngleMaxApplyDeg)
+            {
+                Log.Write(UnitName, "T_Align",
+                    $"Fail: Angle {rawAngle:F4} > Limit {AngleMaxApplyDeg}");
+                return -1;
+            }
+
+            double applyAngle = rawAngle * AngleApplyGain;
+            LastAppliedTAngle = applyAngle;
+
+            int rc = UseOffsetForTAxisCorrection
+                ? ApplyOffset(_lastCenterAlignTp.Name, 0.0, 0.0, applyAngle)
+                : MoveAxisOnce(AxisT, applyAngle);
+
+            Log.Write(UnitName, "T_Align",
+                $"{(UseOffsetForTAxisCorrection ? "ApplyOffset" : "DirectMove")} angle={applyAngle:F6} rc={(rc == 0 ? "OK" : "FAIL")}");
+
+            if (rc != 0)
+                return -1;
+
+            // 재 이동(In Offset 적용 시 Teaching 목표 재도달)
+            if (MoveToTeachingPosition(_lastCenterAlignTp) != 0)
+                return -1;
+            if (WaitUntil(() => InPosTeaching(_lastCenterAlignTp), MoveTimeoutMs) != 0)
+                return -1;
+
+            TAlignDone = true;
+            return 0;
         }
 
         /// <summary>
-        /// XY 정렬
+        /// 기존 호환: 한번에 실행 (Prepare + Apply)
+        /// </summary>
+        public int AlignT()
+        {
+            int rc = AlignTPrepare();
+            if (rc != 0) return rc;
+            return AlignTApply();
+        }
+
+        // ===================== XY ALIGN 분리 =====================
+
+        /// <summary>
+        /// XY 정렬 준비 + Vision Offset 획득
+        /// </summary>
+        public int AlignXYPrepare()
+        {
+            XYAlignPrepared = false;
+            XYAlignDone = false;
+            LastFoundDx = 0;
+            LastFoundDy = 0;
+            _lastCenterAlignTp = null;
+
+            Log.Write(UnitName, "XY_Align", "Prepare Start");
+
+            if (PrepareForAlign(out var centerTp, out var _img) != 0)
+                return -1;
+
+            var res = CenterSearchViaRunner();
+            if (!res.ok)
+            {
+                Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
+                return -1;
+            }
+
+            LastFoundDx = res.x;
+            LastFoundDy = res.y;
+            _lastCenterAlignTp = centerTp;
+
+            Log.Write(UnitName, "XY_Align",
+                $"Offset dx={LastFoundDx:F6} dy={LastFoundDy:F6}");
+
+            XYAlignPrepared = true;
+            return 0;
+        }
+
+        /// <summary>
+        /// XY 정렬 적용 (AlignXYPrepare 먼저)
+        /// </summary>
+        public int AlignXYApply()
+        {
+            if (!XYAlignPrepared || _lastCenterAlignTp == null)
+            {
+                Log.Write(UnitName, "XY_Align", "Not prepared");
+                return -1;
+            }
+
+            double dx = LastFoundDx;
+            double dy = LastFoundDy;
+
+            if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
+            {
+                Log.Write(UnitName, "XY_Align", "Skip: offset under threshold");
+                XYAlignDone = true;
+                return 0;
+            }
+            if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
+            {
+                Log.Write(UnitName, "XY_Align",
+                    $"Fail: Over limit dx={dx:F4} dy={dy:F4} limit={MaxXYOffsetMm}");
+                return -1;
+            }
+
+            int rc = ApplyOffset(_lastCenterAlignTp.Name, dx, dy, 0.0);
+            Log.Write(UnitName, "XY_Align",
+                $"ApplyOffset dx={dx:F6} dy={dy:F6} rc={(rc == 0 ? "OK" : "FAIL")}");
+
+            if (rc != 0)
+                return -1;
+
+            if (MoveToTeachingPosition(_lastCenterAlignTp) != 0)
+                return -1;
+            if (WaitUntil(() => InPosTeaching(_lastCenterAlignTp), MoveTimeoutMs) != 0)
+                return -1;
+
+            XYAlignDone = true;
+            return 0;
+        }
+
+        /// <summary>
+        /// 기존 호환: 한번에 실행 (Prepare + Apply)
         /// </summary>
         public int AlignXY()
         {
-            int nRet = -1;
-            try
-            {
-                Log.Write(UnitName, "XY_Align", "Start");
-
-                // 공통 준비
-                if (PrepareForAlign(out var centerTp, out var img) != 0)
-                    return nRet;
-
-                // Vision XY Offset 검색
-                var res = CenterSearchViaRunner();
-                if (!res.ok)
-                {
-                    Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search fail");
-                    return nRet;
-                }
-
-                double dx = res.x;
-                double dy = res.y;
-
-                Log.Write(UnitName, "XY_Align",
-                    $"XY Offset dx={dx:F6} dy={dy:F6}");
-
-                // 유효성 체크
-                if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
-                {
-                    Log.Write(UnitName, "XY_Align", "Offset below threshold → skip correction");
-                    return nRet;
-                }
-                if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
-                {
-                    Log.Write(UnitName, "XY_Align",
-                        $"Fail: Offset over limit dx={dx:F4}, dy={dy:F4}, limit={MaxXYOffsetMm}");
-                    return nRet;
-                }
-
-                // 보정 적용
-                int correctionOk = ApplyOffset(centerTp.Name, dx, dy, 0.0);
-                Log.Write(UnitName, "XY_Align",
-                    $"ApplyOffset(XY) dx={dx:F6}, dy={dy:F6} -> {(correctionOk == 0 ? "OK" : "FAIL")}");
-
-                if (correctionOk != 0)
-                    return nRet;
-
-                // 보정 후 재이동
-                if (MoveToTeachingPosition(centerTp) != 0)
-                    return nRet;
-                if (WaitUntil(() => InPosTeaching(centerTp), MoveTimeoutMs) != 0)
-                    return nRet;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                return nRet;
-            }
-            nRet = 0;
-            return nRet;
+            int rc = AlignXYPrepare();
+            if (rc != 0) return rc;
+            return AlignXYApply();
         }
-
 
         public int ChipPickUp()
         {
@@ -1049,39 +1131,150 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int UnloadingWafer()
+
+        /* TODO */
+        //웨이퍼 있냐 없냐? 
+        // Ring check
+        //없으면
+        //나가는거고. 
+
+        //있으면
+        //인터락 - 외부 유닛 위치 확인
+        //스테이지이젝터핀 Z축
+        //다이트렌스퍼 Z축
+        //링피커 - 실린더 Up 유무
+
+        //웨이퍼 언로딩 위치 이동.
+        //실린더 Plate Up
+        //실린더 백 -> 다운
+
+        //웨이퍼 언로딩 준비 완료 플래그 ON
+
+        // 링피커가 언로딩 했다는 신호 주면 
+        // Plate Down
+
+        //스테이지 언로딩 완료 플래그 ON ?
+        // === Unloading 상태 플래그 ===
+        public bool StageUnloadingReady { get; private set; }
+        public bool StageUnloadingDone { get; private set; }
+
+        private bool IsExternalUnloadInterlockOk()
         {
-            int nRet = -1;
-            /* TODO */
-            //웨이퍼 있냐 없냐? 
-            // Ring check
-            //없으면
-            //나가는거고. 
-
-            //있으면
-            //인터락 - 외부 유닛 위치 확인
-            //스테이지이젝터핀 Z축
-            //다이트렌스퍼 Z축
-            //링피커 - 실린더 Up 유무
-
-            //웨이퍼 언로딩 위치 이동.
-            //실린더 Plate Up
-            //실린더 백 -> 다운
-
-            //웨이퍼 언로딩 준비 완료 플래그 ON
-
-            // 링피커가 언로딩 했다는 신호 주면 
-            // Plate Down
-
-            //스테이지 언로딩 완료 플래그 ON ?
-
-            return nRet;
+            // DieTransfer PickZ Safety (웨이퍼 이송 중 충돌 방지)
+            if (!IsDieTransferPickZSafe())
+            {
+                Log.Write(UnitName, "Unloading", "Interlock Fail : DieTransfer PickZ not safe");
+                return false;
+            }
+            // TODO: StageEjector / RingTransfer 관련 인터락 필요 시 추가
+            return true;
         }
 
-        public MaterialWafer GetWaferMaterial()
+        /// <summary>
+        /// 언로딩 준비 단계:
+        ///  - 웨이퍼 없으면 즉시 Done 처리 (할 것 없음)
+        ///  - Unloading Teaching 이동
+        ///  - Plate Up / Clamp Back / Lift Down
+        ///  - StageUnloadingReady = true (웨이퍼 픽업 대기)
+        /// 반환: 0=OK, -1=오류
+        /// </summary>
+        public int UnloadingWaferPrepare()
         {
-            var mat = GetMaterial();
-            return mat as MaterialWafer;
+            Log.Write(UnitName, "UnloadingPrep", "Start");
+            StageUnloadingDone = false;
+            StageUnloadingReady = false;
+
+            if (!IsRingPresent())
+            {
+                Log.Write(UnitName, "UnloadingPrep", "No wafer -> Skip");
+                StageUnloadingDone = true;
+                return 0;
+            }
+
+            if (!IsExternalUnloadInterlockOk())
+                return -1;
+
+            if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.Unloading, false) != 0 ||
+                WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName.Unloading, MoveTimeoutMs) != 0)
+            {
+                Log.Write(UnitName, "UnloadingPrep", "Fail: Move Unloading");
+                return -1;
+            }
+
+            // Plate Up (이미 Up 일 수도 있으나 통일)
+            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp())) return -1;
+            // Clamp Back (웨이퍼 픽업 전 클램프 해제)
+            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd())) return -1;
+            // Lift Down (픽업 접근 공간 확보)
+            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown())) return -1;
+
+            StageUnloadingReady = true;
+            Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
+            return 0;
+        }
+
+        /// <summary>
+        /// 언로딩 완료 단계:
+        ///  - 웨이퍼 아직 있으면 1(대기)
+        ///  - 제거된 경우 Plate Down
+        ///  - Optional: Ready 포지션 복귀
+        ///  - StageUnloadingDone = true
+        /// 반환: 0=완료, 1=대기, -1=오류
+        /// </summary>
+        public int UnloadingWaferComplete()
+        {
+            if (StageUnloadingDone)
+                return 0;
+
+            if (!StageUnloadingReady && IsRingPresent())
+            {
+                Log.Write(UnitName, "UnloadingComp", "Not prepared");
+                return -1;
+            }
+
+            if (IsRingPresent())
+                return 1; // 아직 픽업 안됨
+
+            Log.Write(UnitName, "UnloadingComp", "Wafer removed -> Completing");
+
+            // Plate Down (원위치)
+            if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) return -1;
+
+            // Ready Teaching (있으면)
+            var readyTp = TeachingPositions[InputStageConfig.TeachingPositionName.Ready];
+            if (readyTp != null)
+            {
+                if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.Ready, false) == 0)
+                    WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName.Ready, MoveTimeoutMs);
+            }
+
+            StageUnloadingDone = true;
+            StageUnloadingReady = false;
+            Log.Write(UnitName, "UnloadingComp", "Done");
+            return 0;
+        }
+
+        /// <summary>
+        /// 기존 단일 호출 방식 (호환용).
+        ///  - Prepare 수행
+        ///  - 웨이퍼 존재 시 제거될 때까지 대기
+        ///  - Complete 수행
+        /// </summary>
+        public int UnloadingWafer()
+        {
+            int rc = UnloadingWaferPrepare();
+            if (rc != 0) return rc; // 0 아니면 오류 (언로딩은 대기코드 없음)
+
+            // 웨이퍼 있었다면 제거 대기
+            if (IsRingPresent())
+            {
+                if (!WaitIO(() => !IsRingPresent(), MoveTimeoutMs))
+                {
+                    Log.Write(UnitName, "Unloading", "Fail: Wafer not removed (timeout)");
+                    return -1;
+                }
+            }
+            return UnloadingWaferComplete();
         }
 
         #endregion
