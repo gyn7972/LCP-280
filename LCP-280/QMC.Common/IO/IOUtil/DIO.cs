@@ -32,7 +32,7 @@ namespace QMC.Common.IOUtil
         public static void MapByName(DIOUnit unit, string key, bool isOutput, string channelName)
         {
             if (unit == null) throw new ArgumentNullException(nameof(unit));
-            if (!TryFindByName(unit, isOutput, channelName, out var moduleName, out var displayNo))
+            if (TryFindByName(unit, isOutput, channelName, out var moduleName, out var displayNo))
             {
                 _map[key] = new IoPoint(moduleName, displayNo, isOutput);
             }

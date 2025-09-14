@@ -17,6 +17,12 @@ namespace QMC.Common
         //[DefaultValue(true)]
         //public bool IsEnabled { get; set; } = true;
 
+
+        [Category("Common"), DisplayName("Simulation")]
+        [DefaultValue(false)]
+        public bool IsSimulation { get; set; } = false;
+
+
         [JsonIgnore]
         private DateTime LastModified { get; set; } = DateTime.Now;
 

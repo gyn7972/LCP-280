@@ -9,10 +9,6 @@ namespace QMC.Common.IOUtil
     [Serializable]
     public sealed class CylinderConfig : BaseConfig
     {
-        [Category("Common"), DisplayName("Simulation")]
-        [DefaultValue(false)]
-        public bool IsSimulation { get; set; } = false;
-
         [Category("Common"), DisplayName("Test")]
         [DefaultValue(false)]
         public bool IsTest { get; set; } = false;
