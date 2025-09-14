@@ -62,7 +62,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Config / Teaching
         Equipment _equipment => Equipment.Instance;
         
-        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+        
         #endregion
 
         #region Vision Hooks / Camera / Runner
@@ -344,7 +344,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private int WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName name, int timeoutMs)
         {
-            var tp = TeachingPositions[name];
+            var tp = TeachingPositions[(int)name];
             if (tp == null) return -1;
             return WaitUntilInPos(tp, timeoutMs);
         }
@@ -902,7 +902,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 2) CenterPoint Teaching 확보
-            centerTp = TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint];
+            centerTp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.CenterPoint];
             if (centerTp == null)
             {
                 Log.Write(UnitName, "Align", "Fail: CenterPoint teaching not defined");
@@ -1266,7 +1266,7 @@ namespace QMC.LCP_280.Process.Unit
             if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) return -1;
 
             // Ready Teaching (있으면)
-            var readyTp = TeachingPositions[InputStageConfig.TeachingPositionName.Ready];
+            var readyTp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Ready];
             if (readyTp != null)
             {
                 if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.Ready, false) == 0)
@@ -1304,7 +1304,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool IsWaferLoadingPosition()
         {
-            var tp = TeachingPositions[InputStageConfig.TeachingPositionName.Loading];
+            var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
             if (tp == null) return false;
             return InPosTeaching(tp);
         }

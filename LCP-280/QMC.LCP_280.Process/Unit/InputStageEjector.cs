@@ -33,7 +33,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Config / Teaching
         public InputStageEjectorConfig InputStageEjectorConfig => Config;
-        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+        
         #endregion
 
         #region Axes

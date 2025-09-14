@@ -29,7 +29,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         
-        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+        
 
         // Stage camera
         public HIKGigECamera StageCamera { get; private set; }
