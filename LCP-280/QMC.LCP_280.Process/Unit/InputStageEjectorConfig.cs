@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
@@ -34,7 +35,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// Ejector / Pin √‡ Teaching Position ∏Ò∑œ
         /// </summary>
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         /// <summary>
         /// Position Offset (dzEjector, dzPin)

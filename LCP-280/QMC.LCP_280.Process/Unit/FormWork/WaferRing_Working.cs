@@ -112,9 +112,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "InputRingTransfer",
                         InputRingTransferUnit,
-                        () => InputRingTransferUnit.InputFeederConfig?.TeachingPositions,
+                        () => InputRingTransferUnit.Config?.TeachingPositions,
                         (name, vel) => InputRingTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputRingTransferUnit.InputFeederConfig?.SetTeachingPosition(tp),
+                        tp => InputRingTransferUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 

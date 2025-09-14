@@ -21,7 +21,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Cylinder ??? ???? API (FeederUp/Down, Clamp)
     ///  - OutputStage / InputStage ?? ?????? Region/???? ????
     /// </summary>
-    public class InputFeeder : BaseUnit
+    public class InputFeeder : BaseUnit<InputFeederConfig>
     {
         enum AlarmKeys
         {
@@ -34,8 +34,8 @@ namespace QMC.LCP_280.Process.Unit
             Alarm_GripperClampFailed = 2020,
         }
         #region Config / Teaching
-        public InputFeederConfig InputFeederConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        
+        
         #endregion
 
         #region Axes
@@ -52,9 +52,9 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Constructor / Initialization
-        public InputFeeder(InputFeederConfig config = null) : base("InputRingTransferConfig")
+        public InputFeeder(InputFeederConfig config = null) : base(new InputFeederConfig())
         {
-            InputFeederConfig = config ?? new InputFeederConfig();
+            
             AddComponents();
         }
 
@@ -78,10 +78,10 @@ namespace QMC.LCP_280.Process.Unit
 
         public override void AddComponents()
         {
-            InputFeederConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            InputFeederConfig.InitializeDefaultTeachingPositions();
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
             TeachingPositions.Clear();
-            foreach (var tp in InputFeederConfig.TeachingPositions)
+            foreach (var tp in Config.TeachingPositions)
                 TeachingPositions.Add(tp);
             BindAxes();
             BindIoDomains();
@@ -115,7 +115,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
-            var tp = InputFeederConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -128,12 +128,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            InputFeederConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = InputFeederConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -150,7 +150,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool InPosTeaching(string positionName)
         {
-            var tp = InputFeederConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return false;
             foreach (var kv in tp.AxisPositions)
                 if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
@@ -162,7 +162,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Low-Level IO (Read/Write by Name)
         public bool ReadInput(string name)
         {
-            var hi = InputFeederConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -171,7 +171,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            var ho = InputFeederConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -180,7 +180,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOutputOn(string name)
         {
-            var ho = InputFeederConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)

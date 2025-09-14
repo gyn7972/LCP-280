@@ -119,9 +119,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "OutputStage",
                         OutputStageUnit,
-                        () => OutputStageUnit.OutputStageConfig?.TeachingPositions,
+                        () => OutputStageUnit.Config?.TeachingPositions,
                         (name, vel) => OutputStageUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => OutputStageUnit.OutputStageConfig?.SetTeachingPosition(tp),
+                        tp => OutputStageUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -130,9 +130,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "OutputDieTransfer",
                         OutputDieTransferUnit,
-                        () => OutputDieTransferUnit.OutputDieTransferConfig?.TeachingPositions,
+                        () => OutputDieTransferUnit.Config?.TeachingPositions,
                         (name, vel) => OutputDieTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => OutputDieTransferUnit.OutputDieTransferConfig?.SetTeachingPosition(tp),
+                        tp => OutputDieTransferUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -141,9 +141,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "Rotary",
                         RotaryUnit,
-                        () => RotaryUnit.RotaryConfig?.TeachingPositions,
+                        () => RotaryUnit.Config?.TeachingPositions,
                         (name, vel) => RotaryUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => RotaryUnit.RotaryConfig?.SetTeachingPosition(tp),
+                        tp => RotaryUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 

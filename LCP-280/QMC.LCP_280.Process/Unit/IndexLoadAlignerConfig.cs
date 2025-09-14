@@ -5,7 +5,8 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
 using System.Linq;
-using System; // Enum
+using System;
+using QMC.Common.Component; // Enum
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -73,7 +74,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.SafetyZone,          new [] { AxisNames.IndexZ } },
         };
 
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         public IndexLoadAlignerConfig() : base("IndexLoadAlignerConfig") { }
 

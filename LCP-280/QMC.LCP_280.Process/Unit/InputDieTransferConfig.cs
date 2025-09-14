@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
@@ -80,7 +81,7 @@ namespace QMC.LCP_280.Process.Unit
         };
 
         /// <summary>Teaching Position 순수 목록</summary>
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         /// <summary>Offset: positionName -> (T, PickZ, PlaceZ)</summary>
         public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } = new Dictionary<string, (double t, double pickZ, double placeZ)>();

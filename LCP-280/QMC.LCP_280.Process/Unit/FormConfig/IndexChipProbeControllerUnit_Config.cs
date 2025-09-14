@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.DIO;
 using QMC.Common.IO;
 using QMC.Common.IOUtil;
@@ -56,7 +57,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (EquipmentInstance.Units.TryGetValue(UNIT_NAME, out var raw))
                 {
                     _unit = raw as IndexChipProbeController;
-                    _config = _unit?.IndexChipProbeControllerConfig;
+                    _config = _unit?.Config;
                 }
 
                 if (_unit == null)
@@ -247,9 +248,9 @@ namespace QMC.LCP_280.Process.Unit
                 IEnumerable<object> hardInputs = Enumerable.Empty<object>();
                 IEnumerable<object> hardOutputs = Enumerable.Empty<object>();
 
-                if (eq.Units.TryGetValue(UNIT_NAME, out var raw) && raw is IndexChipProbeController controller && controller.IndexChipProbeControllerConfig != null)
+                if (eq.Units.TryGetValue(UNIT_NAME, out var raw) && raw is IndexChipProbeController controller && controller.Config != null)
                 {
-                    var cfg = controller.IndexChipProbeControllerConfig;
+                    var cfg = controller.Config;
                     var t = cfg.GetType();
                     var piIn = t.GetProperty("HardInputs");
                     var piOut = t.GetProperty("HardOutputs");

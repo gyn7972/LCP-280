@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
@@ -20,7 +21,7 @@ namespace QMC.LCP_280.Process.Unit
             Home
             // 필요시 추가
         }
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         // IO 추가 필요시 여기에 정의
         //[JsonIgnore]

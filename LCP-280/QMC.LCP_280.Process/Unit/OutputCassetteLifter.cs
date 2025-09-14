@@ -15,11 +15,11 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Cassette / RingJut / Mapping 센서 상태 제공
     ///  - OutputStage 와 유사한 구조 (Axis / IO / Teaching / Lifecycle)
     /// </summary>
-    public class OutputCassetteLifter : BaseUnit
+    public class OutputCassetteLifter : BaseUnit<OutputCassetteLifterConfig>
     {
         #region Config / Teaching
-        public OutputCassetteLifterConfig OutputCassetteLifterConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        
+        
         #endregion
 
         #region Axis
@@ -28,18 +28,18 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public OutputCassetteLifter(OutputCassetteLifterConfig config = null) : base("OutputCassetteLifterConfig")
+        public OutputCassetteLifter(OutputCassetteLifterConfig config = null) : base(new OutputCassetteLifterConfig())
         {
-            OutputCassetteLifterConfig = config ?? new OutputCassetteLifterConfig();
+            
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            OutputCassetteLifterConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            OutputCassetteLifterConfig.InitializeDefaultTeachingPositions();
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
             TeachingPositions.Clear();
-            foreach (var tp in OutputCassetteLifterConfig.TeachingPositions)
+            foreach (var tp in Config.TeachingPositions)
                 TeachingPositions.Add(tp);
             BindAxes();
         }
@@ -68,7 +68,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
-            var tp = OutputCassetteLifterConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -81,12 +81,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            OutputCassetteLifterConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = OutputCassetteLifterConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -102,7 +102,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool InPosTeaching(string positionName)
         {
-            var tp = OutputCassetteLifterConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return false;
             double z = tp.AxisPositions.TryGetValue("Bin Lifter Z Axis", out var vz) ? vz : 0;
             return InPos(_axZ, z);
@@ -112,7 +112,7 @@ namespace QMC.LCP_280.Process.Unit
         #region IO / Sensors
         public bool ReadInput(string name)
         {
-            var hi = OutputCassetteLifterConfig.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)

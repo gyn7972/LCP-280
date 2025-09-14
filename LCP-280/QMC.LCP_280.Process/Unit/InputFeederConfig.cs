@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component; // added for TeachingPosition / HardInputDef / HardOutputDef
@@ -60,7 +61,7 @@ namespace QMC.LCP_280.Process.Unit
         };
 
         /// <summary>Teaching Position 순수 목록</summary>
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         #region Hard IO Tables
         [JsonIgnore]

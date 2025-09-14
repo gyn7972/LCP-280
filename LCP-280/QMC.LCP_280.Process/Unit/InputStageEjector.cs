@@ -15,7 +15,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - OutputStage / InputStage 구조와 통일된 Region 구성
     ///  - DryRun 옵션 (현재는 단순 플래그만 유지, 향후 IO 시뮬 추가 가능)
     /// </summary>
-    public class InputStageEjector : BaseUnit
+    public class InputStageEjector : BaseUnit<InputStageEjectorConfig>
     {
         #region Nested Teaching Collection
         public class TeachingPositionCollection : List<TeachingPosition>
@@ -32,7 +32,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Config / Teaching
-        public InputStageEjectorConfig InputStageEjectorConfig { get; private set; }
+        public InputStageEjectorConfig InputStageEjectorConfig => Config;
         public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
         #endregion
 
@@ -48,19 +48,18 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public InputStageEjector(InputStageEjectorConfig config = null) : base("InputStageEjectorConfig")
+        public InputStageEjector(InputStageEjectorConfig config = null) : base(config ?? new InputStageEjectorConfig())
         {
-            InputStageEjectorConfig = config ?? new InputStageEjectorConfig();
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            InputStageEjectorConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            InputStageEjectorConfig.InitializeDefaultTeachingPositions();
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
 
             TeachingPositions.Clear();
-            foreach (var tp in InputStageEjectorConfig.TeachingPositions)
+            foreach (var tp in Config.TeachingPositions)
                 TeachingPositions.Add(tp);
             BindAxes();
         }
@@ -89,7 +88,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisKey)
         {
-            var tp = InputStageEjectorConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisKey, out var v)) return v;
             return 0.0;
         }
@@ -104,14 +103,14 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            InputStageEjectorConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
-            var tp = InputStageEjectorConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
-            var (z, pz) = InputStageEjectorConfig.GetPositionWithOffset(positionName);
+            var (z, pz) = Config.GetPositionWithOffset(positionName);
             int rc = 0;
             if (_axEjectorZ != null)
                 rc |= _axEjectorZ.MoveAbs(z, vel > 0 ? vel : _axEjectorZ.Config.MaxVelocity, acc > 0 ? acc : _axEjectorZ.Config.RunAcc, dec > 0 ? dec : _axEjectorZ.Config.RunDec, jerk > 0 ? jerk : _axEjectorZ.Config.AccJerkPercent);
@@ -124,13 +123,13 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool InPosTeaching(string positionName)
         {
-            var (z, pz) = InputStageEjectorConfig.GetPositionWithOffset(positionName);
+            var (z, pz) = Config.GetPositionWithOffset(positionName);
             return InPos(_axEjectorZ, z) && InPos(_axPinZ, pz);
         }
         public bool InPosTeaching(TeachingPosition tp) => tp != null && InPosTeaching(tp.Name);
         public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
 
-        public void ApplyOffset(string positionName, double dzEjector, double dzPin) => InputStageEjectorConfig.SetOffset(positionName, dzEjector, dzPin);
+        public void ApplyOffset(string positionName, double dzEjector, double dzPin) => Config.SetOffset(positionName, dzEjector, dzPin);
         #endregion
 
         #region Lifecycle

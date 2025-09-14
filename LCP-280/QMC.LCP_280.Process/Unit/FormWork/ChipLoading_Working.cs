@@ -129,9 +129,9 @@ namespace QMC.LCP_280.Process.Unit
                     teachingPositionControl.RegisterUnit(
                         "InputStage",
                         InputStageUnit,
-                        () => InputStageUnit.InputStageConfig?.TeachingPositions,
+                        () => InputStageUnit.Config?.TeachingPositions,
                         (name, vel) => InputStageUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputStageUnit.InputStageConfig?.SetTeachingPosition(tp),
+                        tp => InputStageUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
                 if (InputStageEjectorUnit != null)

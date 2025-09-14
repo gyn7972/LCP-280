@@ -16,7 +16,12 @@ using static QMC.Common.Motions.MotionAxis;
 
 namespace QMC.Common.Unit
 {
-    public class BaseUnit
+    public interface IUnit : IDisposable 
+    { 
+        BaseConfig Config { get; }
+    }
+
+    public class BaseUnit : IUnit
     {
         public enum AlarmKeys
         {
@@ -65,12 +70,25 @@ namespace QMC.Common.Unit
 
         // 축 등록 딕셔너리
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
-        
-        // 단순 키-값 Teaching 포지션 (기존 호환용)
-        public Dictionary<string, double> TeachingPositions { get; } = new Dictionary<string, double>();
-
-        protected BaseUnit(string unitName = null)
+        public List<TeachingPosition> TeachingPositions
         {
+            get
+            {
+                return Config.TeachingPositions;
+            }
+            private set
+            {
+
+                Config.TeachingPositions = value;
+            }
+        }
+
+
+
+
+        protected BaseUnit(string unitName)
+        {
+            
             UnitName = unitName;
             m_dicAlarms = new Dictionary<int, AlarmInfo>(); // <-- Add this line
             MakeAlarm();
@@ -167,17 +185,7 @@ namespace QMC.Common.Unit
             return -1;
         }
 
-        // 티칭 위치 저장/로드
-        public virtual void SetTeachingPosition(string key, double pos)
-        {
-            TeachingPositions[key] = pos;
-        }
-        public virtual double GetTeachingPosition(string key, double defaultValue = 0)
-        {
-            if (TeachingPositions.TryGetValue(key, out var pos))
-                return pos;
-            return defaultValue;
-        }
+       
 
         public void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
         {
@@ -449,6 +457,28 @@ namespace QMC.Common.Unit
                 if (axis == null) continue;
                 try { axis.Stop(); } catch { }
             }
+        }
+        #endregion
+
+        #region IDisposable
+        private bool _disposed;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed) return;
+            if (disposing)
+            {
+                try { m_workThread = null; } catch { }
+            }
+            _disposed = true;
+        }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        ~BaseUnit()
+        {
+            Dispose(false);
         }
         #endregion
     }

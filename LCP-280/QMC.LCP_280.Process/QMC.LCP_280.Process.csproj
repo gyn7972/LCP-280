@@ -125,7 +125,6 @@
     <Compile Include="Component\ProcessData\WaferSummary.cs" />
     <Compile Include="Component\Recipe\MeasurementRecipe.cs" />
     <Compile Include="Component\Recipe\RecipeManager.cs" />
-    <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="Component\TeachingPositionControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

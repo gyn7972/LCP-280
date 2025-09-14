@@ -11,10 +11,10 @@ using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO ???/?עק ???? ???
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class Rotary : BaseUnit
+    public class Rotary : BaseUnit<RotaryConfig>
     {
-        public RotaryConfig RotaryConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        
+        
 
         private MotionAxis _axisT;
         public MotionAxis AxisT => _axisT;
@@ -27,18 +27,18 @@ namespace QMC.LCP_280.Process.Unit
         // ???? Safe ??? ???(??? ????)
         private static readonly string[] SafeNames = new[] { "SafeZone", "Safe", "SasfeZone", "SAFE", "SAFEZONE", "SAFE_ZONE" };
 
-        public Rotary(RotaryConfig config = null) : base("RotaryConfig")
+        public Rotary(RotaryConfig config = null) : base(new RotaryConfig())
         {
-            RotaryConfig = config ?? new RotaryConfig();
+            
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            RotaryConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            RotaryConfig.InitializeDefaultTeachingPositions();
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
             TeachingPositions.Clear();
-            foreach (var tp in RotaryConfig.TeachingPositions) TeachingPositions.Add(tp);
+            foreach (var tp in Config.TeachingPositions) TeachingPositions.Add(tp);
             BindAxes();
             BindIoDomains();
 
@@ -86,13 +86,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             var pos = new Dictionary<string, double>();
             foreach (var kv in Axes) pos[kv.Key] = kv.Value.GetPosition();
-            RotaryConfig.SetTeachingPosition(new TeachingPosition(name, pos, description));
+            Config.SetTeachingPosition(new TeachingPosition(name, pos, description));
         }
 
         public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
-            var tp = RotaryConfig.GetTeachingPosition(name); if (tp == null) return -1;
-            double t = RotaryConfig.GetPositionWithOffset(name);
+            var tp = Config.GetTeachingPosition(name); if (tp == null) return -1;
+            double t = Config.GetPositionWithOffset(name);
             if (_axisT == null) return -2;
             return _axisT.MoveAbs(t,
                 vel  > 0 ? vel  : _axisT.Config.MaxVelocity,
@@ -103,17 +103,17 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool InPosTeaching(string name)
         {
-            double t = RotaryConfig.GetPositionWithOffset(name);
+            double t = Config.GetPositionWithOffset(name);
             return InPos(_axisT, t);
         }
 
-        public void ApplyOffset(string name, double deltaT) => RotaryConfig.SetOffset(name, deltaT);
+        public void ApplyOffset(string name, double deltaT) => Config.SetOffset(name, deltaT);
         #endregion
 
         #region Axis helpers
         public double GetTP(string tpName, string axisName)
         {
-            var tp = RotaryConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -210,7 +210,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool ReadInput(string name)
         {
             if (DryRun) { bool v; return _simInputs.TryGetValue(name, out v) && v; }
-            var hi = RotaryConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -221,7 +221,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool WriteOutput(string name, bool on)
         {
             if (DryRun) { _simOutputs[name] = on; return true; }
-            var ho = RotaryConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -232,7 +232,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsOutputOn(string name)
         {
             if (DryRun) { bool v; return _simOutputs.TryGetValue(name, out v) && v; }
-            var ho = RotaryConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)

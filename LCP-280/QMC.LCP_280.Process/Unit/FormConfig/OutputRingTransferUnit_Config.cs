@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.DIO;
 using QMC.Common.IO;
 using QMC.Common.IOUtil;
@@ -46,7 +47,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     _OutputRingTransfer = unit as OutputRingTransfer;
-                    _cfg = _OutputRingTransfer?.OutputRingTransferConfig;
+                    _cfg = _OutputRingTransfer?.Config;
                 }
 
                 if (_OutputRingTransfer == null)
@@ -299,7 +300,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             var transfer = unit as OutputRingTransfer;
-            var config = transfer?.OutputRingTransferConfig;
+            var config = transfer?.Config;
             if (config == null || config.TeachingPositions == null) return;
             if (idx < 0 || idx >= config.TeachingPositions.Count) return;
 
@@ -341,9 +342,9 @@ namespace QMC.LCP_280.Process.Unit
                 var hardInputs = new List<dynamic>();
                 var hardOutputs = new List<dynamic>();
 
-                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is OutputRingTransfer transfer && transfer.OutputRingTransferConfig != null)
+                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is OutputRingTransfer transfer && transfer.Config != null)
                 {
-                    var cfg = transfer.OutputRingTransferConfig;
+                    var cfg = transfer.Config;
                     var t = cfg.GetType();
                     var piIn = t.GetProperty("HardInputs");
                     if (piIn != null)
@@ -609,12 +610,12 @@ namespace QMC.LCP_280.Process.Unit
                 if (transfer == null) return;
 
                 int selIndex = GetSelectedIndex(positionItemView);
-                if (selIndex < 0 || transfer.OutputRingTransferConfig == null || transfer.OutputRingTransferConfig.TeachingPositions == null || selIndex >= transfer.OutputRingTransferConfig.TeachingPositions.Count)
+                if (selIndex < 0 || transfer.Config == null || transfer.Config.TeachingPositions == null || selIndex >= transfer.Config.TeachingPositions.Count)
                 {
                     return;
                 }
 
-                var tp = transfer.OutputRingTransferConfig.TeachingPositions[selIndex];
+                var tp = transfer.Config.TeachingPositions[selIndex];
 
                 bool isFine = true;
                 if (rbTeachingMoveMode != null)
@@ -764,15 +765,15 @@ namespace QMC.LCP_280.Process.Unit
                 target.AxisPositions = newAxes;
                 target.ExtraInfo = newExtra;
 
-                transfer.OutputRingTransferConfig.SetTeachingPosition(
+                transfer.Config.SetTeachingPosition(
                     new TeachingPosition(target.Name, new Dictionary<string, double>(newAxes), newDesc)
                     {
                         ExtraInfo = new Dictionary<string, object>(newExtra)
                     });
 
-                transfer.OutputRingTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                transfer.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
                 transfer.TeachingPositions.Clear();
-                foreach (var tp in transfer.OutputRingTransferConfig.TeachingPositions)
+                foreach (var tp in transfer.Config.TeachingPositions)
                 {
                     transfer.TeachingPositions.Add(tp);
                 }

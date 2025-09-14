@@ -182,6 +182,7 @@
     <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
     <Compile Include="Common\TypeUtility.cs" />
     <Compile Include="Component\ProcessData\Material.cs" />
+    <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="ConfigPropertyAttributes.cs" />
     <Compile Include="ConfigReflectionMapper.cs" />
     <Compile Include="ConfigStore.cs" />
@@ -399,6 +400,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="UI\ProgressForm.Designer.cs" />
+    <Compile Include="Unit\BaseUnit.Generic.cs" />
     <Compile Include="Unit\BaseUnit.IOExtensions.cs" />
     <Compile Include="VisionPart\MultiPatternMatchingVisionPart.cs" />
     <Compile Include="PatternMatching\PatternMatchingParamControl.cs">
@@ -504,6 +506,7 @@
     <Compile Include="Vision\Tools\SharpnessVisionTool.cs" />
     <Compile Include="Vision\Tools\VisionResult.cs" />
     <Compile Include="Vision\Tools\VisionTool.cs" />
+    <Compile Include="Vision\VisionConfig.cs" />
     <Compile Include="Vision\VisionImage.cs" />
     <Compile Include="Vision\VisionImageHeader.cs" />
     <Compile Include="Vision\VisionImageOverlay.cs" />
@@ -511,6 +514,7 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
+    <Compile Include="Vision\VisionUnit.cs" />
     <EmbeddedResource Include="UI\ProgressForm.resx" />
     <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">

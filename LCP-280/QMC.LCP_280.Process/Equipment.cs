@@ -77,7 +77,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 설비에 등록된 모든 Unit들
         /// </summary>
-        public ConcurrentDictionary<string, BaseUnit> Units { get; private set; }
+        public ConcurrentDictionary<string, IUnit> Units { get; private set; }
 
         /// <summary>
         /// Unit별 실행 상태 관리
@@ -216,7 +216,7 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                Units = new ConcurrentDictionary<string, BaseUnit>();
+                Units = new ConcurrentDictionary<string, IUnit>();
                 _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
                 State = EquipmentState.Stopped;
 
@@ -283,14 +283,14 @@ namespace QMC.LCP_280.Process
         {
             foreach(var v in Units)
             {
-                v.Value.BindUnit();
+                (v.Value as BaseUnit)?.BindUnit();
             }
         }
 
         // === Protected Unit Helper (EquipmentStatus 는 항상 실행 유지) ===
         private bool IsProtectedUnit(string unitName)
             => string.Equals(unitName, UnitKeys.EquipmentStatus, StringComparison.OrdinalIgnoreCase);
-        private bool IsProtectedUnit(BaseUnit unit) => unit is EquipmentStatus;
+        private bool IsProtectedUnit(IUnit unit) => unit is EquipmentStatus;
 
         #endregion
 
@@ -303,7 +303,7 @@ namespace QMC.LCP_280.Process
         private void AutoRegisterUnits()
         {
             // 중복 등록 방지: 이미 존재하면 스킵
-            void TryAdd(BaseUnit u, string name)
+            void TryAdd(IUnit u, string name)
             {
                 if (!Units.ContainsKey(name))
                     RegisterUnit(u, name);
@@ -333,14 +333,15 @@ namespace QMC.LCP_280.Process
         /// <param name="unit">등록할 Unit</param>
         /// <param name="unitName">Unit 이름</param>
         /// <param name="description">Unit 설명</param>
-        public void RegisterUnit(BaseUnit unit, string unitName, string description = null)
+        public void RegisterUnit(IUnit unit, string unitName, string description = null)
         {
             if (unit == null) throw new ArgumentNullException(nameof(unit));
             if (string.IsNullOrEmpty(unitName)) throw new ArgumentException("Unit 이름이 필요합니다.", nameof(unitName));
 
             try
             {
-                unit.UnitName = unitName;
+                if (unit is BaseUnit bu)
+                    bu.UnitName = unitName;
 
                 if (Units.TryAdd(unitName, unit))
                 {
@@ -348,7 +349,9 @@ namespace QMC.LCP_280.Process
                     _unitExecutions[unitName] = new UnitExecutionInfo(unitName, description);
 
                     // Config 및 Recipe 등록
-                    ConfigManager.RegisterUnitConfig(unitName, unit.Config);
+                    var cfg = (unit as BaseUnit)?.Config;
+                    if (cfg != null)
+                        ConfigManager.RegisterUnitConfig(unitName, cfg);
                     RecipeManager.RegisterUnitRecipe(unitName, CreateUnitRecipe(unit));
 
                     Console.WriteLine($"Unit '{unitName}' 등록 완료");
@@ -411,7 +414,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// Unit별 기본 Recipe 생성
         /// </summary>
-        private BaseRecipe CreateUnitRecipe(BaseUnit unit)
+        private BaseRecipe CreateUnitRecipe(IUnit unit)
         {
             // Unit 타입에 따라 적절한 Recipe 생성
             switch (unit)
@@ -485,7 +488,7 @@ namespace QMC.LCP_280.Process
         /// <param name="unitName">시작할 Unit 이름</param>
         public async Task<bool> StartUnitAsync(string unitName)
         {
-            if (!Units.TryGetValue(unitName, out var unit))
+            if (!Units.TryGetValue(unitName, out var unitObj))
             {
                 OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
                 return false;
@@ -511,12 +514,12 @@ namespace QMC.LCP_280.Process
                     _equipmentCancellationTokenSource = new CancellationTokenSource();
 
                 // [MOD] 보호 유닛은 글로벌 토큰과 링크하지 않음
-                execInfo.CancellationTokenSource = IsProtectedUnit(unit)
+                execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
                     ? new CancellationTokenSource()
                     : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
 
                 // Unit 시작
-                unit.Start();
+                (unitObj as BaseUnit)?.Start();
                 //unit.OnRun();
 
                 //// Unit 실행 Task 생성 및 시작
@@ -706,7 +709,7 @@ namespace QMC.LCP_280.Process
         /// <param name="unitName">정지할 Unit 이름</param>
         public async Task<bool> StopUnitAsync(string unitName)
         {
-            if (!Units.TryGetValue(unitName, out var unit))
+            if (!Units.TryGetValue(unitName, out var unitObj))
             {
                 OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
                 return false;
@@ -726,7 +729,7 @@ namespace QMC.LCP_280.Process
 
             try
             {
-                unit.Stop();
+                (unitObj as BaseUnit)?.Stop();
                 Console.WriteLine($"Unit '{unitName}' 정지 완료");
                 return true;
             }
@@ -775,17 +778,17 @@ namespace QMC.LCP_280.Process
             {
                 // 비정상 상태는 무시
                 if (unit is EquipmentStatus) continue;
-                if (_unitExecutions.TryGetValue(unit.UnitName, out var execInfo) && execInfo.IsRunning)
+                if (_unitExecutions.TryGetValue((unit as BaseUnit)?.UnitName, out var execInfo) && execInfo.IsRunning)
                     continue;
 
                 try
                 {
-                    unit.OnStop();
-                    unit.OnRun();
+                    (unit as BaseUnit)?.OnStop();
+                    (unit as BaseUnit)?.OnRun();
                 }
                 catch (Exception ex)
                 {
-                    OnErrorOccurred($"Unit '{unit.UnitName}' 연결 상태 확인 중 오류: {ex.Message}");
+                    OnErrorOccurred($"Unit '{(unit as BaseUnit)?.UnitName}' 연결 상태 확인 중 오류: {ex.Message}");
                 }
             }
         }
@@ -812,7 +815,7 @@ namespace QMC.LCP_280.Process
             foreach (var kv in Units)
             {
                 var name = kv.Key;
-                var unit = kv.Value;
+                var unit = kv.Value as BaseUnit;
 
                 UnitExecutionInfo exec = null;
                 _unitExecutions?.TryGetValue(name, out exec);
@@ -847,31 +850,6 @@ namespace QMC.LCP_280.Process
             }
             return result;
         }
-
-        //public Dictionary<string, UnitStatusInfo> GetAllUnitStatus()
-        //{
-        //    var dict = new Dictionary<string, UnitStatusInfo>();
-        //    foreach (var kvp in Units)
-        //    {
-        //        var name = kvp.Key;
-        //        var unit = kvp.Value;
-        //        var exec = _unitExecutions.ContainsKey(name) ? _unitExecutions[name] : null;
-        //        dict[name] = new UnitStatusInfo
-        //        {
-        //            UnitName = name,
-        //            Description = exec?.Description ?? "",
-        //            IsRunning = exec?.IsRunning ?? false,
-        //            State = GetUnitCurrentState(name),
-        //            ComponentCount = unit.Components.Count,
-        //            StartTime = exec?.StartTime,
-        //            RunningTime = exec?.IsRunning == true && exec.StartTime.HasValue
-        //                ? DateTime.Now - exec.StartTime.Value
-        //                : TimeSpan.Zero,
-        //            LastUpdateTime = DateTime.Now
-        //        };
-        //    }
-        //    return dict;
-        //}
 
         public List<string> GetRegisteredUnitNames() => Units?.Keys.ToList() ?? new List<string>();
 
@@ -1160,7 +1138,10 @@ namespace QMC.LCP_280.Process
 
         private void AttachAxisToUnit(string unitName, string targetMemberName, MotionAxis axis)
         {
-            if (!Units.TryGetValue(unitName, out var unit)) { OnErrorOccurred("AttachAxisToUnit: Unit '" + unitName + "' not found."); return; }
+            if (!Units.TryGetValue(unitName, out var unitObj)) { OnErrorOccurred("AttachAxisToUnit: Unit '" + unitName + "' not found."); return; }
+            var unit = unitObj as BaseUnit;
+            if (unit == null) { OnErrorOccurred("AttachAxisToUnit: Unit object is not BaseUnit."); return; }
+
             var t = unit.GetType();
             var p = t.GetProperty(targetMemberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (p != null && p.CanWrite && p.PropertyType == typeof(MotionAxis)) { p.SetValue(unit, axis); return; }
@@ -1264,7 +1245,7 @@ namespace QMC.LCP_280.Process
         public BaseUnit GetUnit(string name)
         {
             Units.TryGetValue(name, out var unit);
-            return unit;
+            return unit as BaseUnit;
         }
         #endregion // Motion/IO Bootstrap
 

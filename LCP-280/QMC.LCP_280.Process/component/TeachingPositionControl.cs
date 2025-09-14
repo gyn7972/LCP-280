@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Unit;
@@ -226,10 +227,10 @@ namespace QMC.LCP_280.Process.Component
             try
             {
                 if (Equipment?.Units == null) return;
-                BaseUnit unit;
-                if (Equipment.Units.TryGetValue("InputStage", out unit)) _inputStage = unit as InputStage;
-                if (Equipment.Units.TryGetValue("InputStageEjector", out unit)) _ejector = unit as InputStageEjector;
-                if (Equipment.Units.TryGetValue("InputDieTransfer", out unit)) _dieTransfer = unit as InputDieTransfer;
+                IUnit u;
+                if (Equipment.Units.TryGetValue("InputStage", out u)) _inputStage = u as InputStage;
+                if (Equipment.Units.TryGetValue("InputStageEjector", out u)) _ejector = u as InputStageEjector;
+                if (Equipment.Units.TryGetValue("InputDieTransfer", out u)) _dieTransfer = u as InputDieTransfer;
                 if (_inputStage != null || _ejector != null || _dieTransfer != null)
                     SetUnits(_inputStage, _ejector, _dieTransfer, false);
             }
@@ -266,6 +267,7 @@ namespace QMC.LCP_280.Process.Component
             Action<TeachingPosition> saveAction = null,
             bool autoReload = true)
         {
+            // signature kept the same; BaseUnit is still the common base class
             if (string.IsNullOrWhiteSpace(unitKey)) return;
             if (provider == null || moveAction == null) return;
             unitKey = unitKey.Trim();
@@ -314,9 +316,9 @@ namespace QMC.LCP_280.Process.Component
             {
                 RegisterUnit("InputStage",
                     stage,
-                    () => stage.InputStageConfig?.TeachingPositions,
+                    () => stage.Config.TeachingPositions,
                     (name, vel) => stage.MoveToTeachingPosition(name, vel: vel),
-                    tp => stage.InputStageConfig?.SetTeachingPosition(tp),
+                    tp => stage.Config?.SetTeachingPosition(tp),
                     false);
             }
             if (ejector != null)

@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;

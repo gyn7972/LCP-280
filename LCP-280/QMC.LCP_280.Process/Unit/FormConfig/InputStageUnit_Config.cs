@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process.Component;
@@ -45,7 +46,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     _InputStage = unit as InputStage;
-                    _cfg = _InputStage?.InputStageConfig;
+                    _cfg = _InputStage?.Config;
                 }
                 if (_InputStage == null)
                     MessageBox.Show($"{_UNIT_NAME} Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -171,7 +172,7 @@ namespace QMC.LCP_280.Process.Unit
         private void ShowTeachingPositionInPropertyCollectionView(int idx)
         {
             var eq = Equipment.Instance; if (!eq.Units.TryGetValue(_UNIT_NAME, out var unit)) return;
-            var stage = unit as InputStage; var config = stage?.InputStageConfig; if (config?.TeachingPositions == null) return;
+            var stage = unit as InputStage; var config = stage?.Config; if (config?.TeachingPositions == null) return;
             if (idx < 0 || idx >= config.TeachingPositions.Count) return; var tp = config.TeachingPositions[idx];
             var pc = new PropertyCollection(); pc.Add(new TitleOnlyProperty($"Teaching Position: {tp.Name} (mm, Abs. Pos)")); pc.Add(new StringProperty("Description", tp.Description ?? ""));
             foreach (var axis in tp.AxisPositions) pc.Add(new DoubleProperty($"{axis.Key} Position (mm)", axis.Value));
@@ -187,9 +188,9 @@ namespace QMC.LCP_280.Process.Unit
                 if (scan == null || unitIO == null) { inputView.SetProperties(new PropertyCollection()); outputView.SetProperties(new PropertyCollection()); return; }
                 _ioInputs.Clear(); _ioOutputs.Clear();
                 var hardInputs = new List<dynamic>(); var hardOutputs = new List<dynamic>();
-                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputStage stage && stage.InputStageConfig != null)
+                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputStage stage && stage.Config != null)
                 {
-                    var cfg = stage.InputStageConfig; var t = cfg.GetType();
+                    var cfg = stage.Config; var t = cfg.GetType();
                     var piIn = t.GetProperty("HardInputs"); if (piIn != null) hardInputs = ((System.Collections.IEnumerable)piIn.GetValue(cfg))?.Cast<dynamic>().ToList() ?? new List<dynamic>();
                     var piOut = t.GetProperty("HardOutputs"); if (piOut != null) hardOutputs = ((System.Collections.IEnumerable)piOut.GetValue(cfg))?.Cast<dynamic>().ToList() ?? new List<dynamic>();
                 }
@@ -258,8 +259,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit)) return; var stage = unit as InputStage; if (stage == null) return;
                 int selIndex = -1; try { var pi = positionItemView?.GetType().GetProperty("SelectedIndex"); if (pi != null) selIndex = (int)pi.GetValue(positionItemView, null); } catch { selIndex = -1; }
-                if (selIndex < 0 || stage.InputStageConfig.TeachingPositions == null || selIndex >= stage.InputStageConfig.TeachingPositions.Count) return;
-                var tp = stage.InputStageConfig.TeachingPositions[selIndex]; bool isFine = true; try { var si = rbTeachingMoveMode?.GetType().GetProperty("SelectedIndex"); if (si != null) isFine = ((int)si.GetValue(rbTeachingMoveMode, null)) == 0; } catch { }
+                if (selIndex < 0 || stage.Config.TeachingPositions == null || selIndex >= stage.Config.TeachingPositions.Count) return;
+                var tp = stage.Config.TeachingPositions[selIndex]; bool isFine = true; try { var si = rbTeachingMoveMode?.GetType().GetProperty("SelectedIndex"); if (si != null) isFine = ((int)si.GetValue(rbTeachingMoveMode, null)) == 0; } catch { }
                 double defFine = 5, defCoarse = 20, defAcc = 10, defDec = 10, defJerk = 50;
                 foreach (var kv in tp.AxisPositions)
                 {
@@ -288,9 +289,9 @@ namespace QMC.LCP_280.Process.Unit
                     if (p is StringProperty && p.Title.StartsWith("Extra:", StringComparison.OrdinalIgnoreCase)) { var key = p.Title.Substring("Extra:".Length).Trim(); newExtra[key] = ((StringProperty)p).Value; continue; }
                 }
                 target.Description = newDesc; target.AxisPositions = newAxes; target.ExtraInfo = newExtra;
-                stage.InputStageConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(newAxes), newDesc) { ExtraInfo = new Dictionary<string, object>(newExtra) });
-                stage.InputStageConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-                stage.TeachingPositions.Clear(); foreach (var tp in stage.InputStageConfig.TeachingPositions) stage.TeachingPositions.Add(tp);
+                stage.Config.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(newAxes), newDesc) { ExtraInfo = new Dictionary<string, object>(newExtra) });
+                stage.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                stage.TeachingPositions.Clear(); foreach (var tp in stage.Config.TeachingPositions) stage.TeachingPositions.Add(tp);
                 SetAxisDefinitionsToAxisListBox(); MessageBox.Show("저장 완료", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex) { MessageBox.Show("저장 오류: " + ex.Message); }

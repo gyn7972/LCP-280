@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;
@@ -64,7 +65,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     _OutputCassetteLifter = unit as OutputCassetteLifter;
-                    _cfg = _OutputCassetteLifter?.OutputCassetteLifterConfig;
+                    _cfg = _OutputCassetteLifter?.Config;
                 }
 
                 if (_OutputCassetteLifter == null)
@@ -182,10 +183,10 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPosition(int selectedIndex)
         {
-            if (_OutputCassetteLifter?.OutputCassetteLifterConfig?.TeachingPositions == null)
+            if (_OutputCassetteLifter?.Config?.TeachingPositions == null)
                 return;
 
-            var list = _OutputCassetteLifter.OutputCassetteLifterConfig.TeachingPositions;
+            var list = _OutputCassetteLifter.Config.TeachingPositions;
             if (selectedIndex < 0 || selectedIndex >= list.Count)
                 return;
 
@@ -261,9 +262,9 @@ namespace QMC.LCP_280.Process.Unit
                 Array hardInputsArr = Array.CreateInstance(typeof(object), 0);
                 Array hardOutputsArr = Array.CreateInstance(typeof(object), 0);
 
-                if (_OutputCassetteLifter?.OutputCassetteLifterConfig != null)
+                if (_OutputCassetteLifter?.Config != null)
                 {
-                    var cfg = _OutputCassetteLifter.OutputCassetteLifterConfig;
+                    var cfg = _OutputCassetteLifter.Config;
                     var cfgType = cfg.GetType();
 
                     var piIn = cfgType.GetProperty("HardInputs");
@@ -456,7 +457,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 int selIndex = GetSelectedPositionIndex();
                 if (selIndex < 0 ||
-                    selIndex >= _OutputCassetteLifter.OutputCassetteLifterConfig.TeachingPositions.Count)
+                    selIndex >= _OutputCassetteLifter.Config.TeachingPositions.Count)
                 {
                     MessageBox.Show(
                         "선택된 Teaching Position이 없습니다.",
@@ -466,7 +467,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var tp = _OutputCassetteLifter.OutputCassetteLifterConfig.TeachingPositions[selIndex];
+                var tp = _OutputCassetteLifter.Config.TeachingPositions[selIndex];
                 bool isFine = IsFineSelected();
 
                 // 기본 파라미터 (축 Config 에 값 없을 때 fallback)
@@ -710,7 +711,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.ExtraInfo = newExtra;
 
                 _OutputCassetteLifter
-                    .OutputCassetteLifterConfig
+                    .Config
                     .SetTeachingPosition(
                         new TeachingPosition(
                             target.Name,
@@ -721,11 +722,11 @@ namespace QMC.LCP_280.Process.Unit
                         });
 
                 _OutputCassetteLifter
-                    .OutputCassetteLifterConfig
+                    .Config
                     .LoadAndBindAxes(Equipment.Instance.AxisManager);
 
                 _OutputCassetteLifter.TeachingPositions.Clear();
-                foreach (var tp in _OutputCassetteLifter.OutputCassetteLifterConfig.TeachingPositions)
+                foreach (var tp in _OutputCassetteLifter.Config.TeachingPositions)
                 {
                     _OutputCassetteLifter.TeachingPositions.Add(tp);
                 }

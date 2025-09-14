@@ -114,9 +114,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "OutputRingTransfer",
                         _OutputRingTransferUnit,
-                        () => _OutputRingTransferUnit.OutputRingTransferConfig?.TeachingPositions,
+                        () => _OutputRingTransferUnit.Config?.TeachingPositions,
                         (name, vel) => _OutputRingTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _OutputRingTransferUnit.OutputRingTransferConfig?.SetTeachingPosition(tp),
+                        tp => _OutputRingTransferUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -125,9 +125,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "OutputCassetteLifter",
                         _OutputCassetteLifterUnit,
-                        () => _OutputCassetteLifterUnit.OutputCassetteLifterConfig?.TeachingPositions,
+                        () => _OutputCassetteLifterUnit.Config?.TeachingPositions,
                         (name, vel) => _OutputCassetteLifterUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _OutputCassetteLifterUnit.OutputCassetteLifterConfig?.SetTeachingPosition(tp),
+                        tp => _OutputCassetteLifterUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 

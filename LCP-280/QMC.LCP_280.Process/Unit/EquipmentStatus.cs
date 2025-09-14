@@ -4,6 +4,7 @@ using System.Linq; // 여러 물리 DIO 모듈 순회용
 using QMC.Common.Unit;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -24,6 +25,7 @@ namespace QMC.LCP_280.Process.Unit
         private readonly object _gate = new object();          // 스냅샷 보호용 락
         private EquipmentStatusSnapshot _latest = new EquipmentStatusSnapshot(); // 최신 스냅샷
 
+        public EquipmentStatus() : base("EquipmentStatus") { }
         // (중요) 실제 장비 설정에서 DIO 모듈명이 고정되지 않을 수 있어
         // 기존 단일 상수명으로 접근 실패 → 모든 등록 모듈 순회하며 DisplayNo 첫 매칭을 시도.
         private static IEnumerable<string> EnumerateModuleNames()

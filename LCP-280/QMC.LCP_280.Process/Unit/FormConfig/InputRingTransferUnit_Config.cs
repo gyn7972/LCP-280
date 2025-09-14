@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;
@@ -61,7 +62,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     _InputRingTransfer = unit as InputFeeder;
-                    _cfg = _InputRingTransfer?.InputFeederConfig;
+                    _cfg = _InputRingTransfer?.Config;
                 }
 
                 if (_InputRingTransfer == null)
@@ -183,12 +184,12 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPosition(int selectedIndex)
         {
-            if (_InputRingTransfer?.InputFeederConfig?.TeachingPositions == null)
+            if (_InputRingTransfer?.Config?.TeachingPositions == null)
             {
                 return;
             }
 
-            var list = _InputRingTransfer.InputFeederConfig.TeachingPositions;
+            var list = _InputRingTransfer.Config.TeachingPositions;
             if (selectedIndex < 0 || selectedIndex >= list.Count)
             {
                 return;
@@ -289,9 +290,9 @@ namespace QMC.LCP_280.Process.Unit
                 Array hardInputsArr = Array.CreateInstance(typeof(object), 0);
                 Array hardOutputsArr = Array.CreateInstance(typeof(object), 0);
 
-                if (_InputRingTransfer?.InputFeederConfig != null)
+                if (_InputRingTransfer?.Config != null)
                 {
-                    var cfg = _InputRingTransfer.InputFeederConfig;
+                    var cfg = _InputRingTransfer.Config;
                     var cfgType = cfg.GetType();
 
                     var piIn = cfgType.GetProperty("HardInputs");
@@ -487,7 +488,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= _InputRingTransfer.InputFeederConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _InputRingTransfer.Config.TeachingPositions.Count)
                 {
                     MessageBox.Show(
                         "선택된 Teaching Position이 없습니다.",
@@ -497,7 +498,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var tp = _InputRingTransfer.InputFeederConfig.TeachingPositions[selIndex];
+                var tp = _InputRingTransfer.Config.TeachingPositions[selIndex];
                 bool isFine = IsFineSelected();
 
                 double defaultFineVel = 5.0;
@@ -755,7 +756,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.ExtraInfo = newExtra;
 
                 _InputRingTransfer
-                    .InputFeederConfig
+                    .Config
                     .SetTeachingPosition(
                         new TeachingPosition(
                             target.Name,
@@ -766,11 +767,11 @@ namespace QMC.LCP_280.Process.Unit
                         });
 
                 _InputRingTransfer
-                    .InputFeederConfig
+                    .Config
                     .LoadAndBindAxes(Equipment.Instance.AxisManager);
 
                 _InputRingTransfer.TeachingPositions.Clear();
-                foreach (var tp in _InputRingTransfer.InputFeederConfig.TeachingPositions)
+                foreach (var tp in _InputRingTransfer.Config.TeachingPositions)
                 {
                     _InputRingTransfer.TeachingPositions.Add(tp);
                 }

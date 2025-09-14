@@ -16,11 +16,11 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Sphere Forward/Backward Cylinder + Probe Card Vacuum IO 바인딩
     ///  - OutputStage 구조 패턴 적용 (Regions / Helpers / High-Level API)
     /// </summary>
-    public class IndexChipProbeController : BaseUnit
+    public class IndexChipProbeController : BaseUnit<IndexChipProbeControllerConfig>
     {
         #region Config / Teaching
-        public IndexChipProbeControllerConfig IndexChipProbeControllerConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        
+        
         #endregion
 
         #region Axes
@@ -45,18 +45,18 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public IndexChipProbeController(IndexChipProbeControllerConfig config = null) : base("IndexChipProbeControllerConfig")
+        public IndexChipProbeController(IndexChipProbeControllerConfig config = null) : base(new IndexChipProbeControllerConfig())
         {
-            IndexChipProbeControllerConfig = config ?? new IndexChipProbeControllerConfig();
+            
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            IndexChipProbeControllerConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            IndexChipProbeControllerConfig.InitializeDefaultTeachingPositions();
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
             TeachingPositions.Clear();
-            foreach (var tp in IndexChipProbeControllerConfig.TeachingPositions)
+            foreach (var tp in Config.TeachingPositions)
                 TeachingPositions.Add(tp);
 
             BindAxes();
@@ -93,7 +93,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
-            var tp = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -106,12 +106,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            IndexChipProbeControllerConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = IndexChipProbeControllerConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -127,7 +127,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool InPosTeaching(string positionName)
         {
-            var tp = IndexChipProbeControllerConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return false;
             foreach (var kv in tp.AxisPositions)
                 if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
@@ -138,7 +138,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Low-Level IO Access
         public bool ReadInput(string name)
         {
-            var hi = IndexChipProbeControllerConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -147,7 +147,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            var ho = IndexChipProbeControllerConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -156,7 +156,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOutputOn(string name)
         {
-            var ho = IndexChipProbeControllerConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)

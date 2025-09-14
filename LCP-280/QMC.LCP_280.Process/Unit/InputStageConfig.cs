@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
@@ -67,9 +68,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.SetPosition, new [] { AxisNames.WaferStageY } },
         };
 
-        /// <summary>Teaching Position 목록 (순수 위치/설명)</summary>
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
-
+        
         /// <summary>
         /// 개별 Teaching Position 에 적용할 오프셋 (X / Y / T)
         /// </summary>

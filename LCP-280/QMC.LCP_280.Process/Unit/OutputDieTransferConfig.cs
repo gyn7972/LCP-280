@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
@@ -45,7 +46,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.SafetyZone,      new [] { AxisNames.RightPickZ, AxisNames.RightPlaceZ } },
         };
 
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         // ================= IO 이름 상수 (InputStageConfig.IO 패턴과 동일) =================
         internal static class IO
