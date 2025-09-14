@@ -38,9 +38,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in Config.TeachingPositions)
-                TeachingPositions.Add(tp);
+            
             BindAxes();
         }
         #endregion

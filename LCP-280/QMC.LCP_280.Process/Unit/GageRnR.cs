@@ -27,10 +27,6 @@ namespace QMC.LCP_280.Process.Unit
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
 
-            // TeachingPosition에 Axis 바인딩
-            TeachingPositions.Clear();
-            foreach (var tp in Config.TeachingPositions)
-                TeachingPositions.Add(tp);
         }
 
         public override int OnRun()

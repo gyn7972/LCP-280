@@ -28,7 +28,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Config / Teaching
-        public InputCassetteLifterConfig InputCassetteLifterConfig => Config;
+        
         #endregion
 
         public InputStage InputStage { get; private set; }
@@ -70,8 +70,8 @@ namespace QMC.LCP_280.Process.Unit
 
         public override void AddComponents()
         {
-            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            Config.InitializeDefaultTeachingPositions();
+            base.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            base.Config.InitializeDefaultTeachingPositions();
             BindAxes();
         }
         #endregion
@@ -99,7 +99,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
-            var tp = Config.GetTeachingPosition(tpName);
+            var tp = base.Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -112,12 +112,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            Config.SetTeachingPosition(tp);
+            base.Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = Config.GetTeachingPosition(positionName);
+            var tp = base.Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -133,7 +133,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool InPosTeaching(string positionName)
         {
-            var tp = Config.GetTeachingPosition(positionName);
+            var tp = base.Config.GetTeachingPosition(positionName);
             if (tp == null) return false;
             foreach (var kv in tp.AxisPositions)
                 if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
@@ -144,7 +144,7 @@ namespace QMC.LCP_280.Process.Unit
         #region IO / Sensors
         public bool ReadInput(string name)
         {
-            var hi = Config.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = base.Config.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -196,6 +196,7 @@ namespace QMC.LCP_280.Process.Unit
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
+                this.OnStop();
             }
 
             return ret;
@@ -286,6 +287,7 @@ namespace QMC.LCP_280.Process.Unit
                                     else if (Stagewafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
                                     {
                                         MoveToSlot(Stagewafer.SlotIndex);
+
                                     }
                                     else
                                     {
@@ -310,7 +312,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
-            dPos += Config.SlotPitch * slotIndex;
+            dPos += base.Config.SlotPitch * slotIndex;
             MoveAxisOnce(WaferLifterZ, dPos);
             while (!InPos(WaferLifterZ, dPos))
             {
@@ -392,7 +394,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             MaterialCassette material = GetMaterialCassette();
-            int nSlotCount = Config.SlotCount;
+            int nSlotCount = base.Config.SlotCount;
             material.Slots = new List<MaterialWafer>();
             for (int iter = 0; iter < nSlotCount; iter++)
             {
@@ -427,9 +429,9 @@ namespace QMC.LCP_280.Process.Unit
                 if (MappingSensor())
                 {
                     double dPos = WaferLifterZ.GetPosition();
-                    double dSlotPitch = Config.SlotPitch;
+                    double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
-                    int slot = (int)(Math.Abs(dPos - dStartPos) / Config.SlotPitch);
+                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
 
                     if (slot >= 0 && slot < material.Slots.Count)
                     {
@@ -513,7 +515,7 @@ namespace QMC.LCP_280.Process.Unit
         public int OnMoveToScanEndPosition(bool isFine = false)
         {
             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
-            axisPos -= Config.SlotPitch * (Config.SlotCount - 1);
+            axisPos -= base.Config.SlotPitch * (base.Config.SlotCount - 1);
             int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
 
             Thread.Sleep(10);

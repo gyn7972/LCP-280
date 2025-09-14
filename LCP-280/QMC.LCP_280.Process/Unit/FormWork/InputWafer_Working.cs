@@ -132,9 +132,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "InputCassetteLifter",
                         InputCassetteLifterUnit,
-                        () => InputCassetteLifterUnit.InputCassetteLifterConfig?.TeachingPositions,
+                        () => InputCassetteLifterUnit.Config?.TeachingPositions,
                         (name, vel) => InputCassetteLifterUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputCassetteLifterUnit.InputCassetteLifterConfig?.SetTeachingPosition(tp),
+                        tp => InputCassetteLifterUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 

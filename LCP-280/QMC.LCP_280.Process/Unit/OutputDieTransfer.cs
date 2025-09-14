@@ -14,13 +14,11 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputDieTransfer : BaseUnit<OutputDieTransferConfig>
     {
-        public OutputDieTransferConfig Config { get; private set; }
         
 
         public OutputDieTransfer(OutputDieTransferConfig config = null)
             : base(new OutputDieTransferConfig())
         {
-            Config = config ?? new OutputDieTransferConfig();
             AddComponents();
         }
 
@@ -28,9 +26,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in Config.TeachingPositions)
-                TeachingPositions.Add(tp);
+
+
             BindAxes();
             BindIoDomains();
         }
