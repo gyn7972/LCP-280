@@ -127,7 +127,7 @@ namespace QMC.LCP_280.Process
             // btnStartAll
             // 
             this.btnStartAll.BackColor = System.Drawing.Color.LightGreen;
-            this.btnStartAll.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStartAll.Enabled = false;
             this.btnStartAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStartAll.Location = new System.Drawing.Point(3, 3);
             this.btnStartAll.Name = "btnStartAll";
@@ -135,6 +135,7 @@ namespace QMC.LCP_280.Process
             this.btnStartAll.TabIndex = 0;
             this.btnStartAll.Text = "Start All";
             this.btnStartAll.UseVisualStyleBackColor = false;
+            this.btnStartAll.Click += new System.EventHandler(this.BtnStartAll_Click);
             // 
             // btnStopAll
             // 

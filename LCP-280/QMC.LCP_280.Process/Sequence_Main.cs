@@ -61,7 +61,7 @@ namespace QMC.LCP_280.Process
 
         private void WireEvents()
         {
-            if (btnStartAll       != null) btnStartAll.Click       += BtnStartAll_Click;
+            //if (btnStartAll       != null) btnStartAll.Click       += BtnStartAll_Click;
             if (btnStopAll        != null) btnStopAll.Click        += BtnStopAll_Click;
             if (btnSaveAllConfigs != null) btnSaveAllConfigs.Click += BtnSaveAllConfigs_Click;
             if (btnLoadAllConfigs != null) btnLoadAllConfigs.Click += BtnLoadAllConfigs_Click;
@@ -279,7 +279,7 @@ namespace QMC.LCP_280.Process
             {
                 var statuses = equipment.GetAllUnitStatus();
                 // 디버그: 실제 Unit 개수 출력
-                LogMessage($"[DBG] Units={statuses.Count}");
+                //LogMessage($"[DBG] Units={statuses.Count}");
 
                 lstUnitStatus.BeginUpdate();
                 lstUnitStatus.Items.Clear();
@@ -313,7 +313,7 @@ namespace QMC.LCP_280.Process
                 }
                 lstUnitStatus.EndUpdate();
 
-                LogMessage($"[DBG] ListView Items={lstUnitStatus.Items.Count}");
+                //LogMessage($"[DBG] ListView Items={lstUnitStatus.Items.Count}");
             }
             catch (Exception ex)
             {
