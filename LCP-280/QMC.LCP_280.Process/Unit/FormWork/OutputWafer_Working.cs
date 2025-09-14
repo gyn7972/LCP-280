@@ -12,7 +12,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
     ///    OutputRingTransfer : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
     ///    OutputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
     /// </summary>
-    public partial class WaferBin_Working : Form
+    public partial class OutputWafer_Working : Form
     {
         private const string WORK_NAME = "WaferBin";
         private Equipment Equipment => Equipment.Instance;
@@ -25,14 +25,14 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private bool _preloadRequested;     // PreloadUI 호출 여부(1회)
         private bool _deferredInitDone;     // 무거운 바인딩 지연 수행 여부
 
-        public WaferBin_Working() : this(
+        public OutputWafer_Working() : this(
             TryGetUnit<OutputStage>("OutputStage"),
             TryGetUnit<OutputRingTransfer>("OutputRingTransfer"),
             TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"))
         {
         }
 
-        public WaferBin_Working(OutputStage outputStage, OutputRingTransfer ringTransfer, OutputCassetteLifter cassetteLifter)
+        public OutputWafer_Working(OutputStage outputStage, OutputRingTransfer ringTransfer, OutputCassetteLifter cassetteLifter)
         {
             InitializeComponent();
             _OutputStage = outputStage;

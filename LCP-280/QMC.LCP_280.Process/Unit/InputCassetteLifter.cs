@@ -164,7 +164,12 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsCassettePresent1() => ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
-        public bool IsWaferProtrusionDetectionSensor() => !ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+        //public bool IsWaferProtrusionDetectionSensor() => !ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+        public bool IsWaferProtrusionDetectionSensor()
+        {
+            bool sensorState = ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+            return !sensorState;
+        }
 
         public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
@@ -384,7 +389,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return 0;
         }
-       
+
         public int ScanWafer()
         {
             int ret = 0;
@@ -425,16 +430,23 @@ namespace QMC.LCP_280.Process.Unit
                 if (MappingSensor())
                 {
                     double dPos = WaferLifterZ.GetPosition();
-                    double dSlotPitch = InputCassetteLifterConfig.SlotPitch;
-                    int slot = (int)((dPos - GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ)) / InputCassetteLifterConfig.SlotPitch);
+                    double dSlotPitch = 10;// InputCassetteLifterConfig.SlotPitch;
+                    int slot = (int)((dPos - GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ)) / 10);// InputCassetteLifterConfig.SlotPitch);
                     if (slot >= 0 && slot < material.Slots.Count)
                     {
                         MaterialWafer wafer = material.Slots[slot];
-                        if (wafer == null || wafer.Presence == Material.MaterialPresence.NotExist)
+                        if (wafer == null || 
+                            wafer.Presence == Material.MaterialPresence.Unknown || 
+                            wafer.Presence == Material.MaterialPresence.NotExist)
                         {
                             wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
                         }
                         wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
+                        //if (wafer == null || wafer.Presence == Material.MaterialPresence.NotExist)
+                        //{
+                        //    wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
+                        //}
+                        //wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
                         wafer.SlotIndex = slot;
                         material.SetWafer(slot, wafer);
                         Log.Write(this, $"Mapping Sensor Detected at Slot {slot + 1} Position {dPos:F3}");
@@ -443,14 +455,9 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
                     }
-
-
                 }
 
-                Thread.Sleep(0);
-
-
-
+                Thread.Sleep(1);
             }
             Log.Write(this, "End ScanWafer");
             return ret;

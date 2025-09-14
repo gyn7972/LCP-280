@@ -1,6 +1,6 @@
 ﻿namespace QMC.LCP_280.Process.Unit.FormWork
 {
-    partial class WaferRing_Working
+    partial class OutputWafer_Working
     {
         /// <summary>
         /// Required designer variable.
@@ -67,7 +67,7 @@
             this.manualSequenceControl.Size = new System.Drawing.Size(341, 350);
             this.manualSequenceControl.TabIndex = 13;
             // 
-            // WaferRing_Working
+            // WaferBin_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -75,8 +75,8 @@
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
-            this.Name = "WaferRing_Working";
-            this.Text = "WaferRing_Working";
+            this.Name = "WaferBin_Working";
+            this.Text = "WaferBin_Working";
             this.ResumeLayout(false);
 
         }

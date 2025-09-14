@@ -1,6 +1,8 @@
-﻿namespace QMC.LCP_280.Process.Unit.FormWork
+﻿using QMC.LCP_280.Process.Component;
+
+namespace QMC.LCP_280.Process.Unit.FormWork
 {
-    partial class WaferBin_Working
+    partial class InputWafer_Working
     {
         /// <summary>
         /// Required designer variable.
@@ -31,6 +33,8 @@
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
+            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
+            this.btnMapping = new QMC.Common.IndividualMenuButton();
             this.SuspendLayout();
             // 
             // dioControl
@@ -67,16 +71,44 @@
             this.manualSequenceControl.Size = new System.Drawing.Size(341, 350);
             this.manualSequenceControl.TabIndex = 13;
             // 
-            // WaferBin_Working
+            // waferMapView
+            // 
+            this.waferMapView.Location = new System.Drawing.Point(911, 368);
+            this.waferMapView.Name = "waferMapView";
+            this.waferMapView.Size = new System.Drawing.Size(137, 164);
+            this.waferMapView.TabIndex = 16;
+            // 
+            // btnMapping
+            // 
+            this.btnMapping.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMapping.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnMapping.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMapping.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMapping.CustomForeColor = System.Drawing.Color.Black;
+            this.btnMapping.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMapping.ForeColor = System.Drawing.Color.Black;
+            this.btnMapping.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnMapping.Location = new System.Drawing.Point(1054, 368);
+            this.btnMapping.Name = "btnMapping";
+            this.btnMapping.Size = new System.Drawing.Size(90, 35);
+            this.btnMapping.TabIndex = 17;
+            this.btnMapping.TabStop = false;
+            this.btnMapping.Text = "Mapping";
+            this.btnMapping.UseVisualStyleBackColor = false;
+            this.btnMapping.Click += new System.EventHandler(this.btnMapping_Click);
+            // 
+            // InputWafer_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.Controls.Add(this.btnMapping);
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
-            this.Name = "WaferBin_Working";
-            this.Text = "WaferBin_Working";
+            this.Controls.Add(this.waferMapView);
+            this.Name = "InputWafer_Working";
+            this.Text = "InputWafer_Working";
             this.ResumeLayout(false);
 
         }
@@ -85,5 +117,7 @@
         private Component.DIOControl dioControl;
         private Component.TeachingPositionControl teachingPositionControl;
         private Sequences.ManualSequenceControl manualSequenceControl;
+        private WaferMapView waferMapView;
+        private Common.IndividualMenuButton btnMapping;
     }
 }

@@ -9,7 +9,7 @@ namespace QMC.LCP_280.Process.Work
 {
     internal class ChipLoader
     {
-        //waferRingStage
+        //InputWaferStage
         //waferEjector
         //dietransfer
         //index
