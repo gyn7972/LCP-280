@@ -36,6 +36,10 @@ namespace QMC.Common.IOUtil
             {
                 _map[key] = new IoPoint(moduleName, displayNo, isOutput);
             }
+            else
+            {
+
+            }
                 
 
             
