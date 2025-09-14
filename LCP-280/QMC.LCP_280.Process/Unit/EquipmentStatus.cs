@@ -38,6 +38,61 @@ namespace QMC.LCP_280.Process.Unit
                     yield return m.ModuleName;
         }
 
+        #region Lifecycle
+        public override int OnRun()
+        {
+            int ret = 0;
+
+            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            ret = OnRunWork();
+
+            //switch (State)
+            //{
+            //    case ProcessState.Ready:
+            //        ret = OnRunReady();
+            //        break;
+            //    case ProcessState.Work:
+            //        ret = OnRunWork();
+            //        break;
+            //    case ProcessState.Complete:
+            //        ret = OnRunComplete();
+            //        break;
+            //    default:
+            //        break;
+            //}
+            //if (ret != 0)
+            //{
+            //    this.State = ProcessState.Stop;
+            //}
+
+            return ret;
+        }
+        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+
+
+        protected override int OnRunReady() 
+        {
+            return 0; 
+        }
+        protected override int OnRunWork() 
+        { 
+            return 0; 
+        }
+        protected override int OnRunComplete() 
+        { 
+            return 0; 
+        }
+
+
+        #endregion
+
+
+
         /// <summary>
         /// 입력 신호(Display 번호 기반)를 모든 모듈에서 탐색하여 최초 성공 값을 반환.
         /// 실패 시 false 리턴 (value = false).

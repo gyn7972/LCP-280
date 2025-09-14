@@ -2,6 +2,8 @@
 using System;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using LCP_280;
+using QMC.Common;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -12,32 +14,39 @@ namespace QMC.LCP_280.Process.Unit.FormWork
     ///    InputRingTransfer : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
     ///    InputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
     /// </summary>
-    public partial class WaferRing_Working : Form
+    public partial class InputWafer_Working : Form
     {
-        private const string WORK_NAME = "WaferRing";
+        private const string WORK_NAME = "InputWafer";
         private Equipment Equipment => Equipment.Instance;
 
         private InputFeeder InputRingTransferUnit { get; set; }
         private InputCassetteLifter InputCassetteLifterUnit { get; set; }
 
+        private MaterialCassette MaterialCassette { get; set; }
+
         private bool _initialized;
         private bool _preloadRequested;
         private bool _deferredInitDone; // 지연 초기화 완료 여부
 
-        public WaferRing_Working() : this(
+
+        public InputWafer_Working() : this(
             TryGetUnit<InputFeeder>("InputRingTransfer"),
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"))
         {
         }
 
-        public WaferRing_Working(InputFeeder ringTransfer, InputCassetteLifter cassetteLifter)
+        public InputWafer_Working(InputFeeder ringTransfer, InputCassetteLifter cassetteLifter)
         {
             InitializeComponent();
             InputRingTransferUnit = ringTransfer;
             InputCassetteLifterUnit = cassetteLifter;
 
-            Load += WaferRing_Working_Load;
-            FormClosing += WaferRing_Working_FormClosing;
+            Load += InputWafer_Working_Load;
+            FormClosing += InputWafer_Working_FormClosing;
+
+            var materialCassette = InputCassetteLifterUnit.GetMaterialCassette();
+            waferMapView.SetMaterialCassette(materialCassette);
+
         }
 
         /// <summary>
@@ -52,7 +61,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             var handle = Handle; // 강제 핸들 생성
         }
 
-        private void WaferRing_Working_Load(object sender, EventArgs e)
+        private void InputWafer_Working_Load(object sender, EventArgs e)
         {
             EnsureInitialized();
         }
@@ -238,9 +247,46 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         }
         #endregion
 
-        private void WaferRing_Working_FormClosing(object sender, FormClosingEventArgs e)
+        private void InputWafer_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
             try { } catch { }
+        }
+
+        private void btnMapping_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (InputCassetteLifterUnit == null)
+                {
+                    MessageBox.Show("InputCassetteLifterUnit이 초기화되지 않았습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Wafer 감지 수행
+                int nRet = InputCassetteLifterUnit.ScanWafer();
+
+                if (nRet != 0)
+                {
+                    //MessageBox.Show($"Wafer 감지 실패. 오류 코드: {nRet}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Log.Write("InputWafer_Working", "", $"Wafer 감지 실패. 오류 코드: {nRet}", "오류");
+                    return;
+                }
+                // scan 후 재설정.
+                var materialCassette = InputCassetteLifterUnit.GetMaterialCassette();
+                if (materialCassette == null)
+                {
+                    MessageBox.Show("Wafer 감지 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                // WaferMapView에 데이터 설정 //material
+                waferMapView.SetMaterialCassette(materialCassette);
+
+                MessageBox.Show("Wafer 감지가 완료되었습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Wafer 감지 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

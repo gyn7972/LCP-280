@@ -1,4 +1,5 @@
-﻿using QMC.LCP_280.Process.Component; 
+﻿using QMC.Common;
+using QMC.LCP_280.Process.Component; 
 using QMC.LCP_280.Process.Sequences;
 using System;
 using System.Threading;
@@ -500,6 +501,42 @@ namespace QMC.LCP_280.Process.Unit
         private void buttonTest2_Click(object sender, EventArgs e)
         {
             InputStageUnit.SetClampLift(false);
+        }
+
+        private void btnWaferLoading_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.LoadingWafer();
+        }
+
+        private void btnAlignT_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.AlignT();
+        }
+
+        private void btnAlignXY_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.AlignXY();
+        }
+
+        private void btnWaferUnloading_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.UnloadingWafer();
         }
     }
 }

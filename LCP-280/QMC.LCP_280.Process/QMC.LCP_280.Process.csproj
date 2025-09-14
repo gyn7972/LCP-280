@@ -103,6 +103,9 @@
     <Compile Include="Component\JogControl.Designer.cs">
       <DependentUpon>JogControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\ProcessData\WaferMapView.designer.cs">
+      <DependentUpon>WaferMapView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\Recipe\MeasurementKey.cs" />
     <Compile Include="Component\PatternMatchingControl.cs">
       <SubType>UserControl</SubType>
@@ -218,17 +221,17 @@
     <Compile Include="Unit\FormRecipe\Page\TestConditionSetPage.Designer.cs">
       <DependentUpon>TestConditionSetPage.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormWork\WaferBin_Working.cs">
+    <Compile Include="Unit\FormWork\OutputWafer_Working.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormWork\WaferBin_Working.Designer.cs">
-      <DependentUpon>WaferBin_Working.cs</DependentUpon>
+    <Compile Include="Unit\FormWork\OutputWafer_Working.Designer.cs">
+      <DependentUpon>OutputWafer_Working.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormWork\WaferRing_Working.cs">
+    <Compile Include="Unit\FormWork\InputWafer_Working.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormWork\WaferRing_Working.Designer.cs">
-      <DependentUpon>WaferRing_Working.cs</DependentUpon>
+    <Compile Include="Unit\FormWork\InputWafer_Working.Designer.cs">
+      <DependentUpon>InputWafer_Working.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\GageRnR.cs" />
     <Compile Include="Unit\GageRnRConfig.cs" />
@@ -389,13 +392,13 @@
     <Compile Include="WaferData.cs" />
     <Compile Include="WaferDataConfig.cs" />
     <Compile Include="WaferMapItem.cs" />
-    <Compile Include="WaferMapView.cs">
+    <Compile Include="Component\ProcessData\WaferMapView.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Work\ChipLoader.cs" />
     <Compile Include="Work\ChipUnloder.cs" />
     <Compile Include="Work\Process.cs" />
-    <Compile Include="Work\WaferRing.cs" />
+    <Compile Include="Work\InputWafer.cs" />
     <Compile Include="Work\WaferBin.cs" />
     <EmbeddedResource Include="Component\DIOControl.resx">
       <DependentUpon>DIOControl.cs</DependentUpon>
@@ -409,6 +412,9 @@
     <EmbeddedResource Include="Component\PatternMatchingControl.resx">
       <DependentUpon>PatternMatchingControl.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\ProcessData\WaferMapView.resx">
+      <DependentUpon>WaferMapView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\TeachingPositionControl.resx">
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>
@@ -525,11 +531,11 @@
     <EmbeddedResource Include="Unit\FormWork\Process_Working.resx">
       <DependentUpon>Process_Working.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormWork\WaferBin_Working.resx">
-      <DependentUpon>WaferBin_Working.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormWork\OutputWafer_Working.resx">
+      <DependentUpon>OutputWafer_Working.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormWork\WaferRing_Working.resx">
-      <DependentUpon>WaferRing_Working.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormWork\InputWafer_Working.resx">
+      <DependentUpon>InputWafer_Working.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

@@ -247,13 +247,13 @@ namespace QMC.LCP_280.Process
             // btnStartUnit
             // 
             this.btnStartUnit.BackColor = System.Drawing.Color.PaleGreen;
-            this.btnStartUnit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStartUnit.Location = new System.Drawing.Point(745, 3);
             this.btnStartUnit.Name = "btnStartUnit";
             this.btnStartUnit.Size = new System.Drawing.Size(241, 29);
             this.btnStartUnit.TabIndex = 2;
             this.btnStartUnit.Text = "Start Unit";
             this.btnStartUnit.UseVisualStyleBackColor = false;
+            this.btnStartUnit.Click += new System.EventHandler(this.BtnStartUnit_Click);
             // 
             // btnStopUnit
             // 
@@ -265,6 +265,7 @@ namespace QMC.LCP_280.Process
             this.btnStopUnit.TabIndex = 3;
             this.btnStopUnit.Text = "Stop Unit";
             this.btnStopUnit.UseVisualStyleBackColor = false;
+            this.btnStopUnit.Click += new System.EventHandler(this.BtnStopUnit_Click);
             // 
             // grpStatus
             // 
