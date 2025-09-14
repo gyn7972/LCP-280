@@ -246,6 +246,9 @@ namespace QMC.Common.Unit
         { 
             int ret = 0;
             m_bExit = true;
+
+            SetRunMode(UnitRunMode.Manual);
+
             return ret;
         }
 

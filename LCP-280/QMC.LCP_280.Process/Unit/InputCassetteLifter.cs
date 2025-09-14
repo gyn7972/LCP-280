@@ -218,6 +218,7 @@ namespace QMC.LCP_280.Process.Unit
             else
             {
                 cd.Presence = Material.MaterialPresence.NotExist;
+                cd.ProcessSatate = Material.MaterialProcessSatate.Unknown;
             }
             return cd;
         }
@@ -397,7 +398,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 material.Slots.Add(new MaterialWafer());
             }
-            MoveToScanStartPosition();
+            ret = MoveToScanStartPosition();
+            if (ret != 0)
+            {
+                return ret;
+            }
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync();
             while (true)
             {
@@ -413,8 +418,10 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 if (IsWaferProtrusionDetectionSensor())
                 {
+                    this.WaferLifterZ.EmgStop();
                     Log.Write(this, "Wafer Protrusion Detected");
                     AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                   
                     return -1;
                 }
                 if (MappingSensor())
@@ -451,6 +458,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 Thread.Sleep(0);
             }
+            material.ProcessSatate = Material.MaterialProcessSatate.Ready;
             Log.Write(this, "End ScanWafer");
             return ret;
         }
@@ -458,7 +466,7 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToScanStartPosition(bool isFine = false)
         {
             Task<int> task = MoveToScanStartPositionAsync();
-            while (IsEndTask(task))
+            while (IsEndTask(task) == false)
             {
                 if (this.IsWaferProtrusionDetectionSensor())
                 {
@@ -507,9 +515,11 @@ namespace QMC.LCP_280.Process.Unit
             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
             axisPos -= Config.SlotPitch * (Config.SlotCount - 1);
             int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
+
+            Thread.Sleep(10);
             if (ret == 0)
             {
-                while (this.WaferLifterZ.IsMoveDone())
+                while (this.WaferLifterZ.IsMoveDone() == false)
                 {
                     Thread.Sleep(0);
                 }

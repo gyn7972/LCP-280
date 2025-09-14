@@ -735,6 +735,13 @@ namespace QMC.LCP_280.Process
             try
             {
                 (unitObj as BaseUnit)?.Stop();
+
+
+                execInfo.IsRunning = false;
+                execInfo.StopTime = DateTime.Now;
+                OnUnitStateChanged(unitName, UnitState.Stopping);
+
+
                 Console.WriteLine($"Unit '{unitName}' 정지 완료");
                 return true;
             }
