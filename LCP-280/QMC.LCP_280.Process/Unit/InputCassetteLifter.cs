@@ -196,6 +196,10 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Ready;
                     break;
             }
+            if(ret != 0)
+            {
+                this.State = ProcessState.Stop;
+            }
 
             return ret;
         }
@@ -207,16 +211,17 @@ namespace QMC.LCP_280.Process.Unit
             {
                 cd = new MaterialCassette();
                 SetMaterial((Material)cd);
-                if (IsCassettePresentAll())
-                {
-                    cd.Presence = Material.MaterialPresence.Exist;
-                    cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
-                    cd.ArrivedTime = DateTime.Now;
-                }
-                else
-                {
-                    cd.Presence = Material.MaterialPresence.NotExist;
-                }
+                
+            }
+            if (IsCassettePresentAll())
+            {
+                cd.Presence = Material.MaterialPresence.Exist;
+                cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
+                cd.ArrivedTime = DateTime.Now;
+            }
+            else
+            {
+                cd.Presence = Material.MaterialPresence.NotExist;
             }
             return cd;
         }
@@ -367,7 +372,7 @@ namespace QMC.LCP_280.Process.Unit
             MaterialCassette material = GetMaterialCassette();
             if (material.Presence == Material.MaterialPresence.Exist)
             {
-                State = ProcessState.Work;
+                
                 if (material.ProcessSatate == MaterialCassette.MaterialProcessSatate.Unknown)
                 {
                     ret = ScanWafer();
@@ -377,6 +382,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
                 }
+                State = ProcessState.Work;
             }
             else
             {
@@ -458,6 +464,22 @@ namespace QMC.LCP_280.Process.Unit
 
         public int MoveToScanStartPosition(bool isFine = false)
         {
+            Task<int> task = MoveToScanStartPositionAsync();
+            while(IsEndTask(task))
+            {
+                if(this.IsWaferProtrusionDetectionSensor())
+                {
+
+                    this.WaferLifterZ.EmgStop();
+                    AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public int OnMoveToScanStartPosition(bool isFine = false)
+        {
             return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingStart, isFine);
         }
         public Task<int> MoveToScanStartPositionAsync()
@@ -465,7 +487,7 @@ namespace QMC.LCP_280.Process.Unit
             return Task.Run(() =>
             {
 
-                MoveToScanStartPosition();
+                OnMoveToScanStartPosition();
                 return 0;
             });
         }
