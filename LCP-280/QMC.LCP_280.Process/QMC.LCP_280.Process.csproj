@@ -136,13 +136,16 @@
     <Compile Include="Component\VisionRunnerHub.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
-    <Compile Include="Sequence.cs">
+    <Compile Include="Sequence_Main.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="EquipmentManagers.cs" />
     <Compile Include="EquipmentRecipe.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Sequence_Main.Designer.cs">
+      <DependentUpon>Sequence_Main.cs</DependentUpon>
+    </Compile>
     <Compile Include="TestGyn.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -155,7 +158,7 @@
     <Compile Include="Unit\CommonUnitConfig.Designer.cs">
       <DependentUpon>CommonUnitConfig.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\EquipmentStatusUnit.cs" />
+    <Compile Include="Unit\EquipmentStatus.cs" />
     <Compile Include="Component\Form_AxisJogPopup.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -421,6 +424,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="Sequence_Main.resx">
+      <DependentUpon>Sequence_Main.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="TestGyn.resx">
       <DependentUpon>TestGyn.cs</DependentUpon>
     </EmbeddedResource>
