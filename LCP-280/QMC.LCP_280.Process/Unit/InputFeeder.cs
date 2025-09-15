@@ -49,6 +49,12 @@ namespace QMC.LCP_280.Process.Unit
         #region IO Domain Members
         private Cylinder _feederLift; // Up/Down
         private Cylinder _cylClamp;   // Clamp/Unclamp
+
+
+
+        public bool IsRequestLoadingWafer { get; private set; }
+
+
         #endregion
 
         #region Constructor / Initialization
@@ -84,16 +90,12 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
 
-            Config.IsSimulation = true;
+            Config.IsSimulation = false;
             if (Config.IsSimulation)
             {
                 _feederY.Config.IsSimulation = true;
                 Log.Write("InputFeeder", "Simulation Mode");
             }
-
-
-
-
         }
         #endregion
 
@@ -287,7 +289,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.State = ProcessState.Work;
             }
-            else if (this.InputStage.IsCompleteWorking)
+            else if (this.InputStage.IsStatus_CompleteWorking)
             {
                 this.State = ProcessState.Complete;
             }

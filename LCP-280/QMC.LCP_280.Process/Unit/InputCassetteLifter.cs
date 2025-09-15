@@ -114,7 +114,6 @@ namespace QMC.LCP_280.Process.Unit
             var tp = new TeachingPosition(positionName, axisPositions, description);
             base.Config.SetTeachingPosition(tp);
         }
-
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
             var tp = base.Config.GetTeachingPosition(positionName);

@@ -45,6 +45,8 @@ namespace QMC.LCP_280.Process.Unit
             eInputStageEjectorPinZNotSafe,
             eInputStageEjectorZNotSafe,
             eInputFeederYNotSafe,
+            eVisionTsearch,
+            eVisionXYsearch,
 
         }
         private struct AngleStats
@@ -97,6 +99,22 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputFeederYNotSafe;
             alarm.Title = "Feeder Y-Axis Not Sfarety Pos.";
             alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eVisionTsearch;
+            alarm.Title = "Vision T Search.";
+            alarm.Cause = "Vision T Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+            //
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eVisionXYsearch;
+            alarm.Title = "Vision XY Search.";
+            alarm.Cause = "Vision XY Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -156,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            Config.IsSimulation = true;
+            Config.IsSimulation = false;
             if (Config.IsSimulation)
             {
                 _axX.Config.IsSimulation = true;
@@ -1208,108 +1226,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
         }
-
-        // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
-        public bool IsStatus_StageLoadingReady { get; private set; }
-        public bool IsStatus_StageLoadingDone { get; private set; }
-        public override int OnRun()
-        {
-            int ret = 0;
-
-            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
-            {
-                this.State = ProcessState.Stop;
-                return 1;
-            }
-
-            switch (State)
-            {
-                case ProcessState.Ready:
-                    ret = OnRunReady();
-                    break;
-                case ProcessState.Work:
-                    ret = OnRunWork();
-                    break;
-                case ProcessState.Complete:
-                    ret = OnRunComplete();
-                    break;
-                default:
-                    //IsStatus_StageLoadingReady = false;
-                    //IsStatus_StageLoadingDone = false;
-                    this.State = ProcessState.Ready;
-                    break;
-            }
-            if (ret != 0)
-            {
-                this.State = ProcessState.Stop;
-                this.OnStop();
-            }
-
-            return ret;
-        }
-        public override int OnStop()
-        {
-            int ret = 0;
-            State = ProcessState.Stop;
-            base.OnStop();
-            return ret;
-        }
-
-        protected override int OnRunReady() 
-        {
-            int ret = 0;
-            
-            State = ProcessState.Ready;
-            ret = LoadingWafer();
-            if (ret != 0)
-            {
-                State = ProcessState.Error;
-                Log.Write(this, "LoadingWafer Failed");
-                return -1;
-            }
-            else
-            {
-                State = ProcessState.Work;
-            }
-            return 0; 
-        }
-
-        protected override int OnRunWork() 
-        { 
-            int ret = 0;
-            State = ProcessState.Work;
-
-            ret = AlignT();
-            if(ret != 0)
-            {
-                State = ProcessState.Error;
-                Log.Write(this, "AlignT Failed");
-                return -1;
-            }
-            else
-            {
-                IsStatus_StageLoadingDone = true;
-                IsRequestWafer = false;
-
-                ret = AlignXY();
-                if(ret != 0)
-                {
-                    State = ProcessState.Error;
-                    Log.Write(this, "AlignXY Failed");
-                    return -1;
-                }
-                else
-                {
-                }
-            }
-
-            return 0;
-        }
-
-        protected override int OnRunComplete() 
-        { 
-            return 0; 
-        }
         #endregion
 
         // 파라미터로 빼야하는 Data 및 상수
@@ -1384,6 +1300,166 @@ namespace QMC.LCP_280.Process.Unit
         public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
         public bool IsRequestWafer { get; internal set; } = false;
 
+        // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
+        public bool IsStatus_StageLoadingReady { get; private set; }
+        public bool IsStatus_StageLoadingDone { get; private set; }
+        public bool IsStatus_StageUnloadingReady { get; private set; }
+        public bool IsStatus_StageUnloadingDone { get; private set; }
+        public bool IsStatus_CompleteWorking
+        {
+            get
+            {
+                MaterialWafer mat = GetWaferMaterial();
+                if (mat == null)
+                {
+                    return false;
+                }
+                if (mat.Presence == Material.MaterialPresence.Exist)
+                {
+                    return mat.ProcessSatate == Material.MaterialProcessSatate.Completed;
+                }
+                return false;
+            }
+            internal set
+            {
+            }
+        }
+
+        public override int OnRun()
+        {
+            int ret = 0;
+
+            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    ret = OnRunReady();
+                    break;
+                case ProcessState.Work:
+                    ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    ret = OnRunComplete();
+                    break;
+                default:
+                    //IsStatus_StageLoadingReady = false;
+                    //IsStatus_StageLoadingDone = false;
+                    this.State = ProcessState.Ready;
+                    break;
+            }
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+
+            return ret;
+        }
+        public override int OnStop()
+        {
+            int ret = 0;
+            State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
+        }
+
+        protected override int OnRunReady()
+        {
+            int ret = 0;
+
+            // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 Work 단계 가능)
+            if (IsRingPresent())
+            {
+                //Plate Up → 
+                if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+                {
+                    Log.Write(this, "Fail: PlateUp");
+                    return -1;
+                }
+
+                int rc = LoadingWaferComplete();
+                if (rc != 0 && rc != 0)
+                    return rc; // rc !=0 이면 오류. (준비단계는 OK=0 외 다른 코드 없음)
+
+                State = ProcessState.Work;
+                Log.Write(this, "Wafer already present -> Skip prepare");
+                return 0;
+            }
+            else if (!InputFeeder.IsRequestLoadingWafer)
+            {
+                return 0;
+            }
+            else
+            {
+                ret = LoadingWafer();
+                if (ret != 0)
+                {
+                    State = ProcessState.Error;
+                    Log.Write(this, "LoadingWafer Failed");
+                    return -1;
+                }
+                else
+                {
+                    State = ProcessState.Work;
+                }
+            }
+
+            return 0;
+        }
+
+        protected override int OnRunWork()
+        {
+            int ret = 0;
+
+            ret = AlignT();
+            if (ret != 0)
+            {
+                State = ProcessState.Error;
+                Log.Write(this, "AlignT Failed");
+                return -1;
+            }
+            else
+            {
+                IsStatus_StageLoadingDone = true;
+                IsRequestWafer = false;
+
+                ret = AlignXY();
+                if (ret != 0)
+                {
+                    State = ProcessState.Error;
+                    Log.Write(this, "AlignXY Failed");
+                    return -1;
+                }
+                else
+                {
+                    State = ProcessState.Complete;
+                }
+            }
+
+            return 0;
+        }
+
+        protected override int OnRunComplete()
+        {
+            int ret = 0;
+
+            ret = UnloadingWafer();
+            if (ret != 0)
+            {
+                State = ProcessState.Error;
+                Log.Write(this, "UnloadingWafer Failed");
+                return -1;
+            }
+
+            State = ProcessState.None;
+            return 0;
+        }
+
         // 주석   
         /* TODO */
         //웨이퍼 있냐 없냐? 
@@ -1449,7 +1525,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             //Plate Up → 
-            if (!ActAndWait("PlateDown", () => SetClampPlate(true), () => IsPlateUp()))
+            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
             {
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
@@ -1485,7 +1561,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if(Config.IsSimulation)
                 {
-
+                    Thread.Sleep(1000);
                 }
                 else if (IsPlateUp())
                 {
@@ -1527,7 +1603,7 @@ namespace QMC.LCP_280.Process.Unit
         public int LoadingWafer()
         {
             int rc = LoadingWaferPrepare();
-            if (rc != 0 && rc != 0)
+            if (rc != 0)
                 return rc; // rc !=0 이면 오류. (준비단계는 OK=0 외 다른 코드 없음)
             
             // Ring 대기
@@ -1666,6 +1742,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
             {
+                AlarmPost((int)AlarmKeys.eVisionTsearch);
                 Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
                 return -1;
             }
@@ -1771,6 +1848,7 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
+                AlarmPost((int)AlarmKeys.eVisionXYsearch);
                 Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
                 return -1;
             }
@@ -1877,29 +1955,7 @@ namespace QMC.LCP_280.Process.Unit
 
         //스테이지 언로딩 완료 플래그 ON ?
         // === Unloading 상태 플래그 ===
-        public bool StageUnloadingReady { get; private set; }
-        public bool StageUnloadingDone { get; private set; }
-        public bool IsCompleteWorking 
-        {
-            get
-            {
-                MaterialWafer mat = GetWaferMaterial();
-                if(mat==null)
-                { 
-                    return false;
-                }
-                if(mat.Presence == Material.MaterialPresence.Exist)
-                {
-                    return mat.ProcessSatate == Material.MaterialProcessSatate.Completed;
-                }
-                return false;
-                
-
-            }
-            internal set
-            {
-            } 
-        }
+        
 
         private bool IsExternalUnloadInterlockOk()
         {
@@ -1923,35 +1979,38 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int UnloadingWaferPrepare()
         {
+            int nRtn = 0;
             Log.Write(UnitName, "UnloadingPrep", "Start");
-            StageUnloadingDone = false;
-            StageUnloadingReady = false;
+            IsStatus_StageUnloadingDone = false;
+            IsStatus_StageUnloadingReady = false;
 
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingPrep", "No wafer -> Skip");
-                StageUnloadingDone = true;
+                IsStatus_StageUnloadingDone = true;
                 return 0;
             }
 
             if (!IsExternalUnloadInterlockOk())
                 return -1;
 
-            if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.Unloading, false) != 0 ||
-                WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName.Unloading, MoveTimeoutMs) != 0)
+            nRtn = MoveToStageUnloadPosition();
+            if(nRtn != 0)
             {
-                Log.Write(UnitName, "UnloadingPrep", "Fail: Move Unloading");
                 return -1;
             }
 
             // Plate Up (이미 Up 일 수도 있으나 통일)
-            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp())) return -1;
+            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp())) 
+                return -1;
             // Clamp Back (웨이퍼 픽업 전 클램프 해제)
-            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd())) return -1;
+            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd())) 
+                return -1;
             // Lift Down (픽업 접근 공간 확보)
-            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown())) return -1;
+            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown())) 
+                return -1;
 
-            StageUnloadingReady = true;
+            IsStatus_StageUnloadingReady = true;
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
@@ -1966,33 +2025,34 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int UnloadingWaferComplete()
         {
-            if (StageUnloadingDone)
+            int nRtn = 0;
+
+            if (IsStatus_StageUnloadingDone)
                 return 0;
 
-            if (!StageUnloadingReady && IsRingPresent())
+            if (!IsStatus_StageUnloadingReady && !IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingComp", "Not prepared");
                 return -1;
             }
 
-            if (IsRingPresent())
-                return 1; // 아직 픽업 안됨
+            if (!IsRingPresent())
+                return -1; // 아직 픽업 안됨
 
             Log.Write(UnitName, "UnloadingComp", "Wafer removed -> Completing");
 
             // Plate Down (원위치)
-            if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) return -1;
+            if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) 
+                return -1;
 
-            // Ready Teaching (있으면)
-            var readyTp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Ready];
-            if (readyTp != null)
+            nRtn = MoveToStageReadyPosition();
+            if (nRtn != 0)
             {
-                if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.Ready, false) == 0)
-                    WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName.Ready, MoveTimeoutMs);
+                return -1;
             }
 
-            StageUnloadingDone = true;
-            StageUnloadingReady = false;
+            IsStatus_StageUnloadingDone = true;
+            IsStatus_StageUnloadingReady = false;
             Log.Write(UnitName, "UnloadingComp", "Done");
             return 0;
         }

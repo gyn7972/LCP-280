@@ -308,12 +308,6 @@ namespace QMC.LCP_280.Process.Unit
 
 
 
-
-
-
-
-
-
         public void ApplyOffset(string name, double t, double pickZ, double placeZ)
             => Config.SetOffset(name, t, pickZ, placeZ);
         #endregion
@@ -455,8 +449,46 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Lifecycle
-        public override int OnRun() { int ret = 0; return ret; }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        public override int OnRun() 
+        {
+            int ret = 0;
+
+            if (this.Status == UnitRunStatus.Stop || 
+                this.Status == UnitRunStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    ret = OnRunReady();
+                    break;
+                case ProcessState.Work:
+                    ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    ret = OnRunComplete();
+                    break;
+                default:
+                    this.State = ProcessState.Ready;
+                    break;
+            }
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+
+            return ret;
+        }
+        public override int OnStop() 
+        { 
+            int ret = 0; 
+            base.OnStop(); 
+            return ret; 
+        }
         #endregion
 
         public Task<int> MovePickUpPosition()

@@ -26,13 +26,14 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.btnWaferUnloading = new QMC.Common.IndividualMenuButton();
+            this.btnAlignXY = new QMC.Common.IndividualMenuButton();
+            this.btnAlignT = new QMC.Common.IndividualMenuButton();
+            this.btnWaferLoading = new QMC.Common.IndividualMenuButton();
             this.buttonTest2 = new System.Windows.Forms.Button();
             this.buttonTest = new System.Windows.Forms.Button();
             this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
-            this.btnWaferLoading = new QMC.Common.IndividualMenuButton();
-            this.btnAlignT = new QMC.Common.IndividualMenuButton();
-            this.btnAlignXY = new QMC.Common.IndividualMenuButton();
-            this.btnWaferUnloading = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxImageView.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
@@ -124,6 +125,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // groupBoxManual
             // 
+            this.groupBoxManual.Controls.Add(this.individualMenuButton1);
             this.groupBoxManual.Controls.Add(this.btnWaferUnloading);
             this.groupBoxManual.Controls.Add(this.btnAlignXY);
             this.groupBoxManual.Controls.Add(this.btnAlignT);
@@ -137,6 +139,82 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManual.TabIndex = 16;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
+            // 
+            // btnWaferUnloading
+            // 
+            this.btnWaferUnloading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferUnloading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnWaferUnloading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferUnloading.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnWaferUnloading.CustomForeColor = System.Drawing.Color.Black;
+            this.btnWaferUnloading.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnWaferUnloading.ForeColor = System.Drawing.Color.Black;
+            this.btnWaferUnloading.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnWaferUnloading.Location = new System.Drawing.Point(6, 184);
+            this.btnWaferUnloading.Name = "btnWaferUnloading";
+            this.btnWaferUnloading.Size = new System.Drawing.Size(110, 35);
+            this.btnWaferUnloading.TabIndex = 23;
+            this.btnWaferUnloading.TabStop = false;
+            this.btnWaferUnloading.Text = "WaferUnloading";
+            this.btnWaferUnloading.UseVisualStyleBackColor = false;
+            this.btnWaferUnloading.Click += new System.EventHandler(this.btnWaferUnloading_Click);
+            // 
+            // btnAlignXY
+            // 
+            this.btnAlignXY.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignXY.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnAlignXY.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignXY.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnAlignXY.CustomForeColor = System.Drawing.Color.Black;
+            this.btnAlignXY.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnAlignXY.ForeColor = System.Drawing.Color.Black;
+            this.btnAlignXY.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnAlignXY.Location = new System.Drawing.Point(6, 143);
+            this.btnAlignXY.Name = "btnAlignXY";
+            this.btnAlignXY.Size = new System.Drawing.Size(110, 35);
+            this.btnAlignXY.TabIndex = 22;
+            this.btnAlignXY.TabStop = false;
+            this.btnAlignXY.Text = "AlignXY";
+            this.btnAlignXY.UseVisualStyleBackColor = false;
+            this.btnAlignXY.Click += new System.EventHandler(this.btnAlignXY_Click);
+            // 
+            // btnAlignT
+            // 
+            this.btnAlignT.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignT.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnAlignT.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignT.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnAlignT.CustomForeColor = System.Drawing.Color.Black;
+            this.btnAlignT.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnAlignT.ForeColor = System.Drawing.Color.Black;
+            this.btnAlignT.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnAlignT.Location = new System.Drawing.Point(6, 102);
+            this.btnAlignT.Name = "btnAlignT";
+            this.btnAlignT.Size = new System.Drawing.Size(110, 35);
+            this.btnAlignT.TabIndex = 21;
+            this.btnAlignT.TabStop = false;
+            this.btnAlignT.Text = "AlignT";
+            this.btnAlignT.UseVisualStyleBackColor = false;
+            this.btnAlignT.Click += new System.EventHandler(this.btnAlignT_Click);
+            // 
+            // btnWaferLoading
+            // 
+            this.btnWaferLoading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferLoading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnWaferLoading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferLoading.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnWaferLoading.CustomForeColor = System.Drawing.Color.Black;
+            this.btnWaferLoading.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnWaferLoading.ForeColor = System.Drawing.Color.Black;
+            this.btnWaferLoading.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnWaferLoading.Location = new System.Drawing.Point(6, 61);
+            this.btnWaferLoading.Name = "btnWaferLoading";
+            this.btnWaferLoading.Size = new System.Drawing.Size(110, 35);
+            this.btnWaferLoading.TabIndex = 20;
+            this.btnWaferLoading.TabStop = false;
+            this.btnWaferLoading.Text = "WaferLoading";
+            this.btnWaferLoading.UseVisualStyleBackColor = false;
+            this.btnWaferLoading.Click += new System.EventHandler(this.btnWaferLoading_Click);
             // 
             // buttonTest2
             // 
@@ -168,81 +246,23 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
             this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
             // 
-            // btnWaferLoading
+            // individualMenuButton1
             // 
-            this.btnWaferLoading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnWaferLoading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnWaferLoading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnWaferLoading.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnWaferLoading.CustomForeColor = System.Drawing.Color.Black;
-            this.btnWaferLoading.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnWaferLoading.ForeColor = System.Drawing.Color.Black;
-            this.btnWaferLoading.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnWaferLoading.Location = new System.Drawing.Point(6, 61);
-            this.btnWaferLoading.Name = "btnWaferLoading";
-            this.btnWaferLoading.Size = new System.Drawing.Size(138, 35);
-            this.btnWaferLoading.TabIndex = 20;
-            this.btnWaferLoading.TabStop = false;
-            this.btnWaferLoading.Text = "WaferLoading";
-            this.btnWaferLoading.UseVisualStyleBackColor = false;
-            this.btnWaferLoading.Click += new System.EventHandler(this.btnWaferLoading_Click);
-            // 
-            // btnAlignT
-            // 
-            this.btnAlignT.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnAlignT.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnAlignT.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnAlignT.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnAlignT.CustomForeColor = System.Drawing.Color.Black;
-            this.btnAlignT.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnAlignT.ForeColor = System.Drawing.Color.Black;
-            this.btnAlignT.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnAlignT.Location = new System.Drawing.Point(6, 102);
-            this.btnAlignT.Name = "btnAlignT";
-            this.btnAlignT.Size = new System.Drawing.Size(138, 35);
-            this.btnAlignT.TabIndex = 21;
-            this.btnAlignT.TabStop = false;
-            this.btnAlignT.Text = "AlignT";
-            this.btnAlignT.UseVisualStyleBackColor = false;
-            this.btnAlignT.Click += new System.EventHandler(this.btnAlignT_Click);
-            // 
-            // btnAlignXY
-            // 
-            this.btnAlignXY.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnAlignXY.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnAlignXY.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnAlignXY.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnAlignXY.CustomForeColor = System.Drawing.Color.Black;
-            this.btnAlignXY.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnAlignXY.ForeColor = System.Drawing.Color.Black;
-            this.btnAlignXY.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnAlignXY.Location = new System.Drawing.Point(6, 143);
-            this.btnAlignXY.Name = "btnAlignXY";
-            this.btnAlignXY.Size = new System.Drawing.Size(138, 35);
-            this.btnAlignXY.TabIndex = 22;
-            this.btnAlignXY.TabStop = false;
-            this.btnAlignXY.Text = "AlignXY";
-            this.btnAlignXY.UseVisualStyleBackColor = false;
-            this.btnAlignXY.Click += new System.EventHandler(this.btnAlignXY_Click);
-            // 
-            // btnWaferUnloading
-            // 
-            this.btnWaferUnloading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnWaferUnloading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnWaferUnloading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnWaferUnloading.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnWaferUnloading.CustomForeColor = System.Drawing.Color.Black;
-            this.btnWaferUnloading.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnWaferUnloading.ForeColor = System.Drawing.Color.Black;
-            this.btnWaferUnloading.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnWaferUnloading.Location = new System.Drawing.Point(6, 184);
-            this.btnWaferUnloading.Name = "btnWaferUnloading";
-            this.btnWaferUnloading.Size = new System.Drawing.Size(138, 35);
-            this.btnWaferUnloading.TabIndex = 23;
-            this.btnWaferUnloading.TabStop = false;
-            this.btnWaferUnloading.Text = "WaferUnloading";
-            this.btnWaferUnloading.UseVisualStyleBackColor = false;
-            this.btnWaferUnloading.Click += new System.EventHandler(this.btnWaferUnloading_Click);
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(124, 61);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(110, 35);
+            this.individualMenuButton1.TabIndex = 24;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "WaferLoading";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
             // 
             // ChipLoading_Working
             // 
@@ -284,5 +304,6 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnWaferUnloading;
         private IndividualMenuButton btnAlignXY;
         private IndividualMenuButton btnAlignT;
+        private IndividualMenuButton individualMenuButton1;
     }
 }
