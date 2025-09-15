@@ -156,7 +156,7 @@ namespace QMC.LCP_280.Process.Component
                         // 기존 PreStep의 Bin Feeder 사전 동작을 축 단위로 옮김
                         try
                         {
-                            if (eq.Units != null && eq.Units.TryGetValue("OutputRingTransfer", out var uOut) && uOut is OutputRingTransfer outFeeder)
+                            if (eq.Units != null && eq.Units.TryGetValue("OutputFeeder", out var uOut) && uOut is OutputFeeder outFeeder)
                             {
                                 // Unclamp → 센서 확인
                                 outFeeder.SetClamp(false);

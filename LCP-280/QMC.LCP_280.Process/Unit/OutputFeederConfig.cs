@@ -10,13 +10,13 @@ using System.Linq;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// OutputRingTransferConfig
+    /// OutputFeederConfig
     ///  - Bin Feeder (Ring Transfer - Output side) Teaching Position 관리
     ///  - Lift / Clamp 관련 IO 명칭 상수화
     ///  - Hard IO 테이블 및 저장/로드
     ///  - (추가) TeachingPosition 별 허용 축 필터링 기능
     /// </summary>
-    public class OutputRingTransferConfig : BaseConfig
+    public class OutputFeederConfig : BaseConfig
     {
         /// <summary>장치 IO 명칭 상수 집합</summary>
         internal static class IO
@@ -83,7 +83,7 @@ namespace QMC.LCP_280.Process.Unit
         };
         #endregion
 
-        public OutputRingTransferConfig() : base("OutputRingTransferConfig") { }
+        public OutputFeederConfig() : base("OutputFeederConfig") { }
 
         /// <summary>enum 기반 기본 Teaching Position 생성 + 축 매핑 적용</summary>
         public void InitializeDefaultTeachingPositions()

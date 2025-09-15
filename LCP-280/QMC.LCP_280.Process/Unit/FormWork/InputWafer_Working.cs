@@ -155,7 +155,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 if (InputFeederUnit != null)
                 {
-                    StrongBindInputFeederUnit();
+                    StrongBindInputFeeder();
                 }
 
                 if (InputCassetteLifterUnit != null)
@@ -172,7 +172,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             catch { }
         }
 
-        private void StrongBindInputFeederUnit()
+        private void StrongBindInputFeeder()
         {
             if (InputFeederUnit == null || dioControl == null) return;
             try

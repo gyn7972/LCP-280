@@ -7,9 +7,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 {
     /// <summary>
     /// WaferBin Working Form
-    /// - TeachingPositionControl: OutputRingTransfer, OutputCassetteLifter
+    /// - TeachingPositionControl: OutputFeeder, OutputCassetteLifter
     /// - DIO 제어:
-    ///    OutputRingTransfer : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
+    ///    OutputFeeder : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
     ///    OutputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
     /// </summary>
     public partial class OutputWafer_Working : Form
@@ -18,7 +18,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private Equipment Equipment => Equipment.Instance;
 
         private OutputStage _OutputStage { get; set; }
-        private OutputRingTransfer _OutputRingTransferUnit { get; set; }
+        private OutputFeeder _OutputFeederUnit { get; set; }
         private OutputCassetteLifter _OutputCassetteLifterUnit { get; set; }
 
         private bool _initialized;          // 실제 UI 바인딩 완료 여부 (텍스트/핸들)
@@ -27,16 +27,16 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         public OutputWafer_Working() : this(
             TryGetUnit<OutputStage>("OutputStage"),
-            TryGetUnit<OutputRingTransfer>("OutputRingTransfer"),
+            TryGetUnit<OutputFeeder>("OutputFeeder"),
             TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"))
         {
         }
 
-        public OutputWafer_Working(OutputStage outputStage, OutputRingTransfer ringTransfer, OutputCassetteLifter cassetteLifter)
+        public OutputWafer_Working(OutputStage outputStage, OutputFeeder ringTransfer, OutputCassetteLifter cassetteLifter)
         {
             InitializeComponent();
             _OutputStage = outputStage;
-            _OutputRingTransferUnit = ringTransfer;
+            _OutputFeederUnit = ringTransfer;
             _OutputCassetteLifterUnit = cassetteLifter;
 
             Load += WaferBin_Working_Load;
@@ -109,14 +109,14 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (teachingPositionControl == null) return;
                 teachingPositionControl.ClearUnits();
 
-                if (_OutputRingTransferUnit != null)
+                if (_OutputFeederUnit != null)
                 {
                     teachingPositionControl.RegisterUnit(
-                        "OutputRingTransfer",
-                        _OutputRingTransferUnit,
-                        () => _OutputRingTransferUnit.Config?.TeachingPositions,
-                        (name, vel) => _OutputRingTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _OutputRingTransferUnit.Config?.SetTeachingPosition(tp),
+                        "OutputFeeder",
+                        _OutputFeederUnit,
+                        () => _OutputFeederUnit.Config?.TeachingPositions,
+                        (name, vel) => _OutputFeederUnit.MoveToTeachingPosition(name, vel: vel),
+                        tp => _OutputFeederUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -146,10 +146,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (dioControl == null) return;
                 dioControl.IoSortMode = DIOControl.SortingMode.Insertion;
 
-                if (_OutputRingTransferUnit != null)
+                if (_OutputFeederUnit != null)
                 {
-                    dioControl.BindDIOInput(() => false, "---- OutputRingTransfer ----", "SEP_ORT");
-                    StrongBindOutputRingTransfer();
+                    dioControl.BindDIOInput(() => false, "---- OutputFeeder ----", "SEP_ORT");
+                    StrongBindOutputFeeder();
                 }
 
                 if (_OutputCassetteLifterUnit != null)
@@ -167,25 +167,25 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             catch { }
         }
 
-        private void StrongBindOutputRingTransfer()
+        private void StrongBindOutputFeeder()
         {
-            if (_OutputRingTransferUnit == null || dioControl == null) return;
+            if (_OutputFeederUnit == null || dioControl == null) return;
             try
             {
                 // Sensors
-                dioControl.BindDIOInput(() => _OutputRingTransferUnit.IsFeederUp(), "Feeder UP Sns", "ORT_FeederUp");
-                dioControl.BindDIOInput(() => _OutputRingTransferUnit.IsFeederDown(), "Feeder DOWN Sns", "ORT_FeederDown");
-                dioControl.BindDIOInput(() => _OutputRingTransferUnit.IsUnclamped(), "Feeder UNCLAMP Sns", "ORT_Unclamp");
-                dioControl.BindDIOInput(() => _OutputRingTransferUnit.IsRingPresent(), "Feeder RING Sns", "ORT_Ring");
-                dioControl.BindDIOInput(() => _OutputRingTransferUnit.IsOverload(), "Feeder OVERLOAD Sns", "ORT_Overload");
+                dioControl.BindDIOInput(() => _OutputFeederUnit.IsFeederUp(), "Feeder UP Sns", "ORT_FeederUp");
+                dioControl.BindDIOInput(() => _OutputFeederUnit.IsFeederDown(), "Feeder DOWN Sns", "ORT_FeederDown");
+                dioControl.BindDIOInput(() => _OutputFeederUnit.IsUnclamped(), "Feeder UNCLAMP Sns", "ORT_Unclamp");
+                dioControl.BindDIOInput(() => _OutputFeederUnit.IsRingPresent(), "Feeder RING Sns", "ORT_Ring");
+                dioControl.BindDIOInput(() => _OutputFeederUnit.IsOverload(), "Feeder OVERLOAD Sns", "ORT_Overload");
 
                 // Feeder Up/Down (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Up/Down",
-                    extend: () => _OutputRingTransferUnit.SetLift(true),
-                    retract: () => _OutputRingTransferUnit.SetLift(false),
-                    isExtended: () => _OutputRingTransferUnit.IsFeederUpValveOn(),
-                    isRetracted: () => _OutputRingTransferUnit.IsFeederDownValveOn(),
+                    extend: () => _OutputFeederUnit.SetLift(true),
+                    retract: () => _OutputFeederUnit.SetLift(false),
+                    isExtended: () => _OutputFeederUnit.IsFeederUpValveOn(),
+                    isRetracted: () => _OutputFeederUnit.IsFeederDownValveOn(),
                     displayKey: "FeederUpDn",
                     showSensors: false,
                     extendedName: "UP",
@@ -195,10 +195,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Feeder Clamp/Unclamp (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Clamp/Unclamp",
-                    extend: () => _OutputRingTransferUnit.SetClamp(true),
-                    retract: () => _OutputRingTransferUnit.SetClamp(false), 
-                    isExtended: () => _OutputRingTransferUnit.IsFeederClampValveOn(),
-                    isRetracted: () => _OutputRingTransferUnit.IsFeederUnclampValveOn(),
+                    extend: () => _OutputFeederUnit.SetClamp(true),
+                    retract: () => _OutputFeederUnit.SetClamp(false), 
+                    isExtended: () => _OutputFeederUnit.IsFeederClampValveOn(),
+                    isRetracted: () => _OutputFeederUnit.IsFeederUnclampValveOn(),
                     displayKey: "FeederClamp",
                     showSensors: false,
                     extendedName: "CLAMP",
@@ -207,31 +207,31 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 //// Valves (direct forced control + state feedback)
                 //dioControl.BindDIOOutput(
-                //    () => _OutputRingTransferUnit.SetFeederUpValve(true),
-                //    () => _OutputRingTransferUnit.SetFeederUpValve(false),
+                //    () => _OutputFeederUnit.SetFeederUpValve(true),
+                //    () => _OutputFeederUnit.SetFeederUpValve(false),
                 //    "Feeder UP Valve",
-                //    () => _OutputRingTransferUnit.IsFeederUpValveOn(),
+                //    () => _OutputFeederUnit.IsFeederUpValveOn(),
                 //    "ORT_UpValve");
 
                 //dioControl.BindDIOOutput(
-                //    () => _OutputRingTransferUnit.SetFeederDownValve(true),
-                //    () => _OutputRingTransferUnit.SetFeederDownValve(false),
+                //    () => _OutputFeederUnit.SetFeederDownValve(true),
+                //    () => _OutputFeederUnit.SetFeederDownValve(false),
                 //    "Feeder DOWN Valve",
-                //    () => _OutputRingTransferUnit.IsFeederDownValveOn(),
+                //    () => _OutputFeederUnit.IsFeederDownValveOn(),
                 //    "ORT_DownValve");
 
                 //dioControl.BindDIOOutput(
-                //    () => _OutputRingTransferUnit.SetFeederClampValve(true),
-                //    () => _OutputRingTransferUnit.SetFeederClampValve(false),
+                //    () => _OutputFeederUnit.SetFeederClampValve(true),
+                //    () => _OutputFeederUnit.SetFeederClampValve(false),
                 //    "Feeder CLAMP Valve",
-                //    () => _OutputRingTransferUnit.IsFeederClampValveOn(),
+                //    () => _OutputFeederUnit.IsFeederClampValveOn(),
                 //    "ORT_ClampValve");
 
                 //dioControl.BindDIOOutput(
-                //    () => _OutputRingTransferUnit.SetFeederUnclampValve(true),
-                //    () => _OutputRingTransferUnit.SetFeederUnclampValve(false),
+                //    () => _OutputFeederUnit.SetFeederUnclampValve(true),
+                //    () => _OutputFeederUnit.SetFeederUnclampValve(false),
                 //    "Feeder UNCLAMP Valve",
-                //    () => _OutputRingTransferUnit.IsFeederUnclampValveOn(),
+                //    () => _OutputFeederUnit.IsFeederUnclampValveOn(),
                 //    "ORT_UnclampValve");
             }
             catch { }

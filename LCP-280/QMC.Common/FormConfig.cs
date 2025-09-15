@@ -136,7 +136,7 @@ namespace QMC.Common
                     "InputCassetteLifter","InputFeeder","InputStage","InputStageEjector",
                     "InputDieTransfer","Rotary","IndexLoadAligner","IndexChipProbeController",
                     "IndexChipProber","IndexUnloadAligner","OutputDieTransfer","OutputStage",
-                    "OutputCassetteLifter","OutputRingTransfer"
+                    "OutputCassetteLifter","OutputFeeder"
                 };
                 var indexMap = desiredOrder
                     .Select((name, idx) => new { name, idx })

@@ -44,7 +44,7 @@ namespace QMC.LCP_280.Process
             public const string InputStageEjector = "InputStageEjector";
             public const string OutputCassetteLifter = "OutputCassetteLifter";
             public const string OutputDieTransfer = "OutputDieTransfer";
-            public const string OutputRingTransfer = "OutputRingTransfer";
+            public const string OutputFeeder = "OutputFeeder";
             public const string OutputStage = "OutputStage";
             public const string Rotary = "Rotary";
             public const string GageRnR = "GageRnR";
@@ -326,7 +326,7 @@ namespace QMC.LCP_280.Process
             TryAdd(new OutputDieTransfer(), "OutputDieTransfer");
             TryAdd(new OutputStage(), "OutputStage");
             TryAdd(new OutputCassetteLifter(), "OutputCassetteLifter");
-            TryAdd(new OutputRingTransfer(), "OutputRingTransfer");
+            TryAdd(new OutputFeeder(), "OutputFeeder");
             TryAdd(new GageRnR(), "GageRnR");
             TryAdd(new EquipmentStatus(), "EquipmentStatus"); // 신규 상태 유닛
         }

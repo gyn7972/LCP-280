@@ -19,13 +19,13 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public partial class RotaryUnit_Config : Form
+    public partial class InputFeederUnit_Config : Form
     {
-        private const string _UNIT_NAME = "Rotary";
+        private const string _UNIT_NAME = "InputFeeder";
 
         private Equipment _Equipment => Equipment.Instance;
-        private Rotary _unit;
-        private RotaryConfig _cfg;
+        private InputFeeder _unit;
+        private InputFeederConfig _cfg;
 
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
@@ -36,7 +36,7 @@ namespace QMC.LCP_280.Process.Unit
         private Timer _axisPosTimer; // reserved
         private Timer _ioTimer;      // reserved
 
-        public RotaryUnit_Config()
+        public InputFeederUnit_Config()
         {
             InitializeComponent();
 
@@ -57,7 +57,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _unit = unit as Rotary;
+                    _unit = unit as InputFeeder;
                     _cfg = _unit?.Config;
                 }
 
@@ -189,6 +189,147 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Move / Save / CurrentPos
+       
+        #region Digital IO
+        private static T GetPropValue<T>(object obj, string prop, T def = default(T))
+        {
+            if (obj == null)
+            {
+                return def;
+            }
+
+            try
+            {
+                var pi = obj.GetType().GetProperty(prop);
+                if (pi == null)
+                {
+                    return def;
+                }
+
+                var v = pi.GetValue(obj, null);
+                if (v == null)
+                {
+                    return def;
+                }
+
+                if (v is T variable)
+                {
+                    return variable;
+                }
+
+                return (T)Convert.ChangeType(v, typeof(T));
+            }
+            catch
+            {
+                return def;
+            }
+        }
+
+        private void InitializeDigitalIO()
+        {
+            try
+            {
+                if (inputView == null)
+                {
+                    return;
+                }
+
+                var eq = Equipment.Instance;
+                var scan = eq?.DioScan;
+                var unitIO = eq?.UnitIO;
+                if (scan == null || unitIO == null)
+                {
+                    inputView.SetProperties(new PropertyCollection());
+                    outputView.SetProperties(new PropertyCollection());
+                    return;
+                }
+
+                _ioInputs.Clear();
+                _ioOutputs.Clear();
+
+                Array hardInputsArr = Array.CreateInstance(typeof(object), 0);
+                Array hardOutputsArr = Array.CreateInstance(typeof(object), 0);
+
+                if (_InputFeeder?.Config != null)
+                {
+                    var cfg = _InputFeeder.Config;
+                    var cfgType = cfg.GetType();
+
+                    var piIn = cfgType.GetProperty("HardInputs");
+                    var piOut = cfgType.GetProperty("HardOutputs");
+
+                    var hi = piIn?.GetValue(cfg) as Array;
+                    if (hi != null)
+                    {
+                        hardInputsArr = hi;
+                    }
+
+                    var ho = piOut?.GetValue(cfg) as Array;
+                    if (ho != null)
+                    {
+                        hardOutputsArr = ho;
+                    }
+                }
+
+                Func<string, Tuple<string, string>> resolveIn = disp =>
+                {
+                    if (unitIO?.Modules == null)
+                    {
+                        return new Tuple<string, string>(null, disp);
+                    }
+
+                    foreach (var m in unitIO.Modules)
+                    {
+                        if (m?.Inputs == null)
+                        {
+                            continue;
+                        }
+
+                        foreach (var ch in m.Inputs)
+                        {
+                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
+                            }
+                        }
+                    }
+
+                    return new Tuple<string, string>(null, disp);
+                };
+
+                Func<string, Tuple<string, string>> resolveOut = disp =>
+                {
+                    if (unitIO?.Modules == null)
+                    {
+                        return new Tuple<string, string>(null, disp);
+                    }
+
+                    foreach (var m in unitIO.Modules)
+                    {
+                        if (m?.Outputs == null)
+                        {
+                            continue;
+                        }
+
+                        foreach (var ch in m.Outputs)
+                        {
+                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
+                            }
+                        }
+                    }
+
+                    return new Tuple<string, string>(null, disp);
+                };
+
+                if (hardInputsArr.Length > 0)
+                {
+                    var pcIn = new PropertyCollection
+                    {
+                        ShowNoColumn = true,
+                        IsInputParameter = false
+                    };
 
         private void btnMovePosition_Click(object sender, EventArgs e)
         {

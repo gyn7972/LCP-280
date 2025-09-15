@@ -19,13 +19,13 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public partial class RotaryUnit_Config : Form
+    public partial class OutputFeederUnit_Config : Form
     {
-        private const string _UNIT_NAME = "Rotary";
+        private const string _UNIT_NAME = "OutputFeeder";
 
         private Equipment _Equipment => Equipment.Instance;
-        private Rotary _unit;
-        private RotaryConfig _cfg;
+        private OutputFeeder _unit;
+        private OutputFeederConfig _cfg;
 
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
@@ -36,7 +36,7 @@ namespace QMC.LCP_280.Process.Unit
         private Timer _axisPosTimer; // reserved
         private Timer _ioTimer;      // reserved
 
-        public RotaryUnit_Config()
+        public OutputFeederUnit_Config()
         {
             InitializeComponent();
 
@@ -57,7 +57,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _unit = unit as Rotary;
+                    _unit = unit as OutputFeeder;
                     _cfg = _unit?.Config;
                 }
 

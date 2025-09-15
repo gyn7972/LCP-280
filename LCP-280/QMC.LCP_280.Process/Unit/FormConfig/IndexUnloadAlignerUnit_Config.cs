@@ -5,42 +5,36 @@ using QMC.Common.DIO;
 using QMC.Common.IO;
 using QMC.Common.IOUtil;
 using QMC.Common.Motions;
-using QMC.LCP_280.Process.Component; // TeachingPosition
+using QMC.Common.UI;
+using QMC.Common.Unit;
+using QMC.LCP_280.Process.Component; // Added for TeachingPosition
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    /// <summary>
-    /// IndexUnloadAligner Unit Config Form (Logic Part)
-    /// UI 구성요소 선언 및 InitializeComponent 는 Designer partial 에 존재.
-    /// 여기서는 데이터 처리 / 이벤트 로직만 유지.
-    /// </summary>
     public partial class IndexUnloadAlignerUnit_Config : Form
     {
-        private const string UNIT_NAME = "IndexUnloadAligner";
+        private const string _UNIT_NAME = "IndexUnloadAligner";
 
-        private Equipment EquipmentInstance
-        {
-            get => Equipment.Instance;
-        }
-
+        private Equipment _Equipment => Equipment.Instance;
         private IndexUnloadAligner _unit;
-        private IndexUnloadAlignerConfig _config;
+        private IndexUnloadAlignerConfig _cfg;
 
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        // ==== Digital IO 표시용 내부 구조 ====
-        
-
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
+
+        private Timer _axisPosTimer; // reserved
+        private Timer _ioTimer;      // reserved
 
         public IndexUnloadAlignerUnit_Config()
         {
@@ -48,52 +42,39 @@ namespace QMC.LCP_280.Process.Unit
 
             InitializeUnit();
 
-            this.SuspendLayout();
-            _designerSize = this.Size;
+            SuspendLayout();
+            _designerSize = Size;
             InitializeUI();
-            this.ResumeLayout(true);
+            ResumeLayout(true);
 
-            // OutputView 항목 클릭 - Toggle 처리
-            if (this.outputView != null)
-            {
-                this.outputView.ItemClicked -= new EventHandler<string>(OnOutputItemClicked);
-                this.outputView.ItemClicked += new EventHandler<string>(OnOutputItemClicked);
-            }
-
-            Console.WriteLine("IndexUnloadAlignerUnit_Config 생성 완료");
+            outputView.ItemClicked -= new EventHandler<string>(OnOutputItemClicked);
+            outputView.ItemClicked += new EventHandler<string>(OnOutputItemClicked);
         }
 
         private void InitializeUnit()
         {
             try
             {
-                if (EquipmentInstance.Units.TryGetValue(UNIT_NAME, out var rawUnit))
+                if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _unit = rawUnit as IndexUnloadAligner;
-                    if (_unit != null)
-                    {
-                        _config = _unit.Config;
-                    }
+                    _unit = unit as IndexUnloadAligner;
+                    _cfg = _unit?.Config;
                 }
 
                 if (_unit == null)
                 {
                     MessageBox.Show(
-                        $"{UNIT_NAME} Unit을 찾을 수 없습니다.\nEquipment 등록 상태를 확인하세요.",
+                        _UNIT_NAME + " Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
                         "오류",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error
                     );
                 }
-                else
-                {
-                    Console.WriteLine($"{UNIT_NAME} Unit 연결 성공");
-                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    $"Unit 초기화 중 오류: {ex.Message}",
+                    "Unit 초기화 중 오류 발생: " + ex.Message,
                     "오류",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error
@@ -101,76 +82,64 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        #region UI Initialize
+        #region UI 초기화
 
         private void InitializeUI()
         {
             try
             {
-                SetTeachingPositionsToList();
-                SetupPositionItemSelectionEvent();
-                InitializeMoveModeRadioButtons();
+                PopulateTeachingPositionList();
+                HookTeachingPositionSelection();
+                InitializeRadioButtonView();
                 InitializeDigitalIO();
+                PopulateAllAxesInJogControl();
             }
             catch (Exception ex)
             {
-                Console.WriteLine("InitializeUI 오류: " + ex.Message);
+                Debug.WriteLine("InitializeUI error: " + ex.Message);
             }
         }
 
-        private void InitializeMoveModeRadioButtons()
+        private void InitializeRadioButtonView()
         {
             try
             {
-                // RadioButtonView.SetOptions(bool isVertical, params object[] options)
-                // true => Vertical 배치
                 rbTeachingMoveMode?.SetOptions(true, "Fine", "Coarse");
-                rbTeachingMoveMode.SelectedIndex = 0; // 기본 Fine
             }
             catch (Exception ex)
             {
-                Console.WriteLine("MoveMode 라디오 초기화 오류: " + ex.Message);
+                Debug.WriteLine("RadioButtonView 오류: " + ex.Message);
             }
         }
 
         #endregion
 
-        #region Teaching Position List
+        #region Teaching Position 목록 / 표시
 
-        private void SetTeachingPositionsToList()
+        private void PopulateTeachingPositionList()
         {
             try
             {
-                if (_unit == null)
+                if (_unit?.TeachingPositions != null && _unit.TeachingPositions.Count > 0)
                 {
-                    return;
-                }
-
-                if (_unit.TeachingPositions != null && _unit.TeachingPositions.Count > 0)
-                {
-                    var names = _unit.TeachingPositions
-                        .Select(tp => tp.Name)
+                    string[] names = _unit.TeachingPositions
+                        .Select(t => t.Name)
                         .ToArray();
 
                     positionItemView?.SetItems(names);
-
-                    Console.WriteLine(
-                        $"TeachingPositions 목록 설정: {names.Length} 개"
-                    );
                 }
                 else
                 {
                     positionItemView?.SetItems();
-                    Console.WriteLine("TeachingPositions 비어 있음");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("TeachingPositions 설정 오류: " + ex.Message);
+                Debug.WriteLine("PopulateTeachingPositionList 오류: " + ex.Message);
             }
         }
 
-        private void SetupPositionItemSelectionEvent()
+        private void HookTeachingPositionSelection()
         {
             if (positionItemView == null)
             {
@@ -179,112 +148,448 @@ namespace QMC.LCP_280.Process.Unit
 
             positionItemView.ItemSelected -= OnPositionItemSelected;
             positionItemView.ItemSelected += OnPositionItemSelected;
-
-            Console.WriteLine("Position Item 선택 이벤트 설정 완료");
         }
 
-        private void OnPositionItemSelected(
-            object sender,
-            int selectedIndex)
+        private void OnPositionItemSelected(object sender, int selectedIndex)
         {
             try
             {
                 ShowTeachingPositionInEditor(selectedIndex);
-                UpdateJogAxisFilter(selectedIndex);
             }
             catch (Exception ex)
             {
-                Console.WriteLine(
-                    "Position Item 선택 처리 오류: " + ex.Message
-                );
+                Debug.WriteLine("OnPositionItemSelected error: " + ex.Message);
             }
         }
 
         private void ShowTeachingPositionInEditor(int selectedIndex)
         {
-            if (_unit == null || _config == null)
-            {
-                return;
-            }
+            if (_cfg?.TeachingPositions == null) return;
+            if (selectedIndex < 0 || selectedIndex >= _cfg.TeachingPositions.Count) return;
 
-            if (_config.TeachingPositions == null)
-            {
-                return;
-            }
-
-            if (selectedIndex < 0 || selectedIndex >= _config.TeachingPositions.Count)
-            {
-                return;
-            }
-
-            var tp = _config.TeachingPositions[selectedIndex];
+            var tp = _cfg.TeachingPositions[selectedIndex];
 
             var pc = new PropertyCollection();
-
-            pc.Add(
-                new TitleOnlyProperty(
-                    $"Teaching Position: {tp.Name} (mm, Abs. Pos)"
-                )
-            );
-
-            pc.Add(
-                new StringProperty(
-                    title: "Description",
-                    value: tp.Description ?? string.Empty
-                )
-            );
+            pc.Add(new TitleOnlyProperty("Teaching Position: " + tp.Name + " (mm, Abs. Pos)"));
+            pc.Add(new StringProperty("Description", tp.Description ?? string.Empty));
 
             foreach (var axis in tp.AxisPositions)
             {
-                string title = axis.Key + " Position (mm)";
-                double value = axis.Value;
-
-                pc.Add(
-                    new DoubleProperty(
-                        title: title,
-                        value: value
-                    )
-                );
+                pc.Add(new DoubleProperty(axis.Key + " Position (mm)", axis.Value));
             }
 
             foreach (var kv in tp.ExtraInfo)
             {
-                pc.Add(
-                    new StringProperty(
-                        title: "Extra: " + kv.Key,
-                        value: kv.Value?.ToString() ?? string.Empty
-                    )
-                );
+                pc.Add(new StringProperty("Extra: " + kv.Key, kv.Value?.ToString() ?? string.Empty));
             }
 
             positionEditorView?.SetProperties(pc);
         }
 
-        private void UpdateJogAxisFilter(int selectedIndex)
+        #endregion
+
+        #region Move / Save / CurrentPos
+
+        private void btnMovePosition_Click(object sender, EventArgs e)
         {
             try
             {
-                if (_unit == null || _config == null)
+                if (_unit == null)
                 {
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                if (selectedIndex < 0 || selectedIndex >= _config.TeachingPositions.Count)
+                int selIndex = GetSelectedTeachingIndex();
+                if (selIndex < 0 || selIndex >= _unit.Config.TeachingPositions.Count)
                 {
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var tp = _config.TeachingPositions[selectedIndex];
+                var tp = _unit.Config.TeachingPositions[selIndex];
+                bool isFine = GetSelectedMoveModeIsFine();
 
-                if (tp.AxisPositions != null && jogControl != null)
+                double defaultFineVel = 5.0;
+                double defaultCoarseVel = 20.0;
+                double defaultAcc = 10.0;
+                double defaultDec = 10.0;
+                double defaultJerk = 50.0;
+
+                var moveResults = new List<Tuple<string, int>>();
+
+                foreach (var kv in tp.AxisPositions)
                 {
-                    jogControl.SetTeachingAxisList(tp.AxisPositions.Keys);
+                    string axisKey = kv.Key;
+                    double targetPos = kv.Value;
+
+                    MotionAxis axis = null;
+
+                    if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out var boundAxis))
+                    {
+                        axis = boundAxis;
+                    }
+
+                    if (axis == null && _unit.Axes.TryGetValue(axisKey, out var directAxis))
+                    {
+                        axis = directAxis;
+                    }
+
+                    if (axis == null)
+                    {
+                        foreach (var pair in _unit.Axes)
+                        {
+                            if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                axis = pair.Value;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (axis == null)
+                    {
+                        continue; // axis not found
+                    }
+
+                    double vel = isFine
+                        ? (axis.Config != null && axis.Config.JogFineVelocity > 0 ? axis.Config.JogFineVelocity : defaultFineVel)
+                        : (axis.Config != null && axis.Config.JogCoarseVelocity > 0 ? axis.Config.JogCoarseVelocity : defaultCoarseVel);
+
+                    double acc = axis.Config != null && axis.Config.JogAcc > 0 ? axis.Config.JogAcc : defaultAcc;
+                    double dec = axis.Config != null && axis.Config.JogDec > 0 ? axis.Config.JogDec : defaultDec;
+                    double jerk = axis.Config != null ? (axis.Config.AccJerkPercent + axis.Config.DecJerkPercent) / 2.0 : defaultJerk;
+
+                    int rc = axis.MoveAbs(targetPos, vel, acc, dec, jerk);
+                    moveResults.Add(new Tuple<string, int>(axisKey, rc));
+                }
+
+                int waitErrors = 0;
+                foreach (var kv in tp.AxisPositions)
+                {
+                    MotionAxis axis = null;
+                    if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out var boundAxis2))
+                    {
+                        axis = boundAxis2;
+                    }
+                    if (axis == null && _unit.Axes.TryGetValue(kv.Key, out var directAxis2))
+                    {
+                        axis = directAxis2;
+                    }
+                    if (axis == null)
+                    {
+                        continue;
+                    }
+
+                    int rc = axis.WaitMoveDone(-1);
+                    if (rc != 0)
+                    {
+                        waitErrors++;
+                    }
+                }
+
+                bool anyFail = moveResults.Exists(t => t.Item2 != 0) || waitErrors > 0;
+
+                if (!anyFail)
+                {
+                    MessageBox.Show(
+                        "Teaching Position 이동 완료",
+                        "Move",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "일부 축 이동 실패 또는 타임아웃",
+                        "Move",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Jog 축 필터링 오류: " + ex.Message);
+                MessageBox.Show(
+                    "Move 처리 중 오류: " + ex.Message,
+                    "오류",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
             }
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_unit == null)
+                {
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                int selIndex = GetSelectedTeachingIndex();
+                if (selIndex < 0 || selIndex >= _unit.TeachingPositions.Count)
+                {
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                positionEditorView?.Apply();
+                var props = positionEditorView?.GetCurrentProperties();
+                if (props == null || props.Count == 0)
+                {
+                    MessageBox.Show("편집할 데이터가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var target = _unit.TeachingPositions[selIndex];
+                var newAxisPositions = new Dictionary<string, double>();
+                if (target.AxisPositions != null)
+                {
+                    foreach (var kv in target.AxisPositions)
+                    {
+                        newAxisPositions[kv.Key] = kv.Value;
+                    }
+                }
+
+                string newDescription = target.Description;
+                var newExtra = new Dictionary<string, object>();
+                if (target.ExtraInfo != null)
+                {
+                    foreach (var kv in target.ExtraInfo)
+                    {
+                        newExtra[kv.Key] = kv.Value;
+                    }
+                }
+
+                foreach (var p in props)
+                {
+                    if (p is StringProperty && string.Equals(p.Title, "Description", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var sp = (StringProperty)p;
+                        newDescription = sp.Value ?? string.Empty;
+                        continue;
+                    }
+
+                    if (p is DoubleProperty && p.Title.EndsWith(" Position (mm)", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var dp = (DoubleProperty)p;
+                        int pos = p.Title.IndexOf(" Position (mm)", StringComparison.OrdinalIgnoreCase);
+                        string axisKey = p.Title.Substring(0, pos).Trim();
+                        newAxisPositions[axisKey] = dp.Value;
+                        continue;
+                    }
+
+                    if (p is StringProperty && p.Title.StartsWith("Extra:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var sp = (StringProperty)p;
+                        string extraKey = p.Title.Substring("Extra:".Length).Trim();
+                        newExtra[extraKey] = sp.Value;
+                        continue;
+                    }
+                }
+
+                target.Description = newDescription;
+                target.AxisPositions = newAxisPositions;
+                target.ExtraInfo = newExtra;
+
+                _unit.Config.SetTeachingPosition(
+                    new TeachingPosition(
+                        target.Name,
+                        new Dictionary<string, double>(target.AxisPositions),
+                        target.Description
+                    )
+                    {
+                        ExtraInfo = new Dictionary<string, object>(target.ExtraInfo)
+                    }
+                );
+
+                _unit.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+
+                var snapshot = _unit.Config.TeachingPositions != null
+                     ? new List<TeachingPosition>(_unit.Config.TeachingPositions)
+                     : new List<TeachingPosition>();
+
+                _unit.Config.TeachingPositions = snapshot.ToList();
+                if (_unit.TeachingPositions != null)
+                {
+                    _unit.TeachingPositions.Clear();
+                    foreach (var tp in snapshot)
+                    {
+                        _unit.TeachingPositions.Add(tp);
+                    }
+                }
+
+                PopulateTeachingPositionList();
+
+                MessageBox.Show(
+                    "변경된 Teaching Position이 저장되었습니다.",
+                    "저장 완료",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "저장 처리 중 오류: " + ex.Message,
+                    "오류",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
+
+        private void btnCurrentPos_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+                {
+                    MessageBox.Show(
+                        "Unit을 찾을 수 없습니다.",
+                        "오류",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                    return;
+                }
+
+                int selIndex = GetSelectedTeachingIndex();
+
+                if (selIndex < 0 || _cfg == null || _cfg.TeachingPositions == null || selIndex >= _cfg.TeachingPositions.Count)
+                {
+                    MessageBox.Show(
+                        "선택된 Teaching Position이 없습니다.",
+                        "알림",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                    return;
+                }
+
+                var tp = _cfg.TeachingPositions[selIndex];
+                var updatedPositions = new Dictionary<string, double>();
+
+                foreach (var kv in tp.AxisPositions)
+                {
+                    string axisKey = kv.Key;
+                    double fallback = kv.Value;
+                    MotionAxis axis = null;
+
+                    if (tp.Axes != null)
+                    {
+                        tp.Axes.TryGetValue(axisKey, out axis);
+                    }
+
+                    if (axis == null && _unit?.Axes != null && _unit.Axes.TryGetValue(axisKey, out var direct))
+                    {
+                        axis = direct;
+                    }
+
+                    if (axis == null && _unit?.Axes != null)
+                    {
+                        foreach (var pair in _unit.Axes)
+                        {
+                            MotionAxis a = pair.Value;
+                            if (a != null && string.Equals(a.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                axis = a;
+                                break;
+                            }
+                        }
+                    }
+
+                    double pos = fallback;
+                    if (axis != null)
+                    {
+                        try
+                        {
+                            pos = axis.GetPosition();
+                        }
+                        catch
+                        {
+                            pos = fallback;
+                        }
+                    }
+                    updatedPositions[axisKey] = pos;
+                }
+
+                var editorProperties = new PropertyCollection();
+                editorProperties.Add(new TitleOnlyProperty("Teaching Position: " + tp.Name + " (mm, Abs. Pos)"));
+                editorProperties.Add(new StringProperty("Description", tp.Description ?? string.Empty));
+
+                foreach (var ap in updatedPositions)
+                {
+                    editorProperties.Add(new DoubleProperty(ap.Key + " Position (mm)", ap.Value));
+                }
+
+                foreach (var extra in tp.ExtraInfo)
+                {
+                    editorProperties.Add(new StringProperty("Extra: " + extra.Key, extra.Value?.ToString() ?? string.Empty));
+                }
+
+                positionEditorView?.SetProperties(editorProperties);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "현재 위치 읽기 중 오류: " + ex.Message,
+                    "오류",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
+
+        private int GetSelectedTeachingIndex()
+        {
+            int selIndex = -1;
+            try
+            {
+                var pi = positionItemView?.GetType().GetProperty("SelectedIndex");
+                if (pi != null)
+                {
+                    object val = pi.GetValue(positionItemView, null);
+                    if (val is int)
+                    {
+                        selIndex = (int)val;
+                    }
+                }
+            }
+            catch
+            {
+                selIndex = -1;
+            }
+            return selIndex;
+        }
+
+        private bool GetSelectedMoveModeIsFine()
+        {
+            bool isFine = true;
+            try
+            {
+                if (rbTeachingMoveMode != null)
+                {
+                    var siProp = rbTeachingMoveMode.GetType().GetProperty("SelectedIndex");
+                    if (siProp != null)
+                    {
+                        object v = siProp.GetValue(rbTeachingMoveMode, null);
+                        if (v is int)
+                        {
+                            isFine = ((int)v) == 0;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                isFine = true;
+            }
+            return isFine;
         }
 
         #endregion
@@ -300,11 +605,11 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var eq = EquipmentInstance;
+                var eq = Equipment.Instance;
                 var scan = eq?.DioScan;
-                var dioUnit = eq?.UnitIO;
+                var unitIO = eq?.UnitIO;
 
-                if (scan == null || dioUnit == null)
+                if (scan == null || unitIO == null)
                 {
                     inputView.SetProperties(new PropertyCollection());
                     outputView.SetProperties(new PropertyCollection());
@@ -314,35 +619,28 @@ namespace QMC.LCP_280.Process.Unit
                 _ioInputs.Clear();
                 _ioOutputs.Clear();
 
-                // HardInputs / HardOutputs 를 reflection 으로 읽기 (타입 정적 의존 제거)
-                IEnumerable<object> hardInputs = Enumerable.Empty<object>();
-                IEnumerable<object> hardOutputs = Enumerable.Empty<object>();
-                if (eq.Units != null && eq.Units.TryGetValue(UNIT_NAME, out var unitObj))
+                HardInputDef[] hardInputs;
+                HardOutputDef[] hardOutputs;
+
+                if (eq?.Units != null && eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputCassetteLifter lifter && lifter.Config != null)
                 {
-                    var aligner = unitObj as IndexUnloadAligner;
-                    if (aligner != null && aligner.Config != null)
-                    {
-                        var cfg = aligner.Config;
-                        var cfgType = cfg.GetType();
-                        var piIn = cfgType.GetProperty("HardInputs");
-                        var piOut = cfgType.GetProperty("HardOutputs");
-                        if (piIn != null)
-                        {
-                            var val = piIn.GetValue(cfg) as System.Collections.IEnumerable;
-                            if (val != null) hardInputs = val.Cast<object>();
-                        }
-                        if (piOut != null)
-                        {
-                            var val = piOut.GetValue(cfg) as System.Collections.IEnumerable;
-                            if (val != null) hardOutputs = val.Cast<object>();
-                        }
-                    }
+                    var cfg = lifter.Config;
+                    var cfgType = cfg.GetType();
+                    var piIn = cfgType.GetProperty("HardInputs");
+                    var piOut = cfgType.GetProperty("HardOutputs");
+                    hardInputs = piIn?.GetValue(cfg) as HardInputDef[] ?? Array.Empty<HardInputDef>();
+                    hardOutputs = piOut?.GetValue(cfg) as HardOutputDef[] ?? Array.Empty<HardOutputDef>();
+                }
+                else
+                {
+                    hardInputs = Array.Empty<HardInputDef>();
+                    hardOutputs = Array.Empty<HardOutputDef>();
                 }
 
-                Tuple<string, string> ResolveInput(string disp)
+                Func<string, Tuple<string, string>> resolveIn = disp =>
                 {
-                    if (dioUnit?.Modules == null) return new Tuple<string, string>(null, disp);
-                    foreach (var m in dioUnit.Modules)
+                    if (unitIO?.Modules == null) return new Tuple<string, string>(null, disp);
+                    foreach (var m in unitIO.Modules)
                     {
                         if (m?.Inputs == null) continue;
                         foreach (var ch in m.Inputs)
@@ -354,11 +652,12 @@ namespace QMC.LCP_280.Process.Unit
                         }
                     }
                     return new Tuple<string, string>(null, disp);
-                }
-                Tuple<string, string> ResolveOutput(string disp)
+                };
+
+                Func<string, Tuple<string, string>> resolveOut = disp =>
                 {
-                    if (dioUnit?.Modules == null) return new Tuple<string, string>(null, disp);
-                    foreach (var m in dioUnit.Modules)
+                    if (unitIO?.Modules == null) return new Tuple<string, string>(null, disp);
+                    foreach (var m in unitIO.Modules)
                     {
                         if (m?.Outputs == null) continue;
                         foreach (var ch in m.Outputs)
@@ -370,96 +669,56 @@ namespace QMC.LCP_280.Process.Unit
                         }
                     }
                     return new Tuple<string, string>(null, disp);
+                };
+
+                if (hardInputs.Length > 0)
+                {
+                    var pcIn = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
+                    pcIn.Add(new TitleOnlyProperty("No", "Name", "State"));
+                    foreach (var item in hardInputs)
+                    {
+                        var map = resolveIn(item.Disp);
+                        bool cur = false;
+                        if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur);
+                        string nameCell = item.Disp + " " + item.Name;
+                        var ps = new PropertyState(item.No.ToString(), nameCell, cur);
+                        pcIn.Add(ps);
+                        _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                    }
+                    inputView.SetProperties(pcIn);
+                }
+                else
+                {
+                    inputView.SetProperties(new PropertyCollection());
                 }
 
-                BuildInputProperties(scan, hardInputs, ResolveInput);
-                BuildOutputProperties(scan, hardOutputs, ResolveOutput);
+                if (hardOutputs.Length > 0)
+                {
+                    var pcOut = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
+                    pcOut.Add(new TitleOnlyProperty("No", "Name", "State"));
+                    foreach (var item in hardOutputs)
+                    {
+                        var map = resolveOut(item.Disp);
+                        bool cur = false;
+                        string nameCell = item.Disp + " " + item.Name;
+                        var ps = new PropertyState(item.No.ToString(), nameCell, cur);
+                        pcOut.Add(ps);
+                        _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                    }
+                    outputView.SetProperties(pcOut);
+                }
+                else
+                {
+                    outputView.SetProperties(new PropertyCollection());
+                }
+
                 scan.InputChanged -= OnDioInputChanged;
                 scan.InputChanged += OnDioInputChanged;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("InitializeDigitalIO 오류: " + ex.Message);
+                Debug.WriteLine("InitializeDigitalIO error: " + ex.Message);
             }
-        }
-
-        private void BuildInputProperties(DioScanService scan, IEnumerable<object> hardInputs, Func<string, Tuple<string, string>> resolver)
-        {
-            if (hardInputs == null || !hardInputs.Any())
-            {
-                inputView.SetProperties(new PropertyCollection());
-                return;
-            }
-            var pc = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
-            pc.Add(new TitleOnlyProperty("No", "Name", "State"));
-            foreach (var def in hardInputs)
-            {
-                int no = GetIntProperty(def, "No");
-                string name = GetStringProperty(def, "Name");
-                string disp = GetStringProperty(def, "Disp");
-                var map = resolver(disp);
-                bool cur = false;
-                if (map.Item1 != null)
-                {
-                    scan.TryGetInput(map.Item1, map.Item2, out cur);
-                }
-                string nameCell = disp + " " + name;
-                var ps = new PropertyState(no.ToString(), nameCell, cur);
-                pc.Add(ps);
-                _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
-            }
-            inputView.SetProperties(pc);
-        }
-
-        private void BuildOutputProperties(DioScanService scan, IEnumerable<object> hardOutputs, Func<string, Tuple<string, string>> resolver)
-        {
-            if (hardOutputs == null || !hardOutputs.Any())
-            {
-                outputView.SetProperties(new PropertyCollection());
-                return;
-            }
-            var pc = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
-            pc.Add(new TitleOnlyProperty("No", "Name", "State"));
-            foreach (var def in hardOutputs)
-            {
-                int no = GetIntProperty(def, "No");
-                string name = GetStringProperty(def, "Name");
-                string disp = GetStringProperty(def, "Disp");
-                var map = resolver(disp);
-                bool cur = false;
-                string nameCell = disp + " " + name;
-                var ps = new PropertyState(no.ToString(), nameCell, cur);
-                pc.Add(ps);
-                _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
-            }
-            outputView.SetProperties(pc);
-        }
-
-        private static int GetIntProperty(object obj, string prop)
-        {
-            if (obj == null) return 0;
-            var pi = obj.GetType().GetProperty(prop);
-            if (pi == null) return 0;
-            try
-            {
-                var val = pi.GetValue(obj, null);
-                if (val == null) return 0;
-                return Convert.ToInt32(val);
-            }
-            catch { return 0; }
-        }
-
-        private static string GetStringProperty(object obj, string prop)
-        {
-            if (obj == null) return string.Empty;
-            var pi = obj.GetType().GetProperty(prop);
-            if (pi == null) return string.Empty;
-            try
-            {
-                var val = pi.GetValue(obj, null);
-                return val?.ToString() ?? string.Empty;
-            }
-            catch { return string.Empty; }
         }
 
         private void OnDioInputChanged(string module, string disp, bool value)
@@ -469,7 +728,7 @@ namespace QMC.LCP_280.Process.Unit
                 for (int i = 0; i < _ioInputs.Count; i++)
                 {
                     var item = _ioInputs[i];
-                    if (item.IsSameIO(module, disp))
+                    if (item.Module == module && item.IsSameIO(module, disp))
                     {
                         item.Prop.State = value;
                         inputView.SetStateByKey(disp, value);
@@ -477,18 +736,105 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
             }
-            catch { }
+            catch
+            {
+                // ignore
+            }
         }
 
-        #endregion
+        private void OnOutputItemClicked(object sender, string key)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(key)) return;
+                var eq = Equipment.Instance;
+                var scan = eq?.DioScan;
+                if (scan == null) return;
 
-        #region Output Toggle
+                string cmpKey = NormalizeXYKey(key);
+                string module = null;
+                string originalDisp = null;
+
+                foreach (var entry in _ioOutputs)
+                {
+                    string storedDisp = entry.Disp;
+                    if (string.Equals(storedDisp, key, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(NormalizeXYKey(storedDisp), cmpKey, StringComparison.OrdinalIgnoreCase))
+                    {
+                        module = entry.Module;
+                        originalDisp = storedDisp;
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(module) || string.IsNullOrEmpty(originalDisp)) return;
+
+                bool before = false;
+                scan.TryGetOutput(module, originalDisp, out before);
+
+                var dr = MessageBox.Show(
+                    "[" + module + ":" + originalDisp + "] 현재 상태 = " + before + "\r\n변경하시겠습니까?",
+                    "Output Toggle",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (dr != DialogResult.Yes) return;
+
+                int rc = scan.WriteOutput(module, originalDisp, !before);
+                if (rc != 0)
+                {
+                    MessageBox.Show(
+                        "WriteOutput 실패 (rc=" + rc + ")",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                    return;
+                }
+
+                scan.RefreshOnce();
+                bool after = before;
+                scan.TryGetOutput(module, originalDisp, out after);
+
+                if (outputView != null)
+                {
+                    outputView.SetStateByKey(key, after);
+                    if (!string.Equals(key, originalDisp, StringComparison.OrdinalIgnoreCase))
+                    {
+                        outputView.SetStateByKey(originalDisp, after);
+                    }
+                    string norm = NormalizeXYKey(key);
+                    if (!string.Equals(norm, key, StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(norm, originalDisp, StringComparison.OrdinalIgnoreCase))
+                    {
+                        outputView.SetStateByKey(norm, after);
+                    }
+                }
+
+                MessageBox.Show(
+                    originalDisp + ": " + before + " -> " + after,
+                    "Info",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Output 토글 처리 중 오류: " + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+            }
+        }
 
         private static string NormalizeXYKey(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return raw;
             string trimmed = raw.Trim().ToUpperInvariant();
-            var m = Regex.Match(trimmed, "^(X|Y)0*(\\d+)$");
+            var m = Regex.Match(trimmed, @"^(X|Y)0*(\d+)$");
             if (m.Success)
             {
                 string letter = m.Groups[1].Value;
@@ -499,348 +845,51 @@ namespace QMC.LCP_280.Process.Unit
             return trimmed;
         }
 
-        private void OnOutputItemClicked(object sender, string key)
+        #endregion
+
+        #region JogControl
+
+        private void PopulateAllAxesInJogControl()
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(key)) return;
-                var eq = EquipmentInstance;
-                var scan = eq?.DioScan;
-                if (scan == null) return;
-                string cmpKey = NormalizeXYKey(key);
-                string module = null;
-                string originalDisp = null;
-                foreach (var item in _ioOutputs)
+                if (jogControl == null) return;
+
+                // InitializeUnit()에서 채운 _unit을 그대로 사용
+                if (_unit?.Axes == null || _unit.Axes.Count == 0)
                 {
-                    string stored = item.Disp;
-                    bool direct = string.Equals(stored, key, StringComparison.OrdinalIgnoreCase);
-                    bool normalized = string.Equals(NormalizeXYKey(stored), cmpKey, StringComparison.OrdinalIgnoreCase);
-                    if (direct || normalized)
-                    {
-                        module = item.Module;
-                        originalDisp = stored;
-                        break;
-                    }
-                }
-                if (string.IsNullOrEmpty(module) || string.IsNullOrEmpty(originalDisp)) return;
-                bool before = false;
-                scan.TryGetOutput(module, originalDisp, out before);
-                var dr = MessageBox.Show("[" + module + ":" + originalDisp + "] 현재=" + before + "\n변경하시겠습니까?", "Output Toggle", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (dr != DialogResult.Yes) return;
-                int rc = scan.WriteOutput(module, originalDisp, !before);
-                if (rc != 0)
-                {
-                    MessageBox.Show("WriteOutput 실패 (rc=" + rc + ")", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    jogControl.SetTeachingAxisList(null);
                     return;
                 }
-                scan.RefreshOnce();
-                bool after = before;
-                scan.TryGetOutput(module, originalDisp, out after);
-                try
-                {
-                    outputView.SetStateByKey(key, after);
-                    if (!string.Equals(key, originalDisp, StringComparison.OrdinalIgnoreCase))
-                    {
-                        outputView.SetStateByKey(originalDisp, after);
-                    }
-                    string norm = NormalizeXYKey(key);
-                    if (!string.Equals(norm, key, StringComparison.OrdinalIgnoreCase) && !string.Equals(norm, originalDisp, StringComparison.OrdinalIgnoreCase))
-                    {
-                        outputView.SetStateByKey(norm, after);
-                    }
-                }
-                catch { }
-                MessageBox.Show(originalDisp + ": " + before + " -> " + after, "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                string[] axisNames = _unit.Axes.Values
+                    .Where(a => a != null)
+                    .Select(a => a.Name ?? a.Setup?.Name)
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Distinct()
+                    .ToArray();
+                jogControl.SetTeachingAxisList(axisNames);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Output 토글 오류: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Debug.WriteLine("PopulateAllAxesInJogControl error: " + ex.Message);
             }
         }
 
         #endregion
 
-        #region Move Teaching Position
+        #region Panel Size
 
-        private void btnMovePosition_Click(object sender, EventArgs e)
+        public void SetPanelSize(int width, int height)
         {
-            try
+            if (!_sizeMismatchWarned && (width != _designerSize.Width || height != _designerSize.Height))
             {
-                if (!EquipmentInstance.Units.TryGetValue(UNIT_NAME, out var unitObj))
-                {
-                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                var aligner = unitObj as IndexUnloadAligner;
-                if (aligner == null)
-                {
-                    MessageBox.Show("Unit 형식 오류", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= aligner.Config.TeachingPositions.Count)
-                {
-                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-                var tp = aligner.Config.TeachingPositions[selIndex];
-                bool isFine = GetMoveModeIsFine();
-                double defaultFineVel = 5.0;
-                double defaultCoarseVel = 20.0;
-                double defaultAcc = 10.0;
-                double defaultDec = 10.0;
-                double defaultJerk = 50.0;
-                var moveResults = new List<Tuple<string, int>>();
-                foreach (var kv in tp.AxisPositions)
-                {
-                    string axisKey = kv.Key;
-                    double targetPos = kv.Value;
-                    MotionAxis axis = ResolveAxis(tp, aligner, axisKey);
-                    if (axis == null) continue;
-                    double vel = isFine ? (axis.Config != null && axis.Config.JogFineVelocity > 0 ? axis.Config.JogFineVelocity : defaultFineVel)
-                                        : (axis.Config != null && axis.Config.JogCoarseVelocity > 0 ? axis.Config.JogCoarseVelocity : defaultCoarseVel);
-                    double acc = axis.Config != null && axis.Config.JogAcc > 0 ? axis.Config.JogAcc : defaultAcc;
-                    double dec = axis.Config != null && axis.Config.JogDec > 0 ? axis.Config.JogDec : defaultDec;
-                    double jerk = axis.Config != null ? (axis.Config.AccJerkPercent + axis.Config.DecJerkPercent) / 2.0 : defaultJerk;
-                    int rc = axis.MoveAbs(targetPos, vel, acc, dec, jerk);
-                    moveResults.Add(new Tuple<string, int>(axisKey, rc));
-                }
-                int waitErrors = 0;
-                foreach (var kv in tp.AxisPositions)
-                {
-                    MotionAxis axis = ResolveAxis(tp, aligner, kv.Key);
-                    if (axis == null) continue;
-                    int rc = axis.WaitMoveDone(-1);
-                    if (rc != 0) waitErrors++;
-                }
-                bool anyFail = moveResults.Exists(t => t.Item2 != 0) || waitErrors > 0;
-                if (!anyFail)
-                {
-                    MessageBox.Show("Teaching Position 이동 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("일부 축 이동 실패 또는 타임아웃", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+                _sizeMismatchWarned = true;
+                Debug.WriteLine(
+                    "[SizeMismatch] Form=" + GetType().Name +
+                    " Designer=" + _designerSize.Width + "x" + _designerSize.Height +
+                    " Requested=" + width + "x" + height
+                );
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Move 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private MotionAxis ResolveAxis(TeachingPosition tp, IndexUnloadAligner aligner, string axisKey)
-        {
-            MotionAxis axis = null;
-            if (tp.Axes != null) tp.Axes.TryGetValue(axisKey, out axis);
-            if (axis == null && aligner.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
-            if (axis == null)
-            {
-                foreach (var aPair in aligner.Axes)
-                {
-                    var candidate = aPair.Value;
-                    if (candidate != null && string.Equals(candidate.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-                    {
-                        axis = candidate;
-                        break;
-                    }
-                }
-            }
-            return axis;
-        }
-
-        private bool GetMoveModeIsFine()
-        {
-            bool isFine = true;
-            if (rbTeachingMoveMode != null)
-            {
-                try
-                {
-                    var pi = rbTeachingMoveMode.GetType().GetProperty("SelectedIndex");
-                    if (pi != null)
-                    {
-                        object val = pi.GetValue(rbTeachingMoveMode, null);
-                        if (val is int) isFine = ((int)val) == 0;
-                    }
-                }
-                catch { isFine = true; }
-            }
-            return isFine;
-        }
-
-        private int GetSelectedPositionIndex()
-        {
-            int selIndex = -1;
-            if (positionItemView == null) return -1;
-            try
-            {
-                var pi = positionItemView.GetType().GetProperty("SelectedIndex");
-                if (pi != null)
-                {
-                    object val = pi.GetValue(positionItemView, null);
-                    if (val is int) selIndex = (int)val;
-                }
-            }
-            catch { selIndex = -1; }
-            return selIndex;
-        }
-
-        #endregion
-
-        #region Save / Current Position
-
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (!EquipmentInstance.Units.TryGetValue(UNIT_NAME, out var unitObj))
-                {
-                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                var aligner = unitObj as IndexUnloadAligner;
-                if (aligner == null)
-                {
-                    MessageBox.Show("Unit 형식이 올바르지 않습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= aligner.TeachingPositions.Count)
-                {
-                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-                positionEditorView?.Apply();
-                var props = positionEditorView?.GetCurrentProperties();
-                if (props == null || props.Count == 0)
-                {
-                    MessageBox.Show("편집할 데이터가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-                var target = aligner.TeachingPositions[selIndex];
-                var newAxisPositions = new Dictionary<string, double>(target.AxisPositions ?? new Dictionary<string, double>());
-                string newDescription = target.Description;
-                var newExtra = target.ExtraInfo != null ? new Dictionary<string, object>(target.ExtraInfo) : new Dictionary<string, object>();
-                foreach (var p in props)
-                {
-                    if (p is StringProperty spDesc && string.Equals(p.Title, "Description", StringComparison.OrdinalIgnoreCase))
-                    {
-                        newDescription = spDesc.Value ?? string.Empty;
-                        continue;
-                    }
-                    if (p is DoubleProperty dpPos && p.Title.EndsWith(" Position (mm)", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string axisKey = p.Title.Substring(0, p.Title.IndexOf(" Position (mm)")).Trim();
-                        newAxisPositions[axisKey] = dpPos.Value;
-                        continue;
-                    }
-                    if (p is StringProperty spExtra && p.Title.StartsWith("Extra:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        string extraKey = p.Title.Substring("Extra:".Length).Trim();
-                        newExtra[extraKey] = spExtra.Value;
-                        continue;
-                    }
-                }
-                target.Description = newDescription;
-                target.AxisPositions = newAxisPositions;
-                target.ExtraInfo = newExtra;
-                aligner.Config.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description)
-                {
-                    ExtraInfo = new Dictionary<string, object>(target.ExtraInfo)
-                });
-                aligner.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
-                aligner.TeachingPositions.Clear();
-                foreach (var tp in aligner.Config.TeachingPositions)
-                {
-                    aligner.TeachingPositions.Add(tp);
-                }
-                SetTeachingPositionsToList();
-                MessageBox.Show("변경된 Teaching Position이 저장되었습니다.", "저장 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("저장 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnCurrentPos_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (!EquipmentInstance.Units.TryGetValue(UNIT_NAME, out var unitObj))
-                {
-                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                var aligner = unitObj as IndexUnloadAligner;
-                if (aligner == null)
-                {
-                    MessageBox.Show("Unit 형식 오류", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || _config == null || _config.TeachingPositions == null || selIndex >= _config.TeachingPositions.Count)
-                {
-                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-                var tp = _config.TeachingPositions[selIndex];
-                var updatedPositions = new Dictionary<string, double>();
-                foreach (var kv in tp.AxisPositions)
-                {
-                    string axisKey = kv.Key;
-                    double fallback = kv.Value;
-                    MotionAxis axis = ResolveAxis(tp, aligner, axisKey);
-                    double pos = fallback;
-                    if (axis != null)
-                    {
-                        try { pos = axis.GetPosition(); }
-                        catch { pos = fallback; }
-                    }
-                    updatedPositions[axisKey] = pos;
-                }
-                var pc = new PropertyCollection();
-                pc.Add(new TitleOnlyProperty("Teaching Position: " + tp.Name + " (mm, Abs. Pos)"));
-                pc.Add(new StringProperty("Description", tp.Description ?? string.Empty));
-                foreach (var ap in updatedPositions)
-                {
-                    pc.Add(new DoubleProperty(ap.Key + " Position (mm)", ap.Value));
-                }
-                foreach (var extra in tp.ExtraInfo)
-                {
-                    pc.Add(new StringProperty("Extra: " + extra.Key, extra.Value?.ToString() ?? string.Empty));
-                }
-                positionEditorView?.SetProperties(pc);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("현재 위치 읽기 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        #endregion
-
-        #region Utility / Layout
-
-        public void SetPanelSize(
-            int width,
-            int height)
-        {
-            if (!_sizeMismatchWarned &&
-                (width != _designerSize.Width || height != _designerSize.Height))
-            {
-                string formName = GetType().Name;
-                string msg =
-                    "폼: " + formName + "\n" +
-                    "디자이너 크기: " + _designerSize.Width + " x " + _designerSize.Height + "\n" +
-                    "전달 크기: " + width + " x " + height + "\n" +
-                    "크기가 일치하지 않습니다.";
-
-#if DEBUG
-                Debug.WriteLine("[SizeMismatch] " + msg);
-#endif
-            }
-
             try
             {
                 SuspendLayout();
@@ -854,21 +903,31 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        #endregion
+
+        #region Axis 선택 / 위치 업데이트 (확장 포인트)
+
+        private void OnAxisSelected(object sender, int index)
+        {
+            // 필요 시 구현
+        }
+
+        private void UpdateAxisActualPosition()
+        {
+            // Timer 활용 예정 지점
+        }
+
+        #endregion
+
+        #region Paint / Resize
+
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-
             int centerX = ClientSize.Width / 2;
-
-            using (var pen = new Pen(Color.Black, 2))
+            using (var blackPen = new Pen(Color.Black, 2))
             {
-                e.Graphics.DrawLine(
-                    pen,
-                    centerX,
-                    0,
-                    centerX,
-                    ClientSize.Height
-                );
+                e.Graphics.DrawLine(blackPen, centerX, 0, centerX, ClientSize.Height);
             }
         }
 
@@ -876,13 +935,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.OnResize(e);
             Invalidate();
-        }
-
-        private void OnAxisSelected(
-            object sender,
-            int index)
-        {
-            // Axis 선택시 필요 기능 추가 예정
         }
 
         #endregion

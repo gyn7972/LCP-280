@@ -450,7 +450,7 @@ namespace QMC.Common.IOUtil
             vent = new Vacuum("OutputDieTransferVent4", "OutputDieTransfer.VentOut4", null);
             IoAutoBindings.Vacuums["OutputDieTransferVent4"] = vent;
 
-            // OutputRingTransfer
+            // OutputFeeder
             DIO.MapByName(unit, "OutFeeder.UpOut", true, IO.BIN_FEEDER_UP_VALVE);
             DIO.MapByName(unit, "OutFeeder.DownOut", true, IO.BIN_FEEDER_DOWN_VALVE);
             DIO.MapByName(unit, "OutFeeder.UpIn", false, IO.BIN_FEEDER_UP);
