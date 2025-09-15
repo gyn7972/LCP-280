@@ -190,7 +190,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Move / Save / CurrentPos
 
-        private void btnMovePosition_Click(object sender, EventArgs e)
+        private async void btnMovePosition_Click(object sender, EventArgs e)
         {
             try
             {
@@ -207,116 +207,38 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var tp = _unit.Config.TeachingPositions[selIndex];
                 bool isFine = GetSelectedMoveModeIsFine();
 
-                double defaultFineVel = 5.0;
-                double defaultCoarseVel = 20.0;
-                double defaultAcc = 10.0;
-                double defaultDec = 10.0;
-                double defaultJerk = 50.0;
-
-                var moveResults = new List<Tuple<string, int>>();
-
-                foreach (var kv in tp.AxisPositions)
+                var task = _unit.MoveTeachingPositionOnceAsync(selIndex, isFine);
+                using (var pf = new ProgressForm(_UNIT_NAME, "Teaching Position 이동 중...", task))
                 {
-                    string axisKey = kv.Key;
-                    double targetPos = kv.Value;
-
-                    MotionAxis axis = null;
-
-                    if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out var boundAxis))
+                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                    if (dr == DialogResult.Cancel)
                     {
-                        axis = boundAxis;
-                    }
-
-                    if (axis == null && _unit.Axes.TryGetValue(axisKey, out var directAxis))
-                    {
-                        axis = directAxis;
-                    }
-
-                    if (axis == null)
-                    {
-                        foreach (var pair in _unit.Axes)
-                        {
-                            if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-                            {
-                                axis = pair.Value;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (axis == null)
-                    {
-                        continue; // axis not found
-                    }
-
-                    double vel = isFine
-                        ? (axis.Config != null && axis.Config.JogFineVelocity > 0 ? axis.Config.JogFineVelocity : defaultFineVel)
-                        : (axis.Config != null && axis.Config.JogCoarseVelocity > 0 ? axis.Config.JogCoarseVelocity : defaultCoarseVel);
-
-                    double acc = axis.Config != null && axis.Config.JogAcc > 0 ? axis.Config.JogAcc : defaultAcc;
-                    double dec = axis.Config != null && axis.Config.JogDec > 0 ? axis.Config.JogDec : defaultDec;
-                    double jerk = axis.Config != null ? (axis.Config.AccJerkPercent + axis.Config.DecJerkPercent) / 2.0 : defaultJerk;
-
-                    int rc = axis.MoveAbs(targetPos, vel, acc, dec, jerk);
-                    moveResults.Add(new Tuple<string, int>(axisKey, rc));
-                }
-
-                int waitErrors = 0;
-                foreach (var kv in tp.AxisPositions)
-                {
-                    MotionAxis axis = null;
-                    if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out var boundAxis2))
-                    {
-                        axis = boundAxis2;
-                    }
-                    if (axis == null && _unit.Axes.TryGetValue(kv.Key, out var directAxis2))
-                    {
-                        axis = directAxis2;
-                    }
-                    if (axis == null)
-                    {
-                        continue;
-                    }
-
-                    int rc = axis.WaitMoveDone(-1);
-                    if (rc != 0)
-                    {
-                        waitErrors++;
+                        _unit.StopTeachingPositionOnce(selIndex);
+                        return;
                     }
                 }
 
-                bool anyFail = moveResults.Exists(t => t.Item2 != 0) || waitErrors > 0;
+                var result = await task; // 완료 결과 수집
 
-                if (!anyFail)
+                if (result == 0)
                 {
-                    MessageBox.Show(
-                        "Teaching Position 이동 완료",
-                        "Move",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("Teaching Position 이동 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 else
                 {
-                    MessageBox.Show(
-                        "일부 축 이동 실패 또는 타임아웃",
-                        "Move",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Warning
-                    );
+                    MessageBox.Show("일부 축 이동 실패 또는 타임아웃", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "Move 처리 중 오류: " + ex.Message,
-                    "오류",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                MessageBox.Show("Move 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnMovePosition.Enabled = true;
+                Cursor.Current = Cursors.Default;
             }
         }
 

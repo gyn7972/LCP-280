@@ -462,6 +462,12 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int)name, isFine);
         }
+        
+        public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
+        {
+            return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
+        }
+
         public int MoveTeachingPositionOnce(int selIndex, bool isFine)
         {
             if (!IsInterlockOK(selIndex))
