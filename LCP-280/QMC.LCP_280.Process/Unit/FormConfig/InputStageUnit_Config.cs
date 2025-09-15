@@ -235,11 +235,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 MessageBox.Show("Move 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            finally
-            {
-                btnMovePosition.Enabled = true;
-                Cursor.Current = Cursors.Default;
-            }
         }
 
         private void btnSave_Click(object sender, EventArgs e)
