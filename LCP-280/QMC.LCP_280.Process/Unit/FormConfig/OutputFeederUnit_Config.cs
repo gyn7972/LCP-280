@@ -14,12 +14,12 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public partial class OutputRingTransferUnit_Config : Form
+    public partial class OutputFeederUnit_Config : Form
     {
-        private const string _UNIT_NAME = "OutputRingTransfer";
+        private const string _UNIT_NAME = "OutputFeeder";
         private Equipment _Equipment => Equipment.Instance;
-        private OutputRingTransfer _OutputRingTransfer;
-        private OutputRingTransferConfig _cfg;
+        private OutputFeeder _OutputFeeder;
+        private OutputFeederConfig _cfg;
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
@@ -27,7 +27,7 @@ namespace QMC.LCP_280.Process.Unit
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
-        public OutputRingTransferUnit_Config()
+        public OutputFeederUnit_Config()
         {
             InitializeComponent();
             InitializeUnit();
@@ -46,11 +46,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _OutputRingTransfer = unit as OutputRingTransfer;
-                    _cfg = _OutputRingTransfer?.Config;
+                    _OutputFeeder = unit as OutputFeeder;
+                    _cfg = _OutputFeeder?.Config;
                 }
 
-                if (_OutputRingTransfer == null)
+                if (_OutputFeeder == null)
                 {
                     MessageBox.Show($"{_UNIT_NAME} Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -86,14 +86,14 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                if (_OutputRingTransfer == null || _OutputRingTransfer.Axes == null || _OutputRingTransfer.Axes.Count == 0)
+                if (_OutputFeeder == null || _OutputFeeder.Axes == null || _OutputFeeder.Axes.Count == 0)
                 {
                     jogControl.SetTeachingAxisList(null);
                     return;
                 }
 
                 var names = new List<string>();
-                foreach (var pair in _OutputRingTransfer.Axes)
+                foreach (var pair in _OutputFeeder.Axes)
                 {
                     var axis = pair.Value;
                     if (axis == null) continue;
@@ -166,14 +166,14 @@ namespace QMC.LCP_280.Process.Unit
                         tp.Axes.TryGetValue(axisKey, out axis);
                     }
 
-                    if (axis == null && _OutputRingTransfer?.Axes != null)
+                    if (axis == null && _OutputFeeder?.Axes != null)
                     {
-                        _OutputRingTransfer.Axes.TryGetValue(axisKey, out axis);
+                        _OutputFeeder.Axes.TryGetValue(axisKey, out axis);
                     }
 
-                    if (axis == null && _OutputRingTransfer?.Axes != null)
+                    if (axis == null && _OutputFeeder?.Axes != null)
                     {
-                        foreach (var ap in _OutputRingTransfer.Axes)
+                        foreach (var ap in _OutputFeeder.Axes)
                         {
                             if (ap.Value != null && string.Equals(ap.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
                             {
@@ -246,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var transfer = unit as OutputRingTransfer;
+                var transfer = unit as OutputFeeder;
                 if (transfer == null || transfer.TeachingPositions == null || transfer.TeachingPositions.Count == 0)
                 {
                     positionItemView?.SetItems();
@@ -299,7 +299,7 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            var transfer = unit as OutputRingTransfer;
+            var transfer = unit as OutputFeeder;
             var config = transfer?.Config;
             if (config == null || config.TeachingPositions == null) return;
             if (idx < 0 || idx >= config.TeachingPositions.Count) return;
@@ -342,7 +342,7 @@ namespace QMC.LCP_280.Process.Unit
                 var hardInputs = new List<dynamic>();
                 var hardOutputs = new List<dynamic>();
 
-                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is OutputRingTransfer transfer && transfer.Config != null)
+                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is OutputFeeder transfer && transfer.Config != null)
                 {
                     var cfg = transfer.Config;
                     var t = cfg.GetType();
@@ -606,7 +606,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit)) return;
-                var transfer = unit as OutputRingTransfer;
+                var transfer = unit as OutputFeeder;
                 if (transfer == null) return;
 
                 int selIndex = GetSelectedIndex(positionItemView);
@@ -707,7 +707,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit)) return;
-                var transfer = unit as OutputRingTransfer;
+                var transfer = unit as OutputFeeder;
                 if (transfer == null) return;
 
                 int selIndex = GetSelectedIndex(positionItemView);

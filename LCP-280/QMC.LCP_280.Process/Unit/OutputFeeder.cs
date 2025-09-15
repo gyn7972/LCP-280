@@ -11,12 +11,12 @@ using System.Linq;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// OutputRingTransfer (Bin Feeder / Ring Transfer - Output side)
+    /// OutputFeeder (Bin Feeder / Ring Transfer - Output side)
     ///  - Y 축 이송 + Lift + Clamp
     ///  - Ring 존재 / Overload 센서
     ///  - Config/Unit 구조를 다른 Unit들과 통일
     /// </summary>
-    public class OutputRingTransfer : BaseUnit<OutputRingTransferConfig>
+    public class OutputFeeder : BaseUnit<OutputFeederConfig>
     {
         #region Config / Teaching
         
@@ -34,7 +34,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public OutputRingTransfer(OutputRingTransferConfig config = null) : base(new OutputRingTransferConfig())
+        public OutputFeeder(OutputFeederConfig config = null) : base(new OutputFeederConfig())
         {
             
             AddComponents();
@@ -56,7 +56,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("OutputRingTransfer", "[BindAxes] AxisManager null");
+                Log.Write("OutputFeeder", "[BindAxes] AxisManager null");
                 return;
             }
 
@@ -150,12 +150,12 @@ namespace QMC.LCP_280.Process.Unit
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
             if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederLift", out _feederLift))
             {
-                Log.Write("OutputRingTransfer", "BindIoDomains", "Cylinder not found: OutFeederLift");
+                Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederLift");
             }
 
             if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederClamp", out _cylClamp))
             {
-                Log.Write("OutputRingTransfer", "BindIoDomains", "Cylinder not found: OutFeederClamp");
+                Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederClamp");
             }
         }
         #endregion
@@ -176,20 +176,20 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Status Helpers
-        public bool IsFeederUp() => ReadInput(OutputRingTransferConfig.IO.FEEDER_UP);
-        public bool IsFeederDown() => ReadInput(OutputRingTransferConfig.IO.FEEDER_DOWN);
-        public bool IsUnclamped() => ReadInput(OutputRingTransferConfig.IO.FEEDER_UNCLAMP);
-        public bool IsRingPresent() => ReadInput(OutputRingTransferConfig.IO.FEEDER_RING_CHECK);
-        public bool IsOverload() => ReadInput(OutputRingTransferConfig.IO.FEEDER_OVERLOAD);
+        public bool IsFeederUp() => ReadInput(OutputFeederConfig.IO.FEEDER_UP);
+        public bool IsFeederDown() => ReadInput(OutputFeederConfig.IO.FEEDER_DOWN);
+        public bool IsUnclamped() => ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
+        public bool IsRingPresent() => ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
+        public bool IsOverload() => ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
         #endregion
 
         /// ////////////////////////////////////////////////////////////////////////////////////////
 
         #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public bool IsFeederUpValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UP_VALVE);
-        public bool IsFeederDownValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_DOWN_VALVE);
-        public bool IsFeederClampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_CLAMP_VALVE);
-        public bool IsFeederUnclampValveOn() => IsOutputOn(OutputRingTransferConfig.IO.FEEDER_UNCLAMP_VALVE);
+        public bool IsFeederUpValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UP_VALVE);
+        public bool IsFeederDownValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_DOWN_VALVE);
+        public bool IsFeederClampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_CLAMP_VALVE);
+        public bool IsFeederUnclampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
 
         #region Seq 단위 동작 함수

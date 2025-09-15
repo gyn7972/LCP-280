@@ -17,15 +17,15 @@ using System.Windows.Forms;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// InputRingTransfer Unit Config (UI 로직 & 기능 코드 비즈니스 분리)
+    /// InputFeeder Unit Config (UI 로직 & 기능 코드 비즈니스 분리)
     /// </summary>
-    public partial class InputRingTransferUnit_Config : Form
+    public partial class InputFeederUnit_Config : Form
     {
         #region Fields
-        private const string _UNIT_NAME = "InputRingTransfer";
+        private const string _UNIT_NAME = "InputFeeder";
 
         private Equipment _Equipment => Equipment.Instance;
-        private InputFeeder _InputRingTransfer;
+        private InputFeeder _InputFeeder;
         private InputFeederConfig _cfg;
 
         private readonly Size _designerSize;
@@ -38,7 +38,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Constructor
-        public InputRingTransferUnit_Config()
+        public InputFeederUnit_Config()
         {
             InitializeComponent();
 
@@ -61,11 +61,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _InputRingTransfer = unit as InputFeeder;
-                    _cfg = _InputRingTransfer?.Config;
+                    _InputFeeder = unit as InputFeeder;
+                    _cfg = _InputFeeder?.Config;
                 }
 
-                if (_InputRingTransfer == null)
+                if (_InputFeeder == null)
                 {
                     MessageBox.Show(
                         $"{_UNIT_NAME} Unit을 찾을 수 없습니다.",
@@ -111,13 +111,13 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                if (_InputRingTransfer?.Axes == null || _InputRingTransfer.Axes.Count == 0)
+                if (_InputFeeder?.Axes == null || _InputFeeder.Axes.Count == 0)
                 {
                     jogControl.SetTeachingAxisList(null);
                     return;
                 }
 
-                var axisNames = _InputRingTransfer
+                var axisNames = _InputFeeder
                     .Axes
                     .Values
                     .Where(a => a != null)
@@ -138,10 +138,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_InputRingTransfer?.TeachingPositions != null &&
-                    _InputRingTransfer.TeachingPositions.Count > 0)
+                if (_InputFeeder?.TeachingPositions != null &&
+                    _InputFeeder.TeachingPositions.Count > 0)
                 {
-                    var names = _InputRingTransfer
+                    var names = _InputFeeder
                         .TeachingPositions
                         .Select(tp => tp.Name)
                         .ToArray();
@@ -184,12 +184,12 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPosition(int selectedIndex)
         {
-            if (_InputRingTransfer?.Config?.TeachingPositions == null)
+            if (_InputFeeder?.Config?.TeachingPositions == null)
             {
                 return;
             }
 
-            var list = _InputRingTransfer.Config.TeachingPositions;
+            var list = _InputFeeder.Config.TeachingPositions;
             if (selectedIndex < 0 || selectedIndex >= list.Count)
             {
                 return;
@@ -290,9 +290,9 @@ namespace QMC.LCP_280.Process.Unit
                 Array hardInputsArr = Array.CreateInstance(typeof(object), 0);
                 Array hardOutputsArr = Array.CreateInstance(typeof(object), 0);
 
-                if (_InputRingTransfer?.Config != null)
+                if (_InputFeeder?.Config != null)
                 {
-                    var cfg = _InputRingTransfer.Config;
+                    var cfg = _InputFeeder.Config;
                     var cfgType = cfg.GetType();
 
                     var piIn = cfgType.GetProperty("HardInputs");
@@ -477,7 +477,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_InputRingTransfer == null)
+                if (_InputFeeder == null)
                 {
                     MessageBox.Show(
                         "Unit을 찾을 수 없습니다.",
@@ -488,7 +488,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= _InputRingTransfer.Config.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _InputFeeder.Config.TeachingPositions.Count)
                 {
                     MessageBox.Show(
                         "선택된 Teaching Position이 없습니다.",
@@ -498,7 +498,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var tp = _InputRingTransfer.Config.TeachingPositions[selIndex];
+                var tp = _InputFeeder.Config.TeachingPositions[selIndex];
                 bool isFine = IsFineSelected();
 
                 double defaultFineVel = 5.0;
@@ -521,14 +521,14 @@ namespace QMC.LCP_280.Process.Unit
                         tp.Axes.TryGetValue(axisKey, out axis);
                     }
 
-                    if (axis == null && _InputRingTransfer.Axes.TryGetValue(axisKey, out var directAxis))
+                    if (axis == null && _InputFeeder.Axes.TryGetValue(axisKey, out var directAxis))
                     {
                         axis = directAxis;
                     }
 
                     if (axis == null)
                     {
-                        foreach (var pair in _InputRingTransfer.Axes)
+                        foreach (var pair in _InputFeeder.Axes)
                         {
                             if (pair.Value != null &&
                                 string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
@@ -578,7 +578,7 @@ namespace QMC.LCP_280.Process.Unit
                         tp.Axes.TryGetValue(kv.Key, out axis);
                     }
 
-                    if (axis == null && _InputRingTransfer.Axes.TryGetValue(kv.Key, out var directAxis))
+                    if (axis == null && _InputFeeder.Axes.TryGetValue(kv.Key, out var directAxis))
                     {
                         axis = directAxis;
                     }
@@ -680,7 +680,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_InputRingTransfer == null)
+                if (_InputFeeder == null)
                 {
                     MessageBox.Show(
                         "Unit을 찾을 수 없습니다.",
@@ -691,7 +691,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= _InputRingTransfer.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _InputFeeder.TeachingPositions.Count)
                 {
                     MessageBox.Show(
                         "선택된 Teaching Position이 없습니다.",
@@ -713,7 +713,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var target = _InputRingTransfer.TeachingPositions[selIndex];
+                var target = _InputFeeder.TeachingPositions[selIndex];
 
                 var newAxisPositions = new Dictionary<string, double>(
                     target.AxisPositions ?? new Dictionary<string, double>());
@@ -755,7 +755,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.AxisPositions = newAxisPositions;
                 target.ExtraInfo = newExtra;
 
-                _InputRingTransfer
+                _InputFeeder
                     .Config
                     .SetTeachingPosition(
                         new TeachingPosition(
@@ -766,14 +766,14 @@ namespace QMC.LCP_280.Process.Unit
                             ExtraInfo = new Dictionary<string, object>(target.ExtraInfo)
                         });
 
-                _InputRingTransfer
+                _InputFeeder
                     .Config
                     .LoadAndBindAxes(Equipment.Instance.AxisManager);
 
-                _InputRingTransfer.TeachingPositions.Clear();
-                foreach (var tp in _InputRingTransfer.Config.TeachingPositions)
+                _InputFeeder.TeachingPositions.Clear();
+                foreach (var tp in _InputFeeder.Config.TeachingPositions)
                 {
-                    _InputRingTransfer.TeachingPositions.Add(tp);
+                    _InputFeeder.TeachingPositions.Add(tp);
                 }
 
                 SetTeachingPositionItems();
@@ -798,7 +798,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_InputRingTransfer == null)
+                if (_InputFeeder == null)
                 {
                     return;
                 }
@@ -832,15 +832,15 @@ namespace QMC.LCP_280.Process.Unit
                         tp.Axes.TryGetValue(axisKey, out axis);
                     }
 
-                    if (axis == null && _InputRingTransfer.Axes != null &&
-                        _InputRingTransfer.Axes.TryGetValue(axisKey, out var directAxis))
+                    if (axis == null && _InputFeeder.Axes != null &&
+                        _InputFeeder.Axes.TryGetValue(axisKey, out var directAxis))
                     {
                         axis = directAxis;
                     }
 
-                    if (axis == null && _InputRingTransfer.Axes != null)
+                    if (axis == null && _InputFeeder.Axes != null)
                     {
-                        foreach (var pair in _InputRingTransfer.Axes)
+                        foreach (var pair in _InputFeeder.Axes)
                         {
                             if (pair.Value != null &&
                                 string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))

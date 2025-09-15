@@ -1,16 +1,17 @@
-﻿using QMC.Common;
+﻿using QMC.Common; // maybe needed for base types
 using QMC.Common.CustomControl;
+using QMC.Common.IO;
 using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class OutputRingTransferUnit_Config
+    partial class InputFeederUnit_Config
     {
         private IOPropertyCollectionView inputView;
         private IOPropertyCollectionView outputView;
-        private ListBoxItemsView axisListBoxItemsView;
+        private ListBoxItemsView axisListBoxItemsView; // not placed in layout
         private IndividualMenuButton btnSave;
         private IndividualMenuButton btnCancel;
         private GroupBox gbPositionTeaching;
@@ -20,7 +21,7 @@ namespace QMC.LCP_280.Process.Unit
         private ListBoxItemsView axisPositionsView;
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel ioTableLayoutPanel;
-        private Panel positionItemPanel;
+        private Panel positionItemPanel; // placeholder
         private ListBoxItemsView positionItemView;
         private TableLayoutPanel positionTableLayoutPanel;
         private PropertyCollectionView positionEditorView;
@@ -118,8 +119,8 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // btnMovePosition
             // 
-            this.btnMovePosition.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnMovePosition.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMovePosition.BackColor = System.Drawing.Color.FromArgb(217, 217, 217);
+            this.btnMovePosition.CustomBackColor = System.Drawing.Color.FromArgb(217, 217, 217);
             this.btnMovePosition.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnMovePosition.CustomForeColor = System.Drawing.Color.Black;
             this.btnMovePosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
@@ -139,6 +140,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rbTeachingMoveMode.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.rbTeachingMoveMode.GroupName = "Move Mode";
             this.rbTeachingMoveMode.Location = new System.Drawing.Point(6, 25);
+            this.rbTeachingMoveMode.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.rbTeachingMoveMode.Name = "rbTeachingMoveMode";
             this.rbTeachingMoveMode.Orientation = System.Windows.Forms.Orientation.Vertical;
             this.rbTeachingMoveMode.SelectedIndex = -1;
@@ -161,15 +163,17 @@ namespace QMC.LCP_280.Process.Unit
             this.positionEditorView.FastBuild = true;
             this.positionEditorView.GroupName = "Editor";
             this.positionEditorView.Location = new System.Drawing.Point(4, 4);
+            this.positionEditorView.Margin = new System.Windows.Forms.Padding(4);
             this.positionEditorView.Name = "positionEditorView";
             this.positionEditorView.Size = new System.Drawing.Size(358, 145);
             this.positionEditorView.SuppressResizeInvalidation = true;
             this.positionEditorView.TabIndex = 0;
+            this.positionEditorView.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9F);
             // 
             // btnCancel
             // 
-            this.btnCancel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnCancel.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnCancel.BackColor = System.Drawing.Color.FromArgb(217, 217, 217);
+            this.btnCancel.CustomBackColor = System.Drawing.Color.FromArgb(217, 217, 217);
             this.btnCancel.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnCancel.CustomForeColor = System.Drawing.Color.Black;
             this.btnCancel.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
@@ -186,8 +190,8 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // btnSave
             // 
-            this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.BackColor = System.Drawing.Color.FromArgb(217, 217, 217);
+            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(217, 217, 217);
             this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnSave.CustomForeColor = System.Drawing.Color.Black;
             this.btnSave.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
@@ -218,12 +222,11 @@ namespace QMC.LCP_280.Process.Unit
             this.positionItemView.Margin = new System.Windows.Forms.Padding(3, 8, 3, 8);
             this.positionItemView.Name = "positionItemView";
             this.positionTableLayoutPanel.SetRowSpan(this.positionItemView, 2);
-            this.positionItemView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.positionItemView.SelectedBackColor = System.Drawing.Color.FromArgb(198, 255, 0);
             this.positionItemView.SelectedForeColor = System.Drawing.Color.Black;
             this.positionItemView.SelectedIndex = -1;
             this.positionItemView.Size = new System.Drawing.Size(242, 344);
             this.positionItemView.TabIndex = 2;
-            this.positionItemView.ItemSelected += new System.EventHandler<int>(this.OnPositionItemSelected);
             // 
             // gbDigitalIO
             // 
@@ -265,7 +268,7 @@ namespace QMC.LCP_280.Process.Unit
             this.inputView.Location = new System.Drawing.Point(4, 6);
             this.inputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
             this.inputView.Name = "inputView";
-            this.inputView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.inputView.SelectedBackColor = System.Drawing.Color.FromArgb(198, 255, 0);
             this.inputView.SelectedForeColor = System.Drawing.Color.Black;
             this.inputView.Size = new System.Drawing.Size(302, 348);
             this.inputView.SuppressResizeInvalidation = true;
@@ -282,12 +285,11 @@ namespace QMC.LCP_280.Process.Unit
             this.outputView.Location = new System.Drawing.Point(314, 6);
             this.outputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
             this.outputView.Name = "outputView";
-            this.outputView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.outputView.SelectedBackColor = System.Drawing.Color.FromArgb(198, 255, 0);
             this.outputView.SelectedForeColor = System.Drawing.Color.Black;
             this.outputView.Size = new System.Drawing.Size(302, 348);
             this.outputView.SuppressResizeInvalidation = true;
             this.outputView.TabIndex = 1;
-            this.outputView.ItemClicked += new System.EventHandler<string>(this.OnOutputItemClicked);
             // 
             // gbMoveAxis
             // 
@@ -327,31 +329,30 @@ namespace QMC.LCP_280.Process.Unit
             this.axisPositionsView.Location = new System.Drawing.Point(951, 3);
             this.axisPositionsView.Name = "axisPositionsView";
             this.mainTableLayoutPanel.SetRowSpan(this.axisPositionsView, 2);
-            this.axisPositionsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.axisPositionsView.SelectedBackColor = System.Drawing.Color.FromArgb(198, 255, 0);
             this.axisPositionsView.SelectedForeColor = System.Drawing.Color.Black;
             this.axisPositionsView.SelectedIndex = -1;
             this.axisPositionsView.Size = new System.Drawing.Size(310, 774);
             this.axisPositionsView.TabIndex = 11;
             // 
-            // axisListBoxItemsView
+            // axisListBoxItemsView (not in layout)
             // 
             this.axisListBoxItemsView.BorderColor = System.Drawing.Color.White;
             this.axisListBoxItemsView.BorderWidth = 2;
             this.axisListBoxItemsView.GroupBackColor = System.Drawing.Color.White;
             this.axisListBoxItemsView.GroupForeColor = System.Drawing.Color.Black;
-            this.axisListBoxItemsView.GroupName = "";
+            this.axisListBoxItemsView.GroupName = string.Empty;
             this.axisListBoxItemsView.ItemBackColor = System.Drawing.Color.Black;
             this.axisListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
             this.axisListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
             this.axisListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
             this.axisListBoxItemsView.Location = new System.Drawing.Point(8, 18);
             this.axisListBoxItemsView.Name = "axisListBoxItemsView";
-            this.axisListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.axisListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(198, 255, 0);
             this.axisListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.axisListBoxItemsView.SelectedIndex = -1;
             this.axisListBoxItemsView.Size = new System.Drawing.Size(234, 124);
             this.axisListBoxItemsView.TabIndex = 0;
-            this.axisListBoxItemsView.ItemSelected += new System.EventHandler<int>(this.OnAxisSelected);
             // 
             // mainTableLayoutPanel
             // 
@@ -373,21 +374,21 @@ namespace QMC.LCP_280.Process.Unit
             this.mainTableLayoutPanel.Size = new System.Drawing.Size(1264, 780);
             this.mainTableLayoutPanel.TabIndex = 12;
             // 
-            // positionItemPanel
+            // positionItemPanel (placeholder)
             // 
             this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
             this.positionItemPanel.Name = "positionItemPanel";
             this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
             this.positionItemPanel.TabIndex = 0;
             // 
-            // OutputRingTransferUnit_Config
+            // InputFeederUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 780);
             this.Controls.Add(this.mainTableLayoutPanel);
-            this.Name = "OutputRingTransferUnit_Config";
-            this.Text = "OutputRingTransfer Unit Configuration";
+            this.Name = "InputFeederUnit_Config";
+            this.Text = "InputFeeder Unit Configuration";
             this.gbPositionTeaching.ResumeLayout(false);
             this.positionTableLayoutPanel.ResumeLayout(false);
             this.gbTeachingMove.ResumeLayout(false);

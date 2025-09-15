@@ -271,11 +271,11 @@
     <Compile Include="Unit\FormConfig\InputStageEjectorUnit_Config.Designer.cs">
       <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormConfig\OutputRingTransferUnit_Config.cs">
+    <Compile Include="Unit\FormConfig\OutputFeederUnit_Config.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormConfig\OutputRingTransferUnit_Config.Designer.cs">
-      <DependentUpon>OutputRingTransferUnit_Config.cs</DependentUpon>
+    <Compile Include="Unit\FormConfig\OutputFeederUnit_Config.Designer.cs">
+      <DependentUpon>OutputFeederUnit_Config.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormConfig\OutputDieTransferUnit_Config.cs">
       <SubType>Form</SubType>
@@ -319,11 +319,11 @@
     <Compile Include="Unit\FormConfig\GageRnRUnit_Config.Designer.cs">
       <DependentUpon>GageRnRUnit_Config.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormConfig\InputRingTransferUnit_Config.cs">
+    <Compile Include="Unit\FormConfig\InputFeederUnit_Config.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormConfig\InputRingTransferUnit_Config.Designer.cs">
-      <DependentUpon>InputRingTransferUnit_Config.cs</DependentUpon>
+    <Compile Include="Unit\FormConfig\InputFeederUnit_Config.Designer.cs">
+      <DependentUpon>InputFeederUnit_Config.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormConfig\RotaryUnit_Config.cs">
       <SubType>Form</SubType>
@@ -371,8 +371,8 @@
     <Compile Include="Unit\OutputCassetteLifterConfig.cs" />
     <Compile Include="Unit\OutputDieTransfer.cs" />
     <Compile Include="Unit\OutputDieTransferConfig.cs" />
-    <Compile Include="Unit\OutputRingTransfer.cs" />
-    <Compile Include="Unit\OutputRingTransferConfig.cs" />
+    <Compile Include="Unit\OutputFeeder.cs" />
+    <Compile Include="Unit\OutputFeederConfig.cs" />
     <Compile Include="Unit\OutputStage.cs" />
     <Compile Include="Unit\OutputStageConfig.cs" />
     <Compile Include="Unit\Rotary.cs" />
@@ -477,8 +477,8 @@
     <EmbeddedResource Include="Unit\FormConfig\InputStageEjectorUnit_Config.resx">
       <DependentUpon>InputStageEjectorUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormConfig\OutputRingTransferUnit_Config.resx">
-      <DependentUpon>OutputRingTransferUnit_Config.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormConfig\OutputFeederUnit_Config.resx">
+      <DependentUpon>OutputFeederUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\OutputDieTransferUnit_Config.resx">
       <DependentUpon>OutputDieTransferUnit_Config.cs</DependentUpon>
@@ -501,8 +501,8 @@
     <EmbeddedResource Include="Unit\FormConfig\GageRnRUnit_Config.resx">
       <DependentUpon>GageRnRUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormConfig\InputRingTransferUnit_Config.resx">
-      <DependentUpon>InputRingTransferUnit_Config.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormConfig\InputFeederUnit_Config.resx">
+      <DependentUpon>InputFeederUnit_Config.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\RotaryUnit_Config.resx">
       <DependentUpon>RotaryUnit_Config.cs</DependentUpon>

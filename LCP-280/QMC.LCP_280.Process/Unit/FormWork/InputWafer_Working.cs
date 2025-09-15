@@ -9,9 +9,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 {
     /// <summary>
     /// WaferRing Working Form
-    /// - TeachingPositionControl: InputRingTransfer, InputCassetteLifter
+    /// - TeachingPositionControl: InputFeeder, InputCassetteLifter
     /// - DIO 제어:
-    ///    InputRingTransfer : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
+    ///    InputFeeder : Feeder Up/Down/Clamp 관련 센서 + 밸브 강제 제어
     ///    InputCassetteLifter : Cassette / RingJut / Mapping 센서 표시
     /// </summary>
     public partial class InputWafer_Working : Form
@@ -19,7 +19,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private const string WORK_NAME = "InputWafer";
         private Equipment Equipment => Equipment.Instance;
 
-        private InputFeeder InputRingTransferUnit { get; set; }
+        private InputFeeder InputFeederUnit { get; set; }
         private InputCassetteLifter InputCassetteLifterUnit { get; set; }
 
         private MaterialCassette MaterialCassette { get; set; }
@@ -30,7 +30,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
 
         public InputWafer_Working() : this(
-            TryGetUnit<InputFeeder>("InputRingTransfer"),
+            TryGetUnit<InputFeeder>("InputFeeder"),
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"))
         {
         }
@@ -38,7 +38,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         public InputWafer_Working(InputFeeder ringTransfer, InputCassetteLifter cassetteLifter)
         {
             InitializeComponent();
-            InputRingTransferUnit = ringTransfer;
+            InputFeederUnit = ringTransfer;
             InputCassetteLifterUnit = cassetteLifter;
 
             Load += InputWafer_Working_Load;
@@ -116,14 +116,14 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (teachingPositionControl == null) return;
                 teachingPositionControl.ClearUnits();
 
-                if (InputRingTransferUnit != null)
+                if (InputFeederUnit != null)
                 {
                     teachingPositionControl.RegisterUnit(
-                        "InputRingTransfer",
-                        InputRingTransferUnit,
-                        () => InputRingTransferUnit.Config?.TeachingPositions,
-                        (name, vel) => InputRingTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputRingTransferUnit.Config?.SetTeachingPosition(tp),
+                        "InputFeeder",
+                        InputFeederUnit,
+                        () => InputFeederUnit.Config?.TeachingPositions,
+                        (name, vel) => InputFeederUnit.MoveToTeachingPosition(name, vel: vel),
+                        tp => InputFeederUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -153,9 +153,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (dioControl == null) return;
                 dioControl.IoSortMode = DIOControl.SortingMode.Insertion;
 
-                if (InputRingTransferUnit != null)
+                if (InputFeederUnit != null)
                 {
-                    StrongBindInputRingTransfer();
+                    StrongBindInputFeeder();
                 }
 
                 if (InputCassetteLifterUnit != null)
@@ -172,25 +172,25 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             catch { }
         }
 
-        private void StrongBindInputRingTransfer()
+        private void StrongBindInputFeeder()
         {
-            if (InputRingTransferUnit == null || dioControl == null) return;
+            if (InputFeederUnit == null || dioControl == null) return;
             try
             {
                 // Sensors
-                dioControl.BindDIOInput(() => InputRingTransferUnit.IsFeederUp(), "Feeder UP Sns", "IRT_FeederUp");
-                dioControl.BindDIOInput(() => InputRingTransferUnit.IsFeederDown(), "Feeder DOWN Sns", "IRT_FeederDown");
-                dioControl.BindDIOInput(() => InputRingTransferUnit.IsUnclamped(), "Feeder UNCLAMP Sns", "IRT_Unclamp");
-                dioControl.BindDIOInput(() => InputRingTransferUnit.IsRingPresent(), "Feeder RING Sns", "IRT_Ring");
-                dioControl.BindDIOInput(() => InputRingTransferUnit.IsOverload(), "Feeder OVERLOAD Sns", "IRT_Overload");
+                dioControl.BindDIOInput(() => InputFeederUnit.IsFeederUp(), "Feeder UP Sns", "IRT_FeederUp");
+                dioControl.BindDIOInput(() => InputFeederUnit.IsFeederDown(), "Feeder DOWN Sns", "IRT_FeederDown");
+                dioControl.BindDIOInput(() => InputFeederUnit.IsUnclamped(), "Feeder UNCLAMP Sns", "IRT_Unclamp");
+                dioControl.BindDIOInput(() => InputFeederUnit.IsRingPresent(), "Feeder RING Sns", "IRT_Ring");
+                dioControl.BindDIOInput(() => InputFeederUnit.IsOverload(), "Feeder OVERLOAD Sns", "IRT_Overload");
 
                 // Feeder Up/Down (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Up/Down",
-                    extend: () => InputRingTransferUnit.SetLift(true),
-                    retract: () => InputRingTransferUnit.SetLift(false),
-                    isExtended: () => InputRingTransferUnit.IsFeederUpValveOn(),
-                    isRetracted: () => InputRingTransferUnit.IsFeederDownValveOn(),
+                    extend: () => InputFeederUnit.SetLift(true),
+                    retract: () => InputFeederUnit.SetLift(false),
+                    isExtended: () => InputFeederUnit.IsFeederUpValveOn(),
+                    isRetracted: () => InputFeederUnit.IsFeederDownValveOn(),
                     displayKey: "FeederUpDn",
                     showSensors: false,
                     extendedName: "UP",
@@ -200,10 +200,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Feeder Clamp/Unclamp (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Clamp/Unclamp",
-                    extend: () => InputRingTransferUnit.SetClamp(true),
-                    retract: () => InputRingTransferUnit.SetClamp(false),
-                    isExtended: () => InputRingTransferUnit.IsFeederClampValveOn(),
-                    isRetracted: () => InputRingTransferUnit.IsFeederUnclampValveOn(),
+                    extend: () => InputFeederUnit.SetClamp(true),
+                    retract: () => InputFeederUnit.SetClamp(false),
+                    isExtended: () => InputFeederUnit.IsFeederClampValveOn(),
+                    isRetracted: () => InputFeederUnit.IsFeederUnclampValveOn(),
                     displayKey: "FeederClamp",
                     showSensors: false,
                     extendedName: "CLAMP",
@@ -212,28 +212,28 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 // Valves
                 //dioControl.BindDIOOutput(
-                //    () => InputRingTransferUnit.SetFeederUpValve(true),
-                //    () => InputRingTransferUnit.SetFeederUpValve(false),
+                //    () => InputFeederUnit.SetFeederUpValve(true),
+                //    () => InputFeederUnit.SetFeederUpValve(false),
                 //    "Feeder UP Valve",
-                //    () => InputRingTransferUnit.IsFeederUpValveOn(),
+                //    () => InputFeederUnit.IsFeederUpValveOn(),
                 //    "IRT_FeederUpValve");
                 //dioControl.BindDIOOutput(
-                //    () => InputRingTransferUnit.SetFeederDownValve(true),
-                //    () => InputRingTransferUnit.SetFeederDownValve(false),
+                //    () => InputFeederUnit.SetFeederDownValve(true),
+                //    () => InputFeederUnit.SetFeederDownValve(false),
                 //    "Feeder DOWN Valve",
-                //    () => InputRingTransferUnit.IsFeederDownValveOn(),
+                //    () => InputFeederUnit.IsFeederDownValveOn(),
                 //    "IRT_FeederDownValve");
                 //dioControl.BindDIOOutput(
-                //    () => InputRingTransferUnit.SetFeederClampValve(true),
-                //    () => InputRingTransferUnit.SetFeederClampValve(false),
+                //    () => InputFeederUnit.SetFeederClampValve(true),
+                //    () => InputFeederUnit.SetFeederClampValve(false),
                 //    "Feeder CLAMP Valve",
-                //    () => InputRingTransferUnit.IsFeederClampValveOn(),
+                //    () => InputFeederUnit.IsFeederClampValveOn(),
                 //    "IRT_FeederClampValve");
                 //dioControl.BindDIOOutput(
-                //    () => InputRingTransferUnit.SetFeederUnclampValve(true),
-                //    () => InputRingTransferUnit.SetFeederUnclampValve(false),
+                //    () => InputFeederUnit.SetFeederUnclampValve(true),
+                //    () => InputFeederUnit.SetFeederUnclampValve(false),
                 //    "Feeder UNCLAMP Valve",
-                //    () => InputRingTransferUnit.IsFeederUnclampValveOn(),
+                //    () => InputFeederUnit.IsFeederUnclampValveOn(),
                 //    "IRT_FeederUnclampValve");
             }
             catch { }

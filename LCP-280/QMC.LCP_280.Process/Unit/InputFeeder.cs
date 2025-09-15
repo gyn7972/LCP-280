@@ -15,9 +15,9 @@ using System.Windows.Navigation;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// InputRingTransfer (Wafer Feeder / Ring Transfer Unit)
+    /// InputFeeder (Wafer Feeder / Ring Transfer Unit)
     ///  - X ?? ??? + Lift + Clamp (Ring ???? ??? / Overload ???)
-    ///  - Teaching Position ???? (InputRingTransferConfig)
+    ///  - Teaching Position ???? (InputFeederConfig)
     ///  - Cylinder ??? ???? API (FeederUp/Down, Clamp)
     ///  - OutputStage / InputStage ?? ?????? Region/???? ????
     /// </summary>
@@ -97,7 +97,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("InputRingTransfer", "[BindAxes] AxisManager null");
+                Log.Write("InputFeeder", "[BindAxes] AxisManager null");
                 return;
             }
 
@@ -194,12 +194,12 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!IoAutoBindings.Cylinders.TryGetValue("InFeederLift", out _feederLift))
             {
-                Log.Write("InputRingTransfer", "BindIoDomains", "Cylinder not found: InFeederLift");
+                Log.Write("InputFeeder", "BindIoDomains", "Cylinder not found: InFeederLift");
             }
 
             if (!IoAutoBindings.Cylinders.TryGetValue("InFeederClamp", out _cylClamp))
             {
-                Log.Write("InputRingTransfer", "BindIoDomains", "Cylinder not found: InFeederClamp");
+                Log.Write("InputFeeder", "BindIoDomains", "Cylinder not found: InFeederClamp");
             }
         }
         #endregion

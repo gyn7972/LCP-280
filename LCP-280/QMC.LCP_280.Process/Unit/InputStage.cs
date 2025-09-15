@@ -106,7 +106,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 _dieTr = unit as InputDieTransfer;
             }
-            if (_equipment.Units.TryGetValue(UnitKeys.InputRingTransfer, out var unit2))
+            if (_equipment.Units.TryGetValue(UnitKeys.InputFeeder, out var unit2))
             {
                 _ringTr = unit2 as InputFeeder;
             }
