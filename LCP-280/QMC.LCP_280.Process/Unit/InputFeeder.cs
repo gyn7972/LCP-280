@@ -90,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
 
-            Config.IsSimulation = false;
+            Config.IsSimulation = true;
             if (Config.IsSimulation)
             {
                 _feederY.Config.IsSimulation = true;

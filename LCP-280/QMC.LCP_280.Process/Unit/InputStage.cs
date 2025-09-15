@@ -174,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            Config.IsSimulation = false;
+            Config.IsSimulation = true;
             if (Config.IsSimulation)
             {
                 _axX.Config.IsSimulation = true;
@@ -1051,17 +1051,6 @@ namespace QMC.LCP_280.Process.Unit
             nRtn = 0;
             return nRtn;
         }
-        private int WaitUntilInPos(TeachingPosition tp, int timeoutMs)
-        {
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeoutMs)
-            {
-                if (InPosTeaching(tp))
-                    return 0;
-                Thread.Sleep(PollIntervalMs);
-            }
-            return -1;
-        }
         private bool WaitIO(Func<bool> cond, int timeoutMs)
         {
             var sw = Stopwatch.StartNew();
@@ -1471,7 +1460,6 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
                 grabRc = StageCamera.GrabSync(out img);
-
             }
             catch (Exception ex)
             {

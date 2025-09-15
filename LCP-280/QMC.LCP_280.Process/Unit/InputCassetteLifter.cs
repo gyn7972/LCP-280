@@ -485,19 +485,19 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
+        public Task<int> MoveToScanStartPositionAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMoveToScanStartPosition(isFine);
+                return 0;
+            });
+        }
         public int OnMoveToScanStartPosition(bool isFine = false)
         {
             return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingStart, isFine);
         }
-
-        public Task<int> MoveToScanStartPositionAsync()
-        {
-            return Task.Run(() =>
-            {
-                OnMoveToScanStartPosition();
-                return 0;
-            });
-        }
+        
 
 
         public double GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName pos, string axis)
@@ -536,7 +536,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return ret;
         }
-
         public Task<int> MoveToScanEndPositionAsync()
         {
             return Task.Run(() =>
@@ -546,12 +545,11 @@ namespace QMC.LCP_280.Process.Unit
             });
         }
 
+
         public Task<int> ScanWaferAsync()
         {
             return Task.Run(() => ScanWafer());
         }
-
-        
         #endregion
 
         #region Seq 단위 동작 함수
