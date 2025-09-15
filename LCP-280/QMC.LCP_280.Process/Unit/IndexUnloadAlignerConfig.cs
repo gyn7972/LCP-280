@@ -4,6 +4,7 @@ using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,28 +17,18 @@ namespace QMC.LCP_280.Process.Unit
         public enum TeachingPositionName
         {
         }
-        
 
-        // IO 추가 필요시 여기에 정의
-        //[JsonIgnore]
-        //public HardInputDef[] HardInputs => _hardInputs;
-        //[JsonIgnore]
-        //private static readonly HardInputDef[] _hardInputs = new[]
-        //{
-        //    new HardInputDef { No = 1, Name = "SPHERE FW", Disp = "X006" },
-        //    new HardInputDef { No = 2, Name = "SPHERE BW", Disp = "X007" },
-        //    new HardInputDef { No = 3, Name = "PROBE CARD VACUUM CHECK", Disp = "X018" },
-        //};
+        #region Hard IO Tables
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = Array.Empty<HardInputDef>();
 
-        //[JsonIgnore]
-        //public HardOutputDef[] HardOutputs => _hardOutputs;
-        //[JsonIgnore]
-        //private static readonly HardOutputDef[] _hardOutputs = new[]
-        //{
-        //    new HardOutputDef { No = 1, Name = "SPHERE FW", Disp = "Y026" },
-        //    new HardOutputDef { No = 2, Name = "SPHERE BW", Disp = "Y027" },
-        //    new HardOutputDef { No = 3, Name = "PROBE CARD VACUUM CHECK", Disp = "Y011" },
-        //};
+        [JsonIgnore]
+        public HardOutputDef[] HardOutputs => _hardOutputs;
+        [JsonIgnore]
+        private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
+        #endregion
 
         public IndexUnloadAlignerConfig() : base("IndexUnloadAlignerConfig")
         {

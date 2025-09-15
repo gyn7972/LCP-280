@@ -4,6 +4,7 @@ using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -63,6 +64,18 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.EjectPinOffset,    new [] { AxisNames.EjectPinZ } },
             { TeachingPositionName.EjectPinReady,   new [] { AxisNames.EjectPinZ } },
         };
+
+        #region Hard IO Tables
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = Array.Empty<HardInputDef>();
+
+        [JsonIgnore]
+        public HardOutputDef[] HardOutputs => _hardOutputs;
+        [JsonIgnore]
+        private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
+        #endregion
 
         public InputStageEjectorConfig() : base("InputStageEjectorConfig") { }
 

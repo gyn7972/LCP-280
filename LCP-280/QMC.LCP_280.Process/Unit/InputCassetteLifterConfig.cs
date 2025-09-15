@@ -55,8 +55,6 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.LoadPort,       new [] { AxisNames.WaferLifterZ } },
         };
 
-        
-
         #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
@@ -70,7 +68,9 @@ namespace QMC.LCP_280.Process.Unit
 
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs; // currently none
-        private static readonly HardOutputDef[] _hardOutputs = new HardOutputDef[0];
+        private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
+        #endregion
+
         public double SlotPitch
         {
             get
@@ -114,7 +114,6 @@ namespace QMC.LCP_280.Process.Unit
                 tp.AxisPositions[AxisNames.WaferLifterZ] = value;
             }
         }
-        #endregion
 
         public InputCassetteLifterConfig() : base("InputCassetteLifterConfig") { }
 

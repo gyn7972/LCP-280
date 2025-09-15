@@ -77,8 +77,8 @@ namespace QMC.LCP_280.Process.Unit
         // Motion Done 관련 옵션
         public bool   EnablePredictiveControl   { get; set; } = false;
         public double MoveDoneRemainDistance    { get; set; } = 0.005;
-      
-        #region Hard I/O 테이블 정의
+
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
         private static readonly HardInputDef[] _hardInputs = new[]
