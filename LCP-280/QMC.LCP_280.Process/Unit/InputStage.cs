@@ -295,22 +295,9 @@ namespace QMC.LCP_280.Process.Unit
 
         // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
         /// <summary>
-        /// 축 이름(Teaching 키 또는 Axis.Name)으로 축을 찾아 지정 위치로 이동 (Safety 인터락 포함).
-        /// </summary>
-        public int MoveAxisWithSafety(string axisKeyOrName, double target, bool isFine = false)
-        {
-            var axis = ResolveStageAxis(axisKeyOrName);
-            if (axis == null)
-            {
-                Log.Write(UnitName, "MoveAxisWithSafety", $"Axis not found : {axisKeyOrName}");
-                return -1;
-            }
-            return MoveAxisWithSafety(axis, target, isFine);
-        }
-        /// <summary>
         /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
         /// </summary>
-        public int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
+        public override int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
 
@@ -353,80 +340,19 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
-        /// <summary>
-        /// 단일 축 이동 비동기 (외부 UI 비블로킹 용)
-        /// </summary>
-        public Task<int> MoveAxisWithSafetyAsync(MotionAxis axis, double target, bool isFine = false)
+
+        protected override int CheckMoveSafety(MotionAxis ax)
         {
-            return Task.Run(() => OnMoveAxisWithSafety(axis, target, isFine));
-        }
-        /// <summary>
-        /// 실제 이동 로직 (Task 내부). 속도 감속은 단순 비율 적용.
-        /// </summary>
-        private int OnMoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
-        {
-            if (axis == null) return -1;
-
-            double cur = axis.GetPosition();
-            if (Math.Abs(cur - target) <= axis.Config.InposTolerance) // 이미 InPos
-                return 0;
-
-            double vel = axis.Config.MaxVelocity;
-            if (isFine) vel *= 0.2; // 필요 시 파라미터화 가능
-
-            int rc = axis.MoveAbs(target, vel, axis.Config.RunAcc, axis.Config.RunDec, axis.Config.AccJerkPercent);
-            if (rc != 0)
-            {
-                Log.Write(UnitName, "MoveAxisWithSafety", $"MoveAbs Fail axis={axis.Name} rc={rc}");
-                return -1;
-            }
-
-            if (axis.WaitMoveDone(-1) != 0)
-            {
-                Log.Write(UnitName, "MoveAxisWithSafety", $"WaitMoveDone Timeout axis={axis.Name}");
-                return -1;
-            }
+            //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
             return 0;
         }
-        /// <summary>
-        /// 축 이름/키로 Stage 보유 축(X/Y/T 또는 추가 등록 축) 검색.
-        /// </summary>
-        private MotionAxis ResolveStageAxis(string axisKeyOrName)
-        {
-            if (string.IsNullOrWhiteSpace(axisKeyOrName))
-                return null;
 
-            // 기본 Stage 축 매핑 (키 또는 Name)
-            if (AxisX != null &&
-                (axisKeyOrName.Equals(AxisNames.WaferStageX, StringComparison.OrdinalIgnoreCase) ||
-                 axisKeyOrName.Equals(AxisX.Name, StringComparison.OrdinalIgnoreCase)))
-                return AxisX;
+        //protected override MotionAxis ResolveAxis(string name)
+        //{
+        //    // 특수 축 우선 매핑 후
+        //    return base.ResolveAxis(name);
+        //}
 
-            if (AxisY != null &&
-                (axisKeyOrName.Equals(AxisNames.WaferStageY, StringComparison.OrdinalIgnoreCase) ||
-                 axisKeyOrName.Equals(AxisY.Name, StringComparison.OrdinalIgnoreCase)))
-                return AxisY;
-
-            if (AxisT != null &&
-                (axisKeyOrName.Equals(AxisNames.WaferStageT, StringComparison.OrdinalIgnoreCase) ||
-                 axisKeyOrName.Equals(AxisT.Name, StringComparison.OrdinalIgnoreCase)))
-                return AxisT;
-
-            // Config에 등록된 기타 축 검색 (Axes 딕셔너리)
-            if (Axes != null)
-            {
-                if (Axes.TryGetValue(axisKeyOrName, out var ax))
-                    return ax;
-
-                foreach (var kv in Axes)
-                {
-                    if (kv.Value != null &&
-                        kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
-                        return kv.Value;
-                }
-            }
-            return null;
-        }
 
         public int MoveApplyOffset(string positionName, double dx, double dy, double dt)
         {
@@ -463,83 +389,6 @@ namespace QMC.LCP_280.Process.Unit
             return MoveTeachingPositionOnce((int)name, isFine);
         }
         
-        //public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
-        //{
-        //    return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
-        //}
-
-        //public int MoveTeachingPositionOnce(int selIndex, bool isFine)
-        //{
-        //    if (!IsInterlockOK(selIndex))
-        //    {
-        //        Log.Write(UnitName, "MoveTP", $"Interlock Fail index={selIndex}");
-        //        return -1;
-        //    }
-
-        //    if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
-        //        return -1;
-
-        //    var tp = Config.TeachingPositions[selIndex];
-        //    if (tp == null || tp.AxisPositions == null) return -1;
-
-        //    // 축 이동 명령
-        //    foreach (var kv in tp.AxisPositions)
-        //    {
-        //        string axisKey = kv.Key;
-        //        double target = kv.Value;
-
-        //        MotionAxis axis = null;
-
-        //        if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
-        //        if (axis == null && Axes.TryGetValue(axisKey, out var a2)) axis = a2;
-        //        if (axis == null)
-        //        {
-        //            foreach (var pair in Axes)
-        //            {
-        //                if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-        //                {
-        //                    axis = pair.Value; break;
-        //                }
-        //            }
-        //        }
-        //        if (axis == null) continue;
-
-        //        axis.MoveAbs(target, isFine);
-        //    }
-
-        //    // 완료 대기
-        //    int waitErrors = 0;
-        //    foreach (var kv in tp.AxisPositions)
-        //    {
-        //        MotionAxis axis = null;
-        //        if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
-        //        if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
-        //        if (axis == null) continue;
-
-        //        if (axis.WaitMoveDone(-1) != 0)
-        //            waitErrors++;
-        //    }
-        //    return waitErrors == 0 ? 0 : -1;
-        //}
-        //public void StopTeachingPositionOnce(int selIndex)
-        //{
-        //    if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
-        //        return;
-
-        //    var tp = Config.TeachingPositions[selIndex];
-        //    if (tp?.AxisPositions == null) return;
-
-        //    foreach (var kv in tp.AxisPositions)
-        //    {
-        //        MotionAxis axis = null;
-        //        if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
-        //        if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
-        //        if (axis == null) continue;
-        //        axis.Stop();
-        //    }
-        //}
-
-
         public int MoveToStageCenterPosition(bool isFine = false)
         {
             Task<int> task = MoveToStageCenterPositionAsync();
@@ -609,7 +458,7 @@ namespace QMC.LCP_280.Process.Unit
             return MoveTeachingPositionOnce((int)InputStageConfig.TeachingPositionName.CenterPoint, isFine);
         }
         
-
+        
         public int MoveToStageLoadPosition(bool isFine = false)
         {
             Task<int> task = MoveToStageLoadPositionAsync();
@@ -739,11 +588,11 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
-        public Task<int> MoveToStageUnloadPositionAsync()
+        public Task<int> MoveToStageUnloadPositionAsync(bool isFine = false)
         {
             return Task.Run(() =>
             {
-                OnMoveToStageUnloadPosition();
+                OnMoveToStageUnloadPosition(isFine);
                 return 0;
             });
         }
@@ -822,6 +671,7 @@ namespace QMC.LCP_280.Process.Unit
             return MoveTeachingPositionOnce((int)InputStageConfig.TeachingPositionName.Ready, isFine);
         }
 
+
         public bool InPosTeaching(string name)
         {
             var (t, pz, plz) = Config.GetPositionWithOffset(name);
@@ -878,16 +728,7 @@ namespace QMC.LCP_280.Process.Unit
         protected bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
-
         #region Teaching Position Move (Batch Style)
-        public void TeachCurrentPosition(string positionName, string description = null)
-        {
-            var axisPositions = new Dictionary<string, double>();
-            foreach (var axisPair in Axes)
-                axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            var tp = new TeachingPosition(positionName, axisPositions, description);
-            Config.SetTeachingPosition(tp);
-        }
         public int MoveToTeachingPosition(string positionName, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
             var tp = Config.GetTeachingPosition(positionName);
@@ -899,47 +740,11 @@ namespace QMC.LCP_280.Process.Unit
             if (AxisT != null) rc |= AxisT.MoveAbs(t, vel > 0 ? vel : AxisT.Config.MaxVelocity, acc > 0 ? acc : AxisT.Config.RunAcc, dec > 0 ? dec : AxisT.Config.RunDec, jerk > 0 ? jerk : AxisT.Config.AccJerkPercent);
             return rc;
         }
-        public int MoveToTeachingPosition(TeachingPosition tp, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
-        {
-            if (tp == null)
-                return -1;
-            return MoveToTeachingPosition(tp.Name, vel, acc, dec, jerk);
-        }
-        public int MoveToTeachingPosition(InputStageConfig.TeachingPositionName name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
-        {
-            return MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
-        }
-        private int WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName name, int timeoutMs)
-        {
-            var tp = TeachingPositions[(int)name];
-            if (tp == null) return -1;
-            return WaitUntilInPos(tp, timeoutMs);
-        }
-        
-
         public bool InPosTeaching(TeachingPosition tp)
         {
             if (tp == null)
                 return false;
             return InPosTeaching(tp.Name);
-        }
-        public bool InPosTeaching(InputStageConfig.TeachingPositionName name)
-        {
-            return InPosTeaching(name.ToString());
-        }
-        public int MoveAxisOnce(MotionAxis ax, double target)
-        {
-            int nRtn = -1;
-            if (ax == null)
-                return nRtn;
-
-            if (Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-            {
-                nRtn = ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-            }
-
-
-            return nRtn;
         }
         public double GetTP(string tpName, string axisName)
         {
@@ -950,7 +755,6 @@ namespace QMC.LCP_280.Process.Unit
         public double GetTP(TeachingPosition tp, string axisName) => (tp == null || string.IsNullOrEmpty(axisName)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisName, out var v) ? v : 0.0);
         public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
         #endregion
-
 
         #region Low-Level IO Access (Refactored to match OutputStage pattern)
         private bool ActAndWait(string tag, Func<bool> act, Func<bool> cond)
@@ -1075,7 +879,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampFB");
             }
         }
-
         // === Domain Control (표준 구동) ===
         public bool SetVacuum(bool on)
         {
@@ -1084,14 +887,12 @@ namespace QMC.LCP_280.Process.Unit
             else _vacuum.Off();
             return true;
         }
-
         public bool SetClampPlate(bool bUpDn)
         {
             if (_cylPlate == null) return false;
             if (bUpDn) return _cylPlate.Extend();
             else return _cylPlate.Retract();
         }
-
         public bool SetClampLift(bool bUpDn)
         {
             if (_cylClampLift == null)
@@ -1107,7 +908,6 @@ namespace QMC.LCP_280.Process.Unit
                 return _cylClampLift.Retract();
             }
         }
-
         public bool SetClampFB(bool bFwdBwd)
         {
             if (_cylClampFB == null) return false;
@@ -1118,7 +918,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             else return _cylClampFB.Retract();
         }
-
         #region High-Level Actuator API (Interlock 포함)
         public bool IsClampLiftUp()
         {
@@ -1129,7 +928,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return !IsClampLiftDown();
         }
-        
         public bool IsClampLiftDown()
         {
             if (Config.IsSimulation)
@@ -1139,7 +937,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return ReadInput(InputStageConfig.IO.CLAMP_DOWN_SNS);
         }
-        
         public bool IsClampFwd()
         {
             if(Config.IsSimulation)
@@ -1159,7 +956,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return !IsClampFwd();
         }
-
         public bool Ring0()
         {
             if (Config.IsSimulation)
@@ -1277,23 +1073,6 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
 
-        private bool IsExternalLoadInterlockOk()
-        {
-            // DieTransfer PickZ Safety
-            if (!InputDieTransfer.IsDieTransferPickZSafetyPos())
-            {
-                Log.Write(UnitName, "Loading", "Interlock Fail : DieTransfer PickZ not safe");
-                return false;
-            }
-
-            // TODO: StageEjector Z 안전 위치 확인 (관련 API 확인 후 추가)
-            // if (_stageEjector != null && !_stageEjector.IsSafeZ()) { ... }
-
-            // TODO: RingTransfer 실린더 Up 상태 / 안전 위치 확인 (관련 센서/함수 필요 시 추가)
-            // if (_ringTr != null && !_ringTr.IsFeederUp()) { ... }
-
-            return true;
-        }
 
         #region Seq 단위 동작 함수
 
@@ -1373,7 +1152,6 @@ namespace QMC.LCP_280.Process.Unit
             base.OnStop();
             return ret;
         }
-
         protected override int OnRunReady()
         {
             int ret = 0;
@@ -1417,7 +1195,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return 0;
         }
-
         protected override int OnRunWork()
         {
             int ret = 0;
@@ -1449,7 +1226,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return 0;
         }
-
         protected override int OnRunComplete()
         {
             int ret = 0;
@@ -1543,7 +1319,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(this, "End LoadingWaferPrepare");
             return 0;
         }
-
         public int LoadingWaferComplete()
         {
             int ret = 0;
@@ -1610,7 +1385,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return ret;
         }
-
         // 기존 일괄 함수(호환 유지 용). 필요 없으면 제거 가능.
         public int LoadingWafer()
         {
@@ -1632,20 +1406,17 @@ namespace QMC.LCP_280.Process.Unit
             return LoadingWaferComplete();
         }
 
-
         // ====== Align Refactor: 상태/결과 보관 필드 ======
         public bool TAlignPrepared { get; private set; }
         public bool TAlignDone { get; private set; }
         public double LastFoundTRawAngle { get; private set; }
         public double LastAppliedTAngle { get; private set; }
-
         public bool XYAlignPrepared { get; private set; }
         public bool XYAlignDone { get; private set; }
         public double LastFoundDx { get; private set; }
         public double LastFoundDy { get; private set; }
-
+        
         private TeachingPosition _lastCenterAlignTp;
-
         /// <summary>
         /// 공통 Center 이동 + Grab (기존 함수 그대로 사용)
         /// </summary>
@@ -1730,9 +1501,8 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "Align", "Grab OK");
             return 0;
         }
-
+        
         // ===================== T ALIGN 분리 =====================
-
         /// <summary>
         /// T 정렬 준비 + Vision 각도 리스트 획득/통계 산출
         /// </summary>
@@ -1776,7 +1546,6 @@ namespace QMC.LCP_280.Process.Unit
             TAlignPrepared = true;
             return 0;
         }
-
         /// <summary>
         /// T 정렬 적용 (AlignTPrepare 먼저 호출)
         /// </summary>
@@ -1828,7 +1597,6 @@ namespace QMC.LCP_280.Process.Unit
             TAlignDone = true;
             return 0;
         }
-
         /// <summary>
         /// 기존 호환: 한번에 실행 (Prepare + Apply)
         /// </summary>
@@ -1840,7 +1608,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // ===================== XY ALIGN 분리 =====================
-
         /// <summary>
         /// XY 정렬 준비 + Vision Offset 획득
         /// </summary>
@@ -1875,7 +1642,6 @@ namespace QMC.LCP_280.Process.Unit
             XYAlignPrepared = true;
             return 0;
         }
-
         /// <summary>
         /// XY 정렬 적용 (AlignXYPrepare 먼저)
         /// </summary>
@@ -1918,7 +1684,6 @@ namespace QMC.LCP_280.Process.Unit
             XYAlignDone = true;
             return 0;
         }
-
         /// <summary>
         /// 기존 호환: 한번에 실행 (Prepare + Apply)
         /// </summary>
@@ -1943,44 +1708,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-
         /* TODO */
-        //웨이퍼 있냐 없냐? 
-        // Ring check
-        //없으면
-        //나가는거고. 
-
-        //있으면
-        //인터락 - 외부 유닛 위치 확인
-        //스테이지이젝터핀 Z축
-        //다이트렌스퍼 Z축
-        //링피커 - 실린더 Up 유무
-
-        //웨이퍼 언로딩 위치 이동.
-        //실린더 Plate Up
-        //실린더 백 -> 다운
-
-        //웨이퍼 언로딩 준비 완료 플래그 ON
-
-        // 링피커가 언로딩 했다는 신호 주면 
-        // Plate Down
-
-        //스테이지 언로딩 완료 플래그 ON ?
-        // === Unloading 상태 플래그 ===
-        
-
-        private bool IsExternalUnloadInterlockOk()
-        {
-            // DieTransfer PickZ Safety (웨이퍼 이송 중 충돌 방지)
-            if (!InputDieTransfer.IsDieTransferPlaceZSafetyPos())
-            {
-                Log.Write(UnitName, "Unloading", "Interlock Fail : DieTransfer PickZ not safe");
-                return false;
-            }
-            // TODO: StageEjector / RingTransfer 관련 인터락 필요 시 추가
-            return true;
-        }
-
         /// <summary>
         /// 언로딩 준비 단계:
         ///  - 웨이퍼 없으면 즉시 Done 처리 (할 것 없음)
@@ -2003,9 +1731,6 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
-            if (!IsExternalUnloadInterlockOk())
-                return -1;
-
             nRtn = MoveToStageUnloadPosition();
             if(nRtn != 0)
             {
@@ -2026,7 +1751,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
-
         /// <summary>
         /// 언로딩 완료 단계:
         ///  - 웨이퍼 아직 있으면 1(대기)
@@ -2068,7 +1792,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingComp", "Done");
             return 0;
         }
-
         /// <summary>
         /// 기존 단일 호출 방식 (호환용).
         ///  - Prepare 수행
@@ -2091,14 +1814,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             return UnloadingWaferComplete();
         }
-
         public bool IsWaferLoadingPosition()
         {
             var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
-
         #endregion
     }
 }

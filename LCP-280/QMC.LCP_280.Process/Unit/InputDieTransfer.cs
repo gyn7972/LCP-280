@@ -1,4 +1,5 @@
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
@@ -8,8 +9,11 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms.DataVisualization.Charting;
 using System.Windows.Media;
+using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -23,9 +27,82 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputDieTransfer : BaseUnit<InputDieTransferConfig>
     {
+        public enum AlarmKeys
+        {
+            eInputStageNotSafe = 4001,
+            eRotatyNotSafe,
+            eInputStageEjectorPinZNotSafe,
+            eInputStageEjectorZNotSafe,
+            eInputStageAxesMoving = 4010,
+            eRotaryAxesMoving,
+            eInputStageEjectorAxesMoving,
+
+        }
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageNotSafe;
+            alarm.Title = "InputStage Not Sfarety Pos.";
+            alarm.Cause = "InputStage가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eRotatyNotSafe;
+            alarm.Title = "Rotaty Not Sfarety Pos.";
+            alarm.Cause = "Rotaty가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            //,
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+            alarm.Title = "EjectorPin Z-Axis Not Sfarety Pos.";
+            alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+            //,
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageEjectorZNotSafe;
+            alarm.Title = "Ejector Z-Axis Not Sfarety Pos.";
+            alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageAxesMoving;
+            alarm.Title = "InputStage Axis Moving";
+            alarm.Cause = "InputStage 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
+            alarm.Title = "Rotary Axis Moving";
+            alarm.Cause = "Rotary 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageEjectorAxesMoving;
+            alarm.Title = "Ejector Axis Moving";
+            alarm.Cause = "InputStageEjector 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
+        #endregion
+
         #region Config / Teaching
         public InputDieTransferConfig InputDieTransferConfig => Config;
-        
         #endregion
 
         #region DryRun Simulation
@@ -35,11 +112,17 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Dictionary<string, bool> _simInputs  = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
         #endregion
 
+        #region Unit
+        InputStage InputStage { get; set; }
+        InputStageEjector InputStageEjector { get; set; }
+        Rotary Rotary { get; set; }
+        #endregion
+
         #region Axes
         private MotionAxis _toolT, _pickZ, _placeZ;
-        public MotionAxis ToolT => _toolT;
-        public MotionAxis PickZ => _pickZ;
-        public MotionAxis PlaceZ => _placeZ;
+        public MotionAxis AxisToolT => _toolT;
+        public MotionAxis AxisPickZ => _pickZ;
+        public MotionAxis AxisPlaceZ => _placeZ;
         #endregion
 
         #region ctor / Initialization
@@ -54,10 +137,17 @@ namespace QMC.LCP_280.Process.Unit
             Config.InitializeDefaultTeachingPositions();
             
             BindAxes();
-            // (Arm IO 는 단순 DO/DI 이름 관리이므로, 별도 Cylinder/Vacuum Domain 매핑은 선택)
-            BindIoDomains();
+            BindIoDomains();    // (Arm IO 는 단순 DO/DI 이름 관리이므로, 별도 Cylinder/Vacuum Domain 매핑은 선택)
         }
         #endregion
+
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+            InputStage = Equipment.Instance.GetUnit(UnitKeys.InputStage) as InputStage;
+            InputStageEjector = Equipment.Instance.GetUnit(UnitKeys.InputStageEjector) as InputStageEjector;
+            Rotary = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
+        }
 
         #region Axis Binding / Helpers
         private void BindAxes()
@@ -74,12 +164,95 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.LeftPickZ, ref _pickZ);
             BindAxis(mgr, unitName, AxisNames.LeftPlaceZ, ref _placeZ);
         }
-        public void MoveAxisOnce(MotionAxis ax, double target)
+
+        public override int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
         {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+            if (axis == null) return -1;
+
+            Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
+            while (IsEndTask(task) == false)
+            {
+                if(InputStage.IsAnyAxisMoving())
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+
+                if(InputStageEjector.IsAnyAxisMoving())
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                }
+
+                if(Rotary.IsAnyAxisMoving())
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                }
+
+
+                Thread.Sleep(0);
+            }
+            return task.Result;
         }
+
+        public int MovePickUpPosition(bool isFine = false)
+        {
+            Task<int> task = MovePickUpPositionAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                // Check Interlock.!!! 구문 넣을것.!!!
+                if (InputStage.IsAnyAxisMoving())
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+
+                if (InputStageEjector.IsAnyAxisMoving())
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                }
+
+                if (Rotary.IsAnyAxisMoving())
+                {
+                    AxisToolT.EmgStop();
+                    AxisPickZ.EmgStop();
+                    AxisPlaceZ.EmgStop();
+                    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                }
+
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public Task<int> MovePickUpPositionAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePickUpPosition(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePickUpPosition(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)InputDieTransferConfig.TeachingPositionName.Pickup, isFine);
+        }
+        
+
+
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
@@ -90,12 +263,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Teaching Helpers
-        public void TeachCurrentPosition(string name, string description = null)
-        {
-            var pos = new Dictionary<string, double>();
-            foreach (var kv in Axes) pos[kv.Key] = kv.Value.GetPosition();
-            Config.SetTeachingPosition(new TeachingPosition(name, pos, description));
-        }
         public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
             var tp = Config.GetTeachingPosition(name);
@@ -113,56 +280,6 @@ namespace QMC.LCP_280.Process.Unit
             return InPos(_toolT, t) && InPos(_pickZ, pz) && InPos(_placeZ, plz);
         }
 
-        /// <summary>
-        /// 지정한 Teaching Position에서 특정 축만 InPosition 여부를 확인.
-        /// - T / PickZ / PlaceZ 는 Offset 적용 값을 사용
-        /// - 그 외 축 이름이 오면 TeachingPosition.AxisPositions 값 그대로 비교
-        /// </summary>
-        /// <param name="tpName">Teaching Position 이름</param>
-        /// <param name="axisName">
-        /// 확인할 축 키(or 이름). 예:
-        ///   AxisNames.LeftToolT / AxisNames.LeftPickZ / AxisNames.LeftPlaceZ
-        /// </param>
-        /// <returns>true = 지정 축이 목표 위치(InPositionTolerance 내)에 있음</returns>
-        public bool InPosTeachingAxis(string tpName, string axisName)
-        {
-            if (string.IsNullOrEmpty(tpName) || string.IsNullOrEmpty(axisName)) return false;
-
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp == null) return false;
-
-            // 표준 3축(T / PickZ / PlaceZ) 은 Offset 반영된 위치 사용
-            var (t, pz, plz) = Config.GetPositionWithOffset(tpName);
-            if (string.Equals(axisName, AxisNames.LeftToolT, StringComparison.OrdinalIgnoreCase))
-                return InPos(_toolT, t);
-            if (string.Equals(axisName, AxisNames.LeftPickZ, StringComparison.OrdinalIgnoreCase))
-                return InPos(_pickZ, pz);
-            if (string.Equals(axisName, AxisNames.LeftPlaceZ, StringComparison.OrdinalIgnoreCase))
-                return InPos(_placeZ, plz);
-
-            // 기타 축 처리: TeachingPosition에 저장된 원본 값 사용 (Offset 미적용)
-            MotionAxis axis = null;
-            if (tp.Axes != null && tp.Axes.TryGetValue(axisName, out var direct)) axis = direct;
-            if (axis == null && Axes.TryGetValue(axisName, out var unitAxis)) axis = unitAxis;
-            if (axis == null)
-            {
-                // Name 기준 추가 검색
-                foreach (var kv in Axes)
-                {
-                    if (kv.Value != null &&
-                        string.Equals(kv.Value.Name, axisName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        axis = kv.Value; break;
-                    }
-                }
-            }
-            if (axis == null) return false;
-
-            double target = tp.GetAxisPosition(axisName, 0.0);
-            return InPos(axis, target);
-        }
-
-        /// <summary>
         /// DieTransfer PickZ 축이 SafetyPos Teaching (Offset 적용) 위치(또는 허용오차 범위)인지 확인.
         /// Teaching 이름이 SafetyPos 없으면 SafetyZone 순으로 fallback (둘 다 없으면 false).
         /// 장치/축이 없으면 true(안전)로 간주. 필요 시 treatMissingAsSafe=false 로 변경 가능.
@@ -174,7 +291,7 @@ namespace QMC.LCP_280.Process.Unit
                                                  bool useAxisInposTolerance = true,
                                                  bool treatMissingAsSafe = true)
         {
-            if (PickZ == null)
+            if (AxisPickZ == null)
                 return treatMissingAsSafe;
 
             var cfg = InputDieTransferConfig;
@@ -206,9 +323,9 @@ namespace QMC.LCP_280.Process.Unit
             // Offset 적용 PickZ 목표값
             var (_, pickZTarget, _) = cfg.GetPositionWithOffset(foundName);
 
-            double cur = PickZ.GetPosition();
+            double cur = AxisPickZ.GetPosition();
             double tol = useAxisInposTolerance
-                ? (PickZ.Config?.InposTolerance ?? fallbackTolerance)
+                ? (AxisPickZ.Config?.InposTolerance ?? fallbackTolerance)
                 : fallbackTolerance;
 
             // 동일위치(=InPos) 판정
@@ -223,7 +340,7 @@ namespace QMC.LCP_280.Process.Unit
                                                  bool useAxisInposTolerance = true,
                                                  bool treatMissingAsSafe = true)
         {
-            if (ToolT == null)
+            if (AxisToolT == null)
                 return treatMissingAsSafe;
 
             var cfg = InputDieTransferConfig;
@@ -256,9 +373,9 @@ namespace QMC.LCP_280.Process.Unit
             // Offset 적용 튜플에서 t 사용
             var (tTarget, _, _) = cfg.GetPositionWithOffset(foundName);
 
-            double cur = ToolT.GetPosition();
+            double cur = AxisToolT.GetPosition();
             double tol = useAxisInposTolerance
-                ? (ToolT.Config?.InposTolerance ?? fallbackTolerance)
+                ? (AxisToolT.Config?.InposTolerance ?? fallbackTolerance)
                 : fallbackTolerance;
 
             return System.Math.Abs(cur - tTarget) <= tol;
@@ -271,7 +388,7 @@ namespace QMC.LCP_280.Process.Unit
                                                   bool useAxisInposTolerance = true,
                                                   bool treatMissingAsSafe = true)
         {
-            if (PlaceZ == null)
+            if (AxisPlaceZ == null)
                 return treatMissingAsSafe;
 
             var cfg = InputDieTransferConfig;
@@ -298,15 +415,13 @@ namespace QMC.LCP_280.Process.Unit
 
             var (_, _, placeZTarget) = cfg.GetPositionWithOffset(foundName);
 
-            double cur = PlaceZ.GetPosition();
+            double cur = AxisPlaceZ.GetPosition();
             double tol = useAxisInposTolerance
-                ? (PlaceZ.Config?.InposTolerance ?? fallbackTolerance)
+                ? (AxisPlaceZ.Config?.InposTolerance ?? fallbackTolerance)
                 : fallbackTolerance;
 
             return System.Math.Abs(cur - placeZTarget) <= tol;
         }
-
-
 
         public void ApplyOffset(string name, double t, double pickZ, double placeZ)
             => Config.SetOffset(name, t, pickZ, placeZ);
@@ -448,6 +563,7 @@ namespace QMC.LCP_280.Process.Unit
         /// //////////////////////////////////////////////////////////////////
         #endregion
 
+
         #region Lifecycle
         public override int OnRun() 
         {
@@ -491,137 +607,27 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        public Task<int> MovePickUpPosition()
-        {
-            return MoveTeachingPositionOnceASync((int)InputDieTransferConfig.TeachingPositionName.Pickup,false);
-        }
-
-        public Task<int> MoveTeachingPositionOnceASync(int selIndex, bool isFine)
-        {
-            return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
-        }
-
-        public bool IsInterlockOK(int selIndex)
-        {
-            switch((InputDieTransferConfig.TeachingPositionName)selIndex)
-            {
-                case InputDieTransferConfig.TeachingPositionName.Pickup:
-                    return IsInterlockOKPickup();
-                default:
-                    return true;
-            }
-        }
-
-        private bool IsInterlockOKPickup()
-        {
-            return true;
-        }
-
-        public int MoveTeachingPositionOnce(int selIndex, bool isFine)
-        {
-            if(IsInterlockOK(selIndex))
-            {
-                var tp = this.Config.TeachingPositions[selIndex];
-
-                var moveResults = new List<Tuple<string, int>>();
-
-                foreach (var kv in tp.AxisPositions)
-                {
-
-
-                    string axisKey = kv.Key;
-                    double targetPos = kv.Value;
-
-                    // 축 찾기: TeachingPosition.Axes 우선 후 실패 시 Unit.Axes에서 키 또는 Name 기준 검색
-                    MotionAxis axis = null;
-                    if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
-                    if (axis == null && this.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
-                    if (axis == null)
-                    {
-                        // Name 매칭 시도
-                        foreach (var aPair in this.Axes)
-                        {
-                            if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-                            {
-                                axis = aPair.Value; break;
-                            }
-                        }
-                    }
-                    if (axis == null) continue; // 해당 축 없으면 스킵
-
-                    // 이동 명령 전송 (버퍼링 없음; 완료는 WaitMoveDone 단계)
-                    int rc = axis.MoveAbs(targetPos, isFine);
-                    moveResults.Add(new Tuple<string, int>(axisKey, rc));
-                }
-
-
-                // 이동 완료 대기 (각 축 내부 Timeout 사용: 예 axis.Setup.MoveTimeoutMs)
-                int waitErrors = 0;
-                foreach (var kv in tp.AxisPositions)
-                {
-                    MotionAxis axis = null;
-                    if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
-                    if (axis == null && this.Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
-                    if (axis == null) continue;
-
-                    int rc = axis.WaitMoveDone(-1); // axis.Setup.MoveTimeoutMs 사용
-                    if (rc != 0) waitErrors++;
-                }
-                if (waitErrors == 0)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-            else
-            {
-                return -1;
-            }
-        }
-
-        public void StopTeachingPositionOnce(int selIndex)
-        {
-            var tp = this.Config.TeachingPositions[selIndex];
-
-            var moveResults = new List<Tuple<string, int>>();
-
-            foreach (var kv in tp.AxisPositions)
-            {
-                string axisKey = kv.Key;
-                double targetPos = kv.Value;
-
-                // 축 찾기: TeachingPosition.Axes 우선 후 실패 시 Unit.Axes에서 키 또는 Name 기준 검색
-                MotionAxis axis = null;
-                if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
-                if (axis == null && this.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
-                if (axis == null)
-                {
-                    // Name 매칭 시도
-                    foreach (var aPair in this.Axes)
-                    {
-                        if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-                        {
-                            axis = aPair.Value; break;
-                        }
-                    }
-                }
-                if (axis == null) continue; // 해당 축 없으면 스킵
-
-                // 정지 명령
-                int rc = axis.Stop();
-                
-            }
-            
-        }
-
         #region Seq 단위 동작 함수
         public int ChipPickUp()
         {
             int nRet = -1;
-            /* TODO */
+
+            double dPosX = 0;
+            double dPosY = 0;
+            //
+            //1. InputStage Pick 위치 이동
+
+            InputStage.MoveAxisWithSafety(AxisNames.WaferStageX, dPosX);
+            InputStage.MoveAxisWithSafety(AxisNames.WaferStageX, dPosY);
+
+            nRet = MovePickUpPosition();
+            if (nRet != 0) return nRet;
+            //2. Arm Down
+            //3. Vacuum On
+            //4. Arm Up
+            //5. Vacuum OK Check
+
+
             return nRet;
         }
 

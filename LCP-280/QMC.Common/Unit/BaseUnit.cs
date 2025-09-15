@@ -1,5 +1,6 @@
 // QMC.Common\Unit\BaseUnit.cs
 using Ivi.Visa;
+using QMC.Common;
 using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
@@ -16,8 +17,8 @@ using static QMC.Common.Motions.MotionAxis;
 
 namespace QMC.Common.Unit
 {
-    public interface IUnit : IDisposable 
-    { 
+    public interface IUnit : IDisposable
+    {
         BaseConfig Config { get; }
         void SetName(string name);
     }
@@ -27,7 +28,6 @@ namespace QMC.Common.Unit
         public enum AlarmKeys
         {
             ePrepareFailed = 1000,
-            
         }
 
         public enum UnitRunStatus
@@ -54,7 +54,7 @@ namespace QMC.Common.Unit
 
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
         private bool m_bExit;
-        
+
         public string UnitName { get; set; }
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
@@ -69,28 +69,19 @@ namespace QMC.Common.Unit
         public UnitRunStatus Status { get; protected set; }
         public ProcessState State { get; protected set; }
 
-        // 축 등록 딕셔너리
+        // 등록 축 사전 (Key: 논리 축명)
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
+
         public List<TeachingPosition> TeachingPositions
         {
-            get
-            {
-                return Config.TeachingPositions;
-            }
-            private set
-            {
-
-                Config.TeachingPositions = value;
-            }
+            get => Config.TeachingPositions;
+            private set => Config.TeachingPositions = value;
         }
 
-
-
-
         protected BaseUnit(string unitName)
-        {   
+        {
             UnitName = unitName;
-            m_dicAlarms = new Dictionary<int, AlarmInfo>(); // <-- Add this line
+            m_dicAlarms = new Dictionary<int, AlarmInfo>();
             MakeAlarm();
         }
 
@@ -98,86 +89,73 @@ namespace QMC.Common.Unit
         {
             m_dicAlarms = new Dictionary<int, AlarmInfo>();
             InitAlarm();
-
         }
 
         protected virtual void InitAlarm()
         {
-
+            // 원래 코드 구조 유지 (AlarmPost가 먼저 호출되는 구조 그대로 둠)
             AlarmRegister(AlarmPost((int)AlarmKeys.ePrepareFailed), "PrepareFialed", "PrepareFialed", "Error");
         }
 
-        protected void AlarmRegister(int alarmCode, string title, string cause,string grade)
+        protected void AlarmRegister(int alarmCode, string title, string cause, string grade)
         {
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)alarmCode;
-            alarm.Title = title;
-            alarm.Cause = cause;
-            alarm.Source = this.UnitName;
-            alarm.Grade = grade;
+            if (m_dicAlarms.ContainsKey(alarmCode)) return;
+            var alarm = new AlarmInfo
+            {
+                Code = alarmCode,
+                Title = title,
+                Cause = cause,
+                Source = UnitName,
+                Grade = grade
+            };
             m_dicAlarms.Add(alarm.Code, alarm);
         }
 
-        private Material m_currentMaterial = null;
-
+        private Material m_currentMaterial;
 
         public virtual void AddComponents() { }
+
         public bool IsEndTask(Task<int> task)
-        {
-            return task.IsCompleted || task.IsFaulted || task.IsCanceled;
-        }
+            => task.IsCompleted || task.IsFaulted || task.IsCanceled;
 
         private static readonly object _alarmLogLock = new object();
-        // 알람 발생시 사용.
-        public int AlarmPost(int AlarmCode)
+
+        public int AlarmPost(int alarmCode)
         {
             try
             {
-                AlarmInfo alarm = GetAlarm((int)AlarmCode);
+                AlarmInfo alarm = GetAlarm(alarmCode);
                 alarm.GeneratedTime = DateTime.Now;
 
-                // 중복 알람 방지 인터락
                 if (AlarmManager.Instance.Alarms.Any(a => a.Code == alarm.Code))
-                {
-                    //Log.Write("AlarmPost", $"[ALARM 무시 - 중복] Code: {(int)AlarmCode}, 이미 발생 중인 알람입니다.");
-                    return (int)AlarmCode;
-                }
+                    return alarmCode;
 
-                // 알람 정보 로그 기록
-                Log.Write("AlarmPost", $"[ALARM 발생] Code: {(int)AlarmCode}, Grade: {alarm.Grade}, Cause: {alarm.Cause}");
+                Log.Write("AlarmPost", $"[ALARM] Code:{alarmCode} Grade:{alarm.Grade} Cause:{alarm.Cause}");
 
                 string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
                 string logFile = Path.Combine(logFolder, $"AlarmLog_{DateTime.Now:yyyyMMdd}.csv");
                 Directory.CreateDirectory(logFolder);
 
-                // UTF-8 with BOM로 저장 (동시 접근 안전하게 lock 처리)
                 lock (_alarmLogLock)
                 {
                     using (var fs = new FileStream(logFile, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
                     using (var writer = new StreamWriter(fs, new UTF8Encoding(true)))
                     {
-                        string logLine = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss},{alarm.Title},{alarm.Grade},{alarm.Source},{alarm.Cause},{(int)AlarmCode}";
+                        string logLine = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss},{alarm.Title},{alarm.Grade},{alarm.Source},{alarm.Cause},{alarm.Code}";
                         writer.WriteLine(logLine);
                     }
                 }
 
-                if (alarm.Grade.Equals("Error"))
-                {
-                    // 장비 내부 멈춰야 하는 이것저것
-                    //this.m_LoaderWork_Start = false;
-                }
                 AlarmManager.Instance.ShowAlarm(alarm);
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
             }
-
-            return (int)AlarmCode;
+            return alarmCode;
         }
 
-
-        // 축 이동
+        // 단순 축 이동 (공통)
         public virtual int MoveAxis(string axisKey, double pos, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
             if (Axes.TryGetValue(axisKey, out var axis))
@@ -185,154 +163,109 @@ namespace QMC.Common.Unit
             return -1;
         }
 
-       
-
         public void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
         {
-            if (mgr.TryGet(unitName, axisName, out var axis) && axis != null)
+            if (mgr != null && mgr.TryGet(unitName, axisName, out var axis) && axis != null)
             {
                 field = axis;
-                Axes[axisName] = axis; // Axes 사전에도 추가
+                Axes[axisName] = axis;
             }
             else
             {
-                if (Axes.ContainsKey(axisName))
-                    Axes.Remove(axisName);
+                if (Axes.ContainsKey(axisName)) Axes.Remove(axisName);
                 Log.Write("UnitAxis", $"[BindAxes] Axis '{unitName}||{axisName}' 바인딩 실패");
             }
         }
-        public void BindUnit()
-        {
-            OnBindUnit();
-        }
 
-        protected virtual void OnBindUnit()
-        {
-            
-        }
+        public void BindUnit() => OnBindUnit();
+        protected virtual void OnBindUnit() { }
 
         public int Start()
         {
             SetRunMode(UnitRunMode.Auto);
             m_bExit = false;
-            m_workThread = new Thread(new ThreadStart(OnMainProcedure));
+            m_workThread = new Thread(OnMainProcedure) { IsBackground = true };
             m_workThread.Start();
-
             return OnStart();
         }
 
-        private void SetRunMode(UnitRunMode auto)
-        {
-            this.RunMode = auto;
-        }
+        private void SetRunMode(UnitRunMode mode) => RunMode = mode;
 
-        protected virtual int OnStart()
-        {
-            int ret = 0;
+        protected virtual int OnStart() => 0;
 
-            return ret;
-        }
-        public int Stop()
+        public int Stop() => OnStop();
+
+        public virtual int OnRun() => 0;
+
+        public virtual int OnStop()
         {
-            return OnStop();
-        }
-        // Unit 메인 실행 루프 진입 전 호출
-        public virtual int OnRun() 
-        {
-            int ret = 0;
-            return ret;
-        }
-        public virtual int OnStop() 
-        { 
-            int ret = 0;
             m_bExit = true;
-
             SetRunMode(UnitRunMode.Manual);
-
-            return ret;
+            return 0;
         }
 
-        // 추가: 준비/작업/완료 스텝
-        protected virtual int OnRunReady() { return 0; }
-        protected virtual int OnRunWork() { return 0; }
-        protected virtual int OnRunComplete() { return 0; }
+        protected virtual int OnRunReady() => 0;
+        protected virtual int OnRunWork() => 0;
+        protected virtual int OnRunComplete() => 0;
 
         protected void OnMainProcedure()
         {
-            // 현재 워커 스레드 이름을 유닛 이름으로 설정 (이미 설정되어 있으면 유지)
             try
             {
                 if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
-                {
                     Thread.CurrentThread.Name = string.IsNullOrWhiteSpace(UnitName) ? GetType().Name : UnitName;
-                }
             }
-            catch { /* ignore if thread name already set */ }
+            catch { }
 
-            //int ret = 0;
             int ret = OnPrepareToMainProcedure();
             if (ret != 0)
             {
-                AlarmInfo alarm = this.GetAlarm((int)AlarmKeys.ePrepareFailed);
+                var alarm = GetAlarm((int)AlarmKeys.ePrepareFailed);
                 AlarmManager.Instance.ShowAlarm(alarm);
-
                 return;
             }
+
             while (true)
             {
-                if (m_bExit)
-                {
-                    break;
-                }
+                if (m_bExit) break;
                 if ((ret = OnRun()) != 0)
                 {
-                    Log.Write(this, string.Format("OnRun Return Value : {0}", ret));
+                    Log.Write(this, $"OnRun Return: {ret}");
                     break;
                 }
                 Thread.Sleep(1);
             }
-
             OnStop();
         }
 
-        public string GetUnitName()
-        {   
-            return UnitName;
-        }
-        public Material GetMaterial()
-        {
-            return m_currentMaterial;
-        }
+        public string GetUnitName() => UnitName;
+        public Material GetMaterial() => m_currentMaterial;
+        protected void SetMaterial(Material m) => m_currentMaterial = m;
 
-        protected void SetMaterial(Material wd)
+        protected AlarmInfo GetAlarm(int code)
         {
-            m_currentMaterial = wd;
-        }
-        protected AlarmInfo GetAlarm(int nCode)
-        {
-            AlarmInfo alarm = null;
-            if (m_dicAlarms.ContainsKey(nCode))
+            if (m_dicAlarms.ContainsKey(code))
+                return m_dicAlarms[code];
+            // fallback (999 없으면 신규 생성)
+            if (!m_dicAlarms.ContainsKey(999))
             {
-                alarm = m_dicAlarms[nCode];
+                m_dicAlarms[999] = new AlarmInfo
+                {
+                    Code = 999,
+                    Title = "Unknown",
+                    Cause = "Unknown",
+                    Source = UnitName,
+                    Grade = "Warning"
+                };
             }
-            else
-            {
-                alarm = m_dicAlarms[999];
-            }
-
-            return alarm;
-        }
-        protected virtual int OnPrepareToMainProcedure()
-        {
-            
-            return 0;
+            return m_dicAlarms[999];
         }
 
-        #region Generic TeachingPosition Move Helpers (Reflection Based)
-        // 파생 Unit Override 가능 (index 기반 인터락)
+        protected virtual int OnPrepareToMainProcedure() => 0;
+
+        #region TeachingPosition Helpers (기존 구조 유지)
         public virtual bool IsInterlockOK(int selIndex) => true;
 
-        // TeachingPositions (List 형태/파생 컬렉션) 리플렉션 추출
         protected IList<object> ResolveTeachingPositionObjectList()
         {
             try
@@ -343,8 +276,7 @@ namespace QMC.Common.Unit
                 if (val is System.Collections.IEnumerable en)
                 {
                     var list = new List<object>();
-                    foreach (var item in en)
-                        list.Add(item);
+                    foreach (var item in en) list.Add(item);
                     return list;
                 }
             }
@@ -357,23 +289,24 @@ namespace QMC.Common.Unit
             if (tp == null) return null;
             var pi = tp.GetType().GetProperty("AxisPositions");
             if (pi == null) return null;
-            var val = pi.GetValue(tp, null);
-            return val as IDictionary<string, double>;
+            return pi.GetValue(tp, null) as IDictionary<string, double>;
         }
+
         private static IDictionary<string, MotionAxis> GetAxisObjects(object tp)
         {
             if (tp == null) return null;
             var pi = tp.GetType().GetProperty("Axes");
             if (pi == null) return null;
-            var val = pi.GetValue(tp, null);
-            return val as IDictionary<string, MotionAxis>;
+            return pi.GetValue(tp, null) as IDictionary<string, MotionAxis>;
         }
+
         private static string GetTpName(object tp)
         {
             if (tp == null) return string.Empty;
             var pi = tp.GetType().GetProperty("Name");
             if (pi == null) return string.Empty;
-            try { return pi.GetValue(tp, null) as string ?? string.Empty; } catch { return string.Empty; }
+            try { return pi.GetValue(tp, null) as string ?? string.Empty; }
+            catch { return string.Empty; }
         }
 
         public virtual int MoveTeachingPositionOnce(int selIndex, bool isFine)
@@ -388,23 +321,28 @@ namespace QMC.Common.Unit
             if (axisPos == null) return -1;
             var axisObj = GetAxisObjects(tp);
 
-            // 이동 명령
             foreach (var kv in axisPos)
             {
-                string axisKey = kv.Key; double targetPos = kv.Value;
+                string key = kv.Key;
+                double target = kv.Value;
                 MotionAxis axis = null;
-                if (axisObj != null && axisObj.TryGetValue(axisKey, out axis)) { }
-                if (axis == null && Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
+                if (axisObj != null && axisObj.TryGetValue(key, out axis)) { }
+                if (axis == null && Axes.TryGetValue(key, out var direct)) axis = direct;
                 if (axis == null)
                 {
-                    foreach (var aPair in Axes)
+                    foreach (var ap in Axes)
                     {
-                        if (aPair.Value != null && string.Equals(aPair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-                        { axis = aPair.Value; break; }
+                        if (ap.Value != null &&
+                            (ap.Key.Equals(key, StringComparison.OrdinalIgnoreCase) ||
+                             ap.Value.Name.Equals(key, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            axis = ap.Value;
+                            break;
+                        }
                     }
                 }
                 if (axis == null) continue;
-                axis.MoveAbs(targetPos, isFine);
+                axis.MoveAbs(target, isFine);
             }
 
             Thread.Sleep(500);
@@ -439,7 +377,7 @@ namespace QMC.Common.Unit
             {
                 MotionAxis axis = null;
                 if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
-                if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
+                if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
                 if (axis == null) continue;
                 double dTarget = kv.Value;
                 if (axis.InPosition(dTarget) == false)
@@ -449,7 +387,7 @@ namespace QMC.Common.Unit
                     waitErrors++; 
                 }
             }
-            return waitErrors == 0 ? 0 : -1;
+            return err == 0 ? 0 : -1;
         }
 
         public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
@@ -469,10 +407,164 @@ namespace QMC.Common.Unit
             {
                 MotionAxis axis = null;
                 if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
-                if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
+                if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
                 if (axis == null) continue;
                 try { axis.Stop(); } catch { }
             }
+        }
+
+        public virtual bool IsAxisMoving(string axisKeyOrName)
+        {
+            if (string.IsNullOrWhiteSpace(axisKeyOrName) || Axes.Count == 0)
+                return false;
+
+            MotionAxis axis = null;
+            if (!Axes.TryGetValue(axisKeyOrName, out axis))
+            {
+                foreach (var kv in Axes)
+                {
+                    if (kv.Value == null) continue;
+                    if (kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase) ||
+                        kv.Key.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        axis = kv.Value;
+                        break;
+                    }
+                }
+            }
+                return axis != null && !axis.IsMoveDone();
+        }
+
+        public virtual bool IsAnyAxisMoving()
+        {
+            foreach (var ax in Axes.Values)
+            {
+                if (ax != null && !ax.IsMoveDone())
+                    return true;
+            }
+            return false;
+        }
+
+        public virtual IDictionary<string, bool> GetAxesMovingMap()
+        {
+            var map = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kv in Axes)
+            {
+                if (kv.Value != null)
+                    map[kv.Key] = !kv.Value.IsMoveDone();
+            }
+            return map;
+        }
+        #endregion
+
+        #region 공통 Safety 축 이동
+        /// <summary>
+        /// 축 Key 또는 MotionAxis.Name 으로 안전 이동.
+        /// </summary>
+        public virtual int MoveAxisWithSafety(string axisKeyOrName, double target, bool isFine = false)
+        {
+            var axis = ResolveAxis(axisKeyOrName);
+            if (axis == null)
+            {
+                Log.Write(UnitName, "MoveAxisWithSafety", $"Axis not found : {axisKeyOrName}");
+                return -1;
+            }
+            return MoveAxisWithSafety(axis, target, isFine);
+        }
+
+        /// <summary>
+        /// 단일 축 안전 이동(동기). CheckMoveSafety != 0 이면 모든 축 EmgStop 후 알람.
+        /// </summary>
+        public virtual int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
+        {
+            if (axis == null) return -1;
+
+            var task = MoveAxisWithSafetyAsync(axis, target, isFine);
+            while (!IsEndTask(task))
+            {
+                int alarmCode = CheckMoveSafety(axis);
+                if (alarmCode != 0)
+                {
+                    foreach (var ax in Axes.Values)
+                    {
+                        try { ax?.EmgStop(); } catch { }
+                    }
+                    AlarmPost(alarmCode);
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+
+        /// <summary>
+        /// 단일 축 안전 이동(비동기).
+        /// </summary>
+        public virtual Task<int> MoveAxisWithSafetyAsync(MotionAxis axis, double target, bool isFine = false)
+            => Task.Run(() => OnMoveAxisWithSafety(axis, target, isFine));
+
+        /// <summary>
+        /// 실제 이동 실행 (파생 Override 가능).
+        /// </summary>
+        protected virtual int OnMoveAxisWithSafety(MotionAxis axis, double target, bool isFine)
+        {
+            if (axis == null) return -1;
+
+            var cfg = axis.Config;
+            double cur = axis.GetPosition();
+            if (cfg != null && Math.Abs(cur - target) <= cfg.InposTolerance)
+                return 0;
+
+            double vel = cfg != null ? cfg.MaxVelocity : 0;
+            if (isFine && vel > 0) vel *= 0.2;
+
+            int rc;
+            if (cfg != null)
+                rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
+            else
+                rc = axis.MoveAbs(target, false);
+
+            if (rc != 0)
+            {
+                Log.Write(UnitName, "MoveAxisWithSafety",
+                    $"MoveAbs Fail axis={axis.Name} rc={rc}");
+                return -1;
+            }
+
+            if (axis.WaitMoveDone(-1) != 0)
+            {
+                Log.Write(UnitName, "MoveAxisWithSafety",
+                    $"WaitMoveDone Timeout axis={axis.Name}");
+                return -1;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Safety 인터락 검사 (0=OK, 알람코드!=0 → 중단/알람).
+        /// 파생 클래스에서 조건 구현.
+        /// </summary>
+        protected virtual int CheckMoveSafety(MotionAxis movingAxis) => 0;
+
+        /// <summary>
+        /// 기본 축 검색 (Key 우선 → Name 매칭). 파생에서 필요 시 Override.
+        /// </summary>
+        protected virtual MotionAxis ResolveAxis(string axisKeyOrName)
+        {
+            if (string.IsNullOrWhiteSpace(axisKeyOrName))
+                return null;
+
+            if (Axes.TryGetValue(axisKeyOrName, out var ax) && ax != null)
+                return ax;
+
+            foreach (var kv in Axes)
+            {
+                if (kv.Value == null) continue;
+                if (kv.Key.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase) ||
+                    kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
+                    return kv.Value;
+            }
+            return null;
         }
         #endregion
 
@@ -487,16 +579,14 @@ namespace QMC.Common.Unit
             }
             _disposed = true;
         }
+
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        public void SetName(string name)
-        {
-            this.UnitName = name;
-        }
+        public void SetName(string name) => UnitName = name;
 
         ~BaseUnit()
         {

@@ -397,7 +397,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 var ejector  = InputStageEjectorUnit;
                 var transfer = InputDieTransferUnit;
-                if (ejector?.AxisPinZ == null || transfer?.PickZ == null)
+                if (ejector?.AxisPinZ == null || transfer?.AxisPickZ == null)
                 {
                     MessageBox.Show(this, "축 준비가 되지 않았습니다.", "Axis Not Ready", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
@@ -415,17 +415,17 @@ namespace QMC.LCP_280.Process.Unit
                 catch { }
 
                 double curPinZ  = ejector.AxisPinZ.GetPosition();
-                double curPickZ = transfer.PickZ.GetPosition();
+                double curPickZ = transfer.AxisPickZ.GetPosition();
 
                 // 1단계: PinZ Waiting 이동 필요 여부
                 bool needMoveToWaiting = Math.Abs(curPinZ - pinWaiting) > (ejector.AxisPinZ.Config?.InposTolerance ?? 0.005) * 2;
 
                 // 공통 속도 (두 축의 80%)
                 double vPin  = ejector.AxisPinZ.Config?.MaxVelocity  ?? 10;
-                double vPick = transfer.PickZ.Config?.MaxVelocity   ?? 10;
+                double vPick = transfer.AxisPickZ.Config?.MaxVelocity   ?? 10;
                 double commonVel = Math.Min(vPin, vPick) * 0.8; if (commonVel <= 0) commonVel = Math.Min(vPin, vPick);
                 double accPin  = ejector.AxisPinZ.Config?.RunAcc  ?? 10; double decPin  = ejector.AxisPinZ.Config?.RunDec  ?? accPin; double jerkPin  = ejector.AxisPinZ.Config?.AccJerkPercent  ?? 50;
-                double accPick = transfer.PickZ.Config?.RunAcc    ?? 10; double decPick = transfer.PickZ.Config?.RunDec    ?? accPick; double jerkPick = transfer.PickZ.Config?.AccJerkPercent    ?? 50;
+                double accPick = transfer.AxisPickZ.Config?.RunAcc    ?? 10; double decPick = transfer.AxisPickZ.Config?.RunDec    ?? accPick; double jerkPick = transfer.AxisPickZ.Config?.AccJerkPercent    ?? 50;
 
                 buttonPickUpNiddle_Move.Enabled = false;
 
@@ -452,7 +452,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 // PinZ 가 Waiting 에 위치한 후 현재값 갱신
                 curPinZ  = ejector.AxisPinZ.GetPosition();
-                curPickZ = transfer.PickZ.GetPosition();
+                curPickZ = transfer.AxisPickZ.GetPosition();
 
                 // 2단계: Offset 만큼 상대 이동 (delta = Offset - Waiting)
                 double deltaPin = pinOffset - pinWaiting; // 이 상대 이동량을 PickZ 에 동일 적용
@@ -476,9 +476,9 @@ namespace QMC.LCP_280.Process.Unit
                 await Task.Run(() =>
                 {
                     // 동시 이동
-                    transfer.PickZ.MoveAbs(finalPickZ,  commonVel, accPick, decPick, jerkPick);
+                    transfer.AxisPickZ.MoveAbs(finalPickZ,  commonVel, accPick, decPick, jerkPick);
                     ejector.AxisPinZ.MoveAbs(finalPinZ, commonVel, accPin,  decPin,  jerkPin);
-                    transfer.PickZ.WaitMoveDone(-1);
+                    transfer.AxisPickZ.WaitMoveDone(-1);
                     ejector.AxisPinZ.WaitMoveDone(-1);
                 });
 
