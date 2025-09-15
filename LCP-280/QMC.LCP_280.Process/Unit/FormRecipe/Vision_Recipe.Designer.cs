@@ -23,9 +23,10 @@
             // 
             this.patternMatchingControl1.BackColor = System.Drawing.Color.White;
             this.patternMatchingControl1.Location = new System.Drawing.Point(4, 4);
+            this.patternMatchingControl1.Margin = new System.Windows.Forms.Padding(0);
             this.patternMatchingControl1.MinimumSize = new System.Drawing.Size(900, 600);
             this.patternMatchingControl1.Name = "patternMatchingControl1";
-            this.patternMatchingControl1.Size = new System.Drawing.Size(1070, 634);
+            this.patternMatchingControl1.Size = new System.Drawing.Size(1251, 738);
             this.patternMatchingControl1.TabIndex = 0;
             // 
             // Vision_Recipe
