@@ -6,7 +6,8 @@ using QMC.Common.IO;
 using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.Common.UI;
-using QMC.LCP_280.Process.Component; // For TeachingPosition and related components
+using QMC.Common.Unit;
+using QMC.LCP_280.Process.Component; // Added for TeachingPosition
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,21 +22,24 @@ namespace QMC.LCP_280.Process.Unit
     public partial class InputDieTransferUnit_Config : Form
     {
         private const string _UNIT_NAME = "InputDieTransfer";
+
         private Equipment _Equipment => Equipment.Instance;
-        private InputDieTransfer _InputDieTransfer;
+        private InputDieTransfer _unit;
         private InputDieTransferConfig _cfg;
+
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-      
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
-        private Timer _ioTimer;      // reserved (not used but kept)
-        private Timer _axisPosTimer; // reserved for future axis position refresh
+
+        private Timer _axisPosTimer; // reserved
+        private Timer _ioTimer;      // reserved
 
         public InputDieTransferUnit_Config()
         {
             InitializeComponent();
+
             InitializeUnit();
 
             SuspendLayout();
@@ -43,11 +47,8 @@ namespace QMC.LCP_280.Process.Unit
             InitializeUI();
             ResumeLayout(true);
 
-            // Output toggle click event
             outputView.ItemClicked -= new EventHandler<string>(OnOutputItemClicked);
             outputView.ItemClicked += new EventHandler<string>(OnOutputItemClicked);
-
-            Debug.WriteLine("InputDieTransferUnit_Config 생성 완료");
         }
 
         private void InitializeUnit()
@@ -56,11 +57,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _InputDieTransfer = unit as InputDieTransfer;
-                    _cfg = _InputDieTransfer?.InputDieTransferConfig;
+                    _unit = unit as InputDieTransfer;
+                    _cfg = _unit?.Config;
                 }
 
-                if (_InputDieTransfer == null)
+                if (_unit == null)
                 {
                     MessageBox.Show(
                         _UNIT_NAME + " Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
@@ -81,7 +82,7 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        #region UI 초기화 / 구성
+        #region UI 초기화
 
         private void InitializeUI()
         {
@@ -103,7 +104,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                // Original signature was rbTeachingMoveMode?.SetOptions(true, "Fine", "Coarse");
                 rbTeachingMoveMode?.SetOptions(true, "Fine", "Coarse");
             }
             catch (Exception ex)
@@ -114,24 +114,16 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        #region Teaching Position 리스트 / 선택 처리
+        #region Teaching Position 목록 / 표시
 
         private void PopulateTeachingPositionList()
         {
             try
             {
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+                if (_unit?.TeachingPositions != null && _unit.TeachingPositions.Count > 0)
                 {
-                    positionItemView?.SetItems();
-                    return;
-                }
-
-                var transfer = unit as InputDieTransfer;
-
-                if (transfer?.TeachingPositions != null && transfer.TeachingPositions.Count > 0)
-                {
-                    string[] names = transfer.TeachingPositions
-                        .Select(p => p.Name)
+                    string[] names = _unit.TeachingPositions
+                        .Select(t => t.Name)
                         .ToArray();
 
                     positionItemView?.SetItems(names);
@@ -143,7 +135,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("PopulateTeachingPositionList error: " + ex.Message);
+                Debug.WriteLine("PopulateTeachingPositionList 오류: " + ex.Message);
             }
         }
 
@@ -172,25 +164,10 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPositionInEditor(int selectedIndex)
         {
-            if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
-            {
-                return;
-            }
+            if (_cfg?.TeachingPositions == null) return;
+            if (selectedIndex < 0 || selectedIndex >= _cfg.TeachingPositions.Count) return;
 
-            var transfer = unit as InputDieTransfer;
-            var config = transfer?.InputDieTransferConfig;
-
-            if (config?.TeachingPositions == null)
-            {
-                return;
-            }
-
-            if (selectedIndex < 0 || selectedIndex >= config.TeachingPositions.Count)
-            {
-                return;
-            }
-
-            TeachingPosition tp = config.TeachingPositions[selectedIndex];
+            var tp = _cfg.TeachingPositions[selectedIndex];
 
             var pc = new PropertyCollection();
             pc.Add(new TitleOnlyProperty("Teaching Position: " + tp.Name + " (mm, Abs. Pos)"));
@@ -211,71 +188,109 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        #region Teaching Position 이동 / 저장 / 현재 위치 반영
+        #region Move / Save / CurrentPos
 
         private void btnMovePosition_Click(object sender, EventArgs e)
         {
             try
             {
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+                if (_unit == null)
                 {
-                    MessageBox.Show(
-                        "Unit을 찾을 수 없습니다.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
-                }
-
-                var transfer = unit as InputDieTransfer;
-
-                if (transfer == null)
-                {
-                    MessageBox.Show(
-                        "Unit 형식 오류",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 int selIndex = GetSelectedTeachingIndex();
-
-                if (selIndex < 0 || selIndex >= transfer.InputDieTransferConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _unit.Config.TeachingPositions.Count)
                 {
-                    MessageBox.Show(
-                        "선택된 Teaching Position이 없습니다.",
-                        "알림",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
+                var tp = _unit.Config.TeachingPositions[selIndex];
                 bool isFine = GetSelectedMoveModeIsFine();
 
-                Task<int> task = transfer.MoveTeachingPositionOnceASync(selIndex, isFine);
+                double defaultFineVel = 5.0;
+                double defaultCoarseVel = 20.0;
+                double defaultAcc = 10.0;
+                double defaultDec = 10.0;
+                double defaultJerk = 50.0;
 
-                using (var progressForm = new ProgressForm(
-                    "Input Die Transfer",
-                    "Teaching Position 이동 중...",
-                    task
-                ))
+                var moveResults = new List<Tuple<string, int>>();
+
+                foreach (var kv in tp.AxisPositions)
                 {
-                    progressForm.ShowDialog(this);
+                    string axisKey = kv.Key;
+                    double targetPos = kv.Value;
 
-                    if (progressForm.DialogResult == DialogResult.Cancel)
+                    MotionAxis axis = null;
+
+                    if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out var boundAxis))
                     {
-                        transfer.StopTeachingPositionOnce(selIndex);
-                        return;
+                        axis = boundAxis;
+                    }
+
+                    if (axis == null && _unit.Axes.TryGetValue(axisKey, out var directAxis))
+                    {
+                        axis = directAxis;
+                    }
+
+                    if (axis == null)
+                    {
+                        foreach (var pair in _unit.Axes)
+                        {
+                            if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                axis = pair.Value;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (axis == null)
+                    {
+                        continue; // axis not found
+                    }
+
+                    double vel = isFine
+                        ? (axis.Config != null && axis.Config.JogFineVelocity > 0 ? axis.Config.JogFineVelocity : defaultFineVel)
+                        : (axis.Config != null && axis.Config.JogCoarseVelocity > 0 ? axis.Config.JogCoarseVelocity : defaultCoarseVel);
+
+                    double acc = axis.Config != null && axis.Config.JogAcc > 0 ? axis.Config.JogAcc : defaultAcc;
+                    double dec = axis.Config != null && axis.Config.JogDec > 0 ? axis.Config.JogDec : defaultDec;
+                    double jerk = axis.Config != null ? (axis.Config.AccJerkPercent + axis.Config.DecJerkPercent) / 2.0 : defaultJerk;
+
+                    int rc = axis.MoveAbs(targetPos, vel, acc, dec, jerk);
+                    moveResults.Add(new Tuple<string, int>(axisKey, rc));
+                }
+
+                int waitErrors = 0;
+                foreach (var kv in tp.AxisPositions)
+                {
+                    MotionAxis axis = null;
+                    if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out var boundAxis2))
+                    {
+                        axis = boundAxis2;
+                    }
+                    if (axis == null && _unit.Axes.TryGetValue(kv.Key, out var directAxis2))
+                    {
+                        axis = directAxis2;
+                    }
+                    if (axis == null)
+                    {
+                        continue;
+                    }
+
+                    int rc = axis.WaitMoveDone(-1);
+                    if (rc != 0)
+                    {
+                        waitErrors++;
                     }
                 }
 
-                int result = task.Result;
+                bool anyFail = moveResults.Exists(t => t.Item2 != 0) || waitErrors > 0;
 
-                if (result == 0)
+                if (!anyFail)
                 {
                     MessageBox.Show(
                         "Teaching Position 이동 완료",
@@ -305,110 +320,32 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        private int GetSelectedTeachingIndex()
-        {
-            int selIndex = -1;
-            try
-            {
-                var pi = positionItemView?.GetType().GetProperty("SelectedIndex");
-                if (pi != null)
-                {
-                    object val = pi.GetValue(positionItemView, null);
-                    if (val is int)
-                    {
-                        selIndex = (int)val;
-                    }
-                }
-            }
-            catch
-            {
-                selIndex = -1;
-            }
-            return selIndex;
-        }
-
-        private bool GetSelectedMoveModeIsFine()
-        {
-            bool isFine = true;
-            try
-            {
-                if (rbTeachingMoveMode != null)
-                {
-                    var siProp = rbTeachingMoveMode.GetType().GetProperty("SelectedIndex");
-                    if (siProp != null)
-                    {
-                        object v = siProp.GetValue(rbTeachingMoveMode, null);
-                        if (v is int)
-                        {
-                            isFine = ((int)v) == 0; // 0 -> Fine
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                isFine = true;
-            }
-            return isFine;
-        }
-
         private void btnSave_Click(object sender, EventArgs e)
         {
             try
             {
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+                if (_unit == null)
                 {
-                    MessageBox.Show(
-                        "Unit을 찾을 수 없습니다.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
-                }
-
-                var transfer = unit as InputDieTransfer;
-
-                if (transfer == null)
-                {
-                    MessageBox.Show(
-                        "Unit 형식이 올바르지 않습니다.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 int selIndex = GetSelectedTeachingIndex();
-
-                if (selIndex < 0 || selIndex >= transfer.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _unit.TeachingPositions.Count)
                 {
-                    MessageBox.Show(
-                        "선택된 Teaching Position이 없습니다.",
-                        "알림",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
                 positionEditorView?.Apply();
                 var props = positionEditorView?.GetCurrentProperties();
-
                 if (props == null || props.Count == 0)
                 {
-                    MessageBox.Show(
-                        "편집할 데이터가 없습니다.",
-                        "알림",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("편집할 데이터가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                TeachingPosition target = transfer.TeachingPositions[selIndex];
-
+                var target = _unit.TeachingPositions[selIndex];
                 var newAxisPositions = new Dictionary<string, double>();
                 if (target.AxisPositions != null)
                 {
@@ -459,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.AxisPositions = newAxisPositions;
                 target.ExtraInfo = newExtra;
 
-                transfer.InputDieTransferConfig.SetTeachingPosition(
+                _unit.Config.SetTeachingPosition(
                     new TeachingPosition(
                         target.Name,
                         new Dictionary<string, double>(target.AxisPositions),
@@ -470,12 +407,20 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 );
 
-                transfer.InputDieTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-                transfer.TeachingPositions.Clear();
+                _unit.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
 
-                foreach (var tp in transfer.InputDieTransferConfig.TeachingPositions)
+                var snapshot = _unit.Config.TeachingPositions != null
+                     ? new List<TeachingPosition>(_unit.Config.TeachingPositions)
+                     : new List<TeachingPosition>();
+
+                _unit.Config.TeachingPositions = snapshot.ToList();
+                if (_unit.TeachingPositions != null)
                 {
-                    transfer.TeachingPositions.Add(tp);
+                    _unit.TeachingPositions.Clear();
+                    foreach (var tp in snapshot)
+                    {
+                        _unit.TeachingPositions.Add(tp);
+                    }
                 }
 
                 PopulateTeachingPositionList();
@@ -540,14 +485,14 @@ namespace QMC.LCP_280.Process.Unit
                         tp.Axes.TryGetValue(axisKey, out axis);
                     }
 
-                    if (axis == null && _InputDieTransfer?.Axes != null && _InputDieTransfer.Axes.TryGetValue(axisKey, out var direct))
+                    if (axis == null && _unit?.Axes != null && _unit.Axes.TryGetValue(axisKey, out var direct))
                     {
                         axis = direct;
                     }
 
-                    if (axis == null && _InputDieTransfer?.Axes != null)
+                    if (axis == null && _unit?.Axes != null)
                     {
-                        foreach (var pair in _InputDieTransfer.Axes)
+                        foreach (var pair in _unit.Axes)
                         {
                             MotionAxis a = pair.Value;
                             if (a != null && string.Equals(a.Name, axisKey, StringComparison.OrdinalIgnoreCase))
@@ -600,9 +545,56 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        private int GetSelectedTeachingIndex()
+        {
+            int selIndex = -1;
+            try
+            {
+                var pi = positionItemView?.GetType().GetProperty("SelectedIndex");
+                if (pi != null)
+                {
+                    object val = pi.GetValue(positionItemView, null);
+                    if (val is int)
+                    {
+                        selIndex = (int)val;
+                    }
+                }
+            }
+            catch
+            {
+                selIndex = -1;
+            }
+            return selIndex;
+        }
+
+        private bool GetSelectedMoveModeIsFine()
+        {
+            bool isFine = true;
+            try
+            {
+                if (rbTeachingMoveMode != null)
+                {
+                    var siProp = rbTeachingMoveMode.GetType().GetProperty("SelectedIndex");
+                    if (siProp != null)
+                    {
+                        object v = siProp.GetValue(rbTeachingMoveMode, null);
+                        if (v is int)
+                        {
+                            isFine = ((int)v) == 0;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                isFine = true;
+            }
+            return isFine;
+        }
+
         #endregion
 
-        #region Digital IO 초기화 / 갱신
+        #region Digital IO
 
         private void InitializeDigitalIO()
         {
@@ -630,9 +622,9 @@ namespace QMC.LCP_280.Process.Unit
                 HardInputDef[] hardInputs;
                 HardOutputDef[] hardOutputs;
 
-                if (eq?.Units != null && eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputDieTransfer transfer && transfer.InputDieTransferConfig != null)
+                if (eq?.Units != null && eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputCassetteLifter lifter && lifter.Config != null)
                 {
-                    var cfg = transfer.InputDieTransferConfig;
+                    var cfg = lifter.Config;
                     var cfgType = cfg.GetType();
                     var piIn = cfgType.GetProperty("HardInputs");
                     var piOut = cfgType.GetProperty("HardOutputs");
@@ -780,12 +772,13 @@ namespace QMC.LCP_280.Process.Unit
                 bool before = false;
                 scan.TryGetOutput(module, originalDisp, out before);
 
-                DialogResult dr = MessageBox.Show(
+                var dr = MessageBox.Show(
                     "[" + module + ":" + originalDisp + "] 현재 상태 = " + before + "\r\n변경하시겠습니까?",
                     "Output Toggle",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question
                 );
+
                 if (dr != DialogResult.Yes) return;
 
                 int rc = scan.WriteOutput(module, originalDisp, !before);
@@ -841,7 +834,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (string.IsNullOrWhiteSpace(raw)) return raw;
             string trimmed = raw.Trim().ToUpperInvariant();
-            Match m = Regex.Match(trimmed, @"^(X|Y)0*(\d+)$");
+            var m = Regex.Match(trimmed, @"^(X|Y)0*(\d+)$");
             if (m.Success)
             {
                 string letter = m.Groups[1].Value;
@@ -854,25 +847,21 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        #region JogControl 축 목록 초기화
+        #region JogControl
 
         private void PopulateAllAxesInJogControl()
         {
             try
             {
                 if (jogControl == null) return;
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+
+                // InitializeUnit()에서 채운 _unit을 그대로 사용
+                if (_unit?.Axes == null || _unit.Axes.Count == 0)
                 {
                     jogControl.SetTeachingAxisList(null);
                     return;
                 }
-                var transfer = unit as InputDieTransfer;
-                if (transfer?.Axes == null || transfer.Axes.Count == 0)
-                {
-                    jogControl.SetTeachingAxisList(null);
-                    return;
-                }
-                string[] axisNames = transfer.Axes.Values
+                string[] axisNames = _unit.Axes.Values
                     .Where(a => a != null)
                     .Select(a => a.Name ?? a.Setup?.Name)
                     .Where(n => !string.IsNullOrWhiteSpace(n))
@@ -888,7 +877,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        #region 폼 사이즈 설정
+        #region Panel Size
 
         public void SetPanelSize(int width, int height)
         {
@@ -916,21 +905,21 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        #region Axis Position, Axis 선택 (확장 포인트)
+        #region Axis 선택 / 위치 업데이트 (확장 포인트)
 
         private void OnAxisSelected(object sender, int index)
         {
-            // Axis 선택 시 필요 로직 추가 가능
+            // 필요 시 구현
         }
 
         private void UpdateAxisActualPosition()
         {
-            // Timer 활용해서 구현할 수 있음
+            // Timer 활용 예정 지점
         }
 
         #endregion
 
-        #region 페인팅 / 리사이즈
+        #region Paint / Resize
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -946,16 +935,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.OnResize(e);
             Invalidate();
-        }
-
-        #endregion
-
-        #region 기타 (테스트 버튼 예시)
-
-        private void button_Test_Click(object sender, EventArgs e)
-        {
-            var dlg = new TestGyn();
-            dlg.ShowDialog(this);
         }
 
         #endregion

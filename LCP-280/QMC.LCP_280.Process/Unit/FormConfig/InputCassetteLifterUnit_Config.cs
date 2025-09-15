@@ -6,6 +6,7 @@ using QMC.Common.IO;
 using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.Common.UI;
+using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component; // Added for TeachingPosition
 using System;
 using System.Collections.Generic;
@@ -23,7 +24,7 @@ namespace QMC.LCP_280.Process.Unit
         private const string _UNIT_NAME = "InputCassetteLifter";
 
         private Equipment _Equipment => Equipment.Instance;
-        private InputCassetteLifter _InputCassetteLifter;
+        private InputCassetteLifter _unit;
         private InputCassetteLifterConfig _cfg;
 
         private readonly Size _designerSize;
@@ -56,11 +57,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _InputCassetteLifter = unit as InputCassetteLifter;
-                    _cfg = _InputCassetteLifter?.Config;
+                    _unit = unit as InputCassetteLifter;
+                    _cfg = _unit?.Config;
                 }
 
-                if (_InputCassetteLifter == null)
+                if (_unit == null)
                 {
                     MessageBox.Show(
                         _UNIT_NAME + " Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
@@ -119,18 +120,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+                if (_unit?.TeachingPositions != null && _unit.TeachingPositions.Count > 0)
                 {
-                    positionItemView?.SetItems();
-                    return;
-                }
-
-                var lifter = unit as InputCassetteLifter;
-
-                if (lifter?.TeachingPositions != null && lifter.TeachingPositions.Count > 0)
-                {
-                    string[] names = lifter.TeachingPositions
-                        .Select(p => p.Name)
+                    string[] names = _unit.TeachingPositions
+                        .Select(t => t.Name)
                         .ToArray();
 
                     positionItemView?.SetItems(names);
@@ -142,7 +135,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("PopulateTeachingPositionList error: " + ex.Message);
+                Debug.WriteLine("PopulateTeachingPositionList 오류: " + ex.Message);
             }
         }
 
@@ -171,25 +164,10 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPositionInEditor(int selectedIndex)
         {
-            if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
-            {
-                return;
-            }
+            if (_cfg?.TeachingPositions == null) return;
+            if (selectedIndex < 0 || selectedIndex >= _cfg.TeachingPositions.Count) return;
 
-            var lifter = unit as InputCassetteLifter;
-            var config = lifter?.Config;
-
-            if (config?.TeachingPositions == null)
-            {
-                return;
-            }
-
-            if (selectedIndex < 0 || selectedIndex >= config.TeachingPositions.Count)
-            {
-                return;
-            }
-
-            var tp = config.TeachingPositions[selectedIndex];
+            var tp = _cfg.TeachingPositions[selectedIndex];
 
             var pc = new PropertyCollection();
             pc.Add(new TitleOnlyProperty("Teaching Position: " + tp.Name + " (mm, Abs. Pos)"));
@@ -216,44 +194,20 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+                if (_unit == null)
                 {
-                    MessageBox.Show(
-                        "Unit을 찾을 수 없습니다.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
-                }
-
-                var lifter = unit as InputCassetteLifter;
-
-                if (lifter == null)
-                {
-                    MessageBox.Show(
-                        "Unit 형식 오류",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 int selIndex = GetSelectedTeachingIndex();
-
-                if (selIndex < 0 || selIndex >= lifter.Config.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _unit.Config.TeachingPositions.Count)
                 {
-                    MessageBox.Show(
-                        "선택된 Teaching Position이 없습니다.",
-                        "알림",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var tp = lifter.Config.TeachingPositions[selIndex];
+                var tp = _unit.Config.TeachingPositions[selIndex];
                 bool isFine = GetSelectedMoveModeIsFine();
 
                 double defaultFineVel = 5.0;
@@ -276,14 +230,14 @@ namespace QMC.LCP_280.Process.Unit
                         axis = boundAxis;
                     }
 
-                    if (axis == null && lifter.Axes.TryGetValue(axisKey, out var directAxis))
+                    if (axis == null && _unit.Axes.TryGetValue(axisKey, out var directAxis))
                     {
                         axis = directAxis;
                     }
 
                     if (axis == null)
                     {
-                        foreach (var pair in lifter.Axes)
+                        foreach (var pair in _unit.Axes)
                         {
                             if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
                             {
@@ -318,7 +272,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         axis = boundAxis2;
                     }
-                    if (axis == null && lifter.Axes.TryGetValue(kv.Key, out var directAxis2))
+                    if (axis == null && _unit.Axes.TryGetValue(kv.Key, out var directAxis2))
                     {
                         axis = directAxis2;
                     }
@@ -370,59 +324,28 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+                if (_unit == null)
                 {
-                    MessageBox.Show(
-                        "Unit을 찾을 수 없습니다.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
-                }
-
-                var lifter = unit as InputCassetteLifter;
-
-                if (lifter == null)
-                {
-                    MessageBox.Show(
-                        "Unit 형식이 올바르지 않습니다.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    MessageBox.Show("Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
                 int selIndex = GetSelectedTeachingIndex();
-
-                if (selIndex < 0 || selIndex >= lifter.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _unit.TeachingPositions.Count)
                 {
-                    MessageBox.Show(
-                        "선택된 Teaching Position이 없습니다.",
-                        "알림",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
                 positionEditorView?.Apply();
                 var props = positionEditorView?.GetCurrentProperties();
-
                 if (props == null || props.Count == 0)
                 {
-                    MessageBox.Show(
-                        "편집할 데이터가 없습니다.",
-                        "알림",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Information
-                    );
+                    MessageBox.Show("편집할 데이터가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var target = lifter.TeachingPositions[selIndex];
-
+                var target = _unit.TeachingPositions[selIndex];
                 var newAxisPositions = new Dictionary<string, double>();
                 if (target.AxisPositions != null)
                 {
@@ -473,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.AxisPositions = newAxisPositions;
                 target.ExtraInfo = newExtra;
 
-                lifter.Config.SetTeachingPosition(
+                _unit.Config.SetTeachingPosition(
                     new TeachingPosition(
                         target.Name,
                         new Dictionary<string, double>(target.AxisPositions),
@@ -484,12 +407,20 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 );
 
-                lifter.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
-                lifter.TeachingPositions.Clear();
+                _unit.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
 
-                foreach (var tp in lifter.Config.TeachingPositions)
+                var snapshot = _unit.Config.TeachingPositions != null
+                     ? new List<TeachingPosition>(_unit.Config.TeachingPositions)
+                     : new List<TeachingPosition>();
+
+                _unit.Config.TeachingPositions = snapshot.ToList();
+                if (_unit.TeachingPositions != null)
                 {
-                    lifter.TeachingPositions.Add(tp);
+                    _unit.TeachingPositions.Clear();
+                    foreach (var tp in snapshot)
+                    {
+                        _unit.TeachingPositions.Add(tp);
+                    }
                 }
 
                 PopulateTeachingPositionList();
@@ -554,14 +485,14 @@ namespace QMC.LCP_280.Process.Unit
                         tp.Axes.TryGetValue(axisKey, out axis);
                     }
 
-                    if (axis == null && _InputCassetteLifter?.Axes != null && _InputCassetteLifter.Axes.TryGetValue(axisKey, out var direct))
+                    if (axis == null && _unit?.Axes != null && _unit.Axes.TryGetValue(axisKey, out var direct))
                     {
                         axis = direct;
                     }
 
-                    if (axis == null && _InputCassetteLifter?.Axes != null)
+                    if (axis == null && _unit?.Axes != null)
                     {
-                        foreach (var pair in _InputCassetteLifter.Axes)
+                        foreach (var pair in _unit.Axes)
                         {
                             MotionAxis a = pair.Value;
                             if (a != null && string.Equals(a.Name, axisKey, StringComparison.OrdinalIgnoreCase))
@@ -923,18 +854,14 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 if (jogControl == null) return;
-                if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
+
+                // InitializeUnit()에서 채운 _unit을 그대로 사용
+                if (_unit?.Axes == null || _unit.Axes.Count == 0)
                 {
                     jogControl.SetTeachingAxisList(null);
                     return;
                 }
-                var lifter = unit as InputCassetteLifter;
-                if (lifter?.Axes == null || lifter.Axes.Count == 0)
-                {
-                    jogControl.SetTeachingAxisList(null);
-                    return;
-                }
-                string[] axisNames = lifter.Axes.Values
+                string[] axisNames = _unit.Axes.Values
                     .Where(a => a != null)
                     .Select(a => a.Name ?? a.Setup?.Name)
                     .Where(n => !string.IsNullOrWhiteSpace(n))
