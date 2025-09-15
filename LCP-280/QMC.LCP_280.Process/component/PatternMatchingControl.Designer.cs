@@ -142,7 +142,7 @@ namespace QMC.LCP_280.Process
             this.tabControl_Vision.Location = new System.Drawing.Point(640, 33);
             this.tabControl_Vision.Name = "tabControl_Vision";
             this.tabControl_Vision.SelectedIndex = 0;
-            this.tabControl_Vision.Size = new System.Drawing.Size(414, 524);
+            this.tabControl_Vision.Size = new System.Drawing.Size(414, 614);
             this.tabControl_Vision.TabIndex = 4;
             // 
             // tabPageROI
@@ -151,17 +151,16 @@ namespace QMC.LCP_280.Process
             this.tabPageROI.Location = new System.Drawing.Point(4, 22);
             this.tabPageROI.Name = "tabPageROI";
             this.tabPageROI.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageROI.Size = new System.Drawing.Size(406, 498);
+            this.tabPageROI.Size = new System.Drawing.Size(406, 588);
             this.tabPageROI.TabIndex = 0;
             this.tabPageROI.Text = "ROI";
             this.tabPageROI.UseVisualStyleBackColor = true;
             // 
             // maintROIControl
             // 
-            this.maintROIControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.maintROIControl.Location = new System.Drawing.Point(3, 3);
             this.maintROIControl.Name = "maintROIControl";
-            this.maintROIControl.Size = new System.Drawing.Size(400, 492);
+            this.maintROIControl.Size = new System.Drawing.Size(400, 585);
             this.maintROIControl.TabIndex = 0;
             // 
             // tabPageParam
@@ -170,7 +169,7 @@ namespace QMC.LCP_280.Process
             this.tabPageParam.Location = new System.Drawing.Point(4, 22);
             this.tabPageParam.Name = "tabPageParam";
             this.tabPageParam.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPageParam.Size = new System.Drawing.Size(406, 498);
+            this.tabPageParam.Size = new System.Drawing.Size(406, 588);
             this.tabPageParam.TabIndex = 1;
             this.tabPageParam.Text = "Parameter";
             this.tabPageParam.UseVisualStyleBackColor = true;
@@ -178,7 +177,6 @@ namespace QMC.LCP_280.Process
             // patternMatchingParamControl
             // 
             this.patternMatchingParamControl.BackColor = System.Drawing.Color.Transparent;
-            this.patternMatchingParamControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.patternMatchingParamControl.DuplicateChecked = false;
             this.patternMatchingParamControl.LearnImage = null;
             this.patternMatchingParamControl.Location = new System.Drawing.Point(3, 3);
@@ -186,7 +184,7 @@ namespace QMC.LCP_280.Process
             this.patternMatchingParamControl.MinScore = 0D;
             this.patternMatchingParamControl.Name = "patternMatchingParamControl";
             this.patternMatchingParamControl.SelectedIndex = 0;
-            this.patternMatchingParamControl.Size = new System.Drawing.Size(400, 492);
+            this.patternMatchingParamControl.Size = new System.Drawing.Size(400, 585);
             this.patternMatchingParamControl.TabIndex = 0;
             this.patternMatchingParamControl.Tolerance = 0D;
             this.patternMatchingParamControl.TrainImage = null;
@@ -198,7 +196,7 @@ namespace QMC.LCP_280.Process
             this.tabPageResult.Controls.Add(this.patternMatchingResultControl);
             this.tabPageResult.Location = new System.Drawing.Point(4, 22);
             this.tabPageResult.Name = "tabPageResult";
-            this.tabPageResult.Size = new System.Drawing.Size(406, 498);
+            this.tabPageResult.Size = new System.Drawing.Size(406, 588);
             this.tabPageResult.TabIndex = 2;
             this.tabPageResult.Text = "Result";
             this.tabPageResult.UseVisualStyleBackColor = true;
@@ -208,13 +206,13 @@ namespace QMC.LCP_280.Process
             this.patternMatchingResultControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.patternMatchingResultControl.Location = new System.Drawing.Point(0, 0);
             this.patternMatchingResultControl.Name = "patternMatchingResultControl";
-            this.patternMatchingResultControl.Size = new System.Drawing.Size(406, 498);
+            this.patternMatchingResultControl.Size = new System.Drawing.Size(406, 588);
             this.patternMatchingResultControl.TabIndex = 0;
             // 
             // _btnSaveParam
             // 
             this._btnSaveParam.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._btnSaveParam.Location = new System.Drawing.Point(850, 563);
+            this._btnSaveParam.Location = new System.Drawing.Point(850, 653);
             this._btnSaveParam.Name = "_btnSaveParam";
             this._btnSaveParam.Size = new System.Drawing.Size(200, 30);
             this._btnSaveParam.TabIndex = 6;
@@ -224,7 +222,7 @@ namespace QMC.LCP_280.Process
             // _btnLoadParam
             // 
             this._btnLoadParam.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this._btnLoadParam.Location = new System.Drawing.Point(640, 563);
+            this._btnLoadParam.Location = new System.Drawing.Point(640, 653);
             this._btnLoadParam.Name = "_btnLoadParam";
             this._btnLoadParam.Size = new System.Drawing.Size(200, 30);
             this._btnLoadParam.TabIndex = 7;
@@ -502,7 +500,7 @@ namespace QMC.LCP_280.Process
             this.Controls.Add(this._btnSearch);
             this.Margin = new System.Windows.Forms.Padding(0);
             this.Name = "PatternMatchingControl";
-            this.Size = new System.Drawing.Size(1244, 611);
+            this.Size = new System.Drawing.Size(1244, 701);
             this.tabControl_Vision.ResumeLayout(false);
             this.tabPageROI.ResumeLayout(false);
             this.tabPageParam.ResumeLayout(false);
