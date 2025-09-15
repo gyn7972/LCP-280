@@ -133,7 +133,7 @@ namespace QMC.Common
 
                 var desiredOrder = new[]
                 {
-                    "InputCassetteLifter","InputRingTransfer","InputStage","InputStageEjector",
+                    "InputCassetteLifter","InputFeeder","InputStage","InputStageEjector",
                     "InputDieTransfer","Rotary","IndexLoadAligner","IndexChipProbeController",
                     "IndexChipProber","IndexUnloadAligner","OutputDieTransfer","OutputStage",
                     "OutputCassetteLifter","OutputRingTransfer"

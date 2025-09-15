@@ -10,7 +10,7 @@ using System.Linq;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// InputRingTransferConfig
+    /// InputFeederConfig
     ///  - Teaching Position 정의/저장/로드
     ///  - Wafer Feeder (Ring Transfer) 관련 IO 이름 상수화
     ///  - Hard Input / Output 테이블 제공
@@ -86,7 +86,7 @@ namespace QMC.LCP_280.Process.Unit
         };
         #endregion
 
-        public InputFeederConfig() : base("InputRingTransferConfig") { }
+        public InputFeederConfig() : base("InputFeederConfig") { }
 
         /// <summary>
         /// enum 에 정의된 TeachingPositionName 목록을 기준으로 기본 포지션을 채움 (허용 축 매핑 사용)

@@ -124,10 +124,101 @@ namespace QMC.LCP_280.Process.Unit
             return InPos(_axEjectorZ, z) && InPos(_axPinZ, pz);
         }
         public bool InPosTeaching(TeachingPosition tp) => tp != null && InPosTeaching(tp.Name);
-        public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
-
+        
         public void ApplyOffset(string positionName, double dzEjector, double dzPin) => Config.SetOffset(positionName, dzEjector, dzPin);
         #endregion
+
+
+
+        public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
+        /// <summary>
+        /// EjectorZ 축이 Safety Teaching 위치(또는 허용 오차 범위)에 있는지 확인.
+        /// 우선순위: EjectBlockSafety → EjectBlockUp → EjectBlockReady
+        /// </summary>
+        /// <param name="fallbackTolerance">축 InposTolerance를 사용할 수 없을 때 기본 허용오차</param>
+        /// <param name="useAxisInposTolerance">축 Config.InposTolerance 사용 여부</param>
+        /// <param name="treatMissingAsSafe">Teaching 또는 축이 없을 경우 true 로 간주할지 여부</param>
+        /// <param name="allowAbove">안전 위치보다 위(더 +방향)도 허용할지 여부 (일반적으로 Z축 위쪽이면 안전)</param>
+        public bool IsEjectorZSafetyPos(double fallbackTolerance = 0.01,
+                                         bool useAxisInposTolerance = true,
+                                         bool treatMissingAsSafe = true,
+                                         bool allowAbove = true)
+        {
+            if (_axEjectorZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputStageEjectorConfig;
+            if (cfg == null) return false;
+
+            string[] candidates =
+            {
+                "EjectBlockSafety",
+                "EjectBlockUp",
+                "EjectBlockReady"
+            };
+
+            string found = candidates.FirstOrDefault(n => cfg.GetTeachingPosition(n) != null);
+            if (found == null)
+                return treatMissingAsSafe;
+
+            var (ejectorTarget, _) = cfg.GetPositionWithOffset(found);
+
+            double cur = _axEjectorZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (_axEjectorZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            if (allowAbove)
+                return cur >= (ejectorTarget - tol);
+            return System.Math.Abs(cur - ejectorTarget) <= tol;
+        }
+
+        /// <summary>
+        /// PinZ 축이 Safety Teaching 위치(또는 허용 오차 범위)에 있는지 확인.
+        /// 우선순위: EjectPinReady → EjectPinChange → EjectPinOffset
+        /// </summary>
+        /// <param name="fallbackTolerance">축 InposTolerance를 사용할 수 없을 때 기본 허용오차</param>
+        /// <param name="useAxisInposTolerance">축 Config.InposTolerance 사용 여부</param>
+        /// <param name="treatMissingAsSafe">Teaching 또는 축이 없을 경우 true 로 간주할지 여부</param>
+        /// <param name="allowAbove">안전 위치보다 위(더 +방향)도 허용할지 여부</param>
+        public bool IsPinZSafetyPos(double fallbackTolerance = 0.01,
+                                     bool useAxisInposTolerance = true,
+                                     bool treatMissingAsSafe = true,
+                                     bool allowAbove = true)
+        {
+            if (_axPinZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputStageEjectorConfig;
+            if (cfg == null) return false;
+
+            string[] candidates =
+            {
+                "EjectPinReady",
+                "EjectPinChange",
+                "EjectPinOffset"
+            };
+
+            string found = candidates.FirstOrDefault(n => cfg.GetTeachingPosition(n) != null);
+            if (found == null)
+                return treatMissingAsSafe;
+
+            var (_, pinTarget) = cfg.GetPositionWithOffset(found);
+
+            double cur = _axPinZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            if (allowAbove)
+                return cur >= (pinTarget - tol);
+            return System.Math.Abs(cur - pinTarget) <= tol;
+        }
+
+        /// <summary>
+        /// 두 축(EjectorZ & PinZ) 모두 Safety 판단
+        /// </summary>
+        public bool IsAllSafety() => IsEjectorZSafetyPos() && IsPinZSafetyPos();
 
         #region Lifecycle
         public override int OnRun() { int ret = 0; return ret; }

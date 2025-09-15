@@ -219,8 +219,27 @@ namespace QMC.LCP_280.Process
         { try { btnStopAll.Enabled = false; LogMessage("설비 전체 정지 중..."); var result = await equipment.StopAllUnitsAsync(false); LogMessage(result ? "설비 전체 정지 완료" : "설비 전체 정지 실패"); } catch (Exception ex) { LogMessage($"설비 정지 오류: {ex.Message}"); } finally { btnStopAll.Enabled = true; UpdateUnitStatus(); UpdateUnitComboBox(); } }
         private void BtnSaveAllConfigs_Click(object sender, EventArgs e) { try { var result = equipment.SaveAllConfigs(); LogMessage(result ? "모든 Config 저장 완료" : "Config 저장 실패"); } catch (Exception ex) { LogMessage($"Config 저장 오류: {ex.Message}"); } }
         private void BtnLoadAllConfigs_Click(object sender, EventArgs e) { try { var result = equipment.LoadAllConfigs(); LogMessage(result ? "모든 Config 로드 완료" : "Config 로드 실패"); } catch (Exception ex) { LogMessage($"Config 로드 오류: {ex.Message}"); } }
-        private void BtnSaveAllRecipes_Click(object sender, EventArgs e) { try { var result = equipment.SaveAllRecipes(); LogMessage(result ? "모든 Recipe 저장 완료" : "Recipe 저장 실패"); } catch (Exception ex) { LogMessage($"Recipe 저장 오류: {ex.Message}"); } }
-        private void BtnLoadAllRecipes_Click(object sender, EventArgs e) { try { var result = equipment.LoadAllRecipes(); LogMessage(result ? "모든 Recipe 로드 완료" : "Recipe 로드 실패"); } catch (Exception ex) { LogMessage($"Recipe 로드 오류: {ex.Message}"); } }
+        private void BtnSaveAllRecipes_Click(object sender, EventArgs e) 
+        { 
+            try 
+            { 
+                //var result = equipment.SaveAllRecipes(); 
+                //LogMessage(result ? "모든 Recipe 저장 완료" : "Recipe 저장 실패"); 
+            } 
+            catch (Exception ex) 
+            { LogMessage($"Recipe 저장 오류: {ex.Message}"); } 
+        }
+
+        private void BtnLoadAllRecipes_Click(object sender, EventArgs e) 
+        { 
+            try 
+            { 
+                //var result = equipment.LoadAllRecipes(); 
+                //LogMessage(result ? "모든 Recipe 로드 완료" : "Recipe 로드 실패"); 
+            } 
+            catch (Exception ex) 
+            { LogMessage($"Recipe 로드 오류: {ex.Message}"); } }
+
         private async void BtnStopUnit_Click(object sender, EventArgs e) 
         { 
             if (cmbUnits?.SelectedItem == null) return; 

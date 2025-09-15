@@ -510,7 +510,7 @@ namespace QMC.LCP_280.Process.Unit
             if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            //InputStageUnit.LoadingWafer();
+            InputStageUnit.LoadingWafer();
         }
 
         private void btnAlignT_Click(object sender, EventArgs e)
@@ -519,7 +519,7 @@ namespace QMC.LCP_280.Process.Unit
             if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            //InputStageUnit.AlignT();
+            InputStageUnit.AlignT();
         }
 
         private void btnAlignXY_Click(object sender, EventArgs e)
@@ -528,7 +528,7 @@ namespace QMC.LCP_280.Process.Unit
             if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            //InputStageUnit.AlignXY();
+            InputStageUnit.AlignXY();
         }
 
         private void btnWaferUnloading_Click(object sender, EventArgs e)
@@ -537,7 +537,7 @@ namespace QMC.LCP_280.Process.Unit
             if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            //InputStageUnit.UnloadingWafer();
+            InputStageUnit.UnloadingWafer();
         }
     }
 }

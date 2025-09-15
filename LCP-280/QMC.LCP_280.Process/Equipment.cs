@@ -39,7 +39,7 @@ namespace QMC.LCP_280.Process
             public const string IndexUnloadAligner = "IndexUnloadAligner";
             public const string InputCassetteLifter = "InputCassetteLifter";
             public const string InputDieTransfer = "InputDieTransfer";
-            public const string InputRingTransfer = "InputRingTransfer";
+            public const string InputFeeder = "InputFeeder";
             public const string InputStage = "InputStage";
             public const string InputStageEjector = "InputStageEjector";
             public const string OutputCassetteLifter = "OutputCassetteLifter";
@@ -92,12 +92,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 설비 전체 Config 관리
         /// </summary>
-        public EquipmentConfigManager ConfigManager { get; private set; }
-
-        /// <summary>
-        /// 설비 전체 Recipe 관리
-        /// </summary>
-        public EquipmentRecipeManager RecipeManager { get; private set; }
+        public EquipmentConfigManager ConfigManager { get; set; }
 
         /// <summary>
         /// 설비 전체 실행 취소 토큰
@@ -211,14 +206,7 @@ namespace QMC.LCP_280.Process
 
         private Equipment()
         {
-            //Units = new ConcurrentDictionary<string, BaseUnit>();
-            //_unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
-            //State = EquipmentState.Stopped;
 
-            //ConfigManager = new EquipmentConfigManager();
-            //RecipeManager = new EquipmentRecipeManager();
-
-            //InitializeEquipment();
         }
 
         /// <summary>
@@ -233,7 +221,6 @@ namespace QMC.LCP_280.Process
                 State = EquipmentState.Stopped;
 
                 ConfigManager = new EquipmentConfigManager();
-                RecipeManager = new EquipmentRecipeManager();
 
                 OnStateChanged(EquipmentState.Initializing);
 
@@ -257,6 +244,11 @@ namespace QMC.LCP_280.Process
                 AutoRegisterUnits();
 
                 BindUnit();
+
+
+                // 3) 설비 Config + 메인 Recipe 로드
+                LoadEquipmentConfigAndMainRecipe();
+
 
 
                 // [ADD] EquipmentStatus 즉시 시작 (장비 Ready 이전에 상태 수집 시작)
@@ -322,7 +314,7 @@ namespace QMC.LCP_280.Process
             }
 
             TryAdd(new InputCassetteLifter(), "InputCassetteLifter");
-            TryAdd(new InputFeeder(), "InputRingTransfer");
+            TryAdd(new InputFeeder(), "InputFeeder");
             TryAdd(new InputStage(), "InputStage");
             TryAdd(new InputStageEjector(), "InputStageEjector");
             TryAdd(new InputDieTransfer(), "InputDieTransfer");
@@ -365,7 +357,7 @@ namespace QMC.LCP_280.Process
                     var cfg = (unit as BaseUnit)?.Config;
                     if (cfg != null)
                         ConfigManager.RegisterUnitConfig(unitName, cfg);
-                    RecipeManager.RegisterUnitRecipe(unitName, CreateUnitRecipe(unit));
+                    //RecipeManager.RegisterUnitRecipe(unitName, CreateUnitRecipe(unit));
 
                     Console.WriteLine($"Unit '{unitName}' 등록 완료");
                 }
@@ -914,16 +906,16 @@ namespace QMC.LCP_280.Process
 
         // ===== Config & Recipe ===== (원본 동일)
         public T GetUnitConfig<T>(string unitName) where T : class => ConfigManager.GetUnitConfig<T>(unitName);
-        public T GetUnitRecipe<T>(string unitName) where T : BaseRecipe => RecipeManager.GetUnitRecipe<T>(unitName);
+        //public T GetUnitRecipe<T>(string unitName) where T : BaseRecipe => RecipeManager.GetUnitRecipe<T>(unitName);
         public void SetUnitConfig(string unitName, object config)
         {
             if (config is BaseConfig baseConfig) ConfigManager.SetUnitConfig(unitName, baseConfig);
         }
-        public void SetUnitRecipe(string unitName, BaseRecipe recipe) => RecipeManager.SetUnitRecipe(unitName, recipe);
+        //public void SetUnitRecipe(string unitName, BaseRecipe recipe) => RecipeManager.SetUnitRecipe(unitName, recipe);
         public bool SaveAllConfigs(string directoryPath = null) => ConfigManager.SaveAllConfigs(directoryPath);
         public bool LoadAllConfigs(string directoryPath = null) => ConfigManager.LoadAllConfigs(directoryPath);
-        public bool SaveAllRecipes(string directoryPath = null) => RecipeManager.SaveAllRecipes(directoryPath);
-        public bool LoadAllRecipes(string directoryPath = null) => RecipeManager.LoadAllRecipes(directoryPath);
+        //public bool SaveAllRecipes(string directoryPath = null) => RecipeManager.SaveAllRecipes(directoryPath);
+        //public bool LoadAllRecipes(string directoryPath = null) => RecipeManager.LoadAllRecipes(directoryPath);
 
         // ===== Status =====
         public Dictionary<string, UnitStatusInfo> GetAllUnitStatus()
@@ -1447,6 +1439,102 @@ namespace QMC.LCP_280.Process
         }
         #endregion // Motion/IO Bootstrap
 
+
+        // ===== 메인 설비 Config / Recipe 로드 추가 =====
+        public static EquipmentConfig EquipmentConfig { get; private set; }
+        public static MeasurementRecipe CurrentRecipe { get; private set; }
+
+        private void LoadEquipmentConfigAndMainRecipe()
+        {
+            try
+            {
+                // (1) 설비 Config
+                EquipmentConfig = EquipmentConfig.LoadOrCreate();
+                _CurrentRecipeName = EquipmentConfig?.CurrentRecipeName ?? "LCP_RECIPE";
+
+                // (2) 메인 Measurement Recipe
+                MeasurementRecipe loaded = null;
+                try
+                {
+                    //var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName) as QMC.Common.BaseRecipe;
+                    var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName);
+                    loaded = obj as MeasurementRecipe;
+                }
+                catch (Exception rex)
+                {
+                    OnErrorOccurred("MeasurementRecipe 로드 실패: " + rex.Message);
+                }
+
+                if (loaded == null)
+                {
+                    // 실패 시 기본 생성
+                    loaded = new MeasurementRecipe(_CurrentRecipeName);
+                    loaded.Reset();
+                    try { loaded.Save(); } catch { }
+                }
+
+                CurrentRecipe = loaded;
+
+                Console.WriteLine($"[Recipe] Main Recipe='{CurrentRecipe.Name}' 로드 완료");
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred("LoadEquipmentConfigAndMainRecipe 실패: " + ex.Message);
+            }
+        }
+
+        // 메인 Recipe 교체/저장 편의 메서드 (필요 시 UI에서 호출)
+        public static bool ChangeCurrentRecipe(string newName)
+        {
+            if (string.IsNullOrWhiteSpace(newName))
+                return false;
+            try
+            {
+                var sanitized = newName.Trim();
+                var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), sanitized) as MeasurementRecipe;
+                if (obj == null)
+                {
+                    obj = new MeasurementRecipe(sanitized);
+                    obj.Reset();
+                    obj.Save();
+                }
+                CurrentRecipe = obj;
+                _CurrentRecipeName = sanitized;
+
+                if (EquipmentConfig == null)
+                    EquipmentConfig = EquipmentConfig.LoadOrCreate();
+                EquipmentConfig.CurrentRecipeName = sanitized;
+                EquipmentConfig.Save();
+
+                Console.WriteLine($"[Recipe] 변경 및 저장: {sanitized}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //OnErrorOccurred("ChangeCurrentRecipe 오류: " + ex.Message);
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+        public static bool SaveCurrentRecipe()
+        {
+            try
+            {
+                CurrentRecipe?.Save();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //OnErrorOccurred("SaveCurrentRecipe 오류: " + ex.Message);
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+
+
+
     }
 
     #region Supporting Classes and Enums
@@ -1559,5 +1647,9 @@ namespace QMC.LCP_280.Process
         }
     }
     #endregion
+
+
+
+
 
 }

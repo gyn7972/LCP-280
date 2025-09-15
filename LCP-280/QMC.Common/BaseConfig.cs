@@ -28,9 +28,6 @@ namespace QMC.Common
         [JsonIgnore]
         private DateTime LastModified { get; set; } = DateTime.Now;
 
-
-        
-
         //[JsonIgnore]
         //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();

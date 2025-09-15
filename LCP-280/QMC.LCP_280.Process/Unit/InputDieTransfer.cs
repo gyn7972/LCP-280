@@ -112,6 +112,208 @@ namespace QMC.LCP_280.Process.Unit
             var (t, pz, plz) = Config.GetPositionWithOffset(name);
             return InPos(_toolT, t) && InPos(_pickZ, pz) && InPos(_placeZ, plz);
         }
+
+        /// <summary>
+        /// 지정한 Teaching Position에서 특정 축만 InPosition 여부를 확인.
+        /// - T / PickZ / PlaceZ 는 Offset 적용 값을 사용
+        /// - 그 외 축 이름이 오면 TeachingPosition.AxisPositions 값 그대로 비교
+        /// </summary>
+        /// <param name="tpName">Teaching Position 이름</param>
+        /// <param name="axisName">
+        /// 확인할 축 키(or 이름). 예:
+        ///   AxisNames.LeftToolT / AxisNames.LeftPickZ / AxisNames.LeftPlaceZ
+        /// </param>
+        /// <returns>true = 지정 축이 목표 위치(InPositionTolerance 내)에 있음</returns>
+        public bool InPosTeachingAxis(string tpName, string axisName)
+        {
+            if (string.IsNullOrEmpty(tpName) || string.IsNullOrEmpty(axisName)) return false;
+
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null) return false;
+
+            // 표준 3축(T / PickZ / PlaceZ) 은 Offset 반영된 위치 사용
+            var (t, pz, plz) = Config.GetPositionWithOffset(tpName);
+            if (string.Equals(axisName, AxisNames.LeftToolT, StringComparison.OrdinalIgnoreCase))
+                return InPos(_toolT, t);
+            if (string.Equals(axisName, AxisNames.LeftPickZ, StringComparison.OrdinalIgnoreCase))
+                return InPos(_pickZ, pz);
+            if (string.Equals(axisName, AxisNames.LeftPlaceZ, StringComparison.OrdinalIgnoreCase))
+                return InPos(_placeZ, plz);
+
+            // 기타 축 처리: TeachingPosition에 저장된 원본 값 사용 (Offset 미적용)
+            MotionAxis axis = null;
+            if (tp.Axes != null && tp.Axes.TryGetValue(axisName, out var direct)) axis = direct;
+            if (axis == null && Axes.TryGetValue(axisName, out var unitAxis)) axis = unitAxis;
+            if (axis == null)
+            {
+                // Name 기준 추가 검색
+                foreach (var kv in Axes)
+                {
+                    if (kv.Value != null &&
+                        string.Equals(kv.Value.Name, axisName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        axis = kv.Value; break;
+                    }
+                }
+            }
+            if (axis == null) return false;
+
+            double target = tp.GetAxisPosition(axisName, 0.0);
+            return InPos(axis, target);
+        }
+
+        /// <summary>
+        /// DieTransfer PickZ 축이 SafetyPos Teaching (Offset 적용) 위치(또는 허용오차 범위)인지 확인.
+        /// Teaching 이름이 SafetyPos 없으면 SafetyZone 순으로 fallback (둘 다 없으면 false).
+        /// 장치/축이 없으면 true(안전)로 간주. 필요 시 treatMissingAsSafe=false 로 변경 가능.
+        /// </summary>
+        /// <param name="fallbackTolerance">축 설정값을 못 가져올 때 사용할 기본 허용오차</param>
+        /// <param name="useAxisInposTolerance">축 Config.InposTolerance 사용 여부</param>
+        /// <param name="treatMissingAsSafe">장치/Teaching 미존재 시 true 반환할지 여부</param>
+        public bool IsDieTransferPickZSafetyPos(double fallbackTolerance = 0.01,
+                                                 bool useAxisInposTolerance = true,
+                                                 bool treatMissingAsSafe = true)
+        {
+            if (PickZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputDieTransferConfig;
+            if (cfg == null) return false;
+
+            // 우선순위: SafetyPos → SafetyZone
+            string[] candidateNames =
+            {
+                "SafetyPos",
+                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidateNames)
+            {
+                if (cfg.GetTeachingPosition(name) != null)
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe ? true : false;
+
+            var tp = cfg.GetTeachingPosition(foundName);
+            if (tp == null) return false;
+
+            // Offset 적용 PickZ 목표값
+            var (_, pickZTarget, _) = cfg.GetPositionWithOffset(foundName);
+
+            double cur = PickZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (PickZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            // 동일위치(=InPos) 판정
+            return System.Math.Abs(cur - pickZTarget) <= tol;
+        }
+
+        /// <summary>
+        /// DieTransfer ToolT 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
+        /// SafetyZone Teaching에 ToolT 값이 없으면 다음 후보로 넘어감.
+        /// </summary>
+        public bool IsDieTransferToolTSafetyPos(double fallbackTolerance = 0.01,
+                                                 bool useAxisInposTolerance = true,
+                                                 bool treatMissingAsSafe = true)
+        {
+            if (ToolT == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputDieTransferConfig;
+            if (cfg == null) return false;
+
+            string[] candidateNames =
+            {
+                "SafetyPos",
+                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidateNames)
+            {
+                var tpTest = cfg.GetTeachingPosition(name);
+                if (tpTest == null) continue;
+                // 해당 Teaching에 ToolT 좌표가 실제 존재하는지 확인 (없으면 스킵)
+                if (tpTest.AxisPositions != null &&
+                    tpTest.AxisPositions.Keys.Any(k => string.Equals(k, AxisNames.LeftToolT, StringComparison.OrdinalIgnoreCase)))
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe;
+
+            var (_, _, _) = cfg.GetPositionWithOffset(foundName);
+            // Offset 적용 튜플에서 t 사용
+            var (tTarget, _, _) = cfg.GetPositionWithOffset(foundName);
+
+            double cur = ToolT.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (ToolT.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            return System.Math.Abs(cur - tTarget) <= tol;
+        }
+
+        /// <summary>
+        /// DieTransfer PlaceZ 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
+        /// </summary>
+        public bool IsDieTransferPlaceZSafetyPos(double fallbackTolerance = 0.01,
+                                                  bool useAxisInposTolerance = true,
+                                                  bool treatMissingAsSafe = true)
+        {
+            if (PlaceZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputDieTransferConfig;
+            if (cfg == null) return false;
+
+            string[] candidateNames =
+            {
+                "SafetyPos",
+                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidateNames)
+            {
+                if (cfg.GetTeachingPosition(name) != null)
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe;
+
+            var (_, _, placeZTarget) = cfg.GetPositionWithOffset(foundName);
+
+            double cur = PlaceZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (PlaceZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            return System.Math.Abs(cur - placeZTarget) <= tol;
+        }
+
+
+
+
+
+
+
+
+
         public void ApplyOffset(string name, double t, double pickZ, double placeZ)
             => Config.SetOffset(name, t, pickZ, placeZ);
         #endregion

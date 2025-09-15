@@ -233,7 +233,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 try
                 {
-                    loaded = CylinderConfig.LoadOrCreate(path, true, true);
+                    loaded = CylinderConfig.LoadOrCreate(path, true, false);
                 }
                 catch (Exception ex)
                 {
@@ -246,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
                             ?? (cyl.Config as CylinderConfig)
                             ?? new CylinderConfig { Name = cyl.Name };
 
-            cyl._config = effective;
+            //cyl._config = effective;
             cyl.Config = effective;
         }
         #endregion

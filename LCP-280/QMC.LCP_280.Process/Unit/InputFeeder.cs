@@ -15,9 +15,9 @@ using System.Windows.Navigation;
 namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
-    /// InputRingTransfer (Wafer Feeder / Ring Transfer Unit)
+    /// InputFeeder (Wafer Feeder / Ring Transfer Unit)
     ///  - X ?? ??? + Lift + Clamp (Ring ???? ??? / Overload ???)
-    ///  - Teaching Position ???? (InputRingTransferConfig)
+    ///  - Teaching Position ???? (InputFeederConfig)
     ///  - Cylinder ??? ???? API (FeederUp/Down, Clamp)
     ///  - OutputStage / InputStage ?? ?????? Region/???? ????
     /// </summary>
@@ -40,7 +40,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Axes
         private MotionAxis _feederY;
-        public MotionAxis FeederX => _feederY;
+        public MotionAxis FeederY => _feederY;
 
         public InputStage InputStage { get; private set; }
         public InputCassetteLifter InputCassetteLifter { get; private set; }
@@ -80,9 +80,20 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-            
+
             BindAxes();
             BindIoDomains();
+
+            Config.IsSimulation = true;
+            if (Config.IsSimulation)
+            {
+                _feederY.Config.IsSimulation = true;
+                Log.Write("InputFeeder", "Simulation Mode");
+            }
+
+
+
+
         }
         #endregion
 
@@ -97,7 +108,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("InputRingTransfer", "[BindAxes] AxisManager null");
+                Log.Write("InputFeeder", "[BindAxes] AxisManager null");
                 return;
             }
 
@@ -194,12 +205,12 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!IoAutoBindings.Cylinders.TryGetValue("InFeederLift", out _feederLift))
             {
-                Log.Write("InputRingTransfer", "BindIoDomains", "Cylinder not found: InFeederLift");
+                Log.Write("InputFeeder", "BindIoDomains", "Cylinder not found: InFeederLift");
             }
 
             if (!IoAutoBindings.Cylinders.TryGetValue("InFeederClamp", out _cylClamp))
             {
-                Log.Write("InputRingTransfer", "BindIoDomains", "Cylinder not found: InFeederClamp");
+                Log.Write("InputFeeder", "BindIoDomains", "Cylinder not found: InFeederClamp");
             }
         }
         #endregion
@@ -218,7 +229,16 @@ namespace QMC.LCP_280.Process.Unit
             else return _cylClamp.Retract();
         }
         #region Status Helpers
-        public bool IsFeederUp() => ReadInput(InputFeederConfig.IO.FEEDER_UP);
+        public bool IsFeederUp()
+        {
+            if(Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return ReadInput(InputFeederConfig.IO.FEEDER_UP);
+        }
+        
         public bool IsFeederDown() => ReadInput(InputFeederConfig.IO.FEEDER_DOWN);
         public bool IsUnclamped() => ReadInput(InputFeederConfig.IO.FEEDER_UNCLAMP);
         public bool IsRingPresent() => ReadInput(InputFeederConfig.IO.FEEDER_RING_CHECK);
@@ -317,6 +337,115 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsFeederClampValveOn() => IsOutputOn(InputFeederConfig.IO.FEEDER_CLAMP_VALVE);
         public bool IsFeederUnclampValveOn() => IsOutputOn(InputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
+
+        /// <summary>
+        /// Feeder Y 축이 안전(Safety) 위치에 있는지 확인.
+        /// 기본 탐색 Teaching 후보: "SafetyPos" → "Safety" → "Safe" → "Ready"
+        /// - 후보 중 첫 번째로 존재하고 FeederY 좌표가 포함된 Teaching 사용
+        /// - 축/Teaching 미존재 시 treatMissingAsSafe 옵션에 따라 반환
+        /// - allowPositiveBeyond = true 이면 목표 위치 이상(+방향)도 안전으로 허용
+        /// </summary>
+        /// <param name="fallbackTolerance">축 InposTolerance 미설정 시 사용할 기본 허용 오차</param>
+        /// <param name="useAxisInposTolerance">축 Config.InposTolerance 사용 여부</param>
+        /// <param name="treatMissingAsSafe">Teaching 또는 축이 없을 때 true 로 간주할지 여부</param>
+        /// <param name="allowPositiveBeyond">
+        /// true: FeederY 현재 위치가 안전 목표 이상(+방향)일 경우도 OK (Cassette 접근 위험이 주로 -방향일 때 사용)
+        /// false: 목표 위치 근처(± tolerance)에서만 OK
+        /// </param>
+        /// <param name="customCandidates">사용자 정의 Teaching 우선순위 (null 이면 기본 후보 사용)</param>
+        public bool IsFeederYSafetyPosition(double fallbackTolerance = 0.01,
+                                            bool useAxisInposTolerance = true,
+                                            bool treatMissingAsSafe = true,
+                                            bool allowPositiveBeyond = true,
+                                            IEnumerable<string> customCandidates = null)
+        {
+            if (FeederY == null)
+                return treatMissingAsSafe;
+
+            var cfg = Config;
+            if (cfg == null)
+                return treatMissingAsSafe;
+
+            // 기본 후보 목록
+            var defaultCandidates = new[] { "SafetyPos", "Safety", "Safe", "Ready" };
+            var candidates = (customCandidates == null ? defaultCandidates : customCandidates)
+                             .Where(s => !string.IsNullOrWhiteSpace(s));
+
+            string axisKey = AxisNames.WaferFeederY;
+            string selectedTpName = null;
+            TeachingPosition selectedTp = null;
+
+            foreach (var name in candidates)
+            {
+                var tp = cfg.GetTeachingPosition(name);
+                if (tp == null) continue;
+
+                // Teaching 에 해당 축 좌표가 실재 포함되는지 확인
+                if (tp.AxisPositions != null &&
+                    tp.AxisPositions.Keys.Any(k =>
+                        string.Equals(k, axisKey, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(k, FeederY.Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    selectedTpName = name;
+                    selectedTp = tp;
+                    break;
+                }
+            }
+
+            if (selectedTp == null)
+                return treatMissingAsSafe;
+
+            // 목표 좌표 가져오기 (AxisPositions 사전에서 직접 조회)
+            double target;
+            if (!selectedTp.AxisPositions.TryGetValue(axisKey, out target))
+            {
+                // Axis 이름으로 재시도
+                if (!selectedTp.AxisPositions.TryGetValue(FeederY.Name, out target))
+                    return treatMissingAsSafe; // 좌표가 없으면 안전 판단 불가 → 기본 정책대로
+            }
+
+            double cur = FeederY.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (FeederY.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            if (allowPositiveBeyond)
+            {
+                // 목표 이상(+방향) 허용
+                if (cur >= target - tol) return true;
+                return false;
+            }
+            else
+            {
+                // 목표 근처만 허용
+                return System.Math.Abs(cur - target) <= tol;
+            }
+        }
+
+        /// <summary>
+        /// Feeder Z(=Lift) 축이 안전(SAFE) 위치인지 판단.
+        /// 안전 기준: Lift Up 센서 ON.
+        /// - Down 센서 ON 이면 false
+        /// - Up/Down 모두 OFF(이행 중 또는 센서 이상) 이면 false
+        /// - Lift 객체 자체가 없으면 treatMissingAsSafe 플래그에 따름
+        /// </summary>
+        /// <param name="treatMissingAsSafe">Lift 미바인딩 시 true 로 처리할지 여부</param>
+        public bool IsFeederZSafetyPosition(bool treatMissingAsSafe = true)
+        {
+            if (_feederLift == null)
+                return treatMissingAsSafe;
+
+            if (IsFeederUp())
+                return true;
+
+            if (IsFeederDown())
+                return false;
+
+            // 전이 상태(Up/Down 모두 OFF) → 안전 아님으로 판단
+            return false;
+        }
+
+
 
         #region Seq ???? ???? ???
         public int WaferLoading(bool isFine = true)

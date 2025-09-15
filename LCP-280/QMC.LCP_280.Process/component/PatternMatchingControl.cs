@@ -133,6 +133,8 @@ namespace QMC.LCP_280.Process
 
             // 초기 현재 MeasurementRecipe에 따라 비전 레시피 명/경로 반영
             ApplyVisionRecipeFromMeasurement();
+
+            _currentRecipeName = Equipment._CurrentRecipeName;
             LoadRecipe(_currentRecipeName);
             TryBindEquipmentCameras();
             InitializeCameraList();

@@ -30,7 +30,7 @@ namespace QMC.LCP_280.Process.Component
                 if (name.Equals("Wafer Feeder Y Axis", StringComparison.OrdinalIgnoreCase))
                 {
                     var eq = Equipment.Instance;
-                    if (eq?.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var u) && u is InputFeeder inFeeder)
+                    if (eq?.Units != null && eq.Units.TryGetValue("InputFeeder", out var u) && u is InputFeeder inFeeder)
                     {
                         double logical = inFeeder.GetTP(
                             InputFeederConfig.TeachingPositionName.SetPosition.ToString(),

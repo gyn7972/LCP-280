@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class InputRingTransferUnit_Config
+    partial class InputFeederUnit_Config
     {
         private IOPropertyCollectionView inputView;
         private IOPropertyCollectionView outputView;
@@ -381,14 +381,14 @@ namespace QMC.LCP_280.Process.Unit
             this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
             this.positionItemPanel.TabIndex = 0;
             // 
-            // InputRingTransferUnit_Config
+            // InputFeederUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 780);
             this.Controls.Add(this.mainTableLayoutPanel);
-            this.Name = "InputRingTransferUnit_Config";
-            this.Text = "InputRingTransfer Unit Configuration";
+            this.Name = "InputFeederUnit_Config";
+            this.Text = "InputFeeder Unit Configuration";
             this.gbPositionTeaching.ResumeLayout(false);
             this.positionTableLayoutPanel.ResumeLayout(false);
             this.gbTeachingMove.ResumeLayout(false);

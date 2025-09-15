@@ -126,7 +126,8 @@ namespace QMC.Common.IOUtil
             var json = File.ReadAllText(filePath, Encoding.UTF8);
             cfg = FromJson(json);
 
-            if (backfill) cfg.Save(filePath, indented);
+            if (backfill) 
+                cfg.Save(filePath, indented);
 
             return cfg;
         }

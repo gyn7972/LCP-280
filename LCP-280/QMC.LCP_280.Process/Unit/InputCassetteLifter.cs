@@ -201,7 +201,13 @@ namespace QMC.LCP_280.Process.Unit
 
             return ret;
         }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        public override int OnStop() 
+        { 
+            int ret = 0; 
+            base.OnStop(); 
+            return ret; 
+        }
+
         public MaterialCassette GetMaterialCassette()
         {
             MaterialCassette cd = GetMaterial() as MaterialCassette;
@@ -493,6 +499,8 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             });
         }
+
+
         public double GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName pos, string axis)
         {
             return GetTP(pos.ToString(), axis);

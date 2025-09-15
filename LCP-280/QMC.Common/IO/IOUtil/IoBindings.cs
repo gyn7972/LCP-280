@@ -368,7 +368,7 @@ namespace QMC.Common.IOUtil
             vent = new Vacuum("InputDieTransferVent4", "InputDieTransfer.VentOut4", null);
             IoAutoBindings.Vacuums["InputDieTransferVent4"] = vent;
 
-            //InputRingTransfer
+            //InputFeeder
             DIO.MapByName(unit, "InFeeder.UpOut", true, IO.WAFER_FEEDER_UP_VALVE);
             DIO.MapByName(unit, "InFeeder.DownOut", true, IO.WAFER_FEEDER_DOWN_VALVE);
             DIO.MapByName(unit, "InFeeder.UpIn", false, IO.WAFER_FEEDER_UP);
@@ -640,7 +640,7 @@ namespace QMC.Common.IOUtil
                     {
                         var cfg = new CylinderConfig { Name = cylName };
                         // 파일 없으면 생성, 있으면 로드 후 누락 필드 보강 저장
-                        cfg = CylinderConfig.LoadOrCreate(cfg.GetFilePath(), indented: true, backfill: true);
+                        cfg = CylinderConfig.LoadOrCreate(cfg.GetFilePath(), indented: true, backfill: false);
                         cyl.Config = cfg;
                     }
                     catch (Exception ex)
