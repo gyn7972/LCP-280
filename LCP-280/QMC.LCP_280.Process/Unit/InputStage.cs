@@ -757,21 +757,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Low-Level IO Access (Refactored to match OutputStage pattern)
-        private bool ActAndWait(string tag, Func<bool> act, Func<bool> cond)
-        {
-            if (!act())
-            {
-                Log.Write(UnitName, "Seq", $"Fail Act {tag}");
-                return false;
-            }
-
-            if (!WaitIO(cond, MoveTimeoutMs))
-            {
-                Log.Write(UnitName, "Seq", $"Timeout {tag}");
-                return false;
-            }
-            return true;
-        }
         public bool ReadInput(string name)
         {
             // 유효성 검사
@@ -1149,7 +1134,8 @@ namespace QMC.LCP_280.Process.Unit
             if (IsRingPresent())
             {
                 //Plate Up → 
-                if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+                SetClampPlate(true);
+                if(!IsPlateUp())
                 {
                     Log.Write(this, "Fail: PlateUp");
                     return -1;
@@ -1285,18 +1271,21 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Clamp Back → Lift Down
-            if (!ActAndWait("ClampBack", () => !SetClampFB(false), () => IsClampBwd()))
+            SetClampFB(false);
+            if(!IsClampBwd())
             {
                 Log.Write(this, "Fail: ClampBack");
                 return -1;
             }
-            if (!ActAndWait("ClampLiftDown", () => !SetClampLift(false), () => IsClampLiftDown()))
+            SetClampLift(false);
+            if(!IsClampLiftDown())
             {
                 Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
             }
             //Plate Up → 
-            if (!ActAndWait("PlateUp", () => !SetClampPlate(false), () => IsPlateDown()))
+            SetClampPlate(false);
+            if(!IsPlateDown())
             {
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
@@ -1335,16 +1324,26 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else if (!IsPlateUp())
                 {
-                    if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+                    SetClampPlate(true);
+                    if (!IsPlateUp())
                     {
                         Log.Write(this, "Fail: PlateUp");
                         return -1;
                     }
 
-                    if (ActAndWait("ClampLiftUp", () => SetClampLift(true), () => IsClampLiftUp()))
+                    SetClampLift(true);
+                    if (!IsClampLiftUp())
+                    {
+                        Log.Write(this, "Fail: ClampLiftUp");
                         return -1;
-                    if (!ActAndWait("ClampForward", () => SetClampFB(true), () => IsClampFwd()))
+                    }
+
+                    SetClampFB(true);
+                    if (!IsClampFwd())
+                    {
+                        Log.Write(this, "Fail: ClampForward");
                         return -1;
+                    }
                 }
                 else
                 {
@@ -1726,14 +1725,24 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Plate Up (이미 Up 일 수도 있으나 통일)
-            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp())) 
+            SetClampPlate(true);
+            if (!IsPlateUp())
+            {
+                Log.Write(this, "Fail: PlateUp");
                 return -1;
-            // Clamp Back (웨이퍼 픽업 전 클램프 해제)
-            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd())) 
+            }
+            SetClampFB(false);
+            if (!IsClampBwd())
+            {
+                Log.Write(this, "Fail: ClampBack");
                 return -1;
-            // Lift Down (픽업 접근 공간 확보)
-            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown())) 
+            }
+            SetClampLift(false);
+            if (!IsClampLiftDown())
+            {
+                Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
+            }
 
             IsStatus_StageUnloadingReady = true;
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
@@ -1766,8 +1775,11 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingComp", "Wafer removed -> Completing");
 
             // Plate Down (원위치)
-            if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) 
+            SetClampPlate(false);
+            if(IsPlateDown())
+            {
                 return -1;
+            }
 
             nRtn = MoveToStageReadyPosition();
             if (nRtn != 0)
