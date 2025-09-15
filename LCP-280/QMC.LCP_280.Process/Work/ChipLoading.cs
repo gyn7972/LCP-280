@@ -59,7 +59,7 @@ namespace QMC.LCP_280.Process.Work
         public static bool ApplyOffsetDeltaAndSyncPick(InputStageEjector ejector, InputDieTransfer transfer, double velScale, out string error)
         {
             error = null;
-            if (ejector?.AxisPinZ == null || transfer?.PickZ == null)
+            if (ejector?.AxisPinZ == null || transfer?.AxisPickZ == null)
             {
                 error = "Axis not ready"; return false;
             }
@@ -70,20 +70,20 @@ namespace QMC.LCP_280.Process.Work
                 double delta = off - wait;
 
                 double curPin = ejector.AxisPinZ.GetPosition();
-                double curPick = transfer.PickZ.GetPosition();
+                double curPick = transfer.AxisPickZ.GetPosition();
                 double targetPin = curPin + delta;
                 double targetPick = curPick + delta;
 
-                var pinCfg = ejector.AxisPinZ.Config; var pickCfg = transfer.PickZ.Config;
+                var pinCfg = ejector.AxisPinZ.Config; var pickCfg = transfer.AxisPickZ.Config;
                 double maxV = Math.Min(pinCfg?.MaxVelocity ?? 10, pickCfg?.MaxVelocity ?? 10);
                 if (maxV <= 0) maxV = 10;
                 double v = maxV * (velScale > 0 && velScale <= 1 ? velScale : 1);
                 double accPin = pinCfg?.RunAcc ?? 10; double decPin = pinCfg?.RunDec ?? accPin; double jerkPin = pinCfg?.AccJerkPercent ?? 50;
                 double accPick = pickCfg?.RunAcc ?? 10; double decPick = pickCfg?.RunDec ?? accPick; double jerkPick = pickCfg?.AccJerkPercent ?? 50;
 
-                transfer.PickZ.MoveAbs(targetPick, v, accPick, decPick, jerkPick);
+                transfer.AxisPickZ.MoveAbs(targetPick, v, accPick, decPick, jerkPick);
                 ejector.AxisPinZ.MoveAbs(targetPin, v, accPin, decPin, jerkPin);
-                transfer.PickZ.WaitMoveDone(-1);
+                transfer.AxisPickZ.WaitMoveDone(-1);
                 ejector.AxisPinZ.WaitMoveDone(-1);
                 return true;
             }
@@ -114,22 +114,22 @@ namespace QMC.LCP_280.Process.Work
                                                  out string error)
         {
             error = null;
-            if (ejector?.AxisPinZ == null || transfer?.PickZ == null)
+            if (ejector?.AxisPinZ == null || transfer?.AxisPickZ == null)
             {
                 error = "Axis not ready"; return false;
             }
             try
             {
-                var pinCfg = ejector.AxisPinZ.Config; var pickCfg = transfer.PickZ.Config;
+                var pinCfg = ejector.AxisPinZ.Config; var pickCfg = transfer.AxisPickZ.Config;
                 double maxV = Math.Min(pinCfg?.MaxVelocity ?? 10, pickCfg?.MaxVelocity ?? 10);
                 if (maxV <= 0) maxV = 10;
                 double v = maxV * (velScale > 0 && velScale <= 1 ? velScale : 1);
                 double accPin = pinCfg?.RunAcc ?? 10; double decPin = pinCfg?.RunDec ?? accPin; double jerkPin = pinCfg?.AccJerkPercent ?? 50;
                 double accPick = pickCfg?.RunAcc ?? 10; double decPick = pickCfg?.RunDec ?? accPick; double jerkPick = pickCfg?.AccJerkPercent ?? 50;
 
-                transfer.PickZ.MoveAbs(targetPickZ, v, accPick, decPick, jerkPick);
+                transfer.AxisPickZ.MoveAbs(targetPickZ, v, accPick, decPick, jerkPick);
                 ejector.AxisPinZ.MoveAbs(targetPinZ, v, accPin, decPin, jerkPin);
-                transfer.PickZ.WaitMoveDone(-1);
+                transfer.AxisPickZ.WaitMoveDone(-1);
                 ejector.AxisPinZ.WaitMoveDone(-1);
                 return true;
             }
@@ -147,14 +147,14 @@ namespace QMC.LCP_280.Process.Work
                                                  out string error)
         {
             error = null;
-            if (ejector?.AxisPinZ == null || transfer?.PickZ == null)
+            if (ejector?.AxisPinZ == null || transfer?.AxisPickZ == null)
             {
                 error = "Axis not ready"; return false;
             }
             try
             {
                 double targetPin = ejector.AxisPinZ.GetPosition() + deltaPinZ;
-                double targetPick = transfer.PickZ.GetPosition() + deltaPickZ;
+                double targetPick = transfer.AxisPickZ.GetPosition() + deltaPickZ;
                 return MovePinAndPickSyncAbs(ejector, transfer, targetPin, targetPick, velScale, out error);
             }
             catch (Exception ex)
