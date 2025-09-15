@@ -619,23 +619,8 @@ namespace QMC.LCP_280.Process.Unit
                 _ioInputs.Clear();
                 _ioOutputs.Clear();
 
-                HardInputDef[] hardInputs;
-                HardOutputDef[] hardOutputs;
-
-                if (eq?.Units != null && eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is InputCassetteLifter lifter && lifter.Config != null)
-                {
-                    var cfg = lifter.Config;
-                    var cfgType = cfg.GetType();
-                    var piIn = cfgType.GetProperty("HardInputs");
-                    var piOut = cfgType.GetProperty("HardOutputs");
-                    hardInputs = piIn?.GetValue(cfg) as HardInputDef[] ?? Array.Empty<HardInputDef>();
-                    hardOutputs = piOut?.GetValue(cfg) as HardOutputDef[] ?? Array.Empty<HardOutputDef>();
-                }
-                else
-                {
-                    hardInputs = Array.Empty<HardInputDef>();
-                    hardOutputs = Array.Empty<HardOutputDef>();
-                }
+                HardInputDef[] hardInputs = _cfg?.HardInputs ?? Array.Empty<HardInputDef>();
+                HardOutputDef[] hardOutputs = _cfg?.HardOutputs ?? Array.Empty<HardOutputDef>();
 
                 Func<string, Tuple<string, string>> resolveIn = disp =>
                 {

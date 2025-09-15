@@ -72,7 +72,17 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.SafetyZone,          new [] { AxisNames.IndexZ } },
         };
 
-        
+        #region Hard IO Tables
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = Array.Empty<HardInputDef>();
+
+        [JsonIgnore]
+        public HardOutputDef[] HardOutputs => _hardOutputs;
+        [JsonIgnore]
+        private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
+        #endregion
 
         public IndexLoadAlignerConfig() : base("IndexLoadAlignerConfig") { }
 

@@ -111,9 +111,6 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.Bottom_Index8_Ready,         new [] { AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ } },
         };
 
-
-        
-
         #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;

@@ -82,7 +82,7 @@ namespace QMC.LCP_280.Process.Unit
             public static readonly string[] ARM_VENT = { ARM1_VENT, ARM2_VENT, ARM3_VENT, ARM4_VENT };
         }
 
-        // ================= Hard IO Á¤ÀÇ =================
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
         [JsonIgnore]
@@ -114,6 +114,7 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 11, Name = IO.ARM3_VENT, Disp = "Y086" },
             new HardOutputDef { No = 12, Name = IO.ARM4_VENT, Disp = "Y087" }
         };
+        #endregion
 
         public OutputDieTransferConfig() : base("OutputDieTransferConfig")
         {

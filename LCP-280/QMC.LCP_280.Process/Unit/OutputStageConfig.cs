@@ -56,8 +56,8 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.SetPosition, new [] { AxisNames.BinStageX, AxisNames.BinStageY } },
         };
 
-        
 
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
         [JsonIgnore]
@@ -85,6 +85,7 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 6, Name = IO.PLATE_DOWN_OUT, Disp = "Y033" },
             new HardOutputDef { No = 7, Name = IO.VACUUM,         Disp = "Y088" },
         };
+        #endregion
 
         public OutputStageConfig() : base("OutputStageConfig") { }
 

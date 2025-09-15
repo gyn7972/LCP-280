@@ -4,6 +4,7 @@ using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -56,8 +57,6 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.LoadPort,       new [] { AxisNames.BinLifterZ } },
         };
 
-        
-
         #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
@@ -69,10 +68,9 @@ namespace QMC.LCP_280.Process.Unit
             new HardInputDef { No = 4, Name = IO.MAPPING_SENSOR,  Disp = "X072" },
         };
 
-        // 출력 없음: 확장 필요시 HardOutputDef 배열 추가
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs;
-        private static readonly HardOutputDef[] _hardOutputs = new HardOutputDef[0];
+        private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
 
         public OutputCassetteLifterConfig() : base("OutputCassetteLifterConfig") { }

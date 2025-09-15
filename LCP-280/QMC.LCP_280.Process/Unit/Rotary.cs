@@ -5,6 +5,7 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO ???/?迭 ???? ???
@@ -171,39 +172,42 @@ namespace QMC.LCP_280.Process.Unit
         {
             reason = null;
             var eq = Equipment.Instance;
-            if (eq == null || eq.Units == null) return true; // ???? ????? ?? ???????? ????
+            if (eq == null || eq.Units == null) return true;
 
             // IndexChipProbeController
-            if (eq.Units.TryGetValue("IndexChipProbeController", out var u1) && u1 is IndexChipProbeController prober)
+            if (eq.Units.TryGetValue("IndexChipProbeController", out var u1))
             {
-                if (!IsUnitInSafe(prober.InPosTeaching))
+                if (!IsUnitInSafeByConnectedAxes(u1))
                 {
                     reason = "IndexChipProbeController Not in Safety Zone";
                     return false;
                 }
             }
+
             // IndexLoadAligner
-            if (eq.Units.TryGetValue("IndexLoadAligner", out var u2) && u2 is IndexLoadAligner loadAligner)
+            if (eq.Units.TryGetValue("IndexLoadAligner", out var u2))
             {
-                if (!IsUnitInSafe(loadAligner.InPosTeaching))
+                if (!IsUnitInSafeByConnectedAxes(u2))
                 {
                     reason = "IndexLoadAligner Not in Safety Zone";
                     return false;
                 }
             }
+
             // InputDieTransfer
-            if (eq.Units.TryGetValue("InputDieTransfer", out var u3) && u3 is InputDieTransfer inputDie)
+            if (eq.Units.TryGetValue("InputDieTransfer", out var u3))
             {
-                if (!IsUnitInSafe(inputDie.InPosTeaching))
+                if (!IsUnitInSafeByConnectedAxes(u3))
                 {
                     reason = "InputDieTransfer Not in Safety Zone";
                     return false;
                 }
             }
+
             // OutputDieTransfer
-            if (eq.Units.TryGetValue("OutputDieTransfer", out var u4) && u4 is OutputDieTransfer outputDie)
+            if (eq.Units.TryGetValue("OutputDieTransfer", out var u4))
             {
-                if (!IsUnitInSafe(outputDie.InPosTeaching))
+                if (!IsUnitInSafeByConnectedAxes(u4))
                 {
                     reason = "OutputDieTransfer Not in Safety Zone";
                     return false;
@@ -211,6 +215,86 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return true;
+        }
+
+        private bool IsUnitInSafeByConnectedAxes(object unit)
+        {
+            if (unit == null) return true;
+
+            // Config(BaseConfig) 획득
+            var t = unit.GetType();
+            var propConfig = t.GetProperty("Config");
+            var cfg = propConfig?.GetValue(unit) as BaseConfig;
+            if (cfg?.TeachingPositions == null) return true;
+
+            // 유닛 보유 축 사전(Dictionary<string, MotionAxis>) 획득
+            var propAxes = t.GetProperty("Axes");
+            var unitAxes = propAxes?.GetValue(unit) as System.Collections.Generic.IDictionary<string, MotionAxis>;
+
+            foreach (var safeName in SafeNames)
+            {
+                var tp = cfg.TeachingPositions.FirstOrDefault(p => string.Equals(p.Name, safeName, StringComparison.OrdinalIgnoreCase));
+                if (tp == null) continue;
+
+                // TeachingPosition의 바인딩된 축 사전 (Dictionary<string, MotionAxis>) 리플렉션으로 접근
+                System.Collections.Generic.IDictionary<string, MotionAxis> tpAxes = null;
+                try
+                {
+                    var tpAxesProp = tp.GetType().GetProperty("Axes");
+                    tpAxes = tpAxesProp?.GetValue(tp) as System.Collections.Generic.IDictionary<string, MotionAxis>;
+                }
+                catch { /* ignore */ }
+
+                bool ok = true;
+                int checkedAny = 0;
+
+                foreach (var kv in tp.AxisPositions)
+                {
+                    string axisKey = kv.Key;
+                    double target = kv.Value;
+
+                    MotionAxis axis = null;
+
+                    // 1) TeachingPosition에 바인딩된 축 우선
+                    if (tpAxes != null)
+                    {
+                        tpAxes.TryGetValue(axisKey, out axis);
+                    }
+
+                    // 2) 유닛 보유 축에서 키/이름으로 검색
+                    if (axis == null && unitAxes != null)
+                    {
+                        if (!unitAxes.TryGetValue(axisKey, out axis))
+                        {
+                            axis = unitAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisKey, StringComparison.OrdinalIgnoreCase));
+                        }
+                    }
+
+                    // 연결되지 않은 축은 비교 대상에서 제외
+                    if (axis == null) continue;
+
+                    checkedAny++;
+                    try
+                    {
+                        if (!axis.InPosition(target))
+                        {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        ok = false;
+                        break;
+                    }
+                }
+
+                // 바인딩된 축이 하나도 없으면 안전으로 간주(필요 시 false로 변경 가능)
+                if (ok && (checkedAny == 0 || checkedAny > 0))
+                    return true;
+            }
+
+            return false;
         }
 
         private bool IsUnitInSafe(System.Func<string, bool> inPosTeaching)
@@ -264,7 +348,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
 
-            // Vacuum ??????? ?????
             if (!IoAutoBindings.Vacuums.TryGetValue("RotatyVac1", out _vacuum[0]))
             {
                 Log.Write("Rotaty", "BindIoDomains", "Vacuums not found: RotatyVac1");
