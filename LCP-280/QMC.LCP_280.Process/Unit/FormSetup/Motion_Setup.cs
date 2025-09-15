@@ -477,11 +477,11 @@ namespace QMC.LCP_280.Process.Unit
 
                 EnsureAxisHomeInterlocks(_axis);
                 string reason;
-                if (!InterlockManager.Instance.ValidateAxisForHome(_axis, out reason))
-                {
-                    MessageBox.Show("홈 인터락 차단:\r\n" + reason);
-                    return;
-                }
+                //if (!InterlockManager.Instance.ValidateAxisForHome(_axis, out reason))
+                //{
+                //    MessageBox.Show("홈 인터락 차단:\r\n" + reason);
+                //    return;
+                //}
                 var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(Equipment);
                 var eval = await seq.PreAxisInterlockAsync(-1, _axis, CancellationToken.None).ConfigureAwait(true);
                 if (!eval.Ok)
