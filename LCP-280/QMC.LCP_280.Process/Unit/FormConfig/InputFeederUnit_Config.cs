@@ -189,7 +189,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Move / Save / CurrentPos
-       
+
         #region Digital IO
         private static T GetPropValue<T>(object obj, string prop, T def = default(T))
         {
@@ -224,112 +224,6 @@ namespace QMC.LCP_280.Process.Unit
                 return def;
             }
         }
-
-        private void InitializeDigitalIO()
-        {
-            try
-            {
-                if (inputView == null)
-                {
-                    return;
-                }
-
-                var eq = Equipment.Instance;
-                var scan = eq?.DioScan;
-                var unitIO = eq?.UnitIO;
-                if (scan == null || unitIO == null)
-                {
-                    inputView.SetProperties(new PropertyCollection());
-                    outputView.SetProperties(new PropertyCollection());
-                    return;
-                }
-
-                _ioInputs.Clear();
-                _ioOutputs.Clear();
-
-                Array hardInputsArr = Array.CreateInstance(typeof(object), 0);
-                Array hardOutputsArr = Array.CreateInstance(typeof(object), 0);
-
-                if (_InputFeeder?.Config != null)
-                {
-                    var cfg = _InputFeeder.Config;
-                    var cfgType = cfg.GetType();
-
-                    var piIn = cfgType.GetProperty("HardInputs");
-                    var piOut = cfgType.GetProperty("HardOutputs");
-
-                    var hi = piIn?.GetValue(cfg) as Array;
-                    if (hi != null)
-                    {
-                        hardInputsArr = hi;
-                    }
-
-                    var ho = piOut?.GetValue(cfg) as Array;
-                    if (ho != null)
-                    {
-                        hardOutputsArr = ho;
-                    }
-                }
-
-                Func<string, Tuple<string, string>> resolveIn = disp =>
-                {
-                    if (unitIO?.Modules == null)
-                    {
-                        return new Tuple<string, string>(null, disp);
-                    }
-
-                    foreach (var m in unitIO.Modules)
-                    {
-                        if (m?.Inputs == null)
-                        {
-                            continue;
-                        }
-
-                        foreach (var ch in m.Inputs)
-                        {
-                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
-                            }
-                        }
-                    }
-
-                    return new Tuple<string, string>(null, disp);
-                };
-
-                Func<string, Tuple<string, string>> resolveOut = disp =>
-                {
-                    if (unitIO?.Modules == null)
-                    {
-                        return new Tuple<string, string>(null, disp);
-                    }
-
-                    foreach (var m in unitIO.Modules)
-                    {
-                        if (m?.Outputs == null)
-                        {
-                            continue;
-                        }
-
-                        foreach (var ch in m.Outputs)
-                        {
-                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
-                            }
-                        }
-                    }
-
-                    return new Tuple<string, string>(null, disp);
-                };
-
-                if (hardInputsArr.Length > 0)
-                {
-                    var pcIn = new PropertyCollection
-                    {
-                        ShowNoColumn = true,
-                        IsInputParameter = false
-                    };
 
         private void btnMovePosition_Click(object sender, EventArgs e)
         {
@@ -1080,4 +974,5 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
     }
+    #endregion
 }
