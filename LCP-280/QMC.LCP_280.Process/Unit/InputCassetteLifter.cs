@@ -223,8 +223,6 @@ namespace QMC.LCP_280.Process.Unit
             return cd;
         }
 
-
-
         protected override int OnRunComplete()
         {
             return 0;
@@ -407,6 +405,7 @@ namespace QMC.LCP_280.Process.Unit
 
             }
             MoveToScanStartPosition();
+            
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync();
             while (true)
             {
@@ -460,6 +459,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingStart, isFine);
         }
+
         public Task<int> MoveToScanStartPositionAsync()
         {
             return Task.Run(() =>
@@ -479,6 +479,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             return Task.Run(() => { MoveToScanEndPosition(); return 0; });
         }
+        
         public int MoveToTeachingPosition(InputCassetteLifterConfig.TeachingPositionName pos, bool isCouseSpeed)
         {
             return MoveToTeachingPosition(pos.ToString());
