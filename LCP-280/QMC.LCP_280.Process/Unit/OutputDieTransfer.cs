@@ -12,25 +12,22 @@ using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // IO 상수/배�
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputDieTransfer : BaseUnit
+    public class OutputDieTransfer : BaseUnit<OutputDieTransferConfig>
     {
-        public OutputDieTransferConfig OutputDieTransferConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        
 
         public OutputDieTransfer(OutputDieTransferConfig config = null)
-            : base("OutputDieTransferConfig")
+            : base(new OutputDieTransferConfig())
         {
-            OutputDieTransferConfig = config ?? new OutputDieTransferConfig();
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            OutputDieTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            OutputDieTransferConfig.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in OutputDieTransferConfig.TeachingPositions)
-                TeachingPositions.Add(tp);
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
+
+
             BindAxes();
             BindIoDomains();
         }
@@ -55,12 +52,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            OutputDieTransferConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = OutputDieTransferConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -77,11 +74,12 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool InPosTeaching(string positionName)
         {
-            var tp = OutputDieTransferConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return false;
             foreach (var kv in tp.AxisPositions)
             {
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) 
+                    return false;
             }
             return true;
         }
@@ -108,7 +106,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public double GetTP(string tpName, string axisName)
         {
-            var tp = OutputDieTransferConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -124,7 +122,7 @@ namespace QMC.LCP_280.Process.Unit
         #region IO Helpers (Input / Output 상태)
         public bool ReadInput(string name)
         {
-            var hi = OutputDieTransferConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -133,7 +131,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            var ho = OutputDieTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -144,7 +142,7 @@ namespace QMC.LCP_280.Process.Unit
         // 출력 캐시 상태 조회 (입력과 무관하게 실제 On/Off 표시)
         public bool IsOutputOn(string name)
         {
-            var ho = OutputDieTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)

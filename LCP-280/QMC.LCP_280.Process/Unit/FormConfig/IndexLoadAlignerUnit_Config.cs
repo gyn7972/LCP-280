@@ -1,6 +1,8 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process.Component;
 using System;
@@ -25,13 +27,7 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        private struct IoRef
-        {
-            public string Module;
-            public string Disp;
-            public PropertyState Prop;
-        }
-
+        
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
@@ -60,7 +56,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (EquipmentInstance.Units.TryGetValue(UNIT_NAME, out var raw))
                 {
                     _unit = raw as IndexLoadAligner;
-                    _config = _unit?.IndexLoadAlignerConfig;
+                    _config = _unit?.Config;
                 }
 
                 if (_unit == null)
@@ -275,9 +271,9 @@ namespace QMC.LCP_280.Process.Unit
                 IEnumerable<object> hardInputs = Enumerable.Empty<object>();
                 IEnumerable<object> hardOutputs = Enumerable.Empty<object>();
 
-                if (eq.Units.TryGetValue(UNIT_NAME, out var raw) && raw is IndexLoadAligner aligner && aligner.IndexLoadAlignerConfig != null)
+                if (eq.Units.TryGetValue(UNIT_NAME, out var raw) && raw is IndexLoadAligner aligner && aligner.Config != null)
                 {
-                    var cfg = aligner.IndexLoadAlignerConfig;
+                    var cfg = aligner.Config;
                     var t = cfg.GetType();
                     var piIn = t.GetProperty("HardInputs");
                     var piOut = t.GetProperty("HardOutputs");
@@ -451,7 +447,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 foreach (var item in _ioInputs)
                 {
-                    if (item.Module == module && string.Equals(item.Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    if (item.IsSameIO(module,disp))
                     {
                         item.Prop.State = value;
                         inputView.SetStateByKey(disp, value);

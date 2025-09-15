@@ -5,7 +5,8 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
 using System.Linq;
-using System; // Enum
+using System;
+using QMC.Common.Component; // Enum
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -54,7 +55,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.LoadPort,       new [] { AxisNames.WaferLifterZ } },
         };
 
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         #region Hard IO Tables
         [JsonIgnore]
@@ -85,6 +86,28 @@ namespace QMC.LCP_280.Process.Unit
                 if (tp == null)
                 {
                     tp = new TeachingPosition(TeachingPositionName.SlotPitch.ToString(), new Dictionary<string, double>(), "Slot Pitch");
+                    TeachingPositions.Add(tp);
+                }
+                if (tp.AxisPositions == null) tp.AxisPositions = new Dictionary<string, double>();
+                tp.AxisPositions[AxisNames.WaferLifterZ] = value;
+            }
+        }
+
+        public int SlotCount
+        {
+            get
+            {
+                var tp = GetTeachingPosition(TeachingPositionName.SlotCount.ToString());
+                if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(AxisNames.WaferLifterZ, out var v))
+                    return (int)v;
+                return 0;
+            }
+            set
+            {
+                var tp = GetTeachingPosition(TeachingPositionName.SlotCount.ToString());
+                if (tp == null)
+                {
+                    tp = new TeachingPosition(TeachingPositionName.SlotCount.ToString(), new Dictionary<string, double>(), "Slot Count");
                     TeachingPositions.Add(tp);
                 }
                 if (tp.AxisPositions == null) tp.AxisPositions = new Dictionary<string, double>();

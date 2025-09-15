@@ -15,17 +15,17 @@ namespace QMC.LCP_280.Process.Unit
 {
     /// <summary>
     /// InputDieTransfer Unit
-    ///  - Tool T / Pick Z / Place Z 축 관리 + Teaching Position 및 Offset
+    ///  - Tool T / Pick Z / Place Z 축 제어 + Teaching Position 및 Offset
     ///  - 4 Arm Vacuum / Blow / Vent 제어
-    ///  - Air/Vac Tank Pressure / Arm Flow 센서 입력
+    ///  - Air/Vac Tank Pressure / Arm Flow 등의 입력
     ///  - DryRun 시뮬레이션 지원
-    ///  - OutputStage 스타일의 Region/메서드 구조로 재구성
+    ///  - OutputStage 스타일과 Region/메서드 레이아웃 통일
     /// </summary>
-    public class InputDieTransfer : BaseUnit
+    public class InputDieTransfer : BaseUnit<InputDieTransferConfig>
     {
         #region Config / Teaching
-        public InputDieTransferConfig InputDieTransferConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        public InputDieTransferConfig InputDieTransferConfig => Config;
+        
         #endregion
 
         #region DryRun Simulation
@@ -43,21 +43,18 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public InputDieTransfer(InputDieTransferConfig config = null) : base("InputDieTransferConfig")
+        public InputDieTransfer(InputDieTransferConfig config = null) : base(config ?? new InputDieTransferConfig())
         {
-            InputDieTransferConfig = config ?? new InputDieTransferConfig();
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            InputDieTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            InputDieTransferConfig.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in InputDieTransferConfig.TeachingPositions)
-                TeachingPositions.Add(tp);
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
+            
             BindAxes();
-            // (Arm IO 는 단순 DO/DI 이름 매핑이므로 별도 Cylinder/Vacuum Domain 구성 생략)
+            // (Arm IO 는 단순 DO/DI 이름 관리이므로, 별도 Cylinder/Vacuum Domain 매핑은 선택)
             BindIoDomains();
         }
         #endregion
@@ -86,7 +83,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
-            var tp = InputDieTransferConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -97,13 +94,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             var pos = new Dictionary<string, double>();
             foreach (var kv in Axes) pos[kv.Key] = kv.Value.GetPosition();
-            InputDieTransferConfig.SetTeachingPosition(new TeachingPosition(name, pos, description));
+            Config.SetTeachingPosition(new TeachingPosition(name, pos, description));
         }
         public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
-            var tp = InputDieTransferConfig.GetTeachingPosition(name);
+            var tp = Config.GetTeachingPosition(name);
             if (tp == null) return -1;
-            var (t, pz, plz) = InputDieTransferConfig.GetPositionWithOffset(name);
+            var (t, pz, plz) = Config.GetPositionWithOffset(name);
             int rc = 0;
             if (_toolT != null)  rc |= _toolT.MoveAbs(t,   vel > 0 ? vel : _toolT.Config.MaxVelocity,  acc > 0 ? acc : _toolT.Config.RunAcc,  dec > 0 ? dec : _toolT.Config.RunDec,  jerk > 0 ? jerk : _toolT.Config.AccJerkPercent);
             if (_pickZ != null)  rc |= _pickZ.MoveAbs(pz,  vel > 0 ? vel : _pickZ.Config.MaxVelocity,  acc > 0 ? acc : _pickZ.Config.RunAcc,  dec > 0 ? dec : _pickZ.Config.RunDec,  jerk > 0 ? jerk : _pickZ.Config.AccJerkPercent);
@@ -112,18 +109,18 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool InPosTeaching(string name)
         {
-            var (t, pz, plz) = InputDieTransferConfig.GetPositionWithOffset(name);
+            var (t, pz, plz) = Config.GetPositionWithOffset(name);
             return InPos(_toolT, t) && InPos(_pickZ, pz) && InPos(_placeZ, plz);
         }
         public void ApplyOffset(string name, double t, double pickZ, double placeZ)
-            => InputDieTransferConfig.SetOffset(name, t, pickZ, placeZ);
+            => Config.SetOffset(name, t, pickZ, placeZ);
         #endregion
 
         #region Low-Level IO (Name Based + DryRun)
         public bool ReadInput(string name)
         {
             if (DryRun) { return _simInputs.TryGetValue(name, out var v) && v; }
-            var hi = InputDieTransferConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -133,7 +130,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool WriteOutput(string name, bool on)
         {
             if (DryRun) { _simOutputs[name] = on; return true; }
-            var ho = InputDieTransferConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -290,7 +287,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             if(IsInterlockOK(selIndex))
             {
-                var tp = this.InputDieTransferConfig.TeachingPositions[selIndex];
+                var tp = this.Config.TeachingPositions[selIndex];
 
                 var moveResults = new List<Tuple<string, int>>();
 
@@ -301,7 +298,7 @@ namespace QMC.LCP_280.Process.Unit
                     string axisKey = kv.Key;
                     double targetPos = kv.Value;
 
-                    // 축 찾기: TeachingPosition.Axes 사전 우선 → 없으면 Unit.Axes에서 키 또는 Name 으로 재검색
+                    // 축 찾기: TeachingPosition.Axes 우선 후 실패 시 Unit.Axes에서 키 또는 Name 기준 검색
                     MotionAxis axis = null;
                     if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
                     if (axis == null && this.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
@@ -316,15 +313,15 @@ namespace QMC.LCP_280.Process.Unit
                             }
                         }
                     }
-                    if (axis == null) continue; // 해당 축 없음 → 스킵
+                    if (axis == null) continue; // 해당 축 없으면 스킵
 
-                    // 이동 명령 전송 (비동기 실행; 완료는 WaitMoveDone 사용)
+                    // 이동 명령 전송 (버퍼링 없음; 완료는 WaitMoveDone 단계)
                     int rc = axis.MoveAbs(targetPos, isFine);
                     moveResults.Add(new Tuple<string, int>(axisKey, rc));
                 }
 
 
-                // 이동 완료 대기 (모든 축 대상으로 최대 공통 Timeout 사용: 각 axis.Setup.MoveTimeoutMs)
+                // 이동 완료 대기 (각 축 내부 Timeout 사용: 예 axis.Setup.MoveTimeoutMs)
                 int waitErrors = 0;
                 foreach (var kv in tp.AxisPositions)
                 {
@@ -353,7 +350,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public void StopTeachingPositionOnce(int selIndex)
         {
-            var tp = this.InputDieTransferConfig.TeachingPositions[selIndex];
+            var tp = this.Config.TeachingPositions[selIndex];
 
             var moveResults = new List<Tuple<string, int>>();
 
@@ -362,7 +359,7 @@ namespace QMC.LCP_280.Process.Unit
                 string axisKey = kv.Key;
                 double targetPos = kv.Value;
 
-                // 축 찾기: TeachingPosition.Axes 사전 우선 → 없으면 Unit.Axes에서 키 또는 Name 으로 재검색
+                // 축 찾기: TeachingPosition.Axes 우선 후 실패 시 Unit.Axes에서 키 또는 Name 기준 검색
                 MotionAxis axis = null;
                 if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
                 if (axis == null && this.Axes.TryGetValue(axisKey, out var directAxis)) axis = directAxis;
@@ -377,9 +374,9 @@ namespace QMC.LCP_280.Process.Unit
                         }
                     }
                 }
-                if (axis == null) continue; // 해당 축 없음 → 스킵
+                if (axis == null) continue; // 해당 축 없으면 스킵
 
-                // 이동 명령 전송 (비동기 실행; 완료는 WaitMoveDone 사용)
+                // 정지 명령
                 int rc = axis.Stop();
                 
             }

@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
@@ -32,20 +33,20 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
         {
-            { TeachingPositionName.Pickup_Index1, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index2, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index3, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index4, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index5, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index6, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index7, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Pickup_Index8, new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
+            { TeachingPositionName.Pickup_Index1, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index2, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index3, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index4, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index5, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index6, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index7, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index8, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
             { TeachingPositionName.Place,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
-            { TeachingPositionName.Ready,         new [] { AxisNames.RightToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.SafetyZone,      new [] { AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Ready,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.SafetyZone,      new [] { AxisNames.RightPickZ, AxisNames.RightPlaceZ } },
         };
 
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         // ================= IO 이름 상수 (InputStageConfig.IO 패턴과 동일) =================
         internal static class IO

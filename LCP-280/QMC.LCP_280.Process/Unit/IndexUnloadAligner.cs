@@ -15,11 +15,11 @@ namespace QMC.LCP_280.Process.Unit
     ///  - 다축(Align/Index 등) Teaching Positions
     ///  - OutputStage 패턴과 유사한 구조 (Axis / Teaching / Lifecycle)
     /// </summary>
-    public class IndexUnloadAligner : BaseUnit
+    public class IndexUnloadAligner : BaseUnit<IndexUnloadAlignerConfig>
     {
         #region Config / Teaching
-        public IndexUnloadAlignerConfig IndexUnloadAlignerConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        
+        
         #endregion
 
         #region Axes
@@ -29,19 +29,17 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public IndexUnloadAligner(IndexUnloadAlignerConfig config = null) : base("IndexUnloadAlignerConfig")
+        public IndexUnloadAligner(IndexUnloadAlignerConfig config = null) : base(new IndexUnloadAlignerConfig())
         {
-            IndexUnloadAlignerConfig = config ?? new IndexUnloadAlignerConfig();
+            
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            IndexUnloadAlignerConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            IndexUnloadAlignerConfig.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in IndexUnloadAlignerConfig.TeachingPositions)
-                TeachingPositions.Add(tp);
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
+            
             BindAxes();
         }
         #endregion
@@ -73,7 +71,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public double GetTP(string tpName, string axisName)
         {
-            var tp = IndexUnloadAlignerConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -86,12 +84,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            IndexUnloadAlignerConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = IndexUnloadAlignerConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -107,7 +105,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool InPosTeaching(string positionName)
         {
-            var tp = IndexUnloadAlignerConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return false;
             foreach (var kv in tp.AxisPositions)
                 if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;

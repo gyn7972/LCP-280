@@ -11,7 +11,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    partial class ChipLoader_Working
+    partial class ChipLoading_Working
     {
         private IContainer components = null;
 
@@ -26,9 +26,13 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.buttonTest2 = new System.Windows.Forms.Button();
             this.buttonTest = new System.Windows.Forms.Button();
             this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
-            this.buttonTest2 = new System.Windows.Forms.Button();
+            this.btnWaferLoading = new QMC.Common.IndividualMenuButton();
+            this.btnAlignT = new QMC.Common.IndividualMenuButton();
+            this.btnAlignXY = new QMC.Common.IndividualMenuButton();
+            this.btnWaferUnloading = new QMC.Common.IndividualMenuButton();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxImageView.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
@@ -120,6 +124,10 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // groupBoxManual
             // 
+            this.groupBoxManual.Controls.Add(this.btnWaferUnloading);
+            this.groupBoxManual.Controls.Add(this.btnAlignXY);
+            this.groupBoxManual.Controls.Add(this.btnAlignT);
+            this.groupBoxManual.Controls.Add(this.btnWaferLoading);
             this.groupBoxManual.Controls.Add(this.buttonTest2);
             this.groupBoxManual.Controls.Add(this.buttonTest);
             this.groupBoxManual.Controls.Add(this.buttonPickUpNiddle_Move);
@@ -130,9 +138,19 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
             // 
+            // buttonTest2
+            // 
+            this.buttonTest2.Location = new System.Drawing.Point(302, 61);
+            this.buttonTest2.Name = "buttonTest2";
+            this.buttonTest2.Size = new System.Drawing.Size(62, 35);
+            this.buttonTest2.TabIndex = 19;
+            this.buttonTest2.Text = "Test2";
+            this.buttonTest2.UseVisualStyleBackColor = true;
+            this.buttonTest2.Click += new System.EventHandler(this.buttonTest2_Click);
+            // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(6, 76);
+            this.buttonTest.Location = new System.Drawing.Point(302, 20);
             this.buttonTest.Name = "buttonTest";
             this.buttonTest.Size = new System.Drawing.Size(62, 35);
             this.buttonTest.TabIndex = 18;
@@ -150,17 +168,83 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
             this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
             // 
-            // buttonTest2
+            // btnWaferLoading
             // 
-            this.buttonTest2.Location = new System.Drawing.Point(6, 117);
-            this.buttonTest2.Name = "buttonTest2";
-            this.buttonTest2.Size = new System.Drawing.Size(62, 35);
-            this.buttonTest2.TabIndex = 19;
-            this.buttonTest2.Text = "Test2";
-            this.buttonTest2.UseVisualStyleBackColor = true;
-            this.buttonTest2.Click += new System.EventHandler(this.buttonTest2_Click);
+            this.btnWaferLoading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferLoading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnWaferLoading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferLoading.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnWaferLoading.CustomForeColor = System.Drawing.Color.Black;
+            this.btnWaferLoading.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnWaferLoading.ForeColor = System.Drawing.Color.Black;
+            this.btnWaferLoading.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnWaferLoading.Location = new System.Drawing.Point(6, 61);
+            this.btnWaferLoading.Name = "btnWaferLoading";
+            this.btnWaferLoading.Size = new System.Drawing.Size(138, 35);
+            this.btnWaferLoading.TabIndex = 20;
+            this.btnWaferLoading.TabStop = false;
+            this.btnWaferLoading.Text = "WaferLoading";
+            this.btnWaferLoading.UseVisualStyleBackColor = false;
+            this.btnWaferLoading.Click += new System.EventHandler(this.btnWaferLoading_Click);
             // 
-            // ChipLoader_Working
+            // btnAlignT
+            // 
+            this.btnAlignT.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignT.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnAlignT.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignT.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnAlignT.CustomForeColor = System.Drawing.Color.Black;
+            this.btnAlignT.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnAlignT.ForeColor = System.Drawing.Color.Black;
+            this.btnAlignT.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnAlignT.Location = new System.Drawing.Point(6, 102);
+            this.btnAlignT.Name = "btnAlignT";
+            this.btnAlignT.Size = new System.Drawing.Size(138, 35);
+            this.btnAlignT.TabIndex = 21;
+            this.btnAlignT.TabStop = false;
+            this.btnAlignT.Text = "AlignT";
+            this.btnAlignT.UseVisualStyleBackColor = false;
+            this.btnAlignT.Click += new System.EventHandler(this.btnAlignT_Click);
+            // 
+            // btnAlignXY
+            // 
+            this.btnAlignXY.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignXY.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnAlignXY.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAlignXY.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnAlignXY.CustomForeColor = System.Drawing.Color.Black;
+            this.btnAlignXY.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnAlignXY.ForeColor = System.Drawing.Color.Black;
+            this.btnAlignXY.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnAlignXY.Location = new System.Drawing.Point(6, 143);
+            this.btnAlignXY.Name = "btnAlignXY";
+            this.btnAlignXY.Size = new System.Drawing.Size(138, 35);
+            this.btnAlignXY.TabIndex = 22;
+            this.btnAlignXY.TabStop = false;
+            this.btnAlignXY.Text = "AlignXY";
+            this.btnAlignXY.UseVisualStyleBackColor = false;
+            this.btnAlignXY.Click += new System.EventHandler(this.btnAlignXY_Click);
+            // 
+            // btnWaferUnloading
+            // 
+            this.btnWaferUnloading.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferUnloading.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnWaferUnloading.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnWaferUnloading.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnWaferUnloading.CustomForeColor = System.Drawing.Color.Black;
+            this.btnWaferUnloading.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnWaferUnloading.ForeColor = System.Drawing.Color.Black;
+            this.btnWaferUnloading.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnWaferUnloading.Location = new System.Drawing.Point(6, 184);
+            this.btnWaferUnloading.Name = "btnWaferUnloading";
+            this.btnWaferUnloading.Size = new System.Drawing.Size(138, 35);
+            this.btnWaferUnloading.TabIndex = 23;
+            this.btnWaferUnloading.TabStop = false;
+            this.btnWaferUnloading.Text = "WaferUnloading";
+            this.btnWaferUnloading.UseVisualStyleBackColor = false;
+            this.btnWaferUnloading.Click += new System.EventHandler(this.btnWaferUnloading_Click);
+            // 
+            // ChipLoading_Working
             // 
             this.ClientSize = new System.Drawing.Size(1264, 751);
             this.Controls.Add(this.groupBoxManual);
@@ -170,8 +254,8 @@ namespace QMC.LCP_280.Process.Unit
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
-            this.Name = "ChipLoader_Working";
-            this.Text = "ChipLoader Working";
+            this.Name = "ChipLoading_Working";
+            this.Text = "ChipLoading Working";
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.groupBoxImageView.ResumeLayout(false);
             this.groupBoxManual.ResumeLayout(false);
@@ -196,5 +280,9 @@ namespace QMC.LCP_280.Process.Unit
         private Button buttonPickUpNiddle_Move;
         private Button buttonTest;
         private Button buttonTest2;
+        private IndividualMenuButton btnWaferLoading;
+        private IndividualMenuButton btnWaferUnloading;
+        private IndividualMenuButton btnAlignXY;
+        private IndividualMenuButton btnAlignT;
     }
 }

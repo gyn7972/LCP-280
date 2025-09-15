@@ -13,7 +13,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputStage : BaseUnit
+    public class OutputStage : BaseUnit<OutputStageConfig>
     {
         // Wrapper collection to allow enum index access
         public class TeachingPositionCollection : List<TeachingPosition>
@@ -28,27 +28,25 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        public OutputStageConfig OutputStageConfig { get; private set; }
-        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+        
+        
 
         // Stage camera
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "Out_Stage";
 
         public OutputStage(OutputStageConfig config = null)
-            : base("OutputStageConfig")
+            : base(new OutputStageConfig())
         {
-            OutputStageConfig = config ?? new OutputStageConfig();
+            
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            OutputStageConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            OutputStageConfig.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in OutputStageConfig.TeachingPositions)
-                TeachingPositions.Add(tp);
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
+            
             BindAxes();
             BindIoDomains();
             BindCamera();
@@ -76,12 +74,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            OutputStageConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = OutputStageConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -117,7 +115,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public double GetTP(string tpName, string axisName)
         {
-            var tp = OutputStageConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -133,7 +131,7 @@ namespace QMC.LCP_280.Process.Unit
         #region IO Low-Level
         public bool ReadInput(string name)
         {
-            var hi = OutputStageConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -142,7 +140,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            var ho = OutputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -151,7 +149,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOutputOn(string name)
         {
-            var ho = OutputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -196,7 +194,7 @@ namespace QMC.LCP_280.Process.Unit
         private bool IsAtTeaching(OutputStageConfig.TeachingPositionName name)
         {
             // Config에 저장된 TeachingPosition 조회
-            var tp = OutputStageConfig.GetTeachingPosition(name.ToString());
+            var tp = Config.GetTeachingPosition(name.ToString());
             if (tp == null || tp.AxisPositions == null || tp.AxisPositions.Count == 0)
                 return false;
 

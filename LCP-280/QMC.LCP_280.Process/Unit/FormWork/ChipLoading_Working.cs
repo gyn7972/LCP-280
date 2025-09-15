@@ -1,4 +1,5 @@
-﻿using QMC.LCP_280.Process.Component; 
+﻿using QMC.Common;
+using QMC.LCP_280.Process.Component; 
 using QMC.LCP_280.Process.Sequences;
 using System;
 using System.Threading;
@@ -16,9 +17,9 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Vision : Stage Camera Live 연결
     ///  - Manual Sequence : (InputStage Align / Mapping / Pick / Place 등 등록)
     /// </summary>
-    public partial class ChipLoader_Working : Form
+    public partial class ChipLoading_Working : Form
     {
-        private const string WORK_NAME = "ChipLoader";
+        private const string WORK_NAME = "ChipLoading";
         private Equipment Equipment => Equipment.Instance;
 
         // Units
@@ -33,20 +34,20 @@ namespace QMC.LCP_280.Process.Unit
         private bool _isLayoutEditMode;
 
         #region Constructors
-        public ChipLoader_Working() : this(
+        public ChipLoading_Working() : this(
             TryGetUnit<InputStage>("InputStage"),
             TryGetUnit<InputStageEjector>("InputStageEjector"),
             TryGetUnit<InputDieTransfer>("InputDieTransfer"))
         { }
 
-        public ChipLoader_Working(InputStage inputStage, InputStageEjector ejector, InputDieTransfer dieTransfer)
+        public ChipLoading_Working(InputStage inputStage, InputStageEjector ejector, InputDieTransfer dieTransfer)
         {
             InitializeComponent();
             InputStageUnit = inputStage;
             InputStageEjectorUnit = ejector;
             InputDieTransferUnit = dieTransfer;
-            Load += ChipLoader_Working_Load;
-            FormClosing += ChipLoader_Working_FormClosing;
+            Load += ChipLoading_Working_Load;
+            FormClosing += ChipLoading_Working_FormClosing;
         }
         #endregion
 
@@ -60,7 +61,7 @@ namespace QMC.LCP_280.Process.Unit
             var handle = Handle; // 강제 Handle 생성
         }
 
-        private void ChipLoader_Working_Load(object sender, EventArgs e) => EnsureInitialized();
+        private void ChipLoading_Working_Load(object sender, EventArgs e) => EnsureInitialized();
 
         private void EnsureInitialized()
         {
@@ -129,9 +130,9 @@ namespace QMC.LCP_280.Process.Unit
                     teachingPositionControl.RegisterUnit(
                         "InputStage",
                         InputStageUnit,
-                        () => InputStageUnit.InputStageConfig?.TeachingPositions,
+                        () => InputStageUnit.Config?.TeachingPositions,
                         (name, vel) => InputStageUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputStageUnit.InputStageConfig?.SetTeachingPosition(tp),
+                        tp => InputStageUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
                 if (InputStageEjectorUnit != null)
@@ -368,8 +369,9 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Events
-        private void ChipLoader_Working_FormClosing(object sender, FormClosingEventArgs e)
+        private void ChipLoading_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
+            System.Threading.Tasks.Task.Delay(500).Wait();
             
         }
 
@@ -500,6 +502,42 @@ namespace QMC.LCP_280.Process.Unit
         private void buttonTest2_Click(object sender, EventArgs e)
         {
             InputStageUnit.SetClampLift(false);
+        }
+
+        private void btnWaferLoading_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.LoadingWafer();
+        }
+
+        private void btnAlignT_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.AlignT();
+        }
+
+        private void btnAlignXY_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.AlignXY();
+        }
+
+        private void btnWaferUnloading_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            //InputStageUnit.UnloadingWafer();
         }
     }
 }

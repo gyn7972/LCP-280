@@ -12,79 +12,97 @@ namespace QMC.Common
         private Dictionary<TabPage, Form> _tabFormInstances;
 
         // Theme fields
-        private int _tabHeight = 28;
+        private int _tabHeight = 32; // ★ 높이 확대 (기존 28)
         private Color _tabBorderColor = Color.Black;
         private int _tabBorderWidth = 2;
-        private Font _tabFont = new Font("맑은 고딕", 9, FontStyle.Regular);
+        private Font _tabFont = new Font("맑은 고딕", 10, FontStyle.Regular); // ★ 폰트 약간 확대
 
-        // 호스트에서 유효 크기를 한 번이라도 전달받았는지
+        // 2줄 고정 설정
+        private const int _desiredTabRows = 2; // ★ 추가
+
         private bool _hostSized;
+
+        // 재계산 재진입/중복 최소화
+        private bool _isRecalcRunning; // ★ 추가
+        private int _lastTabWidth = -1; // ★ 추가
 
         public FormConfig()
         {
             InitializeComponent();
-
-            // 🔧 배경색을 흰색으로 설정
             this.BackColor = Color.White;
-
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializeconfigUI();
-
-            // 🔧 Visible 상태 변경 이벤트: 자식 크기만 동기화
             this.VisibleChanged += Formconfig_VisibleChanged;
         }
 
-        /// <summary>
-        /// 🔧 FormConfig가 보여질 때 탭 자식 크기만 갱신
-        /// </summary>
         private void Formconfig_VisibleChanged(object sender, EventArgs e)
         {
             if (!this.Visible) return;
-            // 호스트에서 최종 사이즈를 전달받기 전이면 무시
             if (!_hostSized) return;
             BeginInvoke(new Action(() => UpdateActiveChildSize()));
         }
 
         private void InitializeconfigUI()
         {
-            Console.WriteLine("🚀 Formconfig.InitializeconfigUI() 시작");
-
-            // 🔧 Formconfig 배경색을 확실히 흰색으로 설정
-            this.BackColor = Color.White;
-
-            // TabControl 생성 및 테마 적용
-            configTabControl = new TabControl();
-            // 🔧 Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
-            configTabControl.Dock = DockStyle.Fill;
-            configTabControl.Font = _tabFont;
-            configTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
-            configTabControl.ItemSize = new Size(120, _tabHeight);
-            configTabControl.SizeMode = TabSizeMode.Fixed;
+            configTabControl = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                Font = _tabFont,
+                DrawMode = TabDrawMode.OwnerDrawFixed,
+                ItemSize = new Size(120, _tabHeight),
+                SizeMode = TabSizeMode.Fixed,
+                BackColor = Color.White,
+                Multiline = true,              // ★ 2줄 이상 허용
+                Padding = new Point(12, 6)     // ★ 상하 여백 (텍스트 배치용)
+            };
             configTabControl.DrawItem += configTabControl_DrawItem;
             configTabControl.SelectedIndexChanged += configTabControl_SelectedIndexChanged;
-
-            // 🔧 TabControl 배경색도 흰색으로 설정
-            configTabControl.BackColor = Color.White;
-
-            Console.WriteLine($"   TabControl 생성 완료: Size={configTabControl.Size}, Visible={configTabControl.Visible}");
+            configTabControl.Resize += (s, e) => RecalculateTabItemSize(); // ★ 리사이즈 대응
 
             this.Controls.Add(configTabControl);
 
-            Console.WriteLine($"   TabControl을 Formconfig에 추가 완료");
-            Console.WriteLine($"   Formconfig.Controls.Count: {this.Controls.Count}");
-
-            // FormManager에서 등록된 config 폼들을 자동으로 탭으로 추가
             LoadFormsFromManager();
-
-            // 강제로 TabControl을 보이게 설정
             configTabControl.Visible = true;
             configTabControl.BringToFront();
-
-            // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
             EnsureFirstTabLoaded();
 
-            Console.WriteLine($"✅ InitializeconfigUI 완료");
-            Console.WriteLine($"   최종 TabControl 상태: Visible={configTabControl.Visible}, TabCount={configTabControl.TabPages.Count}");
+            // ★ 탭 로드 후 폭/줄 재계산
+            RecalculateTabItemSize();
+        }
+
+        // ★ 탭 폭/높이 재계산: 항상 2줄 목표 + 재진입/불필요 갱신 방지
+        private void RecalculateTabItemSize()
+        {
+            if (_isRecalcRunning) return; // 재진입 방지
+            if (configTabControl == null || configTabControl.TabPages.Count == 0) return;
+
+            try
+            {
+                _isRecalcRunning = true;
+                int total = configTabControl.TabPages.Count;
+                int rows = _desiredTabRows;
+                int perRow = (int)Math.Ceiling(total / (double)rows);
+                if (perRow <= 0) perRow = 1;
+
+                int clientW = Math.Max(100, configTabControl.ClientSize.Width - 8);
+                int newWidth = Math.Max(90, (clientW / perRow) - 2);
+                if (newWidth > 220) newWidth = 220;
+
+                // 폭이 변하지 않으면 갱신 생략 -> 불필요한 Resize 루프 방지
+                if (newWidth == _lastTabWidth) return;
+                _lastTabWidth = newWidth;
+
+                var newSize = new Size(newWidth, _tabHeight);
+                if (configTabControl.ItemSize != newSize)
+                {
+                    configTabControl.ItemSize = newSize; // 내부적으로 레이아웃 발생
+                    configTabControl.Invalidate();
+                }
+            }
+            finally
+            {
+                _isRecalcRunning = false;
+            }
         }
 
         private void EnsureFirstTabLoaded()
@@ -98,7 +116,6 @@ namespace QMC.Common
                 var info = first.Tag as FormInfo;
                 if (info != null && !_tabFormInstances.ContainsKey(first))
                 {
-                    Console.WriteLine("🔹 초기 첫 탭 폼 로드 수행(Config)");
                     LoadFormIntoTab(first, info);
                 }
             }
@@ -112,83 +129,54 @@ namespace QMC.Common
         {
             try
             {
-                Console.WriteLine("🔍 Formconfig.LoadFormsFromManager() 시작");
-
                 var configForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Config);
-                // 원하는 순서를 명시
+
                 var desiredOrder = new[]
                 {
-                    "InputCassetteLifter",
-                    "InputRingTransfer",
-                    "InputStage",
-                    "InputStageEjector",
-                    "InputDieTransfer",
-                    "Rotary",
-                    "IndexLoadAligner",
-                    "IndexChipProbeController",
-                    "IndexChipProber",
-                    "IndexUnloadAligner",
-                    "OutputDieTransfer",
-                    "OutputStage",
-                    "OutputCassetteLifter",
-                    "OutputRingTransfer",
+                    "InputCassetteLifter","InputRingTransfer","InputStage","InputStageEjector",
+                    "InputDieTransfer","Rotary","IndexLoadAligner","IndexChipProbeController",
+                    "IndexChipProber","IndexUnloadAligner","OutputDieTransfer","OutputStage",
+                    "OutputCassetteLifter","OutputRingTransfer"
                 };
                 var indexMap = desiredOrder
                     .Select((name, idx) => new { name, idx })
                     .ToDictionary(x => x.name, x => x.idx);
 
-                // 표시명 기준 정렬(명시되지 않은 항목은 마지막)
                 configForms = configForms
                     .OrderBy(f => indexMap.ContainsKey(f.DisplayName) ? indexMap[f.DisplayName] : int.MaxValue)
-                    .ThenBy(f => f.DisplayName) // 동일 우선순위 시 이름순
+                    .ThenBy(f => f.DisplayName)
                     .ToList();
 
-                Console.WriteLine($"   등록된 config 폼 개수: {configForms.Count}");
-
                 foreach (var formInfo in configForms)
-                {
-                    Console.WriteLine($"   config 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
                     CreateTabFromFormInfo(formInfo);
-                }
 
                 if (configForms.Count == 0)
-                {
-                    Console.WriteLine("⚠️ 등록된 config 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
-                }
-
-                Console.WriteLine($"✅ 최종 탭 개수: {configTabControl.TabPages.Count}");
-                Console.WriteLine($"   configTabControl.Visible: {configTabControl.Visible}");
-                Console.WriteLine($"   configTabControl.Size: {configTabControl.Size}");
-                Console.WriteLine($"   configTabControl.Dock: {configTabControl.Dock}");
-                Console.WriteLine($"   Formconfig.Visible: {this.Visible}");
-                Console.WriteLine($"   Formconfig.Size: {this.Size}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ config 폼 로드 중 오류: {ex.Message}");
-                MessageBox.Show($"config 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"config 폼 로드 중 오류 발생: {ex.Message}", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
                 CreateSampleTabs();
             }
         }
 
         private void CreateTabFromFormInfo(FormInfo formInfo)
         {
-            Console.WriteLine($"🔧 탭 생성: {formInfo.DisplayName}");
-            TabPage tabPage = new TabPage(formInfo.DisplayName);
-            tabPage.Tag = formInfo;
-            tabPage.BackColor = Color.White;
+            var tabPage = new TabPage(formInfo.DisplayName)
+            {
+                Tag = formInfo,
+                BackColor = Color.White
+            };
             configTabControl.TabPages.Add(tabPage);
-            Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {configTabControl.TabPages.Count}");
         }
 
         private void configTabControl_SelectedIndexChanged(object sender, EventArgs e)
         {
-            TabPage selectedTab = configTabControl.SelectedTab;
+            var selectedTab = configTabControl.SelectedTab;
             if (selectedTab?.Tag is FormInfo formInfo)
             {
                 LoadFormIntoTab(selectedTab, formInfo);
-                // 호스트에서 유효 사이즈를 받기 전에는 자식 크기 전달 보류
                 if (_hostSized)
                     UpdateActiveChildSize();
             }
@@ -211,14 +199,14 @@ namespace QMC.Common
                 }
                 else
                 {
-                    var existingForm = _tabFormInstances[tabPage];
-                    existingForm.Show();
+                    _tabFormInstances[tabPage].Show();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Label errorLabel = new Label
+                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var lbl = new Label
                 {
                     Text = $"폼 로드 실패: {formInfo.DisplayName}",
                     Dock = DockStyle.Fill,
@@ -227,7 +215,7 @@ namespace QMC.Common
                     ForeColor = Color.Red
                 };
                 tabPage.Controls.Clear();
-                tabPage.Controls.Add(errorLabel);
+                tabPage.Controls.Add(lbl);
             }
         }
 
@@ -244,18 +232,12 @@ namespace QMC.Common
 
                 int availableWidth = configTabControl.ClientSize.Width;
                 int availableHeight = configTabControl.ClientSize.Height;
-                // 너무 작은 초기값(예: 600x400) 필터링
-                if (availableWidth < 800 || availableHeight < 450)
-                {
-                    Console.WriteLine($"   ?? 크기 전달 보류(Working): {availableWidth}x{availableHeight}");
-                    return;
-                }
-                var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", new Type[] { typeof(int), typeof(int) });
+                if (availableWidth < 800 || availableHeight < 450) return;
+
+                var setPanelSizeMethod = activeForm.GetType()
+                    .GetMethod("SetPanelSize", new Type[] { typeof(int), typeof(int) });
                 if (setPanelSizeMethod != null)
-                {
-                    Console.WriteLine($"   활성 폼 {activeForm.GetType().Name}에 정확한 크기 전달(Config): {availableWidth}x{availableHeight}");
                     setPanelSizeMethod.Invoke(activeForm, new object[] { availableWidth, availableHeight });
-                }
             }
             catch (Exception ex)
             {
@@ -266,13 +248,13 @@ namespace QMC.Common
         public void RefreshconfigTabs()
         {
             foreach (var formInstance in _tabFormInstances.Values)
-            {
                 formInstance?.Dispose();
-            }
+
             _tabFormInstances.Clear();
             configTabControl.TabPages.Clear();
             LoadFormsFromManager();
             EnsureFirstTabLoaded();
+            RecalculateTabItemSize(); // ★ 갱신
             UpdateActiveChildSize();
         }
 
@@ -280,26 +262,22 @@ namespace QMC.Common
         {
             TabPage page = configTabControl.TabPages[e.Index];
             Rectangle tabRect = configTabControl.GetTabRect(e.Index);
+
             Color backColor = (e.Index == configTabControl.SelectedIndex) ? Color.White : Color.Gainsboro;
-            using (Brush backBrush = new SolidBrush(backColor))
-            {
-                e.Graphics.FillRectangle(backBrush, tabRect);
-            }
-            using (Pen borderPen = new Pen(_tabBorderColor, _tabBorderWidth))
+            using (Brush b = new SolidBrush(backColor))
+                e.Graphics.FillRectangle(b, tabRect);
+
+            using (Pen pen = new Pen(_tabBorderColor, _tabBorderWidth))
             {
                 Rectangle borderRect = tabRect;
                 if (_tabBorderWidth > 1)
-                {
                     borderRect.Inflate(-_tabBorderWidth / 2, -_tabBorderWidth / 2);
-                }
-                e.Graphics.DrawRectangle(borderPen, borderRect);
+                e.Graphics.DrawRectangle(pen, borderRect);
             }
-            string text = page.Text;
-            Size tabSize = tabRect.Size;
-            StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-            SizeF textSize = e.Graphics.MeasureString(text, _tabFont);
 
-            if (textSize.Width > tabSize.Width - 8)
+            string text = page.Text;
+            SizeF textSize = e.Graphics.MeasureString(text, _tabFont);
+            if (textSize.Width > tabRect.Width - 10)
             {
                 string[] words = text.Split(' ');
                 string line1 = words[0];
@@ -309,21 +287,20 @@ namespace QMC.Common
                     for (int i = 1; i < words.Length; i++)
                     {
                         string testLine = line1 + " " + words[i];
-                        if (e.Graphics.MeasureString(testLine, _tabFont).Width < tabSize.Width - 8)
+                        if (e.Graphics.MeasureString(testLine, _tabFont).Width < tabRect.Width - 10)
                         {
                             line1 = testLine;
                             line2 = string.Join(" ", words.Skip(i + 1));
                         }
-                        else
-                        {
-                            break;
-                        }
+                        else break;
                     }
                 }
-                RectangleF line1Rect = new RectangleF(tabRect.X, tabRect.Y + 2, tabRect.Width, tabRect.Height / 2 - 2);
-                RectangleF line2Rect = new RectangleF(tabRect.X, tabRect.Y + tabRect.Height / 2, tabRect.Width, tabRect.Height / 2 - 2);
-                e.Graphics.DrawString(line1, _tabFont, Brushes.Black, line1Rect, sf);
-                e.Graphics.DrawString(line2, _tabFont, Brushes.Black, line2Rect, sf);
+                int half = tabRect.Height / 2;
+                RectangleF r1 = new RectangleF(tabRect.X, tabRect.Y + 2, tabRect.Width, half - 2);
+                RectangleF r2 = new RectangleF(tabRect.X, tabRect.Y + half - 2, tabRect.Width, half);
+                StringFormat sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                e.Graphics.DrawString(line1, _tabFont, Brushes.Black, r1, sf);
+                e.Graphics.DrawString(line2, _tabFont, Brushes.Black, r2, sf);
             }
             else
             {
@@ -333,80 +310,62 @@ namespace QMC.Common
                     _tabFont,
                     tabRect,
                     Color.Black,
-                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis
                 );
             }
         }
 
         private void CreateSampleTabs()
         {
-            TabPage systemTab = new TabPage("Sample config");
-            systemTab.BackColor = Color.White;
-            Label systemLabel = new Label();
-            systemLabel.Text = "No config Forms Registered\n\nUse FormManager.Instance.RegisterForm() to add config forms.";
-            systemLabel.Font = new Font("맑은 고딕", 12, FontStyle.Regular);
-            systemLabel.TextAlign = ContentAlignment.MiddleCenter;
-            systemLabel.Dock = DockStyle.Fill;
-            systemLabel.BackColor = Color.White;
-            systemTab.Controls.Add(systemLabel);
-            configTabControl.TabPages.Add(systemTab);
+            var tab = new TabPage("Sample config") { BackColor = Color.White };
+            var lbl = new Label
+            {
+                Text = "No config Forms Registered\r\n\r\nUse FormManager.Instance.RegisterForm() to add config forms.",
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("맑은 고딕", 12, FontStyle.Regular),
+                BackColor = Color.White
+            };
+            tab.Controls.Add(lbl);
+            configTabControl.TabPages.Add(tab);
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
             foreach (var formInstance in _tabFormInstances.Values)
-            {
                 formInstance?.Dispose();
-            }
             _tabFormInstances.Clear();
             base.OnFormClosed(e);
         }
 
         public void SetPanelSize(int width, int height)
         {
-            Console.WriteLine($"🔧 Formconfig.SetPanelSize() 호출: width={width}, height={height}");
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
-            _hostSized = true; // 호스트에서 유효 사이즈 전달 받음
+            _hostSized = true;
+            RecalculateTabItemSize(); // ★ 부모 크기 반영 후 재계산
             UpdateActiveChildSize();
             this.Invalidate();
             this.Update();
-            Console.WriteLine($"✅ Formconfig.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
 
-        #region Form Border Drawing
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            using (Pen borderPen = new Pen(FormBorderColor, FormBorderWidth))
-            {
-                Rectangle borderRect = new Rectangle(0, 0, this.ClientSize.Width - 1, this.ClientSize.Height - 1);
-                e.Graphics.DrawRectangle(borderPen, borderRect);
-            }
-            Console.WriteLine($"🖌️ Formconfig 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
+            using (Pen pen = new Pen(FormBorderColor, FormBorderWidth))
+                e.Graphics.DrawRectangle(pen, new Rectangle(0, 0, this.ClientSize.Width - 1, this.ClientSize.Height - 1));
         }
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
             this.Invalidate();
         }
-        #endregion
-
-        #region Border Customization Methods
         public void SetBorderStyle(Color color, int width)
         {
             FormBorderColor = color;
             FormBorderWidth = width;
-            Console.WriteLine($"🎨 Formconfig 테두리 스타일 변경: Color={color}, Width={width}");
         }
-        public void ResetBorderStyle()
-        {
-            SetBorderStyle(Color.Black, 2);
-        }
-        public void HighlightBorder()
-        {
-            SetBorderStyle(Color.Red, 4);
-        }
-        #endregion
+        public void ResetBorderStyle() => SetBorderStyle(Color.Black, 2);
+        public void HighlightBorder() => SetBorderStyle(Color.Red, 4);
     }
 }

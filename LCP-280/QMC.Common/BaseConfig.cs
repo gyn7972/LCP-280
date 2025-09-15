@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using QMC.Common.Component;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -17,12 +19,21 @@ namespace QMC.Common
         //[DefaultValue(true)]
         //public bool IsEnabled { get; set; } = true;
 
+
+        [Category("Common"), DisplayName("Simulation")]
+        [DefaultValue(false)]
+        public bool IsSimulation { get; set; } = false;
+
+
         [JsonIgnore]
         private DateTime LastModified { get; set; } = DateTime.Now;
 
+
+        
+
         //[JsonIgnore]
         //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
-
+        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
         // ===== 생성/초기화 =====
         protected BaseConfig(string name = null)
         {

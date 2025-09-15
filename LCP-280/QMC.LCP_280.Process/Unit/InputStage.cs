@@ -20,6 +20,7 @@ using System.Linq;
 using System.Threading;
 using System.Windows;
 using static QMC.LCP_280.Process.Equipment;
+using static QMC.LCP_280.Process.Unit.InputCassetteLifter;
 using static System.Windows.Forms.AxHost;
 
 namespace QMC.LCP_280.Process.Unit
@@ -33,7 +34,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - DryRun (시뮬레이션) 지원
     ///  - OutputStage 와 구현 양식 통일 (Axis / IO / Domain / High-Level 구분)
     /// </summary>
-    public class InputStage : BaseUnit
+    public class InputStage : BaseUnit<InputStageConfig>
     {
         private struct AngleStats
         {
@@ -42,6 +43,7 @@ namespace QMC.LCP_280.Process.Unit
             public double StdDev;
             public double Representative;
         }
+
 
         #region Nested Teaching Collection (Enum Indexer)
         public class TeachingPositionCollection : List<TeachingPosition>
@@ -59,8 +61,8 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Config / Teaching
         Equipment _equipment => Equipment.Instance;
-        public InputStageConfig InputStageConfig { get; private set; }
-        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+        
+        
         #endregion
 
         #region Vision Hooks / Camera / Runner
@@ -83,14 +85,14 @@ namespace QMC.LCP_280.Process.Unit
 
 
         InputDieTransfer _dieTr;
-        InputRingTransfer _ringTr;
+        InputFeeder _ringTr;
         InputStageEjector _stageEjector;
 
         #region Construction / Initialization
         public InputStage(InputStageConfig config = null)
-            : base("InputStageConfig")
+            : base(new InputStageConfig())
         {
-            InputStageConfig = config ?? new InputStageConfig();
+            
 
             
 
@@ -106,7 +108,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             if (_equipment.Units.TryGetValue(UnitKeys.InputRingTransfer, out var unit2))
             {
-                _ringTr = unit2 as InputRingTransfer;
+                _ringTr = unit2 as InputFeeder;
             }
             if (_equipment.Units.TryGetValue(UnitKeys.InputStageEjector, out var unit3))
             {
@@ -116,13 +118,10 @@ namespace QMC.LCP_280.Process.Unit
 
         public override void AddComponents()
         {
-            InputStageConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            InputStageConfig.InitializeDefaultTeachingPositions();
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
 
-            TeachingPositions.Clear();
-            foreach (var tp in InputStageConfig.TeachingPositions)
-                TeachingPositions.Add(tp);
-
+            
             BindAxes();
             BindIoDomains();
             BindCamera();
@@ -236,14 +235,14 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            InputStageConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
-            var tp = InputStageConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
-            var (x, y, t) = InputStageConfig.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
+            var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
             int rc = 0;
             if (AxisX != null) rc |= AxisX.MoveAbs(x, vel > 0 ? vel : AxisX.Config.MaxVelocity, acc > 0 ? acc : AxisX.Config.RunAcc, dec > 0 ? dec : AxisX.Config.RunDec, jerk > 0 ? jerk : AxisX.Config.AccJerkPercent);
             if (AxisY != null) rc |= AxisY.MoveAbs(y, vel > 0 ? vel : AxisY.Config.MaxVelocity, acc > 0 ? acc : AxisY.Config.RunAcc, dec > 0 ? dec : AxisY.Config.RunDec, jerk > 0 ? jerk : AxisY.Config.AccJerkPercent);
@@ -276,10 +275,10 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (selIndex < 0 || selIndex >= InputStageConfig.TeachingPositions.Count)
+            if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
                 return -1;
 
-            var tp = InputStageConfig.TeachingPositions[selIndex];
+            var tp = Config.TeachingPositions[selIndex];
             if (tp == null || tp.AxisPositions == null) return -1;
 
             // 축 이동 명령
@@ -324,10 +323,10 @@ namespace QMC.LCP_280.Process.Unit
 
         public void StopTeachingPositionOnce(int selIndex)
         {
-            if (selIndex < 0 || selIndex >= InputStageConfig.TeachingPositions.Count)
+            if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
                 return;
 
-            var tp = InputStageConfig.TeachingPositions[selIndex];
+            var tp = Config.TeachingPositions[selIndex];
             if (tp?.AxisPositions == null) return;
 
             foreach (var kv in tp.AxisPositions)
@@ -342,7 +341,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private int WaitTeachingPositionInPos(InputStageConfig.TeachingPositionName name, int timeoutMs)
         {
-            var tp = TeachingPositions[name];
+            var tp = TeachingPositions[(int)name];
             if (tp == null) return -1;
             return WaitUntilInPos(tp, timeoutMs);
         }
@@ -365,7 +364,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool InPosTeaching(string positionName)
         {
-            var (x, y, t) = InputStageConfig.GetPositionWithOffset(positionName);
+            var (x, y, t) = Config.GetPositionWithOffset(positionName);
             return InPos(AxisX, x) && InPos(AxisY, y) && InPos(AxisT, t);
         }
         public bool InPosTeaching(TeachingPosition tp)
@@ -383,12 +382,12 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = -1;
             // Teaching Position 가져오기
-            var tp = InputStageConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null)
                 return nRtn;
 
             // 오프셋 적용
-            InputStageConfig.SetOffset(positionName, dx, dy, dt);
+            Config.SetOffset(positionName, dx, dy, dt);
 
             // 이동 명령 수행
             int rc = MoveToTeachingPosition(positionName);
@@ -417,7 +416,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
-            var tp = InputStageConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -428,7 +427,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Low-Level IO Access (Refactored to match OutputStage pattern)
         public bool ReadInput(string name)
         {
-            var hi = InputStageConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -437,7 +436,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            var ho = InputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -446,7 +445,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOutputOn(string name)
         {
-            var ho = InputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -551,6 +550,28 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnRun()
         {
             int ret = 0;
+
+            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    ret = OnRunReady();
+                    break;
+                case ProcessState.Work:
+                    ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    ret = OnRunComplete();
+                    break;
+                default:
+                    break;
+            }
+
             return ret;
         }
         public override int OnStop()
@@ -878,7 +899,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 2) CenterPoint Teaching 확보
-            centerTp = TeachingPositions[InputStageConfig.TeachingPositionName.CenterPoint];
+            centerTp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.CenterPoint];
             if (centerTp == null)
             {
                 Log.Write(UnitName, "Align", "Fail: CenterPoint teaching not defined");
@@ -1157,6 +1178,27 @@ namespace QMC.LCP_280.Process.Unit
         // === Unloading 상태 플래그 ===
         public bool StageUnloadingReady { get; private set; }
         public bool StageUnloadingDone { get; private set; }
+        public bool IsCompleteWorking 
+        {
+            get
+            {
+                MaterialWafer mat = GetWaferMaterial();
+                if(mat==null)
+                { 
+                    return false;
+                }
+                if(mat.Presence == Material.MaterialPresence.Exist)
+                {
+                    return mat.ProcessSatate == Material.MaterialProcessSatate.Completed;
+                }
+                return false;
+                
+
+            }
+            internal set
+            {
+            } 
+        }
 
         private bool IsExternalUnloadInterlockOk()
         {
@@ -1241,7 +1283,7 @@ namespace QMC.LCP_280.Process.Unit
             if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) return -1;
 
             // Ready Teaching (있으면)
-            var readyTp = TeachingPositions[InputStageConfig.TeachingPositionName.Ready];
+            var readyTp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Ready];
             if (readyTp != null)
             {
                 if (MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName.Ready, false) == 0)
@@ -1275,6 +1317,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             return UnloadingWaferComplete();
+        }
+
+        public bool IsWaferLoadingPosition()
+        {
+            var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
+            if (tp == null) return false;
+            return InPosTeaching(tp);
         }
 
         #endregion

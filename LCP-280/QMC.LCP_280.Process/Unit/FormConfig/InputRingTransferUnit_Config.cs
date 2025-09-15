@@ -1,7 +1,9 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process.Component;
 using System;
@@ -23,21 +25,16 @@ namespace QMC.LCP_280.Process.Unit
         private const string _UNIT_NAME = "InputRingTransfer";
 
         private Equipment _Equipment => Equipment.Instance;
-        private InputRingTransfer _InputRingTransfer;
-        private InputRingTransferConfig _cfg;
+        private InputFeeder _InputRingTransfer;
+        private InputFeederConfig _cfg;
 
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        private struct _IoRef
-        {
-            public string Module;
-            public string Disp;
-            public PropertyState Prop;
-        }
+        
 
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
         #endregion
 
         #region Constructor
@@ -64,8 +61,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
-                    _InputRingTransfer = unit as InputRingTransfer;
-                    _cfg = _InputRingTransfer?.InputRingTransferConfig;
+                    _InputRingTransfer = unit as InputFeeder;
+                    _cfg = _InputRingTransfer?.Config;
                 }
 
                 if (_InputRingTransfer == null)
@@ -187,12 +184,12 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPosition(int selectedIndex)
         {
-            if (_InputRingTransfer?.InputRingTransferConfig?.TeachingPositions == null)
+            if (_InputRingTransfer?.Config?.TeachingPositions == null)
             {
                 return;
             }
 
-            var list = _InputRingTransfer.InputRingTransferConfig.TeachingPositions;
+            var list = _InputRingTransfer.Config.TeachingPositions;
             if (selectedIndex < 0 || selectedIndex >= list.Count)
             {
                 return;
@@ -232,6 +229,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+       
         #region Digital IO
         private static T GetPropValue<T>(object obj, string prop, T def = default(T))
         {
@@ -292,9 +290,9 @@ namespace QMC.LCP_280.Process.Unit
                 Array hardInputsArr = Array.CreateInstance(typeof(object), 0);
                 Array hardOutputsArr = Array.CreateInstance(typeof(object), 0);
 
-                if (_InputRingTransfer?.InputRingTransferConfig != null)
+                if (_InputRingTransfer?.Config != null)
                 {
-                    var cfg = _InputRingTransfer.InputRingTransferConfig;
+                    var cfg = _InputRingTransfer.Config;
                     var cfgType = cfg.GetType();
 
                     var piIn = cfgType.GetProperty("HardInputs");
@@ -392,7 +390,7 @@ namespace QMC.LCP_280.Process.Unit
                         var ps = new PropertyState(no.ToString(), nameCell, cur);
 
                         pcIn.Add(ps);
-                        _ioInputs.Add(new _IoRef
+                        _ioInputs.Add(new IoRef
                         {
                             Module = map.Item1,
                             Disp = map.Item2,
@@ -429,7 +427,7 @@ namespace QMC.LCP_280.Process.Unit
                         var ps = new PropertyState(no.ToString(), nameCell, cur);
 
                         pcOut.Add(ps);
-                        _ioOutputs.Add(new _IoRef
+                        _ioOutputs.Add(new IoRef
                         {
                             Module = map.Item1,
                             Disp = map.Item2,
@@ -457,12 +455,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                foreach (var io in _ioInputs)
+                foreach (var item in _ioInputs)
                 {
-                    if (io.Module == module &&
-                        string.Equals(io.Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    if (item.IsSameIO(module, disp))
                     {
-                        io.Prop.State = value;
+                        item.Prop.State = value;
                         inputView.SetStateByKey(disp, value);
                         break;
                     }
@@ -491,7 +488,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= _InputRingTransfer.InputRingTransferConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= _InputRingTransfer.Config.TeachingPositions.Count)
                 {
                     MessageBox.Show(
                         "선택된 Teaching Position이 없습니다.",
@@ -501,7 +498,7 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var tp = _InputRingTransfer.InputRingTransferConfig.TeachingPositions[selIndex];
+                var tp = _InputRingTransfer.Config.TeachingPositions[selIndex];
                 bool isFine = IsFineSelected();
 
                 double defaultFineVel = 5.0;
@@ -759,7 +756,7 @@ namespace QMC.LCP_280.Process.Unit
                 target.ExtraInfo = newExtra;
 
                 _InputRingTransfer
-                    .InputRingTransferConfig
+                    .Config
                     .SetTeachingPosition(
                         new TeachingPosition(
                             target.Name,
@@ -770,11 +767,11 @@ namespace QMC.LCP_280.Process.Unit
                         });
 
                 _InputRingTransfer
-                    .InputRingTransferConfig
+                    .Config
                     .LoadAndBindAxes(Equipment.Instance.AxisManager);
 
                 _InputRingTransfer.TeachingPositions.Clear();
-                foreach (var tp in _InputRingTransfer.InputRingTransferConfig.TeachingPositions)
+                foreach (var tp in _InputRingTransfer.Config.TeachingPositions)
                 {
                     _InputRingTransfer.TeachingPositions.Add(tp);
                 }

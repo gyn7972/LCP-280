@@ -1,4 +1,6 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process.Component;
 using System;
@@ -24,9 +26,9 @@ namespace QMC.LCP_280.Process.Unit
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
 
-        private struct _IoRef { public string Module; public string Disp; public PropertyState Prop; }
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
         public OutputStageUnit_Config()
         {
@@ -47,7 +49,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     _OutputStage = unit as OutputStage;
-                    _cfg = _OutputStage?.OutputStageConfig;
+                    _cfg = _OutputStage?.Config;
                 }
                 if (_OutputStage == null)
                     MessageBox.Show($"{_UNIT_NAME} Unit을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -142,7 +144,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowTeachingPositionInPropertyCollectionView(int idx)
         {
-            var eq = Equipment.Instance; if (!eq.Units.TryGetValue(_UNIT_NAME, out var unit)) return; var stage = unit as OutputStage; var config = stage?.OutputStageConfig; if (config?.TeachingPositions == null) return;
+            var eq = Equipment.Instance; if (!eq.Units.TryGetValue(_UNIT_NAME, out var unit)) return; var stage = unit as OutputStage; var config = stage?.Config; if (config?.TeachingPositions == null) return;
             if (idx < 0 || idx >= config.TeachingPositions.Count) return; var tp = config.TeachingPositions[idx];
             var pc = new PropertyCollection(); pc.Add(new TitleOnlyProperty($"Teaching Position: {tp.Name} (mm, Abs. Pos)")); pc.Add(new StringProperty("Description", tp.Description ?? ""));
             foreach (var axis in tp.AxisPositions) pc.Add(new DoubleProperty($"{axis.Key} Position (mm)", axis.Value));
@@ -157,9 +159,9 @@ namespace QMC.LCP_280.Process.Unit
                 var eq = Equipment.Instance; var scan = eq?.DioScan; var unitIO = eq?.UnitIO; if (scan == null || unitIO == null) { inputView.SetProperties(new PropertyCollection()); outputView.SetProperties(new PropertyCollection()); return; }
                 _ioInputs.Clear(); _ioOutputs.Clear();
                 var hardInputs = new List<dynamic>(); var hardOutputs = new List<dynamic>();
-                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is OutputStage stage && stage.OutputStageConfig != null)
+                if (eq.Units.TryGetValue(_UNIT_NAME, out var unit) && unit is OutputStage stage && stage.Config != null)
                 {
-                    var cfg = stage.OutputStageConfig; var t = cfg.GetType();
+                    var cfg = stage.Config; var t = cfg.GetType();
                     var piIn = t.GetProperty("HardInputs"); if (piIn != null) hardInputs = ((System.Collections.IEnumerable)piIn.GetValue(cfg))?.Cast<dynamic>().ToList() ?? new List<dynamic>();
                     var piOut = t.GetProperty("HardOutputs"); if (piOut != null) hardOutputs = ((System.Collections.IEnumerable)piOut.GetValue(cfg))?.Cast<dynamic>().ToList() ?? new List<dynamic>();
                 }
@@ -168,14 +170,14 @@ namespace QMC.LCP_280.Process.Unit
                 if (hardInputs.Count > 0)
                 {
                     var pcIn = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false }; pcIn.Add(new TitleOnlyProperty("No", "Name", "State"));
-                    foreach (var it in hardInputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveIn(disp); bool cur = false; if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur); var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcIn.Add(ps); _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
+                    foreach (var it in hardInputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveIn(disp); bool cur = false; if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur); var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcIn.Add(ps); _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
                     inputView.SetProperties(pcIn);
                 }
                 else inputView.SetProperties(new PropertyCollection());
                 if (hardOutputs.Count > 0)
                 {
                     var pcOut = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false }; pcOut.Add(new TitleOnlyProperty("No", "Name", "State"));
-                    foreach (var it in hardOutputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveOut(disp); bool cur = false; var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcOut.Add(ps); _ioOutputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
+                    foreach (var it in hardOutputs) { string disp = it.Disp; string name = it.Name; int no = it.No; var map = resolveOut(disp); bool cur = false; var ps = new PropertyState(no.ToString(), $"{disp} {name}", cur); pcOut.Add(ps); _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps }); }
                     outputView.SetProperties(pcOut);
                 }
                 else outputView.SetProperties(new PropertyCollection());
@@ -185,7 +187,22 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         private void OnDioInputChanged(string module, string disp, bool value)
-        { try { foreach (var r in _ioInputs) if (r.Module == module && string.Equals(r.Disp, disp, StringComparison.OrdinalIgnoreCase)) { r.Prop.State = value; inputView.SetStateByKey(disp, value); break; } } catch { } }
+        { 
+            try 
+            {
+                foreach (var item in _ioInputs)
+                {
+                    if (item.IsSameIO(module, disp))
+                    {
+                        item.Prop.State = value;
+                        inputView.SetStateByKey(disp, value);
+                        break;
+                    }
+                }
+            } catch 
+            { 
+            } 
+        }
 
         private static string NormalizeXYKey(string raw)
         { if (string.IsNullOrWhiteSpace(raw)) return raw; raw = raw.Trim().ToUpperInvariant(); var m = Regex.Match(raw, @"^(X|Y)0*(\d+)$"); if (m.Success) { var letter = m.Groups[1].Value; var digits = m.Groups[2].Value; if (string.IsNullOrEmpty(digits)) digits = "0"; return letter + digits; } return raw; }
@@ -213,8 +230,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit)) return; var stage = unit as OutputStage; if (stage == null) return;
                 int selIndex = -1; try { var pi = positionItemView?.GetType().GetProperty("SelectedIndex"); if (pi != null) selIndex = (int)pi.GetValue(positionItemView, null); } catch { selIndex = -1; }
-                if (selIndex < 0 || stage.OutputStageConfig.TeachingPositions == null || selIndex >= stage.OutputStageConfig.TeachingPositions.Count) return;
-                var tp = stage.OutputStageConfig.TeachingPositions[selIndex]; bool isFine = true; try { var si = rbTeachingMoveMode?.GetType().GetProperty("SelectedIndex"); if (si != null) isFine = ((int)si.GetValue(rbTeachingMoveMode, null)) == 0; } catch { }
+                if (selIndex < 0 || stage.Config.TeachingPositions == null || selIndex >= stage.Config.TeachingPositions.Count) return;
+                var tp = stage.Config.TeachingPositions[selIndex]; bool isFine = true; try { var si = rbTeachingMoveMode?.GetType().GetProperty("SelectedIndex"); if (si != null) isFine = ((int)si.GetValue(rbTeachingMoveMode, null)) == 0; } catch { }
                 double defFine = 5, defCoarse = 20, defAcc = 10, defDec = 10, defJerk = 50;
                 foreach (var kv in tp.AxisPositions)
                 { MotionAxis axis = null; if (tp.Axes != null) tp.Axes.TryGetValue(kv.Key, out axis); if (axis == null && stage.Axes.TryGetValue(kv.Key, out var direct)) axis = direct; if (axis == null) foreach (var ap in stage.Axes) if (ap.Value != null && string.Equals(ap.Value.Name, kv.Key, StringComparison.OrdinalIgnoreCase)) { axis = ap.Value; break; } if (axis == null) continue; double vel = isFine ? (axis.Config?.JogFineVelocity > 0 ? axis.Config.JogFineVelocity : defFine) : (axis.Config?.JogCoarseVelocity > 0 ? axis.Config.JogCoarseVelocity : defCoarse); double acc = axis.Config?.JogAcc > 0 ? axis.Config.JogAcc : defAcc; double dec = axis.Config?.JogDec > 0 ? axis.Config.JogDec : defDec; double jerk = axis.Config != null ? (axis.Config.AccJerkPercent + axis.Config.DecJerkPercent) / 2.0 : defJerk; axis.MoveAbs(kv.Value, vel, acc, dec, jerk); }
@@ -240,9 +257,9 @@ namespace QMC.LCP_280.Process.Unit
                     if (p is StringProperty && p.Title.StartsWith("Extra:", StringComparison.OrdinalIgnoreCase)) { var key = p.Title.Substring("Extra:".Length).Trim(); newExtra[key] = ((StringProperty)p).Value; continue; }
                 }
                 target.Description = newDesc; target.AxisPositions = newAxes; target.ExtraInfo = newExtra;
-                stage.OutputStageConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(newAxes), newDesc) { ExtraInfo = new Dictionary<string, object>(newExtra) });
-                stage.OutputStageConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-                stage.TeachingPositions.Clear(); foreach (var tp in stage.OutputStageConfig.TeachingPositions) stage.TeachingPositions.Add(tp);
+                stage.Config.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(newAxes), newDesc) { ExtraInfo = new Dictionary<string, object>(newExtra) });
+                stage.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                stage.TeachingPositions.Clear(); foreach (var tp in stage.Config.TeachingPositions) stage.TeachingPositions.Add(tp);
                 SetAxisDefinitionsToAxisListBox(); MessageBox.Show("저장 완료", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex) { MessageBox.Show("저장 오류: " + ex.Message); }

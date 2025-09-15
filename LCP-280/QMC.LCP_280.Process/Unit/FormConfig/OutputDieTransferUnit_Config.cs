@@ -43,7 +43,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_Equipment.Units.TryGetValue(_UNIT_NAME, out var unit))
                 {
                     _OutputDieTransfer = unit as OutputDieTransfer;
-                    _cfg = _OutputDieTransfer.OutputDieTransferConfig;
+                    _cfg = _OutputDieTransfer.Config;
                 }
 
                 if (_OutputDieTransfer == null)

@@ -124,9 +124,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "IndexLoadAligner",
                         _loadAlignerUnit,
-                        () => _loadAlignerUnit.IndexLoadAlignerConfig?.TeachingPositions,
+                        () => _loadAlignerUnit.Config?.TeachingPositions,
                         (name, vel) => _loadAlignerUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _loadAlignerUnit.IndexLoadAlignerConfig?.SetTeachingPosition(tp),
+                        tp => _loadAlignerUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -135,9 +135,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "IndexUnloadAligner",
                         _unloadAlignerUnit,
-                        () => _unloadAlignerUnit.IndexUnloadAlignerConfig?.TeachingPositions,
+                        () => _unloadAlignerUnit.Config?.TeachingPositions,
                         (name, vel) => _unloadAlignerUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _unloadAlignerUnit.IndexUnloadAlignerConfig?.SetTeachingPosition(tp),
+                        tp => _unloadAlignerUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -146,9 +146,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "IndexChipProber",
                         _proberUnit,
-                        () => _proberUnit.IndexChipProberConfig?.TeachingPositions,
+                        () => _proberUnit.Config?.TeachingPositions,
                         (name, vel) => _proberUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _proberUnit.IndexChipProberConfig?.SetTeachingPosition(tp),
+                        tp => _proberUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -157,9 +157,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "IndexChipProbeController",
                         _probeControllerUnit,
-                        () => _probeControllerUnit.IndexChipProbeControllerConfig?.TeachingPositions,
+                        () => _probeControllerUnit.Config?.TeachingPositions,
                         (name, vel) => _probeControllerUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _probeControllerUnit.IndexChipProbeControllerConfig?.SetTeachingPosition(tp),
+                        tp => _probeControllerUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -168,9 +168,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     teachingPositionControl.RegisterUnit(
                         "Rotary",
                         _rotaryUnit,
-                        () => _rotaryUnit.RotaryConfig?.TeachingPositions,
+                        () => _rotaryUnit.Config?.TeachingPositions,
                         (name, vel) => _rotaryUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _rotaryUnit.RotaryConfig?.SetTeachingPosition(tp),
+                        tp => _rotaryUnit.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 

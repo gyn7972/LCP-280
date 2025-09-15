@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace QMC.LCP_280.Process.Work
 {
-    internal class ChipLoader
+    internal class ChipLoading
     {
-        //waferRingStage
+        //InputWaferStage
         //waferEjector
         //dietransfer
         //index

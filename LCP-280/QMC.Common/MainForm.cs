@@ -1,9 +1,11 @@
 ﻿using QMC.Common.Alarm;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Timer = System.Windows.Forms.Timer;
 
@@ -39,11 +41,9 @@ namespace QMC.Common
             // 🔧 MainForm 배경색을 흰색으로 설정
             this.BackColor = Color.White;
             this.DoubleBuffered = true;
-
             this.StartPosition = FormStartPosition.WindowsDefaultLocation;
             this.WindowState = FormWindowState.Normal;           // 일반 상태로 시작
             this.Load += MainForm_Load;
-
             // ⬇ 종료 이벤트 연결
             this.FormClosing += MainForm_FormClosing;
             this.FormClosed += MainForm_FormClosed;
@@ -51,7 +51,12 @@ namespace QMC.Common
             // (선택) 프로세스 종료 훅 – 폼이 강제 종료될 때도 안전장치
             AppDomain.CurrentDomain.ProcessExit += (_, __) =>
             {
-                try { EquipmentLocator.Instance?.Dispose(); } catch { }
+                //try { EquipmentLocator.Instance?.Dispose(); } catch { }
+                try
+                {
+                    try { EquipmentLocator.ShutdownAndDisposeSafely(); } catch { }
+                }
+                catch { }
             };
         }
 
@@ -80,8 +85,8 @@ namespace QMC.Common
 
             // 각 행을 동일한 비율로 분할
             tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 80F));
-            tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
+            tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 84F)); //80
+            tableLayoutPanelFormMain.RowStyles.Add(new RowStyle(SizeType.Percent, 6F));  //10
             tableLayoutPanelFormMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
             this.Controls.Add(tableLayoutPanelFormMain);
@@ -136,76 +141,66 @@ namespace QMC.Common
             AlarmManager.Instance.PostAlarm += AlarmManager_PostAlarm;
         }
 
-        // ⬇ 사용자가 창을 닫을 때 호출
-        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        // [MOD] 종료 이벤트 비동기화
+        private async void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (_isShuttingDown) return;           // 재진입 방지
+            if (_isShuttingDown) return;
             _isShuttingDown = true;
+            this.Enabled = false;
+            this.Cursor = Cursors.WaitCursor;
 
             try
             {
-                // UI 입력 차단
-                this.Enabled = false;
-                this.Cursor = Cursors.WaitCursor;
-
-                // 알람 폼이 떠 있으면 닫기
                 try
                 {
                     if (formAlarm != null && !formAlarm.IsDisposed)
                     {
                         formAlarm.Hide();
-                        formAlarm.Close(); // ShowDialog 사용했으므로 Close로 정리
+                        formAlarm.Close();
                         formAlarm.Dispose();
                         formAlarm = null;
                     }
                 }
-                catch { /* ignore */ }
+                catch { }
 
-                // 프리웜 타이머 정리
                 try
                 {
-                    if (_prewarmTimer != null)
-                    {
-                        _prewarmTimer.Stop();
-                        _prewarmTimer.Dispose();
-                        _prewarmTimer = null;
-                    }
+                    _prewarmTimer?.Stop();
+                    _prewarmTimer?.Dispose();
+                    _prewarmTimer = null;
                     _prewarmQueue = null;
                 }
-                catch { /* ignore */ }
+                catch { }
 
-                // 설비 안전 정지 + 자원 해제
-                // StopAllUnitsAsync()는 내부에서 루프를 취소하고 정지 대기함
                 try
                 {
-                    // 가능하면 먼저 정지
-                    var eq = EquipmentLocator.Instance;
-                    // 정지(최대 8초 대기) → 실패해도 Dispose에서 한번 더 강제 정리
-                    try { eq?.StopAllUnitsAsync().Wait(TimeSpan.FromSeconds(8)); } catch { /* ignore */ }
-                    // 완전 해제
-                    eq?.Dispose();
+                    if (EquipmentLocator.TryGet(out var eq))
+                    {
+                        var stopTask = eq.StopAllUnitsAsync();
+                        var finished = await Task.WhenAny(stopTask, Task.Delay(8000));
+                        if (finished != stopTask)
+                            Console.WriteLine("StopAllUnitsAsync timeout - force disposing");
+                        eq.Dispose();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    // 로그만 남기고 종료 진행
                     Console.WriteLine("Shutdown error: " + ex.Message);
                 }
             }
             finally
             {
                 this.Cursor = Cursors.Default;
-                // e.Cancel = false;  // 기본값: 계속 닫기
+
+                //Process.GetCurrentProcess().Kill();
             }
         }
-
-        // ⬇ 폼 핸들이 내려간 뒤 최종 마무리
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
         {
             // 추가로 해제할 핸들/매니저가 있으면 여기에서
             // 예) 글로벌 싱글톤 로그 Flush 등
+            try { EquipmentLocator.ShutdownAndDisposeSafely(); } catch { }
         }
-
-
 
         private void AlarmManager_PostAlarm(AlarmInfo alarm)
         {
@@ -239,11 +234,6 @@ namespace QMC.Common
         public void ShowAlarmForm(Form form)
         {
             Thread.Sleep(100);                      //  창이 너무 빨리 떠서 알람 코드가 안보이나?
-
-            //form.TopLevel = false;
-            //centerPanel.Controls.Add(form);
-            //form.BringToFront();
-            //form.Show();
             form.ShowDialog();
         }
 
@@ -251,13 +241,19 @@ namespace QMC.Common
         {
             try
             {
-                var doubleBufferPropertyInfo = panel.GetType().GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
-                if (doubleBufferPropertyInfo != null)
-                {
-                    doubleBufferPropertyInfo.SetValue(panel, true, null);
-                }
+                var pi = panel.GetType().GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+                pi?.SetValue(panel, true, null);
             }
             catch { }
+            //try
+            //{
+            //    var doubleBufferPropertyInfo = panel.GetType().GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic);
+            //    if (doubleBufferPropertyInfo != null)
+            //    {
+            //        doubleBufferPropertyInfo.SetValue(panel, true, null);
+            //    }
+            //}
+            //catch { }
         }
 
         private void StartPrewarm()

@@ -1,7 +1,9 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO; // 추가
 using QMC.Common.IO;  // DIOUnit, DIOModuleSetup
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process;
 using QMC.LCP_280.Process.Component;
@@ -38,10 +40,10 @@ namespace QMC.LCP_280.Process.Unit
         private Timer _axisPosTimer;
 
         // === Digital IO 표시용 내부 구조 추가 (기존 코드 유지) ===
-        private struct _IoRef { public string Module; public string Disp; public PropertyState Prop; }
-        private readonly List<_IoRef> _ioInputs = new List<_IoRef>();
+        
+        private readonly List<IoRef> _ioInputs = new List<IoRef>();
         // 출력 사용 안함
-        private readonly List<_IoRef> _ioOutputs = new List<_IoRef>();
+        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
         // 타이머 제거 (실시간 스캔 이벤트 사용)
         private Timer _ioTimer; // 남겨두되 사용 안함
 
@@ -511,9 +513,9 @@ namespace QMC.LCP_280.Process.Unit
                 if (eq?.Units != null &&
                     eq.Units.TryGetValue(UNIT_NAME, out var unit) &&
                     unit is OutputDieTransfer transfer &&
-                    transfer.OutputDieTransferConfig != null)
+                    transfer.Config != null)
                 {
-                    var cfg = transfer.OutputDieTransferConfig;
+                    var cfg = transfer.Config;
 
                     // Config에 HardInputs가 선언되어 있지 않으면 처리하지 않음
                     var cfgType = cfg.GetType();
@@ -596,7 +598,7 @@ namespace QMC.LCP_280.Process.Unit
                         string nameCell = $"{item.Disp} {item.Name}";
                         var ps = new PropertyState(item.No.ToString(), nameCell, cur);
                         pcIn.Add(ps);
-                        _ioInputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                        _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
                     }
                     inputView.SetProperties(pcIn);
                 }
@@ -616,7 +618,7 @@ namespace QMC.LCP_280.Process.Unit
                         string nameCell = $"{item.Disp} {item.Name}";
                         var ps = new PropertyState(item.No.ToString(), nameCell, cur);
                         pcOut.Add(ps);
-                        _ioOutputs.Add(new _IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
+                        _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
                     }
                     outputView.SetProperties(pcOut);
                 }
@@ -641,7 +643,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 for (int i = 0; i < _ioInputs.Count; i++)
                 {
-                    if (_ioInputs[i].Module == module && string.Equals(_ioInputs[i].Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    var item = _ioInputs[i];
+                    if (item.IsSameIO(module, disp))
                     {
                         _ioInputs[i].Prop.State = value; // 모델 업데이트
                         // 색상 갱신
@@ -731,7 +734,7 @@ namespace QMC.LCP_280.Process.Unit
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
                 var transfer = unit as OutputDieTransfer;
-                var config = transfer?.OutputDieTransferConfig;
+                var config = transfer?.Config;
                 if (config?.TeachingPositions != null && selectedIndex >= 0 && selectedIndex < config.TeachingPositions.Count)
                 {
                     var tp = config.TeachingPositions[selectedIndex];
@@ -761,7 +764,7 @@ namespace QMC.LCP_280.Process.Unit
             if (equipment.Units.TryGetValue(UNIT_NAME, out var unit))
             {
                 var transfer = unit as OutputDieTransfer;
-                var config = transfer?.OutputDieTransferConfig;
+                var config = transfer?.Config;
                 if (config?.TeachingPositions != null)
                 {
                     var positionNames = config.TeachingPositions.Select(tp => tp.Name).ToArray();
@@ -811,13 +814,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch { selIndex = -1; }
 
-                if (selIndex < 0 || selIndex >= transfer.OutputDieTransferConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= transfer.Config.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
-                var tp = transfer.OutputDieTransferConfig.TeachingPositions[selIndex];
+                var tp = transfer.Config.TeachingPositions[selIndex];
 
                 // Fine / Coarse 판단 (RadioButtonView SelectedIndex: 0=Fine, 1=Coarse)
                 bool isFine = true;
@@ -1007,12 +1010,12 @@ namespace QMC.LCP_280.Process.Unit
                 target.ExtraInfo = newExtra;
 
                 // Config에도 반영 (SetTeachingPosition은 Saveconfig 호출 포함)
-                transfer.OutputDieTransferConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description) { ExtraInfo = new Dictionary<string, object>(target.ExtraInfo) });
+                transfer.Config.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description) { ExtraInfo = new Dictionary<string, object>(target.ExtraInfo) });
 
                 // 저장 후 재로드 & 재바인딩 (선택적으로 최신 반영)
-                transfer.OutputDieTransferConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                transfer.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
                 transfer.TeachingPositions.Clear();
-                foreach (var tp in transfer.OutputDieTransferConfig.TeachingPositions)
+                foreach (var tp in transfer.Config.TeachingPositions)
                     transfer.TeachingPositions.Add(tp);
 
                 // 리스트 갱신

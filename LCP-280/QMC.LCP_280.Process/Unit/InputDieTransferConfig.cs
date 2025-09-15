@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
@@ -67,20 +68,20 @@ namespace QMC.LCP_280.Process.Unit
         private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
         {
             { TeachingPositionName.Pickup,       new [] { AxisNames.LeftToolT, AxisNames.LeftPickZ } },
-            { TeachingPositionName.Place_Index1, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Index2, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Index3, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Index4, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Index5, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Index6, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Index7, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Place_Index8, new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.Ready,        new [] { AxisNames.LeftToolT, AxisNames.RightPlaceZ } },
-            { TeachingPositionName.SafetyZone,   new [] { AxisNames.LeftPickZ, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Place_Index1, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Place_Index2, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Place_Index3, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Place_Index4, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Place_Index5, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Place_Index6, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Place_Index7, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Place_Index8, new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.Ready,        new [] { AxisNames.LeftToolT, AxisNames.LeftPlaceZ } },
+            { TeachingPositionName.SafetyZone,   new [] { AxisNames.LeftPickZ, AxisNames.LeftPlaceZ } },
         };
 
         /// <summary>Teaching Position 순수 목록</summary>
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        
 
         /// <summary>Offset: positionName -> (T, PickZ, PlaceZ)</summary>
         public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } = new Dictionary<string, (double t, double pickZ, double placeZ)>();

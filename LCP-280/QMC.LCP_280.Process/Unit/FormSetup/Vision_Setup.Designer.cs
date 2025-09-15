@@ -216,7 +216,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Camera_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Camera_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Camera_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Camera_Setup.Location = new System.Drawing.Point(122, 420);
+            this.btn_Camera_Setup.Location = new System.Drawing.Point(122, 444);
             this.btn_Camera_Setup.Name = "btn_Camera_Setup";
             this.btn_Camera_Setup.Size = new System.Drawing.Size(100, 40);
             this.btn_Camera_Setup.TabIndex = 20;
@@ -234,7 +234,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Illuninator_Setup.Location = new System.Drawing.Point(784, 420);
+            this.btn_Illuninator_Setup.Location = new System.Drawing.Point(784, 444);
             this.btn_Illuninator_Setup.Name = "btn_Illuninator_Setup";
             this.btn_Illuninator_Setup.Size = new System.Drawing.Size(100, 40);
             this.btn_Illuninator_Setup.TabIndex = 21;
@@ -336,7 +336,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_JogPopup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_JogPopup.ForeColor = System.Drawing.Color.Black;
             this.btn_JogPopup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_JogPopup.Location = new System.Drawing.Point(11, 420);
+            this.btn_JogPopup.Location = new System.Drawing.Point(11, 444);
             this.btn_JogPopup.Name = "btn_JogPopup";
             this.btn_JogPopup.Size = new System.Drawing.Size(100, 40);
             this.btn_JogPopup.TabIndex = 25;

@@ -1,7 +1,9 @@
 ﻿using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.CustomControl;
 using QMC.Common.DIO;
 using QMC.Common.IO;
+using QMC.Common.IOUtil;
 using QMC.Common.Motions;
 using QMC.LCP_280.Process.Component; // TeachingPosition
 using System;
@@ -35,12 +37,7 @@ namespace QMC.LCP_280.Process.Unit
         private bool _sizeMismatchWarned;
 
         // ==== Digital IO 표시용 내부 구조 ====
-        private struct IoRef
-        {
-            public string Module;
-            public string Disp;
-            public PropertyState Prop;
-        }
+        
 
         private readonly List<IoRef> _ioInputs = new List<IoRef>();
         private readonly List<IoRef> _ioOutputs = new List<IoRef>();
@@ -75,7 +72,7 @@ namespace QMC.LCP_280.Process.Unit
                     _unit = rawUnit as IndexUnloadAligner;
                     if (_unit != null)
                     {
-                        _config = _unit.IndexUnloadAlignerConfig;
+                        _config = _unit.Config;
                     }
                 }
 
@@ -323,9 +320,9 @@ namespace QMC.LCP_280.Process.Unit
                 if (eq.Units != null && eq.Units.TryGetValue(UNIT_NAME, out var unitObj))
                 {
                     var aligner = unitObj as IndexUnloadAligner;
-                    if (aligner != null && aligner.IndexUnloadAlignerConfig != null)
+                    if (aligner != null && aligner.Config != null)
                     {
-                        var cfg = aligner.IndexUnloadAlignerConfig;
+                        var cfg = aligner.Config;
                         var cfgType = cfg.GetType();
                         var piIn = cfgType.GetProperty("HardInputs");
                         var piOut = cfgType.GetProperty("HardOutputs");
@@ -472,7 +469,7 @@ namespace QMC.LCP_280.Process.Unit
                 for (int i = 0; i < _ioInputs.Count; i++)
                 {
                     var item = _ioInputs[i];
-                    if (item.Module == module && string.Equals(item.Disp, disp, StringComparison.OrdinalIgnoreCase))
+                    if (item.IsSameIO(module, disp))
                     {
                         item.Prop.State = value;
                         inputView.SetStateByKey(disp, value);
@@ -581,12 +578,12 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
                 int selIndex = GetSelectedPositionIndex();
-                if (selIndex < 0 || selIndex >= aligner.IndexUnloadAlignerConfig.TeachingPositions.Count)
+                if (selIndex < 0 || selIndex >= aligner.Config.TeachingPositions.Count)
                 {
                     MessageBox.Show("선택된 Teaching Position이 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
-                var tp = aligner.IndexUnloadAlignerConfig.TeachingPositions[selIndex];
+                var tp = aligner.Config.TeachingPositions[selIndex];
                 bool isFine = GetMoveModeIsFine();
                 double defaultFineVel = 5.0;
                 double defaultCoarseVel = 20.0;
@@ -747,13 +744,13 @@ namespace QMC.LCP_280.Process.Unit
                 target.Description = newDescription;
                 target.AxisPositions = newAxisPositions;
                 target.ExtraInfo = newExtra;
-                aligner.IndexUnloadAlignerConfig.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description)
+                aligner.Config.SetTeachingPosition(new TeachingPosition(target.Name, new Dictionary<string, double>(target.AxisPositions), target.Description)
                 {
                     ExtraInfo = new Dictionary<string, object>(target.ExtraInfo)
                 });
-                aligner.IndexUnloadAlignerConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
+                aligner.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
                 aligner.TeachingPositions.Clear();
-                foreach (var tp in aligner.IndexUnloadAlignerConfig.TeachingPositions)
+                foreach (var tp in aligner.Config.TeachingPositions)
                 {
                     aligner.TeachingPositions.Add(tp);
                 }

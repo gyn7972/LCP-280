@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using QMC.Common.Motions; // MotionAxis 등 사용
 
-namespace QMC.LCP_280.Process.Component
+namespace QMC.Common.Component
 {
     public class TeachingPosition
     {

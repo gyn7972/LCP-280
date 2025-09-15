@@ -1,9 +1,10 @@
+using QMC.Common;
+using QMC.Common.Motions;
+using QMC.LCP_280.Process.Unit;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using QMC.Common.Motions;
-using QMC.LCP_280.Process.Unit;
 
 namespace QMC.LCP_280.Process.Component
 {
@@ -89,7 +90,7 @@ namespace QMC.LCP_280.Process.Component
                         // 기존 PreStep의 Wafer Feeder 사전 동작을 축 단위로 옮김
                         try
                         {
-                            if (eq.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var uIn) && uIn is InputRingTransfer inFeeder)
+                            if (eq.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var uIn) && uIn is InputFeeder inFeeder)
                             {
                                 // Unclamp → 센서 확인
                                 inFeeder.SetClamp(false);
@@ -278,19 +279,48 @@ namespace QMC.LCP_280.Process.Component
                             }
 
                             // 3) IndexLoadAligner SafeZone 확인
-                            if (eq.Units != null && eq.Units.TryGetValue("Index Z Axis", out var uIla) && uIla is IndexLoadAligner indexAligner)
+                            //if (eq.Units != null && eq.Units.TryGetValue("Index Z Axis", out var uIla))
+                            if (eq.Units != null && eq.Units.TryGetValue("IndexLoadAligner", out var uIla))
                             {
-                                var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
-                                if (!outTransfer.InPosTeaching(safeOut))
-                                    return (false, "OutputDieTransfer Not in Safety Zone");
+                                if (uIla == null)
+                                {
+                                    Log.Write("디버그", "\"Index Z Axis\" 값이 null입니다.");
+                                }
+                                else
+                                {
+                                    Log.Write("디버그", "\"Index Z Axis\" 타입: " + uIla.GetType().FullName);
+                                }
+                                if (uIla is IndexLoadAligner indexAligner)
+                                {
+                                    var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
+                                    if (!outTransfer.InPosTeaching(safeOut))
+                                        return (false, "OutputDieTransfer Not in Safety Zone");
+                                }
+                                else
+                                {
+                                    Log.Write("디버그", "\"Index Z Axis\"가 IndexLoadAligner 타입이 아닙니다.");
+                                }
                             }
                             else
                             {
-                                return (false, "OutputDieTransfer Unit Not Found");
+                                Log.Write("디버그", "\"Index Z Axis\" 키가 eq.Units에 없습니다.");
                             }
+                            //if (eq.Units != null && 
+                            //    eq.Units.TryGetValue("Index Z Axis", out var uIla) &&
+                            //    uIla is IndexLoadAligner indexAligner)
+                            //{
+                            //    var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
+                            //    if (!outTransfer.InPosTeaching(safeOut))
+                            //        return (false, "OutputDieTransfer Not in Safety Zone");
+                            //}
+                            //else
+                            //{
+                            //    return (false, "OutputDieTransfer Unit Not Found");
+                            //}
 
                             // 4) IndexChipProbeController SafeZone 확인
-                            if (eq.Units != null && eq.Units.TryGetValue("Index Z Axis", out var uIp) && uIp is IndexChipProbeController indexProbe)
+                            //if (eq.Units != null && eq.Units.TryGetValue("Index Z Axis", out var uIp) && uIp is IndexChipProbeController indexProbe)
+                            if (eq.Units != null && eq.Units.TryGetValue("IndexChipProbeController", out var uIp) && uIp is IndexChipProbeController indexProbe)
                             {
                                 var safeOut = nameof(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone);
                                 if (!outTransfer.InPosTeaching(safeOut))
