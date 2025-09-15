@@ -345,33 +345,46 @@ namespace QMC.Common.Unit
                 axis.MoveAbs(target, isFine);
             }
 
-            while (true)
+            Thread.Sleep(500);
+
+            // 완료 대기
+            int waitErrors = 0;
+            while(true)
             {
                 bool allDone = true;
                 foreach (var kv in axisPos)
                 {
                     MotionAxis axis = null;
                     if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
-                    if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
-                    if (axis == null) continue;
-                    if (!axis.IsMoveDone()) { allDone = false; break; }
+
+                    if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis)) 
+                        axis = directAxis;
+
+                    if (axis == null) 
+                        continue;
+
+                    if (!axis.IsMoveDone()) 
+                    { 
+                        allDone = false; 
+                        break; 
+                    }
                 }
                 if (allDone) break;
                 Thread.Sleep(0);
             }
 
-            int err = 0;
             foreach (var kv in axisPos)
             {
                 MotionAxis axis = null;
                 if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
                 if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
                 if (axis == null) continue;
-                if (!axis.InPosition(kv.Value))
-                {
-                    Log.Write("MoveTeachingPositionOnce",
-                        $"[TEACH 이동 오류] '{GetTpName(tp)}' 축 '{kv.Key}' 목표 {kv.Value}, 현재 {axis.GetPosition()}");
-                    err++;
+                double dTarget = kv.Value;
+                if (axis.InPosition(dTarget) == false)
+                { 
+                    Log.Write("MoveTeachingPositionOnce", 
+                        $"[티칭 이동 오류] '{GetTpName(tp)}' 축 '{kv.Key}' 목표 {dTarget}, 현재 {axis.GetPosition()}");
+                    waitErrors++; 
                 }
             }
             return err == 0 ? 0 : -1;

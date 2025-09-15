@@ -216,7 +216,7 @@ namespace QMC.LCP_280.Process.Unit
                     if (dr == DialogResult.Cancel)
                     {
                         _unit.StopTeachingPositionOnce(selIndex);
-                        return;
+                         return;
                     }
                 }
 
@@ -234,11 +234,6 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 MessageBox.Show("Move 처리 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                btnMovePosition.Enabled = true;
-                Cursor.Current = Cursors.Default;
             }
         }
 

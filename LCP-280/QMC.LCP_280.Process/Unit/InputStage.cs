@@ -1163,10 +1163,10 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Wafer already present -> Skip prepare");
                 return 0;
             }
-            else if (!InputFeeder.IsRequestLoadingWafer)
-            {
-                return 0;
-            }
+            //else if (!InputFeeder.IsRequestLoadingWafer)
+            //{
+            //    return 0;
+            //}
             else
             {
                 ret = LoadingWafer();
@@ -1285,18 +1285,18 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Clamp Back ¡æ Lift Down
-            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd()))
+            if (!ActAndWait("ClampBack", () => !SetClampFB(false), () => IsClampBwd()))
             {
                 Log.Write(this, "Fail: ClampBack");
                 return -1;
             }
-            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown()))
+            if (!ActAndWait("ClampLiftDown", () => !SetClampLift(false), () => IsClampLiftDown()))
             {
                 Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
             }
             //Plate Up ¡æ 
-            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+            if (!ActAndWait("PlateUp", () => !SetClampPlate(false), () => IsPlateDown()))
             {
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
@@ -1333,9 +1333,15 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     Thread.Sleep(1000);
                 }
-                else if (IsPlateUp())
+                else if (!IsPlateUp())
                 {
-                    if (!ActAndWait("ClampLiftUp", () => SetClampLift(true), () => IsClampLiftUp()))
+                    if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+                    {
+                        Log.Write(this, "Fail: PlateUp");
+                        return -1;
+                    }
+
+                    if (ActAndWait("ClampLiftUp", () => SetClampLift(true), () => IsClampLiftUp()))
                         return -1;
                     if (!ActAndWait("ClampForward", () => SetClampFB(true), () => IsClampFwd()))
                         return -1;
