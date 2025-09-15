@@ -463,81 +463,81 @@ namespace QMC.LCP_280.Process.Unit
             return MoveTeachingPositionOnce((int)name, isFine);
         }
         
-        public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
-        {
-            return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
-        }
+        //public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
+        //{
+        //    return Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
+        //}
 
-        public int MoveTeachingPositionOnce(int selIndex, bool isFine)
-        {
-            if (!IsInterlockOK(selIndex))
-            {
-                Log.Write(UnitName, "MoveTP", $"Interlock Fail index={selIndex}");
-                return -1;
-            }
+        //public int MoveTeachingPositionOnce(int selIndex, bool isFine)
+        //{
+        //    if (!IsInterlockOK(selIndex))
+        //    {
+        //        Log.Write(UnitName, "MoveTP", $"Interlock Fail index={selIndex}");
+        //        return -1;
+        //    }
 
-            if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
-                return -1;
+        //    if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
+        //        return -1;
 
-            var tp = Config.TeachingPositions[selIndex];
-            if (tp == null || tp.AxisPositions == null) return -1;
+        //    var tp = Config.TeachingPositions[selIndex];
+        //    if (tp == null || tp.AxisPositions == null) return -1;
 
-            // 축 이동 명령
-            foreach (var kv in tp.AxisPositions)
-            {
-                string axisKey = kv.Key;
-                double target = kv.Value;
+        //    // 축 이동 명령
+        //    foreach (var kv in tp.AxisPositions)
+        //    {
+        //        string axisKey = kv.Key;
+        //        double target = kv.Value;
 
-                MotionAxis axis = null;
+        //        MotionAxis axis = null;
 
-                if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
-                if (axis == null && Axes.TryGetValue(axisKey, out var a2)) axis = a2;
-                if (axis == null)
-                {
-                    foreach (var pair in Axes)
-                    {
-                        if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
-                        {
-                            axis = pair.Value; break;
-                        }
-                    }
-                }
-                if (axis == null) continue;
+        //        if (tp.Axes != null && tp.Axes.TryGetValue(axisKey, out axis)) { }
+        //        if (axis == null && Axes.TryGetValue(axisKey, out var a2)) axis = a2;
+        //        if (axis == null)
+        //        {
+        //            foreach (var pair in Axes)
+        //            {
+        //                if (pair.Value != null && string.Equals(pair.Value.Name, axisKey, StringComparison.OrdinalIgnoreCase))
+        //                {
+        //                    axis = pair.Value; break;
+        //                }
+        //            }
+        //        }
+        //        if (axis == null) continue;
 
-                axis.MoveAbs(target, isFine);
-            }
+        //        axis.MoveAbs(target, isFine);
+        //    }
 
-            // 완료 대기
-            int waitErrors = 0;
-            foreach (var kv in tp.AxisPositions)
-            {
-                MotionAxis axis = null;
-                if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
-                if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
-                if (axis == null) continue;
+        //    // 완료 대기
+        //    int waitErrors = 0;
+        //    foreach (var kv in tp.AxisPositions)
+        //    {
+        //        MotionAxis axis = null;
+        //        if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
+        //        if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
+        //        if (axis == null) continue;
 
-                if (axis.WaitMoveDone(-1) != 0)
-                    waitErrors++;
-            }
-            return waitErrors == 0 ? 0 : -1;
-        }
-        public void StopTeachingPositionOnce(int selIndex)
-        {
-            if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
-                return;
+        //        if (axis.WaitMoveDone(-1) != 0)
+        //            waitErrors++;
+        //    }
+        //    return waitErrors == 0 ? 0 : -1;
+        //}
+        //public void StopTeachingPositionOnce(int selIndex)
+        //{
+        //    if (selIndex < 0 || selIndex >= Config.TeachingPositions.Count)
+        //        return;
 
-            var tp = Config.TeachingPositions[selIndex];
-            if (tp?.AxisPositions == null) return;
+        //    var tp = Config.TeachingPositions[selIndex];
+        //    if (tp?.AxisPositions == null) return;
 
-            foreach (var kv in tp.AxisPositions)
-            {
-                MotionAxis axis = null;
-                if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
-                if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
-                if (axis == null) continue;
-                axis.Stop();
-            }
-        }
+        //    foreach (var kv in tp.AxisPositions)
+        //    {
+        //        MotionAxis axis = null;
+        //        if (tp.Axes != null && tp.Axes.TryGetValue(kv.Key, out axis)) { }
+        //        if (axis == null && Axes.TryGetValue(kv.Key, out var a2)) axis = a2;
+        //        if (axis == null) continue;
+        //        axis.Stop();
+        //    }
+        //}
 
 
         public int MoveToStageCenterPosition(bool isFine = false)
@@ -1396,10 +1396,10 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Wafer already present -> Skip prepare");
                 return 0;
             }
-            else if (!InputFeeder.IsRequestLoadingWafer)
-            {
-                return 0;
-            }
+            //else if (!InputFeeder.IsRequestLoadingWafer)
+            //{
+            //    return 0;
+            //}
             else
             {
                 ret = LoadingWafer();
@@ -1520,18 +1520,18 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Clamp Back → Lift Down
-            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd()))
+            if (!ActAndWait("ClampBack", () => !SetClampFB(false), () => IsClampBwd()))
             {
                 Log.Write(this, "Fail: ClampBack");
                 return -1;
             }
-            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown()))
+            if (!ActAndWait("ClampLiftDown", () => !SetClampLift(false), () => IsClampLiftDown()))
             {
                 Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
             }
             //Plate Up → 
-            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+            if (!ActAndWait("PlateUp", () => !SetClampPlate(false), () => IsPlateDown()))
             {
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
@@ -1569,9 +1569,15 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     Thread.Sleep(1000);
                 }
-                else if (IsPlateUp())
+                else if (!IsPlateUp())
                 {
-                    if (!ActAndWait("ClampLiftUp", () => SetClampLift(true), () => IsClampLiftUp()))
+                    if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+                    {
+                        Log.Write(this, "Fail: PlateUp");
+                        return -1;
+                    }
+
+                    if (ActAndWait("ClampLiftUp", () => SetClampLift(true), () => IsClampLiftUp()))
                         return -1;
                     if (!ActAndWait("ClampForward", () => SetClampFB(true), () => IsClampFwd()))
                         return -1;

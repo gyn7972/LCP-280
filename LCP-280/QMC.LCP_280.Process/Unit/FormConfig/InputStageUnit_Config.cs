@@ -216,7 +216,7 @@ namespace QMC.LCP_280.Process.Unit
                     if (dr == DialogResult.Cancel)
                     {
                         _unit.StopTeachingPositionOnce(selIndex);
-                        return;
+                         return;
                     }
                 }
 

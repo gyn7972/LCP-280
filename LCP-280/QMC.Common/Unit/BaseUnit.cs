@@ -407,6 +407,8 @@ namespace QMC.Common.Unit
                 axis.MoveAbs(targetPos, isFine);
             }
 
+            Thread.Sleep(500);
+
             // 완료 대기
             int waitErrors = 0;
             while(true)
@@ -416,13 +418,23 @@ namespace QMC.Common.Unit
                 {
                     MotionAxis axis = null;
                     if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
-                    if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis)) axis = directAxis;
-                    if (axis == null) continue;
-                    if (!axis.IsMoveDone()) { allDone = false; break; }
+
+                    if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis)) 
+                        axis = directAxis;
+
+                    if (axis == null) 
+                        continue;
+
+                    if (!axis.IsMoveDone()) 
+                    { 
+                        allDone = false; 
+                        break; 
+                    }
                 }
                 if (allDone) break;
                 Thread.Sleep(0);
             }
+
             foreach (var kv in axisPos)
             {
                 MotionAxis axis = null;
@@ -432,7 +444,8 @@ namespace QMC.Common.Unit
                 double dTarget = kv.Value;
                 if (axis.InPosition(dTarget) == false)
                 { 
-                    Log.Write("MoveTeachingPositionOnce", $"[티칭 이동 오류] '{GetTpName(tp)}' 축 '{kv.Key}' 목표 {dTarget}, 현재 {axis.GetPosition()}");
+                    Log.Write("MoveTeachingPositionOnce", 
+                        $"[티칭 이동 오류] '{GetTpName(tp)}' 축 '{kv.Key}' 목표 {dTarget}, 현재 {axis.GetPosition()}");
                     waitErrors++; 
                 }
             }
