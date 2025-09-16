@@ -26,7 +26,6 @@ namespace QMC.LCP_280.Process.Unit
             public const string WAFER_PROTRUSION_DETECTION_SENSOR  = "WAFER LIFTER RING JUT CHECK";   // X018
             public const string MAPPING_SENSOR  = "WAFER MAPPING";                 // X019
         }
-        
 
         public enum TeachingPositionName
         {
@@ -67,7 +66,6 @@ namespace QMC.LCP_280.Process.Unit
         public HardOutputDef[] HardOutputs => _hardOutputs; // currently none
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
-
 
         [Category("Cassette"), DisplayName("SlotPitch (mm)")]
         [DefaultValue(0.0)]
