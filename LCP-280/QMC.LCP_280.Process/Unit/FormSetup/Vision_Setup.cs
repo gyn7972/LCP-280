@@ -8,7 +8,6 @@ using QMC.Common;
 using QMC.Common.Cameras;
 using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
-using System.Runtime.InteropServices; // <-- added
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -35,48 +34,6 @@ namespace QMC.LCP_280.Process.Unit
         private Dictionary<(string section, string title), PropertyBase> _configIndex;
         private Dictionary<(string section, string title), PropertyBase> _speedIndex;
 
-        // ===== Z-Order (Non-TopMost) 관리 추가 =====
-        [DllImport("user32.dll", SetLastError = false)]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,
-            int X, int Y, int cx, int cy, uint uFlags);
-        private static readonly IntPtr HWND_TOP = new IntPtr(0);
-        private const uint SWP_NOSIZE = 0x0001;
-        private const uint SWP_NOMOVE = 0x0002;
-        private const uint SWP_NOACTIVATE = 0x0010;
-        private const uint SWP_SHOWWINDOW = 0x0040;
-
-        private void EnsureAboveMain(Form popup)
-        {
-            if (popup == null || popup.IsDisposed || !popup.Visible) return;
-            if (popup.WindowState == FormWindowState.Minimized) return;
-            try
-            {
-                SetWindowPos(popup.Handle, HWND_TOP, 0, 0, 0, 0,
-                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-            }
-            catch { }
-        }
-        private void HookPopupZOrderEvents()
-        {
-            this.Activated -= VisionSetup_Activated;
-            this.Activated += VisionSetup_Activated;
-            this.Move -= VisionSetup_MoveResize;
-            this.Move += VisionSetup_MoveResize;
-            this.Resize -= VisionSetup_MoveResize;
-            this.Resize += VisionSetup_MoveResize;
-        }
-        private void VisionSetup_Activated(object sender, EventArgs e)
-        {
-            EnsureAboveMain(_jogPopup);
-            EnsureAboveMain(_axisPosPopup);
-        }
-        private void VisionSetup_MoveResize(object sender, EventArgs e)
-        {
-            EnsureAboveMain(_jogPopup);
-            EnsureAboveMain(_axisPosPopup);
-        }
-        // ===========================================
-
         public Vision_Setup()
         {
             InitializeComponent();
@@ -90,8 +47,6 @@ namespace QMC.LCP_280.Process.Unit
                 visionImageViewer.DoubleClick -= VisionImageViewer_DoubleClick;
                 visionImageViewer.DoubleClick += VisionImageViewer_DoubleClick;
             }
-
-            HookPopupZOrderEvents(); // <-- added
 
             //_jogPopup = new Form_AxisJogPopup();
             ResumeLayout(true);
@@ -208,10 +163,10 @@ namespace QMC.LCP_280.Process.Unit
                 _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
                 _jogPopup.FormClosing += (s, ev) =>
                 {
-                    if (ev.CloseReason == CloseReason.UserClosing)
-                    {
-                        ev.Cancel = true;
-                        _jogPopup.Hide();
+                    if (ev.CloseReason == CloseReason.UserClosing) 
+                    { 
+                        ev.Cancel = true; 
+                        _jogPopup.Hide(); 
                     }
                 };
             }
@@ -220,13 +175,13 @@ namespace QMC.LCP_280.Process.Unit
                 //_jogPopup.Show(owner);
                 _jogPopup.Show();
             }
-
-            if (_jogPopup.WindowState == FormWindowState.Minimized)
+                
+            if (_jogPopup.WindowState == FormWindowState.Minimized) 
                 _jogPopup.WindowState = FormWindowState.Normal;
 
             _jogPopup.BringToFront();
-            // _jogPopup.TopMost = true;  // 제거
-            EnsureAboveMain(_jogPopup); // 신규 적용
+            _jogPopup.TopMost = true; 
+            //_jogPopup.TopMost = false;
             _jogPopup.Activate();
         }
         private void ShowOrRestoreAxisPosPopup(IWin32Window owner)
@@ -268,8 +223,7 @@ namespace QMC.LCP_280.Process.Unit
 
             _axisPosPopup.BringToFront();
 
-            // _axisPosPopup.TopMost = true; // 제거
-            EnsureAboveMain(_axisPosPopup); // 신규 적용
+            _axisPosPopup.TopMost = true;
 
             _axisPosPopup.Activate();
         }

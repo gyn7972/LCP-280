@@ -346,6 +346,7 @@ namespace QMC.LCP_280.Process.Unit
             return task.Result;
         }
 
+        //가공시에 스테이지 Area 밖으로 나가는것을 방지하기 위한 함수
         protected override int CheckMoveSafety(MotionAxis ax)
         {
             try
