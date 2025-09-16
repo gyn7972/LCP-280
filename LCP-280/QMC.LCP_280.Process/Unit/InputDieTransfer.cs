@@ -8,6 +8,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -172,31 +173,43 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {
-                if(InputStage.IsAnyAxisMoving())
+                if(axis == AxisPickZ)
                 {
-                    AxisToolT.EmgStop();
-                    AxisPickZ.EmgStop();
-                    AxisPlaceZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
-                    return -1;
+                    if (InputStage.IsAnyAxisMoving())
+                    {
+                        AxisToolT.EmgStop();
+                        AxisPickZ.EmgStop();
+                        AxisPlaceZ.EmgStop();
+                        AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                        return -1;
+                    }
+
+                    if (InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
+                    {
+                        AxisToolT.EmgStop();
+                        AxisPickZ.EmgStop();
+                        AxisPlaceZ.EmgStop();
+                        AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                    }
+                    //if (InputStageEjector.IsAnyAxisMoving())
+                    //{
+                    //    AxisToolT.EmgStop();
+                    //    AxisPickZ.EmgStop();
+                    //    AxisPlaceZ.EmgStop();
+                    //    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                    //}
                 }
 
-                if(InputStageEjector.IsAnyAxisMoving())
+                if (axis == AxisPlaceZ)
                 {
-                    AxisToolT.EmgStop();
-                    AxisPickZ.EmgStop();
-                    AxisPlaceZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                    if (Rotary.IsAnyAxisMoving())
+                    {
+                        AxisToolT.EmgStop();
+                        AxisPickZ.EmgStop();
+                        AxisPlaceZ.EmgStop();
+                        AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                    }
                 }
-
-                if(Rotary.IsAnyAxisMoving())
-                {
-                    AxisToolT.EmgStop();
-                    AxisPickZ.EmgStop();
-                    AxisPlaceZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
-                }
-
 
                 Thread.Sleep(0);
             }
@@ -250,7 +263,139 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int)InputDieTransferConfig.TeachingPositionName.Pickup, isFine);
         }
-        
+
+
+        #region Dual Axis (PickZ + PinZ) Simultaneous Move
+        /// <summary>
+        /// PickZ 와 PinZ 를 Offset(상대이동)으로 동시에 구동.
+        ///  - 두 축 모두 상대이동 (MoveRel) 사용
+        ///  - velPickZ / velPinZ = 0 이면 각 축 설정(MaxVelocity/RunAcc/RunDec) 사용
+        ///  - timeoutMs > 0 이고 시간 초과 시 -2 반환
+        ///  - Interlock 위반 시 두 축 Emergency Stop 후 -1 반환
+        /// </summary>
+        public int MovePickZAndPinZByOffset(double pickZOffset,
+                                            double pinZOffset,
+                                            double velPickZ = 0,
+                                            double velPinZ = 0,
+                                            double acc = 0,
+                                            double dec = 0,
+                                            int timeoutMs = 0,
+                                            bool isFine = false)
+        {
+            var pick = AxisPickZ;
+            var pin = InputStageEjector != null ? InputStageEjector.AxisPinZ : null;
+
+            if (pick == null || pin == null)
+            {
+                Log.Write(UnitName, "[MovePickZAndPinZByOffset] Axis null");
+                return -1;
+            }
+
+            // 이동 필요 없으면 즉시 성공
+            if (System.Math.Abs(pickZOffset) < 1e-9 && System.Math.Abs(pinZOffset) < 1e-9)
+                return 0;
+
+            // 사전 Interlock (다른 관련 Unit 축 동작 중이면 시작하지 않음)
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            {
+                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+            //if (Rotary != null && Rotary.IsAnyAxisMoving())
+            //{
+            //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+            //    return -1;
+            //}
+            if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
+            {
+                AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                return -1;
+            }
+
+            double vPick = velPickZ > 0 ? velPickZ : pick.Config.MaxVelocity;
+            double aPick = acc > 0 ? acc : pick.Config.RunAcc;
+            double dPick = dec > 0 ? dec : pick.Config.RunDec;
+
+            double vPin = velPinZ > 0 ? velPinZ : pin.Config.MaxVelocity;
+            double aPin = acc > 0 ? acc : pin.Config.RunAcc;
+            double dPin = dec > 0 ? dec : pin.Config.RunDec;
+
+            // 동시에 시작 (반환코드 OR)
+            //ex) Offset값이 양수로 300 이면 Z축이 위로 300 이동
+            // 두 개의 축 전부 300이면 동일하게 위로 올라간다.
+            int rc = 0;
+            rc |= pick.MoveRel(pickZOffset, vPick, aPick, dPick, pick.Config.AccJerkPercent);
+            rc |= pin.MoveRel(pinZOffset, vPin, aPin, dPin, pin.Config.AccJerkPercent);
+            if (rc != 0)
+            {
+                Log.Write(UnitName, "[MovePickZAndPinZByOffset] MoveRel start failed rc=" + rc);
+                return -1;
+            }
+
+            var sw = timeoutMs > 0 ? Stopwatch.StartNew() : null;
+
+            while (true)
+            {
+                bool pickMoving = pick.IsMoveDone();
+                bool pinMoving = pin.IsMoveDone();
+
+                // 완료
+                if (pickMoving && pinMoving)
+                    break;
+
+                // 진행 중 Interlock 감시 (기존 MoveAxisWithSafety 로직과 유사)
+                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                {
+                    pick.EmgStop(); pin.EmgStop();
+                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+                if (Rotary != null && Rotary.IsAnyAxisMoving())
+                {
+                    pick.EmgStop(); pin.EmgStop();
+                    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                    return -1;
+                }
+                // Ejector 다른 축(EjectorZ) 움직임 감시
+                if (InputStageEjector != null && InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
+                {
+                    pick.EmgStop(); pin.EmgStop();
+                    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                    return -1;
+                }
+
+                // 타임아웃
+                if (sw != null && sw.ElapsedMilliseconds > timeoutMs)
+                {
+                    pick.EmgStop(); pin.EmgStop();
+                    Log.Write(UnitName, "[MovePickZAndPinZByOffset] Timeout");
+                    return -2;
+                }
+
+                Thread.Sleep(1);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// 비동기 버전 (Task 반환). 필요 시 UI 에서 await 사용.
+        /// </summary>
+        public Task<int> MovePickZAndPinZByOffsetAsync(double pickZOffset,
+                                                       double pinZOffset,
+                                                       double velPickZ = 0,
+                                                       double velPinZ = 0,
+                                                       double acc = 0,
+                                                       double dec = 0,
+                                                       int timeoutMs = 0,
+                                                       bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                return MovePickZAndPinZByOffset(pickZOffset, pinZOffset, velPickZ, velPinZ, acc, dec, timeoutMs, isFine);
+            });
+        }
+        #endregion
 
 
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
@@ -605,28 +750,61 @@ namespace QMC.LCP_280.Process.Unit
             base.OnStop(); 
             return ret; 
         }
+
+        protected override int OnRunReady()
+        {
+            int ret = 0;
+
+            ChipPickUp();
+
+            State = ProcessState.Work;
+            return 0;
+        }
+        protected override int OnRunWork()
+        {
+            int ret = 0;
+
+            State = ProcessState.Complete;
+            return 0;
+        }
+        protected override int OnRunComplete()
+        {
+            int ret = 0;
+
+            State = ProcessState.None;
+            return 0;
+        }
+
         #endregion
 
         #region Seq 단위 동작 함수
         public int ChipPickUp()
         {
             int nRet = -1;
-
             double dPosX = 0;
             double dPosY = 0;
-            //
-            //1. InputStage Pick 위치 이동
 
-            InputStage.MoveAxisWithSafety(AxisNames.WaferStageX, dPosX);
-            InputStage.MoveAxisWithSafety(AxisNames.WaferStageX, dPosY);
+            if(InputStage.IsStatus_CompleteWorking)
+            {
+                //1. InputStage Pick 위치 이동
+                nRet = InputStage.MoveAxisWithSafety(AxisNames.WaferStageX, dPosX);
+                nRet = InputStage.MoveAxisWithSafety(AxisNames.WaferStageY, dPosY);
+                if (nRet != 0)
+                {
+                    return -1;
+                }
 
-            nRet = MovePickUpPosition();
-            if (nRet != 0) return nRet;
+                nRet = MovePickUpPosition();
+                if (nRet != 0)
+                {
+                    return -1;
+                }
+            }
+
             //2. Arm Down
             //3. Vacuum On
             //4. Arm Up
             //5. Vacuum OK Check
-
 
             return nRet;
         }

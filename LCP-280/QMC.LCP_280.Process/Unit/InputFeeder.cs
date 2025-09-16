@@ -80,8 +80,6 @@ namespace QMC.LCP_280.Process.Unit
 
         }
 
-        
-
         public override void AddComponents()
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
@@ -90,7 +88,7 @@ namespace QMC.LCP_280.Process.Unit
             BindAxes();
             BindIoDomains();
 
-            Config.IsSimulation = true;
+            Config.IsSimulation = false;
             if (Config.IsSimulation)
             {
                 _feederY.Config.IsSimulation = true;
@@ -237,7 +235,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return true;
             }
-
             return ReadInput(InputFeederConfig.IO.FEEDER_UP);
         }
         

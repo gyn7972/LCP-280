@@ -26,6 +26,7 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.btnPickUpNiddleMove = new QMC.Common.IndividualMenuButton();
             this.btnWaferUnloading = new QMC.Common.IndividualMenuButton();
             this.btnAlignXY = new QMC.Common.IndividualMenuButton();
             this.btnAlignT = new QMC.Common.IndividualMenuButton();
@@ -33,7 +34,6 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonTest2 = new System.Windows.Forms.Button();
             this.buttonTest = new System.Windows.Forms.Button();
             this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
-            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxImageView.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
@@ -125,7 +125,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // groupBoxManual
             // 
-            this.groupBoxManual.Controls.Add(this.individualMenuButton1);
+            this.groupBoxManual.Controls.Add(this.btnPickUpNiddleMove);
             this.groupBoxManual.Controls.Add(this.btnWaferUnloading);
             this.groupBoxManual.Controls.Add(this.btnAlignXY);
             this.groupBoxManual.Controls.Add(this.btnAlignT);
@@ -139,6 +139,25 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManual.TabIndex = 16;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
+            // 
+            // btnPickUpNiddleMove
+            // 
+            this.btnPickUpNiddleMove.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPickUpNiddleMove.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnPickUpNiddleMove.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPickUpNiddleMove.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPickUpNiddleMove.CustomForeColor = System.Drawing.Color.Black;
+            this.btnPickUpNiddleMove.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPickUpNiddleMove.ForeColor = System.Drawing.Color.Black;
+            this.btnPickUpNiddleMove.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnPickUpNiddleMove.Location = new System.Drawing.Point(124, 61);
+            this.btnPickUpNiddleMove.Name = "btnPickUpNiddleMove";
+            this.btnPickUpNiddleMove.Size = new System.Drawing.Size(110, 35);
+            this.btnPickUpNiddleMove.TabIndex = 24;
+            this.btnPickUpNiddleMove.TabStop = false;
+            this.btnPickUpNiddleMove.Text = "PickUp&&Niddle";
+            this.btnPickUpNiddleMove.UseVisualStyleBackColor = false;
+            this.btnPickUpNiddleMove.Click += new System.EventHandler(this.btnPickUpNiddleMove_Click);
             // 
             // btnWaferUnloading
             // 
@@ -246,24 +265,6 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
             this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
             // 
-            // individualMenuButton1
-            // 
-            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton1.Location = new System.Drawing.Point(124, 61);
-            this.individualMenuButton1.Name = "individualMenuButton1";
-            this.individualMenuButton1.Size = new System.Drawing.Size(110, 35);
-            this.individualMenuButton1.TabIndex = 24;
-            this.individualMenuButton1.TabStop = false;
-            this.individualMenuButton1.Text = "WaferLoading";
-            this.individualMenuButton1.UseVisualStyleBackColor = false;
-            // 
             // ChipLoading_Working
             // 
             this.ClientSize = new System.Drawing.Size(1264, 751);
@@ -304,6 +305,6 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnWaferUnloading;
         private IndividualMenuButton btnAlignXY;
         private IndividualMenuButton btnAlignT;
-        private IndividualMenuButton individualMenuButton1;
+        private IndividualMenuButton btnPickUpNiddleMove;
     }
 }

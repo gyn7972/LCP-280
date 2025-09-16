@@ -174,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            Config.IsSimulation = true;
+            Config.IsSimulation = false;
             if (Config.IsSimulation)
             {
                 _axX.Config.IsSimulation = true;
@@ -301,6 +301,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (axis == null) return -1;
 
+            if(CheckMoveSafety(axis) != 0)
+            {
+                return -1;
+            }
+
             Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {
@@ -343,10 +348,106 @@ namespace QMC.LCP_280.Process.Unit
 
         protected override int CheckMoveSafety(MotionAxis ax)
         {
-            //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
-            return 0;
+            try
+            {
+                //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
+                // PickZ Safety Check
+                // Ejector Pin Z and Ejector Z Safety Check
+                // Ejector Pin Z and Ejector Z 이 Safety Position이 아닐 경우
+                // X,Y Encoder 위치 기준 min/max 체크하고 움직여야 한다. 
+
+
+                // 1) Ejector / PinZ Safety 검사 (우선순위 높음)
+                bool pinZSafe = true;
+                bool ejectorZSafe = true;
+
+                if (InputStageEjector != null)
+                {
+                    pinZSafe = InputStageEjector.IsPinZSafetyPos();
+                    ejectorZSafe = InputStageEjector.IsEjectorZSafetyPos();
+
+                    if (!pinZSafe || !ejectorZSafe)
+                    {
+                        // PinZ 또는 EjectorZ 가 Safety 가 아닐 때 X/Y 이동 허용 범위 검사
+                        if (ax == AxisX || ax == AxisY)
+                        {
+                            if (!IsAllowedXYWindowWhileEjectorUnsafe())
+                            {
+                                // 어떤 축이 원인인지에 따라 더 구체적인 알람 선택
+                                if (!pinZSafe)
+                                    return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+                                if (!ejectorZSafe)
+                                    return (int)AlarmKeys.eInputStageEjectorZNotSafe;
+                                // 둘 다 아니면 일반 반환
+                                return (int)AlarmKeys.eInputStageEjectorZNotSafe;
+                            }
+                        }
+
+                        // 범위 내 이동이라도 PinZ / EjectorZ 가 안전하지 않으면 알람(보수적 정책) →
+                        // Test 후에 필요 시 주석 처리 해야함.
+                        if (!pinZSafe)
+                            return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+                        if (!ejectorZSafe)
+                            return (int)AlarmKeys.eInputStageEjectorZNotSafe;
+                    }
+                }
+
+                // 2) DieTransfer PickZ Safety
+                if (InputDieTransfer != null && !InputDieTransfer.IsDieTransferPickZSafetyPos())
+                    return (int)AlarmKeys.eDieTransferPickZNotSafe;
+
+                // 3) Feeder Z / Y Safety
+                if (InputFeeder != null)
+                {
+                    if (!InputFeeder.IsFeederZSafetyPosition())
+                        return (int)AlarmKeys.eInputFeederCylinderZNotSafe;
+
+                    if (!InputFeeder.IsFeederYSafetyPosition())
+                        return (int)AlarmKeys.eInputFeederYNotSafe;
+                }
+
+                // 추가로 "다른 유닛 축 이동중" 등을 넣고 싶다면 여기서 검사 후 알람 코드 반환
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                // 예외 발생 시 보수적으로 이동 중단하도록 임의 알람 (PinZ 알람 선택) 반환 가능
+                return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+            }
+
+            return 0; // 0 = OK
         }
 
+        /// <summary>
+        /// PinZ / EjectorZ 가 Safety 가 아닐 때 X/Y 축 이동 허용 윈도우 판정.
+        /// CenterPoint 티칭 기준 ±UnsafeHalfRange 범위 내만 허용.
+        /// 티칭 없거나 좌표 취득 실패 시 false(=허용 안 함).
+        /// </summary>
+        private bool IsAllowedXYWindowWhileEjectorUnsafe()
+        {
+            const double UnsafeHalfRangeX = 2.0; // mm (필요 시 Config 로 승격)
+            const double UnsafeHalfRangeY = 2.0; // mm
+
+            // CenterPoint Teaching 확보
+            var tp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
+            if (tp == null || tp.AxisPositions == null)
+                return false;
+
+            double centerX, centerY;
+            if (!tp.AxisPositions.TryGetValue(AxisNames.WaferStageX, out centerX))
+                return false;
+            if (!tp.AxisPositions.TryGetValue(AxisNames.WaferStageY, out centerY))
+                return false;
+
+            double curX = AxisX?.GetPosition() ?? centerX;
+            double curY = AxisY?.GetPosition() ?? centerY;
+
+            bool xOk = Math.Abs(curX - centerX) <= UnsafeHalfRangeX;
+            bool yOk = Math.Abs(curY - centerY) <= UnsafeHalfRangeY;
+
+            return xOk && yOk;
+        }
+        
         //protected override MotionAxis ResolveAxis(string name)
         //{
         //    // 특수 축 우선 매핑 후
