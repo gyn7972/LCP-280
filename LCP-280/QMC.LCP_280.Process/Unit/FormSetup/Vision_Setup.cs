@@ -30,6 +30,10 @@ namespace QMC.LCP_280.Process.Unit
         private bool _viewerPoppedOut;
         private bool _restoringViewer;
 
+        // 팝업 탭 및 동기화
+        private TabControl _popupTabControl;
+        private bool _syncingSelection;
+
         // Property 인덱스 (필요시 확장)
         private Dictionary<(string section, string title), PropertyBase> _configIndex;
         private Dictionary<(string section, string title), PropertyBase> _speedIndex;
@@ -48,7 +52,6 @@ namespace QMC.LCP_280.Process.Unit
                 visionImageViewer.DoubleClick += VisionImageViewer_DoubleClick;
             }
 
-            //_jogPopup = new Form_AxisJogPopup();
             ResumeLayout(true);
         }
 
@@ -109,12 +112,34 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (_camSwitch == null) return;
             if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
+
+            // 카메라 전환 공통 처리
+            SwitchCameraTo(selectedIndex);
+
+            // 팝업 탭 동기화 (재귀 방지)
+            if (_popupTabControl != null && _popupTabControl.IsHandleCreated)
+            {
+                try
+                {
+                    _syncingSelection = true;
+                    if (selectedIndex >= 0 && selectedIndex < _popupTabControl.TabPages.Count)
+                        _popupTabControl.SelectedIndex = selectedIndex;
+                }
+                finally { _syncingSelection = false; }
+            }
+        }
+
+        private void SwitchCameraTo(int index)
+        {
             try { visionImageViewer.CurrentCamera?.StopLive(); } catch { }
             visionImageViewer.SuspendDisplay();
-            _camSwitch.Change(selectedIndex);
+
+            _camSwitch.Change(index);
             ResetViewerForCameraChange();
+
             try { visionImageViewer.CurrentCamera?.StartLive(); }
             catch (Exception ex) { Log.Write(ex); }
+
             visionImageViewer.ResumeDisplay();
             visionImageViewer.StartUpdateTask();
         }
@@ -141,52 +166,45 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowOrRestoreJogPopup(IWin32Window owner)
         {
-            //return;
             if (_jogPopup == null || _jogPopup.IsDisposed)
             {
                 _jogPopup = new Form_AxisJogPopup();
                 _jogPopup.StartPosition = FormStartPosition.CenterParent;
-                //_jogPopup.ShowInTaskbar = false;
 
-                // ✅ 별도 아이콘 나오게
                 _jogPopup.ShowInTaskbar = true;
                 _jogPopup.StartPosition = FormStartPosition.CenterScreen;
 
-                // ✅ Owner 관계 제거 (메인창과 독립)
                 _jogPopup.Owner = null;
                 _jogPopup.Load += (s, e) =>
                 {
-                    // 메인폼과 다른 AppID 부여
                     TaskbarHelper.SetAppId(_jogPopup.Handle, "MyApp.JogPanel");
                 };
 
                 _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
                 _jogPopup.FormClosing += (s, ev) =>
                 {
-                    if (ev.CloseReason == CloseReason.UserClosing) 
-                    { 
-                        ev.Cancel = true; 
-                        _jogPopup.Hide(); 
+                    if (ev.CloseReason == CloseReason.UserClosing)
+                    {
+                        ev.Cancel = true;
+                        _jogPopup.Hide();
                     }
                 };
             }
             if (!_jogPopup.Visible)
             {
-                //_jogPopup.Show(owner);
                 _jogPopup.Show();
             }
-                
-            if (_jogPopup.WindowState == FormWindowState.Minimized) 
+
+            if (_jogPopup.WindowState == FormWindowState.Minimized)
                 _jogPopup.WindowState = FormWindowState.Normal;
 
             _jogPopup.BringToFront();
-            _jogPopup.TopMost = true; 
-            //_jogPopup.TopMost = false;
+            _jogPopup.TopMost = true;
             _jogPopup.Activate();
         }
+
         private void ShowOrRestoreAxisPosPopup(IWin32Window owner)
         {
-            //return;
             if (_axisPosPopup == null || _axisPosPopup.IsDisposed)
             {
                 _axisPosPopup = new AxisPostionPopup();
@@ -195,11 +213,9 @@ namespace QMC.LCP_280.Process.Unit
                 _axisPosPopup.ShowInTaskbar = true;
                 _axisPosPopup.StartPosition = FormStartPosition.CenterScreen;
 
-                // ✅ Owner 관계 제거 (메인창과 독립)
                 _axisPosPopup.Owner = null;
                 _axisPosPopup.Load += (s, e) =>
                 {
-                    // 메인폼과 다른 AppID 부여
                     TaskbarHelper.SetAppId(_axisPosPopup.Handle, "MyApp.AxisPosition");
                 };
 
@@ -227,6 +243,7 @@ namespace QMC.LCP_280.Process.Unit
 
             _axisPosPopup.Activate();
         }
+
         // ===== Viewer Popup (Double-click) =====
         private void VisionImageViewer_DoubleClick(object sender, EventArgs e)
         {
@@ -244,25 +261,105 @@ namespace QMC.LCP_280.Process.Unit
         private void PopOutViewer()
         {
             if (visionImageViewer == null || _viewerPoppedOut) return;
+
             _viewerOriginalParent = visionImageViewer.Parent;
             _viewerOriginalBounds = new Rectangle(visionImageViewer.Location, visionImageViewer.Size);
+
             _viewerPopupForm = new Form
             {
                 Text = "Camera View",
                 FormBorderStyle = FormBorderStyle.SizableToolWindow,
                 StartPosition = FormStartPosition.CenterParent,
-                ClientSize = new Size(800, 600),
+                ClientSize = new Size(1000, 700),
                 ShowInTaskbar = false
             };
             _viewerPopupForm.FormClosed += (s, e) => { if (!_restoringViewer) RestoreViewer(); };
+
+            // 탭 컨트롤 생성 및 카메라 이름으로 탭 구성
+            _popupTabControl = new TabControl
+            {
+                Dock = DockStyle.Fill
+            };
+            var camNames = cameraListBoxItemsView?.GetItems() ?? _cameraNames?.ToArray() ?? Array.Empty<string>();
+            if (camNames.Length == 0 && Equipment.Instance?.Cameras != null)
+            {
+                camNames = Equipment.Instance.Cameras.Keys.ToArray();
+            }
+            foreach (var name in camNames)
+                _popupTabControl.TabPages.Add(new TabPage(string.IsNullOrWhiteSpace(name) ? "Camera" : name));
+
+            // 현재 선택 인덱스 반영
+            int selIndex = 0;
+            if (cameraListBoxItemsView != null && cameraListBoxItemsView.SelectedIndex >= 0)
+                selIndex = cameraListBoxItemsView.SelectedIndex;
+            else if (_camSwitch != null && _camSwitch.SelectCameraIndex >= 0)
+                selIndex = _camSwitch.SelectCameraIndex;
+            selIndex = Math.Max(0, Math.Min(selIndex, _popupTabControl.TabPages.Count - 1));
+            _popupTabControl.SelectedIndex = selIndex;
+
+            // 이벤트 연결
+            _popupTabControl.SelectedIndexChanged -= PopupTabs_SelectedIndexChanged;
+            _popupTabControl.SelectedIndexChanged += PopupTabs_SelectedIndexChanged;
+
+            // 기존 부모에서 분리하고, 선택된 탭 페이지에 붙이기
             visionImageViewer.SuspendLayout();
             _viewerOriginalParent.Controls.Remove(visionImageViewer);
+            var hostPage = _popupTabControl.TabPages[selIndex];
             visionImageViewer.Dock = DockStyle.Fill;
-            _viewerPopupForm.Controls.Add(visionImageViewer);
+            hostPage.Controls.Add(visionImageViewer);
             visionImageViewer.ResumeLayout();
+
+            // 팝업 표시
+            _viewerPopupForm.Controls.Add(_popupTabControl);
             _viewerPoppedOut = true;
             _viewerPopupForm.Show(this);
             _viewerPopupForm.BringToFront();
+
+            // 선택 동기화(재귀 방지)
+            try
+            {
+                _syncingSelection = true;
+                if (cameraListBoxItemsView != null)
+                    cameraListBoxItemsView.SelectedIndex = selIndex;
+            }
+            finally { _syncingSelection = false; }
+        }
+
+        private void PopupTabs_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_popupTabControl == null) return;
+            int idx = _popupTabControl.SelectedIndex;
+            if (idx < 0) return;
+
+            // 카메라 전환
+            if (_camSwitch != null && idx < _camSwitch.Cameras.Count)
+                SwitchCameraTo(idx);
+
+            // viewer를 현재 탭 페이지로 이동(안전)
+            try
+            {
+                var page = _popupTabControl.TabPages[idx];
+                if (visionImageViewer.Parent != page)
+                {
+                    if (visionImageViewer.Parent != null)
+                        visionImageViewer.Parent.Controls.Remove(visionImageViewer);
+
+                    visionImageViewer.Dock = DockStyle.Fill;
+                    page.Controls.Add(visionImageViewer);
+                }
+            }
+            catch { }
+
+            // 좌측 리스트와 동기화(재귀 방지)
+            if (!_syncingSelection && cameraListBoxItemsView != null)
+            {
+                try
+                {
+                    _syncingSelection = true;
+                    cameraListBoxItemsView.SelectedIndex = idx;
+                }
+                finally { _syncingSelection = false; }
+            }
         }
 
         private void RestoreViewer()
@@ -271,10 +368,18 @@ namespace QMC.LCP_280.Process.Unit
             _restoringViewer = true;
             try
             {
-                if (_viewerPopupForm != null && !_viewerPopupForm.IsDisposed)
+                // 탭에서 뷰어 분리
+                if (_popupTabControl != null)
                 {
-                    try { _viewerPopupForm.Controls.Remove(visionImageViewer); } catch { }
+                    try
+                    {
+                        var host = visionImageViewer.Parent;
+                        if (host != null) host.Controls.Remove(visionImageViewer);
+                    }
+                    catch { }
                 }
+
+                // 원래 부모로 복귀
                 if (_viewerOriginalParent != null && !_viewerOriginalParent.IsDisposed)
                 {
                     visionImageViewer.SuspendLayout();
@@ -285,6 +390,15 @@ namespace QMC.LCP_280.Process.Unit
                     visionImageViewer.ResumeLayout();
                     visionImageViewer.BringToFront();
                 }
+
+                // 팝업 폼/탭 정리
+                if (_popupTabControl != null)
+                {
+                    try { _popupTabControl.SelectedIndexChanged -= PopupTabs_SelectedIndexChanged; } catch { }
+                    try { _popupTabControl.Dispose(); } catch { }
+                    _popupTabControl = null;
+                }
+
                 if (_viewerPopupForm != null)
                 {
                     try { if (!_viewerPopupForm.IsDisposed) _viewerPopupForm.Close(); } catch { }
