@@ -109,26 +109,19 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (_camSwitch == null) return;
             if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
+            
+            var cam = _camSwitch.Cameras[selectedIndex];
 
-            // 현재 카메라 라이브 정지
-            try { visionImageViewer.CurrentCamera?.StopLive(); } catch { }
+            try { cam.StopLive(); } catch { }
             
             visionImageViewer.SuspendDisplay();
             _camSwitch.Change(selectedIndex);
-            System.Threading.Thread.Sleep(50);
-
+            
             try 
             { 
-                var cam = _camSwitch.Cameras[selectedIndex];
                 if (cam != null)
                 {
                     visionImageViewer.Simulated = false;
-                    
-                    if (!cam.Opened)
-                    {
-                        var rcOpen = cam.Reconnect();
-                    }
-                    
                     cam.SuspendedImageDisplay = false;
                     
                     var rcLive = cam.StartLive();
@@ -153,8 +146,6 @@ namespace QMC.LCP_280.Process.Unit
             visionImageViewer.Scale.MoveCenter(new Size(cam.Resolution.Width, cam.Resolution.Height));
             visionImageViewer.InitCrossLine();
             visionImageViewer.ShowCrossLine(visionImageViewer.VisibleCrossLine);
-            cam.GrabSync(out var snap);
-            if (snap != null) visionImageViewer.SetImageNDisplay(snap);
         }
 
         // ===== Jog Popup =====
