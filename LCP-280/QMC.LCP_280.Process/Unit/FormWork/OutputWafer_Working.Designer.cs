@@ -30,7 +30,7 @@
         {
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
+            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.SuspendLayout();
             // 
             // dioControl
@@ -84,6 +84,6 @@
         #endregion
         private Component.DIOControl dioControl;
         private Component.TeachingPositionControl teachingPositionControl;
-        private Sequences.ManualSequenceControl manualSequenceControl;
+        private Component.ManualSequenceControl manualSequenceControl;
     }
 }

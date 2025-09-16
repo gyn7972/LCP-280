@@ -321,6 +321,8 @@ namespace QMC.Common.Unit
             if (axisPos == null) return -1;
             var axisObj = GetAxisObjects(tp);
 
+            //** 티칭포지션 중에 Z축이랑 묶여있는 거는 
+            //** 무조건 Z축이 먼저 움직이고 구동되도록 해야함!!!
             foreach (var kv in axisPos)
             {
                 string key = kv.Key;

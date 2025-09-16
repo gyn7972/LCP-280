@@ -80,6 +80,15 @@ namespace QMC.LCP_280.Process.Unit
         [Category("PIckUp"), DisplayName("Up Offset (mm)")]
         [DefaultValue(0.0)]
         public double dPickUpOffset { get; set; } = 0.0;
+        [Category("PIckUp"), DisplayName("Up Speed (mm/sec)")]
+        [DefaultValue(0.0)]
+        public double dPickUpSpeed { get; set; } = 0.0;
+        [Category("PIckUp"), DisplayName("Up Acc (mm/sec2)")]
+        [DefaultValue(0.0)]
+        public double dPickUpAcc { get; set; } = 0.0;
+        [Category("PIckUp"), DisplayName("Up Dec (mm/sec2)")]
+        [DefaultValue(0.0)]
+        public double dPickUpDec { get; set; } = 0.0;
 
 
 

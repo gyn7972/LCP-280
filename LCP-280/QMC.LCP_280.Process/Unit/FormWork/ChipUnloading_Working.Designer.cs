@@ -33,7 +33,7 @@
             this._ChipUnloadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Sequences.ManualSequenceControl();
+            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             ((System.ComponentModel.ISupportInitialize)(this._ChipUnloadingCameraviewer)).BeginInit();
             this.SuspendLayout();
             // 
@@ -124,6 +124,6 @@
         private Common.Vision.VisionImageViewer _ChipUnloadingCameraviewer;
         private Component.DIOControl dioControl;
         private Component.TeachingPositionControl teachingPositionControl;
-        private Sequences.ManualSequenceControl manualSequenceControl;
+        private Component.ManualSequenceControl manualSequenceControl;
     }
 }

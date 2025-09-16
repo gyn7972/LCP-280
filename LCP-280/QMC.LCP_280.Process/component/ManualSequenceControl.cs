@@ -8,7 +8,7 @@ using QMC.LCP_280.Process.Unit;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace QMC.LCP_280.Process.Sequences
+namespace QMC.LCP_280.Process.Component
 {
     public partial class ManualSequenceControl : UserControl
     {

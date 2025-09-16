@@ -1,11 +1,17 @@
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms.DataVisualization.Charting;
+using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -17,34 +23,43 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputStageEjector : BaseUnit<InputStageEjectorConfig>
     {
-        #region Nested Teaching Collection
-        public class TeachingPositionCollection : List<TeachingPosition>
+        public enum AlarmKeys
         {
-            public TeachingPosition this[InputStageEjectorConfig.TeachingPositionName name]
-            {
-                get
-                {
-                    string key = name.ToString();
-                    return this.FirstOrDefault(p => p != null && p.Name.Equals(key, System.StringComparison.OrdinalIgnoreCase));
-                }
-            }
+            eInputStageAxesMoving = 4301,
+
         }
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageAxesMoving;
+            alarm.Title = "InputStage Not Sfarety Pos.";
+            alarm.Cause = "InputStage가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+        }
+
+        #region Config 
+        public InputStageEjectorConfig InputStageEjectorConfig => Config;
         #endregion
 
-        #region Config / Teaching
-        public InputStageEjectorConfig InputStageEjectorConfig => Config;
-        
+        #region DryRun
+        public bool DryRun { get; private set; }
+        public void SetDryRun(bool on) => DryRun = on;
+        #endregion
+
+        #region Unit
+        InputStage InputStage { get; set; }
+        InputDieTransfer InputDieTransfer { get; set; }
         #endregion
 
         #region Axes
         private MotionAxis _axPinZ, _axEjectorZ;
         public MotionAxis AxisPinZ => _axPinZ;
         public MotionAxis AxisEjectorZ => _axEjectorZ;
-        #endregion
-
-        #region DryRun
-        public bool DryRun { get; private set; }
-        public void SetDryRun(bool on) => DryRun = on;
         #endregion
 
         #region ctor / Initialization
@@ -57,8 +72,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-
             BindAxes();
+        }
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+            InputStage = Equipment.Instance.GetUnit(UnitKeys.InputStage) as InputStage;
+            InputDieTransfer = Equipment.Instance.GetUnit(UnitKeys.InputDieTransfer) as InputDieTransfer;
         }
         #endregion
 
@@ -76,33 +96,151 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.EjectPinZ, ref _axPinZ);
             BindAxis(mgr, unitName, AxisNames.EjectorZ, ref _axEjectorZ);
         }
-        public void MoveAxisOnce(MotionAxis ax, double target)
+        #endregion
+
+
+        // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
+        /// <summary>
+        /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
+        /// </summary>
+        public override int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
         {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+            if (axis == null) return -1;
+
+            if (CheckMoveSafety(axis) != 0)
+            {
+                return -1;
+            }
+
+            Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
+            while (IsEndTask(task) == false)
+            {
+                // 동일 Safety Interlock
+                // 사전 Interlock (다른 관련 Unit 축 동작 중이면 시작하지 않음)
+                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                {
+                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+
+                Thread.Sleep(1);
+            }
+            return task.Result;
         }
+
+        protected override int CheckMoveSafety(MotionAxis ax)
+        {
+            try
+            {
+                //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
+                // 1) Ejector / PinZ Safety 검사 (우선순위 높음)
+                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                {
+                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+                // 추가로 "다른 유닛 축 이동중" 등을 넣고 싶다면 여기서 검사 후 알람 코드 반환
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                // 예외 발생 시 보수적으로 이동 중단하도록 임의 알람 
+                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+
+            return 0; // 0 = OK
+        }
+        /// //////////////////////////////////////////////////////////////////////////////////////////////
+        // UI, sequence 용 Move 함수
+
+        //EjectBlockUp
+        public int MoveEjectBlockUpPosition(bool isFine = false)
+        {
+            Task<int> task = MoveEjectBlockUpPositionAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                // Check Interlock.!!! 구문 넣을것.!!!
+                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                {
+                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public Task<int> MoveEjectBlockUpPositionAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMoveEjectBlockUpPosition(isFine);
+                return 0;
+            });
+        }
+        private int OnMoveEjectBlockUpPosition(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectBlockUp, isFine);
+        }
+
+        //EjectBlockReady
+        public int MoveEjectBlockReadyPosition(bool isFine = false)
+        {
+            Task<int> task = MoveEjectBlockReadyPositionAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public Task<int> MoveEjectBlockReadyPositionAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMoveEjectBlockReadyPosition(isFine);
+                return 0;
+            });
+        }
+        private int OnMoveEjectBlockReadyPosition(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectBlockReady, isFine);
+        }
+
+        //EjectBlocksafety
+        public int MoveEjectBlockSafetyPosition(bool isFine = false)
+        {
+            Task<int> task = MoveEjectBlockSafetyPositionAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public Task<int> MoveEjectBlockSafetyPositionAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMoveEjectBlockSafetyPosition(isFine);
+                return 0;
+            });
+        }
+        private int OnMoveEjectBlockSafetyPosition(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectBlockSafety, isFine);
+        }
+
+
+
+
+
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisKey)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisKey, out var v)) return v;
-            return 0.0;
-        }
+
         public double GetTP(TeachingPosition tp, string axisKey) => (tp == null || string.IsNullOrEmpty(axisKey)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisKey, out var v) ? v : 0.0);
         public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
         #endregion
 
         #region Teaching
-        public void TeachCurrentPosition(string positionName, string description = null)
-        {
-            var axisPositions = new Dictionary<string, double>();
-            foreach (var axisPair in Axes)
-                axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            var tp = new TeachingPosition(positionName, axisPositions, description);
-            Config.SetTeachingPosition(tp);
-        }
-
         public int MoveToTeachingPosition(string positionName, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
             var tp = Config.GetTeachingPosition(positionName);
@@ -115,20 +253,13 @@ namespace QMC.LCP_280.Process.Unit
                 rc |= _axPinZ.MoveAbs(pz, vel > 0 ? vel : _axPinZ.Config.MaxVelocity, acc > 0 ? acc : _axPinZ.Config.RunAcc, dec > 0 ? dec : _axPinZ.Config.RunDec, jerk > 0 ? jerk : _axPinZ.Config.AccJerkPercent);
             return rc;
         }
-        public int MoveToTeachingPosition(TeachingPosition tp, double vel = 0, double acc = 0, double dec = 0, double jerk = 0) => tp == null ? -1 : MoveToTeachingPosition(tp.Name, vel, acc, dec, jerk);
         public int MoveToTeachingPosition(InputStageEjectorConfig.TeachingPositionName name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0) => MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
-
         public bool InPosTeaching(string positionName)
         {
             var (z, pz) = Config.GetPositionWithOffset(positionName);
             return InPos(_axEjectorZ, z) && InPos(_axPinZ, pz);
         }
-        public bool InPosTeaching(TeachingPosition tp) => tp != null && InPosTeaching(tp.Name);
-        
-        public void ApplyOffset(string positionName, double dzEjector, double dzPin) => Config.SetOffset(positionName, dzEjector, dzPin);
         #endregion
-
-
 
         public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
         /// <summary>
@@ -214,11 +345,11 @@ namespace QMC.LCP_280.Process.Unit
                 return cur >= (pinTarget - tol);
             return System.Math.Abs(cur - pinTarget) <= tol;
         }
-
         /// <summary>
         /// 두 축(EjectorZ & PinZ) 모두 Safety 판단
         /// </summary>
         public bool IsAllSafety() => IsEjectorZSafetyPos() && IsPinZSafetyPos();
+
 
         #region Lifecycle
         public override int OnRun() { int ret = 0; return ret; }
@@ -227,6 +358,7 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunWork() { return 0; }
         protected override int OnRunComplete() { return 0; }
         #endregion
+
 
         #region Seq 단위 동작 함수
         public int ChipPickUpWait()

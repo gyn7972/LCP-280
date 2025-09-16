@@ -7,6 +7,8 @@ using System.Windows.Forms;
 using QMC.Common;
 using QMC.Common.Cameras;
 using QMC.Common.Vision;
+using QMC.LCP_280.Process.Component;
+using System.Runtime.InteropServices; // <-- added
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -20,6 +22,7 @@ namespace QMC.LCP_280.Process.Unit
 
         // Jog Popup
         private Form_AxisJogPopup _jogPopup = null;
+        private AxisPostionPopup _axisPosPopup = null;
 
         // Viewer popup 관리
         private Form _viewerPopupForm;
@@ -31,6 +34,48 @@ namespace QMC.LCP_280.Process.Unit
         // Property 인덱스 (필요시 확장)
         private Dictionary<(string section, string title), PropertyBase> _configIndex;
         private Dictionary<(string section, string title), PropertyBase> _speedIndex;
+
+        // ===== Z-Order (Non-TopMost) 관리 추가 =====
+        [DllImport("user32.dll", SetLastError = false)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter,
+            int X, int Y, int cx, int cy, uint uFlags);
+        private static readonly IntPtr HWND_TOP = new IntPtr(0);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        private void EnsureAboveMain(Form popup)
+        {
+            if (popup == null || popup.IsDisposed || !popup.Visible) return;
+            if (popup.WindowState == FormWindowState.Minimized) return;
+            try
+            {
+                SetWindowPos(popup.Handle, HWND_TOP, 0, 0, 0, 0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            }
+            catch { }
+        }
+        private void HookPopupZOrderEvents()
+        {
+            this.Activated -= VisionSetup_Activated;
+            this.Activated += VisionSetup_Activated;
+            this.Move -= VisionSetup_MoveResize;
+            this.Move += VisionSetup_MoveResize;
+            this.Resize -= VisionSetup_MoveResize;
+            this.Resize += VisionSetup_MoveResize;
+        }
+        private void VisionSetup_Activated(object sender, EventArgs e)
+        {
+            EnsureAboveMain(_jogPopup);
+            EnsureAboveMain(_axisPosPopup);
+        }
+        private void VisionSetup_MoveResize(object sender, EventArgs e)
+        {
+            EnsureAboveMain(_jogPopup);
+            EnsureAboveMain(_axisPosPopup);
+        }
+        // ===========================================
 
         public Vision_Setup()
         {
@@ -45,6 +90,8 @@ namespace QMC.LCP_280.Process.Unit
                 visionImageViewer.DoubleClick -= VisionImageViewer_DoubleClick;
                 visionImageViewer.DoubleClick += VisionImageViewer_DoubleClick;
             }
+
+            HookPopupZOrderEvents(); // <-- added
 
             //_jogPopup = new Form_AxisJogPopup();
             ResumeLayout(true);
@@ -134,6 +181,7 @@ namespace QMC.LCP_280.Process.Unit
         private void btn_JogPopup_Click(object sender, EventArgs e)
         {
             ShowOrRestoreJogPopup(this);
+            ShowOrRestoreAxisPosPopup(this);
         }
 
         private void ShowOrRestoreJogPopup(IWin32Window owner)
@@ -157,14 +205,13 @@ namespace QMC.LCP_280.Process.Unit
                     TaskbarHelper.SetAppId(_jogPopup.Handle, "MyApp.JogPanel");
                 };
 
-
                 _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
                 _jogPopup.FormClosing += (s, ev) =>
                 {
-                    if (ev.CloseReason == CloseReason.UserClosing) 
-                    { 
-                        ev.Cancel = true; 
-                        _jogPopup.Hide(); 
+                    if (ev.CloseReason == CloseReason.UserClosing)
+                    {
+                        ev.Cancel = true;
+                        _jogPopup.Hide();
                     }
                 };
             }
@@ -173,16 +220,59 @@ namespace QMC.LCP_280.Process.Unit
                 //_jogPopup.Show(owner);
                 _jogPopup.Show();
             }
-                
-            if (_jogPopup.WindowState == FormWindowState.Minimized) 
+
+            if (_jogPopup.WindowState == FormWindowState.Minimized)
                 _jogPopup.WindowState = FormWindowState.Normal;
 
             _jogPopup.BringToFront();
-            //_jogPopup.TopMost = true; 
-            //_jogPopup.TopMost = false;
+            // _jogPopup.TopMost = true;  // 제거
+            EnsureAboveMain(_jogPopup); // 신규 적용
             _jogPopup.Activate();
         }
+        private void ShowOrRestoreAxisPosPopup(IWin32Window owner)
+        {
+            //return;
+            if (_axisPosPopup == null || _axisPosPopup.IsDisposed)
+            {
+                _axisPosPopup = new AxisPostionPopup();
+                _axisPosPopup.StartPosition = FormStartPosition.CenterParent;
 
+                _axisPosPopup.ShowInTaskbar = true;
+                _axisPosPopup.StartPosition = FormStartPosition.CenterScreen;
+
+                // ✅ Owner 관계 제거 (메인창과 독립)
+                _axisPosPopup.Owner = null;
+                _axisPosPopup.Load += (s, e) =>
+                {
+                    // 메인폼과 다른 AppID 부여
+                    TaskbarHelper.SetAppId(_axisPosPopup.Handle, "MyApp.AxisPosition");
+                };
+
+                _axisPosPopup.FormClosed += (s, _) => { _axisPosPopup = null; };
+                _axisPosPopup.FormClosing += (s, ev) =>
+                {
+                    if (ev.CloseReason == CloseReason.UserClosing)
+                    {
+                        ev.Cancel = true;
+                        _axisPosPopup.Hide();
+                    }
+                };
+            }
+            if (!_axisPosPopup.Visible)
+            {
+                _axisPosPopup.Show();
+            }
+
+            if (_axisPosPopup.WindowState == FormWindowState.Minimized)
+                _axisPosPopup.WindowState = FormWindowState.Normal;
+
+            _axisPosPopup.BringToFront();
+
+            // _axisPosPopup.TopMost = true; // 제거
+            EnsureAboveMain(_axisPosPopup); // 신규 적용
+
+            _axisPosPopup.Activate();
+        }
         // ===== Viewer Popup (Double-click) =====
         private void VisionImageViewer_DoubleClick(object sender, EventArgs e)
         {

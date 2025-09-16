@@ -229,11 +229,29 @@ namespace QMC.LCP_280.Process.Unit
             return cd;
         }
 
-        protected override int OnRunComplete()
+        protected override int OnRunReady()
         {
+            int ret = 0;
+            MaterialCassette material = GetMaterialCassette();
+            if (material.Presence == Material.MaterialPresence.Exist)
+            {
+                if (material.ProcessSatate == MaterialCassette.MaterialProcessSatate.Unknown)
+                {
+                    ret = ScanWafer();
+                    if (ret != 0)
+                    {
+                        Log.Write(this, "ScanWafer Failed");
+                        return -1;
+                    }
+                }
+                State = ProcessState.Work;
+            }
+            else
+            {
+                State = ProcessState.None;
+            }
             return 0;
         }
-
         protected override int OnRunWork()
         {
             MaterialCassette material = GetMaterialCassette();
@@ -307,6 +325,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             return 0;
         }
+        protected override int OnRunComplete()
+        {
+            return 0;
+        }
+
+        
 
         private int MoveToSlot(int slotIndex)
         {
@@ -363,29 +387,7 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        protected override int OnRunReady()
-        {
-            int ret = 0;
-            MaterialCassette material = GetMaterialCassette();
-            if (material.Presence == Material.MaterialPresence.Exist)
-            {
-                if (material.ProcessSatate == MaterialCassette.MaterialProcessSatate.Unknown)
-                {
-                    ret = ScanWafer();
-                    if (ret != 0)
-                    {
-                        Log.Write(this, "ScanWafer Failed");
-                        return -1;
-                    }
-                }
-                State = ProcessState.Work;
-            }
-            else
-            {
-                State = ProcessState.None;
-            }
-            return 0;
-        }
+        
 
         public int ScanWafer()
         {

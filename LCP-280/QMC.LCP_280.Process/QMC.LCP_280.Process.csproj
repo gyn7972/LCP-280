@@ -82,6 +82,12 @@
     <Compile Include="CassetteMapView.Designer.cs">
       <DependentUpon>CassetteMapView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\AxisPostionPopup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Component\AxisPostionPopup.Designer.cs">
+      <DependentUpon>AxisPostionPopup.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\DIOControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -406,6 +412,9 @@
     <Compile Include="Work\Process.cs" />
     <Compile Include="Work\InputWafer.cs" />
     <Compile Include="Work\WaferBin.cs" />
+    <EmbeddedResource Include="Component\AxisPostionPopup.resx">
+      <DependentUpon>AxisPostionPopup.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Component\DIOControl.resx">
       <DependentUpon>DIOControl.cs</DependentUpon>
     </EmbeddedResource>

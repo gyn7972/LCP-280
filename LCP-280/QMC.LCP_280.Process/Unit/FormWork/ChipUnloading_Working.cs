@@ -326,10 +326,5 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             try { }
             catch { }
         }
-
-        private void _btnVisionSetting_Click(object sender, EventArgs e)
-        {
-            
-        }
     }
 }

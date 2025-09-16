@@ -2,7 +2,7 @@
 //using System.Drawing;
 //using System.ComponentModel;
 
-namespace QMC.LCP_280.Process.Sequences
+namespace QMC.LCP_280.Process.Component
 {
 
     partial class ManualSequenceControl
