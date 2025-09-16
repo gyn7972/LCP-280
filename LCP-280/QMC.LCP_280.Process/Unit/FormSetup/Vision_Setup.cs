@@ -110,6 +110,9 @@ namespace QMC.LCP_280.Process.Unit
 
         private void OnVisionItemSelected(object sender, int selectedIndex)
         {
+            // 리스트 선택 프로그램적 변경 시(탭 동기화 중) 중복 Stop/Start 방지
+            if (_syncingSelection) return;
+
             if (_camSwitch == null) return;
             if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
 
@@ -331,11 +334,37 @@ namespace QMC.LCP_280.Process.Unit
             int idx = _popupTabControl.SelectedIndex;
             if (idx < 0) return;
 
-            // 카메라 전환
+            // 리스트 동기화로 인해 탭이 프로그램적으로 바뀐 경우:
+            // - 카메라 전환은 이미 리스트 핸들러에서 수행됨
+            // - 뷰어만 현재 탭 페이지로 이동
+            if (_syncingSelection)
+            {
+                MoveViewerIntoTab(idx);
+                return;
+            }
+
+            // 사용자 탭 선택: 카메라 전환
             if (_camSwitch != null && idx < _camSwitch.Cameras.Count)
                 SwitchCameraTo(idx);
 
-            // viewer를 현재 탭 페이지로 이동(안전)
+            // 뷰어를 현재 탭 페이지로 이동
+            MoveViewerIntoTab(idx);
+
+            // 좌측 리스트와 동기화(재귀 방지)
+            if (cameraListBoxItemsView != null)
+            {
+                try
+                {
+                    _syncingSelection = true;
+                    cameraListBoxItemsView.SelectedIndex = idx;
+                }
+                finally { _syncingSelection = false; }
+            }
+        }
+
+        // 탭 페이지로 뷰어를 안전하게 이동
+        private void MoveViewerIntoTab(int idx)
+        {
             try
             {
                 var page = _popupTabControl.TabPages[idx];
@@ -349,17 +378,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             catch { }
-
-            // 좌측 리스트와 동기화(재귀 방지)
-            if (!_syncingSelection && cameraListBoxItemsView != null)
-            {
-                try
-                {
-                    _syncingSelection = true;
-                    cameraListBoxItemsView.SelectedIndex = idx;
-                }
-                finally { _syncingSelection = false; }
-            }
         }
 
         private void RestoreViewer()
