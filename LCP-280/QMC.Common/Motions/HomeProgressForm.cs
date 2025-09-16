@@ -37,7 +37,7 @@ namespace QMC.Common.Motions
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
             this.ClientSize = new Size(620, 360);
-            this.Text = "Operation Progress";
+            this.Text = "Home Progress";
             this.MaximizeBox = false; this.MinimizeBox = false;
             this.ShowInTaskbar = false;
 

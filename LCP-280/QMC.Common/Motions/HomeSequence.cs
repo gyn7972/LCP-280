@@ -266,6 +266,7 @@ namespace QMC.Common.Motions
                     break;
                 }
 
+                // 변경: 실행 중에도 취소되면 해당 스텝 축들을 즉시 정지시키도록 토큰 콜백 등록
                 var tasks = new List<Task<HomeAxisResult>>(runnable.Count);
                 foreach (var axis in runnable)
                 {
@@ -273,119 +274,141 @@ namespace QMC.Common.Motions
                     tasks.Add(t);
                 }
 
-                try
+                using (var cancelReg = token.Register(() =>
                 {
-                    var pending = new List<Task<HomeAxisResult>>(tasks);
-                    bool earlyFail = false;
-                    string earlyFailReason = null;
-                    while (pending.Count > 0)
-                    {
-                        var finished = await Task.WhenAny(pending).ConfigureAwait(false);
-                        pending.Remove(finished);
-                        var res = await finished.ConfigureAwait(false);
-                        if (!res.Success)
-                        {
-                            earlyFail = true;
-                            earlyFailReason = res.FailReason ?? ("ReturnCode=" + res.ReturnCode);
-                            break;
-                        }
-                    }
-                    if (earlyFail)
-                    {
-                        foreach (var ax in step)
-                        {
-                            TryStop(ax);
-                        }
-                        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                        foreach (var r in results)
-                        {
-                            all.Add(r);
-                        }
-                        Aborted = true;
-                        AbortReason = $"Step {stepIndex} failed early: {earlyFailReason}";
-                        AbortStepIndex = stepIndex;
-
-                        var failProgress = new OperationProgress();
-                        failProgress.OperationId = "HOME";
-                        failProgress.Title = "Home";
-                        failProgress.StepIndex = stepIndex;
-                        failProgress.TotalSteps = _steps.Count;
-                        failProgress.StepAxisCount = step.Count;
-                        failProgress.StepFailCount = results.Count(r => !r.Success);
-                        failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                        failProgress.IsStepCompleted = true;
-                        failProgress.IsAborted = true;
-                        failProgress.Message = AbortReason;
-                        RaiseProgress(failProgress);
-
-                        if (PostStepAsync != null)
-                        {
-                            try
-                            {
-                                await PostStepAsync(stepIndex, results, token).ConfigureAwait(false);
-                            }
-                            catch
-                            {
-                                // 예외 무시
-                            }
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                        foreach (var r in results)
-                        {
-                            all.Add(r);
-                        }
-                        var doneProgress = new OperationProgress();
-                        doneProgress.OperationId = "HOME";
-                        doneProgress.Title = "Home";
-                        doneProgress.StepIndex = stepIndex;
-                        doneProgress.TotalSteps = _steps.Count;
-                        doneProgress.StepAxisCount = step.Count;
-                        doneProgress.StepFailCount = results.Count(r => !r.Success);
-                        doneProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                        doneProgress.IsStepCompleted = true;
-                        RaiseProgress(doneProgress);
-
-                        if (PostStepAsync != null)
-                        {
-                            try
-                            {
-                                await PostStepAsync(stepIndex, results, token).ConfigureAwait(false);
-                            }
-                            catch
-                            {
-                                // 예외 무시
-                            }
-                        }
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    foreach (var ax in step)
+                    foreach (var ax in runnable)
                     {
                         TryStop(ax);
                     }
-                    Aborted = true;
-                    AbortReason = "Canceled";
-                    AbortStepIndex = stepIndex;
+                }))
+                {
+                    try
+                    {
+                        var pending = new List<Task<HomeAxisResult>>(tasks);
+                        bool earlyFail = false;
+                        string earlyFailReason = null;
 
-                    var cancelProgress = new OperationProgress();
-                    cancelProgress.OperationId = "HOME";
-                    cancelProgress.Title = "Home";
-                    cancelProgress.StepIndex = stepIndex;
-                    cancelProgress.TotalSteps = _steps.Count;
-                    cancelProgress.StepAxisCount = step.Count;
-                    cancelProgress.StepFailCount = step.Count;
-                    cancelProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                    cancelProgress.IsStepCompleted = true;
-                    cancelProgress.IsCanceled = true;
-                    cancelProgress.Message = "Canceled";
-                    RaiseProgress(cancelProgress);
+                        while (pending.Count > 0)
+                        {
+                            if (token.IsCancellationRequested)
+                            {
+                                // 취소 즉시 축 정지 (중복안전)
+                                foreach (var ax in runnable) { TryStop(ax); }
 
-                    break;
+                                var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                                foreach (var r in results) { all.Add(r); }
+
+                                Aborted = true;
+                                AbortReason = "Canceled";
+                                AbortStepIndex = stepIndex;
+
+                                var cancelProgress = new OperationProgress();
+                                cancelProgress.OperationId = "HOME";
+                                cancelProgress.Title = "Home";
+                                cancelProgress.StepIndex = stepIndex;
+                                cancelProgress.TotalSteps = _steps.Count;
+                                cancelProgress.StepAxisCount = step.Count;
+                                cancelProgress.StepFailCount = results.Count(r => !r.Success);
+                                cancelProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                                cancelProgress.IsStepCompleted = true;
+                                cancelProgress.IsCanceled = true;
+                                cancelProgress.Message = "Canceled";
+                                RaiseProgress(cancelProgress);
+
+                                if (PostStepAsync != null)
+                                {
+                                    try { await PostStepAsync(stepIndex, results, token).ConfigureAwait(false); } catch { }
+                                }
+                                break;
+                            }
+
+                            var finished = await Task.WhenAny(pending).ConfigureAwait(false);
+                            pending.Remove(finished);
+                            var res = await finished.ConfigureAwait(false);
+                            if (!res.Success)
+                            {
+                                earlyFail = true;
+                                earlyFailReason = res.FailReason ?? ("ReturnCode=" + res.ReturnCode);
+                                break;
+                            }
+                        }
+
+                        if (token.IsCancellationRequested)
+                        {
+                            break; // 위에서 처리함
+                        }
+
+                        if (earlyFail)
+                        {
+                            foreach (var ax in step) { TryStop(ax); }
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            foreach (var r in results) { all.Add(r); }
+                            Aborted = true;
+                            AbortReason = $"Step {stepIndex} failed early: {earlyFailReason}";
+                            AbortStepIndex = stepIndex;
+
+                            var failProgress = new OperationProgress();
+                            failProgress.OperationId = "HOME";
+                            failProgress.Title = "Home";
+                            failProgress.StepIndex = stepIndex;
+                            failProgress.TotalSteps = _steps.Count;
+                            failProgress.StepAxisCount = step.Count;
+                            failProgress.StepFailCount = results.Count(r => !r.Success);
+                            failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                            failProgress.IsStepCompleted = true;
+                            failProgress.IsAborted = true;
+                            failProgress.Message = AbortReason;
+                            RaiseProgress(failProgress);
+
+                            if (PostStepAsync != null)
+                            {
+                                try { await PostStepAsync(stepIndex, results, token).ConfigureAwait(false); } catch { }
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+                            foreach (var r in results) { all.Add(r); }
+                            var doneProgress = new OperationProgress();
+                            doneProgress.OperationId = "HOME";
+                            doneProgress.Title = "Home";
+                            doneProgress.StepIndex = stepIndex;
+                            doneProgress.TotalSteps = _steps.Count;
+                            doneProgress.StepAxisCount = step.Count;
+                            doneProgress.StepFailCount = results.Count(r => !r.Success);
+                            doneProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                            doneProgress.IsStepCompleted = true;
+                            RaiseProgress(doneProgress);
+
+                            if (PostStepAsync != null)
+                            {
+                                try { await PostStepAsync(stepIndex, results, token).ConfigureAwait(false); } catch { }
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        foreach (var ax in step) { TryStop(ax); }
+                        Aborted = true;
+                        AbortReason = "Canceled";
+                        AbortStepIndex = stepIndex;
+
+                        var cancelProgress = new OperationProgress();
+                        cancelProgress.OperationId = "HOME";
+                        cancelProgress.Title = "Home";
+                        cancelProgress.StepIndex = stepIndex;
+                        cancelProgress.TotalSteps = _steps.Count;
+                        cancelProgress.StepAxisCount = step.Count;
+                        cancelProgress.StepFailCount = step.Count;
+                        cancelProgress.StepName = string.Join(", ", step.Select(a => a.Name));
+                        cancelProgress.IsStepCompleted = true;
+                        cancelProgress.IsCanceled = true;
+                        cancelProgress.Message = "Canceled";
+                        RaiseProgress(cancelProgress);
+
+                        break;
+                    }
                 }
             }
 

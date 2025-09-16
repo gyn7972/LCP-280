@@ -377,7 +377,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     catch
                     {
-                        // 예외 무시
+                        Equipment.AxisManager?.EmgStopAll();
                     }
                 };
 
