@@ -108,19 +108,18 @@ namespace QMC.LCP_280.Process.Unit
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                if (TeachingPositions.FirstOrDefault(p => p.Name == posName) == null)
+                if (!existing.Contains(posName))
                 {
                     var axes = GetAxisNamesForPosition(posName);
                     var axisPositions = new Dictionary<string, double>();
-                    foreach (var a in axes) axisPositions[a] = 0.0; // 초기값 0
-                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
-                if (!Offsets.ContainsKey(posName)) Offsets[posName] = (0, 0);
             }
-            // 기존 항목도 매핑 필터 적용 (사용하지 않는 축 제거, 누락 축 추가)
             ApplyAxisMapping();
             Saveconfig();
         }
@@ -130,14 +129,13 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public void SetTeachingPosition(TeachingPosition tp)
         {
-            // 매핑 적용: 허용된 축만 남기고 누락된 축은 0으로 추가
             var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
             var filtered = new Dictionary<string, double>();
-            foreach (var key in allowed)
+            foreach (var axis in allowed)
             {
                 double v = 0;
-                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(key, out var val)) v = val;
-                filtered[key] = v;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
             }
             tp.AxisPositions = filtered;
 
@@ -145,11 +143,10 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
-            if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0);
             Saveconfig();
         }
 
@@ -179,10 +176,10 @@ namespace QMC.LCP_280.Process.Unit
             var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-            var original = TeachingPositions;
+            var backup = TeachingPositions;
             TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>Config 로드 + Axis 바인딩 + Offset 키 보정 + 매핑 동기화</summary>
@@ -193,8 +190,6 @@ namespace QMC.LCP_280.Process.Unit
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
-            foreach (var tp in TeachingPositions)
-                if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0);
             return 0;
         }
 
@@ -206,8 +201,7 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var tp in TeachingPositions)
             {
                 var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
-                // 제거 대상 필터
-                var current = tp.AxisPositions != null ? tp.AxisPositions : new Dictionary<string, double>();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
                 var next = new Dictionary<string, double>();
                 foreach (var axis in allowed)
                 {

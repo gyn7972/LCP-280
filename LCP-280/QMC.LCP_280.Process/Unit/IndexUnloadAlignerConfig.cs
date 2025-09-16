@@ -18,6 +18,11 @@ namespace QMC.LCP_280.Process.Unit
         {
         }
 
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+        };
+
         #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
@@ -30,36 +35,41 @@ namespace QMC.LCP_280.Process.Unit
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
 
-        public IndexUnloadAlignerConfig() : base("IndexUnloadAlignerConfig")
-        {
-            //InitializeDefaultTeachingPositions();
-        }
+        public IndexUnloadAlignerConfig() : base("IndexUnloadAlignerConfig") { }
 
         // enum 기반으로 기본 TeachingPosition 생성
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                var tp = TeachingPositions.FirstOrDefault(p => p.Name == posName);
-                if (tp == null)
+                if (!existing.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                    };
-                    tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
-                    TeachingPositions.Add(tp);
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
-                // 축 바인딩은 여기서 하지 말고!
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
         // 포지션 추가/업데이트
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var axis in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -67,51 +77,60 @@ namespace QMC.LCP_280.Process.Unit
                 exist.Description = tp.Description;
                 exist.ExtraInfo = tp.ExtraInfo;
             }
-            else
-            {
-                TeachingPositions.Add(tp);
-            }
+            else TeachingPositions.Add(tp);
             Saveconfig();
         }
 
         // 포지션 조회
-        public TeachingPosition GetTeachingPosition(string name)
-            => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         // 저장: 축 정보(Axes) 제외하고 순수 데이터만 저장
         public int Saveconfig()
         {
-            // 축 정보 제외하고 TeachingPositions만 저장
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-
-            // 임시로 TeachingPositions를 교체해서 저장
-            var original = TeachingPositions;
-            TeachingPositions = purePositions;
-            try
-            {
-                return Save();
-            }
-            finally
-            {
-                TeachingPositions = original;
-            }
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
+            try { return Save(); }
+            finally { TeachingPositions = backup; }
         }
 
         // 불러오기: 저장 데이터를 불러온 뒤, 런타임에 축 바인딩
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load();
-            if (result != 0) return result;
+            int rc = Load();
+            if (rc != 0) return rc;
+            ApplyAxisMapping();
+            foreach (var tp in TeachingPositions)
+                tp.BindAxes(axisManager, "Unit");
+            return 0;
+        }
 
-            // 각 TeachingPosition에 축 바인딩
+        public void ApplyAxisMapping()
+        {
             foreach (var tp in TeachingPositions)
             {
-                tp.BindAxes(axisManager, "Unit"); // unitName = "Unit" (혹은 필요에 맞게)
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
             }
+        }
 
-            return 0;
+        /// <summary>문자열 Position 이름으로 허용 축 배열 반환</summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            return Array.Empty<string>();
         }
 
         #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)

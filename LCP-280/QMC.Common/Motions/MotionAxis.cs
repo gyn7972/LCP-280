@@ -707,8 +707,8 @@ namespace QMC.Common.Motions
                 // 3) Servo On 보장
                 try { this.Servo(true); } catch (Exception ex) { Log.Write(ex); }
 
-                double dAcc = 10; // Config.JogAcc;
-                double dDec = 10; // Config.JogDec;
+                double dAcc = Config.JogAcc;
+                double dDec = Config.JogDec;
 
                 var drv = this._driver as AjinDriver;
                 if (drv != null) drv.JogVelStart(this.AxisNo, signedVel, dAcc, dDec);

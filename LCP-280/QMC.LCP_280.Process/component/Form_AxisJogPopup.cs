@@ -282,7 +282,7 @@ namespace QMC.LCP_280.Process.Unit
                     double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity; // :contentReference[oaicite:5]{index=5}
 
                     //test
-                    vel = 10;
+                    //vel = 10;
                     StartJogContinuous(axis, jc, vel);
                 }
                 else

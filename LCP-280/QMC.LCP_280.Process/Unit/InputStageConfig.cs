@@ -123,10 +123,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axes = GetAxisNamesForPosition(posName);
                     var axisPositions = new Dictionary<string, double>();
-                    foreach (var a in axes) axisPositions[a] = 0.0; // 기본 0
-                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
-                if (!Offsets.ContainsKey(posName)) Offsets[posName] = (0, 0, 0);
             }
             ApplyAxisMapping();
             Saveconfig();
@@ -149,11 +148,10 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
-            if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             Saveconfig();
         }
 
@@ -186,12 +184,12 @@ namespace QMC.LCP_280.Process.Unit
         public int Saveconfig()
         {
             var pure = TeachingPositions
-                .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
-                .ToList();
-            var original = TeachingPositions;
+               .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
+               .ToList();
+            var backup = TeachingPositions;
             TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>
@@ -199,13 +197,11 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load();
-            if (result != 0) return result;
+            int rc = Load();
+            if (rc != 0) return rc;
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
-            foreach (var tp in TeachingPositions)
-                if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             return 0;
         }
 

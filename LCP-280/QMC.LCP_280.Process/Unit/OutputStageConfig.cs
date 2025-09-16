@@ -93,11 +93,11 @@ namespace QMC.LCP_280.Process.Unit
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                if (!existingNames.Contains(posName))
+                if (!existing.Contains(posName))
                 {
                     var axes = GetAxisNamesForPosition(posName);
                     var axisPositions = new Dictionary<string, double>();
@@ -136,19 +136,22 @@ namespace QMC.LCP_280.Process.Unit
 
         public int Saveconfig()
         {
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-            var original = TeachingPositions; TeachingPositions = purePositions;
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load(); if (result != 0) return result;
+            int rc = Load();
+            if (rc != 0) return rc;
             ApplyAxisMapping();
-            foreach (var tp in TeachingPositions) tp.BindAxes(axisManager, "Unit");
+            foreach (var tp in TeachingPositions)
+                tp.BindAxes(axisManager, "Unit");
             return 0;
         }
 

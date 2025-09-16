@@ -138,9 +138,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
             var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
-            foreach (TeachingPositionName name in Enum.GetValues(typeof(TeachingPositionName)))
+            foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
-                var posName = name.ToString();
+                string posName = name.ToString();
                 if (!existing.Contains(posName))
                 {
                     var axes = GetAxisNamesForPosition(posName);
@@ -158,18 +158,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
             var filtered = new Dictionary<string, double>();
-            if (tp.AxisPositions != null)
+            foreach (var axis in allowed)
             {
-                foreach (var a in allowed)
-                {
-                    double v = 0;
-                    if (tp.AxisPositions.TryGetValue(a, out var val)) v = val;
-                    filtered[a] = v;
-                }
-            }
-            else
-            {
-                foreach (var a in allowed) filtered[a] = 0.0;
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
             }
             tp.AxisPositions = filtered;
 
@@ -192,15 +185,17 @@ namespace QMC.LCP_280.Process.Unit
             var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-            var original = TeachingPositions; TeachingPositions = pure;
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>Config 로드 후 축 바인딩</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load(); if (result != 0) return result;
+            int rc = Load();
+            if (rc != 0) return rc;
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
@@ -215,9 +210,9 @@ namespace QMC.LCP_280.Process.Unit
                 var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
                 var current = tp.AxisPositions ?? new Dictionary<string, double>();
                 var next = new Dictionary<string, double>();
-                foreach (var a in allowed)
+                foreach (var axis in allowed)
                 {
-                    if (current.TryGetValue(a, out var v)) next[a] = v; else next[a] = 0.0;
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
                 }
                 tp.AxisPositions = next;
             }
@@ -226,8 +221,8 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>Position 이름 기반 허용 축 목록 반환</summary>
         public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
         {
-            if (string.IsNullOrWhiteSpace(positionName)) return new string[0];
-            if (Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
             {
                 if (_axisMap.TryGetValue(en, out var arr)) return arr;
             }

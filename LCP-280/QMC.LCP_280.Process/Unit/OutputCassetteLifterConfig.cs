@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -35,11 +36,8 @@ namespace QMC.LCP_280.Process.Unit
             CassetteSlot_1,
             MappingStart,
             MappingEnd,
-            SlotPitch,
-            SlotCount,
             UnloadOffset,
             LoadPort
-            // 필요시 확장
         }
 
         /// <summary>
@@ -51,8 +49,6 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.CassetteSlot_1, new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.MappingStart,   new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.MappingEnd,     new [] { AxisNames.BinLifterZ } },
-            { TeachingPositionName.SlotPitch,      new [] { AxisNames.BinLifterZ } },
-            { TeachingPositionName.SlotCount,      new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.UnloadOffset,   new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.LoadPort,       new [] { AxisNames.BinLifterZ } },
         };
@@ -72,6 +68,16 @@ namespace QMC.LCP_280.Process.Unit
         public HardOutputDef[] HardOutputs => _hardOutputs;
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
+
+        [Category("Cassette"), DisplayName("SlotPitch (mm)")]
+        [DefaultValue(0.0)]
+        //[DisplayOrder(1)]
+        public double SlotPitch { get; set; } = 0.0;
+
+        [Category("Cassette"), DisplayName("SlotCount (ea)")]
+        [DefaultValue(0)]
+        //[DisplayOrder(1)]
+        public int SlotCount { get; set; } = 0;
 
         public OutputCassetteLifterConfig() : base("OutputCassetteLifterConfig") { }
 
@@ -112,8 +118,8 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
             Saveconfig();
@@ -124,18 +130,20 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
         public int Saveconfig()
         {
-            var purePositions = TeachingPositions
-                .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
-                .ToList();
-            var original = TeachingPositions; TeachingPositions = purePositions;
+            var pure = TeachingPositions
+                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
+                 .ToList();
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>로드 + 축 매핑 + TeachingPosition 축 바인딩</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int rc = Load(); if (rc != 0) return rc;
+            int rc = Load();
+            if (rc != 0) return rc;
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");

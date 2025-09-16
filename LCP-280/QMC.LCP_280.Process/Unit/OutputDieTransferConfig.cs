@@ -117,18 +117,16 @@ namespace QMC.LCP_280.Process.Unit
         };
         #endregion
 
-        public OutputDieTransferConfig() : base("OutputDieTransferConfig")
-        {
-        }
+        public OutputDieTransferConfig() : base("OutputDieTransferConfig") { }
 
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                if (!existingNames.Contains(posName))
+                if (!existing.Contains(posName))
                 {
                     var axes = GetAxisNamesForPosition(posName);
                     var axisPositions = new Dictionary<string, double>();
@@ -159,43 +157,30 @@ namespace QMC.LCP_280.Process.Unit
                 exist.Description = tp.Description;
                 exist.ExtraInfo = tp.ExtraInfo;
             }
-            else
-            {
-                TeachingPositions.Add(tp);
-            }
+            else TeachingPositions.Add(tp);
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name)
-            => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         public int Saveconfig()
         {
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-
-            var original = TeachingPositions;
-            TeachingPositions = purePositions;
-            try
-            {
-                return Save();
-            }
-            finally
-            {
-                TeachingPositions = original;
-            }
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
+            try { return Save(); }
+            finally { TeachingPositions = backup; }
         }
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load();
-            if (result != 0) return result;
-
+            int rc = Load();
+            if (rc != 0) return rc;
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
-
             return 0;
         }
 
