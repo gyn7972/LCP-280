@@ -354,10 +354,16 @@ namespace QMC.Common.Unit
                     if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
                     if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
                     if (axis == null) continue;
-                    if (!axis.IsMoveDone()) { allDone = false; break; }
+
+                    // 완료 + InPosition을 동시에 만족해야 통과
+                    if (!axis.IsMoveDone() || !axis.InPosition(kv.Value))
+                    {
+                        allDone = false;
+                        break;
+                    }
                 }
                 if (allDone) break;
-                Thread.Sleep(0);
+                Thread.Sleep(10);
             }
 
             int err = 0;
