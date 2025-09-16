@@ -33,8 +33,6 @@ namespace QMC.LCP_280.Process.Unit
             CassetteSlot_1,
             MappingStart,
             MappingEnd,
-            SlotPitch,
-            SlotCount,
             UnloadOffset,
             LoadPort
         }
@@ -50,8 +48,6 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.CassetteSlot_1, new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.MappingStart,   new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.MappingEnd,     new [] { AxisNames.WaferLifterZ } },
-            { TeachingPositionName.SlotPitch,      new [] { AxisNames.WaferLifterZ } },
-            { TeachingPositionName.SlotCount,      new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.UnloadOffset,   new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.LoadPort,       new [] { AxisNames.WaferLifterZ } },
         };
@@ -74,54 +70,14 @@ namespace QMC.LCP_280.Process.Unit
 
 
         [Category("Cassette"), DisplayName("SlotPitch (mm)")]
-        [DefaultValue(0)]
+        [DefaultValue(0.0)]
         //[DisplayOrder(1)]
-        public double SlotPitch
-        {
-            get
-            {
-                var tp = GetTeachingPosition(TeachingPositionName.SlotPitch.ToString());
-                if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(AxisNames.WaferLifterZ, out var v))
-                    return v;
-                return 0.0;
-            }
-            set
-            {
-                var tp = GetTeachingPosition(TeachingPositionName.SlotPitch.ToString());
-                if (tp == null)
-                {
-                    tp = new TeachingPosition(TeachingPositionName.SlotPitch.ToString(), new Dictionary<string, double>(), "Slot Pitch");
-                    TeachingPositions.Add(tp);
-                }
-                if (tp.AxisPositions == null) tp.AxisPositions = new Dictionary<string, double>();
-                tp.AxisPositions[AxisNames.WaferLifterZ] = value;
-            }
-        }
+        public double SlotPitch { get; set; } = 0.0;
 
         [Category("Cassette"), DisplayName("SlotCount (ea)")]
         [DefaultValue(0)]
         //[DisplayOrder(1)]
-        public int SlotCount
-        {
-            get
-            {
-                var tp = GetTeachingPosition(TeachingPositionName.SlotCount.ToString());
-                if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(AxisNames.WaferLifterZ, out var v))
-                    return (int)v;
-                return 0;
-            }
-            set
-            {
-                var tp = GetTeachingPosition(TeachingPositionName.SlotCount.ToString());
-                if (tp == null)
-                {
-                    tp = new TeachingPosition(TeachingPositionName.SlotCount.ToString(), new Dictionary<string, double>(), "Slot Count");
-                    TeachingPositions.Add(tp);
-                }
-                if (tp.AxisPositions == null) tp.AxisPositions = new Dictionary<string, double>();
-                tp.AxisPositions[AxisNames.WaferLifterZ] = value;
-            }
-        }
+        public int SlotCount { get; set; } = 0;
 
         public InputCassetteLifterConfig() : base("InputCassetteLifterConfig") { }
 
@@ -132,18 +88,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
             var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
-            foreach (TeachingPositionName name in Enum.GetValues(typeof(TeachingPositionName)))
+            foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
                 if (!existing.Contains(posName))
                 {
                     var axes = GetAxisNamesForPosition(posName);
                     var axisPositions = new Dictionary<string, double>();
-                    foreach (var a in axes)
-                    {
-                        double init = (a == AxisNames.WaferLifterZ) ? 200.0 : 0.0; // 기존 기본값 유지
-                        axisPositions[a] = init;
-                    }
+                    foreach (var a in axes) axisPositions[a] = 0.0;
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
             }
@@ -158,11 +110,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
             var filtered = new Dictionary<string, double>();
-            var src = tp.AxisPositions ?? new Dictionary<string, double>();
-            foreach (var a in allowed)
+            foreach (var axis in allowed)
             {
-                double init = (a == AxisNames.WaferLifterZ) ? 200.0 : 0.0;
-                if (src.TryGetValue(a, out var v)) filtered[a] = v; else filtered[a] = init;
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
             }
             tp.AxisPositions = filtered;
 
@@ -170,8 +122,8 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
             Saveconfig();
@@ -185,15 +137,17 @@ namespace QMC.LCP_280.Process.Unit
             var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-            var original = TeachingPositions; TeachingPositions = pure;
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>로드 + 축 바인딩 + 축 매핑 동기화</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int rc = Load(); if (rc != 0) return rc;
+            int rc = Load();
+            if (rc != 0) return rc;
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
@@ -210,10 +164,9 @@ namespace QMC.LCP_280.Process.Unit
                 var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
                 var current = tp.AxisPositions ?? new Dictionary<string, double>();
                 var next = new Dictionary<string, double>();
-                foreach (var a in allowed)
+                foreach (var axis in allowed)
                 {
-                    double init = (a == AxisNames.WaferLifterZ) ? 200.0 : 0.0;
-                    if (current.TryGetValue(a, out var v)) next[a] = v; else next[a] = init;
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
                 }
                 tp.AxisPositions = next;
             }
@@ -224,8 +177,8 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
         {
-            if (string.IsNullOrWhiteSpace(positionName)) return new string[0];
-            if (Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
             {
                 if (_axisMap.TryGetValue(en, out var arr)) return arr;
             }

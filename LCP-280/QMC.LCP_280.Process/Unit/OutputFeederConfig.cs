@@ -59,8 +59,6 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.SetPosition,new [] { AxisNames.BinFeederY } },
         };
 
-        
-
         #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
@@ -123,8 +121,8 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
             Saveconfig();
@@ -135,18 +133,20 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
         public int Saveconfig()
         {
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-            var original = TeachingPositions; TeachingPositions = purePositions;
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>Config 로드 후 TeachingPosition 축 바인딩 + 축 매핑 적용</summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load(); if (result != 0) return result;
+            int rc = Load();
+            if (rc != 0) return rc;
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");

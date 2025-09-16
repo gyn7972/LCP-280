@@ -61,8 +61,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.SetPosition, new [] { AxisNames.WaferFeederY } },
         };
 
-        /// <summary>Teaching Position 순수 목록</summary>
-        
+        public Dictionary<string, double> Offsets { get; set; } = new Dictionary<string, double>();
 
         #region Hard IO Tables
         [JsonIgnore]
@@ -138,6 +137,24 @@ namespace QMC.LCP_280.Process.Unit
         public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         /// <summary>
+        /// Teaching Position + Offset 적용 좌표 반환 (X/Y/T)
+        /// </summary>
+        public double GetPositionWithOffset(string name)
+        {
+            var tp = GetTeachingPosition(name);
+            if (tp == null) return (0);
+            double y = tp.AxisPositions.TryGetValue(AxisNames.WaferFeederY, out var vy) ? vy : 0;
+            if (Offsets.TryGetValue(name, out var off)) { y += off; }
+            return y;
+        }
+
+        /// <summary>개별 Teaching Position 에 Offset 설정</summary>
+        public void SetOffset(string name, double dy)
+        {
+            Offsets[name] = dy;
+            Saveconfig();
+        }
+        /// <summary>
         /// Config 저장 (축 객체 참조 제거 후 직렬화)
         /// </summary>
         public int Saveconfig()
@@ -156,7 +173,8 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int rc = Load(); if (rc != 0) return rc;
+            int rc = Load(); 
+            if (rc != 0) return rc;
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");

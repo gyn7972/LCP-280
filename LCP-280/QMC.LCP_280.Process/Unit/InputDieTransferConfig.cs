@@ -120,7 +120,6 @@ namespace QMC.LCP_280.Process.Unit
         };
         #endregion
 
-
         [Category("PIckUp"), DisplayName("SeqType")]
         [DefaultValue(0)]
         public int nPickupSeqType { get; set; } = 0;
@@ -129,39 +128,24 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0.0)]
         public double dPickUpOffset { get; set; } = 0.0;
 
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
         public InputDieTransferConfig() : base("InputDieTransferConfig") { }
 
         /// <summary>Teaching Position 기본 생성</summary>
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                if (TeachingPositions.FirstOrDefault(p => p.Name == posName) == null)
+                if (!existing.Contains(posName))
                 {
                     var axes = GetAxisNamesForPosition(posName);
                     var axisPositions = new Dictionary<string, double>();
-                    foreach (var a in axes) axisPositions[a] = 0.0; // 초기값 0
-                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"Default {posName} Position"));
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
-                if (!Offsets.ContainsKey(posName)) Offsets[posName] = (0, 0, 0);
             }
-            // 축 매핑 정규화 (확장 시 누락/불필요 축 정리)
             ApplyAxisMapping();
             Saveconfig();
         }
@@ -171,11 +155,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
             var filtered = new Dictionary<string, double>();
-            foreach (var a in allowed)
+            foreach (var axis in allowed)
             {
                 double v = 0;
-                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(a, out var val)) v = val;
-                filtered[a] = v;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
             }
             tp.AxisPositions = filtered;
 
@@ -183,11 +167,10 @@ namespace QMC.LCP_280.Process.Unit
             if (exist != null)
             {
                 exist.AxisPositions = tp.AxisPositions;
-                exist.Description   = tp.Description;
-                exist.ExtraInfo     = tp.ExtraInfo;
+                exist.Description = tp.Description;
+                exist.ExtraInfo = tp.ExtraInfo;
             }
             else TeachingPositions.Add(tp);
-            if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             Saveconfig();
         }
 
@@ -214,12 +197,13 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>Config 저장 (TeachingPositions 순수화)</summary>
         public int Saveconfig()
         {
-            var purePositions = TeachingPositions
-                .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
-                .ToList();
-            var original = TeachingPositions; TeachingPositions = purePositions;
+            var pure = TeachingPositions
+                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
+                 .ToList();
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>Config 로드 + TeachingPosition 축 바인딩 + Offset 키 보정 + 축 매핑 적용</summary>
@@ -227,12 +211,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int result = Load();
             if (result != 0) return result;
-            // 로드 후 축 매핑 정규화
             ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
-            foreach (var tp in TeachingPositions)
-                if (!Offsets.ContainsKey(tp.Name)) Offsets[tp.Name] = (0, 0, 0);
             return 0;
         }
        

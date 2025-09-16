@@ -16,12 +16,13 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum TeachingPositionName
         {
-            Loading,
-            Unloading,
-            Ready,
-            Home
             // 필요시 추가
         }
+
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+        };
 
         #region Hard IO Tables
         [JsonIgnore]
