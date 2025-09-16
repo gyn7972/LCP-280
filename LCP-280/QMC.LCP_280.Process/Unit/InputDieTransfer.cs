@@ -166,7 +166,7 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.LeftPlaceZ, ref _placeZ);
         }
 
-        public override int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
+        public override int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
 
@@ -301,7 +301,7 @@ namespace QMC.LCP_280.Process.Unit
 
             double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Pickup.ToString(),
                         AxisNames.LeftToolT);
-            nRet = MoveAxisWithSafety(AxisToolT, dTPos);
+            nRet = MoveAxisPositionOne(AxisToolT, dTPos);
             if (nRet != 0)
             {
                 return -1;
@@ -309,7 +309,7 @@ namespace QMC.LCP_280.Process.Unit
 
             double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Pickup.ToString(),
                         AxisNames.LeftPickZ);
-            nRet = MoveAxisWithSafety(AxisPickZ, dZPos);
+            nRet = MoveAxisPositionOne(AxisPickZ, dZPos);
             if (nRet != 0)
             {
                 return -1;
@@ -1078,7 +1078,7 @@ namespace QMC.LCP_280.Process.Unit
 
             double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),
                         AxisNames.LeftPickZ);
-            nRet &= MoveAxisWithSafety(AxisPickZ, dZPos);
+            nRet &= MoveAxisPositionOne(AxisPickZ, dZPos);
             nRet &= InputStageEjector.MoveEjectBlockReadyPosition();
             if(nRet != 0) //nRet = Move
             {
@@ -1102,7 +1102,7 @@ namespace QMC.LCP_280.Process.Unit
 
             double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
                         AxisNames.LeftToolT);
-            nRet = MoveAxisWithSafety(AxisToolT, dTPos);
+            nRet = MoveAxisPositionOne(AxisToolT, dTPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
@@ -1162,7 +1162,7 @@ namespace QMC.LCP_280.Process.Unit
             // Place 위치로 이동 (없으면 SafetyZone)
             double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
                         AxisNames.LeftPlaceZ);
-            nRet = MoveAxisWithSafety(AxisPlaceZ, dTPos);
+            nRet = MoveAxisPositionOne(AxisPlaceZ, dTPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
@@ -1194,7 +1194,7 @@ namespace QMC.LCP_280.Process.Unit
             if (AxisPlaceZ == null) 
                 return -1;
 
-            return MoveAxisWithSafety(AxisPlaceZ, safeZ);
+            return MoveAxisPositionOne(AxisPlaceZ, safeZ);
         }
 
         public int ChipPickUp()

@@ -103,7 +103,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
         /// </summary>
-        public override int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
+        public override int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
 

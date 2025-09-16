@@ -464,13 +464,13 @@ namespace QMC.Common.Unit
                 Log.Write(UnitName, "MoveAxisWithSafety", $"Axis not found : {axisKeyOrName}");
                 return -1;
             }
-            return MoveAxisWithSafety(axis, target, isFine);
+            return MoveAxisPositionOne(axis, target, isFine);
         }
 
         /// <summary>
         /// 단일 축 안전 이동(동기). CheckMoveSafety != 0 이면 모든 축 EmgStop 후 알람.
         /// </summary>
-        public virtual int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
+        public virtual int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
 

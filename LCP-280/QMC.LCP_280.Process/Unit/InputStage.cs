@@ -297,7 +297,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
         /// </summary>
-        public override int MoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
+        public override int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
 
@@ -467,9 +467,9 @@ namespace QMC.LCP_280.Process.Unit
             var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
 
             int rc = 0;
-            if (AxisX != null) rc |= MoveAxisWithSafety(AxisX, x, false);
-            if (AxisY != null) rc |= MoveAxisWithSafety(AxisY, y, false);
-            if (AxisT != null) rc |= MoveAxisWithSafety(AxisT, t, false);
+            if (AxisX != null) rc |= MoveAxisPositionOne(AxisX, x, false);
+            if (AxisY != null) rc |= MoveAxisPositionOne(AxisY, y, false);
+            if (AxisT != null) rc |= MoveAxisPositionOne(AxisT, t, false);
             if (rc != 0) return -1;
 
             // 필요 시 최종 위치 검증
@@ -2041,9 +2041,9 @@ namespace QMC.LCP_280.Process.Unit
                     double targetY = leftTopY - r * ChipPitchYmm; // 위에서 아래로
 
                     // Stage 이동
-                    if (AxisX != null && MoveAxisWithSafety(AxisX, targetX) != 0) 
+                    if (AxisX != null && MoveAxisPositionOne(AxisX, targetX) != 0) 
                         return -1;
-                    if (AxisY != null && MoveAxisWithSafety(AxisY, targetY) != 0) 
+                    if (AxisY != null && MoveAxisPositionOne(AxisY, targetY) != 0) 
                         return -1;
                     
                     // 우선.. 확인 하고 넘어가자. 
@@ -2181,8 +2181,8 @@ namespace QMC.LCP_280.Process.Unit
             if (!TryGetNextPickupPosition(out var x, out var y, out var idx))
                 return 1; // 완료
 
-            if (AxisX != null && MoveAxisWithSafety(AxisX, x) != 0) return -1;
-            if (AxisY != null && MoveAxisWithSafety(AxisY, y) != 0) return -1;
+            if (AxisX != null && MoveAxisPositionOne(AxisX, x) != 0) return -1;
+            if (AxisY != null && MoveAxisPositionOne(AxisY, y) != 0) return -1;
             if (WaitUntil(() =>
                 AxisX.InPosition(x) && AxisY.InPosition(y),
                 MappingMoveTimeoutMs) != 0)
@@ -2295,8 +2295,8 @@ namespace QMC.LCP_280.Process.Unit
                     double targetX = tileLeft + fovWmm * 0.5;
                     double targetY = tileTop - fovHmm * 0.5;
 
-                    if (MoveAxisWithSafety(AxisX, targetX) != 0) return -1;
-                    if (MoveAxisWithSafety(AxisY, targetY) != 0) return -1;
+                    if (MoveAxisPositionOne(AxisX, targetX) != 0) return -1;
+                    if (MoveAxisPositionOne(AxisY, targetY) != 0) return -1;
                     if (WaitUntil(() => AxisX.InPosition(targetX) && AxisY.InPosition(targetY), MappingMoveTimeoutMs) != 0)
                     {
                         Log.Write(UnitName, "ChipMapV2", $"Move timeout tile ({tx},{ty})");
