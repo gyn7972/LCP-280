@@ -109,12 +109,35 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (_camSwitch == null) return;
             if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
+
             try { visionImageViewer.CurrentCamera?.StopLive(); } catch { }
+            
             visionImageViewer.SuspendDisplay();
             _camSwitch.Change(selectedIndex);
+            
+            try 
+            { 
+                var cam = visionImageViewer.CurrentCamera;
+                if (cam != null)
+                {
+                    visionImageViewer.Simulated = false;
+                    
+                    if (!cam.Opened)
+                    {
+                        var rcOpen = cam.Reconnect();
+                    }
+                    
+                    cam.SuspendedImageDisplay = false;
+                    
+                    var rcLive = cam.StartLive();
+                }
+            }
+            catch (Exception ex) 
+            { 
+                Log.Write("Vision_Setup", $"OnVisionItemSelected StartLive error: {ex}"); 
+            }
+            
             ResetViewerForCameraChange();
-            try { visionImageViewer.CurrentCamera?.StartLive(); }
-            catch (Exception ex) { Log.Write(ex); }
             visionImageViewer.ResumeDisplay();
             visionImageViewer.StartUpdateTask();
         }
