@@ -371,26 +371,13 @@ namespace QMC.LCP_280.Process.Unit
 
                 dlg.CancelRequested += () =>
                 {
-                    try
-                    {
-                        _homeCts.Cancel();
-                    }
-                    catch
-                    {
-                        Equipment.AxisManager?.EmgStopAll();
-                    }
+                    try { _homeCts.Cancel(); } catch { }
+                    try { Equipment.AxisManager?.EmgStopAll(); } catch { }
                 };
 
                 dlg.ForceStopRequested += () =>
                 {
-                    try
-                    {
-                        Equipment.AxisManager?.EmgStopAll();
-                    }
-                    catch
-                    {
-                        // 예외 무시
-                    }
+                    try { Equipment.AxisManager?.EmgStopAll(); } catch { }
                 };
 
                 var runTask = seq.RunAsync(token);

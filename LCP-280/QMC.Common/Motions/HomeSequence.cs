@@ -121,17 +121,29 @@ namespace QMC.Common.Motions
 
             for (int stepIndex = 0; stepIndex < _steps.Count; stepIndex++)
             {
+                // for 루프 내, step 가져온 직후에 취소 처리 보강
                 var step = _steps[stepIndex];
-                if (step == null || step.Count == 0)
-                {
-                    continue;
-                }
+                if (step == null || step.Count == 0) { continue; }
 
                 if (token.IsCancellationRequested)
                 {
-                    Aborted = true;
-                    AbortReason = "Canceled";
-                    AbortStepIndex = stepIndex;
+                    foreach (var ax in step) { TryStop(ax); }
+                    Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
+
+                    var cancelProgressEarly = new OperationProgress
+                    {
+                        OperationId = "HOME",
+                        Title = "Home",
+                        StepIndex = stepIndex,
+                        TotalSteps = _steps.Count,
+                        StepAxisCount = step.Count,
+                        StepFailCount = step.Count,
+                        StepName = string.Join(", ", step.Select(a => a.Name)),
+                        IsStepCompleted = true,
+                        IsCanceled = true,
+                        Message = "Canceled"
+                    };
+                    RaiseProgress(cancelProgressEarly);
                     break;
                 }
 
@@ -269,50 +281,39 @@ namespace QMC.Common.Motions
                 // 변경: 실행 중에도 취소되면 해당 스텝 축들을 즉시 정지시키도록 토큰 콜백 등록
                 var tasks = new List<Task<HomeAxisResult>>(runnable.Count);
                 foreach (var axis in runnable)
-                {
-                    var t = HomeOneAsync(axis, token);
-                    tasks.Add(t);
-                }
+                    tasks.Add(HomeOneAsync(axis, token));
 
-                using (var cancelReg = token.Register(() =>
-                {
-                    foreach (var ax in runnable)
-                    {
-                        TryStop(ax);
-                    }
-                }))
+                // 취소 시 현재 스텝 축 즉시 정지
+                using (var cancelReg = token.Register(() => { foreach (var ax in runnable) TryStop(ax); }))
                 {
                     try
                     {
                         var pending = new List<Task<HomeAxisResult>>(tasks);
-                        bool earlyFail = false;
-                        string earlyFailReason = null;
+                        bool earlyFail = false; string earlyFailReason = null;
 
                         while (pending.Count > 0)
                         {
                             if (token.IsCancellationRequested)
                             {
-                                // 취소 즉시 축 정지 (중복안전)
                                 foreach (var ax in runnable) { TryStop(ax); }
-
                                 var results = await Task.WhenAll(tasks).ConfigureAwait(false);
-                                foreach (var r in results) { all.Add(r); }
+                                foreach (var r in results) all.Add(r);
 
-                                Aborted = true;
-                                AbortReason = "Canceled";
-                                AbortStepIndex = stepIndex;
+                                Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
 
-                                var cancelProgress = new OperationProgress();
-                                cancelProgress.OperationId = "HOME";
-                                cancelProgress.Title = "Home";
-                                cancelProgress.StepIndex = stepIndex;
-                                cancelProgress.TotalSteps = _steps.Count;
-                                cancelProgress.StepAxisCount = step.Count;
-                                cancelProgress.StepFailCount = results.Count(r => !r.Success);
-                                cancelProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                                cancelProgress.IsStepCompleted = true;
-                                cancelProgress.IsCanceled = true;
-                                cancelProgress.Message = "Canceled";
+                                var cancelProgress = new OperationProgress
+                                {
+                                    OperationId = "HOME",
+                                    Title = "Home",
+                                    StepIndex = stepIndex,
+                                    TotalSteps = _steps.Count,
+                                    StepAxisCount = step.Count,
+                                    StepFailCount = results.Count(r => !r.Success),
+                                    StepName = string.Join(", ", step.Select(a => a.Name)),
+                                    IsStepCompleted = true,
+                                    IsCanceled = true,
+                                    Message = "Canceled"
+                                };
                                 RaiseProgress(cancelProgress);
 
                                 if (PostStepAsync != null)
@@ -325,18 +326,10 @@ namespace QMC.Common.Motions
                             var finished = await Task.WhenAny(pending).ConfigureAwait(false);
                             pending.Remove(finished);
                             var res = await finished.ConfigureAwait(false);
-                            if (!res.Success)
-                            {
-                                earlyFail = true;
-                                earlyFailReason = res.FailReason ?? ("ReturnCode=" + res.ReturnCode);
-                                break;
-                            }
+                            if (!res.Success) { earlyFail = true; earlyFailReason = res.FailReason ?? ("ReturnCode=" + res.ReturnCode); break; }
                         }
 
-                        if (token.IsCancellationRequested)
-                        {
-                            break; // 위에서 처리함
-                        }
+                        if (token.IsCancellationRequested) break;
 
                         if (earlyFail)
                         {
@@ -390,23 +383,20 @@ namespace QMC.Common.Motions
                     catch (OperationCanceledException)
                     {
                         foreach (var ax in step) { TryStop(ax); }
-                        Aborted = true;
-                        AbortReason = "Canceled";
-                        AbortStepIndex = stepIndex;
-
-                        var cancelProgress = new OperationProgress();
-                        cancelProgress.OperationId = "HOME";
-                        cancelProgress.Title = "Home";
-                        cancelProgress.StepIndex = stepIndex;
-                        cancelProgress.TotalSteps = _steps.Count;
-                        cancelProgress.StepAxisCount = step.Count;
-                        cancelProgress.StepFailCount = step.Count;
-                        cancelProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                        cancelProgress.IsStepCompleted = true;
-                        cancelProgress.IsCanceled = true;
-                        cancelProgress.Message = "Canceled";
-                        RaiseProgress(cancelProgress);
-
+                        Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
+                        RaiseProgress(new OperationProgress
+                        {
+                            OperationId = "HOME",
+                            Title = "Home",
+                            StepIndex = stepIndex,
+                            TotalSteps = _steps.Count,
+                            StepAxisCount = step.Count,
+                            StepFailCount = step.Count,
+                            StepName = string.Join(", ", step.Select(a => a.Name)),
+                            IsStepCompleted = true,
+                            IsCanceled = true,
+                            Message = "Canceled"
+                        });
                         break;
                     }
                 }
