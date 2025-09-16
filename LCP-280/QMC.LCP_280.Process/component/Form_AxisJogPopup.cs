@@ -1,13 +1,15 @@
-﻿using System;
+﻿using QMC.Common;
+using QMC.Common.Motions;
+using QMC.Common.Motions.CKD;
+using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Motions;
-using QMC.Common.Motions.CKD;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -25,9 +27,21 @@ namespace QMC.LCP_280.Process.Unit
             // 디자이너에서 열릴 때는 장비 접근 금지
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
 
+            // 작업표시줄에 아이콘 따로 표시
+            this.ShowInTaskbar = true;
+            // 독립 창으로 보이게 (메인폼에 종속 X)
+            this.TopLevel = true;
+            this.Owner = null;
+            // 필요에 따라 창 스타일
+            this.StartPosition = FormStartPosition.CenterScreen;
+
             _axisManager = EquipmentInst != null ? EquipmentInst.AxisManager : null;
 
+            // Jog Panel
+            this.Text = "JogPanel";   // ← 작업표시줄 툴팁에 보이는 문자열
+            this.Icon = Properties.Resources.JogPanel_ico;  // 내장된 아이콘 로드
             InitializeUI();
+
         }
 
         // ===== 초기화 (Motion_Setup 스타일) =====

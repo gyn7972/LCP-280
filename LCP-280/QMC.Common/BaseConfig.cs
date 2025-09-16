@@ -13,17 +13,16 @@ namespace QMC.Common
     public abstract partial class BaseConfig : ICloneable
     {
         // ===== 공통 메타 속성 =====
-        [DefaultValue(null)]
+        [Category("General"), DisplayName("Name")]
+        [DefaultValue(0)]
         public string Name { get; set; }
 
         //[DefaultValue(true)]
         //public bool IsEnabled { get; set; } = true;
 
-
         [Category("Common"), DisplayName("Simulation")]
         [DefaultValue(false)]
         public bool IsSimulation { get; set; } = false;
-
 
         [JsonIgnore]
         private DateTime LastModified { get; set; } = DateTime.Now;

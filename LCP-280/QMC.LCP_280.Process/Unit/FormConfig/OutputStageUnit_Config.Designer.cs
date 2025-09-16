@@ -17,7 +17,6 @@ namespace QMC.LCP_280.Process.Unit
         private GroupBox gbDigitalIO;
         private GroupBox gbMoveAxis;
         private JogControl jogControl;
-        private ListBoxItemsView axisPositionsView;
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel ioTableLayoutPanel;
         private Panel positionItemPanel;
@@ -58,10 +57,10 @@ namespace QMC.LCP_280.Process.Unit
             this.outputView = new QMC.Common.IOPropertyCollectionView();
             this.gbMoveAxis = new System.Windows.Forms.GroupBox();
             this.jogControl = new QMC.LCP_280.Process.Unit.JogControl();
-            this.axisPositionsView = new QMC.Common.ListBoxItemsView();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.positionItemPanel = new System.Windows.Forms.Panel();
+            this.unitConfigControl = new QMC.LCP_280.Process.Component.UnitConfig();
             this.gbPositionTeaching.SuspendLayout();
             this.positionTableLayoutPanel.SuspendLayout();
             this.gbTeachingMove.SuspendLayout();
@@ -119,6 +118,7 @@ namespace QMC.LCP_280.Process.Unit
             // btnMovePosition
             // 
             this.btnMovePosition.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMovePosition.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.btnMovePosition.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnMovePosition.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnMovePosition.CustomForeColor = System.Drawing.Color.Black;
@@ -169,6 +169,7 @@ namespace QMC.LCP_280.Process.Unit
             // btnCancel
             // 
             this.btnCancel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnCancel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.btnCancel.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnCancel.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnCancel.CustomForeColor = System.Drawing.Color.Black;
@@ -187,6 +188,7 @@ namespace QMC.LCP_280.Process.Unit
             // btnSave
             // 
             this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
             this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnSave.CustomForeColor = System.Drawing.Color.Black;
@@ -312,27 +314,6 @@ namespace QMC.LCP_280.Process.Unit
             this.jogControl.Size = new System.Drawing.Size(304, 750);
             this.jogControl.TabIndex = 0;
             // 
-            // axisPositionsView
-            // 
-            this.axisPositionsView.BorderColor = System.Drawing.Color.White;
-            this.axisPositionsView.BorderWidth = 2;
-            this.axisPositionsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.axisPositionsView.GroupBackColor = System.Drawing.Color.White;
-            this.axisPositionsView.GroupForeColor = System.Drawing.Color.Black;
-            this.axisPositionsView.GroupName = "Axis Positions";
-            this.axisPositionsView.ItemBackColor = System.Drawing.Color.Black;
-            this.axisPositionsView.ItemForeColor = System.Drawing.Color.Lime;
-            this.axisPositionsView.ListBackColor = System.Drawing.Color.Black;
-            this.axisPositionsView.ListForeColor = System.Drawing.Color.Lime;
-            this.axisPositionsView.Location = new System.Drawing.Point(951, 3);
-            this.axisPositionsView.Name = "axisPositionsView";
-            this.mainTableLayoutPanel.SetRowSpan(this.axisPositionsView, 2);
-            this.axisPositionsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
-            this.axisPositionsView.SelectedForeColor = System.Drawing.Color.Black;
-            this.axisPositionsView.SelectedIndex = -1;
-            this.axisPositionsView.Size = new System.Drawing.Size(310, 774);
-            this.axisPositionsView.TabIndex = 11;
-            // 
             // axisListBoxItemsView
             // 
             this.axisListBoxItemsView.BorderColor = System.Drawing.Color.White;
@@ -360,7 +341,7 @@ namespace QMC.LCP_280.Process.Unit
             this.mainTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.mainTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.mainTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.mainTableLayoutPanel.Controls.Add(this.axisPositionsView, 3, 0);
+            this.mainTableLayoutPanel.Controls.Add(this.unitConfigControl, 3, 0);
             this.mainTableLayoutPanel.Controls.Add(this.gbDigitalIO, 0, 1);
             this.mainTableLayoutPanel.Controls.Add(this.gbPositionTeaching, 0, 0);
             this.mainTableLayoutPanel.Controls.Add(this.gbMoveAxis, 2, 0);
@@ -380,6 +361,17 @@ namespace QMC.LCP_280.Process.Unit
             this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
             this.positionItemPanel.TabIndex = 0;
             // 
+            // unitConfigControl
+            // 
+            this.unitConfigControl.BackColor = System.Drawing.Color.White;
+            this.unitConfigControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.unitConfigControl.Location = new System.Drawing.Point(948, 0);
+            this.unitConfigControl.Margin = new System.Windows.Forms.Padding(0);
+            this.unitConfigControl.Name = "unitConfigControl";
+            this.mainTableLayoutPanel.SetRowSpan(this.unitConfigControl, 2);
+            this.unitConfigControl.Size = new System.Drawing.Size(316, 780);
+            this.unitConfigControl.TabIndex = 12;
+            // 
             // OutputStageUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -397,7 +389,10 @@ namespace QMC.LCP_280.Process.Unit
             this.gbMoveAxis.ResumeLayout(false);
             this.mainTableLayoutPanel.ResumeLayout(false);
             this.ResumeLayout(false);
+
         }
         #endregion
+
+        private Component.UnitConfig unitConfigControl;
     }
 }

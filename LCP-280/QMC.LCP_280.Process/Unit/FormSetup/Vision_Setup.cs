@@ -46,7 +46,7 @@ namespace QMC.LCP_280.Process.Unit
                 visionImageViewer.DoubleClick += VisionImageViewer_DoubleClick;
             }
 
-            _jogPopup = new Form_AxisJogPopup();
+            //_jogPopup = new Form_AxisJogPopup();
             ResumeLayout(true);
         }
 
@@ -138,21 +138,48 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ShowOrRestoreJogPopup(IWin32Window owner)
         {
+            //return;
             if (_jogPopup == null || _jogPopup.IsDisposed)
             {
                 _jogPopup = new Form_AxisJogPopup();
                 _jogPopup.StartPosition = FormStartPosition.CenterParent;
-                _jogPopup.ShowInTaskbar = false;
+                //_jogPopup.ShowInTaskbar = false;
+
+                // ✅ 별도 아이콘 나오게
+                _jogPopup.ShowInTaskbar = true;
+                _jogPopup.StartPosition = FormStartPosition.CenterScreen;
+
+                // ✅ Owner 관계 제거 (메인창과 독립)
+                _jogPopup.Owner = null;
+                _jogPopup.Load += (s, e) =>
+                {
+                    // 메인폼과 다른 AppID 부여
+                    TaskbarHelper.SetAppId(_jogPopup.Handle, "MyApp.JogPanel");
+                };
+
+
                 _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
                 _jogPopup.FormClosing += (s, ev) =>
                 {
-                    if (ev.CloseReason == CloseReason.UserClosing) { ev.Cancel = true; _jogPopup.Hide(); }
+                    if (ev.CloseReason == CloseReason.UserClosing) 
+                    { 
+                        ev.Cancel = true; 
+                        _jogPopup.Hide(); 
+                    }
                 };
             }
-            if (!_jogPopup.Visible) _jogPopup.Show(owner);
-            if (_jogPopup.WindowState == FormWindowState.Minimized) _jogPopup.WindowState = FormWindowState.Normal;
+            if (!_jogPopup.Visible)
+            {
+                //_jogPopup.Show(owner);
+                _jogPopup.Show();
+            }
+                
+            if (_jogPopup.WindowState == FormWindowState.Minimized) 
+                _jogPopup.WindowState = FormWindowState.Normal;
+
             _jogPopup.BringToFront();
-            _jogPopup.TopMost = true; _jogPopup.TopMost = false;
+            //_jogPopup.TopMost = true; 
+            //_jogPopup.TopMost = false;
             _jogPopup.Activate();
         }
 

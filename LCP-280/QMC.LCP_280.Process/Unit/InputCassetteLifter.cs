@@ -265,7 +265,7 @@ namespace QMC.LCP_280.Process.Unit
                             }
                             else
                             {
-                                if (InputStage.IsRequestWafer)
+                                if (InputStage.IsStatus_RequestWafer)
                                 {
                                     MoveToNextSlot();
                                 }

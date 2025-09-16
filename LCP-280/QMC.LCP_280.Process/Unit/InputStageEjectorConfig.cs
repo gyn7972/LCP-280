@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -17,7 +18,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - OutputStage / InputStageConfig 와 동일한 구조/주석 스타일로 통일
     ///  - 현재 별도 IO (Cylinder/Vacuum) 정의는 없음 → 필요 시 internal static class IO 에 상수 추가
     /// </summary>
-    public class InputStageEjectorConfig : BaseConfig
+    public class InputStageEjectorConfig : BaseConfig, IPropertyOrderProvider
     {
         /// <summary>
         /// Teaching Position 이름 (기존 이름 유지 - 호환성)
@@ -43,10 +44,6 @@ namespace QMC.LCP_280.Process.Unit
         ///  - 개별 TeachingPosition 이름별로 보정값 유지
         /// </summary>
         public Dictionary<string, (double dzEjector, double dzPin)> Offsets { get; set; } = new Dictionary<string, (double dzEjector, double dzPin)>();
-
-        // Motion Done / In-Position 동작 관련 옵션
-        public bool   EnablePredictiveControl { get; set; } = false;
-        public double MoveDoneRemainDistance { get; set; } = 0.005;
 
         /// <summary>
         /// Position 별 사용할 축 매핑 (필요시 여기서 조정)
@@ -75,9 +72,26 @@ namespace QMC.LCP_280.Process.Unit
         public HardOutputDef[] HardOutputs => _hardOutputs;
         [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
+
+        [Category("PIckUp"), DisplayName("SeqType")]
+        [DefaultValue(0)]
+        public int nPickupSeqType { get; set; } = 0;
+
+        [Category("PIckUp"), DisplayName("Up Offset (mm)")]
+        [DefaultValue(0.0)]
+        public double dPickUpOffset { get; set; } = 0.0;
+
+
+
+
+
+
+
+
         #endregion
 
         public InputStageEjectorConfig() : base("InputStageEjectorConfig") { }
+
 
         /// <summary>
         /// enum 기반 기본 Teaching Position 초기화 + Offset 기본값 구성 (축 매핑 반영)
@@ -207,5 +221,27 @@ namespace QMC.LCP_280.Process.Unit
             // 매핑 없는 경우: 현재 사용중인 축(백워드 호환) → 둘 다
             return new[] { AxisNames.EjectorZ, AxisNames.EjectPinZ };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

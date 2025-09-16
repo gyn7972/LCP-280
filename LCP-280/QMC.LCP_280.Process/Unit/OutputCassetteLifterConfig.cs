@@ -17,7 +17,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - OutputStageConfig 구조와 동일한 패턴(내부 IO 상수 / Hard I/O 테이블 / Save & Load)
     ///  - (추가) TeachingPosition 별 허용 축 필터링 기능 적용
     /// </summary>
-    public class OutputCassetteLifterConfig : BaseConfig
+    public class OutputCassetteLifterConfig : BaseConfig, IPropertyOrderProvider
     {
         /// <summary>
         /// 장치 IO 명칭 (입력 전용, 출력 없음 -> 필요시 확장)
@@ -169,5 +169,27 @@ namespace QMC.LCP_280.Process.Unit
             // 기본: BinLifterZ 1축
             return new[] { AxisNames.BinLifterZ };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

@@ -176,12 +176,15 @@
     <Compile Include="Common\SerialComm.cs" />
     <Compile Include="Common\SizeD.cs" />
     <Compile Include="Common\StopWatch.cs" />
+    <Compile Include="Common\Taskbarhelper.cs" />
     <Compile Include="Common\TimeoutChecker.cs" />
     <Compile Include="Common\TimeoutCheckerStateEnum.cs" />
     <Compile Include="Common\TimeSpanInfo.cs" />
     <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
     <Compile Include="Common\TypeUtility.cs" />
+    <Compile Include="Component\DisplayOrderAttribute.cs" />
     <Compile Include="Component\ProcessData\Material.cs" />
+    <Compile Include="Component\PropertyOrderAttributes.cs" />
     <Compile Include="Component\TeachingPosition.cs" />
     <Compile Include="ConfigPropertyAttributes.cs" />
     <Compile Include="ConfigReflectionMapper.cs" />
@@ -632,6 +635,7 @@
     <Content Include="Resources\Logo.png" />
     <Content Include="Resources\megaphone_80px.png" />
     <Content Include="Resources\megaphone_80px_q.png" />
+    <None Include="Resources\QMC.ico" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.CogNamer.PC.dll" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.SDK.Discovery.PC.dll" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.SDK.PC.dll" />

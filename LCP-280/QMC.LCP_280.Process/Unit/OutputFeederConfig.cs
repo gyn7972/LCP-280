@@ -4,6 +4,7 @@ using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -16,7 +17,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Hard IO 테이블 및 저장/로드
     ///  - (추가) TeachingPosition 별 허용 축 필터링 기능
     /// </summary>
-    public class OutputFeederConfig : BaseConfig
+    public class OutputFeederConfig : BaseConfig, IPropertyOrderProvider
     {
         /// <summary>장치 IO 명칭 상수 집합</summary>
         internal static class IO
@@ -179,5 +180,27 @@ namespace QMC.LCP_280.Process.Unit
             // 기본: BinFeederY 1축
             return new[] { AxisNames.BinFeederY };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

@@ -4,12 +4,13 @@ using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputStageConfig : BaseConfig
+    public class OutputStageConfig : BaseConfig, IPropertyOrderProvider
     {
         // Unified IO constant collection (shared with OutputStage)
         internal static class IO
@@ -177,5 +178,27 @@ namespace QMC.LCP_280.Process.Unit
             }
             return new[] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

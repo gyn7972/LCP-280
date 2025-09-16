@@ -4,7 +4,9 @@ using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -16,7 +18,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Hard I/O 테이블과 저장/로드 로직 제공
     ///  - (추가) TeachingPosition 별 허용 축 필터링 기능
     /// </summary>
-    public class InputDieTransferConfig : BaseConfig
+    public class InputDieTransferConfig : BaseConfig, IPropertyOrderProvider
     {
         /// <summary>장치 IO 명칭 모음</summary>
         internal static class IO
@@ -86,10 +88,6 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>Offset: positionName -> (T, PickZ, PlaceZ)</summary>
         public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } = new Dictionary<string, (double t, double pickZ, double placeZ)>();
 
-        // Motion Done 보조 설정
-        public bool EnablePredictiveControl { get; set; } = false;
-        public double MoveDoneRemainDistance { get; set; } = 0.005;
-
         #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
@@ -121,6 +119,29 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 12, Name = IO.ARM4_VENT, Disp = "Y050" },
         };
         #endregion
+
+
+        [Category("PIckUp"), DisplayName("SeqType")]
+        [DefaultValue(0)]
+        public int nPickupSeqType { get; set; } = 0;
+
+        [Category("PIckUp"), DisplayName("Up Offset (mm)")]
+        [DefaultValue(0.0)]
+        public double dPickUpOffset { get; set; } = 0.0;
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
 
         public InputDieTransferConfig() : base("InputDieTransferConfig") { }
 
@@ -243,5 +264,26 @@ namespace QMC.LCP_280.Process.Unit
             return new[] { AxisNames.LeftToolT, AxisNames.LeftPickZ, AxisNames.RightPlaceZ };
         }
 
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

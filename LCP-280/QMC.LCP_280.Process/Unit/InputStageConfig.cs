@@ -4,6 +4,7 @@ using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,7 +18,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Teaching Position Offset (X/Y/T 보정) 추가 관리 (OutputStageConfig 와의 차별점)
     ///  - (추가) TeachingPosition 별 허용 축 필터링 기능
     /// </summary>
-    public class InputStageConfig : BaseConfig
+    public class InputStageConfig : BaseConfig, IPropertyOrderProvider
     {
         /// <summary>
         /// 장치에서 사용하는 실 I/O 명칭을 한 곳에 모아둔 상수 클래스
@@ -235,5 +236,27 @@ namespace QMC.LCP_280.Process.Unit
             // 기본: X/Y/T 모두 허용
             return new[] { AxisNames.WaferStageX, AxisNames.WaferStageY, AxisNames.WaferStageT };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

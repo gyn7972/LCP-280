@@ -135,6 +135,12 @@
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\ProcessData\MaterialWafer.cs" />
+    <Compile Include="Component\UnitConfig.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\UnitConfig.Designer.cs">
+      <DependentUpon>UnitConfig.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\VisionRunnerHub.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
@@ -419,6 +425,9 @@
     <EmbeddedResource Include="Component\TeachingPositionControl.resx">
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\UnitConfig.resx">
+      <DependentUpon>UnitConfig.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -572,6 +581,10 @@
       <Project>{457920bd-bbae-447e-8ab0-a03f4722275c}</Project>
       <Name>QMC.Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\JogPanel_ico.ico" />
+    <Content Include="Resources\JogPanel.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

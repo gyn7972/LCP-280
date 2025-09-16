@@ -174,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            Config.IsSimulation = false;
+            Config.IsSimulation = true;
             if (Config.IsSimulation)
             {
                 _axX.Config.IsSimulation = true;
@@ -1158,7 +1158,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
-        public bool IsRequestWafer { get; internal set; } = false;
+        public bool IsStatus_RequestWafer { get; internal set; } = false;
 
         // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
         public bool IsStatus_StageLoadingReady { get; private set; }
@@ -1184,6 +1184,20 @@ namespace QMC.LCP_280.Process.Unit
             {
             }
         }
+
+
+        // ====== Align Refactor: 상태/결과 보관 필드 ======
+        public bool IsStatus_TAlignPrepared { get; private set; }
+        public bool IsStatus_TAlignDone { get; private set; }
+        public double IsStatus_LastFoundTRawAngle { get; private set; }
+        public double IsStatus_LastAppliedTAngle { get; private set; }
+        public bool IsStatus_XYAlignPrepared { get; private set; }
+        public bool IsStatus_XYAlignDone { get; private set; }
+        public double IsStatus_LastFoundDx { get; private set; }
+        public double IsStatus_LastFoundDy { get; private set; }
+
+
+
 
         public override int OnRun()
         {
@@ -1246,6 +1260,8 @@ namespace QMC.LCP_280.Process.Unit
                 if (rc != 0 && rc != 0)
                     return rc; // rc !=0 이면 오류. (준비단계는 OK=0 외 다른 코드 없음)
 
+                IsStatus_StageLoadingDone = true;
+
                 State = ProcessState.Work;
                 Log.Write(this, "Wafer already present -> Skip prepare");
                 return 0;
@@ -1256,6 +1272,7 @@ namespace QMC.LCP_280.Process.Unit
             //}
             else
             {
+                IsStatus_RequestWafer = true;
                 ret = LoadingWafer();
                 if (ret != 0)
                 {
@@ -1265,6 +1282,8 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
+                    IsStatus_RequestWafer = false;
+                    IsStatus_StageLoadingDone = true;
                     State = ProcessState.Work;
                 }
             }
@@ -1284,9 +1303,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                IsStatus_StageLoadingDone = true;
-                IsRequestWafer = false;
-
                 ret = AlignXY();
                 if (ret != 0)
                 {
@@ -1296,11 +1312,19 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
+                    // === Chip Mapping 추가 ===
+                    ret = PerformChipMapping();
+                    if (ret != 0)
+                    {
+                        State = ProcessState.Error;
+                        Log.Write(this, "Chip Mapping Failed");
+                        return -1;
+                    }
+
                     State = ProcessState.Complete;
+                    return 0;
                 }
             }
-
-            return 0;
         }
         protected override int OnRunComplete()
         {
@@ -1349,9 +1373,9 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
 
             Log.Write(this, "Start LoadingWaferPrepare");
+            IsStatus_StageLoadingReady = true;
             IsStatus_StageLoadingDone = false;
-            IsStatus_StageLoadingReady = false;
-
+            
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
             if(Config.IsSimulation)
             {
@@ -1495,16 +1519,6 @@ namespace QMC.LCP_280.Process.Unit
             return LoadingWaferComplete();
         }
 
-        // ====== Align Refactor: 상태/결과 보관 필드 ======
-        public bool TAlignPrepared { get; private set; }
-        public bool TAlignDone { get; private set; }
-        public double LastFoundTRawAngle { get; private set; }
-        public double LastAppliedTAngle { get; private set; }
-        public bool XYAlignPrepared { get; private set; }
-        public bool XYAlignDone { get; private set; }
-        public double LastFoundDx { get; private set; }
-        public double LastFoundDy { get; private set; }
-        
         private TeachingPosition _lastCenterAlignTp;
         /// <summary>
         /// 공통 Center 이동 + Grab (기존 함수 그대로 사용)
@@ -1555,8 +1569,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-
-                int grabRc;
+            int grabRc;
             try
             {
                 // 4) 카메라 그랩
@@ -1596,10 +1609,10 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int AlignTPrepare()
         {
-            TAlignPrepared = false;
-            TAlignDone = false;
-            LastFoundTRawAngle = 0;
-            LastAppliedTAngle = 0;
+            IsStatus_TAlignPrepared = false;
+            IsStatus_TAlignDone = false;
+            IsStatus_LastFoundTRawAngle = 0;
+            IsStatus_LastAppliedTAngle = 0;
             _lastCenterAlignTp = null;
 
             Log.Write(UnitName, "T_Align", "Prepare Start");
@@ -1625,13 +1638,13 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             double rawAngle = stats.Representative;
-            LastFoundTRawAngle = rawAngle;
+            IsStatus_LastFoundTRawAngle = rawAngle;
             _lastCenterAlignTp = centerTp;
 
             Log.Write(UnitName, "T_Align",
                 $"Angle Representative={rawAngle:F6} avg={stats.Average:F6} std={stats.StdDev:F6} rawCount={stats.RawCount}");
 
-            TAlignPrepared = true;
+            IsStatus_TAlignPrepared = true;
             return 0;
         }
         /// <summary>
@@ -1639,17 +1652,17 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int AlignTApply()
         {
-            if (!TAlignPrepared || _lastCenterAlignTp == null)
+            if (!IsStatus_TAlignPrepared || _lastCenterAlignTp == null)
             {
                 Log.Write(UnitName, "T_Align", "Not prepared");
                 return -1;
             }
 
-            double rawAngle = LastFoundTRawAngle;
+            double rawAngle = IsStatus_LastFoundTRawAngle;
             if (Math.Abs(rawAngle) < AngleIgnoreThresholdDeg)
             {
                 Log.Write(UnitName, "T_Align", $"Skip: |{rawAngle:F6}| < Ignore({AngleIgnoreThresholdDeg})");
-                TAlignDone = true;
+                IsStatus_TAlignDone = true;
                 return 0;
             }
             if (Math.Abs(rawAngle) > AngleMaxApplyDeg)
@@ -1660,7 +1673,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             double applyAngle = rawAngle * AngleApplyGain;
-            LastAppliedTAngle = applyAngle;
+            IsStatus_LastAppliedTAngle = applyAngle;
 
             //int rc = UseOffsetForTAxisCorrection
             //    ? MoveApplyOffset(_lastCenterAlignTp.Name, 0.0, 0.0, applyAngle)
@@ -1675,14 +1688,14 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-                
+
             //// 재 이동(In Offset 적용 시 Teaching 목표 재도달)
             //if (MoveToTeachingPosition(_lastCenterAlignTp) != 0)
             //    return -1;
             //if (WaitUntil(() => InPosTeaching(_lastCenterAlignTp), MoveTimeoutMs) != 0)
             //    return -1;
 
-            TAlignDone = true;
+            IsStatus_TAlignDone = true;
             return 0;
         }
         /// <summary>
@@ -1691,7 +1704,8 @@ namespace QMC.LCP_280.Process.Unit
         public int AlignT()
         {
             int rc = AlignTPrepare();
-            if (rc != 0) return rc;
+            if (rc != 0) 
+                return rc;
             return AlignTApply();
         }
 
@@ -1701,10 +1715,10 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int AlignXYPrepare()
         {
-            XYAlignPrepared = false;
-            XYAlignDone = false;
-            LastFoundDx = 0;
-            LastFoundDy = 0;
+            IsStatus_XYAlignPrepared = false;
+            IsStatus_XYAlignDone = false;
+            IsStatus_LastFoundDx = 0;
+            IsStatus_LastFoundDy = 0;
             _lastCenterAlignTp = null;
 
             Log.Write(UnitName, "XY_Align", "Prepare Start");
@@ -1720,14 +1734,14 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            LastFoundDx = res.x;
-            LastFoundDy = res.y;
+            IsStatus_LastFoundDx = res.x;
+            IsStatus_LastFoundDy = res.y;
             _lastCenterAlignTp = centerTp;
 
             Log.Write(UnitName, "XY_Align",
-                $"Offset dx={LastFoundDx:F6} dy={LastFoundDy:F6}");
+                $"Offset dx={IsStatus_LastFoundDx:F6} dy={IsStatus_LastFoundDy:F6}");
 
-            XYAlignPrepared = true;
+            IsStatus_XYAlignPrepared = true;
             return 0;
         }
         /// <summary>
@@ -1735,19 +1749,19 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int AlignXYApply()
         {
-            if (!XYAlignPrepared || _lastCenterAlignTp == null)
+            if (!IsStatus_XYAlignPrepared || _lastCenterAlignTp == null)
             {
                 Log.Write(UnitName, "XY_Align", "Not prepared");
                 return -1;
             }
 
-            double dx = LastFoundDx;
-            double dy = LastFoundDy;
+            double dx = IsStatus_LastFoundDx;
+            double dy = IsStatus_LastFoundDy;
 
             if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
             {
                 Log.Write(UnitName, "XY_Align", "Skip: offset under threshold");
-                XYAlignDone = true;
+                IsStatus_XYAlignDone = true;
                 return 0;
             }
             if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
@@ -1769,7 +1783,7 @@ namespace QMC.LCP_280.Process.Unit
             //if (WaitUntil(() => InPosTeaching(_lastCenterAlignTp), MoveTimeoutMs) != 0)
             //    return -1;
 
-            XYAlignDone = true;
+            IsStatus_XYAlignDone = true;
             return 0;
         }
         /// <summary>
@@ -1921,6 +1935,275 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
+        #endregion
+
+
+
+        #region CHIP MAPPING / PICKUP
+
+        // 매핑 파라미터 (Config 로 승격 가능)
+        public double MappingRoiWidthMm { get; set; } = 50.0;
+        public double MappingRoiHeightMm { get; set; } = 50.0;
+        public double ChipPitchXmm { get; set; } = 5.0;
+        public double ChipPitchYmm { get; set; } = 5.0;
+        public double DuplicateDistMm { get; set; } = 0.8;          // 중복 판단
+        public double MarkMinScore { get; set; } = 0.6;             // Vision 점수 기준 (예시)
+        public double MissingAllowScore { get; set; } = 0.5;
+        public int MappingMoveTimeoutMs { get; set; } = 4000;
+        public bool UseVisionOffsetApply { get; set; } = false;   // 필요시 Vision 미세 중심 보정
+
+        public ChipMapResult CurrentChipMap { get; private set; }
+        public bool ChipMappingDone { get; private set; }
+        private int _chipPickupCursor = 0;
+
+        public class ChipMapEntry
+        {
+            public int Index;
+            public int Row;
+            public int Col;
+            public double Xmm;
+            public double Ymm;
+            public bool Present;
+            public bool Enabled;
+            public double Score;
+        }
+
+        public class ChipMapResult
+        {
+            public int Rows;
+            public int Cols;
+            public double PitchX;
+            public double PitchY;
+            public double OriginX;
+            public double OriginY;
+            public List<ChipMapEntry> Entries = new List<ChipMapEntry>();
+
+            public IEnumerable<ChipMapEntry> EnumeratePickup()
+                => Entries.Where(e => e.Present && e.Enabled).OrderBy(e => e.Index);
+        }
+
+        public int PerformChipMapping()
+        {
+            ChipMappingDone = false;
+            CurrentChipMap = null;
+
+            // 기본 인터락
+            if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
+            {
+                Log.Write(UnitName, "ChipMap", "Align not completed");
+                return -1;
+            }
+            if (!IsRingPresent())
+            {
+                Log.Write(UnitName, "ChipMap", "Wafer (Ring) not present");
+                return -1;
+            }
+
+            // Center Teaching
+            var centerTp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
+            if (centerTp == null)
+            {
+                Log.Write(UnitName, "ChipMap", "Center Teaching not found");
+                return -1;
+            }
+            var (baseX, baseY, baseT) = Config.GetPositionWithOffset(centerTp.Name);
+
+            // ROI 그리드계산
+            if (ChipPitchXmm <= 0 || ChipPitchYmm <= 0)
+                return -1;
+
+            int cols = (int)Math.Floor(MappingRoiWidthMm / ChipPitchXmm) + 1;
+            int rows = (int)Math.Floor(MappingRoiHeightMm / ChipPitchYmm) + 1;
+            if (rows <= 0 || cols <= 0) return -1;
+
+            double leftTopX = baseX - (MappingRoiWidthMm * 0.5);
+            double leftTopY = baseY + (MappingRoiHeightMm * 0.5); // 좌표계 방향(Y+ up/down 프로젝트 기준 확인 필요)
+
+            var map = new ChipMapResult
+            {
+                Rows = rows,
+                Cols = cols,
+                PitchX = ChipPitchXmm,
+                PitchY = ChipPitchYmm
+            };
+
+            int globalIndex = 0;
+            VisionImage img = null;
+
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < cols; c++)
+                {
+                    double targetX = leftTopX + c * ChipPitchXmm;
+                    double targetY = leftTopY - r * ChipPitchYmm; // 위에서 아래로
+
+                    // Stage 이동
+                    if (AxisX != null && MoveAxisWithSafety(AxisX, targetX) != 0) 
+                        return -1;
+                    if (AxisY != null && MoveAxisWithSafety(AxisY, targetY) != 0) 
+                        return -1;
+                    
+                    // 우선.. 확인 하고 넘어가자. 
+                    if (WaitUntil(() =>
+                        AxisX.InPosition(targetX) && AxisY.InPosition(targetY),
+                        MappingMoveTimeoutMs) != 0)
+                    {
+                        Log.Write(UnitName, "ChipMap", $"Move timeout r={r} c={c}");
+                        return -1;
+                    }
+
+                    // Grab
+                    if (StageCamera == null)
+                        return -1;
+
+                    if (!Config.IsSimulation)
+                    {
+                        if (StageCamera.GrabSync(out img) != 0 || img == null)
+                        {
+                            Log.Write(UnitName, "ChipMap", $"Grab fail r={r} c={c}");
+                            continue;
+                        }
+                    }
+
+                    // Vision 패턴 검색 (간단: MultiAngles 재사용 or CenterSearch)
+                    double score = 0;
+                    bool found = false;
+                    double visionDx = 0, visionDy = 0;
+
+                    if (Config.IsSimulation)
+                    {
+                        // 시뮬레이션: 예시로 모두 존재
+                        found = true;
+                        score = 0.9;
+                    }
+                    else
+                    {
+                        // 예시: CenterSearch 사용 (dx,dy 만 필요)
+                        var res = CenterSearchViaRunner();
+                        if (res.ok)
+                        {
+                            // dx,dy 는 이미지 중심 기준 mm 오프셋
+                            visionDx = res.x;
+                            visionDy = res.y;
+                            score = 0.8; // 별도 Run 에서 Score 전달받도록 Runner 확장 가능
+                            found = (score >= MarkMinScore);
+                        }
+                    }
+
+                    double finalX = targetX;
+                    double finalY = targetY;
+
+                    if (found && UseVisionOffsetApply)
+                    {
+                        finalX += visionDx;
+                        finalY += visionDy;
+                    }
+
+                    // 중복 검사
+                    if (found)
+                    {
+                        if (map.Entries.Any(e =>
+                            Math.Abs(e.Xmm - finalX) <= DuplicateDistMm &&
+                            Math.Abs(e.Ymm - finalY) <= DuplicateDistMm))
+                        {
+                            // 중복 → Skip
+                            found = false;
+                        }
+                    }
+
+                    var entry = new ChipMapEntry
+                    {
+                        Index = globalIndex++,
+                        Row = r,
+                        Col = c,
+                        Xmm = finalX,
+                        Ymm = finalY,
+                        Present = found,
+                        Enabled = found, // Missing 은 기본 false (사용자가 Enable 할 수도 있음)
+                        Score = score
+                    };
+                    if (!found)
+                    {
+                        entry.Enabled = false;
+                        entry.Score = 0;
+                    }
+                    map.Entries.Add(entry);
+
+                    img?.Dispose();
+                    img = null;
+                }
+            }
+
+            // Origin 결정: 첫 Present 칩
+            var first = map.Entries.FirstOrDefault(e => e.Present && e.Enabled);
+            if (first != null)
+            {
+                map.OriginX = first.Xmm;
+                map.OriginY = first.Ymm;
+            }
+            else
+            {
+                Log.Write(UnitName, "ChipMap", "No chip found");
+                return -1;
+            }
+
+            CurrentChipMap = map;
+            _chipPickupCursor = 0;
+            ChipMappingDone = true;
+
+            Log.Write(UnitName, "ChipMap",
+                $"Done Rows={rows} Cols={cols} Found={map.Entries.Count(e => e.Present)} Missing={map.Entries.Count(e => !e.Present)}");
+
+            return 0;
+        }
+
+        public bool TryGetNextPickupPosition(out double x, out double y, out int chipIndex)
+        {
+            x = y = 0;
+            chipIndex = -1;
+            if (!ChipMappingDone || CurrentChipMap == null) return false;
+
+            var seq = CurrentChipMap.EnumeratePickup().ToList();
+            if (_chipPickupCursor >= seq.Count) return false;
+
+            var entry = seq[_chipPickupCursor];
+            chipIndex = entry.Index;
+            x = entry.Xmm;
+            y = entry.Ymm;
+            return true;
+        }
+
+        public int MoveToNextChipForPickup()
+        {
+            if (!TryGetNextPickupPosition(out var x, out var y, out var idx))
+                return 1; // 완료
+
+            if (AxisX != null && MoveAxisWithSafety(AxisX, x) != 0) return -1;
+            if (AxisY != null && MoveAxisWithSafety(AxisY, y) != 0) return -1;
+            if (WaitUntil(() =>
+                AxisX.InPosition(x) && AxisY.InPosition(y),
+                MappingMoveTimeoutMs) != 0)
+                return -1;
+
+            _chipPickupCursor++;
+            return 0;
+        }
+
+        public bool IsAllChipPickupDone()
+        {
+            if (!ChipMappingDone || CurrentChipMap == null) return false;
+            return _chipPickupCursor >= CurrentChipMap.EnumeratePickup().Count();
+        }
+
+        // 외부(InputDieTransfer) 요청 처리 예시
+        public int OnPickupRequestFromDieTransfer()
+        {
+            if (!ChipMappingDone) return -1;
+            if (IsAllChipPickupDone()) return 1;
+            return MoveToNextChipForPickup();
+        }
+
+
         #endregion
     }
 }

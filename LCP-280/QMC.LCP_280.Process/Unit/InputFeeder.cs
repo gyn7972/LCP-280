@@ -282,7 +282,7 @@ namespace QMC.LCP_280.Process.Unit
         protected override  int OnRunReady()
         {
             int ret = 0;
-            if (this.InputStage.IsRequestWafer && this.InputCassetteLifter.IsWaferReadyForUnloding)
+            if (this.InputStage.IsStatus_RequestWafer && this.InputCassetteLifter.IsWaferReadyForUnloding)
             {
                 this.State = ProcessState.Work;
             }

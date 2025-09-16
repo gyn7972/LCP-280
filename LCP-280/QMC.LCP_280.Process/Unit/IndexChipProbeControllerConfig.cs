@@ -16,7 +16,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Sphere FW/BW Cylinder + Probe Card Vacuum I/O 명칭 상수화
     ///  - OutputStageConfig 패턴 구조 적용
     /// </summary>
-    public class IndexChipProbeControllerConfig : BaseConfig
+    public class IndexChipProbeControllerConfig : BaseConfig, IPropertyOrderProvider
     {
         /// <summary>장치 IO 명칭</summary>
         internal static class IO
@@ -234,5 +234,27 @@ namespace QMC.LCP_280.Process.Unit
             // 기본(백워드 호환)
             return new[] { AxisNames.ProbeZ, AxisNames.ProbeCardX, AxisNames.ProbeCardY, AxisNames.ProbeCardZ, AxisNames.SphereZ };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

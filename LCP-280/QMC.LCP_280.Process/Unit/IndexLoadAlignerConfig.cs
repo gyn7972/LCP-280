@@ -16,7 +16,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - (현재 별도 IO 없음: 필요 시 IO 클래스 확장)
     ///  - OutputStageConfig 스타일 구조 적용 + Axis filtering
     /// </summary>
-    public class IndexLoadAlignerConfig : BaseConfig
+    public class IndexLoadAlignerConfig : BaseConfig, IPropertyOrderProvider
     {
         internal static class IO { /* Add inputs/outputs later if needed */ }
 
@@ -192,5 +192,27 @@ namespace QMC.LCP_280.Process.Unit
             // 기본(백워드 호환) 두 축 모두
             return new[] { AxisNames.AlignT, AxisNames.IndexZ };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

@@ -1,12 +1,13 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
-using System.Collections.Generic;
-using System.Linq;
 using System;
-using QMC.Common.Component; // Enum
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -16,7 +17,7 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Cassette / RingJut / Mapping Sensor 입력 IO 정의
     ///  - OutputStageConfig 패턴 + Axis filtering (다른 Unit들과 일관성)
     /// </summary>
-    public class InputCassetteLifterConfig : BaseConfig
+    public class InputCassetteLifterConfig : BaseConfig, IPropertyOrderProvider
     {
         internal static class IO
         {
@@ -71,6 +72,10 @@ namespace QMC.LCP_280.Process.Unit
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
 
+
+        [Category("Cassette"), DisplayName("SlotPitch (mm)")]
+        [DefaultValue(0)]
+        //[DisplayOrder(1)]
         public double SlotPitch
         {
             get
@@ -93,6 +98,9 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        [Category("Cassette"), DisplayName("SlotCount (ea)")]
+        [DefaultValue(0)]
+        //[DisplayOrder(1)]
         public int SlotCount
         {
             get
@@ -224,5 +232,27 @@ namespace QMC.LCP_280.Process.Unit
             // 기본(백워드 호환): Lifter Z 1축
             return new[] { AxisNames.WaferLifterZ };
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

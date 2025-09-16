@@ -38,6 +38,10 @@ namespace QMC.Common
         {
             InitializeComponent();
 
+            // Jog Panel
+            this.Text = "QMC";   // ← 작업표시줄 툴팁에 보이는 문자열
+            this.Icon = Properties.Resources.QMC;  // 내장된 아이콘 로드
+
             // 🔧 MainForm 배경색을 흰색으로 설정
             this.BackColor = Color.White;
             this.DoubleBuffered = true;

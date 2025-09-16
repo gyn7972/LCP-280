@@ -13,7 +13,7 @@ using static QMC.LCP_280.Process.Unit.IndexChipProbeController;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class IndexChipProberConfig : BaseConfig
+    public class IndexChipProberConfig : BaseConfig, IPropertyOrderProvider
     {
         public enum TeachingPositionName
         {
@@ -114,5 +114,27 @@ namespace QMC.LCP_280.Process.Unit
 
             return 0;
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

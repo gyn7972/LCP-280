@@ -93,6 +93,7 @@ namespace QMC.LCP_280.Process.Unit
                 InitializeRadioButtonView();
                 InitializeDigitalIO();
                 PopulateAllAxesInJogControl();
+                InitializeUnitConfigPanel();
             }
             catch (Exception ex)
             {
@@ -109,6 +110,35 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Debug.WriteLine("RadioButtonView 오류: " + ex.Message);
+            }
+        }
+
+
+        /// <summary>
+        /// 우측 UnitConfig UserControl 초기화
+        /// </summary>
+        private void InitializeUnitConfigPanel()
+        {
+            try
+            {
+                if (unitConfigControl == null) return;
+                if (_cfg == null)
+                {
+                    unitConfigControl.BindConfig(null);
+                    return;
+                }
+                unitConfigControl.BindConfig(_cfg);
+
+                // 기본 선택 TeachingPosition 없을 때 첫 항목 표시
+                if (_cfg.TeachingPositions != null && _cfg.TeachingPositions.Count == 0)
+                {
+                    try { _cfg.InitializeDefaultTeachingPositions(); } catch { }
+                    PopulateTeachingPositionList();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("InitializeUnitConfigPanel error: " + ex.Message);
             }
         }
 
