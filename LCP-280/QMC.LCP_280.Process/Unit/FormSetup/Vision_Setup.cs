@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 using QMC.Common;
 using QMC.Common.Cameras;
@@ -140,6 +141,12 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     visionImageViewer.Simulated = false;
 
+                    if (cam.IsLiveOn)
+                    {
+                        var rcStop = cam.StopLive();
+                        Log.Write("Vision_Setup", $"Camera.ForceStop '{cam.Name}' rc={rcStop}");
+                    }
+
                     if (!cam.Opened)
                     {
                         var rcRe = cam.Reconnect();
@@ -152,6 +159,13 @@ namespace QMC.LCP_280.Process.Unit
 
                     var rcLive = cam.StartLive();
                     Log.Write("Vision_Setup", $"Camera.StartLive '{cam.Name}' rc={rcLive}");
+
+                    if (rcLive != 0)
+                    {
+                        Thread.Sleep(100); 
+                        var rcRetry = cam.StartLive();
+                        Log.Write("Vision_Setup", $"Camera.StartLive.Retry '{cam.Name}' rc={rcRetry}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -159,7 +173,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write("Vision_Setup", $"SwitchCameraTo StartLive error: {ex}");
             }
 
-            // 스케일/크로스라인/스냅 초기화(스냅은 라이브 실패 대비 썸네일용)
             ResetViewerForCameraChange();
 
             visionImageViewer.ResumeDisplay();
