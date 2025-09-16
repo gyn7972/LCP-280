@@ -38,7 +38,7 @@ namespace QMC.Common.IOUtil
             _config = config ?? new CylinderConfig { Name = name };
         }
 
-        public bool Extend(int timeoutMs = 1000, int settleMs = 50)
+        public bool Extend(int timeoutMs = 1500, int settleMs = 50)
         {
             DIO.Out(_bwdOutKey, false);
             DIO.Out(_fwdOutKey, true);
@@ -48,7 +48,7 @@ namespace QMC.Common.IOUtil
 
             if(this.Config.IsSimulation)
             {
-                Thread.Sleep(200);
+                Thread.Sleep(500);
                 return true;
             }
             else
@@ -112,7 +112,7 @@ namespace QMC.Common.IOUtil
             return false;
         }
 
-        public bool Retract(int timeoutMs = 1000, int settleMs = 50)
+        public bool Retract(int timeoutMs = 1500, int settleMs = 50)
         {
             DIO.Out(_fwdOutKey, false);
             DIO.Out(_bwdOutKey, true);
@@ -122,7 +122,7 @@ namespace QMC.Common.IOUtil
 
             if (this.Config.IsSimulation)
             {
-                Thread.Sleep(200);
+                Thread.Sleep(500);
                 return true;
             }
             else
@@ -139,18 +139,6 @@ namespace QMC.Common.IOUtil
                 }
             }
             return false;
-
-            //var sw = Stopwatch.StartNew();
-            //while (sw.ElapsedMilliseconds < timeout)
-            //{
-            //    if (DIO.In(_bwdInKey, out var on) && on) 
-            //    { 
-            //        Thread.Sleep(settle); 
-            //        return true; 
-            //    }
-            //    Thread.Sleep(5);
-            //}
-            //return false;
         }
 
         public void AllOff() { DIO.Out(_fwdOutKey, false); DIO.Out(_bwdOutKey, false); }

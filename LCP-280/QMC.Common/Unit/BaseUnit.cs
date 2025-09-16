@@ -333,8 +333,8 @@ namespace QMC.Common.Unit
                     foreach (var ap in Axes)
                     {
                         if (ap.Value != null &&
-                            (ap.Key.Equals(key, StringComparison.OrdinalIgnoreCase) ||
-                             ap.Value.Name.Equals(key, StringComparison.OrdinalIgnoreCase)))
+                           (ap.Key.Equals(key, StringComparison.OrdinalIgnoreCase) ||
+                            ap.Value.Name.Equals(key, StringComparison.OrdinalIgnoreCase)))
                         {
                             axis = ap.Value;
                             break;

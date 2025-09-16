@@ -2,6 +2,7 @@
 using QMC.LCP_280.Process.Component; 
 using QMC.LCP_280.Process.Sequences;
 using System;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -538,6 +539,57 @@ namespace QMC.LCP_280.Process.Unit
                 return;
 
             InputStageUnit.UnloadingWafer();
+        }
+
+        private async void btnPickUpNiddleMove_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "동시에 움직이시겠습니까?") != DialogResult.Yes)
+                return;
+
+            btnPickUpNiddleMove.Enabled = false;
+            try
+            {
+                double pickZOffset = 0;
+                double pinZOffset = 0;
+                double velPickZ = 10; // 필요 시 예: (InputDieTransferUnit.AxisPickZ.Config.MaxVelocity * 0.8);
+                double velPinZ = 10;
+                double acc = 20;
+                double dec = 20;
+                int timeoutMs = 5000;   // 필요 시 예: 5000;
+                bool isFine = false;
+
+                int rc = await InputDieTransferUnit.MovePickZAndPinZByOffsetAsync(
+                    pickZOffset,
+                    pinZOffset,
+                    velPickZ,
+                    velPinZ,
+                    acc,
+                    dec,
+                    timeoutMs,
+                    isFine);
+
+                if (rc == 0)
+                    MessageBox.Show(this, "동시 이동 완료", "OK",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else if (rc == -2)
+                    MessageBox.Show(this, "타임아웃", "Timeout",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                else
+                    MessageBox.Show(this, $"실패 rc={rc}", "Fail",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Exception",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnPickUpNiddleMove.Enabled = true;
+            }
+
+            
         }
     }
 }

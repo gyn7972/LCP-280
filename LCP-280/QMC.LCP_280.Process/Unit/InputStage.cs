@@ -301,6 +301,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (axis == null) return -1;
 
+            if(CheckMoveSafety(axis) != 0)
+            {
+                return -1;
+            }
+
             Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {
@@ -343,10 +348,106 @@ namespace QMC.LCP_280.Process.Unit
 
         protected override int CheckMoveSafety(MotionAxis ax)
         {
-            //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
-            return 0;
+            try
+            {
+                //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
+                // PickZ Safety Check
+                // Ejector Pin Z and Ejector Z Safety Check
+                // Ejector Pin Z and Ejector Z 이 Safety Position이 아닐 경우
+                // X,Y Encoder 위치 기준 min/max 체크하고 움직여야 한다. 
+
+
+                // 1) Ejector / PinZ Safety 검사 (우선순위 높음)
+                bool pinZSafe = true;
+                bool ejectorZSafe = true;
+
+                if (InputStageEjector != null)
+                {
+                    pinZSafe = InputStageEjector.IsPinZSafetyPos();
+                    ejectorZSafe = InputStageEjector.IsEjectorZSafetyPos();
+
+                    if (!pinZSafe || !ejectorZSafe)
+                    {
+                        // PinZ 또는 EjectorZ 가 Safety 가 아닐 때 X/Y 이동 허용 범위 검사
+                        if (ax == AxisX || ax == AxisY)
+                        {
+                            if (!IsAllowedXYWindowWhileEjectorUnsafe())
+                            {
+                                // 어떤 축이 원인인지에 따라 더 구체적인 알람 선택
+                                if (!pinZSafe)
+                                    return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+                                if (!ejectorZSafe)
+                                    return (int)AlarmKeys.eInputStageEjectorZNotSafe;
+                                // 둘 다 아니면 일반 반환
+                                return (int)AlarmKeys.eInputStageEjectorZNotSafe;
+                            }
+                        }
+
+                        // 범위 내 이동이라도 PinZ / EjectorZ 가 안전하지 않으면 알람(보수적 정책) →
+                        // Test 후에 필요 시 주석 처리 해야함.
+                        if (!pinZSafe)
+                            return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+                        if (!ejectorZSafe)
+                            return (int)AlarmKeys.eInputStageEjectorZNotSafe;
+                    }
+                }
+
+                // 2) DieTransfer PickZ Safety
+                if (InputDieTransfer != null && !InputDieTransfer.IsDieTransferPickZSafetyPos())
+                    return (int)AlarmKeys.eDieTransferPickZNotSafe;
+
+                // 3) Feeder Z / Y Safety
+                if (InputFeeder != null)
+                {
+                    if (!InputFeeder.IsFeederZSafetyPosition())
+                        return (int)AlarmKeys.eInputFeederCylinderZNotSafe;
+
+                    if (!InputFeeder.IsFeederYSafetyPosition())
+                        return (int)AlarmKeys.eInputFeederYNotSafe;
+                }
+
+                // 추가로 "다른 유닛 축 이동중" 등을 넣고 싶다면 여기서 검사 후 알람 코드 반환
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                // 예외 발생 시 보수적으로 이동 중단하도록 임의 알람 (PinZ 알람 선택) 반환 가능
+                return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+            }
+
+            return 0; // 0 = OK
         }
 
+        /// <summary>
+        /// PinZ / EjectorZ 가 Safety 가 아닐 때 X/Y 축 이동 허용 윈도우 판정.
+        /// CenterPoint 티칭 기준 ±UnsafeHalfRange 범위 내만 허용.
+        /// 티칭 없거나 좌표 취득 실패 시 false(=허용 안 함).
+        /// </summary>
+        private bool IsAllowedXYWindowWhileEjectorUnsafe()
+        {
+            const double UnsafeHalfRangeX = 2.0; // mm (필요 시 Config 로 승격)
+            const double UnsafeHalfRangeY = 2.0; // mm
+
+            // CenterPoint Teaching 확보
+            var tp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
+            if (tp == null || tp.AxisPositions == null)
+                return false;
+
+            double centerX, centerY;
+            if (!tp.AxisPositions.TryGetValue(AxisNames.WaferStageX, out centerX))
+                return false;
+            if (!tp.AxisPositions.TryGetValue(AxisNames.WaferStageY, out centerY))
+                return false;
+
+            double curX = AxisX?.GetPosition() ?? centerX;
+            double curY = AxisY?.GetPosition() ?? centerY;
+
+            bool xOk = Math.Abs(curX - centerX) <= UnsafeHalfRangeX;
+            bool yOk = Math.Abs(curY - centerY) <= UnsafeHalfRangeY;
+
+            return xOk && yOk;
+        }
+        
         //protected override MotionAxis ResolveAxis(string name)
         //{
         //    // 특수 축 우선 매핑 후
@@ -757,21 +858,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Low-Level IO Access (Refactored to match OutputStage pattern)
-        private bool ActAndWait(string tag, Func<bool> act, Func<bool> cond)
-        {
-            if (!act())
-            {
-                Log.Write(UnitName, "Seq", $"Fail Act {tag}");
-                return false;
-            }
-
-            if (!WaitIO(cond, MoveTimeoutMs))
-            {
-                Log.Write(UnitName, "Seq", $"Timeout {tag}");
-                return false;
-            }
-            return true;
-        }
         public bool ReadInput(string name)
         {
             // 유효성 검사
@@ -1051,17 +1137,6 @@ namespace QMC.LCP_280.Process.Unit
             nRtn = 0;
             return nRtn;
         }
-        private int WaitUntilInPos(TeachingPosition tp, int timeoutMs)
-        {
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeoutMs)
-            {
-                if (InPosTeaching(tp))
-                    return 0;
-                Thread.Sleep(PollIntervalMs);
-            }
-            return -1;
-        }
         private bool WaitIO(Func<bool> cond, int timeoutMs)
         {
             var sw = Stopwatch.StartNew();
@@ -1160,7 +1235,8 @@ namespace QMC.LCP_280.Process.Unit
             if (IsRingPresent())
             {
                 //Plate Up → 
-                if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+                SetClampPlate(true);
+                if(!IsPlateUp())
                 {
                     Log.Write(this, "Fail: PlateUp");
                     return -1;
@@ -1174,10 +1250,10 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Wafer already present -> Skip prepare");
                 return 0;
             }
-            else if (!InputFeeder.IsRequestLoadingWafer)
-            {
-                return 0;
-            }
+            //else if (!InputFeeder.IsRequestLoadingWafer)
+            //{
+            //    return 0;
+            //}
             else
             {
                 ret = LoadingWafer();
@@ -1296,18 +1372,21 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Clamp Back → Lift Down
-            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd()))
+            SetClampFB(false);
+            if(!IsClampBwd())
             {
                 Log.Write(this, "Fail: ClampBack");
                 return -1;
             }
-            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown()))
+            SetClampLift(false);
+            if(!IsClampLiftDown())
             {
                 Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
             }
             //Plate Up → 
-            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp()))
+            SetClampPlate(false);
+            if(!IsPlateDown())
             {
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
@@ -1344,12 +1423,28 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     Thread.Sleep(1000);
                 }
-                else if (IsPlateUp())
+                else if (!IsPlateUp())
                 {
-                    if (!ActAndWait("ClampLiftUp", () => SetClampLift(true), () => IsClampLiftUp()))
+                    SetClampPlate(true);
+                    if (!IsPlateUp())
+                    {
+                        Log.Write(this, "Fail: PlateUp");
                         return -1;
-                    if (!ActAndWait("ClampForward", () => SetClampFB(true), () => IsClampFwd()))
+                    }
+
+                    SetClampLift(true);
+                    if (!IsClampLiftUp())
+                    {
+                        Log.Write(this, "Fail: ClampLiftUp");
                         return -1;
+                    }
+
+                    SetClampFB(true);
+                    if (!IsClampFwd())
+                    {
+                        Log.Write(this, "Fail: ClampForward");
+                        return -1;
+                    }
                 }
                 else
                 {
@@ -1471,7 +1566,6 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
                 grabRc = StageCamera.GrabSync(out img);
-
             }
             catch (Exception ex)
             {
@@ -1732,14 +1826,24 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Plate Up (이미 Up 일 수도 있으나 통일)
-            if (!ActAndWait("PlateUp", () => SetClampPlate(true), () => IsPlateUp())) 
+            SetClampPlate(true);
+            if (!IsPlateUp())
+            {
+                Log.Write(this, "Fail: PlateUp");
                 return -1;
-            // Clamp Back (웨이퍼 픽업 전 클램프 해제)
-            if (!ActAndWait("ClampBack", () => SetClampFB(false), () => IsClampBwd())) 
+            }
+            SetClampFB(false);
+            if (!IsClampBwd())
+            {
+                Log.Write(this, "Fail: ClampBack");
                 return -1;
-            // Lift Down (픽업 접근 공간 확보)
-            if (!ActAndWait("ClampLiftDown", () => SetClampLift(false), () => IsClampLiftDown())) 
+            }
+            SetClampLift(false);
+            if (!IsClampLiftDown())
+            {
+                Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
+            }
 
             IsStatus_StageUnloadingReady = true;
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
@@ -1772,8 +1876,11 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingComp", "Wafer removed -> Completing");
 
             // Plate Down (원위치)
-            if (!ActAndWait("PlateDown", () => SetClampPlate(false), () => IsPlateDown())) 
+            SetClampPlate(false);
+            if(IsPlateDown())
+            {
                 return -1;
+            }
 
             nRtn = MoveToStageReadyPosition();
             if (nRtn != 0)

@@ -762,7 +762,12 @@ namespace QMC.Common.Motions.CKD
                 }
 
                 var wait = ReadPeriod;
-                try { await Task.Delay(wait, ct); } catch { /* canceled */ }
+                try 
+                { 
+                    await Task.Delay(wait, ct);
+                } 
+                catch 
+                { /* canceled */ }
             }
             RequestMonitorExecution(false);
         }
