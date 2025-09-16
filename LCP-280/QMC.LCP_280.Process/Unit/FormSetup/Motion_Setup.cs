@@ -386,10 +386,10 @@ namespace QMC.LCP_280.Process.Unit
 
                 dlg.BringToFront();
 
-                while (!runTask.IsCompleted)
+                var completed = await Task.WhenAny(runTask, Task.Delay(Timeout.Infinite, token)).ConfigureAwait(true);
+                if (completed != runTask)
                 {
-                    Application.DoEvents();
-                    await Task.Delay(50).ConfigureAwait(true);
+                    await Task.WhenAny(runTask, Task.Delay(2000)).ConfigureAwait(true);
                 }
                 var results = await runTask.ConfigureAwait(true);
                 dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = seq.TotalSteps - 1, TotalSteps = seq.TotalSteps, IsCompleted = true, IsCanceled = token.IsCancellationRequested, IsAborted = seq.Aborted, Message = seq.AbortReason });
@@ -484,11 +484,7 @@ namespace QMC.LCP_280.Process.Unit
                 dlg.ForceStopRequested += () => { try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
                 var runTask = Task.Run(() => { try { _axis.ClearAlarm(); _axis.Servo(true); _axis.HomeSync(); } catch (Exception ex) { throw ex; } });
                 dlg.Show(this); dlg.BringToFront();
-                while (!runTask.IsCompleted)
-                {
-                    Application.DoEvents();
-                    await Task.Delay(50).ConfigureAwait(true);
-                }
+                await runTask.ConfigureAwait(true);
                 dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = $"Home {_axis.Name}", StepIndex = 0, TotalSteps = 1, IsCompleted = true, IsCanceled = userCanceled, Message = userCanceled ? "Canceled" : "Completed" });
                 MessageBox.Show(userCanceled ? $"축 {_axis.Name} 홈 취소" : $"축 {_axis.Name} 홈 완료");
             }
