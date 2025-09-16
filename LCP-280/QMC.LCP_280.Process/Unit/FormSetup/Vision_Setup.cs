@@ -110,14 +110,16 @@ namespace QMC.LCP_280.Process.Unit
             if (_camSwitch == null) return;
             if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
 
+            // 현재 카메라 라이브 정지
             try { visionImageViewer.CurrentCamera?.StopLive(); } catch { }
             
             visionImageViewer.SuspendDisplay();
             _camSwitch.Change(selectedIndex);
-            
+            System.Threading.Thread.Sleep(50);
+
             try 
             { 
-                var cam = visionImageViewer.CurrentCamera;
+                var cam = _camSwitch.Cameras[selectedIndex];
                 if (cam != null)
                 {
                     visionImageViewer.Simulated = false;
