@@ -60,8 +60,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                BinVisionList();
                 WireAxisSelectionEvent();
+                BinVisionList();
                 InitializeRadioButtonView();
             }
             catch (Exception ex)
@@ -87,10 +87,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (_camSwitch.Cameras.Count > 0)
                 {
-                    _camSwitch.Change(0);
                     cameraListBoxItemsView.SelectedIndex = 0;
-                    ResetViewerForCameraChange();
-                    visionImageViewer.ResumeDisplay();
+                    OnVisionItemSelected(cameraListBoxItemsView, 0);
                 }
             }
             catch (Exception ex)
@@ -110,16 +108,11 @@ namespace QMC.LCP_280.Process.Unit
 
         private void OnVisionItemSelected(object sender, int selectedIndex)
         {
-            // 리스트 선택 프로그램적 변경 시(탭 동기화 중) 중복 Stop/Start 방지
-            if (_syncingSelection) return;
-
             if (_camSwitch == null) return;
             if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
 
-            // 카메라 전환 공통 처리
             SwitchCameraTo(selectedIndex);
 
-            // 팝업 탭 동기화 (재귀 방지)
             if (_popupTabControl != null && _popupTabControl.IsHandleCreated)
             {
                 try
@@ -135,13 +128,39 @@ namespace QMC.LCP_280.Process.Unit
         private void SwitchCameraTo(int index)
         {
             try { visionImageViewer.CurrentCamera?.StopLive(); } catch { }
+
             visionImageViewer.SuspendDisplay();
 
             _camSwitch.Change(index);
-            ResetViewerForCameraChange();
 
-            try { visionImageViewer.CurrentCamera?.StartLive(); }
-            catch (Exception ex) { Log.Write(ex); }
+            try
+            {
+                var cam = visionImageViewer.CurrentCamera;
+                if (cam != null)
+                {
+                    visionImageViewer.Simulated = false;
+
+                    if (!cam.Opened)
+                    {
+                        var rcRe = cam.Reconnect();
+                        Log.Write("Vision_Setup", $"Camera.Reconnect '{cam.Name}' rc={rcRe}");
+                      }
+
+                    cam.SuspendedImageDisplay = false;
+
+                    try { if (visionImageViewer.FrameRate > 0) cam.SetFrameRate(visionImageViewer.FrameRate); } catch { }
+
+                    var rcLive = cam.StartLive();
+                    Log.Write("Vision_Setup", $"Camera.StartLive '{cam.Name}' rc={rcLive}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Vision_Setup", $"SwitchCameraTo StartLive error: {ex}");
+            }
+
+            // 스케일/크로스라인/스냅 초기화(스냅은 라이브 실패 대비 썸네일용)
+            ResetViewerForCameraChange();
 
             visionImageViewer.ResumeDisplay();
             visionImageViewer.StartUpdateTask();
@@ -278,7 +297,6 @@ namespace QMC.LCP_280.Process.Unit
             };
             _viewerPopupForm.FormClosed += (s, e) => { if (!_restoringViewer) RestoreViewer(); };
 
-            // 탭 컨트롤 생성 및 카메라 이름으로 탭 구성
             _popupTabControl = new TabControl
             {
                 Dock = DockStyle.Fill
@@ -300,11 +318,9 @@ namespace QMC.LCP_280.Process.Unit
             selIndex = Math.Max(0, Math.Min(selIndex, _popupTabControl.TabPages.Count - 1));
             _popupTabControl.SelectedIndex = selIndex;
 
-            // 이벤트 연결
             _popupTabControl.SelectedIndexChanged -= PopupTabs_SelectedIndexChanged;
             _popupTabControl.SelectedIndexChanged += PopupTabs_SelectedIndexChanged;
 
-            // 기존 부모에서 분리하고, 선택된 탭 페이지에 붙이기
             visionImageViewer.SuspendLayout();
             _viewerOriginalParent.Controls.Remove(visionImageViewer);
             var hostPage = _popupTabControl.TabPages[selIndex];
@@ -312,13 +328,11 @@ namespace QMC.LCP_280.Process.Unit
             hostPage.Controls.Add(visionImageViewer);
             visionImageViewer.ResumeLayout();
 
-            // 팝업 표시
             _viewerPopupForm.Controls.Add(_popupTabControl);
             _viewerPoppedOut = true;
             _viewerPopupForm.Show(this);
             _viewerPopupForm.BringToFront();
 
-            // 선택 동기화(재귀 방지)
             try
             {
                 _syncingSelection = true;
@@ -334,23 +348,17 @@ namespace QMC.LCP_280.Process.Unit
             int idx = _popupTabControl.SelectedIndex;
             if (idx < 0) return;
 
-            // 리스트 동기화로 인해 탭이 프로그램적으로 바뀐 경우:
-            // - 카메라 전환은 이미 리스트 핸들러에서 수행됨
-            // - 뷰어만 현재 탭 페이지로 이동
             if (_syncingSelection)
             {
                 MoveViewerIntoTab(idx);
                 return;
             }
 
-            // 사용자 탭 선택: 카메라 전환
             if (_camSwitch != null && idx < _camSwitch.Cameras.Count)
                 SwitchCameraTo(idx);
 
-            // 뷰어를 현재 탭 페이지로 이동
             MoveViewerIntoTab(idx);
 
-            // 좌측 리스트와 동기화(재귀 방지)
             if (cameraListBoxItemsView != null)
             {
                 try
@@ -362,7 +370,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // 탭 페이지로 뷰어를 안전하게 이동
         private void MoveViewerIntoTab(int idx)
         {
             try
@@ -386,7 +393,6 @@ namespace QMC.LCP_280.Process.Unit
             _restoringViewer = true;
             try
             {
-                // 탭에서 뷰어 분리
                 if (_popupTabControl != null)
                 {
                     try
@@ -397,7 +403,6 @@ namespace QMC.LCP_280.Process.Unit
                     catch { }
                 }
 
-                // 원래 부모로 복귀
                 if (_viewerOriginalParent != null && !_viewerOriginalParent.IsDisposed)
                 {
                     visionImageViewer.SuspendLayout();
@@ -409,7 +414,6 @@ namespace QMC.LCP_280.Process.Unit
                     visionImageViewer.BringToFront();
                 }
 
-                // 팝업 폼/탭 정리
                 if (_popupTabControl != null)
                 {
                     try { _popupTabControl.SelectedIndexChanged -= PopupTabs_SelectedIndexChanged; } catch { }
