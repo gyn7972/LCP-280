@@ -387,7 +387,7 @@ namespace QMC.Common.Unit
                     waitErrors++; 
                 }
             }
-            return err == 0 ? 0 : -1;
+            return waitErrors == 0 ? 0 : -1;
         }
 
         public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
