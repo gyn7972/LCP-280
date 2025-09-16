@@ -86,7 +86,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     _camSwitch.Change(0);
                     cameraListBoxItemsView.SelectedIndex = 0;
-                    ResetViewerForCameraChange();
+                    //ResetViewerForCameraChange();
                     visionImageViewer.ResumeDisplay();
                 }
             }
@@ -132,14 +132,14 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write("Vision_Setup", $"OnVisionItemSelected StartLive error: {ex}"); 
             }
             
-            ResetViewerForCameraChange();
+            ResetViewerForCameraChange(selectedIndex);
             visionImageViewer.ResumeDisplay();
             visionImageViewer.StartUpdateTask();
         }
 
-        private void ResetViewerForCameraChange()
+        private void ResetViewerForCameraChange(int selectedIndex)
         {
-            var cam = visionImageViewer.CurrentCamera;
+            var cam = _camSwitch.Cameras[selectedIndex];
             if (cam == null) return;
             visionImageViewer.Scale.Wheel = 1.0;
             visionImageViewer.Scale.SetMousePoint(new Point(cam.Resolution.Width / 2, cam.Resolution.Height / 2));
