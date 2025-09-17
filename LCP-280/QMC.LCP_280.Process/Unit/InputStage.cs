@@ -174,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            Config.IsSimulation = true;
+            Config.IsSimulation = Config.IsSimulation; ;
             if (Config.IsSimulation)
             {
                 _axX.Config.IsSimulation = true;
@@ -347,7 +347,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         //가공시에 스테이지 Area 밖으로 나가는것을 방지하기 위한 함수
-        protected override int CheckMoveSafety(MotionAxis ax)
+        public override int CheckMoveSafety(MotionAxis ax)
         {
             try
             {
@@ -386,10 +386,10 @@ namespace QMC.LCP_280.Process.Unit
 
                         // 범위 내 이동이라도 PinZ / EjectorZ 가 안전하지 않으면 알람(보수적 정책) →
                         // Test 후에 필요 시 주석 처리 해야함.
-                        if (!pinZSafe)
-                            return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
-                        if (!ejectorZSafe)
-                            return (int)AlarmKeys.eInputStageEjectorZNotSafe;
+                        //if (!pinZSafe)
+                        //    return (int)AlarmKeys.eInputStageEjectorPinZNotSafe;
+                        //if (!ejectorZSafe)
+                        //    return (int)AlarmKeys.eInputStageEjectorZNotSafe;
                     }
                 }
 
@@ -426,8 +426,8 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         private bool IsAllowedXYWindowWhileEjectorUnsafe()
         {
-            const double UnsafeHalfRangeX = 2.0; // mm (필요 시 Config 로 승격)
-            const double UnsafeHalfRangeY = 2.0; // mm
+            double UnsafeHalfRangeX = Config.dSafeHalfRangeX; // mm (필요 시 Config 로 승격)
+            double UnsafeHalfRangeY = Config.dSafeHalfRangeY; // mm
 
             // CenterPoint Teaching 확보
             var tp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
@@ -967,18 +967,38 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
         // === Domain Control (표준 구동) ===
-        public bool SetVacuum(bool on)
+        public bool SetVacuum(bool on, bool bCheckSignal = false)
         {
-            if (_vacuum == null) return false;
-            if (on) _vacuum.On();
-            else _vacuum.Off();
+            if (_vacuum == null) 
+                return false;
+
+            if(!bCheckSignal)
+            {
+                if (on)
+                    _vacuum.On();
+                else
+                    _vacuum.Off();
+            }
+            else
+            {
+                if (on)
+                    _vacuum.OnWaitOk();
+                else
+                    _vacuum.OffWaitOk();
+            }
+
             return true;
         }
         public bool SetClampPlate(bool bUpDn)
         {
-            if (_cylPlate == null) return false;
-            if (bUpDn) return _cylPlate.Extend();
-            else return _cylPlate.Retract();
+            if (_cylPlate == null) 
+                return false;
+
+            if (bUpDn) 
+                return _cylPlate.Extend();
+            else 
+                return _cylPlate.Retract();
+
         }
         public bool SetClampLift(bool bUpDn)
         {
@@ -1089,7 +1109,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
         }
-        public bool IsVacuum()
+        public bool IsVacuumOn()
         {
             if (Config.IsSimulation)
             {

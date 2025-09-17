@@ -542,7 +542,7 @@ namespace QMC.Common.Unit
         /// Safety 인터락 검사 (0=OK, 알람코드!=0 → 중단/알람).
         /// 파생 클래스에서 조건 구현.
         /// </summary>
-        protected virtual int CheckMoveSafety(MotionAxis movingAxis) => 0;
+        public virtual int CheckMoveSafety(MotionAxis movingAxis) => 0;
 
         /// <summary>
         /// 기본 축 검색 (Key 우선 → Name 매칭). 파생에서 필요 시 Override.

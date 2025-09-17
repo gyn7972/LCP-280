@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -74,6 +75,16 @@ namespace QMC.LCP_280.Process.Unit
         /// 개별 Teaching Position 에 적용할 오프셋 (X / Y / T)
         /// </summary>
         public Dictionary<string, (double dx, double dy, double dt)> Offsets { get; set; } = new Dictionary<string, (double dx, double dy, double dt)>();
+
+
+        //
+        [Category("Limit"), DisplayName("safeHalfRangeX(mm)")]
+        [DefaultValue(0.0)]
+        public double dSafeHalfRangeX { get; set; } = 0.0;
+
+        [Category("Limit"), DisplayName("safeHalfRangeY(mm)")]
+        [DefaultValue(0.0)]
+        public double dSafeHalfRangeY { get; set; } = 0.0;
 
         // Motion Done 관련 옵션
         public bool   EnablePredictiveControl   { get; set; } = false;

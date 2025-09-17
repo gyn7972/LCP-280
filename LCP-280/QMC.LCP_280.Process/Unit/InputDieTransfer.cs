@@ -726,32 +726,42 @@ namespace QMC.LCP_280.Process.Unit
 
             // 진공 On, Index 0번 - 우선 무조건 Index 0번 사용. 
             // 추후 다중 Arm 사용 시 변경 필요 하지만 미리 다중으로 만들자.
-            if(SetVacuum(0, true))
-            {
-                var sw1 = Stopwatch.StartNew();
-                while (!InputStage.IsVacuum())
-                {
-                    if (sw1.ElapsedMilliseconds > 2000)
-                    {
-                        Log.Write(UnitName, "[VacuumOn] Vacuum Timeout");
-                        return -1;
-                    }
-                    Thread.Sleep(1);
-                }
-            }
-            else
-            {
-                Log.Write(UnitName, "[MovePickZAndPinZByOffset] SetVacuum Failed");
-                return -1;
-            }
+            //if(SetVacuum(0, true))
+            //{
+            //    var sw1 = Stopwatch.StartNew();
+            //    while (!InputStage.IsVacuumOn())
+            //    {
+            //        if (sw1.ElapsedMilliseconds > 2000)
+            //        {
+            //            Log.Write(UnitName, "[VacuumOn] Vacuum Timeout");
+            //            return -1;
+            //        }
+            //        Thread.Sleep(1);
+            //    }
+            //}
+            //else
+            //{
+            //    Log.Write(UnitName, "[MovePickZAndPinZByOffset] SetVacuum Failed");
+            //    return -1;
+            //}
 
-            double vPick = velPickZ > 0 ? velPickZ : pick.Config.MaxVelocity;
-            double aPick = acc > 0 ? acc : pick.Config.RunAcc;
-            double dPick = dec > 0 ? dec : pick.Config.RunDec;
+            //double vPick = velPickZ > 0 ? velPickZ : pick.Config.MaxVelocity;
+            //double aPick = acc > 0 ? acc : pick.Config.RunAcc;
+            //double dPick = dec > 0 ? dec : pick.Config.RunDec;
 
-            double vPin = velPinZ > 0 ? velPinZ : pin.Config.MaxVelocity;
-            double aPin = acc > 0 ? acc : pin.Config.RunAcc;
-            double dPin = dec > 0 ? dec : pin.Config.RunDec;
+            //double vPin = velPinZ > 0 ? velPinZ : pin.Config.MaxVelocity;
+            //double aPin = acc > 0 ? acc : pin.Config.RunAcc;
+            //double dPin = dec > 0 ? dec : pin.Config.RunDec;
+
+            pickZOffset = Config.dPickUpOffset;
+            double vPick = Config.dPickUpSpeed;
+            double aPick = Config.dPickUpAcc;
+            double dPick = Config.dPickUpDec;
+
+            pinZOffset = InputStageEjector.Config.dPickUpOffset;
+            double vPin = InputStageEjector.Config.dPickUpSpeed;
+            double aPin = InputStageEjector.Config.dPickUpAcc;
+            double dPin = InputStageEjector.Config.dPickUpDec;
 
             // 동시에 시작 (반환코드 OR)
             //ex) Offset값이 양수로 300 이면 Z축이 위로 300 이동
@@ -1420,7 +1430,7 @@ namespace QMC.LCP_280.Process.Unit
             if (InputStage.SetVacuum(true))
             {
                 var sw = Stopwatch.StartNew();
-                while (!InputStage.IsVacuum())
+                while (!InputStage.IsVacuumOn())
                 {
                     if (sw.ElapsedMilliseconds > 2000)
                     {
@@ -1470,7 +1480,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputStage.SetVacuum(false))
                 {
                     var sw = Stopwatch.StartNew();
-                    while (!InputStage.IsVacuum())
+                    while (!InputStage.IsVacuumOn())
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1482,7 +1492,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-                return nRet;
+            return nRet;
         }
 
         /// <summary>
@@ -1537,7 +1547,7 @@ namespace QMC.LCP_280.Process.Unit
             if(InputStage.SetVacuum(false))
             {
                 var sw = Stopwatch.StartNew();
-                while (InputStage.IsVacuum())
+                while (InputStage.IsVacuumOn())
                 {
                     if (sw.ElapsedMilliseconds > 1000)
                     {
@@ -1643,9 +1653,9 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             // Place 위치로 이동 (없으면 SafetyZone)
-            double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
+            double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
                         AxisNames.LeftPlaceZ);
-            nRet = MoveAxisPositionOne(AxisPlaceZ, dTPos);
+            nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");

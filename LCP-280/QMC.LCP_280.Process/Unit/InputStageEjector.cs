@@ -128,7 +128,7 @@ namespace QMC.LCP_280.Process.Unit
             return task.Result;
         }
 
-        protected override int CheckMoveSafety(MotionAxis ax)
+        public override int CheckMoveSafety(MotionAxis ax)
         {
             try
             {
@@ -139,6 +139,14 @@ namespace QMC.LCP_280.Process.Unit
                     AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
                     return -1;
                 }
+
+                if(InputStage.CheckMoveSafety(InputStage.AxisX) != 0 ||
+                   InputStage.CheckMoveSafety(InputStage.AxisY) != 0    )
+                {
+                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
+
                 // 추가로 "다른 유닛 축 이동중" 등을 넣고 싶다면 여기서 검사 후 알람 코드 반환
             }
             catch (Exception ex)
@@ -194,6 +202,15 @@ namespace QMC.LCP_280.Process.Unit
                 AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
+
+            if (InputStage.CheckMoveSafety(InputStage.AxisX) != 0 ||
+                InputStage.CheckMoveSafety(InputStage.AxisY) != 0  )
+            {
+                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+
+
             return nRet;
         }
         public Task<int> MovePositionAsyncSafeEjectBlockUp(bool isFine = false, CancellationToken ct = default(CancellationToken))
@@ -460,6 +477,12 @@ namespace QMC.LCP_280.Process.Unit
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(TeachingPosition tp, string axisKey) => (tp == null || string.IsNullOrEmpty(axisKey)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisKey, out var v) ? v : 0.0);
         public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
         #endregion
 
         #region Teaching
@@ -495,26 +518,26 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsEjectorZSafetyPos(double fallbackTolerance = 0.01,
                                          bool useAxisInposTolerance = true,
                                          bool treatMissingAsSafe = true,
-                                         bool allowAbove = true)
+                                         bool allowAbove = false)
         {
             if (_axEjectorZ == null)
                 return treatMissingAsSafe;
 
-            var cfg = InputStageEjectorConfig;
-            if (cfg == null) return false;
+            //var cfg = InputStageEjectorConfig;
+            //if (cfg == null) return false;
+            //string[] candidates =
+            //{
+            //    "EjectBlockSafety",
+            //    "EjectBlockUp",
+            //    "EjectBlockReady"
+            //};
+            //string found = candidates.FirstOrDefault(n => cfg.GetTeachingPosition(n) != null);
+            //if (found == null)
+            //    return treatMissingAsSafe;
+            //var (ejectorTarget, _) = cfg.GetPositionWithOffset(found);
 
-            string[] candidates =
-            {
-                "EjectBlockSafety",
-                "EjectBlockUp",
-                "EjectBlockReady"
-            };
-
-            string found = candidates.FirstOrDefault(n => cfg.GetTeachingPosition(n) != null);
-            if (found == null)
-                return treatMissingAsSafe;
-
-            var (ejectorTarget, _) = cfg.GetPositionWithOffset(found);
+            double dZPos = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectBlockSafety.ToString(),
+                        AxisNames.EjectorZ);
 
             double cur = _axEjectorZ.GetPosition();
             double tol = useAxisInposTolerance
@@ -522,8 +545,9 @@ namespace QMC.LCP_280.Process.Unit
                 : fallbackTolerance;
 
             if (allowAbove)
-                return cur >= (ejectorTarget - tol);
-            return System.Math.Abs(cur - ejectorTarget) <= tol;
+                return cur >= (dZPos - tol);
+
+            return System.Math.Abs(cur - dZPos) <= tol;
         }
 
         /// <summary>
@@ -537,26 +561,24 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsPinZSafetyPos(double fallbackTolerance = 0.01,
                                      bool useAxisInposTolerance = true,
                                      bool treatMissingAsSafe = true,
-                                     bool allowAbove = true)
+                                     bool allowAbove = false)
         {
             if (_axPinZ == null)
                 return treatMissingAsSafe;
 
-            var cfg = InputStageEjectorConfig;
-            if (cfg == null) return false;
+            //var cfg = InputStageEjectorConfig;
+            //if (cfg == null) return false;
+            //string[] candidates =
+            //{
+            //    "EjectPinReady"
+            //};
+            //string found = candidates.FirstOrDefault(n => cfg.GetTeachingPosition(n) != null);
+            //if (found == null)
+            //    return treatMissingAsSafe;
+            //var (_, pinTarget) = cfg.GetPositionWithOffset(found);
 
-            string[] candidates =
-            {
-                "EjectPinReady",
-                "EjectPinChange",
-                "EjectPinOffset"
-            };
-
-            string found = candidates.FirstOrDefault(n => cfg.GetTeachingPosition(n) != null);
-            if (found == null)
-                return treatMissingAsSafe;
-
-            var (_, pinTarget) = cfg.GetPositionWithOffset(found);
+            double dZPos = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
+                        AxisNames.EjectPinZ);
 
             double cur = _axPinZ.GetPosition();
             double tol = useAxisInposTolerance
@@ -564,8 +586,9 @@ namespace QMC.LCP_280.Process.Unit
                 : fallbackTolerance;
 
             if (allowAbove)
-                return cur >= (pinTarget - tol);
-            return System.Math.Abs(cur - pinTarget) <= tol;
+                return cur >= (dZPos - tol);
+
+            return System.Math.Abs(cur - dZPos) <= tol;
         }
         /// <summary>
         /// 두 축(EjectorZ & PinZ) 모두 Safety 판단

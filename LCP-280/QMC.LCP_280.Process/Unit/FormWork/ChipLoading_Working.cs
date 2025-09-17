@@ -240,7 +240,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 // ===== Sensors =====
-                dioControl.BindDIOInput(() => InputStage.IsVacuum(), "Vacuum OK(Sns)", "StageVacOk");
+                dioControl.BindDIOInput(() => InputStage.IsVacuumOn(), "Vacuum OK(Sns)", "StageVacOk");
                 dioControl.BindDIOInput(() => InputStage.IsPlateUp(), "Plate UP Sns", "StagePlateUp");
                 dioControl.BindDIOInput(() => InputStage.IsPlateDown(), "Plate DOWN Sns", "StagePlateDn");
                 dioControl.BindDIOInput(() => InputStage.IsClampLiftDown(), "ClampLift DOWN Sns", "StageClampDn");
@@ -254,7 +254,7 @@ namespace QMC.LCP_280.Process.Unit
                     label: "Vacuum",
                     on: () => InputStage.SetVacuum(true),
                     off: () => InputStage.SetVacuum(false),
-                    isOk: () => InputStage.IsVacuum(),
+                    isOk: () => InputStage.IsVacuumOn(),
                     isOnState: () => InputStage.IsVacuumValveOn(),
                     displayKey: "StageVac",
                     showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
