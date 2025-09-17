@@ -90,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     _camSwitch.Change(0);
                     cameraListBoxItemsView.SelectedIndex = 0;
-                    ResetViewerForCameraChange(0);
+                    //ResetViewerForCameraChange(0);
                     visionImageViewer.ResumeDisplay();
                 }
             }

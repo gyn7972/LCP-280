@@ -28,9 +28,9 @@ namespace QMC.LCP_280.Process.Unit
             EjectBlockUp,
             EjectBlockReady,
             EjectBlockSafety,
+            EjectPinChange,
             EjectPinOffset,
             EjectPinReady,
-            EjectPinChange,
             // 필요시 확장
         }
 
