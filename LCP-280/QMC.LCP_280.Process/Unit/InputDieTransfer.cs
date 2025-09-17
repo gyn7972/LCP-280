@@ -1403,17 +1403,28 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int RaiseEjectorForPick()
         {
-            if (InputStageEjector == null) 
-                return -1;
-
             int nRet = 0;
 
-            nRet = InputStageEjector.MovePositionEjectBlockUp();
-            if (nRet != 0)
+            if (InputStageEjector == null)
+            {
+                Log.Write(UnitName, "[RaiseEjectorForPick] InputStageEjector is null");
+                return -1;
+            }
+
+            int blockUpResult = InputStageEjector.MovePositionEjectBlockUp();
+            if (blockUpResult != 0)
             {
                 Log.Write(UnitName, "[RaiseEjectorForPick] EjectBlockUp 이동 실패");
                 return -1;
             }
+
+            int pinReadyResult = InputStageEjector.MovePositionEjectPinReady();
+            if (pinReadyResult != 0)
+            {
+                Log.Write(UnitName, "[RaiseEjectorForPick] EjectPinReady 이동 실패");
+                return -1;
+            }
+
             return nRet;
         }
 

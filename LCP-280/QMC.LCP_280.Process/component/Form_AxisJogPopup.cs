@@ -477,22 +477,22 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnStep1_Click(object sender, EventArgs e)
         {
-            nudStep.Value += 1;
+            nudStep.Value = 1;
         }
 
         private void btnStep10_Click(object sender, EventArgs e)
         {
-            nudStep.Value += 0.1M;  // decimal
+            nudStep.Value = 0.1M;  // decimal
         }
 
         private void btnStep100_Click(object sender, EventArgs e)
         {
-            nudStep.Value += 0.01M;
+            nudStep.Value = 0.01M;
         }
 
         private void btnStep1000_Click(object sender, EventArgs e)
         {
-            nudStep.Value += 0.001M;
+            nudStep.Value = 0.001M;
         }
         private void btnStepClear_Click(object sender, EventArgs e)
         {
