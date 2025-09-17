@@ -430,7 +430,8 @@ namespace QMC.Common.Unit
                     }
                 }
             }
-                return axis != null && !axis.IsMoveDone();
+
+            return axis != null && !axis.IsMoveDone();
         }
 
         public virtual bool IsAnyAxisMoving()
