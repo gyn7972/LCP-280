@@ -507,10 +507,24 @@ namespace QMC.LCP_280.Process
 
             try
             {
+                // [FIX] 실행 플래그와 실제 RunStatus 정합성 보정
+                var bu = unitObj as QMC.Common.Unit.BaseUnit;
                 if (execInfo.IsRunning)
                 {
-                    Console.WriteLine($"Unit '{unitName}'는 이미 실행 중입니다.");
-                    return true;
+                    var rs = bu?.RunStatus;
+                    if (rs == QMC.Common.Unit.BaseUnit.UnitRunStatus.Stop ||
+                        rs == QMC.Common.Unit.BaseUnit.UnitRunStatus.CycleStop)
+                    {
+                        // 실제로는 정지 상태인데 플래그만 Running이던 경우 정정
+                        execInfo.IsRunning = false;
+                        execInfo.StopTime = DateTime.Now;
+                        OnUnitStateChanged(unitName, UnitState.Stopped);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unit '{unitName}'는 이미 실행 중입니다.");
+                        return true;
+                    }
                 }
 
                 OnUnitStateChanged(unitName, UnitState.Starting);
@@ -692,16 +706,9 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true)
         {
-            //if (State == EquipmentState.Stopped)
-            //{
-            //    Console.WriteLine("설비가 이미 정지되어 있습니다.");
-            //    return true;
-            //}
-
             try
             {
                 OnStateChanged(EquipmentState.Stopping);
-
                 _equipmentCancellationTokenSource?.Cancel();
 
                 var stopTasks = new List<Task<bool>>();
@@ -717,12 +724,20 @@ namespace QMC.LCP_280.Process
                     if (execInfo.IsRunning)
                     {
                         OnUnitStateChanged(unitName, UnitState.Stopping);
+
+                        // [FIX] 실제 유닛도 멈추도록 호출
+                        if (Units.TryGetValue(unitName, out var u))
+                            (u as QMC.Common.Unit.BaseUnit)?.Stop();
+
                         execInfo.CancellationTokenSource?.Cancel();
                         execInfo.IsRunning = false;
                         execInfo.StopTime = DateTime.Now;
 
                         if (execInfo.ExecutionTask != null)
                             stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
+
+                        // [FIX] 즉시 Stopped 알림 (Task 루프 미사용 구조 대응)
+                        OnUnitStateChanged(unitName, UnitState.Stopped);
                     }
                 }
 
@@ -833,13 +848,15 @@ namespace QMC.LCP_280.Process
 
             try
             {
-                (unitObj as BaseUnit)?.Stop();
-
+                (unitObj as QMC.Common.Unit.BaseUnit)?.Stop();
 
                 execInfo.IsRunning = false;
                 execInfo.StopTime = DateTime.Now;
-                OnUnitStateChanged(unitName, UnitState.Stopping);
 
+
+                // [FIX] Stopping → Stopped 까지 반영
+                OnUnitStateChanged(unitName, UnitState.Stopping);
+                OnUnitStateChanged(unitName, UnitState.Stopped);
 
                 Console.WriteLine($"Unit '{unitName}' 정지 완료");
                 return true;

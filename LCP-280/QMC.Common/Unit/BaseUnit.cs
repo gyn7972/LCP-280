@@ -50,6 +50,7 @@ namespace QMC.Common.Unit
             Work = 3,
             Complete = 4,
             Error = 5,
+            Manual = 6
         }
 
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
@@ -68,7 +69,7 @@ namespace QMC.Common.Unit
 
         public UnitRunStatus Status { get; protected set; }
         public ProcessState State { get; protected set; }
-
+        
         // 등록 축 사전 (Key: 논리 축명)
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
 
@@ -227,7 +228,9 @@ namespace QMC.Common.Unit
 
             while (true)
             {
-                if (m_bExit) break;
+                if (m_bExit) 
+                    break;
+
                 if ((ret = OnRun()) != 0)
                 {
                     Log.Write(this, $"OnRun Return: {ret}");

@@ -496,9 +496,24 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        private void buttonTest_Click(object sender, EventArgs e)
+        private async void btnSeqStop_Click(object sender, EventArgs e)
         {
-            InputStage.SetClampLift(true);
+            //if (cmbUnits?.SelectedItem == null) return;
+            var unitName = "InputDieTransfer";  //cmbUnits.SelectedItem.ToString();
+            try
+            {
+               // LogMessage($"Unit '{unitName}' 정지 중...");
+                var result = await Equipment.StopUnitAsync(unitName);
+                //LogMessage(result ? $"Unit '{unitName}' 정지 완료" : $"Unit '{unitName}' 정지 실패");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            finally
+            {
+                //UpdateUnitStatus();
+            }
         }
 
         private void buttonTest2_Click(object sender, EventArgs e)
@@ -539,65 +554,20 @@ namespace QMC.LCP_280.Process.Unit
             if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            InputStage.UnloadingWafer();
+            InputStageEjector.MovePositionEjectBlockReady(isFine: false);
+
         }
 
-        private async void btnPickUpNiddleMove_Click(object sender, EventArgs e)
+
+
+
+        private async void btnSafetyZ_Click(object sender, EventArgs e)
         {
             var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "동시에 움직이시겠습니까?") != DialogResult.Yes)
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            btnPickUpNiddleMove.Enabled = false;
-            try
-            {
-                double pickZOffset = InputStageEjector.Config.dPickUpOffset;
-                double pinZOffset = InputDieTransfer.Config.dPickUpOffset;
-                double velPinZ = InputStageEjector.Config.dPickUpSpeed;
-                double velPickZ = velPinZ; // 필요 시 예: (InputDieTransferUnit.AxisPickZ.Config.MaxVelocity * 0.8);
-                double acc = InputStageEjector.Config.dPickUpAcc;
-                double dec = InputStageEjector.Config.dPickUpAcc;
-                int timeoutMs = 5000;   // 필요 시 예: 5000;
-                bool isFine = false;
-
-                int rc = await InputDieTransfer.MovePickZAndPinZByOffsetAsync(
-                    pickZOffset,
-                    pinZOffset,
-                    velPickZ,
-                    velPinZ,
-                    acc,
-                    dec,
-                    timeoutMs,
-                    isFine);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "동시 이동 완료", "OK",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else if (rc == -2)
-                    MessageBox.Show(this, "타임아웃", "Timeout",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                else
-                    MessageBox.Show(this, $"실패 rc={rc}", "Fail",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(this, ex.Message, "Exception",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                btnPickUpNiddleMove.Enabled = true;
-            }
-        }
-
-        private async void btnPickUp_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "동시에 움직이시겠습니까?") != DialogResult.Yes)
-                return;
-
-            btnPickUpNiddleMove.Enabled = false; // 필요 시 자신(btnPickUp)도 비활성
+            btnSafetyZ.Enabled = false;
             // (선택) 취소 대비
             _ctsPickUp?.Cancel();
             _ctsPickUp = new CancellationTokenSource();
@@ -605,7 +575,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int rc = await InputDieTransfer
-                    .MovePickUpPositionAsyncSafe_UI(isFine: false, ct: _ctsPickUp.Token)
+                    .MovePositionAsyncSafeSafetyZ(isFine: false, ct: _ctsPickUp.Token)
                     .ConfigureAwait(true); // UI 컨텍스트 복귀
 
                 if (rc == 0)
@@ -618,20 +588,295 @@ namespace QMC.LCP_280.Process.Unit
                     MessageBox.Show(this, $"실패 (rc={rc})", "Fail",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
             catch (Exception ex)
             {
+                btnSafetyZ.Enabled = true;
                 Log.Write(ex);
                 MessageBox.Show(this, ex.Message, "Exception",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
-                btnPickUpNiddleMove.Enabled = true;
+                btnSafetyZ.Enabled = true;
+            }
+
+        }
+
+        private async void btnEjecterZUp_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
+            try
+            {
+                btnEjecterZUp.Enabled = false;
+                //LogMessage($"Unit '{unitName}' 시작 중...");
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 1;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnEjecterZUp.Enabled = true;
+            }
+        }
+
+        private async void btnPickUp_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
+            try
+            {
+                btnPickUp.Enabled = false;
+                //LogMessage($"Unit '{unitName}' 시작 중...");
+
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 2;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnPickUp.Enabled = true;
+            }
+
+            //btnPickUp.Enabled = false; // 필요 시 자신(btnPickUp)도 비활성
+            //// (선택) 취소 대비
+            //_ctsPickUp?.Cancel();
+            //_ctsPickUp = new CancellationTokenSource();
+
+            //try
+            //{
+            //    int rc = await InputDieTransfer
+            //        .MovePositionAsyncSafePickUp(isFine: false, ct: _ctsPickUp.Token)
+            //        .ConfigureAwait(true); // UI 컨텍스트 복귀
+
+            //    if (rc == 0)
+            //        MessageBox.Show(this, "PickUp 위치 이동 완료", "OK",
+            //            MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //    else if (rc == -999)
+            //        MessageBox.Show(this, "사용자 취소", "Canceled",
+            //            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            //    else
+            //        MessageBox.Show(this, $"실패 (rc={rc})", "Fail",
+            //            MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //}
+            //catch (OperationCanceledException)
+            //{
+            //    MessageBox.Show(this, "취소됨", "Canceled",
+            //        MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //}
+            //catch (Exception ex)
+            //{
+            //    btnPickUpNiddleMove.Enabled = true;
+            //    Log.Write(ex);
+            //    MessageBox.Show(this, ex.Message, "Exception",
+            //        MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //}
+            //finally
+            //{
+            //    btnPickUpNiddleMove.Enabled = true;
+            //}
+        }
+
+        private async void btnPickUpNiddleMove_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
+            try
+            {
+                btnPickUp.Enabled = false;
+                //LogMessage($"Unit '{unitName}' 시작 중...");
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 3;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnPickUp.Enabled = true;
+            }
+
+            {
+                //var ask = new MessageBoxYesNo();
+                //if (ask.ShowDialog("확인", "동시에 움직이시겠습니까?") != DialogResult.Yes)
+                //    return;
+
+                //btnPickUpNiddleMove.Enabled = false;
+                //try
+                //{
+                //    double pickZOffset = InputStageEjector.Config.dPickUpOffset;
+                //    double pinZOffset = InputDieTransfer.Config.dPickUpOffset;
+                //    double velPinZ = InputStageEjector.Config.dPickUpSpeed;
+                //    double velPickZ = velPinZ; // 필요 시 예: (InputDieTransferUnit.AxisPickZ.Config.MaxVelocity * 0.8);
+                //    double acc = InputStageEjector.Config.dPickUpAcc;
+                //    double dec = InputStageEjector.Config.dPickUpAcc;
+                //    int timeoutMs = 5000;   // 필요 시 예: 5000;
+                //    bool isFine = false;
+
+                //    int rc = await InputDieTransfer.MovePickZAndPinZByOffsetAsync(
+                //        pickZOffset,
+                //        pinZOffset,
+                //        velPickZ,
+                //        velPinZ,
+                //        acc,
+                //        dec,
+                //        timeoutMs,
+                //        isFine);
+
+                //    if (rc == 0)
+                //        MessageBox.Show(this, "동시 이동 완료", "OK",
+                //            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //    else if (rc == -2)
+                //        MessageBox.Show(this, "타임아웃", "Timeout",
+                //            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    else
+                //        MessageBox.Show(this, $"실패 rc={rc}", "Fail",
+                //            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //}
+                //catch (Exception ex)
+                //{
+                //    btnPickUpNiddleMove.Enabled = true;
+                //    MessageBox.Show(this, ex.Message, "Exception",
+                //        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //}
+                //finally
+                //{
+                //    btnPickUpNiddleMove.Enabled = true;
+                //}
+            }
+        }
+
+        private async void btnSyncPickPinRetreat_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
+            try
+            {
+                btnPickUp.Enabled = false;
+                //LogMessage($"Unit '{unitName}' 시작 중...");
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 4;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnPickUp.Enabled = true;
+            }
+        }
+
+        private async void btnDieTrReady_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
+            try
+            {
+                btnPickUp.Enabled = false;
+                //LogMessage($"Unit '{unitName}' 시작 중...");
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 5;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnPickUp.Enabled = true;
+            }
+        }
+
+        private async void btnPlaceChipDown_Click(object sender, EventArgs e)
+        {
+            //PlaceChipDown
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer";
+            try
+            {
+                btnPickUp.Enabled = false;
+                //LogMessage($"Unit '{unitName}' 시작 중...");
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 6;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnPickUp.Enabled = true;
+            }
+        }
+
+        private async void btnReleaseVacuumAndPlaceUp_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer";
+            try
+            {
+                btnPickUp.Enabled = false;
+                //LogMessage($"Unit '{unitName}' 시작 중...");
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 7;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnPickUp.Enabled = true;
             }
         }
     }

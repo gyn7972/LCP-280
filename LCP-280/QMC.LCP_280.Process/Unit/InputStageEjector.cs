@@ -155,87 +155,309 @@ namespace QMC.LCP_280.Process.Unit
         // UI, sequence 용 Move 함수
 
         //EjectBlockUp
-        public int MoveEjectBlockUpPosition(bool isFine = false)
+        public int MovePositionEjectBlockUp(bool isFine = false)
         {
-            Task<int> task = MoveEjectBlockUpPositionAsync(isFine);
+            Task<int> task = MovePositionAsyncEjectBlockUp(isFine);
             while (IsEndTask(task) == false)
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
-                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                int nRtn = 0;
+                nRtn = IsMoveInterLockEjectBlockUp();
+                if (nRtn != 0)
                 {
-                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
                     return -1;
                 }
 
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
+           
         }
-        public Task<int> MoveEjectBlockUpPositionAsync(bool isFine = false)
+        private Task<int> MovePositionAsyncEjectBlockUp(bool isFine = false)
         {
             return Task.Run(() =>
             {
-                OnMoveEjectBlockUpPosition(isFine);
+                OnMovePositionEjectBlockUp(isFine);
                 return 0;
             });
         }
-        private int OnMoveEjectBlockUpPosition(bool isFine = false)
+        private int OnMovePositionEjectBlockUp(bool isFine = false)
         {
             return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectBlockUp, isFine);
         }
-
-        //EjectBlockReady
-        public int MoveEjectBlockReadyPosition(bool isFine = false)
+        private int IsMoveInterLockEjectBlockUp()
         {
-            Task<int> task = MoveEjectBlockReadyPositionAsync(isFine);
-            while (IsEndTask(task) == false)
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
-                Thread.Sleep(0);
+                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
             }
-            return task.Result;
+            return nRet;
         }
-        public Task<int> MoveEjectBlockReadyPositionAsync(bool isFine = false)
+        public Task<int> MovePositionAsyncSafeEjectBlockUp(bool isFine = false, CancellationToken ct = default(CancellationToken))
         {
             return Task.Run(() =>
             {
-                OnMoveEjectBlockReadyPosition(isFine);
+                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionEjectBlockUp(isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisEjectorZ?.EmgStop();
+                            AxisPinZ?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockEjectBlockUp();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            },
+            ct);
+        }
+
+
+        //EjectBlockReady
+        public int MovePositionEjectBlockReady(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncEjectBlockReady(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = 0;
+                nRtn = IsMoveInterLockEjectBlockReady();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncEjectBlockReady(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionEjectBlockReady(isFine);
                 return 0;
             });
         }
-        private int OnMoveEjectBlockReadyPosition(bool isFine = false)
+        private int OnMovePositionEjectBlockReady(bool isFine = false)
         {
             return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectBlockReady, isFine);
         }
-
-        //EjectBlocksafety
-        public int MoveEjectBlockSafetyPosition(bool isFine = false)
+        private int IsMoveInterLockEjectBlockReady()
         {
-            Task<int> task = MoveEjectBlockSafetyPositionAsync(isFine);
-            while (IsEndTask(task) == false)
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
-                Thread.Sleep(0);
+                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
             }
-            return task.Result;
+            return nRet;
         }
-        public Task<int> MoveEjectBlockSafetyPositionAsync(bool isFine = false)
+        public Task<int> MovePositionAsyncSafeEjectBlockReady(bool isFine = false, CancellationToken ct = default(CancellationToken))
         {
             return Task.Run(() =>
             {
-                OnMoveEjectBlockSafetyPosition(isFine);
+                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionEjectBlockReady(isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisEjectorZ?.EmgStop();
+                            AxisPinZ?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockEjectBlockReady();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            },
+            ct);
+        }
+
+
+        //EjectBlocksafety
+        public int MovePositionEjectBlockSafety(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncEjectBlockSafety(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = 0;
+                nRtn = IsMoveInterLockEjectBlockSafety();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> MovePositionAsyncEjectBlockSafety(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionEjectBlockSafety(isFine);
                 return 0;
             });
         }
-        private int OnMoveEjectBlockSafetyPosition(bool isFine = false)
+        private int OnMovePositionEjectBlockSafety(bool isFine = false)
         {
             return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectBlockSafety, isFine);
         }
+        private int IsMoveInterLockEjectBlockSafety()
+        {
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            {
+                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeEjectBlockSafety(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionEjectBlockSafety(isFine), ct);
 
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisEjectorZ?.EmgStop();
+                            AxisPinZ?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockEjectBlockSafety();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            },
+            ct);
+        }
+
+
+        //EjectBlockReady
+        public int MovePositionEjectPinReady(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncEjectPinReady(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = 0;
+                nRtn = IsMoveInterLockEjectPinReady();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncEjectPinReady(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionEjectPinReady(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionEjectPinReady(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)InputStageEjectorConfig.TeachingPositionName.EjectPinReady, isFine);
+        }
+        private int IsMoveInterLockEjectPinReady()
+        {
+            int nRet = 0;
+            // Check Interlock.!!! 구문 넣을것.!!!
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            {
+                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeEjectPinReady(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionEjectPinReady(isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisEjectorZ?.EmgStop();
+                            AxisPinZ?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockEjectPinReady();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            },
+            ct);
+        }
 
 
 
 
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-
         public double GetTP(TeachingPosition tp, string axisKey) => (tp == null || string.IsNullOrEmpty(axisKey)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisKey, out var v) ? v : 0.0);
         public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
         #endregion

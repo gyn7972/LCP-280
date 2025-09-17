@@ -19,9 +19,14 @@ namespace QMC.LCP_280.Process.Unit
             this.components = new System.ComponentModel.Container();
             this._btnVisionSetting = new System.Windows.Forms.Button();
             this.buttonDataManual = new System.Windows.Forms.Button();
-            this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
+            this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.btnDieTrReady = new QMC.Common.IndividualMenuButton();
+            this.btnSyncPickPinRetreat = new QMC.Common.IndividualMenuButton();
+            this.btnEjecterZUp = new QMC.Common.IndividualMenuButton();
+            this.btnSafetyZ = new QMC.Common.IndividualMenuButton();
+            this.btnPickUp = new QMC.Common.IndividualMenuButton();
             this.btnPickUpNiddleMove = new QMC.Common.IndividualMenuButton();
             this.btnWaferUnloading = new QMC.Common.IndividualMenuButton();
             this.btnAlignXY = new QMC.Common.IndividualMenuButton();
@@ -31,11 +36,12 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonTest = new System.Windows.Forms.Button();
             this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
             this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
-            this.btnPickUp = new QMC.Common.IndividualMenuButton();
-            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
+            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
+            this.btnPlaceChipDown = new QMC.Common.IndividualMenuButton();
+            this.btnReleaseVacuumAndPlaceUp = new QMC.Common.IndividualMenuButton();
             this.groupBoxImageView.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxManual.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -59,6 +65,16 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonDataManual.UseVisualStyleBackColor = true;
             this.buttonDataManual.Click += new System.EventHandler(this.buttonDataManual_Click);
             // 
+            // groupBoxImageView
+            // 
+            this.groupBoxImageView.Controls.Add(this._ChipLoadingCameraviewer);
+            this.groupBoxImageView.Location = new System.Drawing.Point(643, 12);
+            this.groupBoxImageView.Name = "groupBoxImageView";
+            this.groupBoxImageView.Size = new System.Drawing.Size(370, 350);
+            this.groupBoxImageView.TabIndex = 15;
+            this.groupBoxImageView.TabStop = false;
+            this.groupBoxImageView.Text = "ImageView";
+            // 
             // _ChipLoadingCameraviewer
             // 
             this._ChipLoadingCameraviewer.BackColor = System.Drawing.Color.Black;
@@ -79,18 +95,14 @@ namespace QMC.LCP_280.Process.Unit
             this._ChipLoadingCameraviewer.UpdateDelayTime = 80;
             this._ChipLoadingCameraviewer.VisibleCrossLine = true;
             // 
-            // groupBoxImageView
-            // 
-            this.groupBoxImageView.Controls.Add(this._ChipLoadingCameraviewer);
-            this.groupBoxImageView.Location = new System.Drawing.Point(643, 12);
-            this.groupBoxImageView.Name = "groupBoxImageView";
-            this.groupBoxImageView.Size = new System.Drawing.Size(370, 350);
-            this.groupBoxImageView.TabIndex = 15;
-            this.groupBoxImageView.TabStop = false;
-            this.groupBoxImageView.Text = "ImageView";
-            // 
             // groupBoxManual
             // 
+            this.groupBoxManual.Controls.Add(this.btnReleaseVacuumAndPlaceUp);
+            this.groupBoxManual.Controls.Add(this.btnPlaceChipDown);
+            this.groupBoxManual.Controls.Add(this.btnDieTrReady);
+            this.groupBoxManual.Controls.Add(this.btnSyncPickPinRetreat);
+            this.groupBoxManual.Controls.Add(this.btnEjecterZUp);
+            this.groupBoxManual.Controls.Add(this.btnSafetyZ);
             this.groupBoxManual.Controls.Add(this.btnPickUp);
             this.groupBoxManual.Controls.Add(this.btnPickUpNiddleMove);
             this.groupBoxManual.Controls.Add(this.btnWaferUnloading);
@@ -102,10 +114,105 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManual.Controls.Add(this.buttonPickUpNiddle_Move);
             this.groupBoxManual.Location = new System.Drawing.Point(618, 370);
             this.groupBoxManual.Name = "groupBoxManual";
-            this.groupBoxManual.Size = new System.Drawing.Size(395, 263);
+            this.groupBoxManual.Size = new System.Drawing.Size(395, 412);
             this.groupBoxManual.TabIndex = 16;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
+            // 
+            // btnDieTrReady
+            // 
+            this.btnDieTrReady.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDieTrReady.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnDieTrReady.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDieTrReady.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDieTrReady.CustomForeColor = System.Drawing.Color.Black;
+            this.btnDieTrReady.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDieTrReady.ForeColor = System.Drawing.Color.Black;
+            this.btnDieTrReady.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnDieTrReady.Location = new System.Drawing.Point(142, 266);
+            this.btnDieTrReady.Name = "btnDieTrReady";
+            this.btnDieTrReady.Size = new System.Drawing.Size(130, 35);
+            this.btnDieTrReady.TabIndex = 29;
+            this.btnDieTrReady.TabStop = false;
+            this.btnDieTrReady.Text = "DieTrReady";
+            this.btnDieTrReady.UseVisualStyleBackColor = false;
+            this.btnDieTrReady.Click += new System.EventHandler(this.btnDieTrReady_Click);
+            // 
+            // btnSyncPickPinRetreat
+            // 
+            this.btnSyncPickPinRetreat.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSyncPickPinRetreat.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnSyncPickPinRetreat.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSyncPickPinRetreat.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSyncPickPinRetreat.CustomForeColor = System.Drawing.Color.Black;
+            this.btnSyncPickPinRetreat.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSyncPickPinRetreat.ForeColor = System.Drawing.Color.Black;
+            this.btnSyncPickPinRetreat.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnSyncPickPinRetreat.Location = new System.Drawing.Point(142, 225);
+            this.btnSyncPickPinRetreat.Name = "btnSyncPickPinRetreat";
+            this.btnSyncPickPinRetreat.Size = new System.Drawing.Size(130, 35);
+            this.btnSyncPickPinRetreat.TabIndex = 28;
+            this.btnSyncPickPinRetreat.TabStop = false;
+            this.btnSyncPickPinRetreat.Text = "SyncRetreat";
+            this.btnSyncPickPinRetreat.UseVisualStyleBackColor = false;
+            this.btnSyncPickPinRetreat.Click += new System.EventHandler(this.btnSyncPickPinRetreat_Click);
+            // 
+            // btnEjecterZUp
+            // 
+            this.btnEjecterZUp.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnEjecterZUp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnEjecterZUp.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnEjecterZUp.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnEjecterZUp.CustomForeColor = System.Drawing.Color.Black;
+            this.btnEjecterZUp.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnEjecterZUp.ForeColor = System.Drawing.Color.Black;
+            this.btnEjecterZUp.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnEjecterZUp.Location = new System.Drawing.Point(142, 102);
+            this.btnEjecterZUp.Name = "btnEjecterZUp";
+            this.btnEjecterZUp.Size = new System.Drawing.Size(130, 35);
+            this.btnEjecterZUp.TabIndex = 27;
+            this.btnEjecterZUp.TabStop = false;
+            this.btnEjecterZUp.Text = "EjecterZUp";
+            this.btnEjecterZUp.UseVisualStyleBackColor = false;
+            this.btnEjecterZUp.Click += new System.EventHandler(this.btnEjecterZUp_Click);
+            // 
+            // btnSafetyZ
+            // 
+            this.btnSafetyZ.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSafetyZ.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnSafetyZ.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSafetyZ.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSafetyZ.CustomForeColor = System.Drawing.Color.Black;
+            this.btnSafetyZ.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSafetyZ.ForeColor = System.Drawing.Color.Black;
+            this.btnSafetyZ.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnSafetyZ.Location = new System.Drawing.Point(142, 62);
+            this.btnSafetyZ.Name = "btnSafetyZ";
+            this.btnSafetyZ.Size = new System.Drawing.Size(130, 35);
+            this.btnSafetyZ.TabIndex = 26;
+            this.btnSafetyZ.TabStop = false;
+            this.btnSafetyZ.Text = "Tr SafetyZ";
+            this.btnSafetyZ.UseVisualStyleBackColor = false;
+            this.btnSafetyZ.Click += new System.EventHandler(this.btnSafetyZ_Click);
+            // 
+            // btnPickUp
+            // 
+            this.btnPickUp.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPickUp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnPickUp.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPickUp.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPickUp.CustomForeColor = System.Drawing.Color.Black;
+            this.btnPickUp.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPickUp.ForeColor = System.Drawing.Color.Black;
+            this.btnPickUp.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnPickUp.Location = new System.Drawing.Point(142, 143);
+            this.btnPickUp.Name = "btnPickUp";
+            this.btnPickUp.Size = new System.Drawing.Size(130, 35);
+            this.btnPickUp.TabIndex = 25;
+            this.btnPickUp.TabStop = false;
+            this.btnPickUp.Text = "PickDown";
+            this.btnPickUp.UseVisualStyleBackColor = false;
+            this.btnPickUp.Click += new System.EventHandler(this.btnPickUp_Click);
             // 
             // btnPickUpNiddleMove
             // 
@@ -117,7 +224,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btnPickUpNiddleMove.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnPickUpNiddleMove.ForeColor = System.Drawing.Color.Black;
             this.btnPickUpNiddleMove.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnPickUpNiddleMove.Location = new System.Drawing.Point(142, 102);
+            this.btnPickUpNiddleMove.Location = new System.Drawing.Point(142, 184);
             this.btnPickUpNiddleMove.Name = "btnPickUpNiddleMove";
             this.btnPickUpNiddleMove.Size = new System.Drawing.Size(130, 35);
             this.btnPickUpNiddleMove.TabIndex = 24;
@@ -214,19 +321,19 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(302, 20);
+            this.buttonTest.Location = new System.Drawing.Point(278, 266);
             this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(62, 35);
+            this.buttonTest.Size = new System.Drawing.Size(104, 35);
             this.buttonTest.TabIndex = 18;
-            this.buttonTest.Text = "Test1";
+            this.buttonTest.Text = "SEQ STOP";
             this.buttonTest.UseVisualStyleBackColor = true;
-            this.buttonTest.Click += new System.EventHandler(this.buttonTest_Click);
+            this.buttonTest.Click += new System.EventHandler(this.btnSeqStop_Click);
             // 
             // buttonPickUpNiddle_Move
             // 
-            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(6, 20);
+            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(302, 102);
             this.buttonPickUpNiddle_Move.Name = "buttonPickUpNiddle_Move";
-            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(191, 35);
+            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(62, 35);
             this.buttonPickUpNiddle_Move.TabIndex = 17;
             this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
@@ -238,6 +345,16 @@ namespace QMC.LCP_280.Process.Unit
             this.manualSequenceControl.Name = "manualSequenceControl";
             this.manualSequenceControl.Size = new System.Drawing.Size(362, 295);
             this.manualSequenceControl.TabIndex = 19;
+            // 
+            // dioControl
+            // 
+            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
+            this.dioControl.Location = new System.Drawing.Point(6, 370);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.dioControl.Name = "dioControl";
+            this.dioControl.RefreshIntervalMs = 400;
+            this.dioControl.Size = new System.Drawing.Size(606, 341);
+            this.dioControl.TabIndex = 17;
             // 
             // teachingPositionControl
             // 
@@ -251,38 +368,47 @@ namespace QMC.LCP_280.Process.Unit
             this.teachingPositionControl.TabIndex = 18;
             this.teachingPositionControl.UnitName = null;
             // 
-            // dioControl
+            // btnPlaceChipDown
             // 
-            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(6, 370);
-            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.dioControl.Name = "dioControl";
-            this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(606, 341);
-            this.dioControl.TabIndex = 17;
+            this.btnPlaceChipDown.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPlaceChipDown.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnPlaceChipDown.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPlaceChipDown.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPlaceChipDown.CustomForeColor = System.Drawing.Color.Black;
+            this.btnPlaceChipDown.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPlaceChipDown.ForeColor = System.Drawing.Color.Black;
+            this.btnPlaceChipDown.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnPlaceChipDown.Location = new System.Drawing.Point(142, 306);
+            this.btnPlaceChipDown.Name = "btnPlaceChipDown";
+            this.btnPlaceChipDown.Size = new System.Drawing.Size(130, 35);
+            this.btnPlaceChipDown.TabIndex = 30;
+            this.btnPlaceChipDown.TabStop = false;
+            this.btnPlaceChipDown.Text = "PlaceDown";
+            this.btnPlaceChipDown.UseVisualStyleBackColor = false;
+            this.btnPlaceChipDown.Click += new System.EventHandler(this.btnPlaceChipDown_Click);
             // 
-            // btnPickUp
+            // btnReleaseVacuumAndPlaceUp
             // 
-            this.btnPickUp.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnPickUp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnPickUp.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnPickUp.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPickUp.CustomForeColor = System.Drawing.Color.Black;
-            this.btnPickUp.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPickUp.ForeColor = System.Drawing.Color.Black;
-            this.btnPickUp.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnPickUp.Location = new System.Drawing.Point(142, 61);
-            this.btnPickUp.Name = "btnPickUp";
-            this.btnPickUp.Size = new System.Drawing.Size(130, 35);
-            this.btnPickUp.TabIndex = 25;
-            this.btnPickUp.TabStop = false;
-            this.btnPickUp.Text = "PickUp";
-            this.btnPickUp.UseVisualStyleBackColor = false;
-            this.btnPickUp.Click += new System.EventHandler(this.btnPickUp_Click);
+            this.btnReleaseVacuumAndPlaceUp.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnReleaseVacuumAndPlaceUp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnReleaseVacuumAndPlaceUp.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnReleaseVacuumAndPlaceUp.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnReleaseVacuumAndPlaceUp.CustomForeColor = System.Drawing.Color.Black;
+            this.btnReleaseVacuumAndPlaceUp.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnReleaseVacuumAndPlaceUp.ForeColor = System.Drawing.Color.Black;
+            this.btnReleaseVacuumAndPlaceUp.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnReleaseVacuumAndPlaceUp.Location = new System.Drawing.Point(142, 347);
+            this.btnReleaseVacuumAndPlaceUp.Name = "btnReleaseVacuumAndPlaceUp";
+            this.btnReleaseVacuumAndPlaceUp.Size = new System.Drawing.Size(130, 35);
+            this.btnReleaseVacuumAndPlaceUp.TabIndex = 31;
+            this.btnReleaseVacuumAndPlaceUp.TabStop = false;
+            this.btnReleaseVacuumAndPlaceUp.Text = "PlaceUp";
+            this.btnReleaseVacuumAndPlaceUp.UseVisualStyleBackColor = false;
+            this.btnReleaseVacuumAndPlaceUp.Click += new System.EventHandler(this.btnReleaseVacuumAndPlaceUp_Click);
             // 
             // ChipLoading_Working
             // 
-            this.ClientSize = new System.Drawing.Size(1389, 751);
+            this.ClientSize = new System.Drawing.Size(1389, 848);
             this.Controls.Add(this.groupBoxManual);
             this.Controls.Add(this.manualSequenceControl);
             this.Controls.Add(this.groupBoxImageView);
@@ -292,8 +418,8 @@ namespace QMC.LCP_280.Process.Unit
             this.Controls.Add(this.teachingPositionControl);
             this.Name = "ChipLoading_Working";
             this.Text = "ChipLoading Working";
-            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.groupBoxImageView.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.groupBoxManual.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -322,5 +448,11 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnAlignT;
         private IndividualMenuButton btnPickUpNiddleMove;
         private IndividualMenuButton btnPickUp;
+        private IndividualMenuButton btnSafetyZ;
+        private IndividualMenuButton btnEjecterZUp;
+        private IndividualMenuButton btnSyncPickPinRetreat;
+        private IndividualMenuButton btnDieTrReady;
+        private IndividualMenuButton btnPlaceChipDown;
+        private IndividualMenuButton btnReleaseVacuumAndPlaceUp;
     }
 }

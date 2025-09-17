@@ -181,7 +181,17 @@ namespace QMC.LCP_280.Process
         #region Equipment Event Handlers
         private void Equipment_StateChanged(object sender, EquipmentStateChangedEventArgs e)
         { if (InvokeRequired) { Invoke(new Action(() => Equipment_StateChanged(sender, e))); return; } if (lblEquipmentState != null) { lblEquipmentState.Text = $"State: {e.NewState}"; switch (e.NewState) { case EquipmentState.Running: lblEquipmentState.ForeColor = Color.Green; break; case EquipmentState.Error: lblEquipmentState.ForeColor = Color.Red; break; case EquipmentState.Starting: case EquipmentState.Stopping: lblEquipmentState.ForeColor = Color.Orange; break; default: lblEquipmentState.ForeColor = Color.Black; break; } } LogMessage($"Equipment 상태 변경: {e.OldState} → {e.NewState}"); UpdateUnitStatus(); }
-        private void Equipment_UnitStateChanged(object sender, UnitStateChangedEventArgs e) { if (InvokeRequired) { Invoke(new Action(() => Equipment_UnitStateChanged(sender, e))); return; } LogMessage($"Unit '{e.UnitName}' 상태 변경: {e.State}"); UpdateUnitStatus(); }
+        private void Equipment_UnitStateChanged(object sender, UnitStateChangedEventArgs e) 
+        { 
+            if (InvokeRequired) 
+            { 
+                Invoke(new Action(() => Equipment_UnitStateChanged(sender, e))); 
+                return; 
+            } 
+            LogMessage($"Unit '{e.UnitName}' 상태 변경: {e.State}"); 
+            UpdateUnitStatus();
+        }
+
         private void Equipment_ErrorOccurred(object sender, EquipmentErrorEventArgs e) { if (InvokeRequired) { Invoke(new Action(() => Equipment_ErrorOccurred(sender, e))); return; } LogMessage($"Equipment 오류: {e.ErrorMessage}", Color.Red); }
         private void StatusUpdateTimer_Tick(object sender, EventArgs e) { UpdateUnitStatus(); UpdateUnitComboBox(); }
         #endregion
