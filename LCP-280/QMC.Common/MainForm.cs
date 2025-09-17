@@ -143,6 +143,8 @@ namespace QMC.Common
 
             formAlarm = new Form_Alarm();
             AlarmManager.Instance.PostAlarm += AlarmManager_PostAlarm;
+
+            QMC.Common.MessageBoxTopMostEnforcer.Enable(lowerOtherTopMostInstead: false);
         }
 
         // [MOD] 종료 이벤트 비동기화

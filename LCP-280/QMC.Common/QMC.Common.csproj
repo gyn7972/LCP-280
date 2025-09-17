@@ -267,6 +267,7 @@
     <Compile Include="Logging\Log.cs" />
     <Compile Include="Logging\LogInfo.cs" />
     <Compile Include="Logging\LogManager.cs" />
+    <Compile Include="MessageBoxTopMostEnforcer.cs" />
     <Compile Include="Motions\AjinApi.cs" />
     <Compile Include="Motions\AjinAxlBoardHost.cs" />
     <Compile Include="Motions\AjinDriver.cs" />
