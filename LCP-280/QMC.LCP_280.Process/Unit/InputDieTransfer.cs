@@ -1537,7 +1537,7 @@ namespace QMC.LCP_280.Process.Unit
             if(InputStage.SetVacuum(false))
             {
                 var sw = Stopwatch.StartNew();
-                while (!InputStage.IsVacuum())
+                while (InputStage.IsVacuum())
                 {
                     if (sw.ElapsedMilliseconds > 1000)
                     {
