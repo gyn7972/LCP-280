@@ -186,13 +186,13 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    if (InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
-                    {
-                        AxisToolT.EmgStop();
-                        AxisPickZ.EmgStop();
-                        AxisPlaceZ.EmgStop();
-                        AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
-                    }
+                    //if (InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
+                    //{
+                    //    AxisToolT.EmgStop();
+                    //    AxisPickZ.EmgStop();
+                    //    AxisPlaceZ.EmgStop();
+                    //    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                    //}
                     //if (InputStageEjector.IsAnyAxisMoving())
                     //{
                     //    AxisToolT.EmgStop();
@@ -1024,10 +1024,18 @@ namespace QMC.LCP_280.Process.Unit
             if (_placeZ != null) rc |= _placeZ.MoveAbs(plz, vel > 0 ? vel : _placeZ.Config.MaxVelocity, acc > 0 ? acc : _placeZ.Config.RunAcc, dec > 0 ? dec : _placeZ.Config.RunDec, jerk > 0 ? jerk : _placeZ.Config.AccJerkPercent);
             return rc;
         }
-        public bool InPosTeaching(string name)
+        public bool InPosTeaching(string positionName)
         {
-            var (t, pz, plz) = Config.GetPositionWithOffset(name);
-            return InPos(_toolT, t) && InPos(_pickZ, pz) && InPos(_placeZ, plz);
+            //var (t, pz, plz) = Config.GetPositionWithOffset(name);
+            //return InPos(_toolT, t) && InPos(_pickZ, pz) && InPos(_placeZ, plz);
+            var tp = Config.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+            {
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value))
+                    return false;
+            }
+            return true;
         }
 
        
@@ -1726,7 +1734,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputStage.SetVacuum(false))
                 {
                     var sw = Stopwatch.StartNew();
-                    while (!InputStage.IsVacuumOn())
+                    while (InputStage.IsVacuumOn())
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
