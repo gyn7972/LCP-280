@@ -315,9 +315,14 @@ namespace QMC.Common.Unit
         public virtual int MoveTeachingPositionOnce(int selIndex, bool isFine)
         {
             var list = ResolveTeachingPositionObjectList();
-            if (list == null) return -1;
-            if (selIndex < 0 || selIndex >= list.Count) return -1;
-            if (!IsInterlockOK(selIndex)) return -1;
+            if (list == null) 
+                return -1;
+
+            if (selIndex < 0 || selIndex >= list.Count) 
+                return -1;
+
+            if (!IsInterlockOK(selIndex)) 
+                return -1;
 
             var tp = list[selIndex];
             var axisPos = GetAxisPositions(tp);
@@ -332,7 +337,9 @@ namespace QMC.Common.Unit
                 double target = kv.Value;
                 MotionAxis axis = null;
                 if (axisObj != null && axisObj.TryGetValue(key, out axis)) { }
-                if (axis == null && Axes.TryGetValue(key, out var direct)) axis = direct;
+                if (axis == null && Axes.TryGetValue(key, out var direct)) 
+                    axis = direct;
+
                 if (axis == null)
                 {
                     foreach (var ap in Axes)
@@ -350,42 +357,63 @@ namespace QMC.Common.Unit
                 axis.MoveAbs(target, isFine);
             }
 
-            while (true)
-            {
-                bool allDone = true;
-                foreach (var kv in axisPos)
-                {
-                    MotionAxis axis = null;
-                    if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
-                    if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
-                    if (axis == null) continue;
-
-                    // 완료 + InPosition을 동시에 만족해야 통과
-                    if (!axis.IsMoveDone() || !axis.InPosition(kv.Value))
-                    {
-                        allDone = false;
-                        break;
-                    }
-                }
-                if (allDone) break;
-                Thread.Sleep(10);
-            }
-
-            int err = 0;
+            // 완료 대기
+            int waitErrors = 0;
             foreach (var kv in axisPos)
             {
                 MotionAxis axis = null;
                 if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
-                if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
-                if (axis == null) continue;
-                if (!axis.InPosition(kv.Value))
+                if (axis == null && Axes.TryGetValue(kv.Key, out var directAxis))
+                    axis = directAxis;
+
+                if (axis == null)
+                    continue;
+
+                if (axis.WaitMoveDone(-1) != 0)
                 {
-                    Log.Write("MoveTeachingPositionOnce",
-                        $"[TEACH 이동 오류] '{GetTpName(tp)}' 축 '{kv.Key}' 목표 {kv.Value}, 현재 {axis.GetPosition()}");
-                    err++;
+                    waitErrors++;
                 }
             }
-            return err == 0 ? 0 : -1;
+            return waitErrors == 0 ? 0 : -1;
+
+            //기존 문제 코드
+            {
+                //while (true)
+                //{
+                //    bool allDone = true;
+                //    foreach (var kv in axisPos)
+                //    {
+                //        MotionAxis axis = null;
+                //        if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
+                //        if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
+                //        if (axis == null) continue;
+
+                //        // 완료 + InPosition을 동시에 만족해야 통과
+                //        if (!axis.IsMoveDone() || !axis.InPosition(kv.Value))
+                //        {
+                //            allDone = false;
+                //            break;
+                //        }
+                //    }
+                //    if (allDone) break;
+                //    Thread.Sleep(10);
+                //}
+                //int err = 0;
+                //foreach (var kv in axisPos)
+                //{
+                //    MotionAxis axis = null;
+                //    if (axisObj != null && axisObj.TryGetValue(kv.Key, out axis)) { }
+                //    if (axis == null && Axes.TryGetValue(kv.Key, out var direct)) axis = direct;
+                //    if (axis == null) continue;
+                //    if (!axis.InPosition(kv.Value))
+                //    {
+                //        Log.Write("MoveTeachingPositionOnce",
+                //            $"[TEACH 이동 오류] '{GetTpName(tp)}' 축 '{kv.Key}' 목표 {kv.Value}, 현재 {axis.GetPosition()}");
+                //        err++;
+                //    }
+                //}
+                //return err == 0 ? 0 : -1;
+            }
         }
 
         public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
@@ -505,9 +533,10 @@ namespace QMC.Common.Unit
         /// <summary>
         /// 실제 이동 실행 (파생 Override 가능).
         /// </summary>
-        protected virtual int OnMoveAxisWithSafety(MotionAxis axis, double target, bool isFine)
+        public virtual int OnMoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
         {
-            if (axis == null) return -1;
+            if (axis == null) 
+                return -1;
 
             var cfg = axis.Config;
             double cur = axis.GetPosition();
@@ -515,7 +544,8 @@ namespace QMC.Common.Unit
                 return 0;
 
             double vel = cfg != null ? cfg.MaxVelocity : 0;
-            if (isFine && vel > 0) vel *= 0.2;
+            if (isFine && vel > 0) 
+                vel *= 0.2;
 
             int rc;
             if (cfg != null)
