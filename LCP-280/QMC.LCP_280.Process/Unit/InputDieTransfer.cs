@@ -1037,7 +1037,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return true;
         }
-
        
         public void ApplyOffset(string name, double t, double pickZ, double placeZ)
             => Config.SetOffset(name, t, pickZ, placeZ);
