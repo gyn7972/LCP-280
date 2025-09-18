@@ -70,10 +70,16 @@ namespace QMC.LCP_280.Process.Component
             {
                 var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
                 Task<int> t = m_ParentUnit.RunManualFunction(func);
-                SelectedIndex = this._lstSteps.SelectedIndex;
+                
                 UpdateSeqList();
                 ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
                 form.ShowDialog();
+                if(t.Result == 0)
+                {
+                    this.SelectedIndex++;
+                    this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
+                    this._lstSteps.SelectedIndex = this.SelectedIndex;
+                }
             }
 
         }
