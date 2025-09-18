@@ -483,18 +483,25 @@ namespace QMC.LCP_280.Process.Unit
                 dlg.CancelRequested += () => { userCanceled = true; try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
                 dlg.ForceStopRequested += () => { try { Equipment.AxisManager?.EmgStopAll(); } catch { } };
                 var runTask = Task.Run(() => { try { _axis.ClearAlarm(); _axis.Servo(true); _axis.HomeSync(); } catch (Exception ex) { throw ex; } });
-                dlg.Show(this); dlg.BringToFront();
+                dlg.Show(this); 
+                dlg.BringToFront();
                 await runTask.ConfigureAwait(true);
                 dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = $"Home {_axis.Name}", StepIndex = 0, TotalSteps = 1, IsCompleted = true, IsCanceled = userCanceled, Message = userCanceled ? "Canceled" : "Completed" });
                 MessageBox.Show(userCanceled ? $"축 {_axis.Name} 홈 취소" : $"축 {_axis.Name} 홈 완료");
             }
             catch (Exception ex)
             {
+                Log.Write(ex);
                 MessageBox.Show("원점 구동 오류: " + ex.Message);
             }
             finally
             {
-                try { dlg?.Close(); dlg?.Dispose(); } catch { }
+                try 
+                { 
+                    dlg?.Close(); 
+                    dlg?.Dispose(); 
+                } 
+                catch { }
             }
         }
         #endregion
