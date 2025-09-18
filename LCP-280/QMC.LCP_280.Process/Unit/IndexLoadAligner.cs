@@ -149,7 +149,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
 
@@ -157,7 +157,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
-                AlarmPost((int)AlarmKeys.eIndexLoadAligner);
+                PostAlarm((int)AlarmKeys.eIndexLoadAligner);
                 return -1;
             }
 
@@ -272,7 +272,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
             return nRet;
@@ -345,7 +345,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
             return nRet;
@@ -408,7 +408,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
             return nRet;
@@ -477,7 +477,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
             return nRet;
@@ -802,7 +802,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
             return 0;

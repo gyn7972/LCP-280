@@ -332,37 +332,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (InputStage != null)
                 {
-                    //manualSequenceControl.
-
-
-                    // T_Align 등록
-                    //manualSequenceControl.RegisterSequence(
-                    //    "Stage_T_Align",
-                    //    InputStageUnit.SeqTAlign,
-                    //    stepNameProvider: () => T_AlignSeq.GetStepNames(),
-                    //    startSingleHandler: (name) => InputStageUnit.SeqTAlign.StartSingle(name),
-                    //    stepIndexNameResolver: (idx) => T_AlignSeq.GetStepName(idx)
-                    //);
-
-                    // XY_Align 등록
-                    //manualSequenceControl.RegisterSequence(
-                    //    "Stage_XY_Align",
-                    //    InputStageUnit.SeqXYAlign,
-                    //    stepNameProvider: () => XY_AlignSeq.GetStepNames(),
-                    //    startSingleHandler: (name) => InputStageUnit.SeqXYAlign.StartSingle(name),
-                    //    stepIndexNameResolver: (idx) => XY_AlignSeq.GetStepName(idx)
-                    //);
-
-                    //if (SeqInputStage == null)
-                    //    // 기존: new SeqInputStage(InputStageUnit) -> Ejector 포함 생성자로 변경
-                    //    SeqInputStage = new SeqInputStage(InputStageUnit, InputStageEjectorUnit);
-                    //manualSequenceControl?.RegisterSequence(
-                    //    "InputStage",
-                    //    SeqInputStage,
-                    //    () => Enum.GetNames(typeof(SeqInputStage.Step)),
-                    //    step => SeqInputStage.StartSingle(step),
-                    //    idx => Enum.GetName(typeof(SeqInputStage.Step), idx),
-                    //    autoSelect: true);
+                    manualSequenceControl.ParentUnit = InputDieTransfer; // 시퀀스 등록 대상 유닛 지정
                 }
             }
             catch { }

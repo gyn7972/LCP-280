@@ -40,7 +40,7 @@ namespace QMC.LCP_280.Process.Unit
             eInputStageAxesMoving = 4010,
             eRotaryAxesMoving,
             eInputStageEjectorAxesMoving,
-
+            eInputDieTransferError,
         }
         #region InitAlarm
         protected override void InitAlarm()
@@ -102,6 +102,16 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
+
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputDieTransferError;
+            alarm.Title = "InputDieTransferError";
+            alarm.Cause = "InputDieTransfer명령중 예기치 않은 에러를 만났습니다. 관리자에게 문의 하여 주십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
         }
         #endregion
 
@@ -183,7 +193,7 @@ namespace QMC.LCP_280.Process.Unit
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
                         AxisPlaceZ.EmgStop();
-                        AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                        PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                         return -1;
                     }
 
@@ -210,7 +220,7 @@ namespace QMC.LCP_280.Process.Unit
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
                         AxisPlaceZ.EmgStop();
-                        AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                        PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                     }
                 }
 
@@ -372,7 +382,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
                 AxisPlaceZ?.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
 
@@ -381,7 +391,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
                 AxisPlaceZ?.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageEjectorAxesMoving);
                 return -1;
             }
 
@@ -390,7 +400,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
                 AxisPlaceZ?.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                 return -1;
             }
 
@@ -493,7 +503,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
                 AxisPlaceZ?.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
 
@@ -502,7 +512,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
                 AxisPlaceZ?.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageEjectorAxesMoving);
                 return -1;
             }
 
@@ -511,7 +521,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
                 AxisPlaceZ?.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                 return -1;
             }
 
@@ -638,7 +648,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
                 AxisPlaceZ?.EmgStop();
-                AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                 return -1;
             }
 
@@ -858,7 +868,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
                 AxisPlaceZ.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
             //if (Rotary != null && Rotary.IsAnyAxisMoving())
@@ -871,7 +881,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
                 AxisPlaceZ.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageEjectorAxesMoving);
                 return -1;
             }
 
@@ -947,7 +957,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisToolT.EmgStop();
                     AxisPickZ.EmgStop();
                     AxisPlaceZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                     Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStage");
                     return -1;
                 }
@@ -969,7 +979,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisToolT.EmgStop();
                     AxisPickZ.EmgStop();
                     AxisPlaceZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorAxesMoving);
                     Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStageEjector");
                     return -1;
                 }
@@ -1203,30 +1213,39 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                switch (State)
+                try
                 {
-                    case ProcessState.Manual:
-                        ret = OnRunManual();
-                        break;
-                    case ProcessState.Ready:
-                        ret = OnRunReady();
-                        break;
-                    case ProcessState.Work:
-                        ret = OnRunWork();
-                        break;
-                    case ProcessState.Complete:
-                        ret = OnRunComplete();
-                        break;
-                    default:
-                        if (ManualState == ProcessState.Manual)
-                        {
-                            this.State = ProcessState.Manual;
-                        }
-                        else
-                        {
-                            this.State = ProcessState.Ready;
-                        }
-                        break;
+
+                    switch (State)
+                    {
+                        case ProcessState.Manual:
+                            ret = OnRunManual();
+                            break;
+                        case ProcessState.Ready:
+                            ret = OnRunReady();
+                            break;
+                        case ProcessState.Work:
+                            ret = OnRunWork();
+                            break;
+                        case ProcessState.Complete:
+                            ret = OnRunComplete();
+                            break;
+                        default:
+                            if (ManualState == ProcessState.Manual)
+                            {
+                                this.State = ProcessState.Manual;
+                            }
+                            else
+                            {
+                                this.State = ProcessState.Ready;
+                            }
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ret = -1;
+                    
                 }
             }
 
@@ -1530,62 +1549,45 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-            else
+
+            nRtn = EjectorVacuumOn();
+            if (nRtn != 0)
             {
-                nRtn = EjectorVacuumOn();
-                if (nRtn != 0)
-                {
-                    return -1;
-                }
-                else
-                {
-                    nRtn = ChipPickDown();
-                    if (nRtn != 0)
-                    {
-                        return -1;
-                    }
-                    else
-                    {
-                        nRtn = SyncPickPinUp();
-                        if (nRtn != 0)
-                        {
-                            return -1;
-                        }
-                        else
-                        {
-                            nRtn = SyncPickPinRetreat();
-                            if (nRtn != 0)
-                            {
-                                return -1;
-                            }
-                            else
-                            {
-                                nRtn = RotateToolTForPlace();
-                                if (nRtn != 0)
-                                {
-                                    return -1;
-                                }
-                                else
-                                {
-                                    nRtn = PlaceChipDown();
-                                    if (nRtn != 0)
-                                    {
-                                        return -1;
-                                    }
-                                    else
-                                    {
-                                        nRtn = ReleaseVacuumAndPlaceUp();
-                                        if (nRtn != 0)
-                                        {
-                                            return -1;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                return -1;
             }
+
+            nRtn = ChipPickDown();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = SyncPickPinUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = SyncPickPinRetreat();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = RotateToolTForPlace();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = PlaceChipDown();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = ReleaseVacuumAndPlaceUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
 
             State = ProcessState.Complete;
             return 0;
@@ -1599,7 +1601,96 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #endregion
+        #region Sequence 등록
 
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            this.SequencePlayers.Add(RaiseEjectorForPick);
+            this.SequencePlayers.Add(EjectorVacuumOn);
+            this.SequencePlayers.Add(ChipPickDown);
+            this.SequencePlayers.Add(SyncPickPinUp);
+            this.SequencePlayers.Add(SyncPickPinRetreat);
+            this.SequencePlayers.Add(WaitRotarySupplyRequest);
+            this.SequencePlayers.Add(RotateToolTForPlace);
+            this.SequencePlayers.Add(PlaceChipDown);
+            this.SequencePlayers.Add(ReleaseVacuumAndPlaceUp);
+
+
+
+            /*
+              switch (step)
+        {
+            case 1:
+                ret = RaiseEjectorForPick();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                ret = EjectorVacuumOn();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            case 2:
+                ret = ChipPickDown();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            case 3:
+                ret = SyncPickPinUp();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            case 4:
+                ret = SyncPickPinRetreat();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            case 5:
+                ret = WaitRotarySupplyRequest();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                ret = RotateToolTForPlace();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            case 6:
+                ret = PlaceChipDown();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            case 7:
+                ret = ReleaseVacuumAndPlaceUp();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            case 8: // 복합 Step (옵션)
+                if (!UseCompositeStep8)
+                {
+                    // 사용하지 않는다면 무시 후 루프 재시작
+                    CompleteManualStep(step, 0);
+                    break;
+                }
+                ret = ChipPickDown();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                ret = SyncPickPinUp();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                ret = SyncPickPinRetreat();
+                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                CompleteManualStep(step, 0);
+                break;
+
+            default:
+                // 알 수 없는 Step -> 종료
+                CompleteManualStep(step, -99);
+                break;
+        }*/
+        }
+
+        #endregion
         #region Seq 단위 동작 함수
 
 
@@ -1651,24 +1742,24 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 2. Ejector 상승 (EjectBlockUp 존재 시 우선, 없으면 Ready)
         /// </summary>
-        public int RaiseEjectorForPick()
+        public int RaiseEjectorForPick(bool bFineSpeed = false)
         {
             int nRet = 0;
-
+            this.CurrentFunc = RaiseEjectorForPick;
             if (InputStageEjector == null)
             {
                 Log.Write(UnitName, "[RaiseEjectorForPick] InputStageEjector is null");
                 return -1;
             }
 
-            int blockUpResult = InputStageEjector.MovePositionEjectBlockUp();
+            int blockUpResult = InputStageEjector.MovePositionEjectBlockUp(bFineSpeed);
             if (blockUpResult != 0)
             {
                 Log.Write(UnitName, "[RaiseEjectorForPick] EjectBlockUp 이동 실패");
                 return -1;
             }
 
-            int pinReadyResult = InputStageEjector.MovePositionEjectPinReady();
+            int pinReadyResult = InputStageEjector.MovePositionEjectPinReady(bFineSpeed);
             if (pinReadyResult != 0)
             {
                 Log.Write(UnitName, "[RaiseEjectorForPick] EjectPinReady 이동 실패");
@@ -1681,11 +1772,12 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 3. EjectorVacuumOn (필요 시 Flow OK 대기)
         /// </summary>
-        public int EjectorVacuumOn()
+        public int EjectorVacuumOn(bool bFineSpeed = true)
         {
             if (InputStageEjector == null)
                 return -1;
 
+            this.CurrentFunc = EjectorVacuumOn;
             int nRet = 0;
             
             if (InputStage.SetVacuum(true))
@@ -1710,11 +1802,11 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
-        public int ChipPickDown()
+        public int ChipPickDown(bool bFineSpeed = false)
         {
             int nRet = 0;
-
-            nRet = MovePositionPickUp();
+            this.CurrentFunc = ChipPickDown;
+            nRet = MovePositionPickUp(bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[ChipPickDown] MovePositionPickUp failed");
@@ -1735,21 +1827,6 @@ namespace QMC.LCP_280.Process.Unit
                         Thread.Sleep(1);
                     }
                 }
-
-                //Thread.Sleep(10);
-                //if (InputStage.SetVacuum(false))
-                //{
-                //    var sw = Stopwatch.StartNew();
-                //    while (InputStage.IsVacuumOn())
-                //    {
-                //        if (sw.ElapsedMilliseconds > 2000)
-                //        {
-                //            Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-                //            return -1;
-                //        }
-                //        Thread.Sleep(1);
-                //    }
-                //}
             }
 
             return nRet;
@@ -1758,11 +1835,16 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 4. PickZ & PinZ 동시 하강 (Offset)
         /// </summary>
-        public int SyncPickPinUp()
+        public int SyncPickPinUp(bool bFineSpeed = false)
         {
             if (InputStageEjector == null)
+            {
+                PostAlarm((int)AlarmKeys.eInputStageNotSafe);
                 return -1;
+            }
+                
 
+            this.CurrentFunc = SyncPickPinUp;
             int nRet = 0;
 
             double pickZOffset = InputStageEjector.Config.dPickUpOffset;
@@ -1772,7 +1854,6 @@ namespace QMC.LCP_280.Process.Unit
             double acc = InputStageEjector.Config.dPickUpAcc;
             double dec = InputStageEjector.Config.dPickUpAcc;
             int timeoutMs = 20000;   // 필요 시 예: 5000;
-            bool isFine = false;
 
             nRet = MovePickZAndPinZByOffset(
                     pickZOffset,
@@ -1782,7 +1863,7 @@ namespace QMC.LCP_280.Process.Unit
                     acc,
                     dec,
                     timeoutMs,
-                    isFine);
+                    bFineSpeed);
 
             if (nRet != 0)
             {
@@ -1796,10 +1877,15 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 5. PickZ & PinZ 동시 회피(상승) - 직전 하강 Delta 반대
         /// </summary>
-        public int SyncPickPinRetreat()
+        public int SyncPickPinRetreat(bool bFineSpeed = false)
         {
             if (InputStageEjector == null)
+            {
+                PostAlarm((int)AlarmKeys.eInputStageNotSafe);
                 return -1;
+            }
+
+            this.CurrentFunc = SyncPickPinRetreat;
 
             int nRet = 0;
 
@@ -1827,10 +1913,10 @@ namespace QMC.LCP_280.Process.Unit
 
             double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),
                         AxisNames.LeftPickZ);
-            nRet &= MoveAxisPositionOne(AxisPickZ, dZPos);
+            nRet &= MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed);
 
-            nRet &= InputStageEjector.MovePositionEjectPinReady();
-            nRet &= InputStageEjector.MovePositionEjectBlockReady();
+            nRet &= InputStageEjector.MovePositionEjectPinReady(bFineSpeed);
+            nRet &= InputStageEjector.MovePositionEjectBlockReady(bFineSpeed);
             
             if (nRet != 0) //nRet = Move
             {
@@ -1846,86 +1932,103 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 6. ToolT Place 방향 회전 (PickZ가 충분히 Up 상태라고 가정)
         /// </summary>
-        public int RotateToolTForPlace(int nIndex = 0)
+        public int RotateToolTForPlace(bool bFineSpeed = false)
         {
             if (AxisToolT == null) 
                 return -1;
             
             int nRet = 0;
-
-            // config
-            //int nindxe = rotate.Index;
-
+            this.CurrentFunc = RotateToolTForPlace;
+            int nIndex = GetLoadIndexNo();
             double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
                                 AxisNames.LeftToolT);
-            nRet = MoveAxisPositionOne(AxisToolT, dTPos);
+            nRet = MoveAxisPositionOne(AxisToolT, dTPos, bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
                 return -1;
             }
 
-            //nRet = MovePositionPlace_Index(nIndex, false);
-            //if (nRet != 0)
-            //{
-            //    Log.Write(UnitName, "[RotateToolTForPlace] ToolT MovePositionPlace_Index 이동 실패");
-            //    return -1;
-            //}
-
             return nRet;
+        }
+
+        public int GetLoadIndexNo()
+        {
+            int nIndex = 0;
+            if (Rotary == null) return nIndex;
+            nIndex = (Rotary.GetLoadIndexNo() + this.Config.IndexOfStart) % Rotary.GetIndexCount();
+            return nIndex;
         }
 
         /// <summary>
         /// Rotary 공급(Place 수령) 요청 신호 확인 (실제 IO 연동 필요). timeoutMs=0 이면 즉시 결과 반환.
         /// </summary>
-        public int WaitRotarySupplyRequest(int timeoutMs = 10000, int pollMs = 50)
+        public int WaitRotarySupplyRequest(bool bFineSpeed = false)
         {
             int nRet = 0;
 
+            this.CurrentFunc = WaitRotarySupplyRequest;
+            int timeoutMs = 10000;
+            int pollMs = 50;
             bool IsRequested()
             {
                 // TODO: Rotary Unit 의 특정 입력/상태 사용
                 // 임시: Rotary 정지 + Vacuum Tank OK 라면 공급 가능하다고 가정
                 return Rotary != null && !Rotary.IsAnyAxisMoving();
             }
-
-            if (timeoutMs <= 0) 
-                return IsRequested() ? 0 : -1;
-
-            var sw = Stopwatch.StartNew();
-            while (true)
+            try
             {
-                if (IsRequested()) 
-                    return 0;
-                if (sw.ElapsedMilliseconds > timeoutMs) 
-                    return -2;
 
-                // 진행 중 Interlock 재확인
-                //if (!CheckInterlocks(out alarm))
-                //{
-                //    AlarmPost(alarm);
-                //    return -1;
-                //}
-                Thread.Sleep(pollMs);
+                if (timeoutMs <= 0)
+                    return IsRequested() ? 0 : -1;
+
+                var sw = Stopwatch.StartNew();
+                while (true)
+                {
+                    if (IsRequested())
+                    {
+                        nRet = 0;
+                        break;
+                    }
+
+                    if (sw.ElapsedMilliseconds > timeoutMs)
+                        return -2;
+
+                    // 진행 중 Interlock 재확인
+                    //if (!CheckInterlocks(out alarm))
+                    //{
+                    //    AlarmPost(alarm);
+                    //    return -1;
+                    //}
+                    Thread.Sleep(pollMs);
+                }
+
             }
-
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                nRet = -1;
+                PostAlarm((int)AlarmKeys.eInputDieTransferError);
+            }
             return nRet;
         }
 
         /// <summary>
         /// 7-1. PlaceZ 칩 공급 (Place Teaching Z 로 이동)
         /// </summary>
-        public int PlaceChipDown(int nIndex = 0)
+        public int PlaceChipDown(bool bFineSpeed = false)
         {
             if (AxisPlaceZ == null) 
                 return -1;
             
+            this.CurrentFunc = PlaceChipDown;
             int nRet = 0;
 
+            int nIndex = GetLoadIndexNo();
             // Place 위치로 이동 (없으면 SafetyZone)
             double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
                         AxisNames.LeftPlaceZ);
-            nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos);
+            nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos, bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
@@ -1941,31 +2044,68 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 7-2. Vacuum Release & PlaceZ Up (안전 Z 혹은 SafetyZone)
         /// </summary>
-        public int ReleaseVacuumAndPlaceUp(int armIndex = 0, int nIndex = 0)
+        public int ReleaseVacuumAndPlaceUp(bool bFindSpeed = false)
         {
-            if (armIndex < 0 || armIndex > 3) return -1;
-
+            
             int nRet = 0;
-
-            Rotary.SetVacuum(nIndex, true);
-            Thread.Sleep(10);
-            // Release
-            SetVacuum(armIndex, false);
-            SetVent(armIndex, true);
-            Thread.Sleep(50);
-            SetVent(armIndex, false);
-
-            // Safety 위치로 상승
-            double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),
-                        AxisNames.LeftPlaceZ);
-            nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos);
-            if (nRet != 0)
+            
+            try
             {
-                Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] AxisPlaceZ SafetyZone 이동 실패");
-                return -1;
+                int armIndex = GetPlaceArmIndex();
+                int nIndex = GetLoadIndexNo();
+                this.CurrentFunc = ReleaseVacuumAndPlaceUp;
+                LogSequence("Start");
+
+
+
+                if (armIndex < 0 || armIndex > 3) return -1;
+                Rotary.SetVacuum(nIndex, true);
+                Thread.Sleep(10);
+                // Release
+                SetVacuum(armIndex, false);
+                SetVent(armIndex, true);
+                Thread.Sleep(50);
+                SetVent(armIndex, false);
+
+                // Safety 위치로 상승
+                double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),
+                            AxisNames.LeftPlaceZ);
+                nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos, bFindSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] AxisPlaceZ SafetyZone 이동 실패");
+                    return -1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                nRet = -1;
+                PostAlarm((int)AlarmKeys.eInputDieTransferError);
+
+            }
+            finally
+            {
+                LogSequence("End");
             }
 
             return nRet; 
+        }
+
+        private void LogSequence(string log)
+        {
+            Log.Write(UnitName, this.CurrentFunc.Method.Name , $"[Sequence] {log}");
+        }
+
+        public int GetPlaceArmIndex()
+        {
+            //todo: 구현해라 구부장. 암 하나 더달면. Rotary Index에 따른 Arm Index 반환
+
+            //if(this.AxisToolT.GetPosition() > 10)
+            //{
+
+            //}
+            return 0;
         }
         #endregion
     }

@@ -1,4 +1,5 @@
 // QMC.Common\Unit\BaseUnit.cs
+using Cognex.VisionPro.Implementation.Internal;
 using Ivi.Visa;
 using QMC.Common;
 using QMC.Common.Alarm;
@@ -56,6 +57,34 @@ namespace QMC.Common.Unit
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
         private bool m_bExit;
 
+        protected readonly List<Func<bool, int>> _sequencePlayers;
+        private int _currentIndex = 0;
+
+        public List<Func<bool, int>> SequencePlayers
+        {
+            get             {
+                return _sequencePlayers;
+            }
+        }
+        private Func<bool, int> _currentFunc = null;
+        public Func<bool, int> CurrentFunc
+        {
+            get
+            {
+                return _currentFunc;
+            }
+            set
+            {
+                _currentFunc = value;
+                _currentIndex = _sequencePlayers.IndexOf(value);
+                if (_currentIndex == -1)
+                    _currentIndex = 0;
+                else
+                    _currentIndex = (_currentIndex + 1) % _sequencePlayers.Count;
+            }
+        }
+
+
         public string UnitName { get; set; }
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
@@ -83,7 +112,14 @@ namespace QMC.Common.Unit
         {
             UnitName = unitName;
             m_dicAlarms = new Dictionary<int, AlarmInfo>();
+            _sequencePlayers = new List<Func<bool, int>>();
+            OnMakeSequence();
             MakeAlarm();
+        }
+
+        protected virtual void OnMakeSequence()
+        {
+            
         }
 
         private void MakeAlarm()
@@ -95,7 +131,7 @@ namespace QMC.Common.Unit
         protected virtual void InitAlarm()
         {
             // 원래 코드 구조 유지 (AlarmPost가 먼저 호출되는 구조 그대로 둠)
-            AlarmRegister(AlarmPost((int)AlarmKeys.ePrepareFailed), "PrepareFialed", "PrepareFialed", "Error");
+            AlarmRegister(PostAlarm((int)AlarmKeys.ePrepareFailed), "PrepareFialed", "PrepareFialed", "Error");
         }
 
         protected void AlarmRegister(int alarmCode, string title, string cause, string grade)
@@ -121,7 +157,7 @@ namespace QMC.Common.Unit
 
         private static readonly object _alarmLogLock = new object();
 
-        public int AlarmPost(int alarmCode)
+        public int PostAlarm(int alarmCode)
         {
             try
             {
@@ -183,7 +219,20 @@ namespace QMC.Common.Unit
 
         public int Start()
         {
+            if (m_workThread != null && RunMode == UnitRunMode.Auto)
+            {
+                m_bExit = true;
+                while (true)
+                {
+                    if(RunMode == UnitRunMode.Manual)
+                    {
+                        break;
+                    }
+                }
+            }
+
             SetRunMode(UnitRunMode.Auto);
+            
             m_bExit = false;
             m_workThread = new Thread(OnMainProcedure) { IsBackground = true };
             m_workThread.Start();
@@ -228,6 +277,21 @@ namespace QMC.Common.Unit
 
             while (true)
             {
+                if(State == ProcessState.Manual)
+                {
+                    switch (EquipmentLocator.Instance.EqState)
+                    {
+                        case EquipmentState.Stopped:
+                        case EquipmentState.Error:
+                        case EquipmentState.Stopping:
+                            m_bExit = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                
+
                 if (m_bExit) 
                     break;
 
@@ -236,6 +300,7 @@ namespace QMC.Common.Unit
                     Log.Write(this, $"OnRun Return: {ret}");
                     break;
                 }
+                
                 Thread.Sleep(1);
             }
             OnStop();
@@ -516,7 +581,7 @@ namespace QMC.Common.Unit
                     {
                         try { ax?.EmgStop(); } catch { }
                     }
-                    AlarmPost(alarmCode);
+                    PostAlarm(alarmCode);
                     return -1;
                 }
                 Thread.Sleep(0);
@@ -538,35 +603,68 @@ namespace QMC.Common.Unit
             if (axis == null) 
                 return -1;
 
-            var cfg = axis.Config;
-            double cur = axis.GetPosition();
-            if (cfg != null && Math.Abs(cur - target) <= cfg.InposTolerance)
-                return 0;
-
-            double vel = cfg != null ? cfg.MaxVelocity : 0;
-            if (isFine && vel > 0) 
-                vel *= 0.2;
-
-            int rc;
-            if (cfg != null)
-                rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
-            else
-                rc = axis.MoveAbs(target, false);
-
-            if (rc != 0)
+            try
             {
-                Log.Write(UnitName, "MoveAxisWithSafety",
-                    $"MoveAbs Fail axis={axis.Name} rc={rc}");
-                return -1;
-            }
 
-            if (axis.WaitMoveDone(-1) != 0)
-            {
-                Log.Write(UnitName, "MoveAxisWithSafety",
-                    $"WaitMoveDone Timeout axis={axis.Name}");
-                return -1;
+                LogAxisMove(axis, target, isFine);
+                var cfg = axis.Config;
+                double cur = axis.GetPosition();
+                if (cfg != null && Math.Abs(cur - target) <= cfg.InposTolerance)
+                {
+
+                    return 0;
+
+                }
+
+                double vel = cfg != null ? cfg.MaxVelocity : 0;
+                if (isFine && vel > 0)
+                    vel *= 0.2;
+
+                int rc;
+                if (cfg != null)
+                    rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
+                else
+                    rc = axis.MoveAbs(target, false);
+
+                if (rc != 0)
+                {
+                    Log.Write(UnitName, "MoveAxisWithSafety",
+                        $"MoveAbs Fail axis={axis.Name} rc={rc}");
+                    return -1;
+                }
+
+                if (axis.WaitMoveDone(-1) != 0)
+                {
+                    Log.Write(UnitName, "MoveAxisWithSafety",
+                        $"WaitMoveDone Timeout axis={axis.Name}");
+                    return -1;
+                }
             }
+            catch (Exception ex )
+            {
+                Log.Write(ex);
+                return -1;
+
+            }finally
+            {
+                LogAxisMoveDone(axis, target, isFine);
+            }
+            
             return 0;
+        }
+
+        protected void LogAxisMoveDone(MotionAxis axis, double target, bool isFine)
+        {
+            Log.Write(UnitName, "MoveAxisWithSafety",
+                $"MoveAxisWithSafety Done axis={axis.Name} target={target} isFine={isFine} " +
+                $"cur={axis.GetPosition()}");
+        }
+
+        protected void LogAxisMove(MotionAxis axis, double target, bool isFine)
+        {
+            Log.Write(UnitName, "MoveAxisWithSafety",
+                $"MoveAxisWithSafety axis={axis.Name} target={target} isFine={isFine} " +
+                $"cur={axis.GetPosition()}");
         }
 
         /// <summary>
@@ -616,6 +714,17 @@ namespace QMC.Common.Unit
         }
 
         public void SetName(string name) => UnitName = name;
+
+        public Task<int> RunManualFunction(Func<bool, int> func)
+        {
+            Task<int> task = null;
+            if (func != null && !IsRunning)
+            {
+                CurrentFunc = func;
+                task = Task.Run(() => func(false));
+            }
+            return task;
+        }
 
         ~BaseUnit()
         {

@@ -137,8 +137,9 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0.0)]
         public double dPickUpDec { get; set; } = 0.0;
 
-
-
+        [Category("SetupConfig"), DisplayName("IndexOfStart")]
+        [DefaultValue(0)]
+        public int IndexOfStart { get; internal set; } = 0;
 
         public InputDieTransferConfig() : base("InputDieTransferConfig") { }
 

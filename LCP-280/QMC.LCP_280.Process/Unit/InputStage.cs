@@ -313,31 +313,31 @@ namespace QMC.LCP_280.Process.Unit
                 if (!InputStageEjector.IsPinZSafetyPos())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                     return -1;
                 }
                 if (!InputStageEjector.IsEjectorZSafetyPos())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                     return -1;
                 }
                 if (!InputDieTransfer.IsPickZSafetyPos())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    AlarmPost((int)AlarmKeys.eDieTransferPickZNotSafe);
+                    PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
                 if (!InputFeeder.IsFeederZSafetyPosition())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederCylinderZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
                     return -1;
                 }
                 if (!InputFeeder.IsFeederYSafetyPosition())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederYNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
                     return -1;
                 }
 
@@ -502,7 +502,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                     return -1;
                 }
 
@@ -511,7 +511,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                     return -1;
                 }
 
@@ -521,7 +521,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eDieTransferPickZNotSafe);
+                    PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
 
@@ -530,7 +530,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederCylinderZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
                     return -1;
                 }
 
@@ -539,7 +539,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederYNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
                     return -1;
                 }
 
@@ -572,7 +572,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                     return -1;
                 }
 
@@ -581,7 +581,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                     return -1;
                 }
 
@@ -591,7 +591,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eDieTransferPickZNotSafe);
+                    PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
                 if(Config.IsSimulation)
@@ -603,7 +603,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederCylinderZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
                     return -1;
                 }
 
@@ -612,7 +612,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederYNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
                     return -1;
                 }
 
@@ -645,7 +645,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                     return -1;
                 }
 
@@ -654,7 +654,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                     return -1;
                 }
 
@@ -664,7 +664,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eDieTransferPickZNotSafe);
+                    PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
 
@@ -673,7 +673,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederCylinderZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
                     return -1;
                 }
 
@@ -682,7 +682,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederYNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
                     return -1;
                 }
 
@@ -715,7 +715,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                     return -1;
                 }
 
@@ -724,7 +724,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                     return -1;
                 }
 
@@ -734,7 +734,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eDieTransferPickZNotSafe);
+                    PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
 
@@ -743,7 +743,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederCylinderZNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
                     return -1;
                 }
 
@@ -752,7 +752,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputFeederYNotSafe);
+                    PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
                     return -1;
                 }
 
@@ -1649,7 +1649,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
             {
-                AlarmPost((int)AlarmKeys.eVisionTsearch);
+                PostAlarm((int)AlarmKeys.eVisionTsearch);
                 Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
                 return -1;
             }
@@ -1753,7 +1753,7 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
-                AlarmPost((int)AlarmKeys.eVisionXYsearch);
+                PostAlarm((int)AlarmKeys.eVisionXYsearch);
                 Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
                 return -1;
             }

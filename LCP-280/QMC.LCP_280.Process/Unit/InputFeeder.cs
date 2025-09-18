@@ -299,7 +299,7 @@ namespace QMC.LCP_280.Process.Unit
             ret = WaferLoading();
             if (ret != 0) 
             { 
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 this.State = ProcessState.Error; return ret; 
             }
             
@@ -308,7 +308,7 @@ namespace QMC.LCP_280.Process.Unit
             
             if (ret != 0) 
             { 
-                AlarmPost((int)AlarmKeys.Alarm_StageLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                 this.State = ProcessState.Error; return ret;
             }
             //4. Stage Unloading
@@ -316,7 +316,7 @@ namespace QMC.LCP_280.Process.Unit
             
             if (ret != 0) 
             { 
-                AlarmPost((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 this.State = ProcessState.Error; return ret;
             }
             //5. Wafer Unloading
@@ -324,7 +324,7 @@ namespace QMC.LCP_280.Process.Unit
             
             if (ret != 0) 
             { 
-                AlarmPost((int)AlarmKeys.Alarm_WaferUnloadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferUnloadingFailed);
                 this.State = ProcessState.Error; return ret;
             }
             this.State = ProcessState.Complete;
@@ -463,7 +463,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (nRet != 0)
             {
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 return nRet;
             }
 
@@ -471,7 +471,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = BarcodeReading();
             if (nRet != 0)
             {
-                AlarmPost((int)AlarmKeys.Alarm_BarcodeReadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_BarcodeReadingFailed);
                 return nRet;
             }
 
@@ -487,7 +487,7 @@ namespace QMC.LCP_280.Process.Unit
             else
             {
                 Log.Write("InputFeeder", "WaferLoading", "Clamp Failed");
-                AlarmPost((int)AlarmKeys.Alarm_GripperClampFailed);
+                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
                 nRet = -1;
                 return nRet;
             }
@@ -504,7 +504,7 @@ namespace QMC.LCP_280.Process.Unit
             else
             {
                 Log.Write("InputFeeder", "WaferLoading", "Unclamp Failed");
-                AlarmPost((int)AlarmKeys.Alarm_GripperClampFailed);
+                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
                 nRet = -1;
                 return nRet;
             }
@@ -521,7 +521,7 @@ namespace QMC.LCP_280.Process.Unit
             else
             {
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Up Failed");
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
             }
@@ -537,7 +537,7 @@ namespace QMC.LCP_280.Process.Unit
             else
             {
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Failed");
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
             }
@@ -556,7 +556,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         ax.EmgStop();
                     }
-                    AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                     return -1;
                 }
                 System.Threading.Thread.Sleep(1);
@@ -569,14 +569,14 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             if (IsInterlockOKWaferLoading() == false)
             {
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
             }
             nRet = base.MoveTeachingPositionOnce((int)InputFeederConfig.TeachingPositionName.Ready, isFine);
             if (nRet != 0)
             {
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
             }
@@ -601,7 +601,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         ax.EmgStop();
                     }
-                    AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                     return -1;
                 }
                 System.Threading.Thread.Sleep(1);
@@ -621,14 +621,14 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             if (IsInterlockOKWaferLoading() == false)
             {
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
             }
             nRet = base.MoveTeachingPositionOnce((int)InputFeederConfig.TeachingPositionName.Cassette, isFine);
             if (nRet != 0)
             {
-                AlarmPost((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
             }
