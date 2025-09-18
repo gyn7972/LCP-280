@@ -8,6 +8,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO ???/?Ú˜ ???? ???
 
 namespace QMC.LCP_280.Process.Unit
@@ -219,13 +220,21 @@ namespace QMC.LCP_280.Process.Unit
 
         private bool IsUnitInSafeByConnectedAxes(object unit)
         {
-            if (unit == null) return true;
+            if (unit == null) 
+                return true;
 
             // Config(BaseConfig) »πµÊ
+            //var t = unit.GetType();
+            //var propConfig = t.GetProperty("Config");
+            //var cfg = propConfig?.GetValue(unit) as BaseConfig;
+            //if (cfg?.TeachingPositions == null) return true;
+            // Config(BaseConfig) »πµÊ
             var t = unit.GetType();
-            var propConfig = t.GetProperty("Config");
+            var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(p => p.Name == "Config" && typeof(BaseConfig).IsAssignableFrom(p.PropertyType));
             var cfg = propConfig?.GetValue(unit) as BaseConfig;
             if (cfg?.TeachingPositions == null) return true;
+
 
             // ¿Ø¥÷ ∫∏¿Ø √‡ ªÁ¿¸(Dictionary<string, MotionAxis>) »πµÊ
             var propAxes = t.GetProperty("Axes");
