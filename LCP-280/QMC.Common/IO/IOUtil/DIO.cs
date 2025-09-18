@@ -129,6 +129,7 @@ namespace QMC.Common.IOUtil
             var eq = EquipmentLocator.Instance as IEquipment;
             var dio = eq?.DioScan; if (dio == null) return false;
             return dio.TryGetOutput(p.Module, p.Disp, out value);
+
         }
 
         // ===== Enumeration API (UI에서 Raw 리스트 구성 용도) =====
