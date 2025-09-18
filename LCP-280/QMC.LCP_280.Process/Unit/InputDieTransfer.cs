@@ -13,6 +13,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Windows.Media;
 using static QMC.LCP_280.Process.Equipment;
@@ -1381,7 +1382,69 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnRunWork()
         {
-            int ret = 0;
+            int nRtn = 0;
+
+            //nRtn = RaiseEjectorForPick();
+            //if (nRtn != 0)
+            //{
+            //    return -1;
+            //}
+            //else
+            //{
+            //    nRtn = EjectorVacuumOn();
+            //    if (nRtn != 0)
+            //    {
+            //        return -1;
+            //    }
+            //    else
+            //    {
+            //        ret = ChipPickDown();
+            //        if (ret != 0)
+            //        {
+            //            return -1;
+            //        }
+            //        else
+            //        {
+            //            ret = SyncPickPinUp();
+            //            if (ret != 0)
+            //            {
+            //                return -1;
+            //            }
+            //            else
+            //            {
+            //                ret = SyncPickPinRetreat();
+            //                if (ret != 0)
+            //                {
+            //                    return -1;
+            //                }
+            //                else
+            //                {
+            //                    ret = RotateToolTForPlace();
+            //                    if (ret != 0)
+            //                    {
+            //                        return -1;
+            //                    }
+            //                    else
+            //                    {
+            //                        ret = PlaceChipDown();
+            //                        if (ret != 0)
+            //                        {
+            //                            return -1;
+            //                        }
+            //                        else
+            //                        {
+            //                            ret = ReleaseVacuumAndPlaceUp();
+            //                            if (ret != 0)
+            //                            {
+            //                                return -1;
+            //                            }
+            //                        }
+            //                    }
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
 
             State = ProcessState.Complete;
             return 0;
