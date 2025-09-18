@@ -7,6 +7,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -94,25 +95,25 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.IndexZ, ref _indexZ);
         }
 
-        public override int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
-        {
-            if (axis == null) return -1;
+        //public override int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
+        //{
+        //    if (axis == null) 
+        //        return -1;
 
-            Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
-            while (IsEndTask(task) == false)
-            {
-                if(Rotary.IsAnyAxisMoving())
-                {
-                    AxisIndexZ.EmgStop();
-                    AxisAlignT.EmgStop();
-                    AlarmPost((int)AlarmKeys.eRotaryNotSafe);
-                    return -1;
-                }
-                Thread.Sleep(1);
-            }
-            return task.Result;
-        }
-
+        //    Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
+        //    while (IsEndTask(task) == false)
+        //    {
+        //        if (Rotary.IsAnyAxisMoving())
+        //        {
+        //            AxisIndexZ.EmgStop();
+        //            AxisAlignT.EmgStop();
+        //            AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+        //            return -1;
+        //        }
+        //        Thread.Sleep(1);
+        //    }
+        //    return task.Result;
+        //}
         public int MovePositionSafetyZ(bool isFine = false)
         {
             Task<int> task = MovePositionAsyncSafetyZ(isFine);
@@ -245,7 +246,8 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             double dZPos = GetTP(tpName, AxisNames.IndexZ);
-            nRet = MoveAxisPositionOne(AxisIndexZ, dZPos);
+            //nRet = MoveAxisPositionOne(AxisIndexZ, dZPos);
+            nRet = OnMoveAxisWithSafety(AxisIndexZ, dZPos);
             if (nRet != 0)
             {
                 Log.Write(UnitName, $"[OnMovePositionPlace_Index] PlaceZ move failed tp={tpName} pos={dZPos}");
@@ -820,7 +822,8 @@ namespace QMC.LCP_280.Process.Unit
 
             // 2) T Ready
             bRtn = MovePositionAlignTReady(isFine);
-            if (bRtn != 0) return -1;
+            if (bRtn != 0) 
+                return -1;
 
             // 3) Z Up
             bRtn = MovePositionAlignUp(socketIndex, isFine);

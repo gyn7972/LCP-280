@@ -592,13 +592,19 @@ namespace QMC.Common.Motions
         {
             if (IsSim)
             {
-                if (timeoutMs < 0) timeoutMs = Setup.MoveTimeoutMs;
+                if (timeoutMs < 0) 
+                    timeoutMs = Setup.MoveTimeoutMs;
+
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < timeoutMs)
                 {
-                    bool moving;
-                    lock (_simLock) moving = _simIsMoving;
-                    if (!moving) return 0;
+                    bool moving = false;
+                    lock (_simLock) 
+                        moving = _simIsMoving;
+
+                    if (!moving) 
+                        return 0;
+
                     Thread.Sleep(5);
                 }
                 return -1;
@@ -1383,11 +1389,16 @@ namespace QMC.Common.Motions
                             if (reached) break;
                             await Task.Delay(10).ConfigureAwait(false);
                         }
+                       
                     }
                     catch { }
                     finally
                     {
-                        lock (_simLock) { _simIsMoving = false; _simCurrentVelocity = 0; }
+                        lock (_simLock)
+                        {
+                            _simIsMoving = false;
+                            _simCurrentVelocity = 0;
+                        }
                     }
                 }, token);
             }

@@ -933,7 +933,11 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 완료
                 if (pickMoving && pinMoving)
+                {
+                    Log.Write(UnitName, "[MovePickZAndPinZByOffset] pickMoving && pinMoving : Comp.");
                     break;
+                }
+                    
 
                 // 진행 중 Interlock 감시 (기존 MoveAxisWithSafety 로직과 유사)
                 if (InputStage != null && InputStage.IsAnyAxisMoving())
@@ -946,16 +950,16 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStage");
                     return -1;
                 }
-                if (Rotary != null && Rotary.IsAnyAxisMoving())
-                {
-                    pick.EmgStop(); pin.EmgStop();
-                    AxisToolT.EmgStop();
-                    AxisPickZ.EmgStop();
-                    AxisPlaceZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
-                    Log.Write(UnitName, "[MovePickZAndPinZByOffset] Rotary");
-                    return -1;
-                }
+                //if (Rotary != null && Rotary.IsAnyAxisMoving())
+                //{
+                //    pick.EmgStop(); pin.EmgStop();
+                //    AxisToolT.EmgStop();
+                //    AxisPickZ.EmgStop();
+                //    AxisPlaceZ.EmgStop();
+                //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                //    Log.Write(UnitName, "[MovePickZAndPinZByOffset] Rotary");
+                //    return -1;
+                //}
                 // Ejector 다른 축(EjectorZ) 움직임 감시
                 if (InputStageEjector != null && 
                     InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
@@ -1390,7 +1394,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // 3) CompleteManualStep 호출 시 StepManual=0 으로 리셋됨
             //    루프 모드이면 다음 OnRunManual 진입 시 다시 다음 Step 스케줄
-            return 0;
+             return 0;
         }
 
 
@@ -1728,21 +1732,20 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                Thread.Sleep(10);
-
-                if (InputStage.SetVacuum(false))
-                {
-                    var sw = Stopwatch.StartNew();
-                    while (InputStage.IsVacuumOn())
-                    {
-                        if (sw.ElapsedMilliseconds > 2000)
-                        {
-                            Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-                            return -1;
-                        }
-                        Thread.Sleep(1);
-                    }
-                }
+                //Thread.Sleep(10);
+                //if (InputStage.SetVacuum(false))
+                //{
+                //    var sw = Stopwatch.StartNew();
+                //    while (InputStage.IsVacuumOn())
+                //    {
+                //        if (sw.ElapsedMilliseconds > 2000)
+                //        {
+                //            Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
+                //            return -1;
+                //        }
+                //        Thread.Sleep(1);
+                //    }
+                //}
             }
 
             return nRet;
