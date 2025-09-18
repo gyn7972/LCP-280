@@ -64,7 +64,6 @@ namespace QMC.LCP_280.Process.Component
         {
 
             if (m_ParentUnit == null) return;
-            this.SelectedIndex++;
             this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
             this._lstSteps.SelectedIndex = this.SelectedIndex;
             if (this._lstSteps.SelectedIndex < 0)
