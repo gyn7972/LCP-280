@@ -30,6 +30,7 @@ namespace QMC.LCP_280.Process
 {
     public class Equipment : IDisposable, IEquipment
     {
+        
         public static class UnitKeys
         {
             public const string EquipmentStatus = "EquipmentStatus"; // [MOD] 상수화
@@ -87,7 +88,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 설비 전체 상태
         /// </summary>
-        public EquipmentState State { get; private set; }
+        public EquipmentState EqState { get; set; }
 
         /// <summary>
         /// 설비 전체 Config 관리
@@ -218,7 +219,7 @@ namespace QMC.LCP_280.Process
             {
                 Units = new ConcurrentDictionary<string, IUnit>();
                 _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
-                State = EquipmentState.Stopped;
+                EqState = EquipmentState.Stopped;
 
                 ConfigManager = new EquipmentConfigManager();
 
@@ -440,7 +441,7 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public async Task<bool> StartAllUnitsAsync()
         {
-            if (State == EquipmentState.Running)
+            if (EqState == EquipmentState.Running)
             {
                 Console.WriteLine("설비가 이미 실행 중입니다.");
                 return true;
@@ -1003,8 +1004,8 @@ namespace QMC.LCP_280.Process
 
         private void OnStateChanged(EquipmentState newState)
         {
-            var old = State;
-            State = newState;
+            var old = EqState;
+            EqState = newState;
             StateChanged?.Invoke(this, new EquipmentStateChangedEventArgs(old, newState));
         }
         private void OnUnitStateChanged(string unitName, UnitState newState)
@@ -1556,32 +1557,7 @@ namespace QMC.LCP_280.Process
 
     #region Supporting Classes and Enums
 
-    /// <summary>
-    /// 설비 상태
-    /// </summary>
-    public enum EquipmentState
-    {
-        Stopped,
-        Initializing,
-        Ready,
-        Starting,
-        Running,
-        Stopping,
-        Error
-    }
-
-    /// <summary>
-    /// Unit 상태
-    /// </summary>
-    public enum UnitState
-    {
-        Stopped,
-        Starting,
-        Running,
-        Stopping,
-        Error,
-        Unknown
-    }
+    
 
     /// <summary>
     /// Unit 실행 정보

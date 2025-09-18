@@ -48,7 +48,6 @@ namespace QMC.LCP_280.Process.Component
             this._panelButtons.Name = "_panelButtons";
             this._panelButtons.Size = new System.Drawing.Size(356, 40);
             this._panelButtons.TabIndex = 0;
-            this._panelButtons.Paint += new System.Windows.Forms.PaintEventHandler(this._panelButtons_Paint);
             // 
             // _btnBack
             // 
@@ -58,7 +57,6 @@ namespace QMC.LCP_280.Process.Component
             this._btnBack.TabIndex = 0;
             this._btnBack.Text = "Back";
             this._btnBack.UseVisualStyleBackColor = true;
-            this._btnBack.Click += new System.EventHandler(this.OnBackClick);
             // 
             // _btnRecover
             // 
@@ -68,7 +66,6 @@ namespace QMC.LCP_280.Process.Component
             this._btnRecover.TabIndex = 3;
             this._btnRecover.Text = "Recover";
             this._btnRecover.UseVisualStyleBackColor = true;
-            this._btnRecover.Click += new System.EventHandler(this.OnRecoverClick);
             // 
             // _btnStop
             // 
@@ -78,7 +75,6 @@ namespace QMC.LCP_280.Process.Component
             this._btnStop.TabIndex = 2;
             this._btnStop.Text = "Stop";
             this._btnStop.UseVisualStyleBackColor = true;
-            this._btnStop.Click += new System.EventHandler(this.OnStopClick);
             // 
             // _btnManual
             // 
@@ -88,7 +84,6 @@ namespace QMC.LCP_280.Process.Component
             this._btnManual.TabIndex = 1;
             this._btnManual.Text = "Manual ¢º";
             this._btnManual.UseVisualStyleBackColor = true;
-            this._btnManual.Click += new System.EventHandler(this.OnManualClick);
             // 
             // _cboSequence
             // 

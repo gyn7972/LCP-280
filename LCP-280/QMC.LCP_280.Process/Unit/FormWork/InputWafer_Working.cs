@@ -218,7 +218,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         #region Sequences
         private void InitSequences()
         {
-            try { manualSequenceControl?.ClearSequences(); } catch { }
         }
         #endregion
 

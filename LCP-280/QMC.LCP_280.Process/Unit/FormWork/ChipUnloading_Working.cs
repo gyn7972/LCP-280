@@ -312,12 +312,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         #region Sequences (미구현 Placeholder)
         private void InitSequences()
         {
-            try
-            {
-                if (manualSequenceControl != null)
-                    manualSequenceControl.ClearSequences();
-            }
-            catch { }
         }
         #endregion
 

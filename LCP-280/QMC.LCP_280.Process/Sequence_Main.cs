@@ -315,7 +315,7 @@ namespace QMC.LCP_280.Process
             {
                 statusUpdateTimer?.Stop();
                 statusUpdateTimer?.Dispose();
-                if (equipment != null && equipment.State == EquipmentState.Running)
+                if (equipment != null && equipment.EqState == EquipmentState.Running)
                 {
                     var result = MessageBox.Show("설비가 실행 중입니다. 정지하고 종료하시겠습니까?", "확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                     if (result == DialogResult.Yes) equipment.StopAllUnitsAsync().GetAwaiter().GetResult(); else { e.Cancel = true; return; }

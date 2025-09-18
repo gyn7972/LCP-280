@@ -330,10 +330,6 @@ namespace QMC.LCP_280.Process.Unit
                 InputStageEjector = TryGetUnit<InputStageEjector>("InputStageEjector");
                 InputDieTransfer  = TryGetUnit<InputDieTransfer>("InputDieTransfer");
 
-                if (manualSequenceControl != null)
-                    manualSequenceControl.ClearSequences();
-
-                // InputStage sequence
                 if (InputStage != null)
                 {
                     // T_Align 등록

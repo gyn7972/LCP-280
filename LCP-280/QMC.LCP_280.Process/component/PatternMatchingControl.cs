@@ -412,7 +412,7 @@ namespace QMC.LCP_280.Process
             {
                 var eq = Equipment.Instance;
                 if (eq == null) return;
-                if (eq.Cameras.Count == 0 && eq.State != EquipmentState.Initializing)
+                if (eq.Cameras.Count == 0 && eq.EqState != EquipmentState.Initializing)
                 {
                     try { eq.InitializeEquipment(); } catch { }
                 }

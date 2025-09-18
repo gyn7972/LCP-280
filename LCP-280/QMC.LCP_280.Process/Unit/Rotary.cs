@@ -47,7 +47,7 @@ namespace QMC.LCP_280.Process.Unit
             il.AddAxisMustBeHomed("RotaryTHomed", _axisT, "T?? Home ??? ?? ???? ????????.");
             il.AddGlobalRule("EquipStateRunningBlock", () =>
             {
-                return Equipment.Instance != null && Equipment.Instance.State == EquipmentState.Running
+                return Equipment.Instance != null && Equipment.Instance.EqState == EquipmentState.Running
                     ? "??????? ????? ?ех??? ???? ????? ???????." : null;
             });
         }

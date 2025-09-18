@@ -7,8 +7,37 @@ using System.Diagnostics;
 
 namespace QMC.Common
 {
+    /// <summary>
+    /// 설비 상태
+    /// </summary>
+    public enum EquipmentState
+    {
+        Stopped,
+        Initializing,
+        Ready,
+        Starting,
+        Running,
+        Stopping,
+        Error
+    }
+
+    /// <summary>
+    /// Unit 상태
+    /// </summary>
+    public enum UnitState
+    {
+        Stopped,
+        Starting,
+        Running,
+        Stopping,
+        Error,
+        Unknown
+    }
+
     public interface IEquipment : IDisposable
     {
+        EquipmentState EqState { get; set; }
+
         System.Threading.Tasks.Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true);
         System.Threading.Tasks.Task<bool> StopUnitAsync(string unitName);
 
