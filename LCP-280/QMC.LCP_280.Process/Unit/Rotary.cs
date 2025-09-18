@@ -518,6 +518,23 @@ namespace QMC.LCP_280.Process.Unit
             /* TODO */
             return nRet;
         }
+        public int GetIndexCount()
+        {
+            return 8;
+        }
+
+        public int GetLoadIndexNo()
+        {
+            //Todo : Implement ±¸¿µ³²
+            double dPos = AxisT.GetPosition();
+            double dStep = (360.0)/ GetIndexCount();
+            int nIndex = (int)(((360 - dPos)/ dStep) +0.5);
+            while (nIndex < 0)
+            {
+                nIndex += GetIndexCount();
+            }
+            return nIndex % this.GetIndexCount();
+        }
         #endregion
     }
 }

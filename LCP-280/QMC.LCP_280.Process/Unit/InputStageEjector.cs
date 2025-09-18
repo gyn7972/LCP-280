@@ -121,7 +121,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     AxisEjectorZ.EmgStop();
                     AxisPinZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                     return -1;
                 }
 
@@ -140,7 +140,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     AxisEjectorZ.EmgStop();
                     AxisPinZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                     return -1;
                 }
 
@@ -149,7 +149,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     AxisEjectorZ.EmgStop();
                     AxisPinZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                     return -1;
                 }
 
@@ -161,7 +161,7 @@ namespace QMC.LCP_280.Process.Unit
                 // 예외 발생 시 보수적으로 이동 중단하도록 임의 알람 
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
 
@@ -210,7 +210,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
 
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
 
@@ -220,7 +220,7 @@ namespace QMC.LCP_280.Process.Unit
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
 
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
 
@@ -298,7 +298,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
             return nRet;
@@ -374,7 +374,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
             return nRet;
@@ -451,7 +451,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
-                AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
             return nRet;

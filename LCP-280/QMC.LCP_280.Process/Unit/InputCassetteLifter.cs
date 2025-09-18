@@ -337,7 +337,7 @@ namespace QMC.LCP_280.Process.Unit
             if (IsWaferProtrusionDetectionSensor())
             {
                 Log.Write(this, "Wafer Protrusion Detected");
-                AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                 return -1;
             }
             double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
@@ -349,7 +349,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     WaferLifterZ.EmgStop();
                     Log.Write(this, "Wafer Protrusion Detected");
-                    AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                     return -1;
                 }
                 Thread.Sleep(0);
@@ -396,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit
             if (IsWaferProtrusionDetectionSensor())
             {
                 Log.Write(this, "Wafer Protrusion Detected");
-                AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                 return -1;
             }
 
@@ -429,7 +429,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     this.WaferLifterZ.EmgStop();
                     Log.Write(this, "Wafer Protrusion Detected");
-                    AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                    
                     return -1;
                 }
@@ -480,7 +480,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (this.IsWaferProtrusionDetectionSensor())
                 {
                     this.WaferLifterZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                     return -1;
                 }
                 Thread.Sleep(0);
@@ -515,7 +515,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (this.IsWaferProtrusionDetectionSensor())
                 {
                     this.WaferLifterZ.EmgStop();
-                    AlarmPost((int)AlarmKeys.eWaferProtrusionDetected);
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                     return -1;
                 }
                 Thread.Sleep(0);
