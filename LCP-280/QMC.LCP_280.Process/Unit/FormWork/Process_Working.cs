@@ -1,9 +1,10 @@
-﻿using System;
+﻿using QMC.Common;
+using QMC.LCP_280.Process.Component; // DIO / teaching controls
+using System;
 using System.Linq;
 using System.Reflection;
-using System.Windows.Forms;
 using System.Threading.Tasks;
-using QMC.LCP_280.Process.Component; // DIO / teaching controls
+using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
@@ -18,11 +19,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
     {
         private Equipment Equipment => Equipment.Instance;
 
-        private IndexChipProbeController _probeControllerUnit;
-        private IndexChipProber _proberUnit;
-        private IndexLoadAligner _loadAlignerUnit;
-        private IndexUnloadAligner _unloadAlignerUnit;
-        private Rotary _rotaryUnit;
+        private IndexChipProbeController IndexChipProbeController;
+        private IndexChipProber IndexChipProber;
+        private IndexLoadAligner IndexLoadAligner;
+        private IndexUnloadAligner IndexUnloadAligner;
+        private Rotary Rotary;
 
         private bool _initialized;
         private bool _deferredInitDone; // 지연 바인딩 여부
@@ -44,11 +45,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                                Rotary rotary)
         {
             InitializeComponent();
-            _probeControllerUnit = probeController;
-            _proberUnit = prober;
-            _loadAlignerUnit = loadAligner;
-            _unloadAlignerUnit = unloadAligner;
-            _rotaryUnit = rotary;
+            IndexChipProbeController = probeController;
+            IndexChipProber = prober;
+            IndexLoadAligner = loadAligner;
+            IndexUnloadAligner = unloadAligner;
+            Rotary = rotary;
 
             Load += Process_Working_Load;
             FormClosing += Process_Working_FormClosing;
@@ -107,6 +108,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 BindTeachingPositions();
                 BindDioControls();
                 InitSequences();
+
+                InitSocketIndexCombo();
             }
             catch { }
         }
@@ -119,58 +122,58 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (teachingPositionControl == null) return;
                 teachingPositionControl.ClearUnits();
 
-                if (_loadAlignerUnit != null)
+                if (IndexLoadAligner != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "IndexLoadAligner",
-                        _loadAlignerUnit,
-                        () => _loadAlignerUnit.Config?.TeachingPositions,
-                        (name, vel) => _loadAlignerUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _loadAlignerUnit.Config?.SetTeachingPosition(tp),
+                        IndexLoadAligner,
+                        () => IndexLoadAligner.Config?.TeachingPositions,
+                        (name, vel) => IndexLoadAligner.MoveToTeachingPosition(name, vel: vel),
+                        tp => IndexLoadAligner.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (_unloadAlignerUnit != null)
+                if (IndexUnloadAligner != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "IndexUnloadAligner",
-                        _unloadAlignerUnit,
-                        () => _unloadAlignerUnit.Config?.TeachingPositions,
-                        (name, vel) => _unloadAlignerUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _unloadAlignerUnit.Config?.SetTeachingPosition(tp),
+                        IndexUnloadAligner,
+                        () => IndexUnloadAligner.Config?.TeachingPositions,
+                        (name, vel) => IndexUnloadAligner.MoveToTeachingPosition(name, vel: vel),
+                        tp => IndexUnloadAligner.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (_proberUnit != null)
+                if (IndexChipProber != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "IndexChipProber",
-                        _proberUnit,
-                        () => _proberUnit.Config?.TeachingPositions,
-                        (name, vel) => _proberUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _proberUnit.Config?.SetTeachingPosition(tp),
+                        IndexChipProber,
+                        () => IndexChipProber.Config?.TeachingPositions,
+                        (name, vel) => IndexChipProber.MoveToTeachingPosition(name, vel: vel),
+                        tp => IndexChipProber.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (_probeControllerUnit != null)
+                if (IndexChipProbeController != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "IndexChipProbeController",
-                        _probeControllerUnit,
-                        () => _probeControllerUnit.Config?.TeachingPositions,
-                        (name, vel) => _probeControllerUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _probeControllerUnit.Config?.SetTeachingPosition(tp),
+                        IndexChipProbeController,
+                        () => IndexChipProbeController.Config?.TeachingPositions,
+                        (name, vel) => IndexChipProbeController.MoveToTeachingPosition(name, vel: vel),
+                        tp => IndexChipProbeController.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (_rotaryUnit != null)
+                if (Rotary != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "Rotary",
-                        _rotaryUnit,
-                        () => _rotaryUnit.Config?.TeachingPositions,
-                        (name, vel) => _rotaryUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _rotaryUnit.Config?.SetTeachingPosition(tp),
+                        Rotary,
+                        () => Rotary.Config?.TeachingPositions,
+                        (name, vel) => Rotary.MoveToTeachingPosition(name, vel: vel),
+                        tp => Rotary.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -190,15 +193,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             try
             {
-                BindRotaryActuators(_rotaryUnit);
+                BindRotaryActuators(Rotary);
 
-                if (_probeControllerUnit != null)
+                if (IndexChipProbeController != null)
                 {
                     dioControl.BindDIOInput(() => false, "---- ProbeController ----", "SEP_ProbeCtrl");
 
-                    dioControl.BindDIOInput(() => _probeControllerUnit.ProbeVacOk(), "ProbeVac OK", "ProbeVacOk");
-                    dioControl.BindDIOInput(() => _probeControllerUnit.IsSphereForward(), "Sphere FW Sns", "ProbeSphereFwSns");
-                    dioControl.BindDIOInput(() => _probeControllerUnit.IsSphereBackward(), "Sphere BW Sns", "ProbeSphereBwSns");
+                    dioControl.BindDIOInput(() => IndexChipProbeController.ProbeVacOk(), "ProbeVac OK", "ProbeVacOk");
+                    dioControl.BindDIOInput(() => IndexChipProbeController.IsSphereForward(), "Sphere FW Sns", "ProbeSphereFwSns");
+                    dioControl.BindDIOInput(() => IndexChipProbeController.IsSphereBackward(), "Sphere BW Sns", "ProbeSphereBwSns");
 
                     //dioControl.BindDIOOutput(
                     //    () => _probeControllerUnit.SetProbeVacValve(true),
@@ -209,20 +212,20 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                     dioControl.BindVacuum(
                         label: "Vacuum",
-                        on: () => _probeControllerUnit.SetProbeVac(true),
-                        off: () => _probeControllerUnit.SetProbeVac(false),
-                        isOk: () => _probeControllerUnit.IsProbeVacValveOn(),
-                        isOnState: () => _probeControllerUnit.IsProbeVacValveOn(),
+                        on: () => IndexChipProbeController.SetProbeVac(true),
+                        off: () => IndexChipProbeController.SetProbeVac(false),
+                        isOk: () => IndexChipProbeController.IsProbeVacValveOn(),
+                        isOnState: () => IndexChipProbeController.IsProbeVacValveOn(),
                         displayKey: "ProbeVac",
                         showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
                     );
 
                     dioControl.BindCylinder(
                         label: "SphereFB",
-                        extend: () => _probeControllerUnit.SetSphereFB(true),
-                        retract: () => _probeControllerUnit.SetSphereFB(false),
+                        extend: () => IndexChipProbeController.SetSphereFB(true),
+                        retract: () => IndexChipProbeController.SetSphereFB(false),
                         // FWD 센서만 있어도 동작. BWD는 없으면 null 가능(토글은 FWD 센서로 판단)
-                        isExtended: () => _probeControllerUnit.IsSphereFwdValveOn(),
+                        isExtended: () => IndexChipProbeController.IsSphereFwdValveOn(),
                         isRetracted: null,
                         displayKey: "SphereFB",
                         showSensors: false,
@@ -253,11 +256,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void BindRotaryActuators(Rotary rotary)
         {
             // 그룹 구분선: Rotary (유지)
-            if (_rotaryUnit != null)
+            if (Rotary != null)
             {
                 dioControl.BindDIOInput(() => false, "---- Rotary ----", "SEP_Rotary");
-                dioControl.BindDIOInput(() => _rotaryUnit.AirTankPressureOk(), "Rot AirTank OK", "Rot_AirTk");
-                dioControl.BindDIOInput(() => _rotaryUnit.VacTankPressureOk(), "Rot VacTank OK", "Rot_VacTk");
+                dioControl.BindDIOInput(() => Rotary.AirTankPressureOk(), "Rot AirTank OK", "Rot_AirTk");
+                dioControl.BindDIOInput(() => Rotary.VacTankPressureOk(), "Rot VacTank OK", "Rot_VacTk");
 
                 int slotCount = SLOT_VAC.Length; // 8
                 for (int slot = 0; slot < slotCount; slot++)
@@ -266,15 +269,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     string labelBase = $"Index{idx + 1}";
 
                     dioControl.BindDIOInput(
-                        () => _rotaryUnit.SlotFlowOk(idx),
+                        () => Rotary.SlotFlowOk(idx),
                         $"IndexSlot{idx + 1} FLOW",
                         $"Index_S{idx + 1}_Flow");
 
                     // VAC: 소프트 래치 토글 사용 (isOnState: null)
                     dioControl.BindVacuum(
                         label: $"{labelBase} VAC",
-                        on: () => _rotaryUnit.SetVacuum(idx, true),
-                        off: () => _rotaryUnit.SetVacuum(idx, false),
+                        on: () => Rotary.SetVacuum(idx, true),
+                        off: () => Rotary.SetVacuum(idx, false),
                         isOk: null,
                         isOnState: null,
                         displayKey: $"IndexSlot{idx + 1}_Vac",
@@ -284,8 +287,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     // BLOW
                     dioControl.BindVacuum(
                         label: $"{labelBase} Blow",
-                        on: () => _rotaryUnit.SetBlow(idx, true),
-                        off: () => _rotaryUnit.SetBlow(idx, false),
+                        on: () => Rotary.SetBlow(idx, true),
+                        off: () => Rotary.SetBlow(idx, false),
                         isOk: null,
                         isOnState: null,
                         displayKey: $"IndexSlot{idx + 1}_Blow",
@@ -295,8 +298,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     // VENT
                     dioControl.BindVacuum(
                         label: $"{labelBase} Vent",
-                        on: () => _rotaryUnit.SetVent(idx, true),
-                        off: () => _rotaryUnit.SetVent(idx, false),
+                        on: () => Rotary.SetVent(idx, true),
+                        off: () => Rotary.SetVent(idx, false),
                         isOk: null,
                         isOnState: null,
                         displayKey: $"IndexSlot{idx + 1}_Vent",
@@ -321,6 +324,103 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void Process_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
+        }
+
+        // 추가: 소켓 번호 콤보 초기화 (1~8)
+        private void InitSocketIndexCombo()
+        {
+            try
+            {
+                if (comboBoxIndexSocketNo == null) return;
+                if (comboBoxIndexSocketNo.Items.Count == 0)
+                {
+                    for (int i = 1; i <= 8; i++)
+                        comboBoxIndexSocketNo.Items.Add(i);
+                    comboBoxIndexSocketNo.SelectedIndex = 0;
+                }
+            }
+            catch { }
+        }
+
+        private async void btnInputMAlign_ClickAsync(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "IndexLoadAligner";
+
+            int selSocket = 1;
+            try
+            {
+                if (comboBoxIndexSocketNo != null)
+                {
+                    if (comboBoxIndexSocketNo.SelectedItem is int v)
+                        selSocket = v;                  // 1~8 그대로
+                    else if (comboBoxIndexSocketNo.SelectedIndex >= 0)
+                        selSocket = comboBoxIndexSocketNo.SelectedIndex + 1;
+                }
+            }
+            catch { selSocket = 1; }
+
+            try
+            {
+                btnInputMAlign.Enabled = false;
+
+                // 선택 값 전달
+                IndexLoadAligner.ManualSocketIndex = selSocket;
+
+                IndexLoadAligner.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                IndexLoadAligner.StepManual = 1;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+                if (!result)
+                {
+                    Log.Write("Process_Working", $"[InputMAlign][ERROR] Unit '{unitName}' 시작 실패 (Socket={selSocket})");
+                    return;
+                }
+
+                Log.Write("Process_Working", $"[InputMAlign] Unit '{unitName}' 실행 중... (Socket={selSocket})");
+
+                // 진행 모니터링 (최대 60초)
+                const int timeoutMs = 60000;
+                int start = Environment.TickCount;
+                bool done = false;
+
+                while (Environment.TickCount - start < timeoutMs)
+                {
+                    // 완료 조건: StepManual == 0 (수동 스텝 종료) 또는 에러 상태
+                    if (IndexLoadAligner.StepManual == 0)
+                    {
+                        done = true;
+                        break;
+                    }
+
+                    if (IndexLoadAligner.State == Common.Unit.BaseUnit.ProcessState.Error)
+                    {
+                        Log.Write("Process_Working", $"[InputMAlign][ERROR] 실행 중 에러 상태 전환 (Socket={selSocket})");
+                        return;
+                    }
+
+                    await Task.Delay(100);
+                }
+
+                if (!done)
+                {
+                    Log.Write("Process_Working", $"[InputMAlign][TIMEOUT] 60초 내 완료되지 않음 (Socket={selSocket}, Step={IndexLoadAligner.StepManual})");
+                }
+                else
+                {
+                    Log.Write("Process_Working", $"[InputMAlign] 완료 (Socket={selSocket})");
+                }
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnInputMAlign.Enabled = true;
+            }
         }
     }
 }

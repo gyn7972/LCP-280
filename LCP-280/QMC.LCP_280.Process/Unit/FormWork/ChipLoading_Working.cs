@@ -879,5 +879,30 @@ namespace QMC.LCP_280.Process.Unit
                 btnPickUp.Enabled = true;
             }
         }
+
+        private async void btnPickUpDn_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null)
+                return;
+            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
+            try
+            {
+                btnPickUp.Enabled = false;
+
+                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
+                InputDieTransfer.StepManual = 8;
+                var result = await Equipment.StartUnitAsync(unitName);
+
+            }
+            catch (Exception ex) { Log.Write(ex); }
+            finally
+            {
+                btnPickUp.Enabled = true;
+            }
+        }
     }
 }

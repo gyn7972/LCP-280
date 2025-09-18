@@ -134,7 +134,8 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) 
+            => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         public int Saveconfig()
         {
