@@ -10,7 +10,8 @@ namespace QMC.Common.Unit
 
         protected BaseUnit(TConfig config) : base(ResolveUnitName(config))
         {
-            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (config == null) 
+                throw new ArgumentNullException(nameof(config));
             config.Validate();
             Config = config;
             base.Config = config;
@@ -18,7 +19,8 @@ namespace QMC.Common.Unit
 
         protected void SetConfig(TConfig config)
         {
-            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (config == null) 
+                throw new ArgumentNullException(nameof(config));
             config.Validate();
             Config = config;
             base.Config = config;

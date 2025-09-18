@@ -268,7 +268,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (_axisManager == null) return;
             string axisName = selectAxisListBoxItemsView.SelectedItemName;
-            if (string.IsNullOrEmpty(axisName)) return;
+            if (string.IsNullOrEmpty(axisName)) 
+                return;
 
             var axis = _axisManager.Get(UNIT_NAME, axisName);
             if (axis == null || axis.Status == null || axis.Status.PV == null) return;

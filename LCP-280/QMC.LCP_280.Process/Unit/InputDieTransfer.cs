@@ -943,6 +943,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisPickZ.EmgStop();
                     AxisPlaceZ.EmgStop();
                     AlarmPost((int)AlarmKeys.eInputStageAxesMoving);
+                    Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStage");
                     return -1;
                 }
                 if (Rotary != null && Rotary.IsAnyAxisMoving())
@@ -952,6 +953,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisPickZ.EmgStop();
                     AxisPlaceZ.EmgStop();
                     AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
+                    Log.Write(UnitName, "[MovePickZAndPinZByOffset] Rotary");
                     return -1;
                 }
                 // Ejector 다른 축(EjectorZ) 움직임 감시
@@ -963,6 +965,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisPickZ.EmgStop();
                     AxisPlaceZ.EmgStop();
                     AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
+                    Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStageEjector");
                     return -1;
                 }
 

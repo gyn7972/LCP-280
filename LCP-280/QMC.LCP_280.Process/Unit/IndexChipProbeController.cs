@@ -19,8 +19,9 @@ namespace QMC.LCP_280.Process.Unit
     public class IndexChipProbeController : BaseUnit<IndexChipProbeControllerConfig>
     {
         #region Config / Teaching
-        
-        
+
+        public IndexChipProbeControllerConfig IndexChipProbeControllerConfig => Config;
+
         #endregion
 
         #region Axes
