@@ -195,7 +195,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-        
         public int MovePositionAlignUp(int nIndex = 0, bool isFine = false)
         {
             Task<int> task = MovePositionAsyncAlignUp(nIndex, isFine);
@@ -371,6 +370,7 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
+
         // === AlignT_Backward ===
         public int MovePositionAlignTBackward(bool isFine = false)
         {
@@ -433,9 +433,16 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
+
         // === AlignT_Ready ===
         public int MovePositionAlignTReady(bool isFine = false)
         {
+            string readyName = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready.ToString();
+            if (InPosTeaching(readyName))
+            {
+                return 0;
+            }
+                
             Task<int> task = MovePositionAsyncAlignTReady(isFine);
             while (IsEndTask(task) == false)
             {
@@ -495,6 +502,52 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
+        public bool IsAlignZSafetyPos(double fallbackTolerance = 0.01,
+                                      bool useAxisInposTolerance = true,
+                                      bool treatMissingAsSafe = true)
+        {
+            if (AxisIndexZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = IndexLoadAlignerConfig;
+            if (cfg == null) return false;
+
+            // 우선순위: SafetyPos → SafetyZone
+            string[] candidates =
+            {
+                "SafetyPos",
+                IndexLoadAlignerConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidates)
+            {
+                var tp = cfg.GetTeachingPosition(name);
+                if (tp == null) continue;
+
+                // IndexZ 좌표가 실제 존재하는 티칭만 사용
+                if (tp.AxisPositions != null &&
+                    tp.AxisPositions.Keys.Any(k => string.Equals(k, AxisNames.IndexZ, System.StringComparison.OrdinalIgnoreCase)))
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe;
+
+            var tpFound = cfg.GetTeachingPosition(foundName);
+            if (tpFound == null) return false;
+
+            double target = tpFound.GetAxisPosition(AxisNames.IndexZ, 0.0);
+            double cur = AxisIndexZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (AxisIndexZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            return System.Math.Abs(cur - target) <= tol;
+        }
 
 
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
@@ -597,6 +650,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public ProcessState ManualState { get; set; }
         public int StepManual = 0;
+        public int ManualSocketIndex = 1;
         private int OnRunManual()
         {
             int ret = 0;
@@ -604,6 +658,17 @@ namespace QMC.LCP_280.Process.Unit
             switch (StepManual)
             {
                 case 0:
+                    break;
+                case 1:
+                    ret = AlignSocketOnce(ManualSocketIndex);
+                    if (ret != 0)
+                    {
+                        OnStop();
+                    }
+                    else
+                    {
+                        StepManual = 0;
+                    }
                     break;
             }
 
@@ -641,6 +706,65 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Seq 단위 동작 함수
+
+        
+        /// <summary>
+        /// Rotary(인덱스)가 정지 상태인지 즉시 확인.
+        /// - 정지면 0, 이동 중이면 -1 반환(알람 포스트).
+        /// - 대기는 수행하지 않는다(메인이 반복 호출/대기).
+        /// </summary>
+        public int IsRotaryIdle()
+        {
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ.EmgStop();
+                AxisAlignT.EmgStop();
+                AlarmPost((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// 소켓 1개에 대한 정렬 묶음
+        /// 순서: Z Up(해당 소켓) -> T Forward -> T Backward -> T Ready
+        /// 모든 축 이동은 안전 Async 버전 사용(내부 폴링).
+        /// </summary>
+        public int AlignSocketOnce(int socketIndex, bool isFine = false)
+        {
+            int bRtn = 0;
+            // 1) Rotary Idle Check
+            bRtn = IsRotaryIdle();
+            if (bRtn != 0) return -1;
+
+            // 2) T Ready
+            bRtn = MovePositionAlignTReady(isFine);
+            if (bRtn != 0) return -1;
+
+            // 3) Z Up
+            bRtn = MovePositionAlignUp(socketIndex, isFine);
+            if(bRtn != 0) 
+                return -1;
+
+            // 4) T Forward
+            bRtn = MovePositionAlignTForward(isFine);
+            if (bRtn != 0) 
+                return -1;
+
+            // 5) T Backward
+            bRtn = MovePositionAlignTBackward(isFine);
+            if (bRtn != 0) 
+                return -1;
+
+            // 6) T Ready
+            bRtn = MovePositionAlignTReady(isFine);
+            if (bRtn != 0) 
+                return -1;
+            
+            return bRtn;
+        }
+
+
         public int VisionAlign()
         {
             int nRet = -1;

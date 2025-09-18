@@ -322,7 +322,7 @@ namespace QMC.LCP_280.Process.Unit
                     AlarmPost((int)AlarmKeys.eInputStageEjectorZNotSafe);
                     return -1;
                 }
-                if (!InputDieTransfer.IsDieTransferPickZSafetyPos())
+                if (!InputDieTransfer.IsPickZSafetyPos())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     AlarmPost((int)AlarmKeys.eDieTransferPickZNotSafe);
@@ -394,7 +394,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // 2) DieTransfer PickZ Safety
-                if (InputDieTransfer != null && !InputDieTransfer.IsDieTransferPickZSafetyPos())
+                if (InputDieTransfer != null && !InputDieTransfer.IsPickZSafetyPos())
                     return (int)AlarmKeys.eDieTransferPickZNotSafe;
 
                 // 3) Feeder Z / Y Safety
@@ -516,7 +516,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // DieTransfer PickZ Safety
-                if (!InputDieTransfer.IsDieTransferPickZSafetyPos())
+                if (!InputDieTransfer.IsPickZSafetyPos())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -586,7 +586,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // DieTransfer PickZ Safety
-                if (!InputDieTransfer.IsDieTransferPickZSafetyPos())
+                if (!InputDieTransfer.IsPickZSafetyPos())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -659,7 +659,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // DieTransfer PickZ Safety
-                if (!InputDieTransfer.IsDieTransferPickZSafetyPos())
+                if (!InputDieTransfer.IsPickZSafetyPos())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -729,7 +729,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // DieTransfer PickZ Safety
-                if (!InputDieTransfer.IsDieTransferPickZSafetyPos())
+                if (!InputDieTransfer.IsPickZSafetyPos())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
