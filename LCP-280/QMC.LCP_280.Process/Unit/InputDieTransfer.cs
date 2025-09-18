@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Mail;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1600,6 +1601,9 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Seq 단위 동작 함수
+
+
+
         /// <summary>
         /// 첫번째 칩 XY 오프셋 취득 (Stage Center 기준). 실제 Mapping 연동 시 구현.
         /// 현재는 (0,0) 고정 반환. (TODO)
@@ -1848,6 +1852,9 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             
             int nRet = 0;
+
+            // config
+            //int nindxe = rotate.Index;
 
             double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
                                 AxisNames.LeftToolT);

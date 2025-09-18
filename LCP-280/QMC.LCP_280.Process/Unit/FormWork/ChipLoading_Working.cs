@@ -332,6 +332,9 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (InputStage != null)
                 {
+                    //manualSequenceControl.
+
+
                     // T_Align 등록
                     //manualSequenceControl.RegisterSequence(
                     //    "Stage_T_Align",
