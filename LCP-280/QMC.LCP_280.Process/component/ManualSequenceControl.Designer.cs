@@ -40,8 +40,6 @@ namespace QMC.LCP_280.Process.Component
             // 
             // _panelButtons
             // 
-            this._panelButtons.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
             this._panelButtons.Controls.Add(this._btnBack);
             this._panelButtons.Controls.Add(this._btnRecover);
             this._panelButtons.Controls.Add(this._btnStop);
@@ -62,15 +60,15 @@ namespace QMC.LCP_280.Process.Component
             this._btnBack.UseVisualStyleBackColor = true;
             this._btnBack.Click += new System.EventHandler(this.OnBackClick);
             // 
-            // _btnManual
+            // _btnRecover
             // 
-            this._btnManual.Location = new System.Drawing.Point(79, 5);
-            this._btnManual.Name = "_btnManual";
-            this._btnManual.Size = new System.Drawing.Size(90, 30);
-            this._btnManual.TabIndex = 1;
-            this._btnManual.Text = "Manual ¢º";
-            this._btnManual.UseVisualStyleBackColor = true;
-            this._btnManual.Click += new System.EventHandler(this.OnManualClick);
+            this._btnRecover.Location = new System.Drawing.Point(251, 5);
+            this._btnRecover.Name = "_btnRecover";
+            this._btnRecover.Size = new System.Drawing.Size(90, 30);
+            this._btnRecover.TabIndex = 3;
+            this._btnRecover.Text = "Recover";
+            this._btnRecover.UseVisualStyleBackColor = true;
+            this._btnRecover.Click += new System.EventHandler(this.OnRecoverClick);
             // 
             // _btnStop
             // 
@@ -82,15 +80,15 @@ namespace QMC.LCP_280.Process.Component
             this._btnStop.UseVisualStyleBackColor = true;
             this._btnStop.Click += new System.EventHandler(this.OnStopClick);
             // 
-            // _btnRecover
+            // _btnManual
             // 
-            this._btnRecover.Location = new System.Drawing.Point(251, 5);
-            this._btnRecover.Name = "_btnRecover";
-            this._btnRecover.Size = new System.Drawing.Size(90, 30);
-            this._btnRecover.TabIndex = 3;
-            this._btnRecover.Text = "Recover";
-            this._btnRecover.UseVisualStyleBackColor = true;
-            this._btnRecover.Click += new System.EventHandler(this.OnRecoverClick);
+            this._btnManual.Location = new System.Drawing.Point(79, 5);
+            this._btnManual.Name = "_btnManual";
+            this._btnManual.Size = new System.Drawing.Size(90, 30);
+            this._btnManual.TabIndex = 1;
+            this._btnManual.Text = "Manual ¢º";
+            this._btnManual.UseVisualStyleBackColor = true;
+            this._btnManual.Click += new System.EventHandler(this.OnManualClick);
             // 
             // _cboSequence
             // 
@@ -98,24 +96,25 @@ namespace QMC.LCP_280.Process.Component
             this._cboSequence.FormattingEnabled = true;
             this._cboSequence.Location = new System.Drawing.Point(3, 6);
             this._cboSequence.Name = "_cboSequence";
-            this._cboSequence.Size = new System.Drawing.Size(356, 20);
+            this._cboSequence.Size = new System.Drawing.Size(356, 23);
             this._cboSequence.TabIndex = 4;
             // 
             // _lstStep
             // 
-            this._lstStep.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this._lstStep.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this._lstStep.FormattingEnabled = true;
-            this._lstStep.ItemHeight = 12;
+            this._lstStep.ItemHeight = 15;
             this._lstStep.Location = new System.Drawing.Point(3, 79);
             this._lstStep.Name = "_lstStep";
-            this._lstStep.Size = new System.Drawing.Size(356, 208);
+            this._lstStep.Size = new System.Drawing.Size(356, 199);
             this._lstStep.TabIndex = 5;
             // 
             // ManualSequenceControl
             // 
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this._lstStep);
             this.Controls.Add(this._cboSequence);
             this.Controls.Add(this._panelButtons);

@@ -877,5 +877,10 @@ namespace QMC.LCP_280.Process.Component
                 SafeRefreshStates();
             }
         }
+
+        private void inputView_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

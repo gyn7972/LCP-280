@@ -1225,144 +1225,266 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
+
+        // 클래스 상단 필드들 근처 (ManualState / StepManual 선언 위/아래 적절한 위치에 추가)
+        // ===== Manual Step Signal 추가 =====
+        public event Action<InputDieTransfer, int, int> ManualStepCompleted; // (unit, stepNo, result)
+        public int LastManualStepNumber { get; private set; } = 0;
+        public int LastManualStepResult { get; private set; } = 0;
+        private TaskCompletionSource<int> _manualStepTcs;
+
+        private void CompleteManualStep(int step, int result)
+        {
+            LastManualStepNumber = step;
+            LastManualStepResult = result;
+
+            // 이벤트/대기 중인 Task 신호
+            try { ManualStepCompleted?.Invoke(this, step, result); } catch { }
+            _manualStepTcs?.TrySetResult(result);
+            _manualStepTcs = null;
+
+            // 기존 패턴 유지: StepManual = 0 으로 수동동작 종료
+            StepManual = 0;
+        }
+
+        public Task<int> WaitManualStepAsync(int expectedStep, CancellationToken ct = default(CancellationToken))
+        {
+            // 이미 끝난 경우 즉시 반환
+            if (StepManual == 0 && LastManualStepNumber == expectedStep)
+                return Task.FromResult(LastManualStepResult);
+
+            if (_manualStepTcs != null)
+                throw new InvalidOperationException("이미 다른 수동 Step 대기 중입니다.");
+
+            _manualStepTcs = new TaskCompletionSource<int>();
+
+            void Handler(InputDieTransfer u, int step, int result)
+            {
+                if (step == expectedStep)
+                {
+                    ManualStepCompleted -= Handler;
+                    _manualStepTcs.TrySetResult(result);
+                }
+            }
+            ManualStepCompleted += Handler;
+
+            if (ct.CanBeCanceled)
+            {
+                ct.Register(() =>
+                {
+                    ManualStepCompleted -= Handler;
+                    _manualStepTcs?.TrySetCanceled();
+                });
+            }
+
+            return _manualStepTcs.Task;
+        }
+
+        // ====== Manual 순차 루프 설정 ======
+        private const int MANUAL_FIRST_STEP = 1;
+        private const int MANUAL_BASE_LAST_STEP = 7; // 기본 마지막 스텝
+        public bool ManualSequentialLoop { get; set; } = false; // true 이면 1~N 반복
+        public bool UseCompositeStep8 { get; set; } = false;   // true 이면 1~8 반복(8은 복합)
+        private int ManualLastStep => UseCompositeStep8 ? 8 : MANUAL_BASE_LAST_STEP;
+
         public ProcessState ManualState { get; set; }
         public int StepManual = 0;
         private int OnRunManual()
         {
+            // 1) 현재 실행 중 Step 이 없는 상태(StepManual==0)이고 루프 모드라면 다음 Step 스케줄
+            if (ManualSequentialLoop && StepManual == 0)
+            {
+                int next = LastManualStepNumber + 1;
+                if (next < MANUAL_FIRST_STEP || next > ManualLastStep)
+                    next = MANUAL_FIRST_STEP;
+                StepManual = next; // 다음 Step 실행 예약
+                return 0;          // 다음 OnRun 호출 때 실제 수행
+            }
+
+            if (StepManual == 0)
+                return 0; // 대기 (비루프 모드이거나 외부에서 StepManual 세팅 대기)
+
+            int step = StepManual;
             int ret = 0;
 
-            if (StepManual == 1)
+            // 2) Step 실행 (기존 로직 그대로)
+            switch (step)
             {
-                ret = RaiseEjectorForPick();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
+                case 1:
+                    ret = RaiseEjectorForPick();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
                     ret = EjectorVacuumOn();
-                    if (ret != 0)
-                    {
-                        OnStop();
-                    }
-                    else
-                    {
-                        StepManual = 0;
-                    }
-                }
-            }
-            else if(StepManual == 2)
-            {
-                ret = ChipPickDown();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
-                    StepManual = 0;
-                }
-            }
-            else if (StepManual == 3)
-            {
-                ret = SyncPickPinUp();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
-                    StepManual = 0;
-                }
-            }
-            else if (StepManual == 4)
-            {
-                ret = SyncPickPinRetreat();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
-                    StepManual = 0;
-                }
-            }
-            else if (StepManual == 5)
-            {
-                ret = WaitRotarySupplyRequest();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
-                    ret = RotateToolTForPlace();
-                    if (ret != 0)
-                    {
-                        OnStop();
-                    }
-                    else
-                    {
-                        StepManual = 0;
-                    }
-                }
-            }
-            else if (StepManual == 6)
-            {
-                ret = PlaceChipDown();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
-                    StepManual = 0;
-                }
-            }
-            else if (StepManual == 7)
-            {
-                ret = ReleaseVacuumAndPlaceUp();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
-                    StepManual = 0;
-                    OnStop();
-                }
-            }
-            else if (StepManual == 8)
-            {
-                ret = ChipPickDown();
-                if (ret != 0)
-                {
-                    OnStop();
-                }
-                else
-                {
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                case 2:
+                    ret = ChipPickDown();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                case 3:
                     ret = SyncPickPinUp();
-                    if (ret != 0)
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                case 4:
+                    ret = SyncPickPinRetreat();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                case 5:
+                    ret = WaitRotarySupplyRequest();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    ret = RotateToolTForPlace();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                case 6:
+                    ret = PlaceChipDown();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                case 7:
+                    ret = ReleaseVacuumAndPlaceUp();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                case 8: // 복합 Step (옵션)
+                    if (!UseCompositeStep8)
                     {
-                        OnStop();
+                        // 사용하지 않는다면 무시 후 루프 재시작
+                        CompleteManualStep(step, 0);
+                        break;
                     }
-                    else
-                    {
-                        ret = SyncPickPinRetreat();
-                        if (ret != 0)
-                        {
-                            OnStop();
-                        }
-                        else
-                        {
-                            StepManual = 0;
-                        }
-                    }
-                }
+                    ret = ChipPickDown();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    ret = SyncPickPinUp();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    ret = SyncPickPinRetreat();
+                    if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
+                    CompleteManualStep(step, 0);
+                    break;
+
+                default:
+                    // 알 수 없는 Step -> 종료
+                    CompleteManualStep(step, -99);
+                    break;
             }
-            //OnStop();
+
+            // 3) CompleteManualStep 호출 시 StepManual=0 으로 리셋됨
+            //    루프 모드이면 다음 OnRunManual 진입 시 다시 다음 Step 스케줄
             return 0;
         }
+
+
+        //public ProcessState ManualState { get; set; }
+        //public int StepManual = 0;
+        //private int OnRunManual()
+        //{
+        //    int ret = 0;
+        //    // 기존 구조 유지, 각 Step 종료 지점에서 CompleteManualStep 호출
+        //    if (StepManual == 1)
+        //    {
+        //        ret = RaiseEjectorForPick();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(1, ret); 
+        //            return ret; }
+
+        //        ret = EjectorVacuumOn();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(1, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(1, 0);
+        //    }
+        //    else if (StepManual == 2)
+        //    {
+        //        ret = ChipPickDown();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(2, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(2, 0);
+        //    }
+        //    else if (StepManual == 3)
+        //    {
+        //        ret = SyncPickPinUp();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(3, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(3, 0);
+        //    }
+        //    else if (StepManual == 4)
+        //    {
+        //        ret = SyncPickPinRetreat();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(4, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(4, 0);
+        //    }
+        //    else if (StepManual == 5)
+        //    {
+        //        ret = WaitRotarySupplyRequest();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(5, ret); 
+        //            return ret; }
+
+        //        ret = RotateToolTForPlace();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(5, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(5, 0);
+        //    }
+        //    else if (StepManual == 6)
+        //    {
+        //        ret = PlaceChipDown();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(6, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(6, 0);
+        //    }
+        //    else if (StepManual == 7)
+        //    {
+        //        ret = ReleaseVacuumAndPlaceUp();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(7, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(7, 0);
+        //    }
+        //    else if (StepManual == 8)
+        //    {
+        //        // 복합 Step
+        //        ret = ChipPickDown();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(8, ret); 
+        //            return ret; }
+
+        //        ret = SyncPickPinUp();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(8, ret); 
+        //            return ret; }
+
+        //        ret = SyncPickPinRetreat();
+        //        if (ret != 0) 
+        //        { OnStop(); CompleteManualStep(8, ret); 
+        //            return ret; }
+
+        //        CompleteManualStep(8, 0);
+        //    }
+        //    return 0;
+        //}
 
         public override int OnStop() 
         { 
@@ -1384,67 +1506,71 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            //nRtn = RaiseEjectorForPick();
-            //if (nRtn != 0)
-            //{
-            //    return -1;
-            //}
-            //else
-            //{
-            //    nRtn = EjectorVacuumOn();
-            //    if (nRtn != 0)
-            //    {
-            //        return -1;
-            //    }
-            //    else
-            //    {
-            //        ret = ChipPickDown();
-            //        if (ret != 0)
-            //        {
-            //            return -1;
-            //        }
-            //        else
-            //        {
-            //            ret = SyncPickPinUp();
-            //            if (ret != 0)
-            //            {
-            //                return -1;
-            //            }
-            //            else
-            //            {
-            //                ret = SyncPickPinRetreat();
-            //                if (ret != 0)
-            //                {
-            //                    return -1;
-            //                }
-            //                else
-            //                {
-            //                    ret = RotateToolTForPlace();
-            //                    if (ret != 0)
-            //                    {
-            //                        return -1;
-            //                    }
-            //                    else
-            //                    {
-            //                        ret = PlaceChipDown();
-            //                        if (ret != 0)
-            //                        {
-            //                            return -1;
-            //                        }
-            //                        else
-            //                        {
-            //                            ret = ReleaseVacuumAndPlaceUp();
-            //                            if (ret != 0)
-            //                            {
-            //                                return -1;
-            //                            }
-            //                        }
-            //                    }
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
+            // Test 완료 후에.
+            return 0;
+
+
+            nRtn = RaiseEjectorForPick();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            else
+            {
+                nRtn = EjectorVacuumOn();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+                else
+                {
+                    nRtn = ChipPickDown();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+                    else
+                    {
+                        nRtn = SyncPickPinUp();
+                        if (nRtn != 0)
+                        {
+                            return -1;
+                        }
+                        else
+                        {
+                            nRtn = SyncPickPinRetreat();
+                            if (nRtn != 0)
+                            {
+                                return -1;
+                            }
+                            else
+                            {
+                                nRtn = RotateToolTForPlace();
+                                if (nRtn != 0)
+                                {
+                                    return -1;
+                                }
+                                else
+                                {
+                                    nRtn = PlaceChipDown();
+                                    if (nRtn != 0)
+                                    {
+                                        return -1;
+                                    }
+                                    else
+                                    {
+                                        nRtn = ReleaseVacuumAndPlaceUp();
+                                        if (nRtn != 0)
+                                        {
+                                            return -1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
 
             State = ProcessState.Complete;
             return 0;

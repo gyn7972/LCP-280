@@ -37,18 +37,24 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonTest2 = new System.Windows.Forms.Button();
             this.buttonTest = new System.Windows.Forms.Button();
             this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
+            this.btnPickUpDn = new QMC.Common.IndividualMenuButton();
             this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.btnPickUpDn = new QMC.Common.IndividualMenuButton();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.panel3 = new System.Windows.Forms.Panel();
             this.groupBoxImageView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxManual.SuspendLayout();
+            this.panel1.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.panel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // _btnVisionSetting
             // 
-            this._btnVisionSetting.Location = new System.Drawing.Point(1019, 296);
+            this._btnVisionSetting.Location = new System.Drawing.Point(1000, 307);
             this._btnVisionSetting.Name = "_btnVisionSetting";
             this._btnVisionSetting.Size = new System.Drawing.Size(110, 35);
             this._btnVisionSetting.TabIndex = 13;
@@ -58,7 +64,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // buttonDataManual
             // 
-            this.buttonDataManual.Location = new System.Drawing.Point(1145, 296);
+            this.buttonDataManual.Location = new System.Drawing.Point(1126, 307);
             this.buttonDataManual.Name = "buttonDataManual";
             this.buttonDataManual.Size = new System.Drawing.Size(95, 35);
             this.buttonDataManual.TabIndex = 14;
@@ -69,7 +75,7 @@ namespace QMC.LCP_280.Process.Unit
             // groupBoxImageView
             // 
             this.groupBoxImageView.Controls.Add(this._ChipLoadingCameraviewer);
-            this.groupBoxImageView.Location = new System.Drawing.Point(643, 12);
+            this.groupBoxImageView.Location = new System.Drawing.Point(624, 9);
             this.groupBoxImageView.Name = "groupBoxImageView";
             this.groupBoxImageView.Size = new System.Drawing.Size(370, 350);
             this.groupBoxImageView.TabIndex = 15;
@@ -114,7 +120,7 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManual.Controls.Add(this.buttonTest2);
             this.groupBoxManual.Controls.Add(this.buttonTest);
             this.groupBoxManual.Controls.Add(this.buttonPickUpNiddle_Move);
-            this.groupBoxManual.Location = new System.Drawing.Point(618, 370);
+            this.groupBoxManual.Location = new System.Drawing.Point(630, 420);
             this.groupBoxManual.Name = "groupBoxManual";
             this.groupBoxManual.Size = new System.Drawing.Size(418, 412);
             this.groupBoxManual.TabIndex = 16;
@@ -379,35 +385,6 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
             this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
             // 
-            // manualSequenceControl
-            // 
-            this.manualSequenceControl.Location = new System.Drawing.Point(1019, 12);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.Size = new System.Drawing.Size(362, 295);
-            this.manualSequenceControl.TabIndex = 19;
-            // 
-            // dioControl
-            // 
-            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(6, 370);
-            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.dioControl.Name = "dioControl";
-            this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(606, 341);
-            this.dioControl.TabIndex = 17;
-            // 
-            // teachingPositionControl
-            // 
-            this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
-            this.teachingPositionControl.Location = new System.Drawing.Point(6, 12);
-            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.teachingPositionControl.Name = "teachingPositionControl";
-            this.teachingPositionControl.ShowCancelButton = true;
-            this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(631, 350);
-            this.teachingPositionControl.TabIndex = 18;
-            this.teachingPositionControl.UnitName = null;
-            // 
             // btnPickUpDn
             // 
             this.btnPickUpDn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -427,21 +404,82 @@ namespace QMC.LCP_280.Process.Unit
             this.btnPickUpDn.UseVisualStyleBackColor = false;
             this.btnPickUpDn.Click += new System.EventHandler(this.btnPickUpDn_Click);
             // 
+            // manualSequenceControl
+            // 
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualSequenceControl.Location = new System.Drawing.Point(0, 0);
+            this.manualSequenceControl.Name = "manualSequenceControl";
+            this.manualSequenceControl.Size = new System.Drawing.Size(380, 292);
+            this.manualSequenceControl.TabIndex = 19;
+            // 
+            // dioControl
+            // 
+            this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
+            this.dioControl.Location = new System.Drawing.Point(0, 0);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.dioControl.Name = "dioControl";
+            this.dioControl.RefreshIntervalMs = 400;
+            this.dioControl.Size = new System.Drawing.Size(615, 400);
+            this.dioControl.TabIndex = 17;
+            // 
+            // teachingPositionControl
+            // 
+            this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
+            this.teachingPositionControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.teachingPositionControl.Location = new System.Drawing.Point(0, 0);
+            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.teachingPositionControl.Name = "teachingPositionControl";
+            this.teachingPositionControl.ShowCancelButton = true;
+            this.teachingPositionControl.ShowSaveButton = true;
+            this.teachingPositionControl.Size = new System.Drawing.Size(615, 400);
+            this.teachingPositionControl.TabIndex = 18;
+            this.teachingPositionControl.UnitName = null;
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.dioControl);
+            this.panel1.Location = new System.Drawing.Point(8, 420);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(615, 400);
+            this.panel1.TabIndex = 20;
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.teachingPositionControl);
+            this.panel2.Location = new System.Drawing.Point(8, 9);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(615, 400);
+            this.panel2.TabIndex = 21;
+            // 
+            // panel3
+            // 
+            this.panel3.Controls.Add(this.manualSequenceControl);
+            this.panel3.Location = new System.Drawing.Point(1000, 9);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(380, 292);
+            this.panel3.TabIndex = 22;
+            // 
             // ChipLoading_Working
             // 
-            this.ClientSize = new System.Drawing.Size(1389, 848);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1580, 939);
+            this.Controls.Add(this.panel3);
+            this.Controls.Add(this.panel2);
+            this.Controls.Add(this.panel1);
             this.Controls.Add(this.groupBoxManual);
-            this.Controls.Add(this.manualSequenceControl);
             this.Controls.Add(this.groupBoxImageView);
             this.Controls.Add(this.buttonDataManual);
             this.Controls.Add(this._btnVisionSetting);
-            this.Controls.Add(this.dioControl);
-            this.Controls.Add(this.teachingPositionControl);
             this.Name = "ChipLoading_Working";
             this.Text = "ChipLoading Working";
             this.groupBoxImageView.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.groupBoxManual.ResumeLayout(false);
+            this.panel1.ResumeLayout(false);
+            this.panel2.ResumeLayout(false);
+            this.panel3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -476,5 +514,8 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnPlaceChipDown;
         private IndividualMenuButton btnReleaseVacuumAndPlaceUp;
         private IndividualMenuButton btnPickUpDn;
+        private Panel panel1;
+        private Panel panel2;
+        private Panel panel3;
     }
 }

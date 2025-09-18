@@ -36,32 +36,34 @@
             this.buttonTest = new System.Windows.Forms.Button();
             this.comboBoxIndexSocketNo = new System.Windows.Forms.ComboBox();
             this.labelIndexSocketNo = new System.Windows.Forms.Label();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.panel1 = new System.Windows.Forms.Panel();
             this.groupBoxManual.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // dioControl
             // 
-            this.dioControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(6, 450);
+            this.dioControl.Location = new System.Drawing.Point(0, 0);
             this.dioControl.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.dioControl.Name = "dioControl";
             this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(591, 329);
+            this.dioControl.Size = new System.Drawing.Size(615, 400);
             this.dioControl.TabIndex = 16;
             // 
             // teachingPositionControl
             // 
-            this.teachingPositionControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
             this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
-            this.teachingPositionControl.Location = new System.Drawing.Point(6, 5);
+            this.teachingPositionControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.teachingPositionControl.Location = new System.Drawing.Point(0, 0);
             this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.teachingPositionControl.Name = "teachingPositionControl";
             this.teachingPositionControl.ShowCancelButton = true;
             this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(591, 438);
+            this.teachingPositionControl.Size = new System.Drawing.Size(615, 400);
             this.teachingPositionControl.TabIndex = 15;
             this.teachingPositionControl.UnitName = null;
             // 
@@ -69,11 +71,11 @@
             // 
             this.manualSequenceControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.manualSequenceControl.Location = new System.Drawing.Point(1033, 5);
+            this.manualSequenceControl.Location = new System.Drawing.Point(629, 7);
             this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.manualSequenceControl.MinimumSize = new System.Drawing.Size(297, 250);
             this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.Size = new System.Drawing.Size(390, 438);
+            this.manualSequenceControl.Size = new System.Drawing.Size(387, 338);
             this.manualSequenceControl.TabIndex = 14;
             // 
             // groupBoxManual
@@ -82,7 +84,7 @@
             this.groupBoxManual.Controls.Add(this.comboBoxIndexSocketNo);
             this.groupBoxManual.Controls.Add(this.btnInputMAlign);
             this.groupBoxManual.Controls.Add(this.buttonTest);
-            this.groupBoxManual.Location = new System.Drawing.Point(616, 450);
+            this.groupBoxManual.Location = new System.Drawing.Point(629, 418);
             this.groupBoxManual.Name = "groupBoxManual";
             this.groupBoxManual.Size = new System.Drawing.Size(395, 412);
             this.groupBoxManual.TabIndex = 17;
@@ -110,7 +112,7 @@
             // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(278, 266);
+            this.buttonTest.Location = new System.Drawing.Point(274, 20);
             this.buttonTest.Name = "buttonTest";
             this.buttonTest.Size = new System.Drawing.Size(104, 35);
             this.buttonTest.TabIndex = 18;
@@ -119,6 +121,7 @@
             // 
             // comboBoxIndexSocketNo
             // 
+            this.comboBoxIndexSocketNo.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.comboBoxIndexSocketNo.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.comboBoxIndexSocketNo.FormattingEnabled = true;
             this.comboBoxIndexSocketNo.Location = new System.Drawing.Point(138, 21);
@@ -136,20 +139,38 @@
             this.labelIndexSocketNo.TabIndex = 22;
             this.labelIndexSocketNo.Text = "IndexSocketNo";
             // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.teachingPositionControl);
+            this.panel2.Location = new System.Drawing.Point(8, 7);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(615, 400);
+            this.panel2.TabIndex = 23;
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.dioControl);
+            this.panel1.Location = new System.Drawing.Point(8, 418);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(615, 400);
+            this.panel1.TabIndex = 22;
+            // 
             // Process_Working
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1445, 939);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1580, 939);
+            this.Controls.Add(this.panel2);
+            this.Controls.Add(this.panel1);
             this.Controls.Add(this.groupBoxManual);
-            this.Controls.Add(this.dioControl);
-            this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "Process_Working";
             this.Text = "Process_Working";
             this.groupBoxManual.ResumeLayout(false);
             this.groupBoxManual.PerformLayout();
+            this.panel2.ResumeLayout(false);
+            this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -163,5 +184,7 @@
         private System.Windows.Forms.Button buttonTest;
         private System.Windows.Forms.Label labelIndexSocketNo;
         private System.Windows.Forms.ComboBox comboBoxIndexSocketNo;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.Panel panel1;
     }
 }

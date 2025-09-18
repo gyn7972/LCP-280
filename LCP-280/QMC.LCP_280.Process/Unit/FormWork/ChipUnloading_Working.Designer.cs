@@ -48,7 +48,6 @@
             // 
             // _ChipUnloadingCameraviewer
             // 
-            this._ChipUnloadingCameraviewer.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left))); // fixed size
             this._ChipUnloadingCameraviewer.BackColor = System.Drawing.Color.Black;
             this._ChipUnloadingCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this._ChipUnloadingCameraviewer.Camera = null;
@@ -57,8 +56,8 @@
             this._ChipUnloadingCameraviewer.InputImage = null;
             this._ChipUnloadingCameraviewer.IsViewCustomizedImage = false;
             this._ChipUnloadingCameraviewer.Location = new System.Drawing.Point(535, 12);
-            this._ChipUnloadingCameraviewer.MinimumSize = new System.Drawing.Size(370, 350);
             this._ChipUnloadingCameraviewer.MaximumSize = new System.Drawing.Size(370, 350);
+            this._ChipUnloadingCameraviewer.MinimumSize = new System.Drawing.Size(370, 350);
             this._ChipUnloadingCameraviewer.Name = "_ChipUnloadingCameraviewer";
             this._ChipUnloadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._ChipUnloadingCameraviewer.Simulated = false;
@@ -73,10 +72,12 @@
             // 
             this.dioControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.dioControl.Location = new System.Drawing.Point(12, 362);
+            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
+            this.dioControl.Location = new System.Drawing.Point(12, 550);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dioControl.Name = "dioControl";
             this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(517, 263);
+            this.dioControl.Size = new System.Drawing.Size(833, 263);
             this.dioControl.TabIndex = 16;
             // 
             // teachingPositionControl
@@ -85,10 +86,11 @@
             | System.Windows.Forms.AnchorStyles.Left)));
             this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
             this.teachingPositionControl.Location = new System.Drawing.Point(12, 6);
+            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.teachingPositionControl.Name = "teachingPositionControl";
             this.teachingPositionControl.ShowCancelButton = true;
             this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(517, 350);
+            this.teachingPositionControl.Size = new System.Drawing.Size(517, 538);
             this.teachingPositionControl.TabIndex = 15;
             this.teachingPositionControl.UnitName = null;
             // 
@@ -96,16 +98,17 @@
             // 
             this.manualSequenceControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.manualSequenceControl.Location = new System.Drawing.Point(911, 6);
+            this.manualSequenceControl.Location = new System.Drawing.Point(1227, 6);
             this.manualSequenceControl.MinimumSize = new System.Drawing.Size(260, 200);
             this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.Size = new System.Drawing.Size(341, 350);
+            this.manualSequenceControl.Size = new System.Drawing.Size(341, 538);
             this.manualSequenceControl.TabIndex = 14;
             // 
             // ChipUnloading_Working
             // 
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None; // disable DPI/font autoscale to keep design sizes
-            this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1580, 939);
             this.Controls.Add(this._btnVisionSetting);
             this.Controls.Add(this._ChipUnloadingCameraviewer);
             this.Controls.Add(this.dioControl);

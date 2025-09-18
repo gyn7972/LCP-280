@@ -3,6 +3,7 @@ using QMC.LCP_280.Process.Component; // DIO / teaching controls
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;
@@ -351,8 +352,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             if (Equipment == null)
                 return;
             var unitName = "IndexLoadAligner";
-
             int selSocket = 1;
+
+            CancellationTokenSource cts = null;
             try
             {
                 if (comboBoxIndexSocketNo != null)
@@ -376,50 +378,26 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 IndexLoadAligner.StepManual = 1;
                 var result = await Equipment.StartUnitAsync(unitName);
 
-                if (!result)
-                {
-                    Log.Write("Process_Working", $"[InputMAlign][ERROR] Unit '{unitName}' 시작 실패 (Socket={selSocket})");
-                    return;
-                }
+                cts = new CancellationTokenSource();
+                int rc = await IndexLoadAligner.WaitManualStepAsync(1, cts.Token);
 
-                Log.Write("Process_Working", $"[InputMAlign] Unit '{unitName}' 실행 중... (Socket={selSocket})");
-
-                // 진행 모니터링 (최대 60초)
-                const int timeoutMs = 60000;
-                int start = Environment.TickCount;
-                bool done = false;
-
-                while (Environment.TickCount - start < timeoutMs)
-                {
-                    // 완료 조건: StepManual == 0 (수동 스텝 종료) 또는 에러 상태
-                    if (IndexLoadAligner.StepManual == 0)
-                    {
-                        done = true;
-                        break;
-                    }
-
-                    if (IndexLoadAligner.State == Common.Unit.BaseUnit.ProcessState.Error)
-                    {
-                        Log.Write("Process_Working", $"[InputMAlign][ERROR] 실행 중 에러 상태 전환 (Socket={selSocket})");
-                        return;
-                    }
-
-                    await Task.Delay(100);
-                }
-
-                if (!done)
-                {
-                    Log.Write("Process_Working", $"[InputMAlign][TIMEOUT] 60초 내 완료되지 않음 (Socket={selSocket}, Step={IndexLoadAligner.StepManual})");
-                }
+                if (rc == 0)
+                    MessageBox.Show(this, "Step1 완료", "OK",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
                 else
-                {
-                    Log.Write("Process_Working", $"[InputMAlign] 완료 (Socket={selSocket})");
-                }
+                    MessageBox.Show(this, $"Step1 실패 (rc={rc})", "Fail",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            catch (Exception ex) { Log.Write(ex); }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show(this, "취소됨", "Canceled",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
             finally
             {
                 btnInputMAlign.Enabled = true;
+                cts?.Dispose();
             }
         }
     }

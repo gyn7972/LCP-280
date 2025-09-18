@@ -38,10 +38,11 @@
             this.dioControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(12, 368);
+            this.dioControl.Location = new System.Drawing.Point(14, 460);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.dioControl.Name = "dioControl";
             this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(517, 263);
+            this.dioControl.Size = new System.Drawing.Size(726, 329);
             this.dioControl.TabIndex = 15;
             // 
             // teachingPositionControl
@@ -49,11 +50,12 @@
             this.teachingPositionControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
-            this.teachingPositionControl.Location = new System.Drawing.Point(12, 12);
+            this.teachingPositionControl.Location = new System.Drawing.Point(14, 15);
+            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
             this.teachingPositionControl.Name = "teachingPositionControl";
             this.teachingPositionControl.ShowCancelButton = true;
             this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(517, 350);
+            this.teachingPositionControl.Size = new System.Drawing.Size(591, 438);
             this.teachingPositionControl.TabIndex = 14;
             this.teachingPositionControl.UnitName = null;
             // 
@@ -61,21 +63,23 @@
             // 
             this.manualSequenceControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.manualSequenceControl.Location = new System.Drawing.Point(911, 12);
-            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(260, 200);
+            this.manualSequenceControl.Location = new System.Drawing.Point(1176, 15);
+            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(297, 250);
             this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.Size = new System.Drawing.Size(341, 350);
+            this.manualSequenceControl.Size = new System.Drawing.Size(390, 438);
             this.manualSequenceControl.TabIndex = 13;
             // 
-            // WaferBin_Working
+            // OutputWafer_Working
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1580, 939);
             this.Controls.Add(this.dioControl);
             this.Controls.Add(this.teachingPositionControl);
             this.Controls.Add(this.manualSequenceControl);
-            this.Name = "WaferBin_Working";
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.Name = "OutputWafer_Working";
             this.Text = "WaferBin_Working";
             this.ResumeLayout(false);
 
