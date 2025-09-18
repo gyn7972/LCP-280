@@ -55,10 +55,10 @@ namespace QMC.Common.Alarm
             lock (_lock)
             {
                 // 1. 알람 리스트에 안전하게 추가
-                if(m_Alarms.Where(a=>a.Code == alarm.Code).Count() ==0)
+                CheckAlarmGrade(alarm.Grade);
+                if (m_Alarms.Where(a=>a.Code == alarm.Code).Count() ==0)
                 {
                     m_Alarms.Add(alarm);
-
                 }
                 else
                 {
@@ -127,6 +127,34 @@ namespace QMC.Common.Alarm
             }
 
             // PostAlarm 호출은 필요 시 추가 가능
+        }
+
+
+        private void CheckAlarmGrade(string strGrade)
+        {
+            switch (strGrade)
+            {
+                case "EmergencyStop":
+                    Stop();
+                    break;
+                case "Error":
+                    CycleStop();
+                    break;
+                case "Inform":
+                    break;
+                case "Warning":
+                    break;
+            }
+        }
+
+        private void CycleStop()
+        {
+            EquipmentLocator.Instance.StopAllUnitsAsync();
+        }
+
+        private void Stop()
+        {
+            EquipmentLocator.Instance.StopAllUnitsAsync();
         }
 
         public void ClearAllAlarms()

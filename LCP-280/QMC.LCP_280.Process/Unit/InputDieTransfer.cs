@@ -1202,30 +1202,39 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                switch (State)
+                try
                 {
-                    case ProcessState.Manual:
-                        ret = OnRunManual();
-                        break;
-                    case ProcessState.Ready:
-                        ret = OnRunReady();
-                        break;
-                    case ProcessState.Work:
-                        ret = OnRunWork();
-                        break;
-                    case ProcessState.Complete:
-                        ret = OnRunComplete();
-                        break;
-                    default:
-                        if (ManualState == ProcessState.Manual)
-                        {
-                            this.State = ProcessState.Manual;
-                        }
-                        else
-                        {
-                            this.State = ProcessState.Ready;
-                        }
-                        break;
+
+                    switch (State)
+                    {
+                        case ProcessState.Manual:
+                            ret = OnRunManual();
+                            break;
+                        case ProcessState.Ready:
+                            ret = OnRunReady();
+                            break;
+                        case ProcessState.Work:
+                            ret = OnRunWork();
+                            break;
+                        case ProcessState.Complete:
+                            ret = OnRunComplete();
+                            break;
+                        default:
+                            if (ManualState == ProcessState.Manual)
+                            {
+                                this.State = ProcessState.Manual;
+                            }
+                            else
+                            {
+                                this.State = ProcessState.Ready;
+                            }
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ret = -1;
+                    
                 }
             }
 
@@ -1529,62 +1538,45 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-            else
+
+            nRtn = EjectorVacuumOn();
+            if (nRtn != 0)
             {
-                nRtn = EjectorVacuumOn();
-                if (nRtn != 0)
-                {
-                    return -1;
-                }
-                else
-                {
-                    nRtn = ChipPickDown();
-                    if (nRtn != 0)
-                    {
-                        return -1;
-                    }
-                    else
-                    {
-                        nRtn = SyncPickPinUp();
-                        if (nRtn != 0)
-                        {
-                            return -1;
-                        }
-                        else
-                        {
-                            nRtn = SyncPickPinRetreat();
-                            if (nRtn != 0)
-                            {
-                                return -1;
-                            }
-                            else
-                            {
-                                nRtn = RotateToolTForPlace();
-                                if (nRtn != 0)
-                                {
-                                    return -1;
-                                }
-                                else
-                                {
-                                    nRtn = PlaceChipDown();
-                                    if (nRtn != 0)
-                                    {
-                                        return -1;
-                                    }
-                                    else
-                                    {
-                                        nRtn = ReleaseVacuumAndPlaceUp();
-                                        if (nRtn != 0)
-                                        {
-                                            return -1;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                return -1;
             }
+
+            nRtn = ChipPickDown();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = SyncPickPinUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = SyncPickPinRetreat();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = RotateToolTForPlace();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = PlaceChipDown();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            nRtn = ReleaseVacuumAndPlaceUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
 
             State = ProcessState.Complete;
             return 0;

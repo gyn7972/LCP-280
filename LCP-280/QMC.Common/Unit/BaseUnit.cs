@@ -1,4 +1,5 @@
 // QMC.Common\Unit\BaseUnit.cs
+using Cognex.VisionPro.Implementation.Internal;
 using Ivi.Visa;
 using QMC.Common;
 using QMC.Common.Alarm;
@@ -56,6 +57,7 @@ namespace QMC.Common.Unit
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
         private bool m_bExit;
 
+        
         public string UnitName { get; set; }
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
@@ -183,7 +185,20 @@ namespace QMC.Common.Unit
 
         public int Start()
         {
+            if (m_workThread != null && RunMode == UnitRunMode.Auto)
+            {
+                m_bExit = true;
+                while (true)
+                {
+                    if(RunMode == UnitRunMode.Manual)
+                    {
+                        break;
+                    }
+                }
+            }
+
             SetRunMode(UnitRunMode.Auto);
+            
             m_bExit = false;
             m_workThread = new Thread(OnMainProcedure) { IsBackground = true };
             m_workThread.Start();
@@ -228,6 +243,21 @@ namespace QMC.Common.Unit
 
             while (true)
             {
+                if(State == ProcessState.Manual)
+                {
+                    switch (EquipmentLocator.Instance.EqState)
+                    {
+                        case EquipmentState.Stopped:
+                        case EquipmentState.Error:
+                        case EquipmentState.Stopping:
+                            m_bExit = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                
+
                 if (m_bExit) 
                     break;
 
@@ -236,6 +266,7 @@ namespace QMC.Common.Unit
                     Log.Write(this, $"OnRun Return: {ret}");
                     break;
                 }
+                
                 Thread.Sleep(1);
             }
             OnStop();
