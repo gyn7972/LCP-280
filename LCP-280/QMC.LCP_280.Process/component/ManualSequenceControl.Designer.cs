@@ -29,10 +29,10 @@ namespace QMC.LCP_280.Process.Component
         private void InitializeComponent()
         {
             this._panelButtons = new System.Windows.Forms.Panel();
-            this._btnBack = new System.Windows.Forms.Button();
+            this._btnRun = new System.Windows.Forms.Button();
             this._btnRecover = new System.Windows.Forms.Button();
             this._btnStop = new System.Windows.Forms.Button();
-            this._btnManual = new System.Windows.Forms.Button();
+            this._btnNext = new System.Windows.Forms.Button();
             this._cboSequence = new System.Windows.Forms.ComboBox();
             this._lstSteps = new System.Windows.Forms.ListBox();
             this._panelButtons.SuspendLayout();
@@ -40,30 +40,31 @@ namespace QMC.LCP_280.Process.Component
             // 
             // _panelButtons
             // 
-            this._panelButtons.Controls.Add(this._btnBack);
+            this._panelButtons.Controls.Add(this._btnRun);
             this._panelButtons.Controls.Add(this._btnRecover);
             this._panelButtons.Controls.Add(this._btnStop);
-            this._panelButtons.Controls.Add(this._btnManual);
+            this._panelButtons.Controls.Add(this._btnNext);
             this._panelButtons.Location = new System.Drawing.Point(2, 26);
-            this._panelButtons.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this._panelButtons.Margin = new System.Windows.Forms.Padding(2);
             this._panelButtons.Name = "_panelButtons";
             this._panelButtons.Size = new System.Drawing.Size(285, 32);
             this._panelButtons.TabIndex = 0;
             // 
-            // _btnBack
+            // _btnRun
             // 
-            this._btnBack.Location = new System.Drawing.Point(2, 4);
-            this._btnBack.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this._btnBack.Name = "_btnBack";
-            this._btnBack.Size = new System.Drawing.Size(56, 24);
-            this._btnBack.TabIndex = 0;
-            this._btnBack.Text = "Back";
-            this._btnBack.UseVisualStyleBackColor = true;
+            this._btnRun.Location = new System.Drawing.Point(2, 4);
+            this._btnRun.Margin = new System.Windows.Forms.Padding(2);
+            this._btnRun.Name = "_btnRun";
+            this._btnRun.Size = new System.Drawing.Size(56, 24);
+            this._btnRun.TabIndex = 0;
+            this._btnRun.Text = "Run";
+            this._btnRun.UseVisualStyleBackColor = true;
+            this._btnRun.Click += new System.EventHandler(this._btnRun_Click);
             // 
             // _btnRecover
             // 
             this._btnRecover.Location = new System.Drawing.Point(201, 4);
-            this._btnRecover.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this._btnRecover.Margin = new System.Windows.Forms.Padding(2);
             this._btnRecover.Name = "_btnRecover";
             this._btnRecover.Size = new System.Drawing.Size(72, 24);
             this._btnRecover.TabIndex = 3;
@@ -73,30 +74,30 @@ namespace QMC.LCP_280.Process.Component
             // _btnStop
             // 
             this._btnStop.Location = new System.Drawing.Point(140, 4);
-            this._btnStop.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this._btnStop.Margin = new System.Windows.Forms.Padding(2);
             this._btnStop.Name = "_btnStop";
             this._btnStop.Size = new System.Drawing.Size(56, 24);
             this._btnStop.TabIndex = 2;
             this._btnStop.Text = "Stop";
             this._btnStop.UseVisualStyleBackColor = true;
             // 
-            // _btnManual
+            // _btnNext
             // 
-            this._btnManual.Location = new System.Drawing.Point(63, 4);
-            this._btnManual.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this._btnManual.Name = "_btnManual";
-            this._btnManual.Size = new System.Drawing.Size(72, 24);
-            this._btnManual.TabIndex = 1;
-            this._btnManual.Text = "Manual ¢º";
-            this._btnManual.UseVisualStyleBackColor = true;
-            this._btnManual.Click += new System.EventHandler(this._btnManual_Click);
+            this._btnNext.Location = new System.Drawing.Point(63, 4);
+            this._btnNext.Margin = new System.Windows.Forms.Padding(2);
+            this._btnNext.Name = "_btnNext";
+            this._btnNext.Size = new System.Drawing.Size(72, 24);
+            this._btnNext.TabIndex = 1;
+            this._btnNext.Text = "Next ¢º";
+            this._btnNext.UseVisualStyleBackColor = true;
+            this._btnNext.Click += new System.EventHandler(this._btnNext_Click);
             // 
             // _cboSequence
             // 
             this._cboSequence.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this._cboSequence.FormattingEnabled = true;
             this._cboSequence.Location = new System.Drawing.Point(2, 5);
-            this._cboSequence.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this._cboSequence.Margin = new System.Windows.Forms.Padding(2);
             this._cboSequence.Name = "_cboSequence";
             this._cboSequence.Size = new System.Drawing.Size(286, 20);
             this._cboSequence.TabIndex = 4;
@@ -109,7 +110,7 @@ namespace QMC.LCP_280.Process.Component
             this._lstSteps.FormattingEnabled = true;
             this._lstSteps.ItemHeight = 12;
             this._lstSteps.Location = new System.Drawing.Point(2, 63);
-            this._lstSteps.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this._lstSteps.Margin = new System.Windows.Forms.Padding(2);
             this._lstSteps.Name = "_lstSteps";
             this._lstSteps.Size = new System.Drawing.Size(286, 160);
             this._lstSteps.TabIndex = 5;
@@ -121,7 +122,7 @@ namespace QMC.LCP_280.Process.Component
             this.Controls.Add(this._lstSteps);
             this.Controls.Add(this._cboSequence);
             this.Controls.Add(this._panelButtons);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "ManualSequenceControl";
             this.Size = new System.Drawing.Size(290, 236);
             this._panelButtons.ResumeLayout(false);
@@ -132,11 +133,11 @@ namespace QMC.LCP_280.Process.Component
         #endregion
 
         private System.Windows.Forms.Panel _panelButtons;
-        private System.Windows.Forms.Button _btnManual;
+        private System.Windows.Forms.Button _btnNext;
         private System.Windows.Forms.Button _btnStop;
         private System.Windows.Forms.Button _btnRecover;
         private System.Windows.Forms.ComboBox _cboSequence;
         private System.Windows.Forms.ListBox _lstSteps;
-        private System.Windows.Forms.Button _btnBack;
+        private System.Windows.Forms.Button _btnRun;
     }
 }

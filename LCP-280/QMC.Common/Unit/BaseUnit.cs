@@ -720,8 +720,25 @@ namespace QMC.Common.Unit
             Task<int> task = null;
             if (func != null && !IsRunning)
             {
+
                 CurrentFunc = func;
-                task = Task.Run(() => func(false));
+                task = Task.Factory.StartNew(() =>
+                    {
+                        try
+                        {
+                            if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
+                            {
+                                string threadName = "ManualRun_" + UnitName + "_" + CurrentFunc.Method.Name;
+                                Thread.CurrentThread.Name = threadName;
+
+                            }
+                        }
+                        catch { }
+
+
+                        return func(false);
+                    }
+                );
             }
             return task;
         }
