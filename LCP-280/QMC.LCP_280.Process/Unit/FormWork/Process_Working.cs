@@ -83,6 +83,30 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             EnsureInitialized();
         }
 
+        #region Sequences
+        private void InitSequences()
+        {
+            try
+            {
+                // 최신 Equipment 등록본으로 다시 참조 갱신 (폼 생성 후 재초기화 상황 대비)
+                IndexLoadAligner = TryGetUnit<IndexLoadAligner>("IndexLoadAligner");
+                IndexChipProbeController = TryGetUnit<IndexChipProbeController>("IndexChipProbeController");
+
+                if (IndexLoadAligner != null)
+                {
+                    manualSequenceControl.ParentUnit = IndexLoadAligner; // 시퀀스 등록 대상 유닛 지정
+                }
+
+                if(IndexChipProbeController != null)
+                {
+                    manualSequenceControlProbe.ParentUnit = IndexChipProbeController;
+                }
+
+            }
+            catch { }
+        }
+        #endregion
+
         private void EnsureInitialized()
         {
             if (_initialized) return;
@@ -311,12 +335,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         }
         #endregion
 
-        #region Manual Sequence Placeholder
-        private void InitSequences()
-        {
-        }
-        #endregion
-
         private void Process_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
         }
@@ -393,6 +411,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 btnInputMAlign.Enabled = true;
                 cts?.Dispose();
             }
+        }
+
+        private void comboBoxIndexSocketNo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            //Rotary.
         }
     }
 }

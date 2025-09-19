@@ -561,59 +561,56 @@ namespace QMC.Common.Unit
                 Log.Write(UnitName, "MoveAxisWithSafety", $"Axis not found : {axisKeyOrName}");
                 return -1;
             }
-            return MoveAxisPositionOne(axis, target, isFine);
+            return OnMoveAxisPositionOne(axis, target, isFine);
         }
 
         /// <summary>
         /// 단일 축 안전 이동(동기). CheckMoveSafety != 0 이면 모든 축 EmgStop 후 알람.
         /// </summary>
-        public virtual int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
-        {
-            if (axis == null) return -1;
+        //public virtual int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
+        //{
+        //    if (axis == null) return -1;
 
-            var task = MoveAxisWithSafetyAsync(axis, target, isFine);
-            while (!IsEndTask(task))
-            {
-                int alarmCode = CheckMoveSafety(axis);
-                if (alarmCode != 0)
-                {
-                    foreach (var ax in Axes.Values)
-                    {
-                        try { ax?.EmgStop(); } catch { }
-                    }
-                    PostAlarm(alarmCode);
-                    return -1;
-                }
-                Thread.Sleep(0);
-            }
-            return task.Result;
-        }
+        //    var task = MoveAxisPositionOneAsync(axis, target, isFine);
+        //    while (!IsEndTask(task))
+        //    {
+        //        int alarmCode = CheckMoveSafety(axis);
+        //        if (alarmCode != 0)
+        //        {
+        //            foreach (var ax in Axes.Values)
+        //            {
+        //                try { ax?.EmgStop(); } catch { }
+        //            }
+        //            PostAlarm(alarmCode);
+        //            return -1;
+        //        }
+        //        Thread.Sleep(0);
+        //    }
+        //    return task.Result;
+        //}
 
         /// <summary>
         /// 단일 축 안전 이동(비동기).
         /// </summary>
-        public virtual Task<int> MoveAxisWithSafetyAsync(MotionAxis axis, double target, bool isFine = false)
-            => Task.Run(() => OnMoveAxisWithSafety(axis, target, isFine));
+        public virtual Task<int> MoveAxisPositionOneAsync(MotionAxis axis, double target, bool isFine = false)
+            => Task.Run(() => OnMoveAxisPositionOne(axis, target, isFine));
 
         /// <summary>
         /// 실제 이동 실행 (파생 Override 가능).
         /// </summary>
-        public virtual int OnMoveAxisWithSafety(MotionAxis axis, double target, bool isFine = false)
+        public virtual int OnMoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) 
                 return -1;
 
             try
             {
-
                 LogAxisMove(axis, target, isFine);
                 var cfg = axis.Config;
                 double cur = axis.GetPosition();
                 if (cfg != null && Math.Abs(cur - target) <= cfg.InposTolerance)
                 {
-
                     return 0;
-
                 }
 
                 double vel = cfg != null ? cfg.MaxVelocity : 0;

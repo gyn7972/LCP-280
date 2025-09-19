@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System; // Enum È°¿ë
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -130,6 +131,11 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 3, Name = IO.PROBE_VAC_VLV, Disp = "Y075" },
         };
         #endregion
+
+        [Category("SetupConfig"), DisplayName("IndexOfProbe")]
+        [DefaultValue(0)]
+        public int IndexOfProbe { get; internal set; } = 0;
+
 
         public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig") { }
 

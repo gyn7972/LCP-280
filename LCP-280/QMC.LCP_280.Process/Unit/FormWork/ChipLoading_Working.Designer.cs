@@ -22,6 +22,7 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.btnPickUpDn = new QMC.Common.IndividualMenuButton();
             this.btnReleaseVacuumAndPlaceUp = new QMC.Common.IndividualMenuButton();
             this.btnPlaceChipDown = new QMC.Common.IndividualMenuButton();
             this.btnDieTrReady = new QMC.Common.IndividualMenuButton();
@@ -37,13 +38,12 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonTest2 = new System.Windows.Forms.Button();
             this.buttonTest = new System.Windows.Forms.Button();
             this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
-            this.btnPickUpDn = new QMC.Common.IndividualMenuButton();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
-            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.panel3 = new System.Windows.Forms.Panel();
+            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxImageView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxManual.SuspendLayout();
@@ -54,7 +54,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // _btnVisionSetting
             // 
-            this._btnVisionSetting.Location = new System.Drawing.Point(1000, 307);
+            this._btnVisionSetting.Location = new System.Drawing.Point(1000, 324);
             this._btnVisionSetting.Name = "_btnVisionSetting";
             this._btnVisionSetting.Size = new System.Drawing.Size(110, 35);
             this._btnVisionSetting.TabIndex = 13;
@@ -64,7 +64,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // buttonDataManual
             // 
-            this.buttonDataManual.Location = new System.Drawing.Point(1126, 307);
+            this.buttonDataManual.Location = new System.Drawing.Point(1126, 324);
             this.buttonDataManual.Name = "buttonDataManual";
             this.buttonDataManual.Size = new System.Drawing.Size(95, 35);
             this.buttonDataManual.TabIndex = 14;
@@ -75,7 +75,7 @@ namespace QMC.LCP_280.Process.Unit
             // groupBoxImageView
             // 
             this.groupBoxImageView.Controls.Add(this._ChipLoadingCameraviewer);
-            this.groupBoxImageView.Location = new System.Drawing.Point(624, 9);
+            this.groupBoxImageView.Location = new System.Drawing.Point(627, 9);
             this.groupBoxImageView.Name = "groupBoxImageView";
             this.groupBoxImageView.Size = new System.Drawing.Size(370, 350);
             this.groupBoxImageView.TabIndex = 15;
@@ -88,14 +88,15 @@ namespace QMC.LCP_280.Process.Unit
             this._ChipLoadingCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this._ChipLoadingCameraviewer.Camera = null;
             this._ChipLoadingCameraviewer.CameraSwitch = null;
+            this._ChipLoadingCameraviewer.Dock = System.Windows.Forms.DockStyle.Top;
             this._ChipLoadingCameraviewer.FrameRate = 1D;
             this._ChipLoadingCameraviewer.InputImage = null;
             this._ChipLoadingCameraviewer.IsViewCustomizedImage = false;
-            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(6, 20);
+            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(3, 21);
             this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
             this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._ChipLoadingCameraviewer.Simulated = false;
-            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(358, 324);
+            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(364, 324);
             this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._ChipLoadingCameraviewer.TabIndex = 12;
             this._ChipLoadingCameraviewer.TabStop = false;
@@ -126,6 +127,25 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManual.TabIndex = 16;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
+            // 
+            // btnPickUpDn
+            // 
+            this.btnPickUpDn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPickUpDn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnPickUpDn.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnPickUpDn.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPickUpDn.CustomForeColor = System.Drawing.Color.Black;
+            this.btnPickUpDn.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnPickUpDn.ForeColor = System.Drawing.Color.Black;
+            this.btnPickUpDn.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnPickUpDn.Location = new System.Drawing.Point(278, 143);
+            this.btnPickUpDn.Name = "btnPickUpDn";
+            this.btnPickUpDn.Size = new System.Drawing.Size(130, 35);
+            this.btnPickUpDn.TabIndex = 32;
+            this.btnPickUpDn.TabStop = false;
+            this.btnPickUpDn.Text = "PickUpDn";
+            this.btnPickUpDn.UseVisualStyleBackColor = false;
+            this.btnPickUpDn.Click += new System.EventHandler(this.btnPickUpDn_Click);
             // 
             // btnReleaseVacuumAndPlaceUp
             // 
@@ -385,32 +405,13 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
             this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
             // 
-            // btnPickUpDn
+            // panel1
             // 
-            this.btnPickUpDn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnPickUpDn.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnPickUpDn.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnPickUpDn.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPickUpDn.CustomForeColor = System.Drawing.Color.Black;
-            this.btnPickUpDn.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnPickUpDn.ForeColor = System.Drawing.Color.Black;
-            this.btnPickUpDn.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnPickUpDn.Location = new System.Drawing.Point(278, 143);
-            this.btnPickUpDn.Name = "btnPickUpDn";
-            this.btnPickUpDn.Size = new System.Drawing.Size(130, 35);
-            this.btnPickUpDn.TabIndex = 32;
-            this.btnPickUpDn.TabStop = false;
-            this.btnPickUpDn.Text = "PickUpDn";
-            this.btnPickUpDn.UseVisualStyleBackColor = false;
-            this.btnPickUpDn.Click += new System.EventHandler(this.btnPickUpDn_Click);
-            // 
-            // manualSequenceControl
-            // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControl.Location = new System.Drawing.Point(0, 0);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.Size = new System.Drawing.Size(380, 292);
-            this.manualSequenceControl.TabIndex = 19;
+            this.panel1.Controls.Add(this.dioControl);
+            this.panel1.Location = new System.Drawing.Point(8, 420);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(615, 400);
+            this.panel1.TabIndex = 20;
             // 
             // dioControl
             // 
@@ -422,6 +423,14 @@ namespace QMC.LCP_280.Process.Unit
             this.dioControl.RefreshIntervalMs = 400;
             this.dioControl.Size = new System.Drawing.Size(615, 400);
             this.dioControl.TabIndex = 17;
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.teachingPositionControl);
+            this.panel2.Location = new System.Drawing.Point(8, 9);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(615, 400);
+            this.panel2.TabIndex = 21;
             // 
             // teachingPositionControl
             // 
@@ -436,22 +445,6 @@ namespace QMC.LCP_280.Process.Unit
             this.teachingPositionControl.TabIndex = 18;
             this.teachingPositionControl.UnitName = null;
             // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.dioControl);
-            this.panel1.Location = new System.Drawing.Point(8, 420);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(615, 400);
-            this.panel1.TabIndex = 20;
-            // 
-            // panel2
-            // 
-            this.panel2.Controls.Add(this.teachingPositionControl);
-            this.panel2.Location = new System.Drawing.Point(8, 9);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(615, 400);
-            this.panel2.TabIndex = 21;
-            // 
             // panel3
             // 
             this.panel3.Controls.Add(this.manualSequenceControl);
@@ -459,6 +452,16 @@ namespace QMC.LCP_280.Process.Unit
             this.panel3.Name = "panel3";
             this.panel3.Size = new System.Drawing.Size(380, 292);
             this.panel3.TabIndex = 22;
+            // 
+            // manualSequenceControl
+            // 
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControl.Location = new System.Drawing.Point(0, 0);
+            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2);
+            this.manualSequenceControl.Name = "manualSequenceControl";
+            this.manualSequenceControl.ParentUnit = null;
+            this.manualSequenceControl.Size = new System.Drawing.Size(380, 310);
+            this.manualSequenceControl.TabIndex = 19;
             // 
             // ChipLoading_Working
             // 

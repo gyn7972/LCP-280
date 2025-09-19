@@ -297,7 +297,7 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
         /// </summary>
-        public override int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
+        public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
 
@@ -306,7 +306,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
+            Task<int> task = MoveAxisPositionOneAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {
                 // 동일 Safety Interlock

@@ -1,12 +1,16 @@
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -18,6 +22,40 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class IndexChipProbeController : BaseUnit<IndexChipProbeControllerConfig>
     {
+        public enum AlarmKeys
+        {
+            eIndexChipProbeController = 4701,
+            eRotaryNotSafe = 4702,
+            eProbeTimeout = 4703,
+        }
+
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
+            alarm.Title = "Rorary Not Sfarety Pos.";
+            alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eProbeTimeout;
+            alarm.Title = "Probe Timeout.";
+            alarm.Cause = "Probe Timeout입니다.\n Probe 확인 및 재 측정 바랍니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+        }
+        #endregion
+
+        #region Unit
+        Rotary Rotary { get; set; }
+        #endregion
+
         #region Config / Teaching
 
         public IndexChipProbeControllerConfig IndexChipProbeControllerConfig => Config;
@@ -26,11 +64,11 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Axes
         private MotionAxis _probeZ, _probeCardX, _probeCardY, _probeCardZ, _sphereZ;
-        public MotionAxis ProbeZ => _probeZ;
-        public MotionAxis ProbeCardX => _probeCardX;
-        public MotionAxis ProbeCardY => _probeCardY;
-        public MotionAxis ProbeCardZ => _probeCardZ;
-        public MotionAxis SphereZ => _sphereZ;
+        public MotionAxis AxisProbeZ => _probeZ;
+        public MotionAxis AxisProbeCardX => _probeCardX;
+        public MotionAxis AxisProbeCardY => _probeCardY;
+        public MotionAxis AxisProbeCardZ => _probeCardZ;
+        public MotionAxis AxisSphereZ => _sphereZ;              //Top
         #endregion
 
         #region IO Domain Members
@@ -58,12 +96,16 @@ namespace QMC.LCP_280.Process.Unit
             Config.InitializeDefaultTeachingPositions();
             
             BindAxes();
-
             BindIoDomains();
         }
         #endregion
 
         #region Axis Binding / Helpers
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+            Rotary = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
+        }
         private void BindAxes()
         {
             var mgr = Equipment.Instance?.AxisManager;
@@ -82,12 +124,6 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.SphereZ, ref _sphereZ);
         }
 
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
@@ -106,7 +142,6 @@ namespace QMC.LCP_280.Process.Unit
             var tp = new TeachingPosition(positionName, axisPositions, description);
             Config.SetTeachingPosition(tp);
         }
-
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
             var tp = Config.GetTeachingPosition(positionName);
@@ -220,6 +255,31 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
         #endregion
 
+        public int IsRotaryIdle()
+        {
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisProbeCardX.EmgStop();
+                AxisProbeCardY.EmgStop();
+                AxisProbeCardZ.EmgStop();
+                AxisProbeZ.EmgStop();
+                AxisSphereZ.EmgStop();
+
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return 0;
+        }
+
+        private void LogSequence(string log)
+        {
+            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+        }
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            this.SequencePlayers.Add(BottomContactOnce);
+        }
         #region Seq 단위 동작 함수
 
         public int TopContact()
@@ -229,11 +289,145 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int BottomContact()
+        /// <summary>
+        /// Bottom Contact 1개 소켓 검사 시컨스
+        /// 순서:
+        ///  1) ProbeCard Ready Z축 하강 및 확인
+        ///  2) ProbeCard Ready X/Y 이동
+        ///  3) ProbeCard Z Ready 이동
+        ///  4) ProbeCard Up X/Y 이동
+        ///  5) ProbeCard Z축 상승
+        ///  6) ChipProber 검사 요구 신호 전달
+        ///  7) 검사완료 신호 대기
+        ///  8) 검사완료 처리
+        ///  9) ProbeCard Ready Z축 하강
+        ///  10) 완료
+        /// </summary>
+        public int BottomContactOnce(bool bFineSpeed = false)
         {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
+            int bRtn = 0;
+
+            try
+            {
+                LogSequence("Start");
+                this.CurrentFunc = BottomContactOnce;
+
+                int nIndex = GetProbeIndexNo();
+
+                bRtn = IsRotaryIdle();
+                if (bRtn != 0)
+                    return -1;
+
+                // 1) Ready Z축 하강
+                bRtn = MovePositionBottomReadyZDown(nIndex, bFineSpeed);
+                if (bRtn != 0) return -1;
+
+                // 2) Ready X/Y 이동
+                bRtn = MovePositionBottomReadyXY(nIndex, bFineSpeed);
+                if (bRtn != 0) return -1;
+
+                // 3) ProbeCard Z Ready 위치
+                bRtn = MovePositionBottomReadyZ(nIndex, bFineSpeed);
+                if (bRtn != 0) return -1;
+
+                // 4) Up X/Y 이동
+                bRtn = MovePositionBottomUpXY(nIndex, bFineSpeed);
+                if (bRtn != 0) return -1;
+
+                // 5) Z축 상승
+                bRtn = MovePositionBottomUpZ(nIndex, bFineSpeed);
+                if (bRtn != 0) return -1;
+
+                // 6) 검사 요구 신호
+                SetChipProberRequest(true);
+
+                // 7) 검사 완료 신호 대기
+                bRtn = WaitChipProberDone(timeoutMs: 5000);
+                if (bRtn != 0) return -1;
+
+                // 8) 검사 완료 처리
+                SetChipProberRequest(false);
+
+                // 9) Ready Z축 하강
+                bRtn = MovePositionBottomReadyZDown(nIndex, bFineSpeed);
+                if (bRtn != 0) return -1;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                LogSequence("End");
+            }
+
+            return bRtn;
+        }
+
+        private int GetProbeIndexNo()
+        {
+            int nIndex = 0;
+            if (Rotary == null)
+                return nIndex;
+
+            nIndex = (Rotary.GetLoadIndexNo() + this.Config.IndexOfProbe) % Rotary.GetIndexCount();
+            return nIndex;
+        }
+
+        private int MovePositionBottomReadyZDown(int indexNo, bool fine = false)
+        {
+            int nRtn = 0;
+            return nRtn;
+            //return MoveToTeaching(EnumName($"Bottom_Index{indexNo}_Ready"), AxisNames.ProbeCardZ, fine);
+        }
+
+        private int MovePositionBottomReadyXY(int indexNo, bool fine = false)
+        {
+            int nRtn = 0;
+            return nRtn;
+            //return MoveToTeaching(EnumName($"Bottom_Index{indexNo}_Ready"), new[] { AxisNames.ProbeCardX, AxisNames.ProbeCardY }, fine);
+        }
+
+        private int MovePositionBottomReadyZ(int indexNo, bool fine = false)
+        {
+            int nRtn = 0;
+            return nRtn;
+            //return MoveToTeaching(EnumName($"Bottom_Index{indexNo}_Ready"), AxisNames.ProbeCardZ, fine);
+        }
+
+        private int MovePositionBottomUpXY(int indexNo, bool fine = false)
+        {
+            int nRtn = 0;
+            return nRtn;
+            //return MoveToTeaching(EnumName($"Bottom_Index{indexNo}_Up"), new[] { AxisNames.ProbeCardX, AxisNames.ProbeCardY }, fine);
+        }
+
+        private int MovePositionBottomUpZ(int indexNo, bool fine = false)
+        {
+            int nRtn = 0;
+            return nRtn;
+            //return MoveToTeaching(EnumName($"Bottom_Index{indexNo}_Up"), AxisNames.ProbeCardZ, fine);
+        }
+
+        // ChipProber 신호 인터페이스 (예시)
+        private void SetChipProberRequest(bool on)
+        {
+            // IO 혹은 인터페이스를 통해 검사 요구 신호 전달
+            WriteOutput("PROBER_REQ", on);
+        }
+
+        private int WaitChipProberDone(int timeoutMs)
+        {
+            int tick = Environment.TickCount;
+            while (Environment.TickCount - tick < timeoutMs)
+            {
+                if (ReadInput("PROBER_DONE"))
+                    return 0;
+                Thread.Sleep(10);
+            }
+            PostAlarm((int)AlarmKeys.eProbeTimeout);
+            return -1;
         }
 
         #endregion

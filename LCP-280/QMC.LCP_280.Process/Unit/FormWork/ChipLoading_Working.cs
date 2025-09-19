@@ -330,7 +330,7 @@ namespace QMC.LCP_280.Process.Unit
                 InputStageEjector = TryGetUnit<InputStageEjector>("InputStageEjector");
                 InputDieTransfer  = TryGetUnit<InputDieTransfer>("InputDieTransfer");
 
-                if (InputStage != null)
+                if (InputDieTransfer != null)
                 {
                     manualSequenceControl.ParentUnit = InputDieTransfer; // 시퀀스 등록 대상 유닛 지정
                 }

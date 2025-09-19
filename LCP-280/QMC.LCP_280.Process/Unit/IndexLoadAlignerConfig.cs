@@ -1,12 +1,13 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component; // Enum
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
-using System.Collections.Generic;
-using System.Linq;
 using System;
-using QMC.Common.Component; // Enum
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -83,6 +84,10 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
+
+        [Category("SetupConfig"), DisplayName("IndexOfMAlign")]
+        [DefaultValue(0)]
+        public int IndexOfMAlign { get; internal set; } = 0;
 
         public IndexLoadAlignerConfig() : base("IndexLoadAlignerConfig") { }
 

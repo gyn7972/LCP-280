@@ -85,8 +85,8 @@ namespace QMC.LCP_280.Process.Component
                     this._lstSteps.SelectedIndex = this.SelectedIndex;
                 }
             }
-
         }
+
 
         private void _btnRun_Click(object sender, EventArgs e)
         {
@@ -104,6 +104,12 @@ namespace QMC.LCP_280.Process.Component
                 ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
                 form.ShowDialog();
             }
+        }
+
+
+        private void _btnPlay_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -179,11 +179,11 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.LeftPlaceZ, ref _placeZ);
         }
 
-        public override int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
+        public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
 
-            Task<int> task = MoveAxisWithSafetyAsync(axis, target, isFine);
+            Task<int> task = MoveAxisPositionOneAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {
                 if(axis == AxisPickZ)
@@ -196,21 +196,6 @@ namespace QMC.LCP_280.Process.Unit
                         PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                         return -1;
                     }
-
-                    //if (InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
-                    //{
-                    //    AxisToolT.EmgStop();
-                    //    AxisPickZ.EmgStop();
-                    //    AxisPlaceZ.EmgStop();
-                    //    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
-                    //}
-                    //if (InputStageEjector.IsAnyAxisMoving())
-                    //{
-                    //    AxisToolT.EmgStop();
-                    //    AxisPickZ.EmgStop();
-                    //    AxisPlaceZ.EmgStop();
-                    //    AlarmPost((int)AlarmKeys.eInputStageEjectorAxesMoving);
-                    //}
                 }
 
                 if (axis == AxisPlaceZ)
@@ -560,8 +545,6 @@ namespace QMC.LCP_280.Process.Unit
                 return coreTask.Result;
             }, ct);
         }
-
-
 
         public int MovePositionPlace_Index(int nIndex = 0, bool isFine = false)
         {
@@ -1615,79 +1598,6 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(RotateToolTForPlace);
             this.SequencePlayers.Add(PlaceChipDown);
             this.SequencePlayers.Add(ReleaseVacuumAndPlaceUp);
-
-
-
-            /*
-              switch (step)
-        {
-            case 1:
-                ret = RaiseEjectorForPick();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                ret = EjectorVacuumOn();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            case 2:
-                ret = ChipPickDown();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            case 3:
-                ret = SyncPickPinUp();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            case 4:
-                ret = SyncPickPinRetreat();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            case 5:
-                ret = WaitRotarySupplyRequest();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                ret = RotateToolTForPlace();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            case 6:
-                ret = PlaceChipDown();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            case 7:
-                ret = ReleaseVacuumAndPlaceUp();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            case 8: // 복합 Step (옵션)
-                if (!UseCompositeStep8)
-                {
-                    // 사용하지 않는다면 무시 후 루프 재시작
-                    CompleteManualStep(step, 0);
-                    break;
-                }
-                ret = ChipPickDown();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                ret = SyncPickPinUp();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                ret = SyncPickPinRetreat();
-                if (ret != 0) { OnStop(); CompleteManualStep(step, ret); return ret; }
-                CompleteManualStep(step, 0);
-                break;
-
-            default:
-                // 알 수 없는 Step -> 종료
-                CompleteManualStep(step, -99);
-                break;
-        }*/
         }
 
         #endregion
@@ -1914,7 +1824,6 @@ namespace QMC.LCP_280.Process.Unit
             double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),
                         AxisNames.LeftPickZ);
             nRet &= MoveAxisPositionOne(AxisPickZ, dZPos, bFineSpeed);
-
             nRet &= InputStageEjector.MovePositionEjectPinReady(bFineSpeed);
             nRet &= InputStageEjector.MovePositionEjectBlockReady(bFineSpeed);
             
@@ -2055,8 +1964,6 @@ namespace QMC.LCP_280.Process.Unit
                 int nIndex = GetLoadIndexNo();
                 this.CurrentFunc = ReleaseVacuumAndPlaceUp;
                 LogSequence("Start");
-
-
 
                 if (armIndex < 0 || armIndex > 3) return -1;
                 Rotary.SetVacuum(nIndex, true);
