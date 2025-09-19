@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 using LCP_280;
 using QMC.Common;
+using QMC.Common.UI;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -237,7 +238,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 }
 
                 // Wafer 감지 수행
-                int nRet = InputCassetteLifterUnit.ScanWafer();
+                var v = InputCassetteLifterUnit.ScanWaferAsync();
+                ProgressForm progressForm = new ProgressForm("Cassette Mapping","Scanning......" ,v);
+                progressForm.ShowDialog(this);
+
+                int nRet = v.Result;
 
                 if (nRet != 0)
                 {

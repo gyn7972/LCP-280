@@ -476,8 +476,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     bDetected = false; 
                 }
-
-                    Thread.Sleep(0);
+                Thread.Sleep(0);
             }
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
             Log.Write(this, "End ScanWafer");
