@@ -413,7 +413,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return ret;
             }
-            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(true);
+            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(false);
             bool bDetected = false;
             while (true)
             {
@@ -536,7 +536,7 @@ namespace QMC.LCP_280.Process.Unit
         public int OnMoveToScanEndPosition(bool isFine = false)
         {
              var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
-            axisPos -= base.Config.SlotPitch * (base.Config.SlotCount - 1);
+            axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
             int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
 
             Thread.Sleep(10);
