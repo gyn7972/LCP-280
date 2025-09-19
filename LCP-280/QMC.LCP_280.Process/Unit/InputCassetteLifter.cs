@@ -439,7 +439,7 @@ namespace QMC.LCP_280.Process.Unit
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
                     int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-
+                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("f3_ Slot : ") + slot.ToString());
                     if (slot >= 0 && slot < material.Slots.Count)
                     {
                         MaterialWafer wafer = material.Slots[slot];
