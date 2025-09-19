@@ -413,7 +413,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return ret;
             }
-            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync();
+            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(true);
             bool bDetected = false;
             while (true)
             {
@@ -447,7 +447,7 @@ namespace QMC.LCP_280.Process.Unit
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
                     int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-
+                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
                     if (slot >= 0 && slot < material.Slots.Count)
                     {
                         MaterialWafer wafer = material.Slots[slot];
@@ -535,7 +535,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int OnMoveToScanEndPosition(bool isFine = false)
         {
-            var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
+             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
             axisPos -= base.Config.SlotPitch * (base.Config.SlotCount - 1);
             int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
 
@@ -549,11 +549,11 @@ namespace QMC.LCP_280.Process.Unit
             }
             return ret;
         }
-        public Task<int> MoveToScanEndPositionAsync()
+        public Task<int> MoveToScanEndPositionAsync(bool bFine = false)
         {
             return Task.Run(() =>
             {
-                OnMoveToScanEndPosition();
+                OnMoveToScanEndPosition(bFine);
                 return 0;
             });
         }
