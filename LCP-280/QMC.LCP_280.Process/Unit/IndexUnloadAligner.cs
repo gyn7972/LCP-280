@@ -133,6 +133,26 @@ namespace QMC.LCP_280.Process.Unit
             /* TODO */
             return nRet;
         }
+
+        internal int AlignSocketOnceReady()
+        {
+            int nRet = -1;
+            
+            /* TODO */
+
+
+            return nRet;
+        }
+
+        internal int AlignSocketOnce()
+        {
+            int nRet = -1;
+
+            /* TODO */
+
+
+            return nRet;
+        }
         #endregion
     }
 }

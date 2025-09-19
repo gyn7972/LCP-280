@@ -37,15 +37,15 @@
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.panel1 = new System.Windows.Forms.Panel();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
-            this.panel3 = new System.Windows.Forms.Panel();
             this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.manualSequenceControlProbe = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.panel4 = new System.Windows.Forms.Panel();
+            this.groupBoxManualMAlignSeq = new System.Windows.Forms.GroupBox();
+            this.groupBoxManualProbeSeq = new System.Windows.Forms.GroupBox();
             this.groupBoxManual.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel1.SuspendLayout();
-            this.panel3.SuspendLayout();
-            this.panel4.SuspendLayout();
+            this.groupBoxManualMAlignSeq.SuspendLayout();
+            this.groupBoxManualProbeSeq.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBoxManual
@@ -54,9 +54,9 @@
             this.groupBoxManual.Controls.Add(this.comboBoxIndexSocketNo);
             this.groupBoxManual.Controls.Add(this.btnInputMAlign);
             this.groupBoxManual.Controls.Add(this.buttonTest);
-            this.groupBoxManual.Location = new System.Drawing.Point(629, 422);
+            this.groupBoxManual.Location = new System.Drawing.Point(629, 616);
             this.groupBoxManual.Name = "groupBoxManual";
-            this.groupBoxManual.Size = new System.Drawing.Size(395, 412);
+            this.groupBoxManual.Size = new System.Drawing.Size(395, 114);
             this.groupBoxManual.TabIndex = 17;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
@@ -92,7 +92,7 @@
             this.btnInputMAlign.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnInputMAlign.ForeColor = System.Drawing.Color.Black;
             this.btnInputMAlign.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnInputMAlign.Location = new System.Drawing.Point(10, 62);
+            this.btnInputMAlign.Location = new System.Drawing.Point(6, 62);
             this.btnInputMAlign.Name = "btnInputMAlign";
             this.btnInputMAlign.Size = new System.Drawing.Size(130, 35);
             this.btnInputMAlign.TabIndex = 20;
@@ -150,51 +150,57 @@
             this.dioControl.Size = new System.Drawing.Size(615, 400);
             this.dioControl.TabIndex = 16;
             // 
-            // panel3
-            // 
-            this.panel3.Controls.Add(this.manualSequenceControl);
-            this.panel3.Location = new System.Drawing.Point(629, 10);
-            this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(380, 310);
-            this.panel3.TabIndex = 24;
-            // 
             // manualSequenceControl
             // 
             this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControl.Location = new System.Drawing.Point(0, 0);
+            this.manualSequenceControl.Location = new System.Drawing.Point(3, 26);
             this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.manualSequenceControl.MinimumSize = new System.Drawing.Size(297, 250);
             this.manualSequenceControl.Name = "manualSequenceControl";
             this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(380, 310);
+            this.manualSequenceControl.Size = new System.Drawing.Size(389, 310);
             this.manualSequenceControl.TabIndex = 14;
             // 
             // manualSequenceControlProbe
             // 
             this.manualSequenceControlProbe.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlProbe.Location = new System.Drawing.Point(0, 0);
+            this.manualSequenceControlProbe.Location = new System.Drawing.Point(3, 26);
             this.manualSequenceControlProbe.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(297, 250);
             this.manualSequenceControlProbe.Name = "manualSequenceControlProbe";
             this.manualSequenceControlProbe.ParentUnit = null;
-            this.manualSequenceControlProbe.Size = new System.Drawing.Size(380, 310);
+            this.manualSequenceControlProbe.Size = new System.Drawing.Size(389, 310);
             this.manualSequenceControlProbe.TabIndex = 15;
             // 
-            // panel4
+            // groupBoxManualMAlignSeq
             // 
-            this.panel4.Controls.Add(this.manualSequenceControlProbe);
-            this.panel4.Location = new System.Drawing.Point(1015, 10);
-            this.panel4.Name = "panel4";
-            this.panel4.Size = new System.Drawing.Size(380, 310);
-            this.panel4.TabIndex = 25;
+            this.groupBoxManualMAlignSeq.Controls.Add(this.manualSequenceControl);
+            this.groupBoxManualMAlignSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBoxManualMAlignSeq.Location = new System.Drawing.Point(629, 10);
+            this.groupBoxManualMAlignSeq.Name = "groupBoxManualMAlignSeq";
+            this.groupBoxManualMAlignSeq.Size = new System.Drawing.Size(395, 335);
+            this.groupBoxManualMAlignSeq.TabIndex = 26;
+            this.groupBoxManualMAlignSeq.TabStop = false;
+            this.groupBoxManualMAlignSeq.Text = "MAlignSeq";
+            // 
+            // groupBoxManualProbeSeq
+            // 
+            this.groupBoxManualProbeSeq.Controls.Add(this.manualSequenceControlProbe);
+            this.groupBoxManualProbeSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBoxManualProbeSeq.Location = new System.Drawing.Point(1030, 12);
+            this.groupBoxManualProbeSeq.Name = "groupBoxManualProbeSeq";
+            this.groupBoxManualProbeSeq.Size = new System.Drawing.Size(395, 335);
+            this.groupBoxManualProbeSeq.TabIndex = 27;
+            this.groupBoxManualProbeSeq.TabStop = false;
+            this.groupBoxManualProbeSeq.Text = "ProbeSeq";
             // 
             // Process_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1580, 939);
-            this.Controls.Add(this.panel4);
-            this.Controls.Add(this.panel3);
+            this.Controls.Add(this.groupBoxManualProbeSeq);
+            this.Controls.Add(this.groupBoxManualMAlignSeq);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.groupBoxManual);
@@ -205,8 +211,8 @@
             this.groupBoxManual.PerformLayout();
             this.panel2.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            this.panel3.ResumeLayout(false);
-            this.panel4.ResumeLayout(false);
+            this.groupBoxManualMAlignSeq.ResumeLayout(false);
+            this.groupBoxManualProbeSeq.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -222,8 +228,8 @@
         private System.Windows.Forms.ComboBox comboBoxIndexSocketNo;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Panel panel3;
         private Component.ManualSequenceControl manualSequenceControlProbe;
-        private System.Windows.Forms.Panel panel4;
+        private System.Windows.Forms.GroupBox groupBoxManualMAlignSeq;
+        private System.Windows.Forms.GroupBox groupBoxManualProbeSeq;
     }
 }

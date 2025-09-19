@@ -20,8 +20,12 @@ namespace QMC.LCP_280.Process.Unit
             this._btnVisionSetting = new System.Windows.Forms.Button();
             this.buttonDataManual = new System.Windows.Forms.Button();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
-            this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.buttonTest2 = new System.Windows.Forms.Button();
+            this.buttonTest = new System.Windows.Forms.Button();
+            this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.panel2 = new System.Windows.Forms.Panel();
             this.btnPickUpDn = new QMC.Common.IndividualMenuButton();
             this.btnReleaseVacuumAndPlaceUp = new QMC.Common.IndividualMenuButton();
             this.btnPlaceChipDown = new QMC.Common.IndividualMenuButton();
@@ -35,26 +39,22 @@ namespace QMC.LCP_280.Process.Unit
             this.btnAlignXY = new QMC.Common.IndividualMenuButton();
             this.btnAlignT = new QMC.Common.IndividualMenuButton();
             this.btnWaferLoading = new QMC.Common.IndividualMenuButton();
-            this.buttonTest2 = new System.Windows.Forms.Button();
-            this.buttonTest = new System.Windows.Forms.Button();
-            this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.panel3 = new System.Windows.Forms.Panel();
+            this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
+            this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
+            this.groupBoxManualTrSeq = new System.Windows.Forms.GroupBox();
             this.groupBoxImageView.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.groupBoxManual.SuspendLayout();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
-            this.panel3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
+            this.groupBoxManualTrSeq.SuspendLayout();
             this.SuspendLayout();
             // 
             // _btnVisionSetting
             // 
-            this._btnVisionSetting.Location = new System.Drawing.Point(1000, 324);
+            this._btnVisionSetting.Location = new System.Drawing.Point(629, 374);
             this._btnVisionSetting.Name = "_btnVisionSetting";
             this._btnVisionSetting.Size = new System.Drawing.Size(110, 35);
             this._btnVisionSetting.TabIndex = 13;
@@ -64,7 +64,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // buttonDataManual
             // 
-            this.buttonDataManual.Location = new System.Drawing.Point(1126, 324);
+            this.buttonDataManual.Location = new System.Drawing.Point(755, 374);
             this.buttonDataManual.Name = "buttonDataManual";
             this.buttonDataManual.Size = new System.Drawing.Size(95, 35);
             this.buttonDataManual.TabIndex = 14;
@@ -75,33 +75,13 @@ namespace QMC.LCP_280.Process.Unit
             // groupBoxImageView
             // 
             this.groupBoxImageView.Controls.Add(this._ChipLoadingCameraviewer);
+            this.groupBoxImageView.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.groupBoxImageView.Location = new System.Drawing.Point(627, 9);
             this.groupBoxImageView.Name = "groupBoxImageView";
             this.groupBoxImageView.Size = new System.Drawing.Size(370, 350);
             this.groupBoxImageView.TabIndex = 15;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
-            // 
-            // _ChipLoadingCameraviewer
-            // 
-            this._ChipLoadingCameraviewer.BackColor = System.Drawing.Color.Black;
-            this._ChipLoadingCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this._ChipLoadingCameraviewer.Camera = null;
-            this._ChipLoadingCameraviewer.CameraSwitch = null;
-            this._ChipLoadingCameraviewer.Dock = System.Windows.Forms.DockStyle.Top;
-            this._ChipLoadingCameraviewer.FrameRate = 1D;
-            this._ChipLoadingCameraviewer.InputImage = null;
-            this._ChipLoadingCameraviewer.IsViewCustomizedImage = false;
-            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(3, 21);
-            this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
-            this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
-            this._ChipLoadingCameraviewer.Simulated = false;
-            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(364, 324);
-            this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this._ChipLoadingCameraviewer.TabIndex = 12;
-            this._ChipLoadingCameraviewer.TabStop = false;
-            this._ChipLoadingCameraviewer.UpdateDelayTime = 80;
-            this._ChipLoadingCameraviewer.VisibleCrossLine = true;
             // 
             // groupBoxManual
             // 
@@ -127,6 +107,52 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxManual.TabIndex = 16;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
+            // 
+            // buttonTest2
+            // 
+            this.buttonTest2.Location = new System.Drawing.Point(302, 61);
+            this.buttonTest2.Name = "buttonTest2";
+            this.buttonTest2.Size = new System.Drawing.Size(62, 35);
+            this.buttonTest2.TabIndex = 19;
+            this.buttonTest2.Text = "Test2";
+            this.buttonTest2.UseVisualStyleBackColor = true;
+            this.buttonTest2.Click += new System.EventHandler(this.buttonTest2_Click);
+            // 
+            // buttonTest
+            // 
+            this.buttonTest.Location = new System.Drawing.Point(278, 266);
+            this.buttonTest.Name = "buttonTest";
+            this.buttonTest.Size = new System.Drawing.Size(104, 35);
+            this.buttonTest.TabIndex = 18;
+            this.buttonTest.Text = "SEQ STOP";
+            this.buttonTest.UseVisualStyleBackColor = true;
+            this.buttonTest.Click += new System.EventHandler(this.btnSeqStop_Click);
+            // 
+            // buttonPickUpNiddle_Move
+            // 
+            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(302, 102);
+            this.buttonPickUpNiddle_Move.Name = "buttonPickUpNiddle_Move";
+            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(62, 35);
+            this.buttonPickUpNiddle_Move.TabIndex = 17;
+            this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
+            this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
+            this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.dioControl);
+            this.panel1.Location = new System.Drawing.Point(8, 420);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(615, 400);
+            this.panel1.TabIndex = 20;
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.teachingPositionControl);
+            this.panel2.Location = new System.Drawing.Point(8, 9);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(615, 400);
+            this.panel2.TabIndex = 21;
             // 
             // btnPickUpDn
             // 
@@ -375,62 +401,36 @@ namespace QMC.LCP_280.Process.Unit
             this.btnWaferLoading.UseVisualStyleBackColor = false;
             this.btnWaferLoading.Click += new System.EventHandler(this.btnWaferLoading_Click);
             // 
-            // buttonTest2
+            // _ChipLoadingCameraviewer
             // 
-            this.buttonTest2.Location = new System.Drawing.Point(302, 61);
-            this.buttonTest2.Name = "buttonTest2";
-            this.buttonTest2.Size = new System.Drawing.Size(62, 35);
-            this.buttonTest2.TabIndex = 19;
-            this.buttonTest2.Text = "Test2";
-            this.buttonTest2.UseVisualStyleBackColor = true;
-            this.buttonTest2.Click += new System.EventHandler(this.buttonTest2_Click);
+            this._ChipLoadingCameraviewer.BackColor = System.Drawing.Color.Black;
+            this._ChipLoadingCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._ChipLoadingCameraviewer.Camera = null;
+            this._ChipLoadingCameraviewer.CameraSwitch = null;
+            this._ChipLoadingCameraviewer.Dock = System.Windows.Forms.DockStyle.Top;
+            this._ChipLoadingCameraviewer.FrameRate = 1D;
+            this._ChipLoadingCameraviewer.InputImage = null;
+            this._ChipLoadingCameraviewer.IsViewCustomizedImage = false;
+            this._ChipLoadingCameraviewer.Location = new System.Drawing.Point(3, 26);
+            this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
+            this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
+            this._ChipLoadingCameraviewer.Simulated = false;
+            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(364, 324);
+            this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this._ChipLoadingCameraviewer.TabIndex = 12;
+            this._ChipLoadingCameraviewer.TabStop = false;
+            this._ChipLoadingCameraviewer.UpdateDelayTime = 80;
+            this._ChipLoadingCameraviewer.VisibleCrossLine = true;
             // 
-            // buttonTest
+            // manualSequenceControl
             // 
-            this.buttonTest.Location = new System.Drawing.Point(278, 266);
-            this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(104, 35);
-            this.buttonTest.TabIndex = 18;
-            this.buttonTest.Text = "SEQ STOP";
-            this.buttonTest.UseVisualStyleBackColor = true;
-            this.buttonTest.Click += new System.EventHandler(this.btnSeqStop_Click);
-            // 
-            // buttonPickUpNiddle_Move
-            // 
-            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(302, 102);
-            this.buttonPickUpNiddle_Move.Name = "buttonPickUpNiddle_Move";
-            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(62, 35);
-            this.buttonPickUpNiddle_Move.TabIndex = 17;
-            this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
-            this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
-            this.buttonPickUpNiddle_Move.Click += new System.EventHandler(this.buttonPickUpNiddle_Move_Click);
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.dioControl);
-            this.panel1.Location = new System.Drawing.Point(8, 420);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(615, 400);
-            this.panel1.TabIndex = 20;
-            // 
-            // dioControl
-            // 
-            this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(0, 0);
-            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.dioControl.Name = "dioControl";
-            this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(615, 400);
-            this.dioControl.TabIndex = 17;
-            // 
-            // panel2
-            // 
-            this.panel2.Controls.Add(this.teachingPositionControl);
-            this.panel2.Location = new System.Drawing.Point(8, 9);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(615, 400);
-            this.panel2.TabIndex = 21;
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControl.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2);
+            this.manualSequenceControl.Name = "manualSequenceControl";
+            this.manualSequenceControl.ParentUnit = null;
+            this.manualSequenceControl.Size = new System.Drawing.Size(389, 312);
+            this.manualSequenceControl.TabIndex = 19;
             // 
             // teachingPositionControl
             // 
@@ -445,30 +445,34 @@ namespace QMC.LCP_280.Process.Unit
             this.teachingPositionControl.TabIndex = 18;
             this.teachingPositionControl.UnitName = null;
             // 
-            // panel3
+            // dioControl
             // 
-            this.panel3.Controls.Add(this.manualSequenceControl);
-            this.panel3.Location = new System.Drawing.Point(1000, 9);
-            this.panel3.Name = "panel3";
-            this.panel3.Size = new System.Drawing.Size(380, 292);
-            this.panel3.TabIndex = 22;
+            this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
+            this.dioControl.Location = new System.Drawing.Point(0, 0);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.dioControl.Name = "dioControl";
+            this.dioControl.RefreshIntervalMs = 400;
+            this.dioControl.Size = new System.Drawing.Size(615, 400);
+            this.dioControl.TabIndex = 17;
             // 
-            // manualSequenceControl
+            // groupBoxManualTrSeq
             // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControl.Location = new System.Drawing.Point(0, 0);
-            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(380, 310);
-            this.manualSequenceControl.TabIndex = 19;
+            this.groupBoxManualTrSeq.Controls.Add(this.manualSequenceControl);
+            this.groupBoxManualTrSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBoxManualTrSeq.Location = new System.Drawing.Point(1003, 9);
+            this.groupBoxManualTrSeq.Name = "groupBoxManualTrSeq";
+            this.groupBoxManualTrSeq.Size = new System.Drawing.Size(395, 335);
+            this.groupBoxManualTrSeq.TabIndex = 23;
+            this.groupBoxManualTrSeq.TabStop = false;
+            this.groupBoxManualTrSeq.Text = "Tr Seq.";
             // 
             // ChipLoading_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1580, 939);
-            this.Controls.Add(this.panel3);
+            this.Controls.Add(this.groupBoxManualTrSeq);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.groupBoxManual);
@@ -478,11 +482,11 @@ namespace QMC.LCP_280.Process.Unit
             this.Name = "ChipLoading_Working";
             this.Text = "ChipLoading Working";
             this.groupBoxImageView.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.groupBoxManual.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
-            this.panel3.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
+            this.groupBoxManualTrSeq.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -519,6 +523,6 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnPickUpDn;
         private Panel panel1;
         private Panel panel2;
-        private Panel panel3;
+        private GroupBox groupBoxManualTrSeq;
     }
 }

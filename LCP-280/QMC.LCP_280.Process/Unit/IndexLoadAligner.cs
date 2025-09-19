@@ -877,6 +877,7 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
+            this.SequencePlayers.Add(AlignSocketOnceReady);
             this.SequencePlayers.Add(AlignSocketOnce);
         }
         #region Seq 단위 동작 함수
@@ -906,7 +907,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 LogSequence("Start");
-                this.CurrentFunc = AlignSocketOnce;
+                this.CurrentFunc = AlignSocketOnceReady;
                 int nIndex = GetAlignIndexNo();
 
 
@@ -1008,12 +1009,15 @@ namespace QMC.LCP_280.Process.Unit
 
         public int GetAlignIndexNo()
         {
-            int nIndex = 0;
-            if (Rotary == null) 
-                return nIndex;
+            if (Rotary == null)
+                return 0;
 
-            nIndex = (Rotary.GetLoadIndexNo() + this.Config.IndexOfMAlign) % Rotary.GetIndexCount();
-            return nIndex;
+            int loadIndex = Rotary.GetLoadIndexNo();
+
+            // 반시계 방향으로 1칸 이동
+            int probeIndex = (loadIndex - this.Config.IndexOfMAlign + Rotary.GetIndexCount()) % Rotary.GetIndexCount();
+
+            return probeIndex;
         }
         #endregion
     }
