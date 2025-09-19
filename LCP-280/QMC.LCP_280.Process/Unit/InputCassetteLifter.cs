@@ -408,11 +408,13 @@ namespace QMC.LCP_280.Process.Unit
                 material.Slots.Add(new MaterialWafer());
             }
             ret = MoveToScanStartPosition();
+            
             if (ret != 0)
             {
                 return ret;
             }
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync();
+            bool bDetected = false;
             while (true)
             {
                 if (IsEndTask(taskMoveEndPos))
@@ -435,6 +437,12 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 if (MappingSensor())
                 {
+                    if (bDetected == true)
+                    {
+                        Thread.Sleep(0);
+                        continue;
+                    }
+                    bDetected= true;
                     double dPos = WaferLifterZ.GetPosition();
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
@@ -464,8 +472,12 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
                     }
                 }
+                else
+                {
+                    bDetected = false; 
+                }
 
-                Thread.Sleep(0);
+                    Thread.Sleep(0);
             }
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
             Log.Write(this, "End ScanWafer");
