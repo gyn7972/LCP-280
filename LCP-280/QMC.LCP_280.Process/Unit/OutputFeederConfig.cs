@@ -45,7 +45,17 @@ namespace QMC.LCP_280.Process.Unit
             SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
             // 필요시 확장
         }
-
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
         /// <summary>
         /// 현재 모든 포지션은 WaferFeederY 단일 축만 사용. 추후 확장 대비 구조 유지.
         /// </summary>

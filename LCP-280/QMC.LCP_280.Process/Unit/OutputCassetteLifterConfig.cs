@@ -39,7 +39,17 @@ namespace QMC.LCP_280.Process.Unit
             UnloadOffset,
             LoadPort
         }
-
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
         /// <summary>
         /// 모든 포지션은 현재 BinLifterZ 단일축만 사용. (추후 다축 확장 대비 구조 유지)
         /// </summary>

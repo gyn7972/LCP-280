@@ -62,7 +62,17 @@ namespace QMC.LCP_280.Process.Unit
             SafetyZone
             // 필요시 확장
         }
-
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
         /// <summary>
         /// TeachingPositionName 별 허용 축 목록
         /// </summary>
