@@ -1,4 +1,5 @@
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.IOUtil;
 using QMC.Common.Motion;
@@ -7,21 +8,54 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO ???/?迭 ???? ???
 
 namespace QMC.LCP_280.Process.Unit
 {
     public class Rotary : BaseUnit<RotaryConfig>
     {
+        public enum AlarmKeys
+        {
+            eIndexRotary = 4800,
+            eRotaryNotSafe,
 
+        }
 
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
+            alarm.Title = "Rorary Not Sfarety Pos.";
+            alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
+        #endregion
+
+        #region Unit
+        InputDieTransfer InputDieTransfer { get; set; }
+        IndexLoadAligner IndexLoadAligner { get; set; }
+        IndexChipProbeController IndexChipProbeController { get; set; }
+        IndexUnloadAligner IndexUnloadAligner { get; set; }
+        OutputDieTransfer OutputDieTransfer { get; set; }
+        #endregion
 
         private MotionAxis _axisT;
         public MotionAxis AxisT => _axisT;
+        private DateTime _moveStartTime;
 
         public bool DryRun { get; private set; }
+        public bool RequestChip { get; set; } = false;
+
         public void SetDryRun(bool on) => DryRun = on;
         private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, bool> _simInputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
@@ -52,6 +86,16 @@ namespace QMC.LCP_280.Process.Unit
             });
         }
 
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+            InputDieTransfer = Equipment.Instance.GetUnit(UnitKeys.InputDieTransfer) as InputDieTransfer;
+            IndexLoadAligner = Equipment.Instance.GetUnit(UnitKeys.IndexLoadAligner) as IndexLoadAligner;
+            IndexChipProbeController = Equipment.Instance.GetUnit(UnitKeys.IndexChipProbeController) as IndexChipProbeController;
+            IndexUnloadAligner = Equipment.Instance.GetUnit(UnitKeys.IndexUnloadAligner) as IndexUnloadAligner;
+            OutputDieTransfer = Equipment.Instance.GetUnit(UnitKeys.OutputDieTransfer) as OutputDieTransfer;
+        }
+
         private void BindAxes()
         {
             //AxisNames.IndexT
@@ -66,6 +110,32 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.IndexT, ref _axisT);
 
         }
+
+        public int GetLoadIndexNo()
+        {
+            //Todo : Implement 구영남
+            double dPos = AxisT.GetPosition();          // 현재 T축 위치
+            double dStep = 360.0 / GetIndexCount();     // 한 소켓 간격 (45°)
+
+            // 각도를 0~360 범위로 정규화
+            dPos = (dPos % 360 + 360) % 360;
+
+            // 소켓 번호 계산 (0~7)
+            int nIndex = (int)((dPos / dStep) + 0.5) % GetIndexCount();
+            return nIndex;
+            //double dPos = AxisT.GetPosition();
+            //double dStep = (360.0) / GetIndexCount();
+            //int nIndex = (int)(((360 - dPos) / dStep) + 0.5);
+            //while (nIndex < 0)
+            //{
+            //    nIndex += GetIndexCount();
+            //}
+            //return nIndex % this.GetIndexCount();
+        }
+
+
+
+
 
         public override int OnRun()
         {
@@ -166,7 +236,61 @@ namespace QMC.LCP_280.Process.Unit
                 reason = $"Index ??? ????(rc={rc})";
                 return false;
             }
+
+            _moveStartTime = DateTime.Now;
             return true;
+        }
+
+        
+        private bool IsIndexMoveDone()
+        {
+            if (AxisT == null) 
+                return true;
+
+            if (!IsAxisMoving(AxisNames.IndexT)) 
+                return true;
+
+            if ((DateTime.Now - _moveStartTime).TotalMilliseconds > AxisT.Setup.MoveTimeoutMs)
+            {
+                Log.Write("Rotary", "Index Move Timeout");
+                return true;
+            }
+            return false;
+        }
+
+        // 인덱스 이동 완료 대기 (성공:0, 타임아웃:-1)
+        public int WaitIndexMoveDone(int timeoutMs = -1, int pollMs = 5)
+        {
+            if (AxisT == null) return -1;
+
+            if (timeoutMs <= 0)
+            {
+                // Setup 없으면 기본 20000
+                timeoutMs = (AxisT.Setup != null && AxisT.Setup.MoveTimeoutMs > 0)
+                    ? AxisT.Setup.MoveTimeoutMs
+                    : 20000;
+            }
+
+            // DryRun 모드면 짧게 대기 후 OK
+            if (DryRun)
+            {
+                Thread.Sleep(20);
+                return 0;
+            }
+
+            var start = DateTime.Now;
+            while (true)
+            {
+                if (!IsAxisMoving(AxisNames.IndexT))
+                    return 0; // 완료
+
+                if ((DateTime.Now - start).TotalMilliseconds > timeoutMs)
+                {
+                    Log.Write(UnitName, $"Index Move Timeout (>{timeoutMs} ms)");
+                    return -1;
+                }
+                Thread.Sleep(pollMs);
+            }
         }
 
         private bool VerifyAllUnitsSafe(out string reason)
@@ -175,12 +299,12 @@ namespace QMC.LCP_280.Process.Unit
             var eq = Equipment.Instance;
             if (eq == null || eq.Units == null) return true;
 
-            // IndexChipProbeController
-            if (eq.Units.TryGetValue("IndexChipProbeController", out var u1))
+            // InputDieTransfer
+            if (eq.Units.TryGetValue("InputDieTransfer", out var u3))
             {
-                if (!IsUnitInSafeByConnectedAxes(u1))
+                if (!IsUnitInSafeByConnectedAxes(u3))
                 {
-                    reason = "IndexChipProbeController Not in Safety Zone";
+                    reason = "InputDieTransfer Not in Safety Zone";
                     return false;
                 }
             }
@@ -195,12 +319,12 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            // InputDieTransfer
-            if (eq.Units.TryGetValue("InputDieTransfer", out var u3))
+            // IndexChipProbeController
+            if (eq.Units.TryGetValue("IndexChipProbeController", out var u1))
             {
-                if (!IsUnitInSafeByConnectedAxes(u3))
+                if (!IsUnitInSafeByConnectedAxes(u1))
                 {
-                    reason = "InputDieTransfer Not in Safety Zone";
+                    reason = "IndexChipProbeController Not in Safety Zone";
                     return false;
                 }
             }
@@ -511,11 +635,99 @@ namespace QMC.LCP_280.Process.Unit
         public bool VacTankPressureOk() => ReadInput(VAC_TANK_PRESSURE) || ReadInput(VAC_TANK_PRESSURE_LEGACY);
         #endregion
 
-        #region Seq ???? ???? ???
+        #region Seq 함수
+
+        //사전에 Unit 상태 및 안전 위치 확인 함수.
+        public int IsExecuteUnitStatus()
+        {
+            int nRet = 0;
+
+            //InputDieTr는 작업여부 상태신호 보자. //밖에서 확인하고 들어오게 하자.
+            if (InputDieTransfer.IsWork())
+            {
+                return -1; // 대기 인디.
+            }
+
+            return nRet;
+        }
+
+
+        public int ExecuteUnitAction(bool isFine = false)
+        {
+            Task<int> task = ExecuteUnitAsyncAction(isFine);
+            while (IsEndTask(task) == false)
+            {
+                ExecuteUnitActioninterlock(isFine);
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> ExecuteUnitAsyncAction(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnExecuteUnitAction(isFine);
+                return 0;
+            });
+        }
+        public int OnExecuteUnitAction(bool isFine = false)
+        {
+            int nRet = 0;
+
+            RequestChip = true; // InputDieTransfer에 Chip 요청 상태로 변경.
+
+            nRet &= IndexLoadAligner.AlignSocketOnceReady();
+            nRet &= IndexChipProbeController.ContactReady();
+            nRet &= IndexUnloadAligner.AlignSocketOnceReady();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
+                return -1;
+            }
+
+            nRet &= IndexLoadAligner.AlignSocketOnce();
+            nRet &= IndexChipProbeController.ContactBottomOrTop();
+            nRet &= IndexUnloadAligner.AlignSocketOnce();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Fail");
+                return -1;
+            }
+
+            return nRet;
+        }
+
+        public int ExecuteUnitActioninterlock(bool isFine = false)
+        {
+            int nRet = 0;
+
+
+            return nRet;
+        }
+
+
         public int Rotate()
         {
             int nRet = -1;
-            /* TODO */
+
+            string reason;
+            if (!TryMoveIndexNext(out reason))
+            {
+                // 재시도 루프(로그만)
+                Log.Write(UnitName, $"TryMoveIndexNext Fail: {reason}");
+                Thread.Sleep(50);
+                return -1;
+            }
+
+            nRet = WaitIndexMoveDone();
+            if (nRet != 0)
+            {
+                // 필요 시 Alarm 발생 가능
+                // RaiseAlarm((int)AlarmKeys.eIndexRotary, "Index Move Timeout");
+                return -1;
+            }
+
+
             return nRet;
         }
         public int GetIndexCount()
@@ -523,18 +735,7 @@ namespace QMC.LCP_280.Process.Unit
             return 8;
         }
 
-        public int GetLoadIndexNo()
-        {
-            //Todo : Implement 구영남
-            double dPos = AxisT.GetPosition();
-            double dStep = (360.0)/ GetIndexCount();
-            int nIndex = (int)(((360 - dPos)/ dStep) +0.5);
-            while (nIndex < 0)
-            {
-                nIndex += GetIndexCount();
-            }
-            return nIndex % this.GetIndexCount();
-        }
+        
         #endregion
     }
 }

@@ -1737,6 +1737,8 @@ namespace QMC.LCP_280.Process.Unit
                         Thread.Sleep(1);
                     }
                 }
+
+                isWork = false;
             }
 
             return nRet;
@@ -1858,6 +1860,8 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            isWork = true;
+
             return nRet;
         }
 
@@ -1883,7 +1887,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // TODO: Rotary Unit 의 특정 입력/상태 사용
                 // 임시: Rotary 정지 + Vacuum Tank OK 라면 공급 가능하다고 가정
-                return Rotary != null && !Rotary.IsAnyAxisMoving();
+                if (Rotary.RequestChip && Rotary.IsAnyAxisMoving())
+                    return true;
+                else
+                    return false;
             }
             try
             {
@@ -2014,6 +2021,13 @@ namespace QMC.LCP_280.Process.Unit
             //}
             return 0;
         }
+
+        bool isWork = false;
+        public bool IsWork()
+        {
+            return isWork;
+        }
+
         #endregion
     }
 }

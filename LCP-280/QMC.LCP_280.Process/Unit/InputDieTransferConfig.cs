@@ -139,7 +139,7 @@ namespace QMC.LCP_280.Process.Unit
 
         [Category("SetupConfig"), DisplayName("IndexOfStart")]
         [DefaultValue(0)]
-        public int IndexOfStart { get; internal set; } = 0;
+        public int IndexOfStart { get; set; } = 0;
 
         public InputDieTransferConfig() : base("InputDieTransferConfig") { }
 

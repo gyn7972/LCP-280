@@ -134,8 +134,15 @@ namespace QMC.LCP_280.Process.Unit
 
         [Category("SetupConfig"), DisplayName("IndexOfProbe")]
         [DefaultValue(0)]
-        public int IndexOfProbe { get; internal set; } = 0;
+        public int IndexOfProbe { get; set; } = 0;
 
+        [Category("SetupConfig"), DisplayName("ContectMode")]
+        [DefaultValue(false)]
+        public bool ContectMode { get; set; } = false;
+
+        [Category("SetupConfig"), DisplayName("InspectTimeOut (ms)")]
+        [DefaultValue(0)]
+        public int ProbeInspectTimeOutms { get; set; } = 60000;
 
         public IndexChipProbeControllerConfig() : base("IndexChipProbeControllerConfig") { }
 

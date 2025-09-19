@@ -64,6 +64,10 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis Helpers
         private readonly List<MotionAxis> _boundAxes = new List<MotionAxis>();
         public IReadOnlyList<MotionAxis> BoundAxes => _boundAxes;
+
+        public bool RequestChipInsp { get; set; }
+        public bool InspectDone { get; set; }
+
         private void BindAxes()
         {
             _boundAxes.Clear();
