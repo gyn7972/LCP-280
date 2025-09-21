@@ -162,8 +162,11 @@ namespace QMC.LCP_280.Process.Unit
                 exist.Description = tp.Description;
                 exist.ExtraInfo = tp.ExtraInfo;
             }
-            else TeachingPositions.Add(tp);
+            else 
+                TeachingPositions.Add(tp);
+
             Saveconfig();
+
         }
 
         public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
@@ -199,8 +202,14 @@ namespace QMC.LCP_280.Process.Unit
                .ToList();
             var backup = TeachingPositions;
             TeachingPositions = pure;
-            try { return Save(); }
-            finally { TeachingPositions = backup; }
+            try 
+            { 
+                return Save(); 
+            }
+            finally 
+            { 
+                TeachingPositions = backup; 
+            }
         }
 
         /// <summary>
