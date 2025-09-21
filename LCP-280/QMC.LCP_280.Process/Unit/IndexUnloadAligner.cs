@@ -77,7 +77,9 @@ namespace QMC.LCP_280.Process.Unit
         public string IndexOutCameraKey => "Index_Unloader";       
         private void BindCamera()
         {
-            var eq = Equipment.Instance; if (eq == null) return;
+            var eq = Equipment.Instance; 
+            if (eq == null) 
+                return;
             if (eq.Cameras != null && eq.Cameras.TryGetValue(IndexOutCameraKey, out var cam))
                 IndexOutCamera = cam as HIKGigECamera;
             else
