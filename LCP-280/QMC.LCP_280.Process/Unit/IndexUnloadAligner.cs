@@ -80,7 +80,6 @@ namespace QMC.LCP_280.Process.Unit
             var eq = Equipment.Instance; 
             if (eq == null) 
                 return;
-
             if (eq.Cameras != null && eq.Cameras.TryGetValue(IndexOutCameraKey, out var cam))
                 IndexOutCamera = cam as HIKGigECamera;
             else

@@ -34,18 +34,25 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private bool _isLayoutEditMode;
 
         public ChipUnloading_Working() : this(
-            TryGetUnit<OutputStage>("OutputStage"),
-            TryGetUnit<OutputDieTransfer>("OutputDieTransfer"),
-            TryGetUnit<Rotary>("Rotary"))
+            TryGetUnit<Rotary>("Rotary"),
+            TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner"),
+            TryGetUnit<OutputDieTransfer>("OutputDieTransfer"), 
+            TryGetUnit<OutputStage>("OutputStage")
+            
+            )
         {
         }
 
-        public ChipUnloading_Working(OutputStage outputStage, OutputDieTransfer outputDieTransfer, Rotary rotaty)
+        public ChipUnloading_Working(Rotary rotaty,
+            IndexUnloadAligner indexUnloadAligner,
+            OutputDieTransfer outputDieTransfer,
+            OutputStage outputStage)
         {
             InitializeComponent();
-            OutputStageUnit = outputStage;
-            OutputDieTransferUnit = outputDieTransfer;
             RotaryUnit = rotaty;
+            IndexUnloadAligner = indexUnloadAligner;
+            OutputDieTransferUnit = outputDieTransfer;
+            OutputStageUnit = outputStage;
 
             Load += ChipUnloading_Working_Load;
             FormClosing += ChipUnloading_Working_FormClosing;
