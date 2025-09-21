@@ -1,4 +1,5 @@
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
@@ -17,10 +18,34 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class OutputCassetteLifter : BaseUnit<OutputCassetteLifterConfig>
     {
-        #region Config / Teaching
-        
-        
+        public enum AlarmKeys
+        {
+            eBinProtrusionDetected = 5001,
+        }
+
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eBinProtrusionDetected;
+            alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
+            alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+            //AlarmRegister((int)AlarmKeys.eBinProtrusionDetected,
+            //                "Bin Protrusion Detected",
+            //                "Bin protrusion detected by sensor during operation. Please check and clear the obstruction before retrying.",
+            //                "Error");
+
+        }
         #endregion
+
+        public OutputFeeder OutputFeeder { get; private set; }
+
+        public OutputStage OutputStage { get; private set; }
 
         #region Axis
         private MotionAxis _axZ;
@@ -43,6 +68,15 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+
+            OutputFeeder = Equipment.Instance.GetUnit("OutputFeeder") as OutputFeeder;
+            OutputStage = Equipment.Instance.GetUnit("OutputStage") as OutputStage;
+        }
+
+
         #region Axis Binding / Helpers
         private void BindAxes()
         {
@@ -55,6 +89,11 @@ namespace QMC.LCP_280.Process.Unit
 
             const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
             BindAxis(mgr, unitName, AxisNames.BinLifterZ, ref _axZ);
+        }
+
+        public bool IsBinReadyForLoading()
+        {
+            return true;// this.IsBinReadyForloading;
         }
 
         public void MoveAxisOnce(MotionAxis ax, double target)
@@ -81,7 +120,6 @@ namespace QMC.LCP_280.Process.Unit
             var tp = new TeachingPosition(positionName, axisPositions, description);
             Config.SetTeachingPosition(tp);
         }
-
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
             var tp = Config.GetTeachingPosition(positionName);
@@ -118,12 +156,19 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
 
+
         public bool CassettePresent0() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
         public bool CassettePresent1() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
         public bool AnyCassettePresent() => CassettePresent0() || CassettePresent1();
         public bool RingJut() => !ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);
         public bool MappingSensor() => ReadInput(OutputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
+
+        //public bool IsBinProtrusionDetectionSensor()
+        //{
+        //    bool sensorState = ReadInput(OutputCassetteLifterConfig.IO.BIN_PROTRUSION_DETECTION_SENSOR);
+        //    return !sensorState;
+        //}
 
         #region Lifecycle
         public override int OnRun()  { int ret = 0; return ret; }

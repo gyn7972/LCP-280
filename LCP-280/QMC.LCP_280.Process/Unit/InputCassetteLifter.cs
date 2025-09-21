@@ -27,8 +27,22 @@ namespace QMC.LCP_280.Process.Unit
             eWaferProtrusionDetected = 1001,
         }
 
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eWaferProtrusionDetected;
+            alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
+            alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
+        #endregion
+
         #region Config / Teaching
-        
+
         #endregion
 
         public InputFeeder InputFeeder { get; private set; }
@@ -44,19 +58,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsWaferReadyForloading { get; private set; } = false;
         #endregion
 
-        #region InitAlarm
-        protected override void InitAlarm()
-        {
-            base.InitAlarm();
-            AlarmInfo alarm = new AlarmInfo();
-            alarm.Code = (int)AlarmKeys.eWaferProtrusionDetected;
-            alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
-            alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
-            alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
-            m_dicAlarms.Add(alarm.Code, alarm);
-        }
-        #endregion
+        
 
         #region ctor / Initialization
         public InputCassetteLifter(InputCassetteLifterConfig config = null)
@@ -161,12 +163,12 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
         //public bool IsWaferProtrusionDetectionSensor() => !ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+       
         public bool IsWaferProtrusionDetectionSensor()
         {
             bool sensorState = ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
             return !sensorState;
         }
-
         public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
 

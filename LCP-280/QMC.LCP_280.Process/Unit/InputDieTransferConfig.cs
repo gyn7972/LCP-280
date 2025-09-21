@@ -96,7 +96,8 @@ namespace QMC.LCP_280.Process.Unit
         
 
         /// <summary>Offset: positionName -> (T, PickZ, PlaceZ)</summary>
-        public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } = new Dictionary<string, (double t, double pickZ, double placeZ)>();
+        public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } = 
+            new Dictionary<string, (double t, double pickZ, double placeZ)>();
 
         #region Hard IO Tables
         [JsonIgnore]

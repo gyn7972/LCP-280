@@ -323,6 +323,11 @@ namespace QMC.LCP_280.Process.Unit
             /* TODO */
             return nRet;
         }
+
+        internal bool IsBinLoadingPosition()
+        {
+            throw new NotImplementedException();
+        }
         #endregion
     }
 }
