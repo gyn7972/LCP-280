@@ -903,13 +903,12 @@ namespace QMC.LCP_280.Process.Unit
         public int AlignSocketOnceReady(bool bFineSpeed = false)
         {
             int bRtn = 0;
-
+            this.CurrentFunc = AlignSocketOnceReady;
             try
             {
                 LogSequence("Start");
                 this.CurrentFunc = AlignSocketOnceReady;
                 int nIndex = GetAlignIndexNo();
-
 
                 bRtn = IsRotaryIdle();
                 if (bRtn != 0)
@@ -946,7 +945,7 @@ namespace QMC.LCP_280.Process.Unit
         public int AlignSocketOnce(bool bFineSpeed = false)
         {
             int bRtn = 0;
-
+            this.CurrentFunc = AlignSocketOnce;
             try
             {
                 LogSequence("Start");

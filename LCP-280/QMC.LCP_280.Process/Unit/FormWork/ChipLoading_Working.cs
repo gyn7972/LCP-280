@@ -496,7 +496,7 @@ namespace QMC.LCP_280.Process.Unit
             if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            InputStage.LoadingWafer();
+            InputStage.LoadingWaferPrepare();
         }
 
         private async void btnAlignT_Click(object sender, EventArgs e)
@@ -579,41 +579,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
-            
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
 
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 1;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(1, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step1 완료", "OK",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step1 실패 (rc={rc})", "Fail",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
         }
 
         private async void btnPickUp_Click(object sender, EventArgs e)
@@ -624,40 +590,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
-
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 2;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(2, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step2 완료", "OK",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step2 실패 (rc={rc})", "Fail",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
+            
         }
 
         private async void btnPickUpNiddleMove_Click(object sender, EventArgs e)
@@ -668,40 +601,8 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
-
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 3;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(3, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step3 완료", "OK",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step3 실패 (rc={rc})", "Fail",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
+            
+            
         }
 
         private async void btnSyncPickPinRetreat_Click(object sender, EventArgs e)
@@ -712,40 +613,8 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
+            
 
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 4;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(4, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step4 완료", "OK",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step4 실패 (rc={rc})", "Fail",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
         }
 
         private async void btnDieTrReady_Click(object sender, EventArgs e)
@@ -756,39 +625,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer"; //cmbUnits.SelectedItem.ToString();
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
-
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 5;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(5, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step5 완료", "OK",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step5 실패 (rc={rc})", "Fail",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
+            
         }
 
         private async void btnPlaceChipDown_Click(object sender, EventArgs e)
@@ -800,37 +637,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer";
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
-
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 6;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(6, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step6 완료", "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step6 실패 (rc={rc})", "Fail", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
+            
         }
 
         private async void btnReleaseVacuumAndPlaceUp_Click(object sender, EventArgs e)
@@ -841,37 +648,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer";
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
-
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 7;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(7, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step7 완료", "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step7 실패 (rc={rc})", "Fail", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
+           
         }
 
         private async void btnPickUpDn_Click(object sender, EventArgs e)
@@ -882,41 +659,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Equipment == null || InputDieTransfer == null)
                 return;
-            var unitName = "InputDieTransfer";
-            CancellationTokenSource cts = null;
-            try
-            {
-                btnPickUp.Enabled = false;
-                //LogMessage($"Unit '{unitName}' 시작 중...");
-
-                InputDieTransfer.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                InputDieTransfer.StepManual = 8;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                //LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
-
-                cts = new CancellationTokenSource();
-                int rc = await InputDieTransfer.WaitManualStepAsync(8, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step8 완료", "OK", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step8 실패 (rc={rc})", "Fail", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                btnPickUp.Enabled = true;
-                cts?.Dispose();
-            }
+            
         }
     }
 }

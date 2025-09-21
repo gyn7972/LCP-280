@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.labelIndexSocketNo = new System.Windows.Forms.Label();
             this.comboBoxIndexSocketNo = new System.Windows.Forms.ComboBox();
@@ -39,13 +40,25 @@
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.manualSequenceControlProbe = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.groupBoxManualMAlignSeq = new System.Windows.Forms.GroupBox();
-            this.groupBoxManualProbeSeq = new System.Windows.Forms.GroupBox();
+            this.groupBoxProcessSeq = new System.Windows.Forms.GroupBox();
+            this.manualSequenceControlProcessSeq = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.manualSequenceControlOutAlign = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this._ProcessCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxManual.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel1.SuspendLayout();
-            this.groupBoxManualMAlignSeq.SuspendLayout();
-            this.groupBoxManualProbeSeq.SuspendLayout();
+            this.groupBoxProcessSeq.SuspendLayout();
+            this.tabControl1.SuspendLayout();
+            this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
+            this.tabPage3.SuspendLayout();
+            this.groupBox1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).BeginInit();
             this.SuspendLayout();
             // 
             // groupBoxManual
@@ -54,9 +67,10 @@
             this.groupBoxManual.Controls.Add(this.comboBoxIndexSocketNo);
             this.groupBoxManual.Controls.Add(this.btnInputMAlign);
             this.groupBoxManual.Controls.Add(this.buttonTest);
-            this.groupBoxManual.Location = new System.Drawing.Point(629, 616);
+            this.groupBoxManual.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
+            this.groupBoxManual.Location = new System.Drawing.Point(629, 418);
             this.groupBoxManual.Name = "groupBoxManual";
-            this.groupBoxManual.Size = new System.Drawing.Size(395, 114);
+            this.groupBoxManual.Size = new System.Drawing.Size(392, 114);
             this.groupBoxManual.TabIndex = 17;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
@@ -152,55 +166,143 @@
             // 
             // manualSequenceControl
             // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControl.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.manualSequenceControl.Location = new System.Drawing.Point(3, 3);
             this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.manualSequenceControl.MinimumSize = new System.Drawing.Size(297, 250);
             this.manualSequenceControl.Name = "manualSequenceControl";
             this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(389, 310);
+            this.manualSequenceControl.Size = new System.Drawing.Size(401, 310);
             this.manualSequenceControl.TabIndex = 14;
             // 
             // manualSequenceControlProbe
             // 
-            this.manualSequenceControlProbe.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlProbe.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControlProbe.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.manualSequenceControlProbe.Location = new System.Drawing.Point(3, 3);
             this.manualSequenceControlProbe.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.manualSequenceControlProbe.MinimumSize = new System.Drawing.Size(297, 250);
             this.manualSequenceControlProbe.Name = "manualSequenceControlProbe";
             this.manualSequenceControlProbe.ParentUnit = null;
-            this.manualSequenceControlProbe.Size = new System.Drawing.Size(389, 310);
+            this.manualSequenceControlProbe.Size = new System.Drawing.Size(401, 310);
             this.manualSequenceControlProbe.TabIndex = 15;
             // 
-            // groupBoxManualMAlignSeq
+            // groupBoxProcessSeq
             // 
-            this.groupBoxManualMAlignSeq.Controls.Add(this.manualSequenceControl);
-            this.groupBoxManualMAlignSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBoxManualMAlignSeq.Location = new System.Drawing.Point(629, 10);
-            this.groupBoxManualMAlignSeq.Name = "groupBoxManualMAlignSeq";
-            this.groupBoxManualMAlignSeq.Size = new System.Drawing.Size(395, 335);
-            this.groupBoxManualMAlignSeq.TabIndex = 26;
-            this.groupBoxManualMAlignSeq.TabStop = false;
-            this.groupBoxManualMAlignSeq.Text = "MAlignSeq";
+            this.groupBoxProcessSeq.Controls.Add(this.manualSequenceControlProcessSeq);
+            this.groupBoxProcessSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBoxProcessSeq.Location = new System.Drawing.Point(1027, 12);
+            this.groupBoxProcessSeq.Name = "groupBoxProcessSeq";
+            this.groupBoxProcessSeq.Size = new System.Drawing.Size(395, 354);
+            this.groupBoxProcessSeq.TabIndex = 27;
+            this.groupBoxProcessSeq.TabStop = false;
+            this.groupBoxProcessSeq.Text = "Process Seq";
             // 
-            // groupBoxManualProbeSeq
+            // manualSequenceControlProcessSeq
             // 
-            this.groupBoxManualProbeSeq.Controls.Add(this.manualSequenceControlProbe);
-            this.groupBoxManualProbeSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBoxManualProbeSeq.Location = new System.Drawing.Point(1030, 12);
-            this.groupBoxManualProbeSeq.Name = "groupBoxManualProbeSeq";
-            this.groupBoxManualProbeSeq.Size = new System.Drawing.Size(395, 335);
-            this.groupBoxManualProbeSeq.TabIndex = 27;
-            this.groupBoxManualProbeSeq.TabStop = false;
-            this.groupBoxManualProbeSeq.Text = "ProbeSeq";
+            this.manualSequenceControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlProcessSeq.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControlProcessSeq.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlProcessSeq.MinimumSize = new System.Drawing.Size(297, 250);
+            this.manualSequenceControlProcessSeq.Name = "manualSequenceControlProcessSeq";
+            this.manualSequenceControlProcessSeq.ParentUnit = null;
+            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(389, 321);
+            this.manualSequenceControlProcessSeq.TabIndex = 14;
+            // 
+            // tabControl1
+            // 
+            this.tabControl1.Controls.Add(this.tabPage1);
+            this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Controls.Add(this.tabPage3);
+            this.tabControl1.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
+            this.tabControl1.Location = new System.Drawing.Point(1027, 418);
+            this.tabControl1.Name = "tabControl1";
+            this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.Size = new System.Drawing.Size(415, 352);
+            this.tabControl1.TabIndex = 28;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Controls.Add(this.manualSequenceControl);
+            this.tabPage1.Location = new System.Drawing.Point(4, 32);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(407, 316);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "MAlign";
+            this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.Controls.Add(this.manualSequenceControlProbe);
+            this.tabPage2.Location = new System.Drawing.Point(4, 32);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(407, 316);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Probe";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.manualSequenceControlOutAlign);
+            this.tabPage3.Location = new System.Drawing.Point(4, 32);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(407, 316);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "OutAlign";
+            this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // manualSequenceControlOutAlign
+            // 
+            this.manualSequenceControlOutAlign.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.manualSequenceControlOutAlign.Location = new System.Drawing.Point(0, 6);
+            this.manualSequenceControlOutAlign.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlOutAlign.MinimumSize = new System.Drawing.Size(297, 250);
+            this.manualSequenceControlOutAlign.Name = "manualSequenceControlOutAlign";
+            this.manualSequenceControlOutAlign.ParentUnit = null;
+            this.manualSequenceControlOutAlign.Size = new System.Drawing.Size(407, 310);
+            this.manualSequenceControlOutAlign.TabIndex = 29;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this._ProcessCameraviewer);
+            this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
+            this.groupBox1.Location = new System.Drawing.Point(629, 12);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(392, 400);
+            this.groupBox1.TabIndex = 29;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "ImageView";
+            // 
+            // _ProcessCameraviewer
+            // 
+            this._ProcessCameraviewer.BackColor = System.Drawing.Color.Black;
+            this._ProcessCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._ProcessCameraviewer.Camera = null;
+            this._ProcessCameraviewer.CameraSwitch = null;
+            this._ProcessCameraviewer.Dock = System.Windows.Forms.DockStyle.Top;
+            this._ProcessCameraviewer.FrameRate = 1D;
+            this._ProcessCameraviewer.InputImage = null;
+            this._ProcessCameraviewer.IsViewCustomizedImage = false;
+            this._ProcessCameraviewer.Location = new System.Drawing.Point(3, 26);
+            this._ProcessCameraviewer.Name = "_ProcessCameraviewer";
+            this._ProcessCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
+            this._ProcessCameraviewer.Simulated = false;
+            this._ProcessCameraviewer.Size = new System.Drawing.Size(386, 324);
+            this._ProcessCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this._ProcessCameraviewer.TabIndex = 13;
+            this._ProcessCameraviewer.TabStop = false;
+            this._ProcessCameraviewer.UpdateDelayTime = 80;
+            this._ProcessCameraviewer.VisibleCrossLine = true;
             // 
             // Process_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1580, 939);
-            this.Controls.Add(this.groupBoxManualProbeSeq);
-            this.Controls.Add(this.groupBoxManualMAlignSeq);
+            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.tabControl1);
+            this.Controls.Add(this.groupBoxProcessSeq);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.groupBoxManual);
@@ -211,8 +313,13 @@
             this.groupBoxManual.PerformLayout();
             this.panel2.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            this.groupBoxManualMAlignSeq.ResumeLayout(false);
-            this.groupBoxManualProbeSeq.ResumeLayout(false);
+            this.groupBoxProcessSeq.ResumeLayout(false);
+            this.tabControl1.ResumeLayout(false);
+            this.tabPage1.ResumeLayout(false);
+            this.tabPage2.ResumeLayout(false);
+            this.tabPage3.ResumeLayout(false);
+            this.groupBox1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -229,7 +336,14 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Panel panel1;
         private Component.ManualSequenceControl manualSequenceControlProbe;
-        private System.Windows.Forms.GroupBox groupBoxManualMAlignSeq;
-        private System.Windows.Forms.GroupBox groupBoxManualProbeSeq;
+        private System.Windows.Forms.GroupBox groupBoxProcessSeq;
+        private Component.ManualSequenceControl manualSequenceControlProcessSeq;
+        private System.Windows.Forms.TabControl tabControl1;
+        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.TabPage tabPage3;
+        private Component.ManualSequenceControl manualSequenceControlOutAlign;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private Common.Vision.VisionImageViewer _ProcessCameraviewer;
     }
 }

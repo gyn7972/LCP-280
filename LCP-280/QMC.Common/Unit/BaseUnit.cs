@@ -392,7 +392,8 @@ namespace QMC.Common.Unit
 
 
             var axisPos = GetAxisPositions(tp);
-            if (axisPos == null) return -1;
+            if (axisPos == null) 
+                return -1;
             var axisObj = GetAxisObjects(tp);
 
             //** 티칭포지션 중에 Z축이랑 묶여있는 거는 

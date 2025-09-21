@@ -20,8 +20,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private const string WORK_NAME = "InputWafer";
         private Equipment Equipment => Equipment.Instance;
 
-        private InputFeeder InputFeederUnit { get; set; }
-        private InputCassetteLifter InputCassetteLifterUnit { get; set; }
+        
+        private InputCassetteLifter InputCassetteLifter { get; set; }
+        private InputFeeder InputFeeder { get; set; }
+        private InputStage InputStage { get; set; }
 
         private MaterialCassette MaterialCassette { get; set; }
 
@@ -31,21 +33,24 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
 
         public InputWafer_Working() : this(
+            TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
             TryGetUnit<InputFeeder>("InputFeeder"),
-            TryGetUnit<InputCassetteLifter>("InputCassetteLifter"))
+            TryGetUnit<InputStage>("InputStage")
+            )
         {
         }
 
-        public InputWafer_Working(InputFeeder ringTransfer, InputCassetteLifter cassetteLifter)
+        public InputWafer_Working(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, InputStage inputStage)
         {
             InitializeComponent();
-            InputFeederUnit = ringTransfer;
-            InputCassetteLifterUnit = cassetteLifter;
+            InputCassetteLifter = cassetteLifter;
+            InputFeeder = ringTransfer;
+            InputStage = inputStage;
 
             Load += InputWafer_Working_Load;
             FormClosing += InputWafer_Working_FormClosing;
 
-            var materialCassette = InputCassetteLifterUnit.GetMaterialCassette();
+            var materialCassette = InputCassetteLifter.GetMaterialCassette();
             waferMapView.SetMaterialCassette(materialCassette);
 
         }
@@ -104,6 +109,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 BindTeachingPositions();
                 BindDioControls();
+                BindCamera();
                 InitSequences();
             }
             catch { }
@@ -117,25 +123,25 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (teachingPositionControl == null) return;
                 teachingPositionControl.ClearUnits();
 
-                if (InputFeederUnit != null)
+                if (InputFeeder != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "InputFeeder",
-                        InputFeederUnit,
-                        () => InputFeederUnit.Config?.TeachingPositions,
-                        (name, vel) => InputFeederUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputFeederUnit.Config?.SetTeachingPosition(tp),
+                        InputFeeder,
+                        () => InputFeeder.Config?.TeachingPositions,
+                        (name, vel) => InputFeeder.MoveToTeachingPosition(name, vel: vel),
+                        tp => InputFeeder.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (InputCassetteLifterUnit != null)
+                if (InputCassetteLifter != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "InputCassetteLifter",
-                        InputCassetteLifterUnit,
-                        () => InputCassetteLifterUnit.Config?.TeachingPositions,
-                        (name, vel) => InputCassetteLifterUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputCassetteLifterUnit.Config?.SetTeachingPosition(tp),
+                        InputCassetteLifter,
+                        () => InputCassetteLifter.Config?.TeachingPositions,
+                        (name, vel) => InputCassetteLifter.MoveToTeachingPosition(name, vel: vel),
+                        tp => InputCassetteLifter.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -154,18 +160,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (dioControl == null) return;
                 dioControl.IoSortMode = DIOControl.SortingMode.Insertion;
 
-                if (InputFeederUnit != null)
+                if (InputFeeder != null)
                 {
                     StrongBindInputFeeder();
                 }
 
-                if (InputCassetteLifterUnit != null)
+                if (InputCassetteLifter != null)
                 {
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsCassettePresent0(), "Cassette Present 0", "ICL_Cass0");
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsCassettePresent1(), "Cassette Present 1", "ICL_Cass1");
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsAnyCassettePresent(), "Cassette Any", "ICL_CassAny");
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.IsWaferProtrusionDetectionSensor(), "Ring Jut", "ICL_RingJut");
-                    dioControl.BindDIOInput(() => InputCassetteLifterUnit.MappingSensor(), "Mapping Sensor", "ICL_Mapping");
+                    dioControl.BindDIOInput(() => InputCassetteLifter.IsCassettePresent0(), "Cassette Present 0", "ICL_Cass0");
+                    dioControl.BindDIOInput(() => InputCassetteLifter.IsCassettePresent1(), "Cassette Present 1", "ICL_Cass1");
+                    dioControl.BindDIOInput(() => InputCassetteLifter.IsAnyCassettePresent(), "Cassette Any", "ICL_CassAny");
+                    dioControl.BindDIOInput(() => InputCassetteLifter.IsWaferProtrusionDetectionSensor(), "Ring Jut", "ICL_RingJut");
+                    dioControl.BindDIOInput(() => InputCassetteLifter.MappingSensor(), "Mapping Sensor", "ICL_Mapping");
                 }
 
                 dioControl.RebuildLists();
@@ -175,23 +181,23 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void StrongBindInputFeeder()
         {
-            if (InputFeederUnit == null || dioControl == null) return;
+            if (InputFeeder == null || dioControl == null) return;
             try
             {
                 // Sensors
-                dioControl.BindDIOInput(() => InputFeederUnit.IsFeederUp(), "Feeder UP Sns", "IRT_FeederUp");
-                dioControl.BindDIOInput(() => InputFeederUnit.IsFeederDown(), "Feeder DOWN Sns", "IRT_FeederDown");
-                dioControl.BindDIOInput(() => InputFeederUnit.IsUnclamped(), "Feeder UNCLAMP Sns", "IRT_Unclamp");
-                dioControl.BindDIOInput(() => InputFeederUnit.IsRingPresent(), "Feeder RING Sns", "IRT_Ring");
-                dioControl.BindDIOInput(() => InputFeederUnit.IsOverload(), "Feeder OVERLOAD Sns", "IRT_Overload");
+                dioControl.BindDIOInput(() => InputFeeder.IsFeederUp(), "Feeder UP Sns", "IRT_FeederUp");
+                dioControl.BindDIOInput(() => InputFeeder.IsFeederDown(), "Feeder DOWN Sns", "IRT_FeederDown");
+                dioControl.BindDIOInput(() => InputFeeder.IsUnclamped(), "Feeder UNCLAMP Sns", "IRT_Unclamp");
+                dioControl.BindDIOInput(() => InputFeeder.IsRingPresent(), "Feeder RING Sns", "IRT_Ring");
+                dioControl.BindDIOInput(() => InputFeeder.IsOverload(), "Feeder OVERLOAD Sns", "IRT_Overload");
 
                 // Feeder Up/Down (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Up/Down",
-                    extend: () => InputFeederUnit.SetLift(true),
-                    retract: () => InputFeederUnit.SetLift(false),
-                    isExtended: () => InputFeederUnit.IsFeederUpValveOn(),
-                    isRetracted: () => InputFeederUnit.IsFeederDownValveOn(),
+                    extend: () => InputFeeder.SetLift(true),
+                    retract: () => InputFeeder.SetLift(false),
+                    isExtended: () => InputFeeder.IsFeederUpValveOn(),
+                    isRetracted: () => InputFeeder.IsFeederDownValveOn(),
                     displayKey: "FeederUpDn",
                     showSensors: false,
                     extendedName: "UP",
@@ -201,10 +207,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Feeder Clamp/Unclamp (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Clamp/Unclamp",
-                    extend: () => InputFeederUnit.SetClamp(true),
-                    retract: () => InputFeederUnit.SetClamp(false),
-                    isExtended: () => InputFeederUnit.IsFeederClampValveOn(),
-                    isRetracted: () => InputFeederUnit.IsFeederUnclampValveOn(),
+                    extend: () => InputFeeder.SetClamp(true),
+                    retract: () => InputFeeder.SetClamp(false),
+                    isExtended: () => InputFeeder.IsFeederClampValveOn(),
+                    isRetracted: () => InputFeeder.IsFeederUnclampValveOn(),
                     displayKey: "FeederClamp",
                     showSensors: false,
                     extendedName: "CLAMP",
@@ -216,9 +222,53 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         }
         #endregion
 
+        #region Camera
+        private void BindCamera()
+        {
+            try
+            {
+                if (_InputWaferCameraviewer != null && InputStage?.StageCamera != null)
+                {
+                    if (_InputWaferCameraviewer.Camera != InputStage.StageCamera)
+                        _InputWaferCameraviewer.Camera = InputStage.StageCamera;
+                    try { InputStage.StageCamera.StartLive(); } catch { }
+                    try { _InputWaferCameraviewer.StartUpdateTask(); } catch { }
+                }
+            }
+            catch { }
+        }
+        #endregion
+
+
         #region Sequences
         private void InitSequences()
         {
+            try
+            {
+                // 최신 Equipment 등록본으로 다시 참조 갱신 (폼 생성 후 재초기화 상황 대비)
+                InputCassetteLifter = TryGetUnit<InputCassetteLifter>("InputCassetteLifter");
+                InputFeeder = TryGetUnit<InputFeeder>("InputFeeder");
+                InputStage = TryGetUnit<InputStage>("InputStage");
+                
+                if (InputCassetteLifter != null)
+                {
+                    manualSequenceControlCassette.ParentUnit = InputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
+                    // InputFeeder, InputStage 시컨스 등록시 InputCassetteLifter를통하여 등록.
+                    // 순차적으로 시컨스 진행 형태로.
+                    // 완전 Manual Mode는 따로 등록해서 Test 하자.
+
+                    // 완전 Manual Mode.
+                    // InputStage Align, Mapping은 따로 등록해서 Test 하자.
+                }
+                if (InputStage != null)
+                {
+                    manualSequenceControlInputStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
         #endregion
 
@@ -231,14 +281,14 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try
             {
-                if (InputCassetteLifterUnit == null)
+                if (InputCassetteLifter == null)
                 {
-                    MessageBox.Show("InputCassetteLifterUnit이 초기화되지 않았습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("InputCassetteLifter 초기화되지 않았습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
-                // Wafer 감지 수행
-                var v = InputCassetteLifterUnit.ScanWaferAsync();
+                // Wafer 감지 수행.
+                var v = InputCassetteLifter.ScanWaferAsync();
                 ProgressForm progressForm = new ProgressForm("Cassette Mapping","Scanning......" ,v);
                 progressForm.ShowDialog(this);
 
@@ -251,7 +301,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     return;
                 }
                 // scan 후 재설정.
-                var materialCassette = InputCassetteLifterUnit.GetMaterialCassette();
+                var materialCassette = InputCassetteLifter.GetMaterialCassette();
                 if (materialCassette == null)
                 {
                     MessageBox.Show("Wafer 감지 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);

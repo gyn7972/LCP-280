@@ -21,9 +21,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private const string WORK_NAME = "ChipUnloader";
         private Equipment Equipment => Equipment.Instance;
 
-        private OutputStage OutputStageUnit { get; set; }
-        private OutputDieTransfer OutputDieTransferUnit { get; set; }
         private Rotary RotaryUnit { get; set; }
+        private IndexUnloadAligner IndexUnloadAligner { get; set; }
+        private OutputDieTransfer OutputDieTransferUnit { get; set; }
+        private OutputStage OutputStageUnit { get; set; }
+        
+        
 
         private bool _initialized;          // Text/핸들 설정 여부
         private bool _preloadRequested;     // Preload 1회 보장
@@ -297,11 +300,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try
             {
-                if (_ChipUnloadingCameraviewer != null && OutputStageUnit?.StageCamera != null)
+                if (_ChipUnloadingCameraviewer != null && IndexUnloadAligner?.IndexOutCamera != null)
                 {
-                    if (_ChipUnloadingCameraviewer.Camera != OutputStageUnit.StageCamera)
-                        _ChipUnloadingCameraviewer.Camera = OutputStageUnit.StageCamera;
-                    try { OutputStageUnit.StageCamera.StartLive(); } catch { }
+                    if (_ChipUnloadingCameraviewer.Camera != IndexUnloadAligner.IndexOutCamera)
+                        _ChipUnloadingCameraviewer.Camera = IndexUnloadAligner.IndexOutCamera;
+                    try { IndexUnloadAligner.IndexOutCamera.StartLive(); } catch { }
                     try { _ChipUnloadingCameraviewer.StartUpdateTask(); } catch { }
                 }
             }

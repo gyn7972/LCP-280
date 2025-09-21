@@ -134,9 +134,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-
-
-
         public override int OnRun()
         {
             int ret = 0;
@@ -635,80 +632,33 @@ namespace QMC.LCP_280.Process.Unit
         public bool VacTankPressureOk() => ReadInput(VAC_TANK_PRESSURE) || ReadInput(VAC_TANK_PRESSURE_LEGACY);
         #endregion
 
+
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+
+            this.SequencePlayers.Add(Rotate);
+            this.SequencePlayers.Add(ExecuteUnitLoadDie);
+            this.SequencePlayers.Add(ExecuteUnitLoadMAlign);
+            this.SequencePlayers.Add(ExecuteUnitProbe);
+            this.SequencePlayers.Add(ExecuteUnitUnloadAlign);
+            this.SequencePlayers.Add(ExecuteUnitUnLoadDie);
+
+        }
+
+
         #region Seq 함수
 
-        //사전에 Unit 상태 및 안전 위치 확인 함수.
-        public int IsExecuteUnitStatus()
+        public int GetIndexCount()
+        {
+            return 8;
+        }
+
+        public int Rotate(bool isFine = false)
         {
             int nRet = 0;
 
-            //InputDieTr는 작업여부 상태신호 보자. //밖에서 확인하고 들어오게 하자.
-            if (InputDieTransfer.IsWork())
-            {
-                return -1; // 대기 인디.
-            }
-
-            return nRet;
-        }
-
-
-        public int ExecuteUnitAction(bool isFine = false)
-        {
-            Task<int> task = ExecuteUnitAsyncAction(isFine);
-            while (IsEndTask(task) == false)
-            {
-                ExecuteUnitActioninterlock(isFine);
-                Thread.Sleep(1);
-            }
-            return task.Result;
-        }
-        public Task<int> ExecuteUnitAsyncAction(bool isFine = false)
-        {
-            return Task.Run(() =>
-            {
-                OnExecuteUnitAction(isFine);
-                return 0;
-            });
-        }
-        public int OnExecuteUnitAction(bool isFine = false)
-        {
-            int nRet = 0;
-
-            RequestChip = true; // InputDieTransfer에 Chip 요청 상태로 변경.
-
-            nRet &= IndexLoadAligner.AlignSocketOnceReady();
-            nRet &= IndexChipProbeController.ContactReady();
-            nRet &= IndexUnloadAligner.AlignSocketOnceReady();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
-                return -1;
-            }
-
-            nRet &= IndexLoadAligner.AlignSocketOnce();
-            nRet &= IndexChipProbeController.ContactBottomOrTop();
-            nRet &= IndexUnloadAligner.AlignSocketOnce();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Fail");
-                return -1;
-            }
-
-            return nRet;
-        }
-
-        public int ExecuteUnitActioninterlock(bool isFine = false)
-        {
-            int nRet = 0;
-
-
-            return nRet;
-        }
-
-
-        public int Rotate()
-        {
-            int nRet = -1;
+            this.CurrentFunc = Rotate;
 
             string reason;
             if (!TryMoveIndexNext(out reason))
@@ -730,10 +680,193 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-        public int GetIndexCount()
+        //사전에 Unit 상태 및 안전 위치 확인 함수.
+        public int IsExecuteUnitLoadDie()
         {
-            return 8;
+            int nRet = 0;
+
+            //InputDieTr는 작업여부 상태신호 보자. //밖에서 확인하고 들어오게 하자.
+            if (InputDieTransfer.IsWork())
+            {
+                return -1; // 대기 인디.
+            }
+
+            return nRet;
         }
+
+        public int ExecuteUnitLoadDie(bool isFine = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = ExecuteUnitLoadDie;
+
+
+
+            return nRtn;
+        }
+
+        public int ExecuteUnitLoadMAlign(bool isFine = false)
+        {
+            this.CurrentFunc = ExecuteUnitLoadMAlign;
+
+            Task<int> task = ExecuteUnitAsyncLoadMAlign(isFine);
+            while (IsEndTask(task) == false)
+            {
+                ExecuteUnitActionInterlockLoadMAlign(isFine);
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> ExecuteUnitAsyncLoadMAlign(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnExecuteUnitLoadMAlign(isFine);
+                return 0;
+            });
+        }
+        public int OnExecuteUnitLoadMAlign(bool isFine = false)
+        {
+            int nRet = 0;
+
+            RequestChip = true; // InputDieTransfer에 Chip 요청 상태로 변경.
+
+            nRet &= IndexLoadAligner.AlignSocketOnceReady();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
+                return -1;
+            }
+
+            nRet &= IndexLoadAligner.AlignSocketOnce();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Fail");
+                return -1;
+            }
+
+            return nRet;
+        }
+        public int ExecuteUnitActionInterlockLoadMAlign(bool isFine = false)
+        {
+            int nRet = 0;
+
+
+            return nRet;
+        }
+
+        public int ExecuteUnitProbe(bool isFine = false)
+        {
+            this.CurrentFunc = ExecuteUnitProbe;
+
+            Task<int> task = ExecuteUnitAsyncProbe(isFine);
+            while (IsEndTask(task) == false)
+            {
+                ExecuteUnitActionInterlockProbe(isFine);
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> ExecuteUnitAsyncProbe(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnExecuteUnitProbe(isFine);
+                return 0;
+            });
+        }
+        public int OnExecuteUnitProbe(bool isFine = false)
+        {
+            int nRet = 0;
+
+            RequestChip = true; // InputDieTransfer에 Chip 요청 상태로 변경.
+
+            nRet &= IndexChipProbeController.ContactReady();
+            nRet &= IndexUnloadAligner.AlignSocketOnceReady();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
+                return -1;
+            }
+
+            nRet &= IndexChipProbeController.ContactBottomOrTop();
+            nRet &= IndexUnloadAligner.AlignSocketOnce();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Fail");
+                return -1;
+            }
+
+            return nRet;
+        }
+        public int ExecuteUnitActionInterlockProbe(bool isFine = false)
+        {
+            int nRet = 0;
+
+
+            return nRet;
+        }
+
+        public int ExecuteUnitUnloadAlign(bool isFine = false)
+        {
+            this.CurrentFunc = ExecuteUnitUnloadAlign;
+
+            Task<int> task = ExecuteUnitAsyncUnloadAlign(isFine);
+            while (IsEndTask(task) == false)
+            {
+                ExecuteUnitInterlockUnloadAlign(isFine);
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> ExecuteUnitAsyncUnloadAlign(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnExecuteUnitUnloadAlign(isFine);
+                return 0;
+            });
+        }
+        public int OnExecuteUnitUnloadAlign(bool isFine = false)
+        {
+            int nRet = 0;
+
+            RequestChip = true; // InputDieTransfer에 Chip 요청 상태로 변경.
+
+            nRet &= IndexUnloadAligner.AlignSocketOnceReady();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
+                return -1;
+            }
+
+            nRet &= IndexUnloadAligner.AlignSocketOnce();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "ExecuteUnitAction Fail");
+                return -1;
+            }
+
+            return nRet;
+        }
+        public int ExecuteUnitInterlockUnloadAlign(bool isFine = false)
+        {
+            int nRet = 0;
+
+
+            return nRet;
+        }
+
+        public int ExecuteUnitUnLoadDie(bool isFine = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = ExecuteUnitUnLoadDie;
+
+
+
+            return nRtn;
+        }
+
+        
 
         
         #endregion

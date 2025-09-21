@@ -31,6 +31,8 @@ namespace QMC.LCP_280.Process.Unit
         
         #endregion
 
+        public InputFeeder InputFeeder { get; private set; }
+
         public InputStage InputStage { get; private set; }
 
         #region Axis
@@ -57,7 +59,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public InputCassetteLifter(InputCassetteLifterConfig config = null) : base(config ?? new InputCassetteLifterConfig())
+        public InputCassetteLifter(InputCassetteLifterConfig config = null)
+            : base(config ?? new InputCassetteLifterConfig())
         {
             AddComponents();
         }
@@ -65,6 +68,8 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnBindUnit()
         {
             base.OnBindUnit();
+
+            InputFeeder = Equipment.Instance.GetUnit("InputFeeder") as InputFeeder;
             InputStage = Equipment.Instance.GetUnit("InputStage") as InputStage;
         }
 
@@ -165,6 +170,105 @@ namespace QMC.LCP_280.Process.Unit
         public bool MappingSensor() => ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         #endregion
 
+        public MaterialCassette GetMaterialCassette()
+        {
+            MaterialCassette cd = GetMaterial() as MaterialCassette;
+            if (cd == null)
+            {
+                cd = new MaterialCassette();
+                SetMaterial((Material)cd);
+            }
+            if (IsCassettePresentAll())
+            {
+                cd.Presence = Material.MaterialPresence.Exist;
+                cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
+                cd.ArrivedTime = DateTime.Now;
+            }
+            else
+            {
+                cd.Presence = Material.MaterialPresence.NotExist;
+                cd.ProcessSatate = Material.MaterialProcessSatate.Unknown;
+            }
+            return cd;
+        }
+
+        public int MoveToScanStartPosition(bool isFine = false)
+        {
+            Task<int> task = MoveToScanStartPositionAsync();
+            while (IsEndTask(task) == false)
+            {
+                if (Config.IsSimulation)
+                {
+                    Log.Write(this, "Wafer Protrusion Detected - Simulation");
+                }
+                else if (this.IsWaferProtrusionDetectionSensor())
+                {
+                    this.WaferLifterZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public Task<int> MoveToScanStartPositionAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMoveToScanStartPosition(isFine);
+                return 0;
+            });
+        }
+        public int OnMoveToScanStartPosition(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingStart, isFine);
+        }
+        
+        public double GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName pos, string axis)
+        {
+            return GetTP(pos.ToString(), axis);
+        }
+
+        public int MoveToScanEndPosition(bool isFine = false)
+        {
+            Task<int> task = MoveToScanEndPositionAsync();
+            while (IsEndTask(task))
+            {
+                if (this.IsWaferProtrusionDetectionSensor())
+                {
+                    this.WaferLifterZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        public int OnMoveToScanEndPosition(bool isFine = false)
+        {
+             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
+            axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
+            int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
+
+            Thread.Sleep(10);
+            if (ret == 0)
+            {
+                while (this.WaferLifterZ.IsMoveDone() == false)
+                {
+                    Thread.Sleep(0);
+                }
+            }
+            return ret;
+        }
+        public Task<int> MoveToScanEndPositionAsync(bool bFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMoveToScanEndPosition(bFine);
+                return 0;
+            });
+        }
+        
         #region Lifecycle
         public override int OnRun()
         {
@@ -200,33 +304,11 @@ namespace QMC.LCP_280.Process.Unit
 
             return ret;
         }
-        public override int OnStop() 
-        { 
-            int ret = 0; 
-            base.OnStop(); 
-            return ret; 
-        }
-
-        public MaterialCassette GetMaterialCassette()
+        public override int OnStop()
         {
-            MaterialCassette cd = GetMaterial() as MaterialCassette;
-            if (cd == null)
-            {
-                cd = new MaterialCassette();
-                SetMaterial((Material)cd);
-            }
-            if (IsCassettePresentAll())
-            {
-                cd.Presence = Material.MaterialPresence.Exist;
-                cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
-                cd.ArrivedTime = DateTime.Now;
-            }
-            else
-            {
-                cd.Presence = Material.MaterialPresence.NotExist;
-                cd.ProcessSatate = Material.MaterialProcessSatate.Unknown;
-            }
-            return cd;
+            int ret = 0;
+            base.OnStop();
+            return ret;
         }
 
         protected override int OnRunReady()
@@ -329,10 +411,251 @@ namespace QMC.LCP_280.Process.Unit
         {
             return 0;
         }
+        #endregion
 
-        
 
-        private int MoveToSlot(int slotIndex)
+        public bool IsWaferReadyForLoading()
+        {
+            return this.IsWaferReadyForloading;
+        }
+
+
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            this.SequencePlayers.Add(ScanWafer);
+            this.SequencePlayers.Add(MoveToNextSlot);
+
+            this.SequencePlayers.Add(WaferLoadingBeforeStage);
+
+            this.SequencePlayers.Add(WaferLoadingFeeder);
+
+            this.SequencePlayers.Add(WaferLoadingAfterStage);
+
+            //this.SequencePlayers.Add(MoveToNextSlot);
+
+            this.SequencePlayers.Add(WaferUnloadingBeforeStage);
+
+            this.SequencePlayers.Add(WaferUnloadingFeeder);
+
+            this.SequencePlayers.Add(WaferUnloadingAfterStage);
+        }
+
+        private int WaferUnloadingAfterStage(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = WaferUnloadingAfterStage;
+            MaterialCassette material = GetMaterialCassette();
+            
+
+            return nRtn;
+        }
+
+        private int WaferUnloadingBeforeStage(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = WaferUnloadingAfterStage;
+            MaterialCassette material = GetMaterialCassette();
+
+
+            return nRtn;
+        }
+
+        private int WaferLoadingAfterStage(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = WaferUnloadingAfterStage;
+            MaterialCassette material = GetMaterialCassette();
+
+
+            return nRtn;
+        }
+
+        private int WaferLoadingBeforeStage(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = WaferUnloadingAfterStage;
+            MaterialCassette material = GetMaterialCassette();
+
+            return nRtn;
+        }
+
+        #region seq 단위 동작
+        public int ScanWafer(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = ScanWafer;
+
+            Log.Write(this, "Start ScanWafer");
+
+            if (Config.IsSimulation)
+            {
+                Log.Write(this, "Wafer Protrusion Detected - Simulation");
+            }
+            else if (IsWaferProtrusionDetectionSensor())
+            {
+                Log.Write(this, "Wafer Protrusion Detected");
+                PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
+                return -1;
+            }
+
+            MaterialCassette material = GetMaterialCassette();
+            int nSlotCount = base.Config.SlotCount;
+            material.Slots = new List<MaterialWafer>();
+            for (int iter = 0; iter < nSlotCount; iter++)
+            {
+                material.Slots.Add(new MaterialWafer());
+            }
+            nRtn = MoveToScanStartPosition(bFineSpeed);
+
+            if (nRtn != 0)
+            {
+                return nRtn;
+            }
+            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(bFineSpeed);
+            bool bDetected = false;
+            while (true)
+            {
+                if (IsEndTask(taskMoveEndPos))
+                {
+                    nRtn = taskMoveEndPos.Result;
+                    if (nRtn != 0)
+                    {
+                        Log.Write(this, "MoveToScanEndPositionAsync Failed");
+                        return -1;
+                    }
+                    break;
+                }
+
+                if (Config.IsSimulation)
+                {
+                    Log.Write(this, "Wafer Protrusion Detected - Simulation");
+                }
+                else if (IsWaferProtrusionDetectionSensor())
+                {
+                    this.WaferLifterZ.EmgStop();
+                    Log.Write(this, "Wafer Protrusion Detected");
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
+
+                    return -1;
+                }
+
+                if (Config.IsSimulation)
+                {
+                    Log.Write(this, "Wafer Protrusion Detected - Simulation");
+
+                    if (bDetected == true)
+                    {
+                        Thread.Sleep(0);
+                        continue;
+                    }
+                    bDetected = true;
+                    double dPos = WaferLifterZ.GetPosition();
+                    double dSlotPitch = base.Config.SlotPitch;
+                    double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
+                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
+                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
+                    if (slot >= 0 && slot < material.Slots.Count)
+                    {
+                        MaterialWafer wafer = material.Slots[slot];
+                        if (wafer == null ||
+                            wafer.Presence == Material.MaterialPresence.Unknown ||
+                            wafer.Presence == Material.MaterialPresence.NotExist)
+                        {
+                            wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
+                        }
+                        wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
+
+                        wafer.SlotIndex = slot;
+                        material.SetWafer(slot, wafer);
+                        Log.Write(this, $"Mapping Sensor Detected at Slot {slot + 1} Position {dPos:F3}");
+                    }
+                    else
+                    {
+                        Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
+                    }
+                }
+                else if (MappingSensor())
+                {
+                    if (bDetected == true)
+                    {
+                        Thread.Sleep(0);
+                        continue;
+                    }
+                    bDetected = true;
+                    double dPos = WaferLifterZ.GetPosition();
+                    double dSlotPitch = base.Config.SlotPitch;
+                    double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
+                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
+                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
+                    if (slot >= 0 && slot < material.Slots.Count)
+                    {
+                        MaterialWafer wafer = material.Slots[slot];
+                        if (wafer == null ||
+                            wafer.Presence == Material.MaterialPresence.Unknown ||
+                            wafer.Presence == Material.MaterialPresence.NotExist)
+                        {
+                            wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
+                        }
+                        wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
+
+                        wafer.SlotIndex = slot;
+                        material.SetWafer(slot, wafer);
+                        Log.Write(this, $"Mapping Sensor Detected at Slot {slot + 1} Position {dPos:F3}");
+                    }
+                    else
+                    {
+                        Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
+                    }
+                }
+                else
+                {
+                    bDetected = false;
+                }
+                Thread.Sleep(0);
+            }
+            material.ProcessSatate = Material.MaterialProcessSatate.Ready;
+            Log.Write(this, "End ScanWafer");
+            return nRtn;
+        }
+        public Task<int> ScanWaferAsync(bool bFineSpeed = false)
+        {
+            return Task.Run(() => ScanWafer(bFineSpeed));
+        }
+
+        public int MoveToNextSlot(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = MoveToNextSlot;
+
+            MaterialCassette material = GetMaterialCassette();
+            if (material != null)
+            {
+                foreach (var v in GetMaterialCassette().Slots)
+                {
+                    if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
+                    {
+                        continue;
+                    }
+
+                    if (v.ProcessSatate != MaterialWafer.MaterialProcessSatate.Completed)
+                    {
+                        nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
+                        {
+                            if (nRtn != 0)
+                            {
+                                Log.Write(this, "MoveToSlot Failed");
+                                return -1;
+                            }
+                            //this.IsWaferReadyForloading = true;
+                            //this.IsWaferReadyForUnloding = false;
+                        }
+                    }
+                }
+            }
+            return nRtn;
+        }
+        private int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
             if (IsWaferProtrusionDetectionSensor())
             {
@@ -340,6 +663,7 @@ namespace QMC.LCP_280.Process.Unit
                 PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                 return -1;
             }
+
             double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
             dPos += base.Config.SlotPitch * slotIndex;
             MoveAxisOnce(WaferLifterZ, dPos);
@@ -366,245 +690,101 @@ namespace QMC.LCP_280.Process.Unit
             });
         }
 
-        private void MoveToNextSlot()
-        {
-            MaterialCassette material = GetMaterialCassette();
-            if (material != null)
-            {
-                foreach (var v in GetMaterialCassette().Slots)
-                {
-                    if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
-                    {
-                        continue;
-                    }
+        ////Wafer Loading
+        //ScanWafer_Cassette      -> Ready
+        //MoveTonextSlot_Cassette -> work
 
-                    if (v.ProcessSatate != MaterialWafer.MaterialProcessSatate.Completed)
-                    {
-                        MoveToSlot(v.SlotIndex);
-                        return;
-                    }
-                }
-            }
+        //PlateDown_Stage
+        //ClampBackwordDown_Stage
+        //MoveToLaod_Stage
+
+        //MoveToReady_Feeder
+        //MoveToLoadPort_Feeder
+        //ClampDownGripper_Feeder
+        //MoveToBarcode_Feeder
+        //BarcodeRead
+        //MoveToLoadStage_Feeder
+
+        //PlateUp_Stage
+        //ClampUpForword_Stage
+
+        //UnClampGripper_Feeder
+        //ClampUpfeeder
+        //MoveToSafety_Feeder
+
+        //MoveToCenter_Stage
+        //AlignT_Stage
+        //AlignXY_Stage
+        //Mapping_Stage
+        //Complete
+
+        ////Wafer Unloading
+        //WaitToSlot_Cassette (LoadingComp Slot or Empty slot)
+
+        //MoveToUnlaod_Stage
+        //ClampBackwordDown_Stage
+        //PlateDown_Stage
+
+        //ClampDown_Feeder
+        //MoveToUnloadStage_Feeder
+        //ClampGripper_Feeder
+        //MovoToUnloadPort_Feeder
+        //UnClampGripper_Feeder
+        //MoveToReady_Feeder
+        //Complete
+
+
+        /// ///////////////////////////////////////////////////////////
+        public int CassetteLoading(bool bFineSpeed = false)
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
         }
 
-        
-
-        public int ScanWafer()
+        public int WaferMapping(bool bFineSpeed = false)
         {
-            int ret = 0;
-            Log.Write(this, "Start ScanWafer");
-            if (IsWaferProtrusionDetectionSensor())
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int WaferLoadingFeeder(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            
+            nRet = InputFeeder.WaferLoading();
+            if (nRet != 0)
             {
-                Log.Write(this, "Wafer Protrusion Detected");
-                PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
+                Log.Write(this, "InputFeeder WaferLoading Failed");
                 return -1;
             }
 
-            MaterialCassette material = GetMaterialCassette();
-            int nSlotCount = base.Config.SlotCount;
-            material.Slots = new List<MaterialWafer>();
-            for (int iter = 0; iter < nSlotCount; iter++)
-            {
-                material.Slots.Add(new MaterialWafer());
-            }
-            ret = MoveToScanStartPosition();
-            
-            if (ret != 0)
-            {
-                return ret;
-            }
-            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(false);
-            bool bDetected = false;
-            while (true)
-            {
-                if (IsEndTask(taskMoveEndPos))
-                {
-                    ret = taskMoveEndPos.Result;
-                    if (ret != 0)
-                    {
-                        Log.Write(this, "MoveToScanEndPositionAsync Failed");
-                        return -1;
-                    }
-                    break;
-                }
-                if (IsWaferProtrusionDetectionSensor())
-                {
-                    this.WaferLifterZ.EmgStop();
-                    Log.Write(this, "Wafer Protrusion Detected");
-                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
-                   
-                    return -1;
-                }
-                if (MappingSensor())
-                {
-                    if (bDetected == true)
-                    {
-                        Thread.Sleep(0);
-                        continue;
-                    }
-                    bDetected= true;
-                    double dPos = WaferLifterZ.GetPosition();
-                    double dSlotPitch = base.Config.SlotPitch;
-                    double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
-                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
-                    if (slot >= 0 && slot < material.Slots.Count)
-                    {
-                        MaterialWafer wafer = material.Slots[slot];
-                        if (wafer == null || 
-                            wafer.Presence == Material.MaterialPresence.Unknown || 
-                            wafer.Presence == Material.MaterialPresence.NotExist)
-                        {
-                            wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
-                        }
-                        wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
-                        //if (wafer == null || wafer.Presence == Material.MaterialPresence.NotExist)
-                        //{
-                        //    wafer = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
-                        //}
-                        //wafer.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
-                        wafer.SlotIndex = slot;
-                        material.SetWafer(slot, wafer);
-                        Log.Write(this, $"Mapping Sensor Detected at Slot {slot + 1} Position {dPos:F3}");
-                    }
-                    else
-                    {
-                        Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
-                    }
-                }
-                else
-                {
-                    bDetected = false; 
-                }
-                Thread.Sleep(0);
-            }
-            material.ProcessSatate = Material.MaterialProcessSatate.Ready;
-            Log.Write(this, "End ScanWafer");
-            return ret;
+            return nRet;
         }
 
-        public int MoveToScanStartPosition(bool isFine = false)
+        public int WaferUnloadingFeeder(bool bFineSpeed = false)
         {
-            Task<int> task = MoveToScanStartPositionAsync();
-            while (IsEndTask(task) == false)
+            int nRet = 0;
+
+            nRet = InputFeeder.WaferUnloading();
+            if (nRet != 0)
             {
-                if (this.IsWaferProtrusionDetectionSensor())
-                {
-                    this.WaferLifterZ.EmgStop();
-                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
-                    return -1;
-                }
-                Thread.Sleep(0);
+                Log.Write(this, "InputFeeder WaferUnloading Failed");
+                return -1;
             }
-            return task.Result;
+
+            return nRet;
         }
-        public Task<int> MoveToScanStartPositionAsync(bool isFine = false)
+
+        public int CassetteUnloading(bool bFineSpeed = false)
         {
-            return Task.Run(() =>
-            {
-                OnMoveToScanStartPosition(isFine);
-                return 0;
-            });
+            int nRet = -1;
+            /* TODO */
+            return nRet;
         }
-        public int OnMoveToScanStartPosition(bool isFine = false)
-        {
-            return MoveTeachingPositionOnce((int)InputCassetteLifterConfig.TeachingPositionName.MappingStart, isFine);
-        }
+
         
-
-
-        public double GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName pos, string axis)
-        {
-            return GetTP(pos.ToString(), axis);
-        }
-
-        public int MoveToScanEndPosition(bool isFine = false)
-        {
-            Task<int> task = MoveToScanEndPositionAsync();
-            while (IsEndTask(task))
-            {
-                if (this.IsWaferProtrusionDetectionSensor())
-                {
-                    this.WaferLifterZ.EmgStop();
-                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
-                    return -1;
-                }
-                Thread.Sleep(0);
-            }
-            return task.Result;
-        }
-        public int OnMoveToScanEndPosition(bool isFine = false)
-        {
-             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
-            axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
-            int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
-
-            Thread.Sleep(10);
-            if (ret == 0)
-            {
-                while (this.WaferLifterZ.IsMoveDone() == false)
-                {
-                    Thread.Sleep(0);
-                }
-            }
-            return ret;
-        }
-        public Task<int> MoveToScanEndPositionAsync(bool bFine = false)
-        {
-            return Task.Run(() =>
-            {
-                OnMoveToScanEndPosition(bFine);
-                return 0;
-            });
-        }
-
-
-        public Task<int> ScanWaferAsync()
-        {
-            return Task.Run(() => ScanWafer());
-        }
-        #endregion
-
-        #region Seq 단위 동작 함수
-        public int CassetteLoading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int WaferMapping()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int WaferLoading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int WaferUnloading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int CassetteUnloading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public bool IsWaferReadyForLoading()
-        {
-            return this.IsWaferReadyForloading;
-        }
         #endregion
     }
 }

@@ -1,12 +1,16 @@
 using QMC.Common;
+using QMC.Common.Alarm;
+using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
+using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -17,107 +21,70 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class IndexUnloadAligner : BaseUnit<IndexUnloadAlignerConfig>
     {
-        #region Config / Teaching
-        
-        
+        public enum AlarmKeys
+        {
+            eRotaryNotSafe = 4001,
+            eVisionSearch = 4002,
+        }
+
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
+            alarm.Title = "Rotary Not Safe";
+            alarm.Cause = "Rotary axis is not in safe position.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eVisionSearch;
+            alarm.Title = "Vision Search Fail";
+            alarm.Cause = "Vision pattern search failed.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+        }
         #endregion
 
-        #region Axes
-        private MotionAxis _alingT, _indexZ;
-        public MotionAxis AlingT => _alingT;
-        public MotionAxis IndexZ => _indexZ;
+        #region Unit
+        Rotary Rotary { get; set; }
         #endregion
 
         #region ctor / Initialization
         public IndexUnloadAligner(IndexUnloadAlignerConfig config = null) : base(new IndexUnloadAlignerConfig())
         {
-            
             AddComponents();
+        }
+
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+            Rotary = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
         }
 
         public override void AddComponents()
         {
-            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            Config.InitializeDefaultTeachingPositions();
-            
-            BindAxes();
+            BindCamera();
         }
         #endregion
 
-        #region Axis Binding / Helpers
-        private void BindAxes()
+
+        #region Camera Binding
+        public HIKGigECamera IndexOutCamera { get; private set; }
+        public string IndexOutCameraKey => "Index_Unloader";       
+        private void BindCamera()
         {
-            var mgr = Equipment.Instance?.AxisManager;
-            if (mgr == null)
-            {
-                Log.Write("IndexUnloadAligner", "[BindAxes] AxisManager null");
-                return;
-            }
-
-            const string unitName = "Unit"; // 축 등록 시 사용된 유닛명(Equipment.CreateAxes에서 동일)
-
-            BindAxis(mgr, unitName, AxisNames.AlignT, ref _alingT);
-            BindAxis(mgr, unitName, AxisNames.IndexZ, ref _indexZ);
-        }
-
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
-
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
+            var eq = Equipment.Instance; if (eq == null) return;
+            if (eq.Cameras != null && eq.Cameras.TryGetValue(IndexOutCameraKey, out var cam))
+                IndexOutCamera = cam as HIKGigECamera;
+            else
+                IndexOutCamera = eq.IndexUnloaderCam; // fallback
         }
         #endregion
-
-        #region Teaching
-        public void TeachCurrentPosition(string positionName, string description = null)
-        {
-            var axisPositions = new Dictionary<string, double>();
-            foreach (var axisPair in Axes)
-                axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            var tp = new TeachingPosition(positionName, axisPositions, description);
-            Config.SetTeachingPosition(tp);
-        }
-
-        public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
-        {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return -1;
-            int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
-            return result;
-        }
-        public bool InPosTeaching(string positionName)
-        {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            foreach (var kv in tp.AxisPositions)
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
-            return true;
-        }
-        #endregion
-
-        #region IO Placeholders
-        public bool ReadInput(string name) => false; // No IO defined yet
-        public bool WriteOutput(string name, bool on) => false; // No IO defined yet
-        #endregion
-
+        
         #region Lifecycle
         public override int OnRun() { int ret = 0; return ret; }
         public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
@@ -126,30 +93,133 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
         #endregion
 
-        #region Seq ???? ???? ???
-        public int VisionAlign()
+        protected override void OnMakeSequence()
         {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
+            base.OnMakeSequence();
+            this.SequencePlayers.Add(AlignSocketOnceReady);
+            this.SequencePlayers.Add(AlignSocketOnce);
+
         }
 
-        internal int AlignSocketOnceReady()
+        private string CameraKey => IndexOutCameraKey; // 통일된 키 사용
+        public double PixelSizeXmm { get; set; } = 0.005;
+        public double PixelSizeYmm { get; set; } = 0.005;
+        public double ImageOriginX { get; set; } = double.NaN;
+        public double ImageOriginY { get; set; } = double.NaN;
+        public bool UseImageCenterAsOrigin { get; set; } = true;
+        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
+
+        public bool IsStatus_AlignDone { get; set; }
+        public double IsStatus_LastFoundDx { get; set; }
+        public double IsStatus_LastFoundDy { get; set; }
+
+        private (bool ok, double x, double y) CenterSearchViaRunner()
         {
-            int nRet = -1;
+            var res = VisionRunnerHub.SearchCenterOffset(
+                CameraKey,
+                PixelSizeXmm,
+                PixelSizeYmm,
+                ImageOriginX,
+                ImageOriginY,
+                UseImageCenterAsOrigin);
+
+            if (!res.ok)
+            {
+                Log.Write(UnitName, "CenterSearchViaRunner", "Fail: " + res.error);
+                return (false, 0, 0);
+            }
+            return (true, res.dxMm, res.dyMm);
+        }
+
+        #region Seq
+        private int PrepareForAlign(out VisionImage img)
+        {
+            int nRtn = 0;
             
-            /* TODO */
+            img = null;
+            int grabRc;
+            try
+            {
+                // 4) 카메라 그랩
+                if (IndexOutCamera == null)
+                {
+                    Log.Write(UnitName, "Align", "Fail: Camera null");
+                    return -1;
+                }
+                grabRc = IndexOutCamera.GrabSync(out img);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "Align", "Exception: " + ex.Message);
+                return -1;
+            }
 
+            if (Config.IsSimulation)
+            {
+
+            }
+            else if (grabRc != 0 || img == null || img.RawData == null)
+            {
+                Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
+                img?.Dispose();
+                img = null;
+                return -1;
+            }
+
+            IndexOutCamera.LatestImage = img;
+            Log.Write(UnitName, "Align", "Grab OK");
+            return nRtn;
+        }
+
+        internal int AlignSocketOnceReady(bool bFineSpeed = false)
+        {
+            int nRet = -1;
+            this.CurrentFunc = AlignSocketOnceReady;
+
+            Log.Write(UnitName, "Align Start");
+
+            if (PrepareForAlign(out var _img) != 0)
+            {
+                Log.Write(UnitName, "Fail: Prepare for align");
+                return -1;
+            }
+
+            var res = CenterSearchViaRunner();
+            if (!res.ok)
+            {
+                PostAlarm((int)AlarmKeys.eVisionSearch);
+                Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
+                return -1;
+            }
+
+            IsStatus_LastFoundDx = res.x;
+            IsStatus_LastFoundDy = res.y;
 
             return nRet;
         }
 
-        internal int AlignSocketOnce()
+        internal int AlignSocketOnce(bool bFineSpeed = false)
         {
             int nRet = -1;
+            this.CurrentFunc = AlignSocketOnce;
 
-            /* TODO */
+            double dx = IsStatus_LastFoundDx;
+            double dy = IsStatus_LastFoundDy;
 
+            if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
+            {
+                Log.Write(UnitName, "XY_Align", "Skip: offset under threshold");
+                IsStatus_AlignDone = true;
+                return 0;
+            }
+            if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
+            {
+                Log.Write(UnitName, "Align",
+                    $"Fail: Over limit dx={dx:F4} dy={dy:F4} limit={MaxXYOffsetMm}");
+                return -1;
+            }
+
+            // OutStage T축 , XY축 보정 적용 필.
 
             return nRet;
         }

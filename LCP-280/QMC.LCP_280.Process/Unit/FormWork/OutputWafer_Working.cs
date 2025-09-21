@@ -96,6 +96,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 BindTeachingPositions();
                 BindDioControls();
+                BindCamera();
+
                 InitSequences();
             }
             catch { }
@@ -233,6 +235,23 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 //    "Feeder UNCLAMP Valve",
                 //    () => _OutputFeederUnit.IsFeederUnclampValveOn(),
                 //    "ORT_UnclampValve");
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Camera
+        private void BindCamera()
+        {
+            try
+            {
+                if (_OutputWaferCameraviewer != null && _OutputStage?.StageCamera != null)
+                {
+                    if (_OutputWaferCameraviewer.Camera != _OutputStage.StageCamera)
+                        _OutputWaferCameraviewer.Camera = _OutputStage.StageCamera;
+                    try { _OutputStage.StageCamera.StartLive(); } catch { }
+                    try { _OutputWaferCameraviewer.StartUpdateTask(); } catch { }
+                }
             }
             catch { }
         }

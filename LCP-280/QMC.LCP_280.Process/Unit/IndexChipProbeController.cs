@@ -1255,7 +1255,6 @@ namespace QMC.LCP_280.Process.Unit
         public int TopContactOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
-
             try
             {
                 LogSequence("Start");

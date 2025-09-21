@@ -83,23 +83,51 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             EnsureInitialized();
         }
 
+        #region Camera
+        private void BindCamera()
+        {
+            try
+            {
+                if (_ProcessCameraviewer != null && IndexUnloadAligner?.IndexOutCamera!= null)
+                {
+                    if (_ProcessCameraviewer.Camera != IndexUnloadAligner.IndexOutCamera)
+                        _ProcessCameraviewer.Camera = IndexUnloadAligner.IndexOutCamera;
+                    try { IndexUnloadAligner.IndexOutCamera.StartLive(); } catch { }
+                    try { _ProcessCameraviewer.StartUpdateTask(); } catch { }
+                }
+            }
+            catch { }
+        }
+        #endregion
+
         #region Sequences
         private void InitSequences()
         {
             try
             {
                 // 최신 Equipment 등록본으로 다시 참조 갱신 (폼 생성 후 재초기화 상황 대비)
+                Rotary = TryGetUnit<Rotary>("Rotary");
                 IndexLoadAligner = TryGetUnit<IndexLoadAligner>("IndexLoadAligner");
                 IndexChipProbeController = TryGetUnit<IndexChipProbeController>("IndexChipProbeController");
+                IndexChipProber = TryGetUnit<IndexChipProber>("IndexChipProber");
+                IndexUnloadAligner = TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner");
+
+                if (Rotary != null)
+                {
+                    manualSequenceControlProcessSeq.ParentUnit = Rotary; // 시퀀스 등록 대상 유닛 지정
+                }
 
                 if (IndexLoadAligner != null)
                 {
                     manualSequenceControl.ParentUnit = IndexLoadAligner; // 시퀀스 등록 대상 유닛 지정
                 }
-
                 if(IndexChipProbeController != null)
                 {
                     manualSequenceControlProbe.ParentUnit = IndexChipProbeController;
+                }
+                if(IndexUnloadAligner != null)
+                {
+                    manualSequenceControlOutAlign.ParentUnit = IndexUnloadAligner;
                 }
 
             }
@@ -132,6 +160,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 BindTeachingPositions();
                 BindDioControls();
+                BindCamera();
                 InitSequences();
 
                 InitSocketIndexCombo();
@@ -160,13 +189,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 if (IndexUnloadAligner != null)
                 {
-                    teachingPositionControl.RegisterUnit(
-                        "IndexUnloadAligner",
-                        IndexUnloadAligner,
-                        () => IndexUnloadAligner.Config?.TeachingPositions,
-                        (name, vel) => IndexUnloadAligner.MoveToTeachingPosition(name, vel: vel),
-                        tp => IndexUnloadAligner.Config?.SetTeachingPosition(tp),
-                        autoReload: false);
+                    //teachingPositionControl.RegisterUnit(
+                    //    "IndexUnloadAligner",
+                    //    IndexUnloadAligner,
+                    //    () => IndexUnloadAligner.Config?.TeachingPositions,
+                    //    (name, vel) => IndexUnloadAligner.MoveToTeachingPosition(name, vel: vel),
+                    //    tp => IndexUnloadAligner.Config?.SetTeachingPosition(tp),
+                    //    autoReload: false);
                 }
 
                 if (IndexChipProber != null)
