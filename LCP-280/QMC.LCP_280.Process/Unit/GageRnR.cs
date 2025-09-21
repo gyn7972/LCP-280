@@ -7,12 +7,13 @@ using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System.Collections.Generic;
+using System;
 
 namespace QMC.LCP_280.Process.Unit
 {
     public class GageRnR : BaseUnit<GageRnRConfig>
     {
-        
+
         
 
         public GageRnR(GageRnRConfig config = null)

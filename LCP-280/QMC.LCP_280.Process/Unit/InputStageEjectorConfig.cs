@@ -33,11 +33,21 @@ namespace QMC.LCP_280.Process.Unit
             EjectPinReady,
             // 필요시 확장
         }
-
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
         /// <summary>
         /// Ejector / Pin 축 Teaching Position 목록
         /// </summary>
-        
+
 
         /// <summary>
         /// Position Offset (dzEjector, dzPin)

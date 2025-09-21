@@ -44,7 +44,17 @@ namespace QMC.LCP_280.Process.Unit
             AlignT_Ready,
             SafetyZone
         }
-
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
         /// <summary>
         /// Position 별 허용 축 매핑 (필요 시 일부 Position에서 특정 축만 사용하도록 조정)
         /// </summary>

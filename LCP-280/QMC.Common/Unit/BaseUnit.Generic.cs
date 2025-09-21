@@ -32,5 +32,12 @@ namespace QMC.Common.Unit
             var tname = typeof(TConfig).Name;
             return tname != null && tname.EndsWith("Config") ? tname.Substring(0, tname.Length - 6) : (tname ?? "Unit");
         }
+
+        public virtual string GetTeachingPositionName(int selIndex)
+        {
+            Config.GetTeachingPositionName(selIndex, out string name);
+            return name;
+        }
+
     }
 }

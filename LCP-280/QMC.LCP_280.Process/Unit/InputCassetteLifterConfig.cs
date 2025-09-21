@@ -29,11 +29,22 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            CassetteSlot_1,
             MappingStart,
             MappingEnd,
+            CassetteSlot_1,
             UnloadOffset,
             LoadPort
+        }
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
         }
 
         /// <summary>
@@ -44,9 +55,9 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
         {
-            { TeachingPositionName.CassetteSlot_1, new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.MappingStart,   new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.MappingEnd,     new [] { AxisNames.WaferLifterZ } },
+            { TeachingPositionName.CassetteSlot_1, new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.UnloadOffset,   new [] { AxisNames.WaferLifterZ } },
             { TeachingPositionName.LoadPort,       new [] { AxisNames.WaferLifterZ } },
         };

@@ -377,19 +377,20 @@ namespace QMC.Common.Unit
             catch { return string.Empty; }
         }
 
+       
         public virtual int MoveTeachingPositionOnce(int selIndex, bool isFine)
         {
-            var list = ResolveTeachingPositionObjectList();
-            if (list == null) 
-                return -1;
+            string teachName = string.Empty;
+            bool bSuccssed = Config.GetTeachingPositionName(selIndex,out teachName);
 
-            if (selIndex < 0 || selIndex >= list.Count) 
+            if(bSuccssed==false)
+            {
+                Log.Write(UnitName, "MoveTeachingPositionOnce", $"[TEACH 이동 오류] 인덱스 '{selIndex}' 티칭포지션 이름을 찾을 수 없습니다.");
                 return -1;
+            }
+            TeachingPosition tp = TeachingPositions.FirstOrDefault(t => t.Name == teachName);
 
-            if (!IsInterlockOK(selIndex)) 
-                return -1;
 
-            var tp = list[selIndex];
             var axisPos = GetAxisPositions(tp);
             if (axisPos == null) return -1;
             var axisObj = GetAxisObjects(tp);

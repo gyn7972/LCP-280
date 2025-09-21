@@ -1,3 +1,5 @@
+using System;
+
 namespace QMC.Common
 {
     public abstract partial class BaseConfig
@@ -5,6 +7,12 @@ namespace QMC.Common
         public virtual ConfigReflectionMapper CreateMapper()
         {
             return new ConfigReflectionMapper(this);
+        }
+
+        public virtual bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            name = "None";
+            return false;
         }
     }
 }

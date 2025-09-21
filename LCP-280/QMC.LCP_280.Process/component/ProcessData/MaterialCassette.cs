@@ -9,7 +9,7 @@ namespace QMC.LCP_280.Process.Component
     public sealed class MaterialCassette : QMC.Common.Material
     {
         [DefaultValue("")] public string CarrierId { get; set; } = "";
-        [DefaultValue(25)] public int SlotCount { get; set; } = 20;
+        [DefaultValue(25)] public int SlotCount { get; set; } = 25;
 
         public List<MaterialWafer> Slots { get; set; } = new List<MaterialWafer>();
 

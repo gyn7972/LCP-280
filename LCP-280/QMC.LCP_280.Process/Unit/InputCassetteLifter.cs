@@ -408,11 +408,13 @@ namespace QMC.LCP_280.Process.Unit
                 material.Slots.Add(new MaterialWafer());
             }
             ret = MoveToScanStartPosition();
+            
             if (ret != 0)
             {
                 return ret;
             }
-            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync();
+            Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(false);
+            bool bDetected = false;
             while (true)
             {
                 if (IsEndTask(taskMoveEndPos))
@@ -435,11 +437,17 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 if (MappingSensor())
                 {
+                    if (bDetected == true)
+                    {
+                        Thread.Sleep(0);
+                        continue;
+                    }
+                    bDetected= true;
                     double dPos = WaferLifterZ.GetPosition();
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
                     int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-
+                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
                     if (slot >= 0 && slot < material.Slots.Count)
                     {
                         MaterialWafer wafer = material.Slots[slot];
@@ -464,7 +472,10 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
                     }
                 }
-
+                else
+                {
+                    bDetected = false; 
+                }
                 Thread.Sleep(0);
             }
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
@@ -524,8 +535,8 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int OnMoveToScanEndPosition(bool isFine = false)
         {
-            var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
-            axisPos -= base.Config.SlotPitch * (base.Config.SlotCount - 1);
+             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
+            axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
             int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
 
             Thread.Sleep(10);
@@ -538,11 +549,11 @@ namespace QMC.LCP_280.Process.Unit
             }
             return ret;
         }
-        public Task<int> MoveToScanEndPositionAsync()
+        public Task<int> MoveToScanEndPositionAsync(bool bFine = false)
         {
             return Task.Run(() =>
             {
-                OnMoveToScanEndPosition();
+                OnMoveToScanEndPosition(bFine);
                 return 0;
             });
         }

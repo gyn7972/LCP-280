@@ -43,7 +43,17 @@ namespace QMC.LCP_280.Process.Unit
             SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
             // 필요시 확장
         }
-
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
         /// <summary>
         /// Position 별 허용되는 축 목록.
         /// </summary>
