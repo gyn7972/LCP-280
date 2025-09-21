@@ -75,8 +75,7 @@ namespace QMC.LCP_280.Process
             //        }
             //    }
             //}
-
-            dieInputControl1.SetDieList(dies);
+            //dieInputControl1.SetDieList(dies);
 
             // 특정 칩 상태 변경 (중심 칩 가져감)
             dieInputControl1.UpdateDie(new Point(0, 0), DieInputControl.DieState.Picked);
