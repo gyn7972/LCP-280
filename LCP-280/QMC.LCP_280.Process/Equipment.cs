@@ -1370,8 +1370,9 @@ namespace QMC.LCP_280.Process
             {
                 var map = new Dictionary<string, string>
                 {
-                    { "Index_Loader","DA7484884" },
                     { "In_Stage","DA7500464" },
+                    { "Index_Loader","00G97588297" },
+                    { "Index_Aligner","DA7484884" },
                     { "Index_Prober","DA7484883" },
                     { "Index_Unloader","DA7484882" },
                     { "Out_Stage","DA7500465" }
