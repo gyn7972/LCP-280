@@ -1443,7 +1443,7 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!InputStage.IsVacuumOn())
                 {
-                    if(Config.IsSimulation)
+                    if(!Config.IsSimulation)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1465,7 +1465,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            return 0;
+            return nRet;
         }
 
         public int ChipPickDown(bool bFineSpeed = false)
@@ -1654,6 +1654,7 @@ namespace QMC.LCP_280.Process.Unit
                 else
                     return false;
             }
+
             try
             {
 
@@ -1706,6 +1707,7 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = PlaceChipDown;
             int nRet = 0;
 
+            int armIndex = GetPlaceArmIndex();
             int nIndex = GetLoadIndexNo();
             // Place 위치로 이동 (없으면 SafetyZone)
             double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
@@ -1718,6 +1720,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             Rotary.SetVacuum(nIndex, true);
+            SetVacuum(armIndex, false);
             Thread.Sleep(10);
 
             return nRet;
@@ -1728,9 +1731,7 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int ReleaseVacuumAndPlaceUp(bool bFindSpeed = false)
         {
-            
             int nRet = 0;
-            
             try
             {
                 int armIndex = GetPlaceArmIndex();
