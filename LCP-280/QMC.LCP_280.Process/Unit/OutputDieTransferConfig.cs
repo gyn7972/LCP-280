@@ -174,6 +174,28 @@ namespace QMC.LCP_280.Process.Unit
 
         public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
+        /// <summary>Offset: positionName -> (T, PickZ, PlaceZ)</summary>
+        public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } =
+            new Dictionary<string, (double t, double pickZ, double placeZ)>();
+
+        /// <summary>Offset 적용된 목표 좌표</summary>
+        public (double t, double pickZ, double placeZ) GetPositionWithOffset(string name)
+        {
+            var tp = GetTeachingPosition(name);
+            if (tp == null) return (0, 0, 0);
+            double t = tp.AxisPositions.TryGetValue(AxisNames.LeftToolT, out var vt) ? vt : 0;
+            double pz = tp.AxisPositions.TryGetValue(AxisNames.LeftPickZ, out var vpz) ? vpz : 0;
+            double plz = tp.AxisPositions.TryGetValue(AxisNames.LeftPlaceZ, out var vplz) ? vplz : 0;
+            if (Offsets.TryGetValue(name, out var off)) { t += off.t; pz += off.pickZ; plz += off.placeZ; }
+            return (t, pz, plz);
+        }
+
+        public void SetOffset(string name, double t, double pickZ, double placeZ)
+        {
+            Offsets[name] = (t, pickZ, placeZ);
+            Saveconfig();
+        }
+
         public int Saveconfig()
         {
             var pure = TeachingPositions

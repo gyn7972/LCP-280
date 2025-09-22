@@ -150,7 +150,8 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region ctor / Initialization
-        public InputDieTransfer(InputDieTransferConfig config = null) : base(config ?? new InputDieTransferConfig())
+        public InputDieTransfer(InputDieTransferConfig config = null)
+            : base(config ?? new InputDieTransferConfig())
         {
             AddComponents();
         }

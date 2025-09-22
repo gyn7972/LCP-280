@@ -121,10 +121,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        #region Config / Teaching
-        Equipment _equipment => Equipment.Instance;
-        #endregion
-
         #region Vision Hooks / Camera / Runner
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
