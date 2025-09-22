@@ -41,6 +41,7 @@ namespace QMC.LCP_280.Process.Unit
             eRotaryAxesMoving,
             eInputStageEjectorAxesMoving,
             eInputDieTransferError,
+            eInputStageVaccum,
         }
         #region InitAlarm
         protected override void InitAlarm()
@@ -108,6 +109,15 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eInputDieTransferError;
             alarm.Title = "InputDieTransferError";
             alarm.Cause = "InputDieTransfer명령중 예기치 않은 에러를 만났습니다. 관리자에게 문의 하여 주십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            //eInputStageVaccum
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageVaccum;
+            alarm.Title = "eInputStageVaccum";
+            alarm.Cause = "eInputStageVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -1425,6 +1435,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     if (sw.ElapsedMilliseconds > 2000)
                     {
+                        PostAlarm((int)AlarmKeys.eInputStageVaccum);
                         Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
                         return -1;
                     }
@@ -1615,7 +1626,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // TODO: Rotary Unit 의 특정 입력/상태 사용
                 // 임시: Rotary 정지 + Vacuum Tank OK 라면 공급 가능하다고 가정
-                if (Rotary.RequestChip && Rotary.IsAnyAxisMoving())
+                //if (Rotary.RequestChip && Rotary.IsAnyAxisMoving())
+                //    return true;
+                //else
+                //    return false;
+                if (Rotary.IsAnyAxisMoving())
                     return true;
                 else
                     return false;
