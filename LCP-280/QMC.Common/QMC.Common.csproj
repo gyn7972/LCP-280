@@ -407,6 +407,7 @@
     <Compile Include="PKGTester\CIEChromaticityControl.Designer.cs">
       <DependentUpon>CIEChromaticityControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="PKGTester\ColorCoordinateProcess.cs" />
     <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="PKGTester\TestItemResult.cs" />
