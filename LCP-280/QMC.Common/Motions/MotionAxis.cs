@@ -219,7 +219,7 @@ namespace QMC.Common.Motions
             }
             if (_driver != null)
             {
-                var pulse = _driver.ReadCommandPulse(AxisNo);
+                var pulse = _driver.ReadActualPulse(AxisNo);
                 return _correction.ToLogical(pulse);
             }
             else if (_ckdDriver != null)

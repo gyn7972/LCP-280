@@ -30,12 +30,14 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.TestConditionSetPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.TestConditionSetPage();
+            this.rankSetPage1 = new QMC.LCP_280.Process.Unit.FormRecipe.Page.RankSetPage();
             this.cellTesterPage1 = new QMC.LCP_280.Process.Unit.FormRecipe.Page.CellTesterPage();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
             this.tabPage3.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -45,12 +47,14 @@
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl1.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
             this.tabControl1.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(1264, 752);
             this.tabControl1.TabIndex = 0;
+            this.tabControl1.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.tabControl1_DrawItem);
             // 
             // tabPage1
             // 
@@ -63,16 +67,9 @@
             this.tabPage1.Text = "Test Condition Set";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
-            // testConditionSetPage1
-            // 
-            this.testConditionSetPage1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.testConditionSetPage1.Location = new System.Drawing.Point(3, 3);
-            this.testConditionSetPage1.Name = "testConditionSetPage1";
-            this.testConditionSetPage1.Size = new System.Drawing.Size(1250, 713);
-            this.testConditionSetPage1.TabIndex = 0;
-            // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.rankSetPage1);
             this.tabPage2.Location = new System.Drawing.Point(4, 29);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
@@ -91,6 +88,22 @@
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "Cell Tester";
             this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // testConditionSetPage1
+            // 
+            this.testConditionSetPage1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.testConditionSetPage1.Location = new System.Drawing.Point(3, 3);
+            this.testConditionSetPage1.Name = "testConditionSetPage1";
+            this.testConditionSetPage1.Size = new System.Drawing.Size(1250, 713);
+            this.testConditionSetPage1.TabIndex = 0;
+            // 
+            // rankSetPage1
+            // 
+            this.rankSetPage1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.rankSetPage1.Location = new System.Drawing.Point(3, 3);
+            this.rankSetPage1.Name = "rankSetPage1";
+            this.rankSetPage1.Size = new System.Drawing.Size(1250, 713);
+            this.rankSetPage1.TabIndex = 0;
             // 
             // cellTesterPage1
             // 
@@ -112,6 +125,7 @@
             this.Text = "Test_Recipe";
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
+            this.tabPage2.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -125,5 +139,6 @@
         private System.Windows.Forms.TabPage tabPage1;
         private TestConditionSetPage testConditionSetPage1;
         private FormRecipe.Page.CellTesterPage cellTesterPage1;
+        private FormRecipe.Page.RankSetPage rankSetPage1;
     }
 }

@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>5</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -31,6 +32,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -397,6 +399,15 @@
     <Compile Include="PatternMatching\MultiPatternMatchingParameterControl.Designer.cs">
       <DependentUpon>MultiPatternMatchingParameterControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="PKGTester\BinningClassifier.cs" />
+    <Compile Include="PKGTester\CIEChromaticity.cs" />
+    <Compile Include="PKGTester\CIEChromaticityControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="PKGTester\CIEChromaticityControl.Designer.cs">
+      <DependentUpon>CIEChromaticityControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="PKGTester\ColorCoordinateProcess.cs" />
     <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="PKGTester\TestItemResult.cs" />

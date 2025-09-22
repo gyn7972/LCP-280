@@ -96,6 +96,33 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0.0)]
         public double dSafeHalfRangeY { get; set; } = 0.0;
 
+
+
+        [Category("Interlock"), DisplayName("Safty Stage Radius")]
+        [DefaultValue(60.0)]
+        public double SafeSatageRaius
+        {
+            get
+            {
+                return dSafeSatageRaius;
+            }
+            set
+            {
+                if (value < 20)
+                {
+                    value = 20;
+                }
+                else if (value > 75)
+                {
+                    value = 75;
+                }
+                dSafeSatageRaius = value;
+
+
+            }
+        }
+
+        public double dSafeSatageRaius;
         // Motion Done 관련 옵션
         public bool   EnablePredictiveControl   { get; set; } = false;
         public double MoveDoneRemainDistance    { get; set; } = 0.005;

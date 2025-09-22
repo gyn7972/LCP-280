@@ -25,6 +25,12 @@ namespace QMC.LCP_280.Process.Unit
         private readonly object _gate = new object();          // 스냅샷 보호용 락
         private EquipmentStatusSnapshot _latest = new EquipmentStatusSnapshot(); // 최신 스냅샷
 
+        //EMG 확인
+        private const int RefreshIntervalMs = 100;              
+        private int _lastRefreshTick = Environment.TickCount;
+        private const int EMG_ALARM_CODE = 20001;
+        private bool _prevEmg = false;
+
         public EquipmentStatus() : base("EquipmentStatus") { }
         // (중요) 실제 장비 설정에서 DIO 모듈명이 고정되지 않을 수 있어
         // 기존 단일 상수명으로 접근 실패 → 모든 등록 모듈 순회하며 DisplayNo 첫 매칭을 시도.
@@ -39,6 +45,13 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Lifecycle
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            // [ADD] EMG 알람 등록
+            AlarmRegister(EMG_ALARM_CODE, "EMERGENCY PRESSED", "EMG_SW(X003) 입력", "Error");
+        }
+
         public override int OnRun()
         {
             int ret = 0;
@@ -72,15 +85,45 @@ namespace QMC.LCP_280.Process.Unit
 
             return ret;
         }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
-
+        public override int OnStop() 
+        { 
+            int ret = 0; 
+            base.OnStop(); 
+            return ret; 
+        }
 
         protected override int OnRunReady() 
         {
             return 0; 
         }
         protected override int OnRunWork() 
-        { 
+        {
+            var now = Environment.TickCount;
+            if (unchecked(now - _lastRefreshTick) >= RefreshIntervalMs)
+            {
+                Refresh();
+                _lastRefreshTick = now;
+
+                // [ADD] EMG 즉시 반응 (하강 에지에서만)
+                var snap = GetSnapshot();
+                var emg = snap.AnyEmg;
+                if (!emg && _prevEmg)
+                {
+                    try
+                    {
+                        Equipment.Instance?.AxisManager?.EmgStopAll();
+                    }
+                    catch { /* 드라이버 예외 무시하고 알람은 계속 */ }
+
+                    // 타워램프/부저: Alarm 패턴
+                    ApplyTowerPattern(TowerLampPattern.Alarm);
+
+                    // 알람 포스트
+                    PostAlarm(EMG_ALARM_CODE);
+                }
+                _prevEmg = emg;
+            }
+
             return 0; 
         }
         protected override int OnRunComplete() 
@@ -277,6 +320,8 @@ namespace QMC.LCP_280.Process.Unit
                     break;
             }
         }
+
+        public bool IsEmgOn() => GetSnapshot().AnyEmg;
     }
 
     /// <summary>

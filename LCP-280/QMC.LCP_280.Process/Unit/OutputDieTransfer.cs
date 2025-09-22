@@ -418,7 +418,7 @@ namespace QMC.LCP_280.Process.Unit
             //  - 0~7 : +1 보정하여 1~8 매핑
             int teachingIdx;
             if (nIndex >= 1 && nIndex <= 8)
-                teachingIdx = nIndex;
+                teachingIdx = nIndex + 1;
             else if (nIndex >= 0 && nIndex < 8)
                 teachingIdx = nIndex + 1; // 0-based 입력으로 판단
             else

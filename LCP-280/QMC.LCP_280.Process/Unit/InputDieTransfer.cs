@@ -606,7 +606,7 @@ namespace QMC.LCP_280.Process.Unit
             //  - 0~7 : +1 보정하여 1~8 매핑
             int teachingIdx;
             if (nIndex >= 1 && nIndex <= 8)
-                teachingIdx = nIndex;
+                teachingIdx = nIndex + 1;
             else if (nIndex >= 0 && nIndex < 8)
                 teachingIdx = nIndex + 1; // 0-based 입력으로 판단
             else
@@ -1620,7 +1620,7 @@ namespace QMC.LCP_280.Process.Unit
             //  - 0~7 : +1 보정하여 1~8 매핑
             int teachingIdx = 0;
             if (nIndex >= 1 && nIndex <= 8)
-                teachingIdx = nIndex;
+                teachingIdx = nIndex + 1;
             else if (nIndex >= 0 && nIndex < 8)
                 teachingIdx = nIndex + 1; // 0-based 입력으로 판단
             else
@@ -1689,10 +1689,12 @@ namespace QMC.LCP_280.Process.Unit
                 //    return true;
                 //else
                 //    return false;
-                if (Rotary.IsAxisMoving(AxisNames.IndexT)) //
-                    return true;
-                else
-                    return false;
+                //if (Rotary.IsAxisMoving(AxisNames.IndexT)) //
+                //    return true;
+                //else
+                //    return false;
+
+                return true;
             }
 
             try
@@ -1754,7 +1756,7 @@ namespace QMC.LCP_280.Process.Unit
             //  - 0~7 : +1 보정하여 1~8 매핑
             int teachingIdx = 0;
             if (nIndex >= 1 && nIndex <= 8)
-                teachingIdx = nIndex;
+                teachingIdx = nIndex + 1;
             else if (nIndex >= 0 && nIndex < 8)
                 teachingIdx = nIndex + 1; // 0-based 입력으로 판단
             else
@@ -1779,8 +1781,10 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            Rotary.SetVacuum(nIndex, true);
+            SetVacuum(armIndex, false);
+            
             isWork = true;
-
             return nRet;
 
             //// Place 위치로 이동 (없으면 SafetyZone)
@@ -1821,7 +1825,7 @@ namespace QMC.LCP_280.Process.Unit
                     SetBlow(armIndex, true);
 
                     var sw = Stopwatch.StartNew();
-                    while (InputStage.IsVacuumOn())
+                    while (Rotary.SlotFlowOk(nIndex))
                     {
                         if (!Config.IsSimulation)
                         {
@@ -1840,10 +1844,6 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                Thread.Sleep(1);
-                SetVent(armIndex, false);
-                SetBlow(armIndex, false);
-
                 // Safety 위치로 상승
                 double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),
                             AxisNames.LeftPlaceZ);
@@ -1853,6 +1853,10 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] AxisPlaceZ SafetyZone 이동 실패");
                     return -1;
                 }
+
+                Thread.Sleep(1);
+                SetVent(armIndex, false);
+                SetBlow(armIndex, false);
             }
             catch (Exception ex)
             {
