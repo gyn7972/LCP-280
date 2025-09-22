@@ -157,6 +157,11 @@ namespace QMC.Common.Unit
 
         private static readonly object _alarmLogLock = new object();
 
+        public double GetDistance(double deltaX, double deltaY)
+        {
+            return Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+        }
+
         public int PostAlarm(int alarmCode)
         {
             try
