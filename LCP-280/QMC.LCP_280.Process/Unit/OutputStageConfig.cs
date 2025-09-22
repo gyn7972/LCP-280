@@ -212,6 +212,26 @@ namespace QMC.LCP_280.Process.Unit
                 "SlotPitch (mm)",
                 "SlotCount (ea)"
             };
+
+        /// 개별 Teaching Position 에 적용할 오프셋 (X / Y / T)
+        public Dictionary<string, (double dx, double dy, double dt)> Offsets { get; set; } = new Dictionary<string, (double dx, double dy, double dt)>();
+
+        public (double x, double y, double t) GetPositionWithOffset(string name)
+        {
+            var tp = GetTeachingPosition(name);
+            if (tp == null) return (0, 0, 0);
+            double x = tp.AxisPositions.TryGetValue(AxisNames.WaferStageX, out var vx) ? vx : 0;
+            double y = tp.AxisPositions.TryGetValue(AxisNames.WaferStageY, out var vy) ? vy : 0;
+            double t = tp.AxisPositions.TryGetValue(AxisNames.WaferStageT, out var vt) ? vt : 0;
+            if (Offsets.TryGetValue(name, out var off)) { x += off.dx; y += off.dy; t += off.dt; }
+            return (x, y, t);
+        }
+
+        public void SetOffset(string name, double dx, double dy, double dt)
+        {
+            Offsets[name] = (dx, dy, dt);
+            Saveconfig();
+        }
         #endregion
     }
 }

@@ -526,7 +526,11 @@ namespace QMC.Common.Unit
                 }
             }
 
-            return axis != null && !axis.IsMoveDone();
+            if (axis != null && !axis.IsMoveDone())
+                return false;
+
+            return true;
+            //return axis != null && !axis.IsMoveDone();
         }
 
         public virtual bool IsAnyAxisMoving()
@@ -534,9 +538,9 @@ namespace QMC.Common.Unit
             foreach (var ax in Axes.Values)
             {
                 if (ax != null && !ax.IsMoveDone())
-                    return true;
+                    return false;
             }
-            return false;
+            return true;
         }
 
         public virtual IDictionary<string, bool> GetAxesMovingMap()

@@ -174,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -251,7 +251,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -328,7 +328,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -443,7 +443,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -551,7 +551,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -715,7 +715,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -835,7 +835,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -1141,7 +1141,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public int IsRotaryIdle()
         {
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeCardX.EmgStop();
                 AxisProbeCardY.EmgStop();
@@ -1461,7 +1461,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // (선택) Rotary 움직임 감시하여 비정상 시 탈출 가능
-                if (Rotary != null && Rotary.IsAnyAxisMoving())
+                if (Rotary != null && !Rotary.IsAnyAxisMoving())
                 {
                     Log.Write(UnitName, "[BottomContactWait] Rotary moving detected - abort wait");
                     return -1;

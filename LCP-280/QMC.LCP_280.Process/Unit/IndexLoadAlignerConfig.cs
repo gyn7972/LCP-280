@@ -97,7 +97,7 @@ namespace QMC.LCP_280.Process.Unit
 
         [Category("SetupConfig"), DisplayName("IndexOfMAlign")]
         [DefaultValue(0)]
-        public int IndexOfMAlign { get; internal set; } = 0;
+        public int IndexOfMAlign { get; set; } = 0;
 
         public IndexLoadAlignerConfig() : base("IndexLoadAlignerConfig") { }
 

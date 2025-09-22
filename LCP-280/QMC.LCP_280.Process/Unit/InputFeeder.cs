@@ -34,6 +34,8 @@ namespace QMC.LCP_280.Process.Unit
             Alarm_InputStageInterlockFailed = 2010,
             Alarm_GripperClampFailed = 2020,
             Alarm_FeederClampUp = 2021,
+            Alarm_IsWaferReadyForLoading = 2022,
+            Alarm_WaferLoadingPosition = 2023,
         }
         #region InitAlarm
         protected override void InitAlarm()
@@ -70,6 +72,14 @@ namespace QMC.LCP_280.Process.Unit
             AlarmRegister((int)AlarmKeys.Alarm_FeederClampUp,
                 "Feeder Clamp Up Failed",
                 "피더 클램프 업 상태가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "Error");
+            AlarmRegister((int)AlarmKeys.Alarm_IsWaferReadyForLoading,
+                "IsWaferReadyForLoading Fail",
+                "Cassette Ready For Loading Signal Fail.\n장비 상태를 확인 하여 주십시요.",
+                "Error");
+            AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingPosition,
+                "WaferLoadingPosition",
+                "Wafer LoadingPosition Fail\n장비 상태를 확인 하여 주십시요.",
                 "Error");
 
         }
@@ -156,10 +166,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (IsInterlockOKWaferLoading() == false)
                 {
-                    foreach (var ax in Axes.Values)
-                    {
-                        ax.EmgStop();
-                    }
+                    FeederY.EmgStop();
                     PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                     return -1;
                 }
@@ -937,6 +944,7 @@ namespace QMC.LCP_280.Process.Unit
             // Cassette or InputStage 위치 및 Signal 확인 후 진행. 
             if(!InputCassetteLifter.IsWaferReadyForLoading())
             {
+                PostAlarm((int)AlarmKeys.Alarm_IsWaferReadyForLoading);
                 Log.Write(this, "InputCassetteLifter Not Ready for Loading");
                 bRtn = false;
                 return bRtn;
@@ -944,6 +952,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if(!InputStage.IsWaferLoadingPosition())
             {
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingPosition);
                 Log.Write(this, "InputStage Not Ready for Loading");
                 bRtn = false;
                 return bRtn;

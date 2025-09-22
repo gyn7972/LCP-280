@@ -208,7 +208,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if(axis == AxisPickZ)
                 {
-                    if (InputStage.IsAnyAxisMoving())
+                    if (!InputStage.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -220,7 +220,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (axis == AxisPlaceZ)
                 {
-                    if (Rotary.IsAnyAxisMoving())
+                    if (!Rotary.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -382,7 +382,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockPickUp()
         {
             int nRet = 0;
-            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            if (InputStage != null && !InputStage.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -391,7 +391,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
+            if (InputStageEjector != null && !InputStageEjector.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -400,7 +400,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -521,7 +521,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -646,7 +646,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -866,7 +866,7 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
 
             // 사전 Interlock (다른 관련 Unit 축 동작 중이면 시작하지 않음)
-            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            if (InputStage != null && !InputStage.IsAnyAxisMoving())
             {
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
@@ -879,7 +879,7 @@ namespace QMC.LCP_280.Process.Unit
             //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
             //    return -1;
             //}
-            if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
+            if (InputStageEjector != null && !InputStageEjector.IsAnyAxisMoving())
             {
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
@@ -954,7 +954,7 @@ namespace QMC.LCP_280.Process.Unit
                     
 
                 // 진행 중 Interlock 감시 (기존 MoveAxisWithSafety 로직과 유사)
-                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                if (InputStage != null && !InputStage.IsAnyAxisMoving())
                 {
                     pick.EmgStop(); pin.EmgStop();
                     AxisToolT.EmgStop();
@@ -976,7 +976,7 @@ namespace QMC.LCP_280.Process.Unit
                 //}
                 // Ejector 다른 축(EjectorZ) 움직임 감시
                 if (InputStageEjector != null && 
-                    InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
+                    !InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
                 {
                     pick.EmgStop(); pin.EmgStop();
                     AxisToolT.EmgStop();
@@ -1350,9 +1350,6 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
         #region Seq 단위 동작 함수
-
-
-
         /// <summary>
         /// 첫번째 칩 XY 오프셋 취득 (Stage Center 기준). 실제 Mapping 연동 시 구현.
         /// 현재는 (0,0) 고정 반환. (TODO)
@@ -1485,13 +1482,21 @@ namespace QMC.LCP_280.Process.Unit
                     var sw = Stopwatch.StartNew();
                     while (!ArmFlowOk(0))
                     {
-                        if (sw.ElapsedMilliseconds > 2000)
+                        if(!Config.IsSimulation)
                         {
-                            PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
-                            Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
-                            return -1;
+                            if (sw.ElapsedMilliseconds > 2000)
+                            {
+                                PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
+                                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
                         }
-                        Thread.Sleep(1);
+                        else
+                        {
+                            break;
+                        }
+                        
                     }
                 }
 
@@ -1720,7 +1725,6 @@ namespace QMC.LCP_280.Process.Unit
                     //}
                     Thread.Sleep(pollMs);
                 }
-
             }
             catch (Exception ex)
             {

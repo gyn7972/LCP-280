@@ -5,6 +5,7 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -361,10 +362,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-
-
-
-
         #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
@@ -459,7 +456,6 @@ namespace QMC.LCP_280.Process.Unit
             if (bUpDn) return _feederLift.Extend();
             else return _feederLift.Retract();
         }
-
         public bool SetClamp(bool bUpDn)
         {
             if (_cylClamp == null) return false;
@@ -476,18 +472,94 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         /// ////////////////////////////////////////////////////////////////////////////////////////
-
         #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
         public bool IsFeederUpValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UP_VALVE);
         public bool IsFeederDownValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_DOWN_VALVE);
         public bool IsFeederClampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_CLAMP_VALVE);
         public bool IsFeederUnclampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
+        public bool IsFeederZSafetyPosition(bool treatMissingAsSafe = true)
+        {
+            if (_feederLift == null)
+                return treatMissingAsSafe;
 
+            if (IsFeederUp())
+                return true;
 
+            if (IsFeederDown())
+                return false;
 
+            // 전이 상태(Up/Down 모두 OFF) → 안전 아님으로 판단
+            return false;
+        }
+        public bool IsFeederYSafetyPosition(double fallbackTolerance = 0.01,
+                                            bool useAxisInposTolerance = true,
+                                            bool treatMissingAsSafe = true,
+                                            bool allowPositiveBeyond = true,
+                                            IEnumerable<string> customCandidates = null)
+        {
+            if (FeederY == null)
+                return treatMissingAsSafe;
 
+            var cfg = Config;
+            if (cfg == null)
+                return treatMissingAsSafe;
 
+            // 기본 후보 목록
+            var defaultCandidates = new[] { "SafetyPos", "Safety", "Safe", "Ready" };
+            var candidates = (customCandidates == null ? defaultCandidates : customCandidates)
+                             .Where(s => !string.IsNullOrWhiteSpace(s));
+
+            string axisKey = AxisNames.BinFeederY;
+            string selectedTpName = null;
+            TeachingPosition selectedTp = null;
+
+            foreach (var name in candidates)
+            {
+                var tp = cfg.GetTeachingPosition(name);
+                if (tp == null) continue;
+
+                // Teaching 에 해당 축 좌표가 실재 포함되는지 확인
+                if (tp.AxisPositions != null &&
+                    tp.AxisPositions.Keys.Any(k =>
+                        string.Equals(k, axisKey, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(k, FeederY.Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    selectedTpName = name;
+                    selectedTp = tp;
+                    break;
+                }
+            }
+
+            if (selectedTp == null)
+                return treatMissingAsSafe;
+
+            // 목표 좌표 가져오기 (AxisPositions 사전에서 직접 조회)
+            double target;
+            if (!selectedTp.AxisPositions.TryGetValue(axisKey, out target))
+            {
+                // Axis 이름으로 재시도
+                if (!selectedTp.AxisPositions.TryGetValue(FeederY.Name, out target))
+                    return treatMissingAsSafe; // 좌표가 없으면 안전 판단 불가 → 기본 정책대로
+            }
+
+            double cur = FeederY.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (FeederY.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            if (allowPositiveBeyond)
+            {
+                // 목표 이상(+방향) 허용
+                if (cur >= target - tol) return true;
+                return false;
+            }
+            else
+            {
+                // 목표 근처만 허용
+                return System.Math.Abs(cur - target) <= tol;
+            }
+        }
 
 
         #region Runtime
@@ -498,37 +570,48 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
         #endregion
 
+        
+        
+        
         #region Seq 단위 동작 함수
+        
+
+
+
+
         public int BinLoading()
         {
-            int nRet = -1;
+            int nRet = 0;
             /* TODO */
             return nRet;
         }
         public int BarcodeReading()
         {
-            int nRet = -1;
+            int nRet = 0;
             /* TODO */
             return nRet;
         }
         public int StageLoading()
         {
-            int nRet = -1;
+            int nRet = 0;
             /* TODO */
             return nRet;
         }
         public int StageUnloading()
         {
-            int nRet = -1;
+            int nRet = 0;
             /* TODO */
             return nRet;
         }
         public int BinUnloading()
         {
-            int nRet = -1;
+            int nRet = 0;
             /* TODO */
             return nRet;
         }
+
+
+
         #endregion
     }
 }
