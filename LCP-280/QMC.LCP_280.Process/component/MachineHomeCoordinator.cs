@@ -1,9 +1,10 @@
+using QMC.Common;
+using QMC.Common.Motions;
+using QMC.LCP_280.Process.Unit;
 using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using QMC.Common.Motions;
-using QMC.LCP_280.Process.Unit;
 
 namespace QMC.LCP_280.Process.Component
 {
@@ -41,19 +42,19 @@ namespace QMC.LCP_280.Process.Component
             seq.PreStepInterlockAsync = async (stepIndex, list, ct) =>
             {
                 string reason;
-                var il = InterlockManager.Instance; 
+                var il = InterlockManager.Instance;
                 il.Start();
 
-                // 전역/해당축 인터락 평가
-                if (!il.ValidateForHomeStep(list, out reason))
-                    return (false, reason);
+                //// 전역/해당축 인터락 평가
+                //if (!il.ValidateForHomeStep(list, out reason))
+                //    return (false, reason);
 
                 // 축별 사전 체크(Servo/Alarm/Motion)
-                foreach (var a in list)
-                {
-                    if (!a.CheckHomeInterlocks(out reason))
-                        return (false, reason);
-                }
+                //foreach (var a in list)
+                //{
+                //    if (!a.CheckHomeInterlocks(out reason))
+                //        return (false, reason);
+                //}
                 return (true, null);
             };
 
@@ -65,8 +66,11 @@ namespace QMC.LCP_280.Process.Component
                 // InterlockManager 축 규칙 빠른 검사
                 string reason;
                 var il = InterlockManager.Instance;
-                if (!il.ValidateAxisForHome(axis, out reason))
-                    return (false, reason);
+                //if (!il.ValidateAxisForHome(axis, out reason))
+                //    return (false, reason);
+
+                if (!axis.CheckHomeInterlocks(out var reason2))
+                    return (false, reason2);
 
                 // 축 이름별 전처리/인터락
                 switch (axis.Name)
@@ -76,8 +80,8 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (!outStage.IsPlateDown())
                             {
-                                if (!outStage.PlateDown(2000) || !outStage.IsPlateDown())
-                                    return (false, "OutputStage PlateDown 필요");
+                                if (!outStage.SetClampPlate(false) || !outStage.IsPlateDown())
+                                    return (false, "OutputStage PlateDown Required");
                             }
                         }
                         break;
@@ -86,7 +90,7 @@ namespace QMC.LCP_280.Process.Component
                         // 기존 PreStep의 Wafer Feeder 사전 동작을 축 단위로 옮김
                         try
                         {
-                            if (eq.Units != null && eq.Units.TryGetValue("InputRingTransfer", out var uIn) && uIn is InputRingTransfer inFeeder)
+                            if (eq.Units != null && eq.Units.TryGetValue("InputFeeder", out var uIn) && uIn is InputFeeder inFeeder)
                             {
                                 // Unclamp → 센서 확인
                                 inFeeder.SetClamp(false);
@@ -97,7 +101,7 @@ namespace QMC.LCP_280.Process.Component
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
                                 if (!inFeeder.IsUnclamped())
-                                    return (false, "Wafer Feeder Unclamp 센서 미확인");
+                                    return (false, "Wafer Feeder Unclamp Sensor Not Detected");
 
                                 // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
                                 try
@@ -128,8 +132,8 @@ namespace QMC.LCP_280.Process.Component
                                 catch { /* ignore jog errors */ }
 
                                 await Task.Delay(100, ct).ConfigureAwait(false);
-                                if (!inFeeder.FeederUp(3000))
-                                    return (false, "Wafer Feeder Up 실패");
+                                if (!inFeeder.SetLift(true))
+                                    return (false, "Wafer Feeder Up Failure");
 
                                 // Up 센서 확인
                                 until = DateTime.UtcNow.AddMilliseconds(1000);
@@ -139,12 +143,12 @@ namespace QMC.LCP_280.Process.Component
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
                                 if (!inFeeder.IsFeederUp())
-                                    return (false, "Wafer Feeder Up 센서 미확인");
+                                    return (false, "Wafer Feeder Up Sensor Not Detected");
                             }
                         }
                         catch (Exception ex)
                         {
-                            return (false, "Wafer Feeder PreAxis 실패: " + ex.Message);
+                            return (false, "Wafer Feeder PreAxis Failure: " + ex.Message);
                         }
                         break;
 
@@ -152,7 +156,7 @@ namespace QMC.LCP_280.Process.Component
                         // 기존 PreStep의 Bin Feeder 사전 동작을 축 단위로 옮김
                         try
                         {
-                            if (eq.Units != null && eq.Units.TryGetValue("OutputRingTransfer", out var uOut) && uOut is OutputRingTransfer outFeeder)
+                            if (eq.Units != null && eq.Units.TryGetValue("OutputFeeder", out var uOut) && uOut is OutputFeeder outFeeder)
                             {
                                 // Unclamp → 센서 확인
                                 outFeeder.SetClamp(false);
@@ -163,7 +167,7 @@ namespace QMC.LCP_280.Process.Component
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
                                 if (!outFeeder.IsUnclamped())
-                                    return (false, "Bin Feeder Unclamp 센서 미확인");
+                                    return (false, "Bin Feeder Unclamp Sensor Not Detected");
 
                                 // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
                                 try
@@ -194,8 +198,8 @@ namespace QMC.LCP_280.Process.Component
                                 catch { /* ignore jog errors */ }
 
                                 await Task.Delay(100, ct).ConfigureAwait(false);
-                                if (!outFeeder.FeederUp(3000))
-                                    return (false, "Bin Feeder Up 실패");
+                                if (!outFeeder.SetLift(true))
+                                    return (false, "Bin Feeder Up Failure");
 
                                 // Up 센서 확인
                                 until2 = DateTime.UtcNow.AddMilliseconds(1000);
@@ -205,12 +209,12 @@ namespace QMC.LCP_280.Process.Component
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
                                 if (!outFeeder.IsFeederUp())
-                                    return (false, "Bin Feeder Up 센서 미확인");
+                                    return (false, "Bin Feeder Up Sensor Not Detected");
                             }
                         }
                         catch (Exception ex)
                         {
-                            return (false, "Bin Feeder PreAxis 실패: " + ex.Message);
+                            return (false, "Bin Feeder PreAxis Failure: " + ex.Message);
                         }
                         break;
 
@@ -220,13 +224,13 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (eq.Units != null && eq.Units.TryGetValue("InputCassetteLifter", out var uL) && uL is InputCassetteLifter lifter)
                             {
-                                if (lifter.RingJut())
-                                    return (false, "InputCassetteLifter: RING_JUT_CHECK 감지됨 - 홈 중단");
+                                if (lifter.IsWaferProtrusionDetectionSensor())
+                                    return (false, "InputCassetteLifter Ring JUT Detected");
                             }
                         }
                         catch (Exception ex)
                         {
-                            return (false, "InputCassetteLifter PreAxis 실패: " + ex.Message);
+                            return (false, "InputCassetteLifter PreAxis Failure: " + ex.Message);
                         }
                         break;
 
@@ -237,15 +241,101 @@ namespace QMC.LCP_280.Process.Component
                             if (eq.Units != null && eq.Units.TryGetValue("OutputCassetteLifter", out var uOL) && uOL is OutputCassetteLifter outLifter)
                             {
                                 if (outLifter.RingJut())
-                                    return (false, "OutputCassetteLifter: RING_JUT_CHECK 감지됨 - 홈 중단");
+                                    return (false, "OutputCassetteLifter Ring JUT Detected");
                             }
                         }
                         catch (Exception ex)
                         {
-                            return (false, "OutputCassetteLifter PreAxis 실패: " + ex.Message);
+                            return (false, "OutputCassetteLifter PreAxis Failure: " + ex.Message);
                         }
                         break;
 
+                    case "Index T Axis":
+                        // SafeZone(입력 다이 트랜스퍼) 위치가 아닐 경우 Index T 홈 금지
+                        try
+                        {
+                            // 1) InputDieTransfer SafeZone 확인
+                            if (eq.Units != null && eq.Units.TryGetValue("InputDieTransfer", out var uIdt) && uIdt is InputDieTransfer intransfer)
+                            {
+                                var safeZoneName = nameof(InputDieTransferConfig.TeachingPositionName.SafetyZone);
+                                if (!intransfer.InPosTeaching(safeZoneName))
+                                    return (false, "InputDieTransfer Not in Safety Zone");
+                            }
+                            else
+                            {
+                                return (false, "InputDieTransfer Unit Not Found");
+                            }
+
+                            // 2) OutputDieTransfer SafeZone 확인
+                            if (eq.Units != null && eq.Units.TryGetValue("OutputDieTransfer", out var uOdt) && uOdt is OutputDieTransfer outTransfer)
+                            {
+                                var safeOut = nameof(OutputDieTransferConfig.TeachingPositionName.SafetyZone);
+                                if (!outTransfer.InPosTeaching(safeOut))
+                                    return (false, "OutputDieTransfer Not in Safety Zone");
+                            }
+                            else
+                            {
+                                return (false, "OutputDieTransfer Unit Not Found");
+                            }
+
+                            // 3) IndexLoadAligner SafeZone 확인
+                            //if (eq.Units != null && eq.Units.TryGetValue("Index Z Axis", out var uIla))
+                            if (eq.Units != null && eq.Units.TryGetValue("IndexLoadAligner", out var uIla))
+                            {
+                                if (uIla == null)
+                                {
+                                    Log.Write("디버그", "\"Index Z Axis\" 값이 null입니다.");
+                                }
+                                else
+                                {
+                                    Log.Write("디버그", "\"Index Z Axis\" 타입: " + uIla.GetType().FullName);
+                                }
+                                if (uIla is IndexLoadAligner indexAligner)
+                                {
+                                    var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
+                                    if (!outTransfer.InPosTeaching(safeOut))
+                                        return (false, "OutputDieTransfer Not in Safety Zone");
+                                }
+                                else
+                                {
+                                    Log.Write("디버그", "\"Index Z Axis\"가 IndexLoadAligner 타입이 아닙니다.");
+                                }
+                            }
+                            else
+                            {
+                                Log.Write("디버그", "\"Index Z Axis\" 키가 eq.Units에 없습니다.");
+                            }
+                            //if (eq.Units != null && 
+                            //    eq.Units.TryGetValue("Index Z Axis", out var uIla) &&
+                            //    uIla is IndexLoadAligner indexAligner)
+                            //{
+                            //    var safeOut = nameof(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone);
+                            //    if (!outTransfer.InPosTeaching(safeOut))
+                            //        return (false, "OutputDieTransfer Not in Safety Zone");
+                            //}
+                            //else
+                            //{
+                            //    return (false, "OutputDieTransfer Unit Not Found");
+                            //}
+
+                            // 4) IndexChipProbeController SafeZone 확인
+                            //if (eq.Units != null && eq.Units.TryGetValue("Index Z Axis", out var uIp) && uIp is IndexChipProbeController indexProbe)
+                            if (eq.Units != null && eq.Units.TryGetValue("IndexChipProbeController", out var uIp) && uIp is IndexChipProbeController indexProbe)
+                            {
+                                var safeOut = nameof(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone);
+                                if (!outTransfer.InPosTeaching(safeOut))
+                                    return (false, "IndexChipProbeController Not in Safety Zone");
+                            }
+                            else
+                            {
+                                return (false, "IndexChipProbeController Unit Not Found");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "Index T SafetyZone Check Failure" + ex.Message);
+                        }
+                        break;
                     default:
                         break;
                 }

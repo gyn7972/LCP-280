@@ -1,6 +1,7 @@
 ﻿using QMC.Common;
 using QMC.LCP_280.Process.Component;
 using System;
+using System.Collections; // added for IEnumerable checks
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -8,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
-using System.Collections; // added for IEnumerable checks
 
 namespace QMC.LCP_280.Process.Unit.FormRecipe
 {
@@ -27,11 +27,14 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
             // hook events
             this.Load += Main_Recipe_Load;
-            this.recipeListView.ItemSelected += (s, idx) =>
-            {
-                var name = this.recipeListView.SelectedItemName;
-                if (!string.IsNullOrWhiteSpace(name)) LoadRecipe(name);
-            };
+            //this.recipeListView.ItemSelected += (s, idx) =>
+            //{
+            //    var name = this.recipeListView.SelectedItemName;
+            //    if (!string.IsNullOrWhiteSpace(name)) LoadRecipe(name);
+            //};
+
+            string name = Equipment._CurrentRecipeName;
+            LoadRecipe(name);
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
@@ -250,6 +253,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             LoadRecipe(name);
 
             Equipment._CurrentRecipeName = name;
+
+            Equipment.ChangeCurrentRecipe(Equipment._CurrentRecipeName);
+            Equipment.SaveCurrentRecipe();
+
         }
 
         private void btnCopy_Click(object sender, EventArgs e)
@@ -302,6 +309,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 }
 
                 RecipeManager.Save(_current);
+                Equipment.SaveCurrentRecipe();
 
                 RefreshRecipeList();
                 SelectRecipeInList(_current.Name);

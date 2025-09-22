@@ -1,4 +1,3 @@
-using System; // added for Obsolete attribute
 using QMC.Common;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
@@ -7,12 +6,14 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System; // added for Obsolete attribute
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputStage : BaseUnit
+    public class OutputStage : BaseUnit<OutputStageConfig>
     {
         // Wrapper collection to allow enum index access
         public class TeachingPositionCollection : List<TeachingPosition>
@@ -27,27 +28,25 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        public OutputStageConfig OutputStageConfig { get; private set; }
-        public TeachingPositionCollection TeachingPositions { get; private set; } = new TeachingPositionCollection();
+        
+        
 
         // Stage camera
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "Out_Stage";
 
         public OutputStage(OutputStageConfig config = null)
-            : base("OutputStageConfig")
+            : base(new OutputStageConfig())
         {
-            OutputStageConfig = config ?? new OutputStageConfig();
+            
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            OutputStageConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            OutputStageConfig.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in OutputStageConfig.TeachingPositions)
-                TeachingPositions.Add(tp);
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
+            
             BindAxes();
             BindIoDomains();
             BindCamera();
@@ -63,8 +62,11 @@ namespace QMC.LCP_280.Process.Unit
                 StageCamera = eq.OutStageCam; // fallback
         }
 
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() { base.OnStop(); }
+        public override int OnRun() { int ret = 0; return ret; }
+        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        protected override int OnRunReady() { return 0; }
+        protected override int OnRunWork() { return 0; }
+        protected override int OnRunComplete() { return 0; }
 
         public void TeachCurrentPosition(string positionName, string description = null)
         {
@@ -72,12 +74,12 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            OutputStageConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
 
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = OutputStageConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -102,7 +104,7 @@ namespace QMC.LCP_280.Process.Unit
             var mgr = Equipment.Instance?.AxisManager;
             if (mgr == null)
             {
-                Log.Write("InputCassetteLifter", "[BindAxes] AxisManager null");
+                Log.Write("OutputStage", "[BindAxes] AxisManager null");
                 return;
             }
 
@@ -113,7 +115,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public double GetTP(string tpName, string axisName)
         {
-            var tp = OutputStageConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -129,7 +131,7 @@ namespace QMC.LCP_280.Process.Unit
         #region IO Low-Level
         public bool ReadInput(string name)
         {
-            var hi = OutputStageConfig.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -138,7 +140,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            var ho = OutputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -147,7 +149,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOutputOn(string name)
         {
-            var ho = OutputStageConfig.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
+            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
             foreach (var m in eq.UnitIO.Modules)
@@ -173,20 +175,43 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Cylinder는 중앙 별칭으로 조회만
-            if (!IoAutoBindings.Cylinders.TryGetValue("OutStageExpander", out _cylPlate))
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutStagePlate", out _cylPlate))
             {
-                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStageExpander");
+                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStagePlate");
             }
 
-            if (!IoAutoBindings.Cylinders.TryGetValue("OutStageClampLift", out _cylClampLift))
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutStageLift", out _cylClampLift))
             {
-                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStageClampLift");
+                Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStageLift");
             }
 
             if (!IoAutoBindings.Cylinders.TryGetValue("OutStageClampFB", out _cylClampFB))
             {
                 Log.Write("OutputStage", "BindIoDomains", "Cylinder not found: OutStageClampFB");
             }
+        }
+
+        private bool IsAtTeaching(OutputStageConfig.TeachingPositionName name)
+        {
+            // Config에 저장된 TeachingPosition 조회
+            var tp = Config.GetTeachingPosition(name.ToString());
+            if (tp == null || tp.AxisPositions == null || tp.AxisPositions.Count == 0)
+                return false;
+
+            // TeachingPosition에 포함된 각 축이 모두 In-Position인지 검사
+            foreach (var kv in tp.AxisPositions)
+            {
+                var axisKey = kv.Key;
+                var target = kv.Value;
+
+                MotionAxis ax;
+                if (!Axes.TryGetValue(axisKey, out ax) || ax == null)
+                    return false;
+
+                if (!InPos(ax, target))
+                    return false;
+            }
+            return true;
         }
 
         // === Domain Control (표준 구동) ===
@@ -200,30 +225,39 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool SetClampPlate(bool bUpDn)
         {
-            if (_cylPlate == null) 
-                return false;
-
-            if (bUpDn) 
-                return _cylPlate.Extend();
-            else 
-                return _cylPlate.Retract();
-        }
-
-        public bool SetClampLift(bool bUpDn)
-        {
-            if (_cylClampLift == null) 
+            if (_cylPlate == null)
                 return false;
 
             if (bUpDn)
             {
-                if (IsClampBwd())
-                    return false; // 기존 인터락 유지
+                if (!IsAtTeaching(OutputStageConfig.TeachingPositionName.Loading) &&
+                    !IsAtTeaching(OutputStageConfig.TeachingPositionName.Unloading))
+                {
+                    MessageBox.Show("SetClampPlate Interlock",
+                              "Plate UP blocked: not at Loading/Unloading teaching position.",
+                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+                return _cylPlate.Extend();
+            }
+            else
+            {
+                return _cylPlate.Retract();
+            }
+        }
 
+        public bool SetClampLift(bool bUpDn)
+        {
+            if (_cylClampLift == null)
+                return false;
+
+            if (bUpDn)
+            {
                 return _cylClampLift.Extend();
             }
             else
             {
-                if (!IsClampBwd()) 
+                if (!IsClampBwd())
                     return false; // 기존 인터락 유지
 
                 return _cylClampLift.Retract();
@@ -232,77 +266,68 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool SetClampFB(bool bFwdBwd)
         {
-            if (_cylClampFB == null) 
+            if (_cylClampFB == null)
                 return false;
 
             if (bFwdBwd)
             {
-                if (!IsClampLiftUp()) 
+                if (!IsClampLiftUp())
                     return false; // 기존 인터락 유지
 
                 return _cylClampFB.Extend();
             }
             else
             {
-                if (IsClampLiftUp())
+                if (!IsClampLiftUp())
                     return false; // 기존 인터락 유지
 
                 return _cylClampFB.Retract();
             }
         }
 
-        // === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public void SetVacuumValve(bool on) => WriteOutput(OutputStageConfig.IO.VACUUM, on);
-        public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
-
-        public void SetPlateUpValve(bool on) => WriteOutput(OutputStageConfig.IO.PLATE_UP_OUT, on);
-        public bool IsPlateUpValveOn() => IsOutputOn(OutputStageConfig.IO.PLATE_UP_OUT);
-        public void SetPlateDownValve(bool on) => WriteOutput(OutputStageConfig.IO.PLATE_DOWN_OUT, on);
-        public bool IsPlateDownValveOn() => IsOutputOn(OutputStageConfig.IO.PLATE_DOWN_OUT);
-
-        public void SetClampLiftUpValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_UP, on);
-        public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
-        public void SetClampLiftDownValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_DOWN, on);
-        public bool IsClampLiftDownValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_DOWN);
-
-        public void SetClampFwdValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_FWD, on);
-        public bool IsClampFwdValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_FWD);
-        public void SetClampBwdValve(bool on) => WriteOutput(OutputStageConfig.IO.CLAMP_BWD, on);
-        public bool IsClampBwdValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_BWD);
-
         // --- Existing High-Level APIs (인터락 포함) ---
-        public void VacuumOn() => _vacuum?.On();
-        public void VacuumOff() => _vacuum?.Off();
         public bool IsVacuum() => (_vacuum?.IsOk() ?? false) || ReadInput(OutputStageConfig.IO.VACUUM_CHECK);
-        [Obsolete("Use IsVacuum() instead")] public bool VacuumCheck() => IsVacuum();
-        public bool VacuumOk() => _vacuum?.IsOk() ?? false;
-
-        public bool PlateUp(int timeoutMs = 3000) => _cylPlate?.Extend(timeoutMs) ?? false;
-        public bool PlateDown(int timeoutMs = 3000) => _cylPlate?.Retract(timeoutMs) ?? false;
         public bool IsPlateUp() => ReadInput(OutputStageConfig.IO.PLATE_UP);
         public bool IsPlateDown() => ReadInput(OutputStageConfig.IO.PLATE_DOWN);
-
-        public bool ClampLiftUp(int timeoutMs = 3000) => _cylClampLift?.Extend(timeoutMs) ?? false;
-        public bool ClampLiftDown(int timeoutMs = 3000)
-        {
-            if (!IsClampBwd()) return false; // 기존 인터락 유지
-            return _cylClampLift?.Retract(timeoutMs) ?? false;
-        }
         public bool IsClampLiftUp() => !IsClampLiftDown();
         public bool IsClampLiftDown() => ReadInput(OutputStageConfig.IO.CLAMP_DOWN_CHECK);
-
-        public bool ClampFwd(int timeoutMs = 3000)
-        {
-            if (!IsClampLiftUp()) return false; // 기존 인터락 유지
-            return _cylClampFB?.Extend(timeoutMs) ?? false;
-        }
-        public bool ClampBwd(int timeoutMs = 3000) => _cylClampFB?.Retract(timeoutMs) ?? false;
         public bool IsClampFwd() => ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
         public bool IsClampBwd() => !IsClampFwd();
-
         public bool Ring0() => ReadInput(OutputStageConfig.IO.RING_CHECK0);
         public bool Ring1() => ReadInput(OutputStageConfig.IO.RING_CHECK1);
         public bool IsRingPresent() => Ring0() || Ring1();
+
+        // === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
+        public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
+        public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
+        #endregion
+
+        #region Seq 단위 동작 함수
+        public int BinLoading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int ChipPlaceDown()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        public int BinUnloading()
+        {
+            int nRet = -1;
+            /* TODO */
+            return nRet;
+        }
+
+        internal bool IsBinLoadingPosition()
+        {
+            throw new NotImplementedException();
+        }
         #endregion
     }
 }

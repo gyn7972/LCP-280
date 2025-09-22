@@ -1,11 +1,17 @@
 using QMC.Common;
+using QMC.Common.Alarm;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -15,38 +21,66 @@ namespace QMC.LCP_280.Process.Unit
     ///  - OutputStage 스타일 Region/메서드 구조 적용
     ///  - 현재 별도 IO 없음 (추후 필요 시 IO Mapping 추가)
     /// </summary>
-    public class IndexLoadAligner : BaseUnit
+    public class IndexLoadAligner : BaseUnit<IndexLoadAlignerConfig>
     {
+        public enum AlarmKeys
+        {
+            eIndexLoadAligner = 4701,
+            eRotaryNotSafe = 4702,
+        }
+
+        #region InitAlarm
+        protected override void InitAlarm()
+        {
+            base.InitAlarm();
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
+            alarm.Title = "Rorary Not Sfarety Pos.";
+            alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+        }
+        #endregion
+
         #region Config / Teaching
-        public IndexLoadAlignerConfig IndexLoadAlignerConfig { get; private set; }
-        public List<TeachingPosition> TeachingPositions { get; private set; } = new List<TeachingPosition>();
+        public IndexLoadAlignerConfig IndexLoadAlignerConfig => Config;
+        #endregion
+
+        #region Unit
+        Rotary Rotary { get; set; }
         #endregion
 
         #region Axes
         private MotionAxis _alignT, _indexZ;
-        public MotionAxis AlignT => _alignT;
-        public MotionAxis IndexZ => _indexZ;
+        public MotionAxis AxisAlignT => _alignT;
+        public MotionAxis AxisIndexZ => _indexZ;
         #endregion
 
         #region ctor / Initialization
-        public IndexLoadAligner(IndexLoadAlignerConfig config = null) : base("IndexLoadAlignerConfig")
+        public IndexLoadAligner(IndexLoadAlignerConfig config = null) : base(new IndexLoadAlignerConfig())
         {
-            IndexLoadAlignerConfig = config ?? new IndexLoadAlignerConfig();
+            
             AddComponents();
         }
 
         public override void AddComponents()
         {
-            IndexLoadAlignerConfig.LoadAndBindAxes(Equipment.Instance.AxisManager);
-            IndexLoadAlignerConfig.InitializeDefaultTeachingPositions();
-            TeachingPositions.Clear();
-            foreach (var tp in IndexLoadAlignerConfig.TeachingPositions)
-                TeachingPositions.Add(tp);
+            Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            Config.InitializeDefaultTeachingPositions();
+            
             BindAxes();
         }
         #endregion
 
         #region Axis Binding / Helpers
+        protected override void OnBindUnit()
+        {
+            base.OnBindUnit();
+            Rotary = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
+        }
+
         private void BindAxes()
         {
             var mgr = Equipment.Instance?.AxisManager;
@@ -57,36 +91,557 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             const string unitName = "Unit"; // Equipment.CreateAxes 에서 사용한 유닛명과 동일해야 함
-            BindAxis(mgr, unitName, "Align T Axis", ref _alignT);
-            BindAxis(mgr, unitName, "Index Z Axis", ref _indexZ);
+            BindAxis(mgr, unitName, AxisNames.AlignT, ref _alignT);
+            BindAxis(mgr, unitName, AxisNames.IndexZ, ref _indexZ);
         }
 
-        private void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
+        public int MovePositionSafetyZ(bool isFine = false)
         {
-            MotionAxis axis;
-            if (mgr.TryGet(unitName, axisName, out axis) && axis != null)
+            Task<int> task = MovePositionAsyncSafetyZ(isFine);
+            while (IsEndTask(task) == false)
             {
-                field = axis;
-                Axes[axisName] = axis; // 사전에 일관 등록(이미 있으면 갱신)
+                int nRtn = IsMoveInterLockSafetyZ();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+
+                Thread.Sleep(0);
             }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncSafetyZ(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionSafetyZ(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionSafetyZ(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.SafetyZone, isFine);
+        }
+        private int IsMoveInterLockSafetyZ()
+        {
+            int nRet = 0;
+
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ.EmgStop();
+                AxisAlignT.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+
+            if(IsAxisMoving(AxisNames.AlignT))
+            {
+                AxisIndexZ.EmgStop();
+                AxisAlignT.EmgStop();
+                PostAlarm((int)AlarmKeys.eIndexLoadAligner);
+                return -1;
+            }
+
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeSafetyZ(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionSafetyZ(isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisIndexZ?.EmgStop();
+                            AxisAlignT?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockSafetyZ();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            }, ct);
+        }
+
+
+        public int MovePositionAlignUp(int nIndex = 0, bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncAlignUp(nIndex, isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = IsMoveInterLockAlignUp(nIndex);
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncAlignUp(int nIndex = 0, bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionAlignUp(nIndex, isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionAlignUp(int nIndex = 0, bool isFine = false)
+        {
+            int nRet = 0;
+            // nIndex 처리 (0-based와 1-based 모두 지원)
+            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
+            //  - 0~7 : +1 보정하여 1~8 매핑
+            int teachingIdx;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
             else
             {
-                if (Axes.ContainsKey(axisName))
-                    Axes.Remove(axisName);
-                Log.Write("IndexLoadAligner", $"[BindAxes] Axis '{unitName}||{axisName}' 미존재");
+                Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] Invalid index {nIndex}. Range 0~7 or 1~8");
+                return -1;
             }
+
+            string tpName = $"AlignZ_Index{teachingIdx}_Up";
+            var tpObj = IndexLoadAlignerConfig.GetTeachingPosition(tpName);
+            if (tpObj == null)
+            {
+                Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] Teaching not found: {tpName}");
+                return -1;
+            }
+
+            double dZPos = GetTP(tpName, AxisNames.IndexZ);
+            nRet = OnMoveAxisPositionOne(AxisIndexZ, dZPos);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, $"[OnMovePositionPlace_Index] PlaceZ move failed tp={tpName} pos={dZPos}");
+                return -1;
+            }
+
+            //nRet = MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignZ_Index1_Up, isFine);
+            //if(nRet != 0)
+            //{
+            //    Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] MoveTeachingPositionOnce failed: {tpName}");
+            //    return -1;
+            //}
+            return nRet;
+        }
+        private int IsMoveInterLockAlignUp(int nIndex = 0)
+        {
+            int nRet = 0;
+
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ.EmgStop();
+                AxisAlignT.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeAlignUp(int nIndex = 0, bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionAlignUp(nIndex, isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisIndexZ?.EmgStop();
+                            AxisAlignT?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockSafetyZ();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            }, ct);
         }
 
-        public void MoveAxisOnce(MotionAxis ax, double target)
+
+        public int MovePositionAlignZReady(int nIndex = 0, bool isFine = false)
         {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+            Task<int> task = MovePositionAsyncAlignZReady(nIndex, isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = IsMoveInterLockAlignZReady(nIndex);
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+
+                Thread.Sleep(0);
+            }
+            return task.Result;
         }
+        private Task<int> MovePositionAsyncAlignZReady(int nIndex = 0, bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionAlignZReady(nIndex, isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionAlignZReady(int nIndex = 0, bool isFine = false)
+        {
+            int nRet = 0;
+            // nIndex 처리 (0-based와 1-based 모두 지원)
+            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
+            //  - 0~7 : +1 보정하여 1~8 매핑
+            int teachingIdx;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            else
+            {
+                Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] Invalid index {nIndex}. Range 0~7 or 1~8");
+                return -1;
+            }
+
+            string tpName = $"AlignZ_Index{teachingIdx}_Ready";
+            var tpObj = IndexLoadAlignerConfig.GetTeachingPosition(tpName);
+            if (tpObj == null)
+            {
+                Log.Write(UnitName, $"[OnMovePositionAlignUp_Index] Teaching not found: {tpName}");
+                return -1;
+            }
+
+            double dZPos = GetTP(tpName, AxisNames.IndexZ);
+            nRet = OnMoveAxisPositionOne(AxisIndexZ, dZPos);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, $"[OnMovePositionPlace_Index] PlaceZ move failed tp={tpName} pos={dZPos}");
+                return -1;
+            }
+            
+            return nRet;
+        }
+        private int IsMoveInterLockAlignZReady(int nIndex = 0)
+        {
+            int nRet = 0;
+
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ.EmgStop();
+                AxisAlignT.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeAlignZReady(int nIndex = 0, bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                // Task로 돌리고 별도 인터락/취소 감시
+                var coreTask = Task.Run(() => OnMovePositionAlignZReady(nIndex, isFine), ct);
+
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            AxisIndexZ?.EmgStop();
+                            AxisAlignT?.EmgStop();
+                        }
+                        catch { }
+                        return -999; // 취소 코드
+                    }
+
+                    int nRtn = IsMoveInterLockSafetyZ();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+
+                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
+                }
+
+                return coreTask.Result;
+            }, ct);
+        }
+
+
+        // === AlignT_Foward ===
+        public int MovePositionAlignTForward(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncAlignTForward(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = IsMoveInterLockAlignTForward();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncAlignTForward(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionAlignTForward(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionAlignTForward(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Foward, isFine);
+        }
+        private int IsMoveInterLockAlignTForward()
+        {
+            int nRet = 0;
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ?.EmgStop();
+                AxisAlignT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeAlignTForward(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                var coreTask = Task.Run(() => OnMovePositionAlignTForward(isFine), ct);
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try { AxisIndexZ?.EmgStop(); AxisAlignT?.EmgStop(); } catch { }
+                        return -999; // 취소 코드
+                    }
+                    int nRtn = IsMoveInterLockAlignTForward();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+                    Thread.Sleep(5);
+                }
+                return coreTask.Result;
+            }, ct);
+        }
+
+
+        // === AlignT_Backward ===
+        public int MovePositionAlignTBackward(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncAlignTBackward(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = IsMoveInterLockAlignTBackward();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncAlignTBackward(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionAlignTBackward(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionAlignTBackward(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward, isFine);
+        }
+        private int IsMoveInterLockAlignTBackward()
+        {
+            int nRet = 0;
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ?.EmgStop();
+                AxisAlignT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeAlignTBackward(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                var coreTask = Task.Run(() => OnMovePositionAlignTBackward(isFine), ct);
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try { AxisIndexZ?.EmgStop(); AxisAlignT?.EmgStop(); } catch { }
+                        return -999; // 취소 코드
+                    }
+                    int nRtn = IsMoveInterLockAlignTBackward();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+                    Thread.Sleep(5);
+                }
+                return coreTask.Result;
+            }, ct);
+        }
+
+
+        // === AlignT_Ready ===
+        public int MovePositionAlignTReady(bool isFine = false)
+        {
+            string readyName = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready.ToString();
+            if (InPosTeaching(readyName))
+            {
+                return 0;
+            }
+                
+            Task<int> task = MovePositionAsyncAlignTReady(isFine);
+            while (IsEndTask(task) == false)
+            {
+                int nRtn = IsMoveInterLockAlignTReady();
+                if (nRtn != 0)
+                {
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncAlignTReady(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionAlignTReady(isFine);
+                return 0;
+            });
+        }
+        private int OnMovePositionAlignTReady(bool isFine = false)
+        {
+            return MoveTeachingPositionOnce((int)IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready, isFine);
+        }
+        private int IsMoveInterLockAlignTReady()
+        {
+            int nRet = 0;
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ?.EmgStop();
+                AxisAlignT?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return nRet;
+        }
+        public Task<int> MovePositionAsyncSafeAlignTReady(bool isFine = false, CancellationToken ct = default(CancellationToken))
+        {
+            return Task.Run(() =>
+            {
+                var coreTask = Task.Run(() => OnMovePositionAlignTReady(isFine), ct);
+                while (!IsEndTask(coreTask))
+                {
+                    if (ct.IsCancellationRequested)
+                    {
+                        try { AxisIndexZ?.EmgStop(); AxisAlignT?.EmgStop(); } catch { }
+                        return -999; // 취소 코드
+                    }
+                    int nRtn = IsMoveInterLockAlignTReady();
+                    if (nRtn != 0)
+                    {
+                        return -1;
+                    }
+                    Thread.Sleep(5);
+                }
+                return coreTask.Result;
+            }, ct);
+        }
+
+
+
+        public bool IsAlignZSafetyPos(double fallbackTolerance = 0.01,
+                                      bool useAxisInposTolerance = true,
+                                      bool treatMissingAsSafe = true)
+        {
+            if (AxisIndexZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = IndexLoadAlignerConfig;
+            if (cfg == null) return false;
+
+            // 우선순위: SafetyPos → SafetyZone
+            string[] candidates =
+            {
+                "SafetyPos",
+                IndexLoadAlignerConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidates)
+            {
+                var tp = cfg.GetTeachingPosition(name);
+                if (tp == null) continue;
+
+                // IndexZ 좌표가 실제 존재하는 티칭만 사용
+                if (tp.AxisPositions != null &&
+                    tp.AxisPositions.Keys.Any(k => string.Equals(k, AxisNames.IndexZ, System.StringComparison.OrdinalIgnoreCase)))
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe;
+
+            var tpFound = cfg.GetTeachingPosition(foundName);
+            if (tpFound == null) return false;
+
+            double target = tpFound.GetAxisPosition(AxisNames.IndexZ, 0.0);
+            double cur = AxisIndexZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (AxisIndexZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            return System.Math.Abs(cur - target) <= tol;
+        }
+
+
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
-            var tp = IndexLoadAlignerConfig.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
@@ -99,12 +654,11 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var axisPair in Axes)
                 axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
             var tp = new TeachingPosition(positionName, axisPositions, description);
-            IndexLoadAlignerConfig.SetTeachingPosition(tp);
+            Config.SetTeachingPosition(tp);
         }
-
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
-            var tp = IndexLoadAlignerConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
             foreach (var axisKey in tp.AxisPositions.Keys)
@@ -120,7 +674,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool InPosTeaching(string positionName)
         {
-            var tp = IndexLoadAlignerConfig.GetTeachingPosition(positionName);
+            var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return false;
             foreach (var kv in tp.AxisPositions)
                 if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
@@ -134,8 +688,336 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Lifecycle
-        public override void OnRun() => base.OnRun();
-        public override void OnStop() => base.OnStop();
+        public override int OnRun()
+        {
+            int ret = 0;
+
+            if (this.Status == UnitRunStatus.Stop ||
+                this.Status == UnitRunStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                ret = 1;
+            }
+            else
+            {
+                switch (State)
+                {
+                    case ProcessState.Manual:
+                        ret = OnRunManual();
+                        break;
+                    case ProcessState.Ready:
+                        ret = OnRunReady();
+                        break;
+                    case ProcessState.Work:
+                        ret = OnRunWork();
+                        break;
+                    case ProcessState.Complete:
+                        ret = OnRunComplete();
+                        break;
+                    default:
+                        if (ManualState == ProcessState.Manual)
+                        {
+                            this.State = ProcessState.Manual;
+                        }
+                        else
+                        {
+                            this.State = ProcessState.Ready;
+                        }
+                        break;
+                }
+            }
+
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+
+            return ret;
+        }
+
+        // 클래스 상단 필드들 근처 (ManualState / StepManual 선언 위/아래 적절한 위치에 추가)
+        // ===== Manual Step Signal 추가 =====
+        public event Action<IndexLoadAligner, int, int> ManualStepCompleted; // (unit, stepNo, result)
+        public int LastManualStepNumber { get; private set; } = 0;
+        public int LastManualStepResult { get; private set; } = 0;
+        private TaskCompletionSource<int> _manualStepTcs;
+
+        private void CompleteManualStep(int step, int result)
+        {
+            LastManualStepNumber = step;
+            LastManualStepResult = result;
+
+            // 이벤트/대기 중인 Task 신호
+            try 
+            { 
+                ManualStepCompleted?.Invoke(this, step, result); 
+            } 
+            catch { }
+
+            _manualStepTcs?.TrySetResult(result);
+            _manualStepTcs = null;
+
+            // 기존 패턴 유지: StepManual = 0 으로 수동동작 종료
+            StepManual = 0;
+        }
+
+        public Task<int> WaitManualStepAsync(int expectedStep, CancellationToken ct = default(CancellationToken))
+        {
+            // 이미 끝난 경우 즉시 반환
+            if (StepManual == 0 && LastManualStepNumber == expectedStep)
+                return Task.FromResult(LastManualStepResult);
+
+            if (_manualStepTcs != null)
+                throw new InvalidOperationException("이미 다른 수동 Step 대기 중입니다.");
+
+            _manualStepTcs = new TaskCompletionSource<int>();
+
+            void Handler(IndexLoadAligner u, int step, int result)
+            {
+                if (step == expectedStep)
+                {
+                    ManualStepCompleted -= Handler;
+                    _manualStepTcs.TrySetResult(result);
+                }
+            }
+            ManualStepCompleted += Handler;
+
+            if (ct.CanBeCanceled)
+            {
+                ct.Register(() =>
+                {
+                    ManualStepCompleted -= Handler;
+                    _manualStepTcs?.TrySetCanceled();
+                });
+            }
+
+            return _manualStepTcs.Task;
+        }
+
+        // ====== Manual 순차 루프 설정 ======
+        private const int MANUAL_FIRST_STEP = 1;
+        private const int MANUAL_BASE_LAST_STEP = 7; // 기본 마지막 스텝
+        public bool ManualSequentialLoop { get; set; } = false; // true 이면 1~N 반복
+        public bool UseCompositeStep8 { get; set; } = false;   // true 이면 1~8 반복(8은 복합)
+        private int ManualLastStep => UseCompositeStep8 ? 8 : MANUAL_BASE_LAST_STEP;
+
+        public ProcessState ManualState { get; set; }
+        public int StepManual = 0;
+        public int ManualSocketIndex = 1;
+        private int OnRunManual()
+        {
+            // 1) 현재 실행 중 Step 이 없는 상태(StepManual==0)이고 루프 모드라면 다음 Step 스케줄
+            if (ManualSequentialLoop && StepManual == 0)
+            {
+                int next = LastManualStepNumber + 1;
+                if (next < MANUAL_FIRST_STEP || next > ManualLastStep)
+                    next = MANUAL_FIRST_STEP;
+                StepManual = next; // 다음 Step 실행 예약
+                return 0;          // 다음 OnRun 호출 때 실제 수행
+            }
+
+            if (StepManual == 0)
+                return 0; // 대기 (비루프 모드이거나 외부에서 StepManual 세팅 대기)
+
+            int step = StepManual;
+            int ret = 0;
+
+            switch (step)
+            {
+                case 1:
+                    ret = AlignSocketOnce();
+                    if (ret != 0) 
+                    { 
+                        OnStop(); 
+                        CompleteManualStep(step, ret); 
+                        return ret; 
+                    }
+                    
+                    CompleteManualStep(step, 0);
+                    break;
+            }
+
+            // 3) CompleteManualStep 호출 시 StepManual=0 으로 리셋됨
+            //    루프 모드이면 다음 OnRunManual 진입 시 다시 다음 Step 스케줄
+            return 0;
+        }
+        public override int OnStop()
+        {
+            int ret = 0;
+
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
+        }
+        protected override int OnRunReady()
+        {
+            int ret = 0;
+
+            State = ProcessState.Work;
+            return 0;
+        }
+        protected override int OnRunWork()
+        {
+            int ret = 0;
+
+            State = ProcessState.Complete;
+            return 0;
+        }
+        protected override int OnRunComplete()
+        {
+            int ret = 0;
+
+            State = ProcessState.None;
+            return 0;
+        }
+        #endregion
+
+
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            this.SequencePlayers.Add(AlignSocketOnceReady);
+            this.SequencePlayers.Add(AlignSocketOnce);
+        }
+        #region Seq 단위 동작 함수
+
+
+        /// <summary>
+        /// Rotary(인덱스)가 정지 상태인지 즉시 확인.
+        /// - 정지면 0, 이동 중이면 -1 반환(알람 포스트).
+        /// - 대기는 수행하지 않는다(메인이 반복 호출/대기).
+        /// </summary>
+        public int IsRotaryIdle()
+        {
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisIndexZ.EmgStop();
+                AxisAlignT.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+            return 0;
+        }
+
+        public int AlignSocketOnceReady(bool bFineSpeed = false)
+        {
+            int bRtn = 0;
+            this.CurrentFunc = AlignSocketOnceReady;
+            try
+            {
+                LogSequence("Start");
+                this.CurrentFunc = AlignSocketOnceReady;
+                int nIndex = GetAlignIndexNo();
+
+                bRtn = IsRotaryIdle();
+                if (bRtn != 0)
+                    return -1;
+
+                // 2) T Ready
+                bRtn = MovePositionAlignTReady(bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+
+                // 3) Z Up
+                bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                LogSequence("End");
+            }
+
+            return bRtn;
+        }
+
+        /// <summary>
+        /// 소켓 1개에 대한 정렬 묶음
+        /// 순서: Z Up(해당 소켓) -> T Forward -> T Backward -> T Ready
+        /// 모든 축 이동은 안전 Async 버전 사용(내부 폴링).
+        /// </summary>
+        public int AlignSocketOnce(bool bFineSpeed = false)
+        {
+            int bRtn = 0;
+            this.CurrentFunc = AlignSocketOnce;
+            try
+            {
+                LogSequence("Start");
+                this.CurrentFunc = AlignSocketOnce;
+                int nIndex = GetAlignIndexNo();
+
+                bRtn = IsRotaryIdle();
+                if (bRtn != 0)
+                    return -1;
+
+                // 2) T Ready
+                bRtn &= MovePositionAlignTReady(bFineSpeed);
+                bRtn &= MovePositionAlignZReady(nIndex, bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+
+                // 3) Z Up
+                bRtn = MovePositionAlignUp(nIndex, bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+
+                // 4) T Forward
+                bRtn = MovePositionAlignTForward(bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+
+                // 5) T Backward
+                bRtn = MovePositionAlignTBackward(bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+
+                // 6) T Ready
+                bRtn = MovePositionAlignTReady(bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+
+                // 7) Z Ready
+                bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
+                if (bRtn != 0)
+                    return -1;
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                LogSequence("End");
+            }
+
+            return bRtn;
+        }
+
+        private void LogSequence(string log)
+        {
+            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+        }
+
+        public int GetAlignIndexNo()
+        {
+            if (Rotary == null)
+                return 0;
+
+            int loadIndex = Rotary.GetLoadIndexNo();
+
+            // 반시계 방향으로 1칸 이동
+            int probeIndex = (loadIndex - this.Config.IndexOfMAlign + Rotary.GetIndexCount()) % Rotary.GetIndexCount();
+
+            return probeIndex;
+        }
         #endregion
     }
 }

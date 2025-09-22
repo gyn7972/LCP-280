@@ -57,7 +57,7 @@ namespace QMC.LCP_280.Process.Component
         }
 
         // ===== 조회 =====
-        public CarrierData GetCarrier(string carrierId)
+        public MaterialCassette GetCarrier(string carrierId)
         {
             lock (_gate)
             {
@@ -66,21 +66,21 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-        public WaferData GetWafer(string carrierId, int slot)
+        public MaterialWafer GetWafer(string carrierId, int slot)
         {
             var carrier = GetCarrier(carrierId);
             return carrier?.GetWafer(slot);
         }
 
         // ===== Carrier 관리 =====
-        public CarrierData AddCarrier(string carrierId, int slotCount = 25)
+        public MaterialCassette AddCarrier(string carrierId, int slotCount = 25)
         {
             lock (_gate)
             {
                 var existing = GetCarrier(carrierId);
                 if (existing != null) return existing;
 
-                var carrier = new CarrierData
+                var carrier = new MaterialCassette
                 {
                     CarrierId = carrierId,
                     SlotCount = slotCount
@@ -100,7 +100,7 @@ namespace QMC.LCP_280.Process.Component
         }
 
         // ===== Wafer 관리 =====
-        public void AddWafer(string carrierId, int slot, WaferData wafer)
+        public void AddWafer(string carrierId, int slot, MaterialWafer wafer)
         {
             var carrier = AddCarrier(carrierId);
             carrier.SetWafer(slot, wafer);
@@ -113,7 +113,7 @@ namespace QMC.LCP_280.Process.Component
         }
 
         // ===== 새 Lot 로딩 =====
-        public WaferData LoadNewLot(string carrierId, int slot, string lotId)
+        public MaterialWafer LoadNewLot(string carrierId, int slot, string lotId)
         {
             lock (_gate)
             {
@@ -121,7 +121,7 @@ namespace QMC.LCP_280.Process.Component
                 _config.Save();   // BaseConfig.Save() 사용 (GetFilePath() 내부에서 경로 지정)
 
                 // 새 WaferData 생성
-                var newWafer = new WaferData
+                var newWafer = new MaterialWafer
                 {
                     LotId = lotId,
                     CarrierId = carrierId,

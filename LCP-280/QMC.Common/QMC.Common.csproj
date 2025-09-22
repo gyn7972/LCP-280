@@ -143,7 +143,10 @@
     </Compile>
     <Compile Include="BarcodeReader\OpticonBarcodeReader.cs" />
     <Compile Include="BarcodeReader\OpticonBarcodeReaderConfig.cs" />
+    <Compile Include="BaseConfig.Auto.cs" />
+    <Compile Include="BaseRecipe\BaseRecipe.Autp.cs" />
     <Compile Include="BaseRecipe\BaseRecipe.cs" />
+    <Compile Include="BaseSetup.Auto.cs" />
     <Compile Include="BaseSetup.cs" />
     <Compile Include="Cameras\Camera.cs" />
     <Compile Include="Cameras\CameraConfig.cs" />
@@ -175,11 +178,18 @@
     <Compile Include="Common\SerialComm.cs" />
     <Compile Include="Common\SizeD.cs" />
     <Compile Include="Common\StopWatch.cs" />
+    <Compile Include="Common\Taskbarhelper.cs" />
     <Compile Include="Common\TimeoutChecker.cs" />
     <Compile Include="Common\TimeoutCheckerStateEnum.cs" />
     <Compile Include="Common\TimeSpanInfo.cs" />
     <Compile Include="Common\TimeSpanInfoTypeConverter.cs" />
     <Compile Include="Common\TypeUtility.cs" />
+    <Compile Include="Component\DisplayOrderAttribute.cs" />
+    <Compile Include="Component\ProcessData\Material.cs" />
+    <Compile Include="Component\PropertyOrderAttributes.cs" />
+    <Compile Include="Component\TeachingPosition.cs" />
+    <Compile Include="ConfigPropertyAttributes.cs" />
+    <Compile Include="ConfigReflectionMapper.cs" />
     <Compile Include="ConfigStore.cs" />
     <Compile Include="Coordinate\IActor.cs" />
     <Compile Include="Coordinate\SettingParameter.cs" />
@@ -259,6 +269,7 @@
     <Compile Include="Logging\Log.cs" />
     <Compile Include="Logging\LogInfo.cs" />
     <Compile Include="Logging\LogManager.cs" />
+    <Compile Include="MessageBoxTopMostEnforcer.cs" />
     <Compile Include="Motions\AjinApi.cs" />
     <Compile Include="Motions\AjinAxlBoardHost.cs" />
     <Compile Include="Motions\AjinDriver.cs" />
@@ -399,6 +410,12 @@
     <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="PKGTester\TestItemResult.cs" />
+    <Compile Include="UI\ProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ProgressForm.Designer.cs" />
+    <Compile Include="Unit\BaseUnit.Generic.cs" />
+    <Compile Include="Unit\BaseUnit.IOExtensions.cs" />
     <Compile Include="VisionPart\MultiPatternMatchingVisionPart.cs" />
     <Compile Include="PatternMatching\PatternMatchingParamControl.cs">
       <SubType>UserControl</SubType>
@@ -503,6 +520,7 @@
     <Compile Include="Vision\Tools\SharpnessVisionTool.cs" />
     <Compile Include="Vision\Tools\VisionResult.cs" />
     <Compile Include="Vision\Tools\VisionTool.cs" />
+    <Compile Include="Vision\VisionConfig.cs" />
     <Compile Include="Vision\VisionImage.cs" />
     <Compile Include="Vision\VisionImageHeader.cs" />
     <Compile Include="Vision\VisionImageOverlay.cs" />
@@ -510,6 +528,8 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
+    <Compile Include="Vision\VisionUnit.cs" />
+    <EmbeddedResource Include="UI\ProgressForm.resx" />
     <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
       <DependentUpon>Form_Alarm.cs</DependentUpon>
@@ -626,6 +646,7 @@
     <Content Include="Resources\Logo.png" />
     <Content Include="Resources\megaphone_80px.png" />
     <Content Include="Resources\megaphone_80px_q.png" />
+    <None Include="Resources\QMC.ico" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.CogNamer.PC.dll" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.SDK.Discovery.PC.dll" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.SDK.PC.dll" />

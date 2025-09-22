@@ -1,9 +1,10 @@
-﻿using QMC.LCP_280.Process.Component; // ensure access to DIOControl / TeachingPositionControl
-using QMC.LCP_280.Process.Sequences;
+﻿using QMC.Common;
+using QMC.LCP_280.Process.Component; 
 using System;
-using System.Windows.Forms;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -11,27 +12,20 @@ namespace QMC.LCP_280.Process.Unit
     /// ChipLoading Working Form
     ///  - TeachingPositionControl : InputStage / InputStageEjector / InputDieTransfer 등록
     ///  - DIO 제어 :
-    ///      InputStage : 센서 + 밸브 (Raw 포함) 강制 제어
+    ///      InputStage : 센서 + 밸브 (Raw 포함) 강제 제어
     ///      InputDieTransfer : Arm Vac / Blow / Vent 제어 (4 Arms)
     ///  - Vision : Stage Camera Live 연결
     ///  - Manual Sequence : (InputStage Align / Mapping / Pick / Place 등 등록)
     /// </summary>
-    public partial class ChipLoader_Working : Form
+    public partial class ChipLoading_Working : Form
     {
-        private const string WORK_NAME = "ChipLoader";
+        private const string WORK_NAME = "ChipLoading";
         private Equipment Equipment => Equipment.Instance;
 
         // Units
-        private InputStage InputStageUnit { get; set; }
-        private InputStageEjector InputStageEjectorUnit { get; set; }
-        private InputDieTransfer InputDieTransferUnit { get; set; }
-
-        // Sequences
-        private SeqInputStage SeqInputStage { get; set; }
-        private SeqInputChipAlignVision _seqAlignVision;
-        private SeqInputChipMappingVision _seqMappingVision;
-        private SeqInputDieTransferChipUp _seqDiePick;
-        private SeqInputDieTransferChipDown _seqDiePlace;
+        private InputStage InputStage { get; set; }
+        private InputStageEjector InputStageEjector { get; set; }
+        private InputDieTransfer InputDieTransfer { get; set; }
 
         // State
         private bool _initialized;
@@ -39,21 +33,23 @@ namespace QMC.LCP_280.Process.Unit
         private bool _deferredInitDone; // 지연 초기화 완료 여부
         private bool _isLayoutEditMode;
 
+        private CancellationTokenSource _ctsPickUp;
+
         #region Constructors
-        public ChipLoader_Working() : this(
+        public ChipLoading_Working() : this(
             TryGetUnit<InputStage>("InputStage"),
             TryGetUnit<InputStageEjector>("InputStageEjector"),
             TryGetUnit<InputDieTransfer>("InputDieTransfer"))
         { }
 
-        public ChipLoader_Working(InputStage inputStage, InputStageEjector ejector, InputDieTransfer dieTransfer)
+        public ChipLoading_Working(InputStage inputStage, InputStageEjector ejector, InputDieTransfer dieTransfer)
         {
             InitializeComponent();
-            InputStageUnit = inputStage;
-            InputStageEjectorUnit = ejector;
-            InputDieTransferUnit = dieTransfer;
-            Load += ChipLoader_Working_Load;
-            FormClosing += ChipLoader_Working_FormClosing;
+            InputStage = inputStage;
+            InputStageEjector = ejector;
+            InputDieTransfer = dieTransfer;
+            Load += ChipLoading_Working_Load;
+            FormClosing += ChipLoading_Working_FormClosing;
         }
         #endregion
 
@@ -67,7 +63,7 @@ namespace QMC.LCP_280.Process.Unit
             var handle = Handle; // 강제 Handle 생성
         }
 
-        private void ChipLoader_Working_Load(object sender, EventArgs e) => EnsureInitialized();
+        private void ChipLoading_Working_Load(object sender, EventArgs e) => EnsureInitialized();
 
         private void EnsureInitialized()
         {
@@ -131,34 +127,34 @@ namespace QMC.LCP_280.Process.Unit
                 if (teachingPositionControl == null) return;
                 teachingPositionControl.ClearUnits();
 
-                if (InputStageUnit != null)
+                if (InputStage != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "InputStage",
-                        InputStageUnit,
-                        () => InputStageUnit.InputStageConfig?.TeachingPositions,
-                        (name, vel) => InputStageUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputStageUnit.InputStageConfig?.SetTeachingPosition(tp),
+                        InputStage,
+                        () => InputStage.Config?.TeachingPositions,
+                        (name, vel) => InputStage.MoveToTeachingPosition(name, vel: vel),
+                        tp => InputStage.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
-                if (InputStageEjectorUnit != null)
+                if (InputStageEjector != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "InputStageEjector",
-                        InputStageEjectorUnit,
-                        () => InputStageEjectorUnit.InputStageEjectorConfig?.TeachingPositions,
-                        (name, vel) => InputStageEjectorUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputStageEjectorUnit.InputStageEjectorConfig?.SetTeachingPosition(tp),
+                        InputStageEjector,
+                        () => InputStageEjector.InputStageEjectorConfig?.TeachingPositions,
+                        (name, vel) => InputStageEjector.MoveToTeachingPosition(name, vel: vel),
+                        tp => InputStageEjector.InputStageEjectorConfig?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
-                if (InputDieTransferUnit != null)
+                if (InputDieTransfer != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "InputDieTransfer",
-                        InputDieTransferUnit,
-                        () => InputDieTransferUnit.InputDieTransferConfig?.TeachingPositions,
-                        (name, vel) => InputDieTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => InputDieTransferUnit.InputDieTransferConfig?.SetTeachingPosition(tp),
+                        InputDieTransfer,
+                        () => InputDieTransfer.InputDieTransferConfig?.TeachingPositions,
+                        (name, vel) => InputDieTransfer.MoveToTeachingPosition(name, vel: vel),
+                        tp => InputDieTransfer.InputDieTransferConfig?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -167,7 +163,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch
             {
-                try { teachingPositionControl?.SetUnits(InputStageUnit, InputStageEjectorUnit, InputDieTransferUnit, true); } catch { }
+                try { teachingPositionControl?.SetUnits(InputStage, InputStageEjector, InputDieTransfer, true); } catch { }
             }
         }
         #endregion
@@ -185,7 +181,7 @@ namespace QMC.LCP_280.Process.Unit
                 StrongBindInputStage();
 
                 // 구분선: InputDieTransfer
-                if (InputDieTransferUnit != null)
+                if (InputDieTransfer != null)
                 {
                     dioControl.BindDIOInput(() => false, "---- InputDieTransfer ----", "SEP_IDT");
 
@@ -196,93 +192,42 @@ namespace QMC.LCP_280.Process.Unit
 
                         // Flow 센서(입력) 표시
                         dioControl.BindDIOInput(
-                            () => InputDieTransferUnit.ArmFlowOk(idx),
+                            () => InputDieTransfer.ArmFlowOk(idx),
                             $"{labelBase} Flow OK(Sns)",
                             $"IDT_Arm{idx + 1}_FlowOk");
 
                         // VAC: 도메인 + 상태 함수 연결 (출력은 입력과 무관하게 동작)
                         dioControl.BindVacuum(
                             label: $"{labelBase} VAC",
-                            on: () => InputDieTransferUnit.SetVacuum(idx, true),
-                            off: () => InputDieTransferUnit.SetVacuum(idx, false),
-                            isOk: null, // 별도 센서 없음(Flow는 위에서 별도 표시)
-                            isOnState: () => InputDieTransferUnit.IsArmVacOn(idx),
+                            on: () => InputDieTransfer.SetVacuum(idx, true),
+                            off: () => InputDieTransfer.SetVacuum(idx, false),
+                            isOk: null,
+                            isOnState: null,
                             displayKey: $"IDT_Arm{idx + 1}_Vac",
                             showOkSensor: false
                         );
 
                         dioControl.BindVacuum(
                             label: $"{labelBase} Blow",
-                            on: () => InputDieTransferUnit.SetBlow(idx, true),
-                            off: () => InputDieTransferUnit.SetBlow(idx, false),
+                            on: () => InputDieTransfer.SetBlow(idx, true),
+                            off: () => InputDieTransfer.SetBlow(idx, false),
                             isOk: null, // 별도 센서 없음(Flow는 위에서 별도 표시)
-                            isOnState: () => InputDieTransferUnit.IsArmBlowOn(idx),
+                            isOnState: null,
                             displayKey: $"IDT_Arm{idx + 1}_Blow",
                             showOkSensor: false
                         );
 
                         dioControl.BindVacuum(
                             label: $"{labelBase} Vent",
-                            on: () => InputDieTransferUnit.SetVent(idx, true),
-                            off: () => InputDieTransferUnit.SetVent(idx, false),
+                            on: () => InputDieTransfer.SetVent(idx, true),
+                            off: () => InputDieTransfer.SetVent(idx, false),
                             isOk: null, // 별도 센서 없음(Flow는 위에서 별도 표시)
-                            isOnState: () => InputDieTransferUnit.IsArmVentOn(idx),
+                            isOnState: null,
                             displayKey: $"IDT_Arm{idx + 1}_Vent",
                             showOkSensor: false
                         );
-
-                        // BLOW: 상태 함수까지 전달해 올바른 토글 동작 보장
-                        //dioControl.BindDIOOutput(
-                        //    () => InputDieTransferUnit.SetArmBlow(idx, true),
-                        //    () => InputDieTransferUnit.SetArmBlow(idx, false),
-                        //    $"{labelBase} BLOW ON/OFF",
-                        //    () => InputDieTransferUnit.IsArmBlowOn(idx),
-                        //    $"IDT_Arm{idx + 1}_Blow");
-
-                        //// VENT: 상태 함수까지 전달
-                        //dioControl.BindDIOOutput(
-                        //    () => InputDieTransferUnit.SetArmVent(idx, true),
-                        //    () => InputDieTransferUnit.SetArmVent(idx, false),
-                        //    $"{labelBase} VENT ON/OFF",
-                        //    () => InputDieTransferUnit.IsArmVentOn(idx),
-                        //    $"IDT_Arm{idx + 1}_Vent");
                     }
-
-                    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVacOff(), () => InputDieTransferUnit.AllVacOff(), "IDT All VAC OFF", () => false, "IDT_AllVacOff");
-                    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllBlowOff(), () => InputDieTransferUnit.AllBlowOff(), "IDT All BLOW OFF", () => false, "IDT_AllBlowOff");
-                    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVentOff(), () => InputDieTransferUnit.AllVentOff(), "IDT All VENT OFF", () => false, "IDT_AllVentOff");
                 }
-
-                //// 구분선: InputDieTransfer
-                //if (InputDieTransferUnit != null)
-                //{
-                //    dioControl.BindDIOInput(() => false, "---- InputDieTransfer ----", "SEP_IDT");
-                //    for (int arm = 0; arm < 1; arm++) //for (int arm = 0; arm < 4; arm++)
-                //    {
-                //        int idx = arm;
-                //        dioControl.BindDIOOutput(
-                //            () => InputDieTransferUnit.SetArmVac(idx, true),
-                //            () => InputDieTransferUnit.SetArmVac(idx, false),
-                //            $"IDT Arm{idx + 1} VAC ON/OFF",
-                //            () => false,
-                //            $"IDT_Arm{idx + 1}_Vac");
-                //        dioControl.BindDIOOutput(
-                //            () => InputDieTransferUnit.SetArmBlow(idx, true),
-                //            () => InputDieTransferUnit.SetArmBlow(idx, false),
-                //            $"IDT Arm{idx + 1} BLOW ON/OFF",
-                //            () => false,
-                //            $"IDT_Arm{idx + 1}_Blow");
-                //        dioControl.BindDIOOutput(
-                //            () => InputDieTransferUnit.SetArmVent(idx, true),
-                //            () => InputDieTransferUnit.SetArmVent(idx, false),
-                //            $"IDT Arm{idx + 1} VENT ON/OFF",
-                //            () => false,
-                //            $"IDT_Arm{idx + 1}_Vent");
-                //    }
-                //    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVacOff(), () => InputDieTransferUnit.AllVacOff(), "IDT All VAC OFF", () => false, "IDT_AllVacOff");
-                //    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllBlowOff(), () => InputDieTransferUnit.AllBlowOff(), "IDT All BLOW OFF", () => false, "IDT_AllBlowOff");
-                //    dioControl.BindDIOOutput(() => InputDieTransferUnit.AllVentOff(), () => InputDieTransferUnit.AllVentOff(), "IDT All VENT OFF", () => false, "IDT_AllVentOff");
-                //}
 
                 dioControl.RebuildLists();
             }
@@ -291,26 +236,26 @@ namespace QMC.LCP_280.Process.Unit
 
         private void StrongBindInputStage()
         {
-            if (InputStageUnit == null || dioControl == null) return;
+            if (InputStage == null || dioControl == null) return;
             try
             {
                 // ===== Sensors =====
-                dioControl.BindDIOInput(() => InputStageUnit.IsVacuum(), "Vacuum OK(Sns)", "StageVacOk");
-                dioControl.BindDIOInput(() => InputStageUnit.IsPlateUp(), "Plate UP Sns", "StagePlateUp");
-                dioControl.BindDIOInput(() => InputStageUnit.IsPlateDown(), "Plate DOWN Sns", "StagePlateDn");
-                dioControl.BindDIOInput(() => InputStageUnit.IsClampLiftDown(), "ClampLift DOWN Sns", "StageClampDn");
-                dioControl.BindDIOInput(() => InputStageUnit.IsClampFwd(), "Clamp FWD Sns", "StageClampFwd");
-                dioControl.BindDIOInput(() => InputStageUnit.Ring0(), "Ring Sns 0", "StageRing0");
-                dioControl.BindDIOInput(() => InputStageUnit.Ring1(), "Ring Sns 1", "StageRing1");
-                dioControl.BindDIOInput(() => InputStageUnit.IsRingPresent(), "Ring Any", "StageRingAny");
+                dioControl.BindDIOInput(() => InputStage.IsVacuumOn(), "Vacuum OK(Sns)", "StageVacOk");
+                dioControl.BindDIOInput(() => InputStage.IsPlateUp(), "Plate UP Sns", "StagePlateUp");
+                dioControl.BindDIOInput(() => InputStage.IsPlateDown(), "Plate DOWN Sns", "StagePlateDn");
+                dioControl.BindDIOInput(() => InputStage.IsClampLiftDown(), "ClampLift DOWN Sns", "StageClampDn");
+                dioControl.BindDIOInput(() => InputStage.IsClampFwd(), "Clamp FWD Sns", "StageClampFwd");
+                dioControl.BindDIOInput(() => InputStage.Ring0(), "Ring Sns 0", "StageRing0");
+                dioControl.BindDIOInput(() => InputStage.Ring1(), "Ring Sns 1", "StageRing1");
+                dioControl.BindDIOInput(() => InputStage.IsRingPresent(), "Ring Any", "StageRingAny");
 
                 // Vacuum: 도메인 함수 사용 (출력은 입력과 무관하게 동작, 상태 표시는 밸브 상태 함수 사용)
                 dioControl.BindVacuum(
                     label: "Vacuum",
-                    on: () => InputStageUnit.SetVacuum(true),
-                    off: () => InputStageUnit.SetVacuum(false),
-                    isOk: () => InputStageUnit.IsVacuum(),
-                    isOnState: () => InputStageUnit.IsVacuumValveOn(),
+                    on: () => InputStage.SetVacuum(true),
+                    off: () => InputStage.SetVacuum(false),
+                    isOk: () => InputStage.IsVacuumOn(),
+                    isOnState: () => InputStage.IsVacuumValveOn(),
                     displayKey: "StageVac",
                     showOkSensor: false // 위에서 OK 센서를 이미 표시했으므로 중복 방지
                 );
@@ -318,10 +263,10 @@ namespace QMC.LCP_280.Process.Unit
                 // Plate Up/Down: 도메인 함수 사용, 상태 판단은 IsPlateUp 기준
                 dioControl.BindCylinder(
                     label: "PlateUpDn",
-                    extend: () => InputStageUnit.SetClampPlate(true),
-                    retract: () => InputStageUnit.SetClampPlate(false),
-                    isExtended: () => InputStageUnit.IsPlateUp(),
-                    isRetracted: () => InputStageUnit.IsPlateDown(),
+                    extend: () => InputStage.SetClampPlate(true),
+                    retract: () => InputStage.SetClampPlate(false),
+                    isExtended: () => InputStage.IsPlateUp(),
+                    isRetracted: () => InputStage.IsPlateDown(),
                     displayKey: "StagePlateUpDn",
                     showSensors: false // 위에서 Up/Down 센서를 이미 표시했으므로 중복 방지
                 );
@@ -329,11 +274,11 @@ namespace QMC.LCP_280.Process.Unit
                 // ClampLift Up/Down
                 dioControl.BindCylinder(
                     label: "ClampLift",
-                    extend: () => InputStageUnit.SetClampLift(true),
-                    retract: () => InputStageUnit.SetClampLift(false),
+                    extend: () => InputStage.SetClampLift(true),
+                    retract: () => InputStage.SetClampLift(false),
                     // Up 센서가 없으면 밸브 상태 사용, Down은 센서 사용
-                    isExtended: () => InputStageUnit.IsClampLiftUpValveOn(),
-                    isRetracted: () => InputStageUnit.IsClampLiftDown(),
+                    isExtended: () => InputStage.IsClampLiftUpValveOn(),
+                    isRetracted: () => InputStage.IsClampLiftDown(),
                     displayKey: "StageClampUpDn",
                     showSensors: false,
                     extendedName: "UP",
@@ -343,10 +288,10 @@ namespace QMC.LCP_280.Process.Unit
                 // Clamp FWD/BWD
                 dioControl.BindCylinder(
                     label: "ClampFB",
-                    extend: () => InputStageUnit.SetClampFB(true),
-                    retract: () => InputStageUnit.SetClampFB(false),
+                    extend: () => InputStage.SetClampFB(true),
+                    retract: () => InputStage.SetClampFB(false),
                     // FWD 센서만 있어도 동작. BWD는 없으면 null 가능(토글은 FWD 센서로 판단)
-                    isExtended: () => InputStageUnit.IsClampFwd(),
+                    isExtended: () => InputStage.IsClampFwd(),
                     isRetracted: null,
                     displayKey: "StageClampFB",
                     showSensors: false,
@@ -363,11 +308,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                if (_ChipLoadingCameraviewer != null && InputStageUnit?.StageCamera != null)
+                if (_ChipLoadingCameraviewer != null && InputStage?.StageCamera != null)
                 {
-                    if (_ChipLoadingCameraviewer.Camera != InputStageUnit.StageCamera)
-                        _ChipLoadingCameraviewer.Camera = InputStageUnit.StageCamera;
-                    try { InputStageUnit.StageCamera.StartLive(); } catch { }
+                    if (_ChipLoadingCameraviewer.Camera != InputStage.StageCamera)
+                        _ChipLoadingCameraviewer.Camera = InputStage.StageCamera;
+                    try { InputStage.StageCamera.StartLive(); } catch { }
                     try { _ChipLoadingCameraviewer.StartUpdateTask(); } catch { }
                 }
             }
@@ -381,74 +326,13 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 // 최신 Equipment 등록본으로 다시 참조 갱신 (폼 생성 후 재초기화 상황 대비)
-                InputStageUnit        = TryGetUnit<InputStage>("InputStage");
-                InputStageEjectorUnit = TryGetUnit<InputStageEjector>("InputStageEjector");
-                InputDieTransferUnit  = TryGetUnit<InputDieTransfer>("InputDieTransfer");
+                InputStage        = TryGetUnit<InputStage>("InputStage");
+                InputStageEjector = TryGetUnit<InputStageEjector>("InputStageEjector");
+                InputDieTransfer  = TryGetUnit<InputDieTransfer>("InputDieTransfer");
 
-                if (manualSequenceControl != null)
-                    manualSequenceControl.ClearSequences();
-
-                // InputStage sequence
-                if (InputStageUnit != null)
+                if (InputDieTransfer != null)
                 {
-                    if (SeqInputStage == null)
-                        // 기존: new SeqInputStage(InputStageUnit) -> Ejector 포함 생성자로 변경
-                        SeqInputStage = new SeqInputStage(InputStageUnit, InputStageEjectorUnit);
-                    manualSequenceControl?.RegisterSequence(
-                        "InputStage",
-                        SeqInputStage,
-                        () => Enum.GetNames(typeof(SeqInputStage.Step)),
-                        step => SeqInputStage.StartSingle(step),
-                        idx => Enum.GetName(typeof(SeqInputStage.Step), idx),
-                        autoSelect: true);
-                }
-                // Align Vision
-                if (InputStageUnit != null)
-                {
-                    //if (_seqAlignVision == null)
-                    //    _seqAlignVision = new SeqInputChipAlignVision(InputStageUnit); // Unit 재사용
-                    //manualSequenceControl?.RegisterSequence(
-                    //    "AlignVision",
-                    //    _seqAlignVision,
-                    //    () => SeqInputChipAlignVision.GetStepNames(),
-                    //    step => _seqAlignVision.StartSingle(step),
-                    //    idx => Enum.GetName(typeof(SeqInputChipAlignVision.Step), idx));
-                }
-                // Mapping Vision
-                if (InputStageUnit != null)
-                {
-                    if (_seqMappingVision == null)
-                        _seqMappingVision = new SeqInputChipMappingVision(InputStageUnit); // Unit 재사용
-                    manualSequenceControl?.RegisterSequence(
-                        "MappingVision",
-                        _seqMappingVision,
-                        () => SeqInputChipMappingVision.GetStepNames(),
-                        step => _seqMappingVision.StartSingle(step),
-                        idx => Enum.GetName(typeof(SeqInputChipMappingVision.Step), idx));
-                }
-                // Pick Sequence
-                if (InputDieTransferUnit != null)
-                {
-                    if (_seqDiePick == null)
-                        _seqDiePick = new SeqInputDieTransferChipUp(InputDieTransferUnit, 0, InputStageUnit, InputStageEjectorUnit); // 등록된 Unit 전달
-                    manualSequenceControl?.RegisterSequence(
-                        "DiePick",
-                        _seqDiePick,
-                        () => Enum.GetNames(typeof(SeqInputDieTransferChipUp.Step)),
-                        step => { try { return _seqDiePick.Start(); } catch { return false; } },
-                        idx => Enum.GetName(typeof(SeqInputDieTransferChipUp.Step), idx));
-                }
-                // Place Sequence
-                if (InputDieTransferUnit != null)
-                {
-                    if (_seqDiePlace == null)
-                        _seqDiePlace = new SeqInputDieTransferChipDown(InputDieTransferUnit); // 등록된 Unit 전달
-                    manualSequenceControl?.RegisterSequence(
-                        "DiePlace",
-                        _seqDiePlace,
-                        () => Enum.GetNames(typeof(SeqInputDieTransferChipDown.Step)),
-                        step => { try { return _seqDiePlace.Start(); } catch { return false; } },
-                        idx => Enum.GetName(typeof(SeqInputDieTransferChipDown.Step), idx));
+                    manualSequenceControl.ParentUnit = InputDieTransfer; // 시퀀스 등록 대상 유닛 지정
                 }
             }
             catch { }
@@ -456,9 +340,10 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Events
-        private void ChipLoader_Working_FormClosing(object sender, FormClosingEventArgs e)
+        private void ChipLoading_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
-            try { SeqInputStage?.Stop(); } catch { }
+            System.Threading.Tasks.Task.Delay(500).Wait();
+            
         }
 
         private void _btnVisionSetting_Click(object sender, EventArgs e)
@@ -481,9 +366,9 @@ namespace QMC.LCP_280.Process.Unit
             // 3) 동일한 상대 이동량을 PickZ 에 적용 (동기 이동).
             try
             {
-                var ejector  = InputStageEjectorUnit;
-                var transfer = InputDieTransferUnit;
-                if (ejector?.AxisPinZ == null || transfer?.PickZ == null)
+                var ejector  = InputStageEjector;
+                var transfer = InputDieTransfer;
+                if (ejector?.AxisPinZ == null || transfer?.AxisPickZ == null)
                 {
                     MessageBox.Show(this, "축 준비가 되지 않았습니다.", "Axis Not Ready", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
@@ -493,7 +378,7 @@ namespace QMC.LCP_280.Process.Unit
                 double pinWaiting = 0, pinOffset = 0;
                 try
                 {
-                    var posWaiting = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinWaiting.ToString());
+                    var posWaiting = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString());
                     var posOffset  = ejector.InputStageEjectorConfig?.GetPositionWithOffset(InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString());
                     if (posWaiting.HasValue) pinWaiting = posWaiting.Value.pinZ;
                     if (posOffset.HasValue)  pinOffset  = posOffset.Value.pinZ;
@@ -501,17 +386,17 @@ namespace QMC.LCP_280.Process.Unit
                 catch { }
 
                 double curPinZ  = ejector.AxisPinZ.GetPosition();
-                double curPickZ = transfer.PickZ.GetPosition();
+                double curPickZ = transfer.AxisPickZ.GetPosition();
 
                 // 1단계: PinZ Waiting 이동 필요 여부
                 bool needMoveToWaiting = Math.Abs(curPinZ - pinWaiting) > (ejector.AxisPinZ.Config?.InposTolerance ?? 0.005) * 2;
 
                 // 공통 속도 (두 축의 80%)
                 double vPin  = ejector.AxisPinZ.Config?.MaxVelocity  ?? 10;
-                double vPick = transfer.PickZ.Config?.MaxVelocity   ?? 10;
+                double vPick = transfer.AxisPickZ.Config?.MaxVelocity   ?? 10;
                 double commonVel = Math.Min(vPin, vPick) * 0.8; if (commonVel <= 0) commonVel = Math.Min(vPin, vPick);
                 double accPin  = ejector.AxisPinZ.Config?.RunAcc  ?? 10; double decPin  = ejector.AxisPinZ.Config?.RunDec  ?? accPin; double jerkPin  = ejector.AxisPinZ.Config?.AccJerkPercent  ?? 50;
-                double accPick = transfer.PickZ.Config?.RunAcc    ?? 10; double decPick = transfer.PickZ.Config?.RunDec    ?? accPick; double jerkPick = transfer.PickZ.Config?.AccJerkPercent    ?? 50;
+                double accPick = transfer.AxisPickZ.Config?.RunAcc    ?? 10; double decPick = transfer.AxisPickZ.Config?.RunDec    ?? accPick; double jerkPick = transfer.AxisPickZ.Config?.AccJerkPercent    ?? 50;
 
                 buttonPickUpNiddle_Move.Enabled = false;
 
@@ -538,7 +423,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 // PinZ 가 Waiting 에 위치한 후 현재값 갱신
                 curPinZ  = ejector.AxisPinZ.GetPosition();
-                curPickZ = transfer.PickZ.GetPosition();
+                curPickZ = transfer.AxisPickZ.GetPosition();
 
                 // 2단계: Offset 만큼 상대 이동 (delta = Offset - Waiting)
                 double deltaPin = pinOffset - pinWaiting; // 이 상대 이동량을 PickZ 에 동일 적용
@@ -562,9 +447,9 @@ namespace QMC.LCP_280.Process.Unit
                 await Task.Run(() =>
                 {
                     // 동시 이동
-                    transfer.PickZ.MoveAbs(finalPickZ,  commonVel, accPick, decPick, jerkPick);
+                    transfer.AxisPickZ.MoveAbs(finalPickZ,  commonVel, accPick, decPick, jerkPick);
                     ejector.AxisPinZ.MoveAbs(finalPinZ, commonVel, accPin,  decPin,  jerkPin);
-                    transfer.PickZ.WaitMoveDone(-1);
+                    transfer.AxisPickZ.WaitMoveDone(-1);
                     ejector.AxisPinZ.WaitMoveDone(-1);
                 });
 
@@ -580,14 +465,201 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        private void buttonTest_Click(object sender, EventArgs e)
+        private async void btnSeqStop_Click(object sender, EventArgs e)
         {
-            InputStageUnit.SetClampUpDown(true);
+            //if (cmbUnits?.SelectedItem == null) return;
+            var unitName = "InputDieTransfer";  //cmbUnits.SelectedItem.ToString();
+            try
+            {
+               // LogMessage($"Unit '{unitName}' 정지 중...");
+                var result = await Equipment.StopUnitAsync(unitName);
+                //LogMessage(result ? $"Unit '{unitName}' 정지 완료" : $"Unit '{unitName}' 정지 실패");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            finally
+            {
+                //UpdateUnitStatus();
+            }
         }
 
         private void buttonTest2_Click(object sender, EventArgs e)
         {
-            InputStageUnit.SetClampUpDown(false);
+            InputStage.SetClampLift(false);
+        }
+
+        private async void btnWaferLoading_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            InputStage.LoadingWaferPrepare();
+        }
+
+        private async void btnAlignT_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            InputStage.AlignT();
+        }
+
+        private async void btnAlignXY_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            InputStage.AlignXY();
+        }
+
+        private async void btnWaferUnloading_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            InputStageEjector.MovePositionEjectBlockReady(isFine: false);
+
+        }
+
+
+
+
+        private async void btnSafetyZ_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            btnSafetyZ.Enabled = false;
+            // (선택) 취소 대비
+            _ctsPickUp?.Cancel();
+            _ctsPickUp = new CancellationTokenSource();
+
+            try
+            {
+                int rc = await InputDieTransfer
+                    .MovePositionAsyncSafeSafetyZ(isFine: false, ct: _ctsPickUp.Token)
+                    .ConfigureAwait(true); // UI 컨텍스트 복귀
+
+                if (rc == 0)
+                    MessageBox.Show(this, "PickUp 위치 이동 완료", "OK",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                else if (rc == -999)
+                    MessageBox.Show(this, "사용자 취소", "Canceled",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                else
+                    MessageBox.Show(this, $"실패 (rc={rc})", "Fail",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                btnSafetyZ.Enabled = true;
+                Log.Write(ex);
+                MessageBox.Show(this, ex.Message, "Exception",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnSafetyZ.Enabled = true;
+            }
+
+        }
+
+        private async void btnEjecterZUp_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+
+        }
+
+        private async void btnPickUp_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+            
+        }
+
+        private async void btnPickUpNiddleMove_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+            
+            
+        }
+
+        private async void btnSyncPickPinRetreat_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+            
+
+        }
+
+        private async void btnDieTrReady_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+            
+        }
+
+        private async void btnPlaceChipDown_Click(object sender, EventArgs e)
+        {
+            //PlaceChipDown
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+            
+        }
+
+        private async void btnReleaseVacuumAndPlaceUp_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+           
+        }
+
+        private async void btnPickUpDn_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (Equipment == null || InputDieTransfer == null)
+                return;
+            
         }
     }
 }

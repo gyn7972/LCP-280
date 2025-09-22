@@ -11,10 +11,11 @@ using QMC.Common.Motion.Ajin.HW;
 using QMC.Common.Motion.Ajin.IO;
 using QMC.Common.Motions;
 using QMC.Common.Motions.CKD;
+using QMC.Common.PKGTester;
 using QMC.Common.Spectrometer;
 using QMC.Common.Unit;
-using QMC.LCP_280.Process.Unit; // ensure unit namespace
-using System.Threading; // CancellationToken
+using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -24,17 +25,32 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using QMC.Common.PKGTester;
-using QMC.LCP_280.Process.Component; // added for HomeHooks
 
 namespace QMC.LCP_280.Process
 {
-    /// <summary>
-    /// 설비 전체를 관리하는 Equipment 클래스
-    /// 모든 Unit들을 등록하고 Start/Stop/Config/Recipe를 중앙에서 제어
-    /// </summary>
     public class Equipment : IDisposable, IEquipment
     {
+        
+        public static class UnitKeys
+        {
+            public const string EquipmentStatus = "EquipmentStatus"; // [MOD] 상수화
+            public const string IndexChipProbeController = "IndexChipProbeController";
+            public const string IndexChipProber = "IndexChipProber";
+            public const string IndexLoadAligner = "IndexLoadAligner";
+            public const string IndexUnloadAligner = "IndexUnloadAligner";
+            public const string InputCassetteLifter = "InputCassetteLifter";
+            public const string InputDieTransfer = "InputDieTransfer";
+            public const string InputFeeder = "InputFeeder";
+            public const string InputStage = "InputStage";
+            public const string InputStageEjector = "InputStageEjector";
+            public const string OutputCassetteLifter = "OutputCassetteLifter";
+            public const string OutputDieTransfer = "OutputDieTransfer";
+            public const string OutputFeeder = "OutputFeeder";
+            public const string OutputStage = "OutputStage";
+            public const string Rotary = "Rotary";
+            public const string GageRnR = "GageRnR";
+        }
+
         #region Singleton Pattern
 
         private static Equipment _instance;
@@ -55,7 +71,6 @@ namespace QMC.LCP_280.Process
                 return _instance;
             }
         }
-
         #endregion
 
         #region Fields & Properties
@@ -63,7 +78,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 설비에 등록된 모든 Unit들
         /// </summary>
-        public ConcurrentDictionary<string, BaseUnit> Units { get; private set; }
+        public ConcurrentDictionary<string, IUnit> Units { get; private set; }
 
         /// <summary>
         /// Unit별 실행 상태 관리
@@ -73,17 +88,12 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 설비 전체 상태
         /// </summary>
-        public EquipmentState State { get; private set; }
+        public EquipmentState EqState { get; set; }
 
         /// <summary>
         /// 설비 전체 Config 관리
         /// </summary>
-        public EquipmentConfigManager ConfigManager { get; private set; }
-
-        /// <summary>
-        /// 설비 전체 Recipe 관리
-        /// </summary>
-        public EquipmentRecipeManager RecipeManager { get; private set; }
+        public EquipmentConfigManager ConfigManager { get; set; }
 
         /// <summary>
         /// 설비 전체 실행 취소 토큰
@@ -179,20 +189,25 @@ namespace QMC.LCP_280.Process
         // PKG Tester
         public PKGTester Tester { get; private set; }
 
+        // [ADD] 생성여부 노출 (ProcessExit 등에서 강제 생성 방지)
+        public static bool IsCreated => _instance != null;
+        public static bool TryGet(out Equipment inst) 
+        { 
+            inst = _instance; 
+            return inst != null; 
+        }
+        // [ADD] MotionStatusScanner 보관 (정상 Stop 위해)
+        private MotionStatusScanner _motionStatusScanner;
+        // [ADD] Dispose 재진입 방지
+        private bool _disposed;
+
         #endregion
 
         #region Constructor & Initialization
 
         private Equipment()
         {
-            //Units = new ConcurrentDictionary<string, BaseUnit>();
-            //_unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
-            //State = EquipmentState.Stopped;
 
-            //ConfigManager = new EquipmentConfigManager();
-            //RecipeManager = new EquipmentRecipeManager();
-
-            //InitializeEquipment();
         }
 
         /// <summary>
@@ -202,12 +217,11 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                Units = new ConcurrentDictionary<string, BaseUnit>();
+                Units = new ConcurrentDictionary<string, IUnit>();
                 _unitExecutions = new ConcurrentDictionary<string, UnitExecutionInfo>();
-                State = EquipmentState.Stopped;
+                EqState = EquipmentState.Stopped;
 
                 ConfigManager = new EquipmentConfigManager();
-                RecipeManager = new EquipmentRecipeManager();
 
                 OnStateChanged(EquipmentState.Initializing);
 
@@ -230,6 +244,33 @@ namespace QMC.LCP_280.Process
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
 
+                BindUnit();
+
+
+                // 3) 설비 Config + 메인 Recipe 로드
+                LoadEquipmentConfigAndMainRecipe();
+
+
+
+                // [ADD] EquipmentStatus 즉시 시작 (장비 Ready 이전에 상태 수집 시작)
+                try
+                {
+                    if (Units.ContainsKey(UnitKeys.EquipmentStatus))
+                    {
+                        var ok = StartUnitAsync(UnitKeys.EquipmentStatus).GetAwaiter().GetResult();
+                        if (!ok)
+                            OnErrorOccurred("EquipmentStatus Unit 시작 실패");
+                    }
+                    else
+                    {
+                        OnErrorOccurred("EquipmentStatus Unit 미등록 상태");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    OnErrorOccurred("EquipmentStatus Unit 시작 중 예외: " + ex.Message);
+                }
+
                 // 홈 후처리 글로벌 구독(1회)
                 HomeHooks.EnsureSubscribed();
 
@@ -243,6 +284,19 @@ namespace QMC.LCP_280.Process
             }
         }
 
+        private void BindUnit()
+        {
+            foreach(var v in Units)
+            {
+                (v.Value as BaseUnit)?.BindUnit();
+            }
+        }
+
+        // === Protected Unit Helper (EquipmentStatus 는 항상 실행 유지) ===
+        private bool IsProtectedUnit(string unitName)
+            => string.Equals(unitName, UnitKeys.EquipmentStatus, StringComparison.OrdinalIgnoreCase);
+        private bool IsProtectedUnit(IUnit unit) => unit is EquipmentStatus;
+
         #endregion
 
 
@@ -254,14 +308,14 @@ namespace QMC.LCP_280.Process
         private void AutoRegisterUnits()
         {
             // 중복 등록 방지: 이미 존재하면 스킵
-            void TryAdd(BaseUnit u, string name)
+            void TryAdd(IUnit u, string name)
             {
                 if (!Units.ContainsKey(name))
                     RegisterUnit(u, name);
             }
 
             TryAdd(new InputCassetteLifter(), "InputCassetteLifter");
-            TryAdd(new InputRingTransfer(), "InputRingTransfer");
+            TryAdd(new InputFeeder(), "InputFeeder");
             TryAdd(new InputStage(), "InputStage");
             TryAdd(new InputStageEjector(), "InputStageEjector");
             TryAdd(new InputDieTransfer(), "InputDieTransfer");
@@ -273,9 +327,9 @@ namespace QMC.LCP_280.Process
             TryAdd(new OutputDieTransfer(), "OutputDieTransfer");
             TryAdd(new OutputStage(), "OutputStage");
             TryAdd(new OutputCassetteLifter(), "OutputCassetteLifter");
-            TryAdd(new OutputRingTransfer(), "OutputRingTransfer");
+            TryAdd(new OutputFeeder(), "OutputFeeder");
             TryAdd(new GageRnR(), "GageRnR");
-            TryAdd(new EquipmentStatusUnit(), "EquipmentStatusUnit"); // 신규 상태 유닛
+            TryAdd(new EquipmentStatus(), "EquipmentStatus"); // 신규 상태 유닛
         }
 
         /// <summary>
@@ -284,14 +338,16 @@ namespace QMC.LCP_280.Process
         /// <param name="unit">등록할 Unit</param>
         /// <param name="unitName">Unit 이름</param>
         /// <param name="description">Unit 설명</param>
-        public void RegisterUnit(BaseUnit unit, string unitName, string description = null)
+        public void RegisterUnit(IUnit unit, string unitName, string description = null)
         {
+            
             if (unit == null) throw new ArgumentNullException(nameof(unit));
             if (string.IsNullOrEmpty(unitName)) throw new ArgumentException("Unit 이름이 필요합니다.", nameof(unitName));
 
             try
             {
-                unit.UnitName = unitName;
+                if (unit is BaseUnit bu)
+                    bu.UnitName = unitName;
 
                 if (Units.TryAdd(unitName, unit))
                 {
@@ -299,8 +355,10 @@ namespace QMC.LCP_280.Process
                     _unitExecutions[unitName] = new UnitExecutionInfo(unitName, description);
 
                     // Config 및 Recipe 등록
-                    ConfigManager.RegisterUnitConfig(unitName, unit.Config);
-                    RecipeManager.RegisterUnitRecipe(unitName, CreateUnitRecipe(unit));
+                    var cfg = (unit as BaseUnit)?.Config;
+                    if (cfg != null)
+                        ConfigManager.RegisterUnitConfig(unitName, cfg);
+                    //RecipeManager.RegisterUnitRecipe(unitName, CreateUnitRecipe(unit));
 
                     Console.WriteLine($"Unit '{unitName}' 등록 완료");
                 }
@@ -324,6 +382,9 @@ namespace QMC.LCP_280.Process
         {
             try
             {
+                if (IsProtectedUnit(unitName)) // [MOD] 보호 유닛 해제 금지
+                    throw new InvalidOperationException("EquipmentStatus 는 해제할 수 없습니다.");
+
                 // Unit이 실행 중이면 먼저 정지
                 if (_unitExecutions.TryGetValue(unitName, out var execInfo) && execInfo.IsRunning)
                 {
@@ -335,8 +396,8 @@ namespace QMC.LCP_280.Process
                 if (removed)
                 {
                     _unitExecutions.TryRemove(unitName, out _);
-                    ConfigManager.UnregisterUnitConfig(unitName);
-                    RecipeManager.UnregisterUnitRecipe(unitName);
+                    //ConfigManager.UnregisterUnitConfig(unitName);
+                    //RecipeManager.UnregisterUnitRecipe(unitName); // 제거함으로써 비활성화
 
                     // Unit 리소스 정리
                     if (unit is IDisposable disposableUnit)
@@ -359,7 +420,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// Unit별 기본 Recipe 생성
         /// </summary>
-        private BaseRecipe CreateUnitRecipe(BaseUnit unit)
+        private BaseRecipe CreateUnitRecipe(IUnit unit)
         {
             // Unit 타입에 따라 적절한 Recipe 생성
             switch (unit)
@@ -380,7 +441,7 @@ namespace QMC.LCP_280.Process
         /// </summary>
         public async Task<bool> StartAllUnitsAsync()
         {
-            if (State == EquipmentState.Running)
+            if (EqState == EquipmentState.Running)
             {
                 Console.WriteLine("설비가 이미 실행 중입니다.");
                 return true;
@@ -394,8 +455,13 @@ namespace QMC.LCP_280.Process
                 _equipmentCancellationTokenSource?.Dispose();
                 _equipmentCancellationTokenSource = new CancellationTokenSource();
 
-                // 모든 Unit들을 병렬로 시작
-                var startTasks = Units.Keys.Select(unitName => StartUnitAsync(unitName));
+                // [MOD] 1) 보호 유닛(EquipmentStatus) 먼저 기동 (실패해도 계속)
+                if (Units.TryGetValue(UnitKeys.EquipmentStatus, out var statusUnit))
+                    await StartUnitAsync(UnitKeys.EquipmentStatus);
+
+                // 2) 나머지 유닛 병렬 기동
+                var otherUnitNames = Units.Keys.Where(n => !IsProtectedUnit(n)).ToArray();
+                var startTasks = otherUnitNames.Select(StartUnitAsync);
                 var results = await Task.WhenAll(startTasks);
 
                 // 모든 Unit이 성공적으로 시작되었는지 확인
@@ -407,8 +473,9 @@ namespace QMC.LCP_280.Process
                 }
                 else
                 {
-                    // 일부 Unit 시작 실패 시 전체 정지
-                    await StopAllUnitsAsync();
+                    // [MOD] 실패 시에도 EquipmentStatus 는 유지 (StopAllUnitsAsync 호출 시 보호)
+                    //await StopAllUnitsAsync(includeEquipmentStatus: false);
+                    await StopAllUnitsAsync(includeEquipmentStatus: false).ConfigureAwait(false);
                     OnStateChanged(EquipmentState.Error);
                     OnErrorOccurred("설비 시작 중 일부 Unit 실패");
                     return false;
@@ -428,12 +495,11 @@ namespace QMC.LCP_280.Process
         /// <param name="unitName">시작할 Unit 이름</param>
         public async Task<bool> StartUnitAsync(string unitName)
         {
-            if (!Units.TryGetValue(unitName, out var unit))
+            if (!Units.TryGetValue(unitName, out var unitObj))
             {
                 OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
                 return false;
             }
-
             if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
             {
                 OnErrorOccurred($"Unit '{unitName}' 실행 정보를 찾을 수 없습니다.");
@@ -442,36 +508,40 @@ namespace QMC.LCP_280.Process
 
             try
             {
+                // [FIX] 실행 플래그와 실제 RunStatus 정합성 보정
+                var bu = unitObj as QMC.Common.Unit.BaseUnit;
                 if (execInfo.IsRunning)
                 {
-                    Console.WriteLine($"Unit '{unitName}'는 이미 실행 중입니다.");
-                    return true;
+                    var rs = bu?.RunStatus;
+                    if (rs == QMC.Common.Unit.BaseUnit.UnitRunStatus.Stop ||
+                        rs == QMC.Common.Unit.BaseUnit.UnitRunStatus.CycleStop)
+                    {
+                        // 실제로는 정지 상태인데 플래그만 Running이던 경우 정정
+                        execInfo.IsRunning = false;
+                        execInfo.StopTime = DateTime.Now;
+                        OnUnitStateChanged(unitName, UnitState.Stopped);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unit '{unitName}'는 이미 실행 중입니다.");
+                        return true;
+                    }
                 }
 
                 OnUnitStateChanged(unitName, UnitState.Starting);
 
-                // Equipment 취소 토큰이 없으면 생성
                 if (_equipmentCancellationTokenSource == null)
-                {
                     _equipmentCancellationTokenSource = new CancellationTokenSource();
-                }
 
-                // Unit별 취소 토큰 생성
-                execInfo.CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
+                execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
+                    ? new CancellationTokenSource()
+                    : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
 
-                // Unit 시작
-                unit.OnRun();
-
-                // Unit 실행 Task 생성 및 시작
-                execInfo.ExecutionTask = Task.Run(async () =>
-                    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
-                    execInfo.CancellationTokenSource.Token);
+                (unitObj as BaseUnit)?.Start();
 
                 execInfo.IsRunning = true;
                 execInfo.StartTime = DateTime.Now;
-
                 OnUnitStateChanged(unitName, UnitState.Running);
-                Console.WriteLine($"Unit '{unitName}' 시작됨");
                 return true;
             }
             catch (Exception ex)
@@ -481,6 +551,65 @@ namespace QMC.LCP_280.Process
                 return false;
             }
         }
+        //public async Task<bool> StartUnitAsync(string unitName)
+        //{
+        //    if (!Units.TryGetValue(unitName, out var unitObj))
+        //    {
+        //        OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
+        //        return false;
+        //    }
+        //    if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
+        //    {
+        //        OnErrorOccurred($"Unit '{unitName}' 실행 정보를 찾을 수 없습니다.");
+        //        return false;
+        //    }
+
+        //    try
+        //    {
+        //        if (execInfo.IsRunning)
+        //        {
+        //            Console.WriteLine($"Unit '{unitName}'는 이미 실행 중입니다.");
+        //            return true;
+        //        }
+
+        //        OnUnitStateChanged(unitName, UnitState.Starting);
+
+        //        // Equipment 취소 토큰이 없으면 생성
+        //        if (_equipmentCancellationTokenSource == null)
+        //            _equipmentCancellationTokenSource = new CancellationTokenSource();
+
+        //        // [MOD] 보호 유닛은 글로벌 토큰과 링크하지 않음
+        //        execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
+        //            ? new CancellationTokenSource()
+        //            : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
+
+        //        // Unit 시작
+        //        (unitObj as BaseUnit)?.Start();
+        //        //unit.OnRun();
+
+        //        execInfo.IsRunning = true;
+        //        execInfo.StartTime = DateTime.Now;
+        //        OnUnitStateChanged(unitName, UnitState.Running);
+
+        //        //// Unit 실행 Task 생성 및 시작
+        //        //execInfo.ExecutionTask = Task.Run(async () =>
+        //        //    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
+        //        //    execInfo.CancellationTokenSource.Token);
+
+        //        //execInfo.IsRunning = true;
+        //        //execInfo.StartTime = DateTime.Now;
+
+        //        //OnUnitStateChanged(unitName, UnitState.Running);
+        //        //Console.WriteLine($"Unit '{unitName}' 시작됨");
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnUnitStateChanged(unitName, UnitState.Error);
+        //        OnErrorOccurred($"Unit '{unitName}' 시작 중 오류: {ex.Message}");
+        //        return false;
+        //    }
+        //}
 
         /// <summary>
         /// Unit 실행 루프
@@ -510,15 +639,18 @@ namespace QMC.LCP_280.Process
             }
             finally
             {
-                // Unit 정리 작업
-                try
+                // [MOD] 보호 유닛은 외부 Stop 트리거 없으면 OnStop 호출 없이 유지되도록
+                if (!IsProtectedUnit(unitName))
                 {
-                    unit.OnStop();
-                    OnUnitStateChanged(unitName, UnitState.Stopped);
-                }
-                catch (Exception ex)
-                {
-                    OnErrorOccurred($"Unit '{unitName}' 정지 중 오류: {ex.Message}");
+                    try
+                    {
+                        unit.OnStop();
+                        OnUnitStateChanged(unitName, UnitState.Stopped);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnErrorOccurred($"Unit '{unitName}' 정지 중 오류: {ex.Message}");
+                    }
                 }
 
                 // 실행 정보 정리
@@ -542,8 +674,8 @@ namespace QMC.LCP_280.Process
                 case InputCassetteLifter cassetteUnit:
                     await PerformCassetteElevatorCycle(cassetteUnit, cancellationToken);
                     break;
-                case EquipmentStatusUnit statusUnit:
-                    statusUnit.Refresh(); // 고속 경량 Refresh
+                case EquipmentStatus statusUnit:
+                    statusUnit.Refresh();
                     await Task.Delay(1, cancellationToken);
                     break;
                 default:
@@ -563,24 +695,23 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
+        /// 설비 전체 정지 (인터페이스 기본 호출용 – EquipmentStatus 포함)
+        /// </summary>
+        public System.Threading.Tasks.Task<bool> StopAllUnitsAsync()
+        {
+            // IEquipment 인터페이스(매개변수 없는 버전) 요구 충족용 래퍼
+            return StopAllUnitsAsync(includeEquipmentStatus: true);
+        }
+        /// <summary>
         /// 설비 전체 정지
         /// </summary>
-        public async Task<bool> StopAllUnitsAsync()
+        public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true)
         {
-            if (State == EquipmentState.Stopped)
-            {
-                Console.WriteLine("설비가 이미 정지되어 있습니다.");
-                return true;
-            }
-
             try
             {
                 OnStateChanged(EquipmentState.Stopping);
-
-                // 모든 Unit 정지 요청
                 _equipmentCancellationTokenSource?.Cancel();
 
-                // 실행 중인 Unit들의 정지 작업을 직접 수행
                 var stopTasks = new List<Task<bool>>();
 
                 foreach (var kvp in _unitExecutions)
@@ -588,33 +719,31 @@ namespace QMC.LCP_280.Process
                     var unitName = kvp.Key;
                     var execInfo = kvp.Value;
 
+                    if (IsProtectedUnit(unitName) && !includeEquipmentStatus)
+                        continue;
+
                     if (execInfo.IsRunning)
                     {
-                        // 상태 변경 및 취소 요청
                         OnUnitStateChanged(unitName, UnitState.Stopping);
+
+                        // [FIX] 실제 유닛도 멈추도록 호출
+                        if (Units.TryGetValue(unitName, out var u))
+                            (u as QMC.Common.Unit.BaseUnit)?.Stop();
+
                         execInfo.CancellationTokenSource?.Cancel();
                         execInfo.IsRunning = false;
                         execInfo.StopTime = DateTime.Now;
 
-                        // Task 완료 대기를 위한 작업 추가
                         if (execInfo.ExecutionTask != null)
-                        {
                             stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
-                        }
+
+                        // [FIX] 즉시 Stopped 알림 (Task 루프 미사용 구조 대응)
+                        OnUnitStateChanged(unitName, UnitState.Stopped);
                     }
                 }
 
-                // 모든 정지 작업 완료 대기
                 if (stopTasks.Count > 0)
-                {
-                    var results = await Task.WhenAll(stopTasks);
-                    var allStopped = results.All(r => r);
-
-                    if (!allStopped)
-                    {
-                        OnErrorOccurred("일부 Unit 정지에 실패했습니다.");
-                      }
-                }
+                    await Task.WhenAll(stopTasks).ConfigureAwait(false);
 
                 OnStateChanged(EquipmentState.Stopped);
                 Console.WriteLine("설비 전체 정지 완료");
@@ -627,6 +756,68 @@ namespace QMC.LCP_280.Process
                 return false;
             }
         }
+        //public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true)
+        //{
+        //    if (State == EquipmentState.Stopped)
+        //    {
+        //        Console.WriteLine("설비가 이미 정지되어 있습니다.");
+        //        return true;
+        //    }
+
+        //    try
+        //    {
+        //        OnStateChanged(EquipmentState.Stopping);
+
+        //        // 전체 시퀀스 취소 토큰 취소
+        //        _equipmentCancellationTokenSource?.Cancel();
+
+        //        var stopTasks = new List<Task<bool>>();
+
+        //        foreach (var kvp in _unitExecutions)
+        //        {
+        //            var unitName = kvp.Key;
+        //            var execInfo = kvp.Value;
+
+        //            // 보호 유닛 처리
+        //            if (IsProtectedUnit(unitName))
+        //            {
+        //                if (!includeEquipmentStatus)
+        //                {
+        //                    continue; // 유지
+        //                }
+        //            }
+
+        //            if (execInfo.IsRunning)
+        //            {
+        //                OnUnitStateChanged(unitName, UnitState.Stopping);
+
+        //                execInfo.CancellationTokenSource?.Cancel();
+        //                execInfo.IsRunning = false;
+        //                execInfo.StopTime = DateTime.Now;
+
+        //                if (execInfo.ExecutionTask != null)
+        //                {
+        //                    stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
+        //                }
+        //            }
+        //        }
+
+        //        if (stopTasks.Count > 0)
+        //        {
+        //            await Task.WhenAll(stopTasks);
+        //        }
+
+        //        OnStateChanged(EquipmentState.Stopped);
+        //        Console.WriteLine("설비 전체 정지 완료");
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnStateChanged(EquipmentState.Error);
+        //        OnErrorOccurred($"설비 정지 중 오류 발생: {ex.Message}");
+        //        return false;
+        //    }
+        //}
 
         // 기존 Equipment 구현(이미 public) + IDisposable
         //public async System.Threading.Tasks.Task<bool> StopAllUnitsAsync() => await StopAllUnitsAsync(); // 기존 메서드 연결
@@ -638,6 +829,18 @@ namespace QMC.LCP_280.Process
         /// <param name="unitName">정지할 Unit 이름</param>
         public async Task<bool> StopUnitAsync(string unitName)
         {
+            if (!Units.TryGetValue(unitName, out var unitObj))
+            {
+                OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
+                return false;
+            }
+
+            if (IsProtectedUnit(unitName))
+            {
+                Console.WriteLine("EquipmentStatus 는 정지 대상에서 제외 (요청 무시).");
+                return true;
+            }
+
             if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
             {
                 OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
@@ -646,36 +849,16 @@ namespace QMC.LCP_280.Process
 
             try
             {
-                if (!execInfo.IsRunning)
-                {
-                    Console.WriteLine($"Unit '{unitName}'는 이미 정지되어 있습니다.");
-                    return true;
-                }
+                (unitObj as QMC.Common.Unit.BaseUnit)?.Stop();
 
-                OnUnitStateChanged(unitName, UnitState.Stopping);
-
-                // Unit 정지 요청
-                execInfo.CancellationTokenSource?.Cancel();
-
-                // 즉시 실행 상태를 false로 변경 (UI 업데이트용)
                 execInfo.IsRunning = false;
                 execInfo.StopTime = DateTime.Now;
 
-                // Task 완료 대기 (최대 5초)
-                if (execInfo.ExecutionTask != null)
-                {
-                    var timeoutTask = Task.Delay(5000);
-                    var completedTask = await Task.WhenAny(execInfo.ExecutionTask, timeoutTask);
 
-                    if (completedTask == timeoutTask)
-                    {
-                        OnErrorOccurred($"Unit '{unitName}' 정지 타임아웃");
-                        OnUnitStateChanged(unitName, UnitState.Error);
-                        return false;
-                    }
-                }
-
+                // [FIX] Stopping → Stopped 까지 반영
+                OnUnitStateChanged(unitName, UnitState.Stopping);
                 OnUnitStateChanged(unitName, UnitState.Stopped);
+
                 Console.WriteLine($"Unit '{unitName}' 정지 완료");
                 return true;
             }
@@ -715,162 +898,127 @@ namespace QMC.LCP_280.Process
             }
         }
 
-        #endregion
-
-        #region Config & Recipe Management
-
         /// <summary>
-        /// 특정 Unit의 Config 가져오기
+        /// 전체 또는 특정 Unit의 상태를 확인하여 신규 연결 시도
         /// </summary>
-        public T GetUnitConfig<T>(string unitName) where T : class
+        public void RefreshUnitConnections()
         {
-            return ConfigManager.GetUnitConfig<T>(unitName);
-        }
-
-        /// <summary>
-        /// 특정 Unit의 Recipe 가져오기
-        /// </summary>
-        public T GetUnitRecipe<T>(string unitName) where T : BaseRecipe
-        {
-            return RecipeManager.GetUnitRecipe<T>(unitName);
-        }
-
-        /// <summary>
-        /// 특정 Unit의 Config 설정
-        /// </summary>
-        public void SetUnitConfig(string unitName, object config)
-        {
-            if (config is BaseConfig baseConfig)
+            foreach (var unit in Units.Values)
             {
-                ConfigManager.SetUnitConfig(unitName, baseConfig);
+                // 비정상 상태는 무시
+                if (unit is EquipmentStatus) continue;
+                if (_unitExecutions.TryGetValue((unit as BaseUnit)?.UnitName, out var execInfo) && execInfo.IsRunning)
+                    continue;
+
+                try
+                {
+                    (unit as BaseUnit)?.OnStop();
+                    (unit as BaseUnit)?.OnRun();
+                }
+                catch (Exception ex)
+                {
+                    OnErrorOccurred($"Unit '{(unit as BaseUnit)?.UnitName}' 연결 상태 확인 중 오류: {ex.Message}");
+                }
             }
         }
 
-        /// <summary>
-        /// 특정 Unit의 Recipe 설정
-        /// </summary>
-        public void SetUnitRecipe(string unitName, BaseRecipe recipe)
+        // ===== Config & Recipe ===== (원본 동일)
+        public T GetUnitConfig<T>(string unitName) where T : class => ConfigManager.GetUnitConfig<T>(unitName);
+        //public T GetUnitRecipe<T>(string unitName) where T : BaseRecipe => RecipeManager.GetUnitRecipe<T>(unitName);
+        public void SetUnitConfig(string unitName, object config)
         {
-            RecipeManager.SetUnitRecipe(unitName, recipe);
+            if (config is BaseConfig baseConfig) ConfigManager.SetUnitConfig(unitName, baseConfig);
         }
+        //public void SetUnitRecipe(string unitName, BaseRecipe recipe) => RecipeManager.SetUnitRecipe(unitName, recipe);
+        public bool SaveAllConfigs(string directoryPath = null) => ConfigManager.SaveAllConfigs(directoryPath);
+        public bool LoadAllConfigs(string directoryPath = null) => ConfigManager.LoadAllConfigs(directoryPath);
+        //public bool SaveAllRecipes(string directoryPath = null) => RecipeManager.SaveAllRecipes(directoryPath);
+        //public bool LoadAllRecipes(string directoryPath = null) => RecipeManager.LoadAllRecipes(directoryPath);
 
-        /// <summary>
-        /// 모든 Config 저장
-        /// </summary>
-        public bool SaveAllConfigs(string directoryPath = null)
-        {
-            return ConfigManager.SaveAllConfigs(directoryPath);
-        }
-
-        /// <summary>
-        /// 모든 Config 로드
-        /// </summary>
-        public bool LoadAllConfigs(string directoryPath = null)
-        {
-            return ConfigManager.LoadAllConfigs(directoryPath);
-        }
-
-        /// <summary>
-        /// 모든 Recipe 저장
-        /// </summary>
-        public bool SaveAllRecipes(string directoryPath = null)
-        {
-            return RecipeManager.SaveAllRecipes(directoryPath);
-        }
-
-        /// <summary>
-        /// 모든 Recipe 로드
-        /// </summary>
-        public bool LoadAllRecipes(string directoryPath = null)
-        {
-            return RecipeManager.LoadAllRecipes(directoryPath);
-        }
-
-        #endregion
-
-        #region Status & Information
-
-        /// <summary>
-        /// 모든 Unit의 상태 정보 가져오기
-        /// </summary>
+        // ===== Status =====
         public Dictionary<string, UnitStatusInfo> GetAllUnitStatus()
         {
-            var statusDict = new Dictionary<string, UnitStatusInfo>();
+            var result = new Dictionary<string, UnitStatusInfo>();
+            if (Units == null) return result;
 
-            foreach (var kvp in Units)
+            foreach (var kv in Units)
             {
-                var unitName = kvp.Key;
-                var unit = kvp.Value;
-                var execInfo = _unitExecutions.ContainsKey(unitName) ? _unitExecutions[unitName] : null;
+                var name = kv.Key;
+                var unit = kv.Value as BaseUnit;
 
-                statusDict[unitName] = new UnitStatusInfo
+                UnitExecutionInfo exec = null;
+                _unitExecutions?.TryGetValue(name, out exec);
+
+                int compCount = 0;
+                try
                 {
-                    UnitName = unitName,
-                    Description = execInfo?.Description ?? "",
-                    IsRunning = execInfo?.IsRunning ?? false,
-                    State = GetUnitCurrentState(unitName),
-                    ComponentCount = unit.Components.Count,
-                    StartTime = execInfo?.StartTime,
-                    RunningTime = execInfo?.IsRunning == true && execInfo.StartTime.HasValue
-                        ? DateTime.Now - execInfo.StartTime.Value
-                        : TimeSpan.Zero,
+                    // Components 가 null 이거나 접근 중 예외 발생 가능성 대응
+                    var comps = unit?.Components;
+                    compCount = comps != null ? comps.Count : 0;
+                }
+                catch (Exception ex)
+                {
+                    // 개별 Unit 문제는 전체 중단시키지 말고 1개만 0 처리
+                    Log.Write("Equipment", $"[WARN] GetAllUnitStatus ComponentCount '{name}' : {ex.Message}");
+                    compCount = 0;
+                }
+
+                result[name] = new UnitStatusInfo
+                {
+                    UnitName = name,
+                    Description = exec?.Description ?? "",
+                    IsRunning = exec?.IsRunning ?? false,
+                    State = GetUnitCurrentState(name),
+                    ComponentCount = compCount,
+                    StartTime = exec?.StartTime,
+                    RunningTime = (exec?.IsRunning == true && exec.StartTime.HasValue)
+                                        ? DateTime.Now - exec.StartTime.Value
+                                        : TimeSpan.Zero,
                     LastUpdateTime = DateTime.Now
                 };
             }
-
-            return statusDict;
+            return result;
         }
 
-        /// <summary>
-        /// 특정 Unit의 현재 상태 가져오기
-        /// </summary>
+        public List<string> GetRegisteredUnitNames() => Units?.Keys.ToList() ?? new List<string>();
+
         private UnitState GetUnitCurrentState(string unitName)
         {
-            if (_unitExecutions.TryGetValue(unitName, out var execInfo))
+            if (_unitExecutions.TryGetValue(unitName, out var exec))
             {
-                if (execInfo.IsRunning)
+                if (exec.IsRunning) 
                     return UnitState.Running;
-                else if (execInfo.ExecutionTask?.IsFaulted == true)
+
+                else if (exec.ExecutionTask?.IsFaulted == true) 
                     return UnitState.Error;
-                else
+
+                else 
                     return UnitState.Stopped;
             }
             return UnitState.Unknown;
         }
 
-        /// <summary>
-        /// 등록된 모든 Unit 이름 목록 가져기
-        /// </summary>
-        public List<string> GetRegisteredUnitNames()
-        {
-            return Units.Keys.ToList();
-        }
-
         #endregion
 
-        #region Event Methods
+        #region Events
 
         private void OnStateChanged(EquipmentState newState)
         {
-            var oldState = State;
-            State = newState;
-            StateChanged?.Invoke(this, new EquipmentStateChangedEventArgs(oldState, newState));
+            var old = EqState;
+            EqState = newState;
+            StateChanged?.Invoke(this, new EquipmentStateChangedEventArgs(old, newState));
         }
-
         private void OnUnitStateChanged(string unitName, UnitState newState)
+            => UnitStateChanged?.Invoke(this, new UnitStateChangedEventArgs(unitName, newState));
+        private void OnErrorOccurred(string msg)
         {
-            UnitStateChanged?.Invoke(this, new UnitStateChangedEventArgs(unitName, newState));
-        }
-
-        private void OnErrorOccurred(string errorMessage)
-        {
-            ErrorOccurred?.Invoke(this, new EquipmentErrorEventArgs(errorMessage));
-            Console.WriteLine($"Equipment Error: {errorMessage}");
+            ErrorOccurred?.Invoke(this, new EquipmentErrorEventArgs(msg));
+            Console.WriteLine($"Equipment Error: {msg}");
         }
 
         #endregion
 
-        #region IDisposable
+        #region Dispose
 
         public void Dispose()
         {
@@ -880,144 +1028,176 @@ namespace QMC.LCP_280.Process
 
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
+            if (!disposing) return;
+            //if (!_disposed) return;
+            _disposed = true;
+
+            try
+            {
+                // 1) 일반 유닛 정지 (EquipmentStatus 제외)
+                try 
+                { 
+                    StopAllUnitsAsync(includeEquipmentStatus: true).GetAwaiter().GetResult(); 
+                } 
+                catch { }
+                // 2) 보호 유닛 강제 정지
+                ForceStopEquipmentStatus();
+
+                // MotionStatusScanner 중지
+                try { _motionStatusScanner?.Stop(); } catch { }
+                _motionStatusScanner = null;
+
+                // CKD Driver
+                try { _ckdDriver?.Dispose(); } catch { }
+                _ckdDriver = null;
+
+                // DIO Scan
+                try
+                {
+                    _dioScan?.Stop();
+                    _dioScan?.Dispose();
+                }
+                catch { }
+                _dioScan = null;
+
+                // DIO Driver
+                if (_dio is IDisposable dioDisp)
+                {
+                    try { dioDisp.Dispose(); } catch { }
+                }
+                _dio = null;
+
+                // Ajin Host
+                try { _axlHost?.Close(); } catch { }
+                _axlHost = null;
+
+                // Cameras
+                try
+                {
+                    foreach (var cam in Cameras.Values)
+                    {
+                        try { cam.StopLive(); cam.Close(); } catch { }
+                    }
+                }
+                catch { }
+                Cameras.Clear();
+
+                // Sourcemeters
+                try
+                {
+                    foreach (var sm in Sourcemeters.Values)
+                        try { (sm as IDisposable)?.Dispose(); } catch { }
+                }
+                catch { }
+                Sourcemeters.Clear();
+
+                // Spectrometers
+                try
+                {
+                    foreach (var spc in Spectrometers.Values)
+                        try { (spc as IDisposable)?.Dispose(); } catch { }
+                }
+                catch { }
+                Spectrometers.Clear();
+
+                // Units
+                try
+                {
+                    if (Units != null)
+                    {
+                        foreach (var u in Units.Values)
+                            if (u is IDisposable du) { try { du.Dispose(); } catch { } }
+                        Units.Clear();
+                    }
+                }
+                catch { }
+
+                // Cancellation
+                try
+                {
+                    _equipmentCancellationTokenSource?.Cancel();
+                    _equipmentCancellationTokenSource?.Dispose();
+                }
+                catch { }
+                _equipmentCancellationTokenSource = null;
+
+                // Execution infos
+                try
+                {
+                    if (_unitExecutions != null)
+                    {
+                        foreach (var exec in _unitExecutions.Values)
+                        {
+                            try { exec.CancellationTokenSource?.Cancel(); } catch { }
+                            try { exec.CancellationTokenSource?.Dispose(); } catch { }
+                            try { exec.ExecutionTask?.Dispose(); } catch { }
+                        }
+                        _unitExecutions.Clear();
+                    }
+                }
+                catch { }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        // [MOD] 보호 유닛 강제 종료 전용
+        private void ForceStopEquipmentStatus()
+        {
+            if (_unitExecutions == null) 
+                return;
+
+            if (_unitExecutions.TryGetValue(UnitKeys.EquipmentStatus, out var exec))
             {
                 try
                 {
-                    // 1) 모든 Unit 정지
-                    StopAllUnitsAsync().GetAwaiter().GetResult();
-
-                    // [+] CKD Motor Driver (PDO Mapping) 정리
-                    _ckdDriver?.Dispose();
-
-                    // 2) DioScanService 정리
-                    _dioScan?.Stop();
-                    _dioScan?.Dispose();
-                    _dioScan = null;
-
-                    // 3) DIO Driver
-                    if (_dio is IDisposable d) d.Dispose();
-                    _dio = null;
-
-                    // 4) Ajin Host (AXL Close)
-                    _axlHost?.Close();
-                    _axlHost = null;
-
-                    // 5) Cameras
-                    foreach (var cam in Cameras.Values)
-                    {
-                        try
-                        {
-                            cam.StopLive();
-                            cam.Close();
-                        }
-                        catch { /* swallow */ }
-                    }
-                    Cameras.Clear();
-
-                    // [+] Instruments
-                    foreach (var sm in Sourcemeters.Values)
-                    {
-                        try
-                        {
-                            if (sm is IDisposable disposableSm)
-                                disposableSm.Dispose();
-                        }
-                        catch { /* swallow */ }
-                    }
-                    foreach (var spc in Spectrometers.Values)
-                    {
-                        try
-                        {
-                            if (spc is IDisposable disposableSpc)
-                                disposableSpc.Dispose();
-                        }
-                        catch { /* swallow */ }
-                    }
-
-                    // 6) Units
-                    foreach (var unit in Units.Values)
-                    {
-                        if (unit is IDisposable disposableUnit)
-                            disposableUnit.Dispose();
-                    }
-                    Units.Clear();
-
-                    // 7) Cancellation 토큰
-                    _equipmentCancellationTokenSource?.Dispose();
-                    _equipmentCancellationTokenSource = null;
-
-                    // 8) Execution 정보 정리
-                    foreach (var execInfo in _unitExecutions.Values)
-                    {
-                        execInfo.CancellationTokenSource?.Dispose();
-                        execInfo.ExecutionTask?.Dispose();
-                    }
-                    _unitExecutions.Clear();
+                    exec.CancellationTokenSource?.Cancel();
+                    exec.ExecutionTask?.Wait(2000);
                 }
-                catch (Exception ex)
+                catch { }
+                finally
                 {
-                    Log.Write(ex);
+                    exec.IsRunning = false;
+                    exec.CancellationTokenSource?.Dispose();
+                    exec.CancellationTokenSource = null;
                 }
             }
         }
 
         #endregion
 
-        // === 프로그램 시작시에 1회 호출: 유닛별 필요한 축을 생성/등록/부착 ===
+        #region Motion/IO Bootstrap (unchanged logic trimmed)
         private void BootstrapAxesDirect()
         {
-            // 1) Ajin 보드 오픈 + MOT 로드 (한 번만)
             if (_axlHost == null)
             {
                 var motPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LCP-280.mot");
-                if (File.Exists(motPath))
-                {
-                    _axlHost = new AjinAxlBoardHost(motPath);
-                    _axlHost.Open(); // AXL.Open + AxmMotLoadParaAll
-                }
-                else
-                {
-                    _axlHost = new AjinAxlBoardHost(motPath);
-                    //_axlHost.Open(); // AXL.Open + AxmMotLoadParaAll
-                }
+                _axlHost = new AjinAxlBoardHost(motPath);
+                if (File.Exists(motPath)) _axlHost.Open();
             }
-
-            // [+] CKD Motor Driver (PDO Mapping) 추가
             if (_ckdDriver == null)
             {
                 _ckdDriver = new CKDMotorDriver("CKD_DD_MotorDriver");
                 _ckdDriver.StartReadInputDataMonitoring();
             }
-
             Directory.CreateDirectory(_axisRoot);
             CreateAxes();
-
             ClearAllMotionAlarmsOnStartup();
             ServoOnAllAxesOnStartup();
             ApplyMotionParamsForAllAxes();
 
-            var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
-            scanner.AxisStatusUpdated += (axis, status) =>
+            // [MOD] 기존 지역 변수 scanner → 필드 보관
+            if (_motionStatusScanner == null)
             {
-                // UI 바인딩/로그/감시 로직
-                // 예: 라벨 업데이트, 그래프, 알람 인터락, 이동 완료 감지 등
-                // status.State.Done / status.IO.Alarm / status.PV.ActualPosition ...
-            };
-            scanner.Start();
-
-            // 예) CassetteLoadingElevator 유닛의 Z축 하나 생성/등록/부착
-            //    필요에 맞게 더 추가(Y, X 등)
-            //var axisZ = CreateOrLoadAxis("CassetteLoadingElevator", "ElevatorZ", axisNo: 0, boardNo: 0);
-            // 매니저에 등록 (이름 중복 시 예외 방지 위해 TryRegister 사용도 가능)
-            //_axisManager.Register(axisZ);
-            // 유닛 인스턴스에 붙이기 (AxisZ 프로퍼티/필드 or Axes 딕셔너리 등으로 자동 주입 시도)
-            //AttachAxisToUnit("CassetteLoadingElevator", "AxisZ", axisZ);
-
-            // === 필요시 다른 유닛/축도 동일 방식으로 추가 ===
-            // var axisX = CreateOrLoadAxis("Prober", "StageX", 1, 0);
-            // _axisManager.Register(axisX;
-            // AttachAxisToUnit("Prober", "AxisX", axisX);
+                _motionStatusScanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+                _motionStatusScanner.AxisStatusUpdated += (axis, status) => { /* 필요 시 이벤트 처리 */ };
+                _motionStatusScanner.Start();
+            }
+            //var scanner = new MotionStatusScanner(_axisManager, periodMs: 20);
+            //scanner.AxisStatusUpdated += (axis, status) => { };
+            //scanner.Start();
         }
 
         private void ClearAllMotionAlarmsOnStartup()
@@ -1025,30 +1205,21 @@ namespace QMC.LCP_280.Process
             try
             {
                 var axes = _axisManager.GetAll();
-                for (int i = 0; i < axes.Length; i++)
+                foreach (var axis in axes)
                 {
-                    var axis = axes[i];
                     try
                     {
-                        // 현재 축 IO 상태 읽기(내부에서 드라이버별로 알람 신호 읽음)
                         var st = axis.GetStatusSnapshot();
                         if (st.IO.Alarm)
                         {
-                            // 알람만 있을 때 해제 시도
                             axis.ClearAlarm();
-                            System.Threading.Thread.Sleep(5); // 드라이버 래치 해제 간 짧은 여유
+                            Thread.Sleep(5);
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Log.Write(ex);
-                    }
+                    catch (Exception ex) { Log.Write(ex); }
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
+            catch (Exception ex) { Log.Write(ex); }
         }
 
         private void ServoOnAllAxesOnStartup()
@@ -1056,39 +1227,21 @@ namespace QMC.LCP_280.Process
             try
             {
                 var axes = _axisManager.GetAll();
-                for (int i = 0; i < axes.Length; i++)
+                foreach (var axis in axes)
                 {
-                    var axis = axes[i];
                     try
                     {
                         var st = axis.GetStatusSnapshot();
-
-                        // 알람 남아있으면 스킵 (알람 해제 루틴 이후여야 함)
-                        if (st.IO.Alarm)
-                            continue;
-
-                        // 이미 서보 ON이면 스킵
-                        if (st.IO.ServoOn)
-                            continue;
-
-                        // 서보 ON 시도
+                        if (st.IO.Alarm) continue;
+                        if (st.IO.ServoOn) continue;
                         int rc = axis.Servo(true);
-                        if (rc != 0)
-                            Log.Write("Equipment", $"[ServoOn] Axis='{axis.Name}' 실패 rc={rc}");
-
-                        // 드라이버 래치/통신 여유
-                        System.Threading.Thread.Sleep(5);
+                        if (rc != 0) Log.Write("Equipment", $"[ServoOn] Axis='{axis.Name}' 실패 rc={rc}");
+                        Thread.Sleep(5);
                     }
-                    catch (Exception ex)
-                    {
-                        Log.Write(ex);
-                    }
+                    catch (Exception ex) { Log.Write(ex); }
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
+            catch (Exception ex) { Log.Write(ex); }
         }
 
         private void ApplyMotionParamsForAllAxes()
@@ -1096,66 +1249,38 @@ namespace QMC.LCP_280.Process
             try
             {
                 var axes = _axisManager.GetAll();
-                for (int i = 0; i < axes.Length; i++)
+                foreach (var axis in axes)
                 {
-                    var axis = axes[i];
                     try
                     {
-                        // 요구사항: 서보 ON 이후 적용. (서보 OFF 축은 스킵)
                         var st = axis.GetStatusSnapshot();
-                        if (!st.IO.ServoOn)
-                            continue;
-
-                        //int rc = axis.ApplyToDriver();
-                        //if (rc != 0)
-                        //    Log.Write("Equipment", "[ApplyToDriver] Axis='" + axis.Name + "' 실패 rc=" + rc);
-
-                        System.Threading.Thread.Sleep(1); // 드라이버에 과도한 연속 호출 방지
+                        if (!st.IO.ServoOn) continue;
+                        Thread.Sleep(1);
                     }
-                    catch (Exception ex)
-                    {
-                        Log.Write(ex);
-                    }
+                    catch (Exception ex) { Log.Write(ex); }
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
+            catch (Exception ex) { Log.Write(ex); }
         }
 
         private void BootstrapIODirect()
         {
-            // 2) I/O 드라이버 (AjinDioDriver)
             if (_dio == null)
             {
-                // (board, port) -> moduleNo 매핑: 현장 EtherCAT 구성에 맞게 수정
-                AjinDioDriver.ModuleMapper map = delegate (int b, int p) { return b * 8 + p; };
+                AjinDioDriver.ModuleMapper map = (b, p) => b * 8 + p;
                 _dio = new AjinDioDriver(map);
             }
-
-            // 3) I/O 스캔 서비스 시작 (Setup JSON 사용)
             if (_dioScan == null)
             {
                 Directory.CreateDirectory(_dioRoot);
-                //var setupPath = Path.Combine(_dioRoot, "Unit.dio.setup.json"); // CassetteLoadingElevator 등 유닛별로 나눠도 OK
                 var setupPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Unit.dio.setup.json");
-                // 유닛 DIO 맵 로드/없으면 생성
-                _unitIO = DIOUnit.LoadOrCreateDefault(
-                    setupPath,
-                    unitName: "Unit",   // 네가 축을 "Unit"으로 묶었으니 동일 명칭 사용. 필요하면 유닛별 파일로 분리.
-                    32,
-                    32,
-                    "DB64R"
-                );
-
+                _unitIO = DIOUnit.LoadOrCreateDefault(setupPath, "Unit", 32, 32, "DB64R");
                 _dioScan = new DioScanService(_unitIO, _dio);
-                _dioScan.Start(10); // 10ms 주기 스캔
+                _dioScan.Start(10);
             }
-            
             IoBindings.RegisterAll();
 
-            if (!_axlHost.IsOpen)
+            if (_axlHost != null && !_axlHost.IsOpen)
             {
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", "MOTION, I/O INIT FAIL.");
@@ -1167,10 +1292,7 @@ namespace QMC.LCP_280.Process
             try
             {
                 const string unitName = "Unit";
-
                 var boardNo = 0;
-
-                // AxisNames.AllInOrder 의 인덱스가 AxisNo
                 for (int i = 0; i < AxisNames.AllInOrder.Length; i++)
                 {
                     var name = AxisNames.AllInOrder[i];
@@ -1179,340 +1301,110 @@ namespace QMC.LCP_280.Process
                     AttachAxisToUnit(unitName, "Axis_" + i, axis);
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
+            catch (Exception ex) { Log.Write(ex); }
         }
 
-        // === 축 1개 생성/로드 ===
-        // 저장 경로: Axes/<UnitName>/<AxisName>.setup.json(.config.json)
         private MotionAxis CreateOrLoadAxis(string unitName, string axisName, int axisNo, int boardNo)
         {
             var dir = Path.Combine(_axisRoot, unitName);
             Directory.CreateDirectory(dir);
-
             var setupPath = Path.Combine(dir, axisName + ".setup.json");
             var configPath = Path.Combine(dir, axisName + ".config.json");
-
-            MotionAxisSetup setup;
-            MotionAxisConfig config;
-
-            // Setup
-            if (File.Exists(setupPath))
+            MotionAxisSetup setup = File.Exists(setupPath) ? MotionAxisSetup.LoadOrCreate(setupPath, indented: true, backfill: true) : new MotionAxisSetup
             {
-                //setup = MotionAxisSetup.Load(setupPath);
-                setup = MotionAxisSetup.LoadOrCreate(setupPath, indented: true, backfill: true);
-            }
-            else
+                Name = axisName,
+                AxisNo = axisNo,
+                BoardNo = boardNo,
+                PulsesPerUnit = 1000,
+                SoftLimitEnable = true,
+                SoftLimitMin = -10,
+                SoftLimitMax = 310
+            };
+            if (!File.Exists(setupPath)) setup.TrySave(setupPath, out _);
+            MotionAxisConfig config = File.Exists(configPath) ? MotionAxisConfig.LoadOrCreate(configPath, indented: true, backfill: true) : new MotionAxisConfig
             {
-                setup = new MotionAxisSetup
-                {
-                    Name = axisName,
-                    AxisNo = axisNo,
-                    BoardNo = boardNo,
-                    PulsesPerUnit = 1000,
-                    SoftLimitEnable = true,
-                    SoftLimitMin = -10,
-                    SoftLimitMax = 310
-                };
-                string err;
-                setup.TrySave(setupPath, out err);
-            }
-
-            // Config
-            if (File.Exists(configPath))
-            {
-                //config = MotionAxisConfig.Load(configPath);
-                config = MotionAxisConfig.LoadOrCreate(configPath, indented: true, backfill: true);
-            }
-            else
-            {
-                config = new MotionAxisConfig
-                {
-                    MaxVelocity = 200,
-                    RunAcc = 800,
-                    RunDec = 800,
-                    InposTolerance = 0.002,
-                    ProfileMode = ProfileMode.SCurve,
-                    AccJerkPercent = 50,
-                    DecJerkPercent = 50
-                };
-                string err;
-                config.TrySave(configPath, out err);
-            }
-
+                MaxVelocity = 10,
+                RunAcc = 20,
+                RunDec = 20,
+                InposTolerance = 0.002,
+                ProfileMode = ProfileMode.SCurve,
+                AccJerkPercent = 50,
+                DecJerkPercent = 50
+            };
+            if (!File.Exists(configPath)) config.TrySave(configPath, out _);
             if (axisName != "Index T Axis")
             {
-                // 드라이버: 실제 보드 준비되면 AjinDriver로 교체
-                //IMotionDriver driver
                 var driver = new AjinDriver(boardNo, setup.PulsesPerUnit, useLogicalUnits: true);
-                //IMotionDriver driver = new SimDriver(setup.PulsesPerUnit);
-
-                // (선택) AXL Open + .mot 로드 : AjinAxlBoardHost 사용
-                // new AjinAxlBoardHost("C:\\Para\\xxx.mot").Open();  // 필요 시
-
-                // 드라이버 설정 Test 진행하고 적용.
-                //driver.ProfileMode = config.ProfileMode;
-                //int rc = driver.ConfigureFromSetupAndConfig(setup.AxisNo, setup, config);
-                //if (rc != 0) throw new InvalidOperationException($"Ajin configure failed rc={rc}");
                 return new MotionAxis(setup, config, driver);
             }
             else
             {
-                // CKD T축 전용 드라이버
                 var driver = _ckdDriver;
                 return new MotionAxis(setup, config, driver);
             }
         }
 
-        // === 생성된 축을 유닛 인스턴스에 주입 ===
-        // 1) 같은 이름의 MotionAxis 타입 프로퍼티/필드가 있으면 거기에 세팅 (예: public MotionAxis AxisZ {get;set;})
-        // 2) 없으면 'Axes'라는 IDictionary<string, MotionAxis> 프로퍼티/필드를 찾아 추가
-        // 3) 둘 다 없으면 장비의 _axisManager 만에 등록된 상태로 유지(필요시 여기서 매핑표 저장 가능)
         private void AttachAxisToUnit(string unitName, string targetMemberName, MotionAxis axis)
         {
-            BaseUnit unit;
-            if (!Units.TryGetValue(unitName, out unit))
-            {
-                OnErrorOccurred("AttachAxisToUnit: Unit '" + unitName + "' not found.");
-                return;
-            }
+            if (!Units.TryGetValue(unitName, out var unitObj)) { OnErrorOccurred("AttachAxisToUnit: Unit '" + unitName + "' not found."); return; }
+            var unit = unitObj as BaseUnit;
+            if (unit == null) { OnErrorOccurred("AttachAxisToUnit: Unit object is not BaseUnit."); return; }
 
             var t = unit.GetType();
-
-            // 1) 같은 이름의 프로퍼티 먼저 시도
-            var p = t.GetProperty(targetMemberName,
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-            if (p != null && p.CanWrite && p.PropertyType == typeof(MotionAxis))
-            {
-                p.SetValue(unit, axis, null);
-                return;
-            }
-
-            // 1-2) 같은 이름의 필드
-            var f = t.GetField(targetMemberName,
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-            if (f != null && f.FieldType == typeof(MotionAxis))
-            {
-                f.SetValue(unit, axis);
-                return;
-            }
-
-            // 2) Axes 딕셔너리 찾기
-            //    public Dictionary<string, MotionAxis> Axes {get;} 또는 IDictionary<string, MotionAxis>
-            var axesProp = t.GetProperty("Axes",
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
+            var p = t.GetProperty(targetMemberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (p != null && p.CanWrite && p.PropertyType == typeof(MotionAxis)) { p.SetValue(unit, axis); return; }
+            var f = t.GetField(targetMemberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (f != null && f.FieldType == typeof(MotionAxis)) { f.SetValue(unit, axis); return; }
+            var axesProp = t.GetProperty("Axes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (axesProp != null && typeof(System.Collections.IDictionary).IsAssignableFrom(axesProp.PropertyType))
-            {
-                var dict = axesProp.GetValue(unit, null) as System.Collections.IDictionary;
-                if (dict != null)
-                {
-                    dict[axis.Name] = axis; // axis.Name == axisName (예: ElevatorZ)
-                    return;
-                }
-            }
-
-            var axesField = t.GetField("Axes",
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
+            { var dict = axesProp.GetValue(unit) as System.Collections.IDictionary; if (dict != null) { dict[axis.Name] = axis; return; } }
+            var axesField = t.GetField("Axes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (axesField != null && typeof(System.Collections.IDictionary).IsAssignableFrom(axesField.FieldType))
-            {
-                var dict = axesField.GetValue(unit) as System.Collections.IDictionary;
-                if (dict != null)
-                {
-                    dict[axis.Name] = axis;
-                    return;
-                }
-            }
-
-            // 3) 주입할 곳이 없으면 로그만
-            Console.WriteLine("AttachAxisToUnit: '" + unitName + "'에 '" + targetMemberName + "' 또는 Axes 딕셔너리가 없어 축을 직접 주입하지 못했습니다.");
+            { var dict = axesField.GetValue(unit) as System.Collections.IDictionary; if (dict != null) { dict[axis.Name] = axis; return; } }
+            Console.WriteLine("AttachAxisToUnit: '" + unitName + "'에 '" + targetMemberName + "' 또는 Axes 딕셔너리가 없어 축 주입 실패.");
         }
-
-        //private void InitializeCameras()
-        //{
-        //    try
-        //    {
-        //        // 파일로 변경 필요. ( Equipment_Setup.json )
-        //        var map = new Dictionary<string, string>
-        //        {
-        //            { "InputStageCam",       "KV1" },        // Serial
-        //            { "OutputStageCam",      "KV2" },        // Serial
-        //            { "IndexLoadAlignCam",   "KV3" },        // Serial
-        //            { "IndexProcessCam",     "KV4" },        // Serial
-        //            { "IndexUnloadAlignCam", "KV5" }         // Serial
-        //        };
-
-        //        foreach (var kv in map)
-        //        {
-        //            var name = kv.Key;
-        //            var selector = kv.Value;
-
-        //            var cam = new HIKGigECamera(name);
-        //            //cam.CameraConfig = CameraConfig.LoadOrCreate(name);   // JSON 로드 (없으면 생성)
-        //            cam.CameraConfig = CameraConfig.LoadOrCreate(name, indented: true, backfill: true);
-
-        //            int ret = cam.OpenBySelectorOrConfig(selector);       // 여기서 열거→매칭→Open
-        //            if (ret != 0)
-        //            {
-        //                Log.Write("Equipment", $"[Camera] '{name}' open failed ({selector})");
-        //                continue;
-        //            }
-
-        //            // 필요 시 바로 라이브 시작
-        //            cam.StartLive();
-
-        //            Cameras[name] = cam;
-        //            Console.WriteLine($"[Camera] {name} ready");
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Log.Write(ex);
-        //    }
-        //}
-
-        // 사용 예:
-        // 1) 프로그램 시작 시:  InitializeCameras(connect: false);   // ⚡ config만 미리 로드/생성
-        // 2) 나중에 연결 시도:  InitializeCameras(connect: true);    // 🔌 실제 연결
 
         private void InitializeCameras(bool connect = true)
         {
             try
             {
-                // 파일로 변경 필요. ( Equipment_Setup.json )
                 var map = new Dictionary<string, string>
                 {
-                    { "Index_Loader",       "DA7484884" },        // Serial
-                    { "In_Stage",           "DA7500464" },        // Serial
-                    { "Index_Prober",       "DA7484883" },         // Serial
-                    { "Index_Unloader",     "DA7484882" },        // Serial
-                    { "Out_Stage",          "DA7500465" }        // Serial
-                };
-
-                // 카메라별 최소(또는 목표) Exposure 값 (예: µs 혹은 ms – SDK 기준 확인)
-                var exposureTargets = new Dictionary<string, double>
-                {
-                    { "Index_Loader",   5000 },   // 예: 8ms
-                    { "In_Stage",       5000 },
-                    { "Index_Prober",   5000 },
-                    { "Index_Unloader", 5000 },
-                    { "Out_Stage",      5000 }
+                    { "In_Stage","DA7500464" },
+                    { "Index_Loader","00G97588297" },
+                    { "Index_Aligner","DA7484884" },
+                    { "Index_Prober","DA7484883" },
+                    { "Index_Unloader","DA7484882" },
+                    { "Out_Stage","DA7500465" }
                 };
 
                 foreach (var kv in map)
                 {
                     var name = kv.Key;
                     var selector = kv.Value;
+                    CameraConfig cfg;
+                    try { cfg = CameraConfig.LoadOrCreate(name); }
+                    catch (Exception exCfg) { Log.Write("Equipment", $"[Camera] config load fail '{name}': {exCfg.Message}"); continue; }
+                    if (!connect) continue;
 
-                    // 1) ⚠ 네이티브 코드 전혀 안 건드리고, Config만 안전하게 로드/생성
-                    CameraConfig cfg = null;
                     try
                     {
-                        //cfg = CameraConfig.LoadOrCreate(name, indented: true, backfill: true);
-                        cfg = CameraConfig.LoadOrCreate(name);
-                    }
-                    catch (Exception exCfg)
-                    {
-                        Log.Write("Equipment", $"[Camera] config load failed for '{name}': {exCfg.Message}");
-                        // config 자체가 없으면 연결도 의미 없으니 다음 카메라로
-                        continue;
-                    }
-
-                    // 2) 연결 분리: connect=false면 여기서 끝
-                    if (!connect)
-                        continue;
-
-                    // 3) 연결 단계 (이때부터 네이티브 DLL 필요)
-                    try
-                    {
-                        var cam = new HIKGigECamera(name);   // 이 시점까지도 튈 수 있으니 try 내부에 둠
-                        cam.CameraConfig = cfg;
-
-                        int ret = cam.OpenBySelectorOrConfig(selector); // 열거→매칭→Open
-
-                        // -------- Exposure 확인 & 조건부 설정 (Live 시작 전 권장) --------
-                        double currentExp = 0;
-                        //ret = cam.GetExposureTime(ref currentExp);
-                        //if (ret != 0)
-                        //{
-                        //    Log.Write("Equipment", $"[Camera] '{name}' GetExposureTime failed, code=0x{ret:X8}");
-                        //}
-                        //else
-                        {
-                            double target;
-                            if (exposureTargets.TryGetValue(name, out target))
-                            {
-                                if (currentExp < target)
-                                {
-                                    int setRet = 0;// cam.SetExposureTime(target);
-                                    if (setRet != 0)
-                                        Log.Write("Equipment", $"[Camera] '{name}' SetExposureTime({target}) failed, code=0x{setRet:X8}");
-                                    else
-                                        Log.Write("Equipment", $"[Camera] '{name}' Exposure adjusted {currentExp} -> {target}");
-                                }
-                                else
-                                {
-                                    Log.Write("Equipment", $"[Camera] '{name}' Exposure OK ({currentExp} >= {target})");
-                                }
-                            }
-                            else
-                            {
-                                Log.Write("Equipment", $"[Camera] '{name}' no exposure target defined (current={currentExp})");
-                            }
-                        }
-                        // ----------------------------------------------------------------
-
-
-
-
-
-                        //(ret != 0)
-                        {
-                            Log.Write("Equipment", $"[Camera] '{name}' open failed ({selector}), code=0x{ret:X8}");
-                            //continue;
-                        }
-
-                        // 필요 시 바로 라이브 시작
-                        ret = cam.StartLive();
-                        if (ret != 0)
-                        {
-                            Log.Write("Equipment", $"[Camera] '{name}' StartLive failed, code=0x{ret:X8}");
-                            // 라이브 실패는 치명 아님: 연결만 유지하고 넘어가도 됨
-                        }
-
+                        var cam = new HIKGigECamera(name) { CameraConfig = cfg };
+                        int ret = cam.OpenBySelectorOrConfig(selector);
+                        cam.StartLive();
                         Cameras[name] = cam;
                         Console.WriteLine($"[Camera] {name} ready");
                     }
-                    catch (DllNotFoundException ex) { Log.Write(ex); break; } // SDK 미배포/경로
-                    catch (BadImageFormatException ex) { Log.Write(ex); break; } // x86/x64 불일치
-                    catch (EntryPointNotFoundException ex) { Log.Write(ex); break; } // DLL 버전 미스매치
-                    catch (Exception ex) { Log.Write(ex); /* 이 장치만 스킵 */ }
+                    catch (Exception ex) { Log.Write(ex); }
                 }
             }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
+            catch (Exception ex) { Log.Write(ex); }
         }
 
         private void InitializeSourcemeters()
         {
-            // 파일로 변경 필요. ( Equipment_Setup.json )
-            var list = new List<string>()
-            {
-                "Index_Prober_Sourcemeter"
-            };
-
-            foreach (string name in list)
+            var list = new List<string> { "Index_Prober_Sourcemeter" };
+            foreach (var name in list)
             {
                 try
                 {
@@ -1520,32 +1412,21 @@ namespace QMC.LCP_280.Process
                     int ret = smu.Config.Load();
                     if (ret != 0)
                     {
-                        Log.Write("Equipment", $"[Sourcemeter] '{name}' config load failed, code=0x{ret:X8}");
-
-                        // new create
+                        Log.Write("Equipment", $"[Sourcemeter] '{name}' config load failed rc=0x{ret:X8}");
                         smu.Config.Reset();
                         smu.Config.Save();
                     }
-
                     Sourcemeters[name] = smu;
                     Console.WriteLine($"[Sourcemeter] {name} ready");
                 }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
-                }
+                catch (Exception ex) { Log.Write(ex); }
             }
         }
 
         private void InitializeSpectrometers()
         {
-            // 파일로 변경 필요. ( Equipment_Setup.json )
-            var list = new List<string>()
-            {
-                "Index_Prober_Spectrometer"
-            };
-
-            foreach (string name in list)
+            var list = new List<string> { "Index_Prober_Spectrometer" };
+            foreach (var name in list)
             {
                 try
                 {
@@ -1553,64 +1434,131 @@ namespace QMC.LCP_280.Process
                     int ret = spc.Config.Load();
                     if (ret != 0)
                     {
-                        Log.Write("Equipment", $"[Spectrometer] '{name}' config load failed, code=0x{ret:X8}");
-
-                        // new create
+                        Log.Write("Equipment", $"[Spectrometer] '{name}' config load failed rc=0x{ret:X8}");
                         spc.Config.Reset();
                         spc.Config.Save();
                     }
-
                     Spectrometers[name] = spc;
-                    Console.WriteLine($"[Sourcemeter] {name} ready");
+                    Console.WriteLine($"[Spectrometer] {name} ready");
                 }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
-                }
+                catch (Exception ex) { Log.Write(ex); }
             }
         }
 
         private void InitializePKGTester()
         {
+            try { Tester = new PKGTester("PKGTester", Sourcemeter, Spectrometer); }
+            catch (Exception ex) { Log.Write(ex); }
+        }
+
+        public BaseUnit GetUnit(string name)
+        {
+            Units.TryGetValue(name, out var unit);
+            return unit as BaseUnit;
+        }
+        #endregion // Motion/IO Bootstrap
+
+
+        // ===== 메인 설비 Config / Recipe 로드 추가 =====
+        public static EquipmentConfig EquipmentConfig { get; private set; }
+        public static MeasurementRecipe CurrentRecipe { get; private set; }
+
+        private void LoadEquipmentConfigAndMainRecipe()
+        {
             try
             {
-                Tester = new PKGTester("PKGTester", Sourcemeter, Spectrometer);
+                // (1) 설비 Config
+                EquipmentConfig = EquipmentConfig.LoadOrCreate();
+                _CurrentRecipeName = EquipmentConfig?.CurrentRecipeName ?? "LCP_RECIPE";
+
+                // (2) 메인 Measurement Recipe
+                MeasurementRecipe loaded = null;
+                try
+                {
+                    //var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName) as QMC.Common.BaseRecipe;
+                    var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName);
+                    loaded = obj as MeasurementRecipe;
+                }
+                catch (Exception rex)
+                {
+                    OnErrorOccurred("MeasurementRecipe 로드 실패: " + rex.Message);
+                }
+
+                if (loaded == null)
+                {
+                    // 실패 시 기본 생성
+                    loaded = new MeasurementRecipe(_CurrentRecipeName);
+                    loaded.Reset();
+                    try { loaded.Save(); } catch { }
+                }
+
+                CurrentRecipe = loaded;
+
+                Console.WriteLine($"[Recipe] Main Recipe='{CurrentRecipe.Name}' 로드 완료");
             }
             catch (Exception ex)
             {
-                Log.Write(ex);
+                OnErrorOccurred("LoadEquipmentConfigAndMainRecipe 실패: " + ex.Message);
             }
         }
+
+        // 메인 Recipe 교체/저장 편의 메서드 (필요 시 UI에서 호출)
+        public static bool ChangeCurrentRecipe(string newName)
+        {
+            if (string.IsNullOrWhiteSpace(newName))
+                return false;
+            try
+            {
+                var sanitized = newName.Trim();
+                var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), sanitized) as MeasurementRecipe;
+                if (obj == null)
+                {
+                    obj = new MeasurementRecipe(sanitized);
+                    obj.Reset();
+                    obj.Save();
+                }
+                CurrentRecipe = obj;
+                _CurrentRecipeName = sanitized;
+
+                if (EquipmentConfig == null)
+                    EquipmentConfig = EquipmentConfig.LoadOrCreate();
+                EquipmentConfig.CurrentRecipeName = sanitized;
+                EquipmentConfig.Save();
+
+                Console.WriteLine($"[Recipe] 변경 및 저장: {sanitized}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //OnErrorOccurred("ChangeCurrentRecipe 오류: " + ex.Message);
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+        public static bool SaveCurrentRecipe()
+        {
+            try
+            {
+                CurrentRecipe?.Save();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                //OnErrorOccurred("SaveCurrentRecipe 오류: " + ex.Message);
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+
+
+
     }
 
     #region Supporting Classes and Enums
 
-    /// <summary>
-    /// 설비 상태
-    /// </summary>
-    public enum EquipmentState
-    {
-        Stopped,
-        Initializing,
-        Ready,
-        Starting,
-        Running,
-        Stopping,
-        Error
-    }
-
-    /// <summary>
-    /// Unit 상태
-    /// </summary>
-    public enum UnitState
-    {
-        Stopped,
-        Starting,
-        Running,
-        Stopping,
-        Error,
-        Unknown
-    }
+    
 
     /// <summary>
     /// Unit 실행 정보
@@ -1693,5 +1641,9 @@ namespace QMC.LCP_280.Process
         }
     }
     #endregion
+
+
+
+
 
 }

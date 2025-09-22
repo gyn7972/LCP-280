@@ -1,16 +1,17 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
-using System.IO;
+using System.ComponentModel;
 using System.Linq;
-using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputDieTransferConfig : BaseConfig
+    public class OutputDieTransferConfig : BaseConfig, IPropertyOrderProvider
     {
         public enum TeachingPositionName
         {
@@ -22,12 +23,43 @@ namespace QMC.LCP_280.Process.Unit
             Pickup_Index6,
             Pickup_Index7,
             Pickup_Index8,
-            Place_Ready,
-            SafeZone
+            Place,
+            Ready,
+            SafetyZone
             // 필요시 확장
         }
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
 
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        /// <summary>
+        /// TeachingPositionName 별 허용 축 목록
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            { TeachingPositionName.Pickup_Index1, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index2, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index3, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index4, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index5, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index6, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index7, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Pickup_Index8, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Place,         new [] { AxisNames.RightToolT, AxisNames.RightPlaceZ } },
+            { TeachingPositionName.Ready,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.SafetyZone,      new [] { AxisNames.RightPickZ, AxisNames.RightPlaceZ } },
+        };
+
+        
 
         // ================= IO 이름 상수 (InputStageConfig.IO 패턴과 동일) =================
         internal static class IO
@@ -63,7 +95,7 @@ namespace QMC.LCP_280.Process.Unit
             public static readonly string[] ARM_VENT = { ARM1_VENT, ARM2_VENT, ARM3_VENT, ARM4_VENT };
         }
 
-        // ================= Hard IO 정의 (InputStageConfig 패턴과 유사) =================
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
         [JsonIgnore]
@@ -95,38 +127,47 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 11, Name = IO.ARM3_VENT, Disp = "Y086" },
             new HardOutputDef { No = 12, Name = IO.ARM4_VENT, Disp = "Y087" }
         };
+        #endregion
 
-        public OutputDieTransferConfig() : base("OutputDieTransferConfig")
-        {
-            // 필요 시 TeachingPosition 초기화 호출
-            // InitializeDefaultTeachingPositions();
-        }
+
+        [Category("SetupConfig"), DisplayName("IndexOfEnd")]
+        [DefaultValue(0)]
+        public int IndexOfEnd { get; set; } = 0;
+
+
+        public OutputDieTransferConfig() : base("OutputDieTransferConfig") { }
 
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                var tp = TeachingPositions.FirstOrDefault(p => p.Name == posName);
-                if (tp == null)
+                if (!existing.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { AxisNames.RightToolT, 0.0 },
-                        { AxisNames.RightPickZ, 0.0 },
-                        { AxisNames.RightPlaceZ,0.0 }
-                    };
-                    tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
-                    TeachingPositions.Add(tp);
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var axis in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -134,43 +175,101 @@ namespace QMC.LCP_280.Process.Unit
                 exist.Description = tp.Description;
                 exist.ExtraInfo = tp.ExtraInfo;
             }
-            else
-            {
-                TeachingPositions.Add(tp);
-            }
+            else TeachingPositions.Add(tp);
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name)
-            => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+
+        /// <summary>Offset: positionName -> (T, PickZ, PlaceZ)</summary>
+        public Dictionary<string, (double t, double pickZ, double placeZ)> Offsets { get; set; } =
+            new Dictionary<string, (double t, double pickZ, double placeZ)>();
+
+        /// <summary>Offset 적용된 목표 좌표</summary>
+        public (double t, double pickZ, double placeZ) GetPositionWithOffset(string name)
+        {
+            var tp = GetTeachingPosition(name);
+            if (tp == null) return (0, 0, 0);
+            double t = tp.AxisPositions.TryGetValue(AxisNames.LeftToolT, out var vt) ? vt : 0;
+            double pz = tp.AxisPositions.TryGetValue(AxisNames.LeftPickZ, out var vpz) ? vpz : 0;
+            double plz = tp.AxisPositions.TryGetValue(AxisNames.LeftPlaceZ, out var vplz) ? vplz : 0;
+            if (Offsets.TryGetValue(name, out var off)) { t += off.t; pz += off.pickZ; plz += off.placeZ; }
+            return (t, pz, plz);
+        }
+
+        public void SetOffset(string name, double t, double pickZ, double placeZ)
+        {
+            Offsets[name] = (t, pickZ, placeZ);
+            Saveconfig();
+        }
 
         public int Saveconfig()
         {
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-
-            var original = TeachingPositions;
-            TeachingPositions = purePositions;
-            try
-            {
-                return Save();
-            }
-            finally
-            {
-                TeachingPositions = original;
-            }
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
+            try { return Save(); }
+            finally { TeachingPositions = backup; }
         }
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load();
-            if (result != 0) return result;
-
+            int rc = Load();
+            if (rc != 0) return rc;
+            ApplyAxisMapping();
             foreach (var tp in TeachingPositions)
                 tp.BindAxes(axisManager, "Unit");
-
             return 0;
         }
+
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            // 기본: 세 축 모두 허용
+            return new[] { AxisNames.RightToolT, AxisNames.RightPickZ, AxisNames.RightPlaceZ };
+        }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

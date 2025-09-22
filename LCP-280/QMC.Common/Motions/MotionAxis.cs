@@ -1,7 +1,11 @@
 ﻿using QMC.Common.Alarm;
 using QMC.Common.Component;
+using QMC.Common.Motion.Ajin;
+// CKD
+using QMC.Common.Motions.CKD;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,11 +13,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms.DataVisualization.Charting;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-
-// CKD
-using QMC.Common.Motions.CKD;
-using QMC.Common.Motion.Ajin;
 
 namespace QMC.Common.Motions
 {
@@ -66,6 +67,20 @@ namespace QMC.Common.Motions
 
         // Homed 래치(성공 시 true, 필요 시 ClearHomeLatch로 초기화)
         public bool IsHomedLatched { get; private set; }
+
+        // ===== Simulation state =====
+        private bool IsSim { get { return Config != null && Setup.IsSimulation; } }
+        private readonly object _simLock = new object();
+        private CancellationTokenSource _simMoveCts;
+        private Task _simMoveTask;
+        private double _simPosition;            // unit (mm/deg)
+        private double _simCommandPosition;     // unit
+        private double _simTarget;              // unit
+        private double _simCurrentVelocity;     // unit/s (signed)
+        private bool _simIsMoving;
+        private bool _simServoOn;
+        private bool _simAlarm;
+        private bool _simHomeSensor;
 
         public MotionAxis(MotionAxisSetup setup, MotionAxisConfig config, AjinDriver driver, IPropertyCorrection correction = null)
         {
@@ -198,9 +213,13 @@ namespace QMC.Common.Motions
         // ===== 상태 =====
         public double GetPosition()  // 논리 단위(mm/deg)
         {
+            if (IsSim)
+            {
+                lock (_simLock) return _simPosition;
+            }
             if (_driver != null)
             {
-                var pulse = _driver.ReadActualPulse(AxisNo);
+                var pulse = _driver.ReadCommandPulse(AxisNo);
                 return _correction.ToLogical(pulse);
             }
             else if (_ckdDriver != null)
@@ -216,6 +235,13 @@ namespace QMC.Common.Motions
 
         public bool InPosition(double logicalTarget)
         {
+            if (IsSim)
+            {
+                lock (_simLock)
+                {
+                    return Math.Abs(_simPosition - logicalTarget) <= Config.InposTolerance;
+                }
+            }
             if (_driver != null)
             {
                 var pos = GetPosition();
@@ -234,6 +260,34 @@ namespace QMC.Common.Motions
         // ===== 동작 =====
         public int HomeSync()
         {
+            if (IsSim)
+            {
+                // 간단한 홈 시뮬레이션: 0.5초 대기 후 위치 0으로 세팅(+오프셋 적용)
+                try
+                {
+                    lock (_simLock)
+                    {
+                        if (!_simServoOn) _simServoOn = true;
+                        _simAlarm = false;
+                        _simIsMoving = true;
+                        _simCurrentVelocity = 0;
+                    }
+                    Thread.Sleep(500);
+                    lock (_simLock)
+                    {
+                        _simPosition = 0 + Setup.HomeOffset;
+                        _simCommandPosition = _simPosition;
+                        _simHomeSensor = true;
+                        _simIsMoving = false;
+                        _simCurrentVelocity = 0;
+                    }
+                    IsHomedLatched = true;
+                    try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                    return 0;
+                }
+                catch { return -1; }
+            }
+
             if (_driver != null)
             {
                 var rc = _driver.Home(AxisNo);
@@ -301,6 +355,30 @@ namespace QMC.Common.Motions
 
         public int HomeAsync()
         {
+            if (IsSim)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        lock (_simLock) { _simIsMoving = true; _simAlarm = false; if (!_simServoOn) _simServoOn = true; }
+                        await Task.Delay(500).ConfigureAwait(false);
+                        lock (_simLock)
+                        {
+                            _simPosition = 0 + Setup.HomeOffset;
+                            _simCommandPosition = _simPosition;
+                            _simHomeSensor = true;
+                            _simIsMoving = false;
+                            _simCurrentVelocity = 0;
+                        }
+                        IsHomedLatched = true;
+                        try { var h = HomeSucceeded; if (h != null) h(this); } catch { }
+                    }
+                    catch { }
+                });
+                return 0;
+            }
+
             if (_driver != null)
             {
                 var rc = _driver.Home(AxisNo);
@@ -376,8 +454,49 @@ namespace QMC.Common.Motions
             return 0;
         }
 
-        public int MoveAbs(double logicalTarget, double vel = 5, double acc = 10, double dec = 10, double jerkPercent = 50)
+        public int MoveAbs(double logicalTarget, bool isFine)
         {
+
+            double defaultFineVel = 5.0;
+            double defaultCoarseVel = 20.0;
+            double defaultAcc = 10.0;
+            double defaultDec = 10.0;
+            double defaultJerk = 50.0;
+
+            double vel = isFine ? (this.Config != null && this.Config.JogFineVelocity > 0 ? this.Config.JogFineVelocity : defaultFineVel)
+                                        : (this.Config != null && this.Config.JogCoarseVelocity > 0 ? this.Config.JogCoarseVelocity : defaultCoarseVel);
+            double acc = this.Config != null && this.Config.JogAcc > 0 ? this.Config.JogAcc : defaultAcc;
+            double dec = this.Config != null && this.Config.JogDec > 0 ? this.Config.JogDec : defaultDec;
+            double jerk = this.Config != null ? (this.Config.AccJerkPercent + this.Config.DecJerkPercent) / 2.0 : defaultJerk;
+            return MoveAbs(logicalTarget,vel,acc,dec,jerk);
+        }
+
+        public int MoveAbs(double logicalTarget)
+        {
+            return MoveAbs(logicalTarget, false);
+        }
+        public int MoveAbsFine(double logicalTarget)
+        {
+            return MoveAbs(logicalTarget, true);
+        }
+        public int MoveAbs(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
+        {
+            if (IsSim)
+            {
+                try
+                {
+                    GuardSoftLimit(logicalTarget);
+                    double v = vel > 0 ? vel : (Config.MaxVelocity > 0 ? Config.MaxVelocity : 5);
+                    StartSimMoveTo(logicalTarget, v);
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("MotionAxis.MoveAbs(Sim)", ex.Message);
+                    return -1;
+                }
+            }
+
             if (_driver != null)
             {
                 // 1) 소프트리밋 검사
@@ -420,6 +539,11 @@ namespace QMC.Common.Motions
 
         public int MoveRel(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
+            if (IsSim)
+            {
+                var target = GetPosition() + logicalTarget;
+                return MoveAbs(target, vel, acc, dec, jerkPercent);
+            }
             if (_driver != null)
             {
                 var target = GetPosition() + logicalTarget;
@@ -431,8 +555,33 @@ namespace QMC.Common.Motions
             }
         }
 
+        // --- 아래 유틸 메서드 추가 ---
+        private bool IsIndexAxis()
+        {
+            // 회전 Index 축 추정 조건: 소프트리밋 0~360 또는 이름에 Index/Rotary 포함
+            if (Math.Abs(Setup.SoftLimitMin) < 1e-6 && Math.Abs(Setup.SoftLimitMax - 360.0) < 1e-6)
+                return true;
+            var n = Name ?? "";
+            if (n.IndexOf("Index", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (n.IndexOf("Rotary", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
+        }
+
+        private static double NormalizeAngle360(double angle)
+        {
+            angle %= 360.0;
+            if (angle < 0) angle += 360.0;
+            if (Math.Abs(angle - 360.0) < 1e-9) angle = 0.0;
+            return angle;
+        }
+
         public int MoveNextIndex()
         {
+            if (IsSim)
+            {
+                // Div8 => 45도 가정
+                return MoveRel(45.0, Config.MaxVelocity > 0 ? Config.MaxVelocity : 5, 0, 0, 0);
+            }
             if (_ckdDriver != null)
             {
                 return _ckdDriver.RunProgram(CKDMotorDriver.ProgramNumber.Incremental_Div8_CCW);
@@ -445,6 +594,10 @@ namespace QMC.Common.Motions
 
         public int MovePrevIndex()
         {
+            if (IsSim)
+            {
+                return MoveRel(-45.0, Config.MaxVelocity > 0 ? Config.MaxVelocity : 5, 0, 0, 0);
+            }
             if (_ckdDriver != null)
             {
                 return _ckdDriver.RunProgram(CKDMotorDriver.ProgramNumber.Incremental_Div8_CW);
@@ -457,6 +610,25 @@ namespace QMC.Common.Motions
 
         public int WaitMoveDone(int timeoutMs)
         {
+            if (IsSim)
+            {
+                if (timeoutMs < 0) 
+                    timeoutMs = Setup.MoveTimeoutMs;
+
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    bool moving = false;
+                    lock (_simLock) 
+                        moving = _simIsMoving;
+
+                    if (!moving) 
+                        return 0;
+
+                    Thread.Sleep(5);
+                }
+                return -1;
+            }
             if (_driver != null)
             {
                 if (timeoutMs < 0) timeoutMs = Setup.MoveTimeoutMs;
@@ -486,6 +658,23 @@ namespace QMC.Common.Motions
 
         public void JogStart(double signedVel)
         {
+            if (IsSim)
+            {
+                if (Math.Abs(signedVel) < double.Epsilon) return;
+                try
+                {
+                    // 소프트리밋 방향 체크
+                    if (Setup.SoftLimitEnable)
+                    {
+                        var cur = GetPosition();
+                        if (signedVel > 0 && cur >= Setup.SoftLimitMax) { Log.Write("MotionAxis.JogStart", "[" + Name + "] SoftLimitMax 도달 - +방향 조그 차단"); return; }
+                        if (signedVel < 0 && cur <= Setup.SoftLimitMin) { Log.Write("MotionAxis.JogStart", "[" + Name + "] SoftLimitMin 도달 - -방향 조그 차단"); return; }
+                    }
+                    StartSimJog(signedVel);
+                }
+                catch { }
+                return;
+            }
             if (_driver != null)
             {
                 if (Math.Abs(signedVel) < double.Epsilon) return; // 0 속도 무시
@@ -544,8 +733,8 @@ namespace QMC.Common.Motions
                 // 3) Servo On 보장
                 try { this.Servo(true); } catch (Exception ex) { Log.Write(ex); }
 
-                double dAcc = 10; // Config.JogAcc;
-                double dDec = 10; // Config.JogDec;
+                double dAcc = Config.JogAcc;
+                double dDec = Config.JogDec;
 
                 var drv = this._driver as AjinDriver;
                 if (drv != null) drv.JogVelStart(this.AxisNo, signedVel, dAcc, dDec);
@@ -558,6 +747,11 @@ namespace QMC.Common.Motions
 
         public void JogStop()
         {
+            if (IsSim)
+            {
+                StopSimMotion(false);
+                return;
+            }
             if (_driver != null)
             {
                 var drv = this._driver as AjinDriver;
@@ -571,6 +765,11 @@ namespace QMC.Common.Motions
 
         public void JogEStop()
         {
+            if (IsSim)
+            {
+                StopSimMotion(true);
+                return;
+            }
             if (_driver != null)
             {
                 var drv = this._driver as AjinDriver;
@@ -585,6 +784,11 @@ namespace QMC.Common.Motions
 
         public int Stop() 
         { 
+            if (IsSim)
+            {
+                StopSimMotion(false);
+                return 0;
+            }
             if (_driver != null)
             {
                 return _driver.Stop(AxisNo);
@@ -602,6 +806,11 @@ namespace QMC.Common.Motions
         }
         public int EmgStop() 
         {   
+            if (IsSim)
+            {
+                StopSimMotion(true);
+                return 0;
+            }
             if (_driver != null)
             {
                 return _driver.EmgStop(AxisNo);
@@ -618,6 +827,11 @@ namespace QMC.Common.Motions
         }
         public int Servo(bool on) 
         {   
+            if (IsSim)
+            {
+                lock (_simLock) { _simServoOn = on; if (!on) { StopSimMotion(true); } }
+                return 0;
+            }
             if (_driver != null)
             {
                 return _driver.Servo(AxisNo, on);
@@ -633,6 +847,11 @@ namespace QMC.Common.Motions
         }
         public int ClearAlarm() 
         { 
+            if (IsSim)
+            {
+                lock (_simLock) { _simAlarm = false; }
+                return 0;
+            }
             if (_driver != null)
             {
                 return _driver.ClearAlarm(AxisNo);
@@ -650,6 +869,17 @@ namespace QMC.Common.Motions
         /// <summary>현재 위치를 논리값으로 재설정(Actual/Command 동기화)</summary>
         public int SetPositionLogical(double logicalValue)
         {
+            if (IsSim)
+            {
+                lock (_simLock)
+                {
+                    _simPosition = logicalValue;
+                    _simCommandPosition = logicalValue;
+                    _simTarget = logicalValue;
+                    _simCurrentVelocity = 0;
+                }
+                return 0;
+            }
             if (_driver != null)
             {
                 var p = _correction.ToHardware(logicalValue);
@@ -669,6 +899,7 @@ namespace QMC.Common.Motions
         /// </summary>
         public int ApplyToDriver()
         {
+            if (IsSim) return 0;
             if (_driver != null)
             {
                 try
@@ -717,6 +948,30 @@ namespace QMC.Common.Motions
 
             try
             {
+                if (IsSim)
+                {
+                    // 시뮬레이션에서는 서보/알람/이동 상태만 확인
+                    lock (_simLock)
+                    {
+                        if (!_simServoOn)
+                        {
+                            if (tryRecover) { _simServoOn = true; Thread.Sleep(settleMs); }
+                            if (!_simServoOn) { reason = "Servo OFF"; return false; }
+                        }
+                        if (_simAlarm)
+                        {
+                            if (tryRecover) { _simAlarm = false; Thread.Sleep(settleMs); }
+                            if (_simAlarm) { reason = "Alarm ON"; return false; }
+                        }
+                        if (_simIsMoving)
+                        {
+                            if (tryRecover) { StopSimMotion(false); }
+                            if (_simIsMoving) { reason = "Axis moving"; return false; }
+                        }
+                    }
+                    return true;
+                }
+
                 if (_driver != null)
                 {
                     // ===== Ajin 계열 체크 =====
@@ -840,6 +1095,11 @@ namespace QMC.Common.Motions
             {
                 Config = CloneConfig(newConfig);                // 내부 보관은 복사본
                 _correction = new DefaultCorrection(Setup, Config);
+                if (!Setup.IsSimulation)
+                {
+                    // 시뮬레이션에서 실제로 전환 시 안전하게 중지
+                    StopSimMotion(true);
+                }
             }
         }
 
@@ -883,6 +1143,7 @@ namespace QMC.Common.Motions
             t.InposTolerance = c.InposTolerance;
             t.LogicalScaleFactor = c.LogicalScaleFactor;
             t.Offset = c.Offset;
+            
             return t;
         }
 
@@ -922,6 +1183,7 @@ namespace QMC.Common.Motions
             t.HomeTimeoutMs = s.HomeTimeoutMs;
             t.MoveTimeoutMs = s.MoveTimeoutMs;
             t.SensorDetectionTimeoutMs = s.SensorDetectionTimeoutMs;
+            t.IsSimulation = s.IsSimulation;
             return t;
         }
 
@@ -961,11 +1223,43 @@ namespace QMC.Common.Motions
             dst.HomeTimeoutMs = src.HomeTimeoutMs;
             dst.MoveTimeoutMs = src.MoveTimeoutMs;
             dst.SensorDetectionTimeoutMs = src.SensorDetectionTimeoutMs;
+            dst.IsSimulation = src.IsSimulation;
         }
 
         //
         public MotionAxisStatus GetStatusSnapshot()
         {
+            if (IsSim)
+            {
+                lock (_simLock)
+                {
+                    Status.PV.CommandPosition = _simCommandPosition;
+                    Status.PV.ActualPosition = _simPosition;
+                    Status.PV.ErrorPosition = _simCommandPosition - _simPosition;
+                    Status.PV.CommandVelocity = _simCurrentVelocity;
+                    Status.PV.ActualVelocity = _simCurrentVelocity;
+
+                    Status.IO.ServoOn = _simServoOn;
+                    Status.IO.Alarm = _simAlarm;
+                    Status.IO.NegativeLimitSensor = false;
+                    Status.IO.PositiveLimitSensor = false;
+                    Status.IO.HomeSensor = _simHomeSensor;
+
+                    bool inpos = Math.Abs(_simPosition - _simTarget) <= Config.InposTolerance;
+                    bool done = !_simIsMoving && inpos;
+
+                    Status.State.Done = done;
+                    Status.State.Inposition = inpos;
+                    Status.State.InpositionDone = done;
+                    Status.State.InpositionTimeout = false;
+                    Status.State.HomeEnd = IsHomedLatched;
+                    Status.State.HomeTimeout = false;
+
+                    Status.TimestampUtc = DateTime.UtcNow;
+                }
+                return Status;
+            }
+
             if (_driver != null)
             {
                 // 드라이버는 pulse/초 단위 반환 → 보정계층으로 논리단위로 변환
@@ -1032,6 +1326,201 @@ namespace QMC.Common.Motions
                 return Status;
             }
             return Status;
+        }
+
+        // ===== Simulation helpers =====
+        private void StartSimMoveTo(double target, double velocity)
+        {
+            lock (_simLock)
+            {
+                // 소프트리밋 클램프(초과 시 예외는 상단에서 처리)
+                if (Setup.SoftLimitEnable)
+                {
+                    if (target > Setup.SoftLimitMax) target = Setup.SoftLimitMax;
+                    if (target < Setup.SoftLimitMin) target = Setup.SoftLimitMin;
+                }
+                _simTarget = target;
+                _simCommandPosition = target;
+                _simIsMoving = true;
+                _simCurrentVelocity = 0; // 가/감속 미적용: 아래 루프에서 부호만 사용
+                CancelSimCts_NoLock();
+                _simMoveCts = new CancellationTokenSource();
+                var token = _simMoveCts.Token;
+                double startPos = _simPosition;
+                double dist = target - startPos;
+                double dir = Math.Sign(dist);
+                double v = Math.Abs(velocity);
+                if (v <= 0) v = 5;
+                _simServoOn = true; // 시뮬에서는 자동 서보온 가정
+
+                _simMoveTask = Task.Run(async () =>
+                {
+                    var sw = Stopwatch.StartNew();
+                    long last = sw.ElapsedMilliseconds;
+                    try
+                    {
+                        while (!token.IsCancellationRequested)
+                        {
+                            long now = sw.ElapsedMilliseconds;
+                            var dtMs = now - last; if (dtMs < 1) { await Task.Delay(1).ConfigureAwait(false); continue; }
+                            last = now;
+                            double dt = dtMs / 1000.0; // s
+
+                            double step = dir * v * dt;
+                            bool reached = false;
+                            lock (_simLock)
+                            {
+                                double remain = _simTarget - _simPosition;
+                                if (Math.Sign(remain) != Math.Sign(dir)) { reached = true; }
+                                else
+                                {
+                                    if (Math.Abs(step) >= Math.Abs(remain))
+                                    {
+                                        _simPosition = _simTarget;
+                                        _simCurrentVelocity = 0;
+                                        reached = true;
+                                    }
+                                    else
+                                    {
+                                        // 진행하면서 소프트리밋 재확인
+                                        double next = _simPosition + step;
+                                        if (Setup.SoftLimitEnable)
+                                        {
+                                            if ((dir > 0 && next > Setup.SoftLimitMax) || (dir < 0 && next < Setup.SoftLimitMin))
+                                            {
+                                                _simPosition = dir > 0 ? Setup.SoftLimitMax : Setup.SoftLimitMin;
+                                                _simCurrentVelocity = 0;
+                                                reached = true;
+                                            }
+                                            else
+                                            {
+                                                _simPosition = next;
+                                                _simCurrentVelocity = dir * v;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            _simPosition = next;
+                                            _simCurrentVelocity = dir * v;
+                                        }
+                                    }
+                                }
+                            }
+                            if (reached) break;
+                            await Task.Delay(10).ConfigureAwait(false);
+                        }
+                       
+                    }
+                    catch { }
+                    finally
+                    {
+                        lock (_simLock)
+                        {
+                            _simIsMoving = false;
+                            _simCurrentVelocity = 0;
+                        }
+                    }
+                }, token);
+            }
+        }
+
+        private void StartSimJog(double signedVel)
+        {
+            lock (_simLock)
+            {
+                CancelSimCts_NoLock();
+                _simMoveCts = new CancellationTokenSource();
+                var token = _simMoveCts.Token;
+                double v = signedVel;
+                _simServoOn = true;
+                _simIsMoving = true;
+                _simCurrentVelocity = v;
+                _simMoveTask = Task.Run(async () =>
+                {
+                    var sw = Stopwatch.StartNew();
+                    long last = sw.ElapsedMilliseconds;
+                    try
+                    {
+                        while (!token.IsCancellationRequested)
+                        {
+                            long now = sw.ElapsedMilliseconds;
+                            var dtMs = now - last; if (dtMs < 1) { await Task.Delay(1).ConfigureAwait(false); continue; }
+                            last = now;
+                            double dt = dtMs / 1000.0;
+
+                            bool stop = false;
+                            lock (_simLock)
+                            {
+                                double next = _simPosition + _simCurrentVelocity * dt;
+                                if (Setup.SoftLimitEnable)
+                                {
+                                    if (_simCurrentVelocity > 0 && next >= Setup.SoftLimitMax)
+                                    {
+                                        _simPosition = Setup.SoftLimitMax;
+                                        stop = true;
+                                    }
+                                    else if (_simCurrentVelocity < 0 && next <= Setup.SoftLimitMin)
+                                    {
+                                        _simPosition = Setup.SoftLimitMin;
+                                        stop = true;
+                                    }
+                                    else
+                                    {
+                                        _simPosition = next;
+                                    }
+                                }
+                                else
+                                {
+                                    _simPosition = next;
+                                }
+                            }
+                            if (stop) break;
+                            await Task.Delay(10).ConfigureAwait(false);
+                        }
+                    }
+                    catch { }
+                    finally
+                    {
+                        lock (_simLock) { _simIsMoving = false; _simCurrentVelocity = 0; }
+                    }
+                }, token);
+            }
+        }
+
+        private void StopSimMotion(bool emergency)
+        {
+            lock (_simLock)
+            {
+                CancelSimCts_NoLock();
+                _simIsMoving = false;
+                _simCurrentVelocity = 0;
+            }
+        } 
+
+        private void CancelSimCts_NoLock()
+        {
+            try { if (_simMoveCts != null) { _simMoveCts.Cancel(); _simMoveCts.Dispose(); _simMoveCts = null; } } catch { }
+        }
+
+        public bool IsMoveDone()
+        {
+            if(IsSim)
+            {
+                lock(_simLock)
+                {
+                    return !_simIsMoving;
+                }
+            }
+            else if(_driver != null)
+            {
+                return _driver.ReadDone(AxisNo);
+            }
+            else if(_ckdDriver != null)
+            {
+                // CKD는 별도 ReadDone 대신 RunWait 상태가 안전 대기 상태로 간주
+                return _ckdDriver.IsRunWait();
+            }
+            return false;
         }
     }
 }

@@ -368,7 +368,7 @@ namespace QMC.Common.IOUtil
             vent = new Vacuum("InputDieTransferVent4", "InputDieTransfer.VentOut4", null);
             IoAutoBindings.Vacuums["InputDieTransferVent4"] = vent;
 
-            //InputRingTransfer
+            //InputFeeder
             DIO.MapByName(unit, "InFeeder.UpOut", true, IO.WAFER_FEEDER_UP_VALVE);
             DIO.MapByName(unit, "InFeeder.DownOut", true, IO.WAFER_FEEDER_DOWN_VALVE);
             DIO.MapByName(unit, "InFeeder.UpIn", false, IO.WAFER_FEEDER_UP);
@@ -450,7 +450,7 @@ namespace QMC.Common.IOUtil
             vent = new Vacuum("OutputDieTransferVent4", "OutputDieTransfer.VentOut4", null);
             IoAutoBindings.Vacuums["OutputDieTransferVent4"] = vent;
 
-            // OutputRingTransfer
+            // OutputFeeder
             DIO.MapByName(unit, "OutFeeder.UpOut", true, IO.BIN_FEEDER_UP_VALVE);
             DIO.MapByName(unit, "OutFeeder.DownOut", true, IO.BIN_FEEDER_DOWN_VALVE);
             DIO.MapByName(unit, "OutFeeder.UpIn", false, IO.BIN_FEEDER_UP);
@@ -640,7 +640,7 @@ namespace QMC.Common.IOUtil
                     {
                         var cfg = new CylinderConfig { Name = cylName };
                         // 파일 없으면 생성, 있으면 로드 후 누락 필드 보강 저장
-                        cfg = CylinderConfig.LoadOrCreate(cfg.GetFilePath(), indented: true, backfill: true);
+                        cfg = CylinderConfig.LoadOrCreate(cfg.GetFilePath(), indented: true, backfill: false);
                         cyl.Config = cfg;
                     }
                     catch (Exception ex)
@@ -653,36 +653,6 @@ namespace QMC.Common.IOUtil
             {
                 Log.Write("IoBindings", "ManualPatch", "Central cylinder config injection error: " + ex.Message);
             }
-
-
-            // ============ 필요 시: 키 별칭(별도 표준 키 제공) ============
-            // 현장 채널명 스캔으로 생성된 키가 제각각일 수 있어,
-            // 유닛 코드에서 쉽게 찾도록 표준 키를 추가 등록(별칭)합니다.
-            // 예) InputStage:
-            //  - InStageExpander / InStageClampLift / InStageClampFB
-            //try
-            //{
-            //    foreach (var kv in IoAutoBindings.Cylinders)
-            //    {
-            //        var k = kv.Key.ToUpperInvariant();
-
-            //        // Expander
-            //        if (k.Contains("INSTAGE") && (k.Contains("EXPAND") || k.Contains("PLATE")))
-            //            IoAutoBindings.Cylinders["InStageExpander"] = kv.Value;
-
-            //        // Clamp Lift (Up/Down)
-            //        if (k.Contains("INSTAGE") && k.Contains("CLAMP") && (k.Contains("LIFT") || k.Contains("UP") || k.Contains("DOWN")))
-            //            IoAutoBindings.Cylinders["InStageClampLift"] = kv.Value;
-
-            //        // Clamp FWD/BWD
-            //        if (k.Contains("INSTAGE") && k.Contains("CLAMP") && (k.Contains("FWD") || k.Contains("FORWARD") || k.Contains("BWD") || k.Contains("BACK")))
-            //            IoAutoBindings.Cylinders["InStageClampFB"] = kv.Value;
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    Log.Write("IoBindings", "ManualPatch", "Alias mapping failed: " + ex.Message);
-            //}
         }
     }
 }

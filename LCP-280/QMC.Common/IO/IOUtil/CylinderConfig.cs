@@ -9,9 +9,10 @@ namespace QMC.Common.IOUtil
     [Serializable]
     public sealed class CylinderConfig : BaseConfig
     {
-        [Category("Simulation"), DisplayName("Simulation")]
+        [Category("Common"), DisplayName("Test")]
         [DefaultValue(false)]
-        public bool IsSimulation { get; set; } = false;
+        public bool IsTest { get; set; } = false;
+
 
         [Category("Operation"), DisplayName("Extend Timeout (ms)")]
         [DefaultValue(5000)]
@@ -125,7 +126,8 @@ namespace QMC.Common.IOUtil
             var json = File.ReadAllText(filePath, Encoding.UTF8);
             cfg = FromJson(json);
 
-            if (backfill) cfg.Save(filePath, indented);
+            if (backfill) 
+                cfg.Save(filePath, indented);
 
             return cfg;
         }

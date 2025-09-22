@@ -40,6 +40,11 @@ namespace QMC.Common.Motions
         [DefaultValue(100)]
         public int AxisPowerPercent { get; set; } = 100;
 
+        [Category("Common"), DisplayName("Simulation")]
+        [DefaultValue(false)]
+        public bool IsSimulation { get; set; } = true;
+
+
         // ===== Config (배선/방향) =====
         [Category("Config"), DisplayName("Pulse Output")]
         [DefaultValue(PulseOutput.TwoPulse_High_CCW_CW)]
@@ -154,6 +159,8 @@ namespace QMC.Common.Motions
         [Category("Timeout"), DisplayName("Sensor Detection Timeout(ms)")]
         [DefaultValue(20000)]
         public int SensorDetectionTimeoutMs { get; set; } = 20_000;
+
+
 
         // ===== BaseConfig Hooks =====
         public override void Reset()

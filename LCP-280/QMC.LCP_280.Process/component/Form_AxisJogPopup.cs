@@ -1,13 +1,15 @@
-﻿using System;
+﻿using QMC.Common;
+using QMC.Common.Motions;
+using QMC.Common.Motions.CKD;
+using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Motions;
-using QMC.Common.Motions.CKD;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -25,9 +27,21 @@ namespace QMC.LCP_280.Process.Unit
             // 디자이너에서 열릴 때는 장비 접근 금지
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
 
+            // 작업표시줄에 아이콘 따로 표시
+            this.ShowInTaskbar = true;
+            // 독립 창으로 보이게 (메인폼에 종속 X)
+            this.TopLevel = true;
+            this.Owner = null;
+            // 필요에 따라 창 스타일
+            this.StartPosition = FormStartPosition.CenterScreen;
+
             _axisManager = EquipmentInst != null ? EquipmentInst.AxisManager : null;
 
+            // Jog Panel
+            this.Text = "JogPanel";   // ← 작업표시줄 툴팁에 보이는 문자열
+            this.Icon = Properties.Resources.JogPanel_ico;  // 내장된 아이콘 로드
             InitializeUI();
+
         }
 
         // ===== 초기화 (Motion_Setup 스타일) =====
@@ -268,7 +282,7 @@ namespace QMC.LCP_280.Process.Unit
                     double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity; // :contentReference[oaicite:5]{index=5}
 
                     //test
-                    vel = 10;
+                    //vel = 10;
                     StartJogContinuous(axis, jc, vel);
                 }
                 else
@@ -459,6 +473,34 @@ namespace QMC.LCP_280.Process.Unit
             }
             btnStop.Enabled = hasAxis;
             lblPosition.Text = hasAxis ? "----" : "축 미선택";
+        }
+
+        private void btnStep1_Click(object sender, EventArgs e)
+        {
+            nudStep.Value = 1;
+        }
+
+        private void btnStep10_Click(object sender, EventArgs e)
+        {
+            nudStep.Value = 0.1M;  // decimal
+        }
+
+        private void btnStep100_Click(object sender, EventArgs e)
+        {
+            nudStep.Value = 0.01M;
+        }
+
+        private void btnStep1000_Click(object sender, EventArgs e)
+        {
+            nudStep.Value = 0.001M;
+        }
+        private void btnStepClear_Click(object sender, EventArgs e)
+        {
+            // 요청: Clear 시 값을 0으로 설정 (범위를 벗어나지 않도록 클램프)
+            decimal target = 0M;
+            if (target < nudStep.Minimum) target = nudStep.Minimum;
+            if (target > nudStep.Maximum) target = nudStep.Maximum;
+            nudStep.Value = target;
         }
 
         //private async void DoStepMoveAsync(MotionAxis axis, JogCommand jc, double stepUnit)

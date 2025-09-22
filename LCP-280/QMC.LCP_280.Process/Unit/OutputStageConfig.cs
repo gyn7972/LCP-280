@@ -1,16 +1,16 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class OutputStageConfig : BaseConfig
+    public class OutputStageConfig : BaseConfig, IPropertyOrderProvider
     {
         // Unified IO constant collection (shared with OutputStage)
         internal static class IO
@@ -43,8 +43,32 @@ namespace QMC.LCP_280.Process.Unit
             SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
             // 필요시 확장
         }
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
+        /// <summary>
+        /// Position 별 허용되는 축 목록.
+        /// </summary>
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+            { TeachingPositionName.Loading,     new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.Unloading,   new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.CenterPoint, new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.Ready,       new [] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT } },
+            { TeachingPositionName.SetPosition, new [] { AxisNames.BinStageX, AxisNames.BinStageY } },
+        };
 
+
+        #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
         [JsonIgnore]
@@ -72,32 +96,41 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 6, Name = IO.PLATE_DOWN_OUT, Disp = "Y033" },
             new HardOutputDef { No = 7, Name = IO.VACUUM,         Disp = "Y088" },
         };
+        #endregion
 
         public OutputStageConfig() : base("OutputStageConfig") { }
 
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                if (!existingNames.Contains(posName))
+                if (!existing.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { AxisNames.BinStageX, 0.0 },
-                        { AxisNames.BinStageY, 0.0 },
-                        { AxisNames.BinStageT, 0.0 }
-                    };
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
                     TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
         public void SetTeachingPosition(TeachingPosition tp)
         {
+            var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+            var filtered = new Dictionary<string, double>();
+            foreach (var axis in allowed)
+            {
+                double v = 0;
+                if (tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axis, out var val)) v = val;
+                filtered[axis] = v;
+            }
+            tp.AxisPositions = filtered;
+
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
             if (exist != null)
             {
@@ -113,19 +146,72 @@ namespace QMC.LCP_280.Process.Unit
 
         public int Saveconfig()
         {
-            var purePositions = TeachingPositions
+            var pure = TeachingPositions
                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
                 .ToList();
-            var original = TeachingPositions; TeachingPositions = purePositions;
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
             try { return Save(); }
-            finally { TeachingPositions = original; }
+            finally { TeachingPositions = backup; }
         }
 
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load(); if (result != 0) return result;
-            foreach (var tp in TeachingPositions) tp.BindAxes(axisManager, "Unit");
+            int rc = Load();
+            if (rc != 0) return rc;
+            ApplyAxisMapping();
+            foreach (var tp in TeachingPositions)
+                tp.BindAxes(axisManager, "Unit");
             return 0;
         }
+
+        /// <summary>TeachingPositions 의 AxisPositions 를 허용 축만 유지하고 누락 축은 0으로 추가</summary>
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        /// <summary>문자열 Position 이름으로 허용 축 목록 반환 (기본: X/Y/T 3축)</summary>
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            return new[] { AxisNames.BinStageX, AxisNames.BinStageY, AxisNames.BinStageT };
+        }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

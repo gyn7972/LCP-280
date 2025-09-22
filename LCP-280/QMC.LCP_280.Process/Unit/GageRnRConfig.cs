@@ -1,8 +1,10 @@
 using Newtonsoft.Json;
 using QMC.Common;
+using QMC.Common.Component;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,41 +12,41 @@ using System.Text;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    public class GageRnRConfig : BaseConfig
+    public class GageRnRConfig : BaseConfig, IPropertyOrderProvider
     {
         public enum TeachingPositionName
         {
-            Loading,
-            Unloading,
-            Ready,
-            Home
             // 필요시 추가
         }
-        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+      
+        public override bool GetTeachingPositionName(int selIndex, out string name)
+        {
+            if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)
+            {
+                name = "None";
+                return false;
+            }
+            TeachingPositionName tpn = (TeachingPositionName)selIndex;
+            name = tpn.ToString();
+            return true;
+        }
 
-        // IO 추가 필요시 여기에 정의
-        //[JsonIgnore]
-        //public HardInputDef[] HardInputs => _hardInputs;
-        //[JsonIgnore]
-        //private static readonly HardInputDef[] _hardInputs = new[]
-        //{
-        //    new HardInputDef { No = 1, Name = "WAFER FEEDER UP", Disp = "X020" },
-        //    new HardInputDef { No = 2, Name = "WAFER FEEDER DOWN", Disp = "X021" },
-        //    new HardInputDef { No = 3, Name = "WAFER FEEDER UNCLAMP", Disp = "X022" },
-        //    new HardInputDef { No = 4, Name = "WAFER FEEDER RING CHECK", Disp = "X023" },
-        //    new HardInputDef { No = 5, Name = "WAFER FEEDER OVERLOAD CHECK", Disp = "X024" }
-        //};
+        [JsonIgnore]
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        {
+        };
 
-        //[JsonIgnore]
-        //public HardOutputDef[] HardOutputs => _hardOutputs;
-        //[JsonIgnore]
-        //private static readonly HardOutputDef[] _hardOutputs = new[]
-        //{
-        //    new HardOutputDef { No = 1, Name = "WAFER FEEDER UP", Disp = "Y016" },
-        //    new HardOutputDef { No = 2, Name = "WAFER FEEDER DOWNE", Disp = "Y017" },
-        //    new HardOutputDef { No = 3, Name = "WAFER FEEDER CLAMP", Disp = "Y018" },
-        //    new HardOutputDef { No = 4, Name = "WAFER FEEDER UNCALMP", Disp = "Y019" }
-        //};
+        #region Hard IO Tables
+        [JsonIgnore]
+        public HardInputDef[] HardInputs => _hardInputs;
+        [JsonIgnore]
+        private static readonly HardInputDef[] _hardInputs = Array.Empty<HardInputDef>();
+
+        [JsonIgnore]
+        public HardOutputDef[] HardOutputs => _hardOutputs;
+        [JsonIgnore]
+        private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
+        #endregion
 
         public GageRnRConfig() : base("GageRnRConfig")
         {
@@ -132,5 +134,27 @@ namespace QMC.LCP_280.Process.Unit
 
             return 0;
         }
+
+        #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
+        // Category 순서: Common → Cassette
+        public IDictionary<string, int> GetCategoryOrder()
+            => new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
+                { "Common", 1 },
+            };
+
+        // Property 순서: (DisplayName 또는 PropertyName)
+        // BaseConfig: "Simulation" (IsSimulation)
+        // Cassette: "SlotPitch (mm)", "SlotCount (ea)"
+        public IEnumerable<string> GetPropertyOrder()
+            => new[]
+            {
+                "Name",
+                "Simulation",
+                "SlotPitch (mm)",
+                "SlotCount (ea)"
+            };
+        #endregion
     }
 }

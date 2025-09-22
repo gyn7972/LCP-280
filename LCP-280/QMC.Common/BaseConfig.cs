@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using QMC.Common.Component;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Reflection;
@@ -8,21 +10,26 @@ using System.Text;
 
 namespace QMC.Common
 {
-    public abstract class BaseConfig : ICloneable
+    public abstract partial class BaseConfig : ICloneable
     {
         // ===== 공통 메타 속성 =====
-        [DefaultValue(null)]
+        [Category("General"), DisplayName("Name")]
+        [DefaultValue(0)]
         public string Name { get; set; }
 
         //[DefaultValue(true)]
         //public bool IsEnabled { get; set; } = true;
+
+        [Category("Common"), DisplayName("Simulation")]
+        [DefaultValue(false)]
+        public bool IsSimulation { get; set; } = false;
 
         [JsonIgnore]
         private DateTime LastModified { get; set; } = DateTime.Now;
 
         //[JsonIgnore]
         //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
-
+        public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
         // ===== 생성/초기화 =====
         protected BaseConfig(string name = null)
         {

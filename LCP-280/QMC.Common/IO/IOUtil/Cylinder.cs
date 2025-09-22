@@ -13,6 +13,15 @@ namespace QMC.Common.IOUtil
 
         public CylinderConfig _config { get; set; }
 
+        public new CylinderConfig Config
+        {
+            get => _config;
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                _config = value;
+            }
+        }
         // 키 직접 접근 프로퍼티 (리플렉션 제거 목적)
         public string FwdOutKey => _fwdOutKey;
         public string BwdOutKey => _bwdOutKey;
@@ -29,7 +38,7 @@ namespace QMC.Common.IOUtil
             _config = config ?? new CylinderConfig { Name = name };
         }
 
-        public bool Extend(int timeoutMs = 1000, int settleMs = 50)
+        public bool Extend(int timeoutMs = 1500, int settleMs = 50)
         {
             DIO.Out(_bwdOutKey, false);
             DIO.Out(_fwdOutKey, true);
@@ -37,16 +46,25 @@ namespace QMC.Common.IOUtil
             int timeout = (timeoutMs != 0) ? timeoutMs : _config.ExtendTimeout;
             int settle = (settleMs != 0) ? settleMs : _config.SettleDelay;
 
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeout)
+            if(this.Config.IsSimulation)
             {
-                bool value = IsExtended();
-                if (!value)
-                {
-                    return value;
-                }
-                Thread.Sleep(settle);
+                Thread.Sleep(500);
+                return true;
             }
+            else
+            {
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeout)
+                {
+                    bool value = IsExtended();
+                    if (value)
+                    {
+                        return value;
+                    }
+                    Thread.Sleep(settle);
+                }
+            }
+                
             return false;
         }
 
@@ -94,7 +112,7 @@ namespace QMC.Common.IOUtil
             return false;
         }
 
-        public bool Retract(int timeoutMs = 1000, int settleMs = 50)
+        public bool Retract(int timeoutMs = 1500, int settleMs = 50)
         {
             DIO.Out(_fwdOutKey, false);
             DIO.Out(_bwdOutKey, true);
@@ -102,29 +120,25 @@ namespace QMC.Common.IOUtil
             int timeout = (timeoutMs != 0) ? timeoutMs : _config.RetractTimeout;
             int settle = (settleMs != 0) ? settleMs : _config.SettleDelay;
 
-            var sw = Stopwatch.StartNew();
-            while (sw.ElapsedMilliseconds < timeout)
+            if (this.Config.IsSimulation)
             {
-                bool value = IsRetacted();
-                if (!value)
+                Thread.Sleep(500);
+                return true;
+            }
+            else
+            {
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < timeout)
                 {
-                    return value;
+                    bool value = IsRetacted();
+                    if (!value)
+                    {
+                        return value;
+                    }
+                    Thread.Sleep(settle);
                 }
-                Thread.Sleep(settle);
             }
             return false;
-
-            //var sw = Stopwatch.StartNew();
-            //while (sw.ElapsedMilliseconds < timeout)
-            //{
-            //    if (DIO.In(_bwdInKey, out var on) && on) 
-            //    { 
-            //        Thread.Sleep(settle); 
-            //        return true; 
-            //    }
-            //    Thread.Sleep(5);
-            //}
-            //return false;
         }
 
         public void AllOff() { DIO.Out(_fwdOutKey, false); DIO.Out(_bwdOutKey, false); }

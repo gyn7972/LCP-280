@@ -41,32 +41,32 @@ namespace QMC.Common.Motions
         public double HomeSecondAcc { get; set; } = 0.000;
 
         // ===== Jog =====
-        [Category("Jog"), DisplayName("Fine Velocity(mm/s)")]
+        [Category("Jog"), DisplayName("Jog.Fine Velocity(mm/s)")]
         [DefaultValue(0.0)]
         public double JogFineVelocity { get; set; } = 0.000;
 
-        [Category("Jog"), DisplayName("Coarse Velocity(mm/s)")]
+        [Category("Jog"), DisplayName("Jog.Coarse Velocity(mm/s)")]
         [DefaultValue(0.0)]
         public double JogCoarseVelocity { get; set; } = 0.000;
 
-        [Category("Jog"), DisplayName("Accelerator(mm/s^2)")]
+        [Category("Jog"), DisplayName("Jog.Accelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double JogAcc { get; set; } = 0.000;
 
-        [Category("Jog"), DisplayName("Decelerator(mm/s^2)")]
+        [Category("Jog"), DisplayName("Jog.Decelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double JogDec { get; set; } = 0.000;
 
         // ===== Run =====
-        [Category("Run"), DisplayName("Maximum Velocity(mm/s)")]
+        [Category("Run"), DisplayName("Run.Maximum Velocity(mm/s)")]
         [DefaultValue(0.0)]
         public double MaxVelocity { get; set; } = 0.000;
 
-        [Category("Run"), DisplayName("Accelerator(mm/s^2)")]
+        [Category("Run"), DisplayName("Run.Accelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double RunAcc { get; set; } = 0.000;
 
-        [Category("Run"), DisplayName("Decelerator(mm/s^2)")]
+        [Category("Run"), DisplayName("Run.Decelerator(mm/s^2)")]
         [DefaultValue(0.0)]
         public double RunDec { get; set; } = 0.000;
 
@@ -103,10 +103,15 @@ namespace QMC.Common.Motions
         [DefaultValue(false)]
         public bool SensorLimitPlus { get; set; } = false;
 
-        [Category("Simumlation"), DisplayName("Simulation")]
-        [DefaultValue(false)]
-        public bool IsSimulation { get; set; } = false;
+        //Test
+        //[Category("Operation"), DisplayName("구영남")]
+        //[DefaultValue(false)]
+        //public bool bRich { get; set; } = false;
 
+        public MotionAxisConfig()
+        {
+
+        }
         // ===== BaseConfig Hooks =====
         public override void Reset()
         {

@@ -11,6 +11,34 @@ namespace QMC.Common.IOUtil
     /// "논리 키" ↔ (ModuleName, DisplayNo) 매핑 + 입력/출력/펄스 API.
     /// EquipmentLocator.Instance를 통해 DioScan/UnitIO에 접근합니다.
     /// </summary>
+    /// 
+    public class IoRef
+    {
+        public string Module;
+        public string Disp;
+        public PropertyState Prop;
+        public IoRef()
+        {
+            Module = "";
+            Disp = "";
+            Prop = null;
+        }
+        public bool IsSameIO(string module, string disp)
+        {
+            return string.Equals(Module, module, StringComparison.OrdinalIgnoreCase) && IsSameIO(disp);
+        }
+        public bool IsSameIO(string disp)
+        {
+            int IoNO = -1;
+            int.TryParse(this.Disp.Substring(1), out IoNO);
+            int cmpIoNO = 0;
+            int.TryParse(disp.Substring(1), out cmpIoNO);
+
+            return IoNO == cmpIoNO;
+        }
+
+    }
+
     public static class DIO
     {
         private sealed class IoPoint
@@ -32,10 +60,17 @@ namespace QMC.Common.IOUtil
         public static void MapByName(DIOUnit unit, string key, bool isOutput, string channelName)
         {
             if (unit == null) throw new ArgumentNullException(nameof(unit));
-            if (!TryFindByName(unit, isOutput, channelName, out var moduleName, out var displayNo))
-                throw new InvalidOperationException($"'{channelName}' 채널을 찾을 수 없습니다. (isOutput={isOutput})");
+            if (TryFindByName(unit, isOutput, channelName, out var moduleName, out var displayNo))
+            {
+                _map[key] = new IoPoint(moduleName, displayNo, isOutput);
+            }
+            else
+            {
 
-            _map[key] = new IoPoint(moduleName, displayNo, isOutput);
+            }
+                
+
+            
         }
 
         /// <summary>모듈/표시번호를 직접 지정해 매핑</summary>
@@ -94,6 +129,7 @@ namespace QMC.Common.IOUtil
             var eq = EquipmentLocator.Instance as IEquipment;
             var dio = eq?.DioScan; if (dio == null) return false;
             return dio.TryGetOutput(p.Module, p.Disp, out value);
+
         }
 
         // ===== Enumeration API (UI에서 Raw 리스트 구성 용도) =====
