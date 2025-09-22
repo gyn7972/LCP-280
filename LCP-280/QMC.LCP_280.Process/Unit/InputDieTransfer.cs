@@ -42,6 +42,7 @@ namespace QMC.LCP_280.Process.Unit
             eInputStageEjectorAxesMoving,
             eInputDieTransferError,
             eInputStageVaccum,
+            eInputDieTransferVaccum,
         }
         #region InitAlarm
         protected override void InitAlarm()
@@ -116,12 +117,20 @@ namespace QMC.LCP_280.Process.Unit
             //eInputStageVaccum
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputStageVaccum;
-            alarm.Title = "eInputStageVaccum";
+            alarm.Title = "eInputStageVaccumError";
             alarm.Cause = "eInputStageVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            //
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputDieTransferVaccum;
+            alarm.Title = "InputDieTransferVaccumError";
+            alarm.Cause = "InputDieTransferVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
 
@@ -1434,13 +1443,20 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!InputStage.IsVacuumOn())
                 {
-                    if (sw.ElapsedMilliseconds > 2000)
+                    if(Config.IsSimulation)
                     {
-                        PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                        Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-                        return -1;
+                        if (sw.ElapsedMilliseconds > 2000)
+                        {
+                            PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                            Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
+                            return -1;
+                        }
+                        Thread.Sleep(1);
                     }
-                    Thread.Sleep(1);
+                    else
+                    {
+                        break;
+                    }
                 }
             }
             else
@@ -1471,6 +1487,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
+                            PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
                             Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
                             return -1;
                         }
@@ -1494,7 +1511,6 @@ namespace QMC.LCP_280.Process.Unit
                 PostAlarm((int)AlarmKeys.eInputStageNotSafe);
                 return -1;
             }
-                
 
             this.CurrentFunc = SyncPickPinUp;
             int nRet = 0;
@@ -1555,6 +1571,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (sw.ElapsedMilliseconds > 1000)
                         {
+                            PostAlarm((int)AlarmKeys.eInputStageVaccum);
                             Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
                             return -1;
                         }
@@ -1571,6 +1588,7 @@ namespace QMC.LCP_280.Process.Unit
             
             if (nRet != 0) //nRet = Move
             {
+                PostAlarm((int)AlarmKeys.eInputDieTransferError);
                 Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
                 Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
                 Log.Write(UnitName, "[SyncPickPinRetreat] EjectPinReady 이동 실패");
@@ -1631,7 +1649,7 @@ namespace QMC.LCP_280.Process.Unit
                 //    return true;
                 //else
                 //    return false;
-                if (Rotary.IsAnyAxisMoving())
+                if (Rotary.IsAxisMoving(AxisNames.IndexT)) //
                     return true;
                 else
                     return false;
@@ -1652,8 +1670,12 @@ namespace QMC.LCP_280.Process.Unit
                     }
 
                     if (sw.ElapsedMilliseconds > timeoutMs)
-                        return -2;
-
+                    {
+                        PostAlarm((int)AlarmKeys.eRotatyNotSafe);
+                        Log.Write(this, "WaitRotarySupplyRequest TimeOut");
+                        return -1;
+                    }
+                        
                     // 진행 중 Interlock 재확인
                     //if (!CheckInterlocks(out alarm))
                     //{
@@ -1716,14 +1738,38 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = ReleaseVacuumAndPlaceUp;
                 LogSequence("Start");
 
-                if (armIndex < 0 || armIndex > 3) return -1;
-                Rotary.SetVacuum(nIndex, true);
-                Thread.Sleep(10);
-                // Release
-                SetVacuum(armIndex, false);
-                SetVent(armIndex, true);
-                Thread.Sleep(50);
+                if (armIndex < 0 || armIndex > 3) 
+                    return -1;
+
+                if (Rotary.SetVacuum(nIndex, true))
+                {
+                    SetVacuum(armIndex, false);
+                    SetVent(armIndex, true);
+                    SetBlow(armIndex, true);
+
+                    var sw = Stopwatch.StartNew();
+                    while (InputStage.IsVacuumOn())
+                    {
+                        if (!Config.IsSimulation)
+                        {
+                            if (sw.ElapsedMilliseconds > 2000)
+                            {
+                                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
+                        }
+                        else
+                        {
+                            break;
+                        } 
+                    }
+                }
+
+                Thread.Sleep(1);
                 SetVent(armIndex, false);
+                SetBlow(armIndex, false);
 
                 // Safety 위치로 상승
                 double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),
