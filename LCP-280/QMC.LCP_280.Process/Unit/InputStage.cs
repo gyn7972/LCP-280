@@ -47,7 +47,7 @@ namespace QMC.LCP_280.Process.Unit
             eInputFeederYNotSafe,
             eVisionTsearch,
             eVisionXYsearch,
-
+            eInputStageMoveFail,
         }
         private struct AngleStats
         {
@@ -118,6 +118,15 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageMoveFail;
+            alarm.Title = "스테이지 이동에 실패 하였습니다.";
+            alarm.Cause = "모터상태를 확인 하여주십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
         }
         #endregion
 
@@ -1792,10 +1801,29 @@ namespace QMC.LCP_280.Process.Unit
                 MappingMoveTimeoutMs) != 0)
                 return -1;
 
+            if(this.InputStageEjector.IsPinZSafetyPos() == false)
+            {
+                PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                return -1;
+            }
             if (IsStageInterLockOK(x, y))
             {
-                this.AxisX.MoveAbs(x, bFineSpeed);
-                this.AxisY.MoveAbs(y, bFineSpeed);
+                ret = 0;
+                ret = this.AxisX.MoveAbs(x, bFineSpeed);
+                if (ret != 0) 
+                {
+                    this.AxisX.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+                    return ret;
+                }
+                ret = this.AxisY.MoveAbs(y, bFineSpeed);
+                if (ret != 0)
+                {
+                    this.AxisY.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+                    return ret;
+                }
+
                 if (WaitUntil(() =>
                     AxisX.InPosition(x) && AxisY.InPosition(y) && IsStageInterLockOK()==false,
                     MappingMoveTimeoutMs) != 0)
@@ -1912,8 +1940,13 @@ namespace QMC.LCP_280.Process.Unit
                     double targetY = leftTopY - r * ChipPitchYmm; // 위에서 아래로
 
                     nRet = MoveStage(targetX, targetY, bFineSpeed);
+                    if(nRet != 0)
+                    {
+                        Log.Write(UnitName, "ChipMap", $"MoveStage fail r={r} c={c} x={targetX:F3} y={targetY:F3}");
+                        PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                        return -1;
+                    }
 
-                    
                     // Grab
                     if (StageCamera == null)
                     {
