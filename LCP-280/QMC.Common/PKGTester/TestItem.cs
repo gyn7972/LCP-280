@@ -25,8 +25,8 @@ namespace QMC.Common.PKGTester
         [Category("Electrical")] IF,
         [Category("Electrical")] IR,
 
-        [Category("ElectricalSource")] IPulseSweep,
-        [Category("ElectricalSource")] VPulseSweep,
+        [Category("ElectricalSource")] ISourceAndTrigger,
+        [Category("ElectricalSource")] VSourceAndTrigger,
 
         [Category("Optical")] RadInt,
         [Category("Optical")] PhotInt,

@@ -32,18 +32,13 @@
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.tabPage4 = new System.Windows.Forms.TabPage();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.testConditionSetPage1 = new QMC.LCP_280.Process.Unit.TestConditionSetPage();
             this.rankSetPage1 = new QMC.LCP_280.Process.Unit.FormRecipe.Page.RankSetPage();
             this.cellTesterPage1 = new QMC.LCP_280.Process.Unit.FormRecipe.Page.CellTesterPage();
-            this.cieChromaticityControl1 = new QMC.Common.PKGTester.CieChromaticityControl();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.tabPage3.SuspendLayout();
-            this.tabPage4.SuspendLayout();
-            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -51,14 +46,15 @@
             this.tabControl1.Controls.Add(this.tabPage1);
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Controls.Add(this.tabPage3);
-            this.tabControl1.Controls.Add(this.tabPage4);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl1.DrawMode = System.Windows.Forms.TabDrawMode.OwnerDrawFixed;
             this.tabControl1.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.tabControl1.Location = new System.Drawing.Point(0, 0);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
             this.tabControl1.Size = new System.Drawing.Size(1264, 752);
             this.tabControl1.TabIndex = 0;
+            this.tabControl1.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.tabControl1_DrawItem);
             // 
             // tabPage1
             // 
@@ -93,26 +89,6 @@
             this.tabPage3.Text = "Cell Tester";
             this.tabPage3.UseVisualStyleBackColor = true;
             // 
-            // tabPage4
-            // 
-            this.tabPage4.Controls.Add(this.panel1);
-            this.tabPage4.Location = new System.Drawing.Point(4, 29);
-            this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage4.Size = new System.Drawing.Size(1256, 719);
-            this.tabPage4.TabIndex = 3;
-            this.tabPage4.Text = "tabPage4";
-            this.tabPage4.UseVisualStyleBackColor = true;
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.cieChromaticityControl1);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(3, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(1250, 713);
-            this.panel1.TabIndex = 0;
-            // 
             // testConditionSetPage1
             // 
             this.testConditionSetPage1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -138,14 +114,6 @@
             this.cellTesterPage1.Size = new System.Drawing.Size(1250, 713);
             this.cellTesterPage1.TabIndex = 0;
             // 
-            // cieChromaticityControl1
-            // 
-            this.cieChromaticityControl1.BackColor = System.Drawing.Color.White;
-            this.cieChromaticityControl1.Location = new System.Drawing.Point(27, 45);
-            this.cieChromaticityControl1.Name = "cieChromaticityControl1";
-            this.cieChromaticityControl1.Size = new System.Drawing.Size(566, 587);
-            this.cieChromaticityControl1.TabIndex = 0;
-            // 
             // Measurement_Recipe
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -159,8 +127,6 @@
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
-            this.tabPage4.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -174,8 +140,5 @@
         private TestConditionSetPage testConditionSetPage1;
         private FormRecipe.Page.CellTesterPage cellTesterPage1;
         private FormRecipe.Page.RankSetPage rankSetPage1;
-        private System.Windows.Forms.TabPage tabPage4;
-        private System.Windows.Forms.Panel panel1;
-        private Common.PKGTester.CieChromaticityControl cieChromaticityControl1;
     }
 }

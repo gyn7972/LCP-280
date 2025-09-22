@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace QMC.Common.PKGTester
 {
@@ -29,7 +30,7 @@ namespace QMC.Common.PKGTester
         {
             Min = 0;
             Max = 0;
-            IgnoreOutOfRange = false;
+            IgnoreOutOfRange = true;
         }
         public override bool Validate()
         {
@@ -77,9 +78,30 @@ namespace QMC.Common.PKGTester
         public override string ToString()
         {
             if (IgnoreOutOfRange)
-                return $"(Ignore)";
+                return "";
             else
-                return $"[{Min} ~ {Max}]";
+                return $"{Min} ~ {Max}";
+        }
+        public bool CompareTo(BinningRange range)
+        {
+            if (range == null)
+                return false;
+            if (Min != range.Min)
+                return false;
+            if (Max != range.Max)
+                return false;
+            if (IgnoreOutOfRange != range.IgnoreOutOfRange)
+                return false;
+            return true;
+        }
+        public void CopyFrom(BinningRange range)
+        {
+            if (range != null)
+            {
+                Min = range.Min;
+                Max = range.Max;
+                IgnoreOutOfRange = range.IgnoreOutOfRange;
+            }
         }
         #endregion
     }
@@ -117,6 +139,22 @@ namespace QMC.Common.PKGTester
                 item.Reset();
             }
         }
+        public bool CompareTo(BinningSpec spec)
+        {
+            if (spec == null)
+                return false;
+            if (spec.Items.Count != Items.Count)
+                return false;
+
+            foreach (var key in Items.Keys)
+            {
+                if (!spec.Items.ContainsKey(key))
+                    return false;
+                if (!Items[key].CompareTo(spec.Items[key]))
+                    return false;
+            }
+            return true;
+        }
         #endregion
     }
 
@@ -146,7 +184,6 @@ namespace QMC.Common.PKGTester
         public void Clear()
         {
             headers.Clear();
-            binLabels.Clear();
             foreach (var spec in specs)
             {
                 spec.Clear();
@@ -188,7 +225,6 @@ namespace QMC.Common.PKGTester
                     newSpec.Items.Add(header, new BinningRange(""));
                 }
                 specs.Add(newSpec);
-                binLabels.Add(binLabel);
             }
             catch
             {
@@ -204,7 +240,6 @@ namespace QMC.Common.PKGTester
             try
             {
                 specs.RemoveAt(specs.Count - 1);
-                binLabels.RemoveAt(binLabels.Count - 1);
             }
             catch
             {
@@ -221,13 +256,11 @@ namespace QMC.Common.PKGTester
             if (deleteCount >= specs.Count)
             {
                 specs.Clear();
-                binLabels.Clear();
                 return true;
             }
             try
             {
                 specs.RemoveRange(specs.Count - deleteCount, deleteCount);
-                binLabels.RemoveRange(binLabels.Count - deleteCount, deleteCount);
             }
             catch
             {
@@ -237,14 +270,52 @@ namespace QMC.Common.PKGTester
         }
         public bool Validate()
         {
-            if (specs.Count == 0)
+            if (specs.Count == 0 || headers.Count == 0)
                 return false;
-            if (headers.Count == 0)
-                return false;
+
             // binLabel 중복 검사
+            binLabels.Clear();
+            foreach (var spec in specs)
+            {
+                binLabels.Add(spec.BinLabel);
+            }
             if (binLabels.Count != binLabels.Distinct().Count())
                 return false;
 
+            // 모든 아이템이 IgnoreOutOfRange인 BinningSpec이 있는지 검사
+            foreach (var spec in specs)
+            {
+                bool allIgnore = true;
+                foreach (var range in spec.Items.Values)
+                {
+                    if (!range.IgnoreOutOfRange)
+                    {
+                        allIgnore = false;
+                        break;
+                    }
+                }
+                if (allIgnore)
+                    return false;
+            }
+
+            // 판단 기준이 중복되는 BinningSpec이 있는지 검사
+            for (int i = 0; i < specs.Count; i++)
+            {
+                for (int j = i + 1; j < specs.Count; j++)
+                {
+                    bool allSame = true;
+                    foreach (var key in specs[i].Items.Keys)
+                    {
+                        if (!specs[i].Items[key].CompareTo(specs[j].Items[key]))
+                        {
+                            allSame = false;
+                            break;
+                        }
+                    }
+                    if (allSame)
+                        return false;
+                }
+            }
             return true;
         }
         public bool CopyFrom(BinningSpecSheet sheet)

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
+using Newtonsoft.Json.Converters;
 
 namespace QMC.Common.PKGTester
 {
@@ -20,11 +21,6 @@ namespace QMC.Common.PKGTester
 
         // Measure
         public double MeasureTime { get; set; }
-
-        // Pulse
-        public double PulseWidth { get; set; }
-        public double PulsePeriod { get; set; }
-        public int PulseCount { get; set; }
 
         // Data Calibration
         public bool[] UseGain { get; private set; } = new bool[8];
@@ -47,9 +43,6 @@ namespace QMC.Common.PKGTester
             SourceTime = 1;
             SourceLimit = 0;
             MeasureTime = 1;
-            PulseWidth = 0;
-            PulsePeriod = 0;
-            PulseCount = 0;
 
             for (int i = 0; i < 8; i++)
             {
@@ -88,12 +81,6 @@ namespace QMC.Common.PKGTester
                     {
                         // Electrical Source Item
                         if (SourceValue < 0)
-                            return false;
-                        if (PulseWidth <= 0)
-                            return false;
-                        if (PulsePeriod <= 0 || PulsePeriod < PulseWidth)
-                            return false;
-                        if (PulseCount <= 0)
                             return false;
                     }
                     break;
@@ -186,9 +173,6 @@ namespace QMC.Common.PKGTester
                     {
                         // Electrical Source Item
                         pc.Add(nameof(SourceValue), SourceValue);
-                        pc.Add(nameof(PulseWidth), PulseWidth);
-                        pc.Add(nameof(PulsePeriod), PulsePeriod);
-                        pc.Add(nameof(PulseCount), PulseCount);
                     }
                     break;
             }
@@ -241,9 +225,6 @@ namespace QMC.Common.PKGTester
                         {
                             // Electrical Source Item
                             SourceValue = pc.GetValue<double>(nameof(SourceValue));
-                            PulseWidth = pc.GetValue<double>(nameof(PulseWidth));
-                            PulsePeriod = pc.GetValue<double>(nameof(PulsePeriod));
-                            PulseCount = pc.GetValue<int>(nameof(PulseCount));
                         }
                         break;
                 }
@@ -405,7 +386,9 @@ namespace QMC.Common.PKGTester
                     return -1;
 
                 var json = System.IO.File.ReadAllText(filePath, Encoding.UTF8);
-                var data = Newtonsoft.Json.JsonConvert.DeserializeObject<TestConditionSetData>(json);
+                var settings = new Newtonsoft.Json.JsonSerializerSettings();
+                settings.Converters.Add(new StringEnumConverter());
+                var data = Newtonsoft.Json.JsonConvert.DeserializeObject<TestConditionSetData>(json, settings);
                 if (data == null || data.Items == null)
                     return -1;
 
@@ -434,7 +417,9 @@ namespace QMC.Common.PKGTester
                     Items = this.items.ToList()
                 };
 
-                var json = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented);
+                var settings = new Newtonsoft.Json.JsonSerializerSettings();
+                settings.Converters.Add(new StringEnumConverter());
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented, settings);
                 System.IO.File.WriteAllText(filePath, json, Encoding.UTF8);
                 return 0;
             }

@@ -30,24 +30,24 @@
         {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.lbSetNameValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.panel2 = new System.Windows.Forms.Panel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
+            this.nudMaxRank = new System.Windows.Forms.NumericUpDown();
+            this.dataGridRank = new System.Windows.Forms.DataGridView();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.lbSetNameValue = new QMC.Common.CustomControl.CustomBorderLabel();
             this.btnApply = new QMC.Common.IndividualMenuButton();
             this.btnSave = new QMC.Common.IndividualMenuButton();
             this.btnOpen = new QMC.Common.IndividualMenuButton();
             this.btnNew = new QMC.Common.IndividualMenuButton();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.btnMaxRankUpdate = new QMC.Common.IndividualMenuButton();
-            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.lbStatusCaption = new QMC.Common.CustomControl.CustomBorderLabel();
-            this.nudMaxRank = new System.Windows.Forms.NumericUpDown();
-            this.dataGridRank = new System.Windows.Forms.DataGridView();
-            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.pcvEdit = new QMC.Common.PropertyCollectionView();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.btnModify = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -92,22 +92,6 @@
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 94.81268F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(964, 694);
             this.tableLayoutPanel2.TabIndex = 0;
-            // 
-            // lbSetNameValue
-            // 
-            this.lbSetNameValue.BackColor = System.Drawing.Color.Black;
-            this.lbSetNameValue.BorderColor = System.Drawing.Color.Black;
-            this.lbSetNameValue.BorderWidth = 1;
-            this.lbSetNameValue.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbSetNameValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
-            this.lbSetNameValue.ForeColor = System.Drawing.Color.Lime;
-            this.lbSetNameValue.Location = new System.Drawing.Point(3, 3);
-            this.lbSetNameValue.Margin = new System.Windows.Forms.Padding(3);
-            this.lbSetNameValue.Name = "lbSetNameValue";
-            this.lbSetNameValue.Size = new System.Drawing.Size(958, 30);
-            this.lbSetNameValue.TabIndex = 22;
-            this.lbSetNameValue.Text = " - ";
-            this.lbSetNameValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // tableLayoutPanel3
             // 
@@ -154,6 +138,128 @@
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tableLayoutPanel6.Size = new System.Drawing.Size(196, 170);
             this.tableLayoutPanel6.TabIndex = 1;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.tableLayoutPanel5);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBox1.Location = new System.Drawing.Point(3, 3);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(5, 10, 5, 5);
+            this.groupBox1.Size = new System.Drawing.Size(196, 117);
+            this.groupBox1.TabIndex = 0;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Rank";
+            // 
+            // tableLayoutPanel5
+            // 
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.btnMaxRankUpdate, 0, 1);
+            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel7, 0, 0);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(5, 28);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(186, 84);
+            this.tableLayoutPanel5.TabIndex = 0;
+            // 
+            // tableLayoutPanel7
+            // 
+            this.tableLayoutPanel7.ColumnCount = 2;
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 46.66667F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.33333F));
+            this.tableLayoutPanel7.Controls.Add(this.lbStatusCaption, 0, 0);
+            this.tableLayoutPanel7.Controls.Add(this.nudMaxRank, 1, 0);
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
+            this.tableLayoutPanel7.RowCount = 1;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(180, 34);
+            this.tableLayoutPanel7.TabIndex = 0;
+            // 
+            // nudMaxRank
+            // 
+            this.nudMaxRank.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.nudMaxRank.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.nudMaxRank.Location = new System.Drawing.Point(87, 3);
+            this.nudMaxRank.Maximum = new decimal(new int[] {
+            50,
+            0,
+            0,
+            0});
+            this.nudMaxRank.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudMaxRank.Name = "nudMaxRank";
+            this.nudMaxRank.Size = new System.Drawing.Size(90, 29);
+            this.nudMaxRank.TabIndex = 21;
+            this.nudMaxRank.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            // 
+            // dataGridRank
+            // 
+            this.dataGridRank.AllowUserToResizeColumns = false;
+            this.dataGridRank.AllowUserToResizeRows = false;
+            this.dataGridRank.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridRank.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataGridRank.Location = new System.Drawing.Point(211, 3);
+            this.dataGridRank.MultiSelect = false;
+            this.dataGridRank.Name = "dataGridRank";
+            this.dataGridRank.RowHeadersVisible = false;
+            this.dataGridRank.RowTemplate.Height = 23;
+            this.dataGridRank.Size = new System.Drawing.Size(744, 646);
+            this.dataGridRank.TabIndex = 0;
+            this.dataGridRank.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridRank_CellEndEdit);
+            this.dataGridRank.SelectionChanged += new System.EventHandler(this.dataGridRank_SelectionChanged);
+            // 
+            // tableLayoutPanel4
+            // 
+            this.tableLayoutPanel4.ColumnCount = 1;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.Controls.Add(this.pcvEdit, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.panel1, 0, 1);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(973, 3);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 2;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 53.17003F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 46.82997F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(274, 694);
+            this.tableLayoutPanel4.TabIndex = 1;
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.btnModify);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(3, 372);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(268, 319);
+            this.panel1.TabIndex = 1;
+            // 
+            // lbSetNameValue
+            // 
+            this.lbSetNameValue.BackColor = System.Drawing.Color.Black;
+            this.lbSetNameValue.BorderColor = System.Drawing.Color.Black;
+            this.lbSetNameValue.BorderWidth = 1;
+            this.lbSetNameValue.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbSetNameValue.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold);
+            this.lbSetNameValue.ForeColor = System.Drawing.Color.Lime;
+            this.lbSetNameValue.Location = new System.Drawing.Point(3, 3);
+            this.lbSetNameValue.Margin = new System.Windows.Forms.Padding(3);
+            this.lbSetNameValue.Name = "lbSetNameValue";
+            this.lbSetNameValue.Size = new System.Drawing.Size(958, 30);
+            this.lbSetNameValue.TabIndex = 22;
+            this.lbSetNameValue.Text = " - ";
+            this.lbSetNameValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // btnApply
             // 
@@ -235,34 +341,6 @@
             this.btnNew.UseVisualStyleBackColor = false;
             this.btnNew.Click += new System.EventHandler(this.btnNew_Click);
             // 
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.tableLayoutPanel5);
-            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBox1.Location = new System.Drawing.Point(3, 3);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(5, 10, 5, 5);
-            this.groupBox1.Size = new System.Drawing.Size(196, 117);
-            this.groupBox1.TabIndex = 0;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Rank";
-            // 
-            // tableLayoutPanel5
-            // 
-            this.tableLayoutPanel5.ColumnCount = 1;
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Controls.Add(this.btnMaxRankUpdate, 0, 1);
-            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel7, 0, 0);
-            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(5, 28);
-            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
-            this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(186, 84);
-            this.tableLayoutPanel5.TabIndex = 0;
-            // 
             // btnMaxRankUpdate
             // 
             this.btnMaxRankUpdate.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -283,20 +361,6 @@
             this.btnMaxRankUpdate.UseVisualStyleBackColor = false;
             this.btnMaxRankUpdate.Click += new System.EventHandler(this.btnMaxRankUpdate_Click);
             // 
-            // tableLayoutPanel7
-            // 
-            this.tableLayoutPanel7.ColumnCount = 2;
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 46.66667F));
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 53.33333F));
-            this.tableLayoutPanel7.Controls.Add(this.lbStatusCaption, 0, 0);
-            this.tableLayoutPanel7.Controls.Add(this.nudMaxRank, 1, 0);
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 3);
-            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 1;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(180, 34);
-            this.tableLayoutPanel7.TabIndex = 0;
-            // 
             // lbStatusCaption
             // 
             this.lbStatusCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
@@ -311,61 +375,6 @@
             this.lbStatusCaption.Text = "Max Rank";
             this.lbStatusCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // nudMaxRank
-            // 
-            this.nudMaxRank.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.nudMaxRank.Font = new System.Drawing.Font("맑은 고딕", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.nudMaxRank.Location = new System.Drawing.Point(87, 3);
-            this.nudMaxRank.Maximum = new decimal(new int[] {
-            50,
-            0,
-            0,
-            0});
-            this.nudMaxRank.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.nudMaxRank.Name = "nudMaxRank";
-            this.nudMaxRank.Size = new System.Drawing.Size(90, 29);
-            this.nudMaxRank.TabIndex = 21;
-            this.nudMaxRank.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            // 
-            // dataGridRank
-            // 
-            this.dataGridRank.AllowUserToResizeColumns = false;
-            this.dataGridRank.AllowUserToResizeRows = false;
-            this.dataGridRank.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridRank.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGridRank.Location = new System.Drawing.Point(211, 3);
-            this.dataGridRank.MultiSelect = false;
-            this.dataGridRank.Name = "dataGridRank";
-            this.dataGridRank.RowHeadersVisible = false;
-            this.dataGridRank.RowTemplate.Height = 23;
-            this.dataGridRank.Size = new System.Drawing.Size(744, 646);
-            this.dataGridRank.TabIndex = 0;
-            this.dataGridRank.CellEndEdit += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridRank_CellEndEdit);
-            this.dataGridRank.SelectionChanged += new System.EventHandler(this.dataGridRank_SelectionChanged);
-            // 
-            // tableLayoutPanel4
-            // 
-            this.tableLayoutPanel4.ColumnCount = 1;
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.Controls.Add(this.pcvEdit, 0, 0);
-            this.tableLayoutPanel4.Controls.Add(this.panel1, 0, 1);
-            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(973, 3);
-            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
-            this.tableLayoutPanel4.RowCount = 2;
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 53.17003F));
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 46.82997F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(274, 694);
-            this.tableLayoutPanel4.TabIndex = 1;
-            // 
             // pcvEdit
             // 
             this.pcvEdit.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -378,15 +387,6 @@
             this.pcvEdit.TabIndex = 0;
             this.pcvEdit.TextBoxFont = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.pcvEdit.TextBoxFontSize = 9.75F;
-            // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.btnModify);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(3, 372);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(268, 319);
-            this.panel1.TabIndex = 1;
             // 
             // btnModify
             // 

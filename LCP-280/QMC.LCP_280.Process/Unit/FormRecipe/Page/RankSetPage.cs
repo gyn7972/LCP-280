@@ -239,7 +239,33 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private void btnApply_Click(object sender, EventArgs e)
         {
-            //
+            // Interlock
+            if (!tempSheet.Validate())
+            {
+                MessageBox.Show("Invalid test sheet.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            var result = MessageBox.Show("Do you want to save it in the Apply and Recipe data?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    if (Equipment.Instance.Tester.LoadBinningSpecSheet(tempSheet) == 0)
+                    {
+                        // 레시피 처리 수정 필요...
+                    }
+                    else
+                    {
+                        MessageBox.Show("Failed to apply the test sheet.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
         }
 
         private void btnModify_Click(object sender, EventArgs e)
@@ -257,8 +283,16 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             {
                 pcvEdit.Apply();
 
+                BinningRange tempItem = new BinningRange("");
+                tempItem.ApplyValueFromPropertyCollection(pc);
+                if (!tempItem.Validate())
+                {
+                    MessageBox.Show("Invalid value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 BinningRange item = tempSheet.Specs[binIndex].Items[header];
-                item.ApplyValueFromPropertyCollection(pc);
+                item.CopyFrom(tempItem);
                 UpdateRankSetGrid();
             }
         }
