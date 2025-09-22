@@ -555,6 +555,26 @@ namespace QMC.Common.Motions
             }
         }
 
+        // --- 아래 유틸 메서드 추가 ---
+        private bool IsIndexAxis()
+        {
+            // 회전 Index 축 추정 조건: 소프트리밋 0~360 또는 이름에 Index/Rotary 포함
+            if (Math.Abs(Setup.SoftLimitMin) < 1e-6 && Math.Abs(Setup.SoftLimitMax - 360.0) < 1e-6)
+                return true;
+            var n = Name ?? "";
+            if (n.IndexOf("Index", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            if (n.IndexOf("Rotary", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            return false;
+        }
+
+        private static double NormalizeAngle360(double angle)
+        {
+            angle %= 360.0;
+            if (angle < 0) angle += 360.0;
+            if (Math.Abs(angle - 360.0) < 1e-9) angle = 0.0;
+            return angle;
+        }
+
         public int MoveNextIndex()
         {
             if (IsSim)

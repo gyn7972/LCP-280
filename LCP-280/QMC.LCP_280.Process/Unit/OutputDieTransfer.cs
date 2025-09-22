@@ -8,9 +8,11 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms.DataVisualization.Charting;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // IO 상수/배열
 
@@ -20,9 +22,13 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum AlarmKeys
         {
-            eDieTransferPickZNotSafe = 3001,
-            eOutputStageAxesMoving = 3002,
-            eRotaryAxesMoving = 3003,
+            eOutputDieTransferError = 6001,
+            eDieTransferPickZNotSafe = 6002,
+            eOutputStageAxesMoving = 6003,
+            eRotaryAxesMoving = 6004,
+            eOutputDieTransferVacuum = 6005,
+            eOutputDieTransferVent = 6006,
+            eOutputDieTransferBlow = 6007,
         }
 
         #region InitAlarm
@@ -37,7 +43,53 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm.Code = (int)AlarmKeys.eOutputDieTransferError;
+            alarm.Title = "Output Die Transfer Error";
+            alarm.Cause = "Output Die Transfer에서 알수 없는 에러가 발생했습니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm.Code = (int)AlarmKeys.eOutputStageAxesMoving;
+            alarm.Title = "Output Stage Axis Moving";
+            alarm.Cause = "Output Stage Axis가 동작중입니다.\n Output Stage Axis 동작이 완료된 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
+            alarm.Title = "Rotary Axis Moving";
+            alarm.Cause = "Rotary Axis가 동작중입니다.\n Rotary Axis 동작이 완료된 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            //eOutputDieTransferVacuum
+            alarm.Code = (int)AlarmKeys.eOutputDieTransferVacuum;
+            alarm.Title = "Output Die Transfer Vacuum Error";
+            alarm.Cause = "Output Die Transfer Vacuum이 Off 상태입니다.\n Vacuum 상태를 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+
+            //
+            alarm.Code = (int)AlarmKeys.eOutputDieTransferVent;
+            alarm.Title = "Output Die Transfer Vent Error";
+            alarm.Cause = "Output Die Transfer Vent가 Off 상태입니다.\n Vent 상태를 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+            //
+            alarm.Code = (int)AlarmKeys.eOutputDieTransferBlow;
+            alarm.Title = "Output Die Transfer Blow Error";
+            alarm.Cause = "Output Die Transfer Blow가 Off 상태입니다.\n Blow 상태를 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
         }
+
         #endregion
 
         #region Unit
@@ -89,6 +141,19 @@ namespace QMC.LCP_280.Process.Unit
             OutputStage = Equipment.Instance.GetUnit(UnitKeys.OutputStage) as OutputStage;
         }
 
+
+        bool isWork = false;
+        public bool IsWork()
+        {
+            return isWork;
+        }
+        private int GetUnloadIndexNo()
+        {
+            int nIndex = 0;
+            if (Rotary == null) return nIndex;
+            nIndex = (Rotary.GetLoadIndexNo() + this.Config.IndexOfEnd) % Rotary.GetIndexCount();
+            return nIndex;
+        }
 
 
         public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
@@ -301,8 +366,11 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
-        public int MovePositionPickUp_Index(int nIndex = 0, bool isFine = false)
+        public int MovePositionPickUp_Index(bool isFine = false)
         {
+            int nIndex = 0;
+            nIndex = GetUnloadIndexNo();
+
             Task<int> task = MovePositionAsyncPickUp_Index(isFine, nIndex);
             while (IsEndTask(task) == false)
             {
@@ -316,6 +384,9 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
+
+        
+
         public Task<int> MovePositionAsyncPickUp_Index(bool isFine = false, int nIndex = 0)
         {
             return Task.Run(() =>
@@ -350,7 +421,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            string tpName = $"PickUp_Index{teachingIdx}";
+            string tpName = $"Pickup_Index{teachingIdx}";
             var tpObj = Config.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
@@ -883,26 +954,247 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
 
 
-        #region Seq 단위 동작 함수
-        public int ChipPickUp()
+        #region Sequence 등록
+
+        protected override void OnMakeSequence()
         {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
+            base.OnMakeSequence();
+            this.SequencePlayers.Add(MoveOutStage);
+            this.SequencePlayers.Add(ChipPickDown);
+            this.SequencePlayers.Add(ChipPickUp);
+            this.SequencePlayers.Add(RotateToolTForPlace);
+            this.SequencePlayers.Add(ReleaseVacuumAndPlaceUp);
+
         }
-        public int RotateArm()
+
+        #endregion
+
+        #region Seq 단위 동작 함수
+        public int MoveOutStage(bool bFineSpeed = false)
         {
-            int nRet = -1;
-            /* TODO */
+            int nRet = 0;
+            this.CurrentFunc = MoveOutStage;
+
+            // Chip을 순차적으로 Place 하는 위치로 이동
+
+
             return nRet;
         }
 
-        public int ChipPlaceDown()
+        public int ChipPickDown(bool bFineSpeed = false)
         {
-            int nRet = -1;
-            /* TODO */
+            int nRet = 0;
+            this.CurrentFunc = ChipPickDown;
+
+            int nIndex = 0;
+            nIndex = GetUnloadIndexNo();
+            int nArmindex = 0;
+            nArmindex = GetPlaceArmIndex();
+
+            nRet = MovePositionPickUp_Index(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[ChipPickDown] MovePositionPickUp_Index failed");
+                return -1;
+            }
+            else
+            {
+                if (SetVacuum(nArmindex, true))
+                {
+                    var sw = Stopwatch.StartNew();
+                    while (!ArmFlowOk(nArmindex))
+                    {
+                        if (!Config.IsSimulation)
+                        {
+                            if (sw.ElapsedMilliseconds > 2000)
+                            {
+                                PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
+                                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            isWork = false;
             return nRet;
         }
+
+        public int ChipPickUp(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            this.CurrentFunc = ChipPickUp;
+
+            int nIndex = 0;
+            nIndex = GetUnloadIndexNo();
+
+            if (Rotary.SetVacuum(nIndex, false))
+            {
+                Thread.Sleep(50); // 약간의 딜레이
+                if(!Rotary.SetVent(nIndex, true))
+                {
+                    if(!Config.IsSimulation)
+                    {
+                        PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
+                        Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
+                        return -1;
+                    }
+                    
+                }
+
+                if(!Rotary.SetBlow(nIndex, true))
+                {
+                    if (!Config.IsSimulation)
+                    {
+                        PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
+                        Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
+                        return -1;
+                    }
+                }
+
+                var sw = Stopwatch.StartNew();
+                while (!ArmFlowOk(nIndex))
+                {
+                    if(!Config.IsSimulation)
+                    {
+                        if (sw.ElapsedMilliseconds > 2000)
+                        {
+                            PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
+                            Log.Write(UnitName, "[DieTrVacuumOff] Vacuum Timeout");
+                            return -1;
+                        }
+                        Thread.Sleep(1);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    
+                }
+            }
+
+            nRet = MovePositionSafetyZ(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[ChipPickUp] MovePositionSafetyZ failed");
+                return -1;
+            }
+
+            if (Rotary.SetVent(nIndex, false))
+            {
+                if (!Config.IsSimulation)
+                {
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
+                    Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
+                    return -1;
+                } 
+            }
+
+            if (Rotary.SetBlow(nIndex, false))
+            {
+                if (!Config.IsSimulation)
+                {
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
+                    Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
+                    return -1;
+                }   
+            }
+
+            isWork = false;
+            return nRet;
+        }
+
+        public int RotateToolTForPlace(bool bFineSpeed = false)
+        {
+            if (AxisToolT == null)
+                return -1;
+
+            int nRet = 0;
+            this.CurrentFunc = RotateToolTForPlace;
+
+            nRet = MovePositionPlace(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[RotateToolTForPlace] MovePositionPlace 실패");
+                return -1;
+            }
+
+            return nRet;
+        }
+
+        public int ReleaseVacuumAndPlaceUp(bool bFindSpeed = false)
+        {
+            int nRet = 0;
+            try
+            {
+                this.CurrentFunc = ReleaseVacuumAndPlaceUp;
+                LogSequence("Start");
+
+                int armIndex = GetPlaceArmIndex();
+                if (armIndex < 0 || armIndex > 3) 
+                    return -1;
+
+                // Release
+                if(!SetVacuum(armIndex, false))
+                {
+                    if(!Config.IsSimulation)
+                    {
+                        PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
+                        Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] SetVacuum failed");
+                        return -1;
+                    }
+                }
+                SetVent(armIndex, true);
+                SetBlow(armIndex, true);
+
+                nRet = MovePositionSafetyZ(bFindSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] MovePositionSafetyZ 실패");
+                    return -1;
+                }
+
+                SetVent(armIndex, false);
+                SetBlow(armIndex, false);
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                nRet = -1;
+                PostAlarm((int)AlarmKeys.eOutputDieTransferError);
+
+            }
+            finally
+            {
+                LogSequence("End");
+            }
+
+            return nRet;
+        }
+
+        private int GetPlaceArmIndex()
+        {
+            //todo: 구현해라 구부장. 암 하나 더달면. Rotary Index에 따른 Arm Index 반환
+
+            //if(this.AxisToolT.GetPosition() > 10)
+            //{
+
+            //}
+            return 0;
+        }
+
+        private void LogSequence(string log)
+        {
+            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+        }
+
         #endregion
 
     }
