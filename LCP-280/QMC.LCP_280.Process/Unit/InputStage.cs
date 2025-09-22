@@ -1783,6 +1783,69 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+        public int MoveStage(double x, double y, bool bFineSpeed = false)
+        {
+            int ret = 0;
+
+            if (WaitUntil(() =>
+                this.InputStageEjector.IsAnyAxisMoving(),
+                MappingMoveTimeoutMs) != 0)
+                return -1;
+
+            if (IsStageInterLockOK(x, y))
+            {
+                this.AxisX.MoveAbs(x, bFineSpeed);
+                this.AxisY.MoveAbs(y, bFineSpeed);
+                if (WaitUntil(() =>
+                    AxisX.InPosition(x) && AxisY.InPosition(y) && IsStageInterLockOK()==false,
+                    MappingMoveTimeoutMs) != 0)
+                    return -1;
+            }
+            else
+            {
+                return -1;
+            }
+
+
+                return ret;
+        }
+        private bool IsStageInterLockOK()
+        {
+            double x = this.AxisX.GetPosition();
+            double y = this.AxisY.GetPosition();
+            return IsStageInterLockOK(x, y);
+        }
+        private bool IsStageInterLockOK(double x, double y)
+        {
+            bool bRet = false;
+            if(this.InputStageEjector.IsEjectorZSafetyPos() == false)
+            {
+                string strCenterName = InputStageConfig.TeachingPositionName.CenterPoint.ToString();
+                var tp = this.Config.GetTeachingPosition(strCenterName);
+                double centerX = tp.GetAxisPosition(AxisNames.WaferStageX);
+                double centerY = tp.GetAxisPosition(AxisNames.WaferStageY);
+                double dRaius = this.Config.SafeSatageRaius;
+                double deltaX = centerX - x;
+                double deltaY = centerY - y;
+                double dDistance = GetDistance(deltaX, deltaY);
+                if(dDistance < dRaius)
+                {
+                    bRet = true;
+                }
+                else
+                {
+                    Log.Write(UnitName, "MoveStage", $"Fail: Stage move out of range. Dist={dDistance:F3} Limit={dRaius}");
+                    bRet = false;
+                }
+            }
+            else
+            {
+                bRet = true;
+            }
+            return bRet;
+        }
+
+        
         public int PerformChipMapping(bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -1848,27 +1911,9 @@ namespace QMC.LCP_280.Process.Unit
                     double targetX = leftTopX + c * ChipPitchXmm;
                     double targetY = leftTopY - r * ChipPitchYmm; // 위에서 아래로
 
-                    // Stage 이동
-                    if (AxisX != null && MoveAxisPositionOne(AxisX, targetX) != 0)
-                    {
-                        Log.Write(UnitName, "ChipMap", $"Move fail r={r} c={c} x={targetX:F3} y={targetY:F3}");
-                        return -1;
-                    }
-                    if (AxisY != null && MoveAxisPositionOne(AxisY, targetY) != 0)
-                    {
-                        Log.Write(UnitName, "ChipMap", $"Move fail r={r} c={c} x={targetX:F3} y={targetY:F3}");
-                        return -1;
-                    }
+                    nRet = MoveStage(targetX, targetY, bFineSpeed);
 
-                    // 우선.. 확인 하고 넘어가자. 
-                    //if (WaitUntil(() =>
-                    //    AxisX.InPosition(targetX) && AxisY.InPosition(targetY),
-                    //    MappingMoveTimeoutMs) != 0)
-                    //{
-                    //    Log.Write(UnitName, "ChipMap", $"Move timeout r={r} c={c}");
-                    //    return -1;
-                    //}
-
+                    
                     // Grab
                     if (StageCamera == null)
                     {
