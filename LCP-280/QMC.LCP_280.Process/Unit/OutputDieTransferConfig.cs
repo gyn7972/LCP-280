@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -53,7 +54,7 @@ namespace QMC.LCP_280.Process.Unit
             { TeachingPositionName.Pickup_Index6, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
             { TeachingPositionName.Pickup_Index7, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
             { TeachingPositionName.Pickup_Index8, new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
-            { TeachingPositionName.Place,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
+            { TeachingPositionName.Place,         new [] { AxisNames.RightToolT, AxisNames.RightPlaceZ } },
             { TeachingPositionName.Ready,         new [] { AxisNames.RightToolT, AxisNames.RightPickZ } },
             { TeachingPositionName.SafetyZone,      new [] { AxisNames.RightPickZ, AxisNames.RightPlaceZ } },
         };
@@ -127,6 +128,12 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 12, Name = IO.ARM4_VENT, Disp = "Y087" }
         };
         #endregion
+
+
+        [Category("SetupConfig"), DisplayName("IndexOfEnd")]
+        [DefaultValue(0)]
+        public int IndexOfEnd { get; set; } = 0;
+
 
         public OutputDieTransferConfig() : base("OutputDieTransferConfig") { }
 

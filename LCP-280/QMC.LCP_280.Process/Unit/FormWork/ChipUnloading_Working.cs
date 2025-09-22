@@ -21,10 +21,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private const string WORK_NAME = "ChipUnloader";
         private Equipment Equipment => Equipment.Instance;
 
-        private Rotary RotaryUnit { get; set; }
+        private Rotary Rotary { get; set; }
         private IndexUnloadAligner IndexUnloadAligner { get; set; }
-        private OutputDieTransfer OutputDieTransferUnit { get; set; }
-        private OutputStage OutputStageUnit { get; set; }
+        private OutputDieTransfer OutputDieTransfer { get; set; }
+        private OutputStage OutputStage { get; set; }
         
         
 
@@ -49,10 +49,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             OutputStage outputStage)
         {
             InitializeComponent();
-            RotaryUnit = rotaty;
+            Rotary = rotaty;
             IndexUnloadAligner = indexUnloadAligner;
-            OutputDieTransferUnit = outputDieTransfer;
-            OutputStageUnit = outputStage;
+            OutputDieTransfer = outputDieTransfer;
+            OutputStage = outputStage;
 
             Load += ChipUnloading_Working_Load;
             FormClosing += ChipUnloading_Working_FormClosing;
@@ -124,36 +124,36 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                 teachingPositionControl.ClearUnits();
 
-                if (OutputStageUnit != null)
+                if (OutputStage != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "OutputStage",
-                        OutputStageUnit,
-                        () => OutputStageUnit.Config?.TeachingPositions,
-                        (name, vel) => OutputStageUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => OutputStageUnit.Config?.SetTeachingPosition(tp),
+                        OutputStage,
+                        () => OutputStage.Config?.TeachingPositions,
+                        (name, vel) => OutputStage.MoveToTeachingPosition(name, vel: vel),
+                        tp => OutputStage.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (OutputDieTransferUnit != null)
+                if (OutputDieTransfer != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "OutputDieTransfer",
-                        OutputDieTransferUnit,
-                        () => OutputDieTransferUnit.Config?.TeachingPositions,
-                        (name, vel) => OutputDieTransferUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => OutputDieTransferUnit.Config?.SetTeachingPosition(tp),
+                        OutputDieTransfer,
+                        () => OutputDieTransfer.Config?.TeachingPositions,
+                        (name, vel) => OutputDieTransfer.MoveToTeachingPosition(name, vel: vel),
+                        tp => OutputDieTransfer.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (RotaryUnit != null)
+                if (Rotary != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "Rotary",
-                        RotaryUnit,
-                        () => RotaryUnit.Config?.TeachingPositions,
-                        (name, vel) => RotaryUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => RotaryUnit.Config?.SetTeachingPosition(tp),
+                        Rotary,
+                        () => Rotary.Config?.TeachingPositions,
+                        (name, vel) => Rotary.MoveToTeachingPosition(name, vel: vel),
+                        tp => Rotary.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -178,7 +178,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 StrongBindOutputStage();
 
                 // 그룹 구분선: OutputDieTransfer
-                if (OutputDieTransferUnit != null)
+                if (OutputDieTransfer != null)
                 {
                     dioControl.BindDIOInput(() => false, "---- OutputDieTransfer ----", "SEP_ODT");
 
@@ -189,15 +189,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                         // Flow 센서(입력) 표시
                         dioControl.BindDIOInput(
-                            () => OutputDieTransferUnit.ArmFlowOk(idx),
+                            () => OutputDieTransfer.ArmFlowOk(idx),
                             $"{labelBase} Flow OK(Sns)",
                             $"ODT_Arm{idx + 1}_FlowOk");
 
                         // VAC: 소프트 래치 토글 사용 (isOnState: null)
                         dioControl.BindVacuum(
                             label: $"{labelBase} VAC",
-                            on: () => OutputDieTransferUnit.SetVacuum(idx, true),
-                            off: () => OutputDieTransferUnit.SetVacuum(idx, false),
+                            on: () => OutputDieTransfer.SetVacuum(idx, true),
+                            off: () => OutputDieTransfer.SetVacuum(idx, false),
                             isOk: null,
                             isOnState: null,
                             displayKey: $"ODT_Arm{idx + 1}_Vac",
@@ -207,8 +207,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         // BLOW
                         dioControl.BindVacuum(
                             label: $"{labelBase} Blow",
-                            on: () => OutputDieTransferUnit.SetBlow(idx, true),
-                            off: () => OutputDieTransferUnit.SetBlow(idx, false),
+                            on: () => OutputDieTransfer.SetBlow(idx, true),
+                            off: () => OutputDieTransfer.SetBlow(idx, false),
                             isOk: null,
                             isOnState: null,
                             displayKey: $"ODT_Arm{idx + 1}_Blow",
@@ -218,8 +218,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         // VENT
                         dioControl.BindVacuum(
                             label: $"{labelBase} Vent",
-                            on: () => OutputDieTransferUnit.SetVent(idx, true),
-                            off: () => OutputDieTransferUnit.SetVent(idx, false),
+                            on: () => OutputDieTransfer.SetVent(idx, true),
+                            off: () => OutputDieTransfer.SetVent(idx, false),
                             isOk: null,
                             isOnState: null,
                             displayKey: $"ODT_Arm{idx + 1}_Vent",
@@ -235,26 +235,26 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void StrongBindOutputStage()
         {
-            if (OutputStageUnit == null || dioControl == null) return;
+            if (OutputStage == null || dioControl == null) return;
             try
             {
                 // ===== Sensors =====
-                dioControl.BindDIOInput(() => OutputStageUnit.IsVacuum(), "Vacuum OK(Sns)", "OutStageVacOk");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsPlateUp(), "Plate UP Sns", "OutStagePlateUp");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsPlateDown(), "Plate DOWN Sns", "OutStagePlateDn");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampLiftDown(), "ClampLift DOWN Sns", "OutStageLiftDn");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsClampFwd(), "Clamp FWD Sns", "OutStageClampFwd");
-                dioControl.BindDIOInput(() => OutputStageUnit.Ring0(), "Ring Sns 0", "OutStageRing0");
-                dioControl.BindDIOInput(() => OutputStageUnit.Ring1(), "Ring Sns 1", "OutStageRing1");
-                dioControl.BindDIOInput(() => OutputStageUnit.IsRingPresent(), "Ring Any", "OutStageRingAny");
+                dioControl.BindDIOInput(() => OutputStage.IsVacuum(), "Vacuum OK(Sns)", "OutStageVacOk");
+                dioControl.BindDIOInput(() => OutputStage.IsPlateUp(), "Plate UP Sns", "OutStagePlateUp");
+                dioControl.BindDIOInput(() => OutputStage.IsPlateDown(), "Plate DOWN Sns", "OutStagePlateDn");
+                dioControl.BindDIOInput(() => OutputStage.IsClampLiftDown(), "ClampLift DOWN Sns", "OutStageLiftDn");
+                dioControl.BindDIOInput(() => OutputStage.IsClampFwd(), "Clamp FWD Sns", "OutStageClampFwd");
+                dioControl.BindDIOInput(() => OutputStage.Ring0(), "Ring Sns 0", "OutStageRing0");
+                dioControl.BindDIOInput(() => OutputStage.Ring1(), "Ring Sns 1", "OutStageRing1");
+                dioControl.BindDIOInput(() => OutputStage.IsRingPresent(), "Ring Any", "OutStageRingAny");
 
                 // Vacuum: 도메인/상태 함수로 표준화 (출력은 입력과 무관하게 동작)
                 dioControl.BindVacuum(
                     label: "Vacuum",
-                    on: () => OutputStageUnit.SetVacuum(true),
-                    off: () => OutputStageUnit.SetVacuum(false),
-                    isOk: () => OutputStageUnit.IsVacuum(),
-                    isOnState: () => OutputStageUnit.IsVacuumValveOn(),
+                    on: () => OutputStage.SetVacuum(true),
+                    off: () => OutputStage.SetVacuum(false),
+                    isOk: () => OutputStage.IsVacuum(),
+                    isOnState: () => OutputStage.IsVacuumValveOn(),
                     displayKey: "StageVacValve",
                     showOkSensor: false // 위에서 OK 센서 이미 표시
                 );
@@ -262,10 +262,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Plate Up/Down: 도메인 함수 사용, 상태 판단은 IsPlateUp 기준
                 dioControl.BindCylinder(
                     label: "PlateUpDn",
-                    extend: () => OutputStageUnit.SetClampPlate(true),
-                    retract: () => OutputStageUnit.SetClampPlate(false),
-                    isExtended: () => OutputStageUnit.IsPlateUp(),
-                    isRetracted: () => OutputStageUnit.IsPlateDown(),
+                    extend: () => OutputStage.SetClampPlate(true),
+                    retract: () => OutputStage.SetClampPlate(false),
+                    isExtended: () => OutputStage.IsPlateUp(),
+                    isRetracted: () => OutputStage.IsPlateDown(),
                     displayKey: "StagePlateUpDn",
                     showSensors: false // 위에서 Up/Down 센서를 이미 표시했으므로 중복 방지
                 );
@@ -273,11 +273,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // ClampLift Up/Down
                 dioControl.BindCylinder(
                     label: "ClampLift",
-                    extend: () => OutputStageUnit.SetClampLift(true),
-                    retract: () => OutputStageUnit.SetClampLift(false),
+                    extend: () => OutputStage.SetClampLift(true),
+                    retract: () => OutputStage.SetClampLift(false),
                     // Up 센서가 없으면 밸브 상태 사용, Down은 센서 사용
-                    isExtended: () => OutputStageUnit.IsClampLiftUpValveOn(),
-                    isRetracted: () => OutputStageUnit.IsClampLiftDown(),
+                    isExtended: () => OutputStage.IsClampLiftUpValveOn(),
+                    isRetracted: () => OutputStage.IsClampLiftDown(),
                     displayKey: "StageClampUpDn",
                     showSensors: false,
                     extendedName: "UP",
@@ -287,10 +287,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Clamp FWD/BWD
                 dioControl.BindCylinder(
                     label: "ClampFB",
-                    extend: () => OutputStageUnit.SetClampFB(true),
-                    retract: () => OutputStageUnit.SetClampFB(false),
+                    extend: () => OutputStage.SetClampFB(true),
+                    retract: () => OutputStage.SetClampFB(false),
                     // FWD 센서만 있어도 동작. BWD는 없으면 null 가능(토글은 FWD 센서로 판단)
-                    isExtended: () => OutputStageUnit.IsClampFwd(),
+                    isExtended: () => OutputStage.IsClampFwd(),
                     isRetracted: null,
                     displayKey: "StageClampFB",
                     showSensors: false,
@@ -322,6 +322,20 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         #region Sequences (미구현 Placeholder)
         private void InitSequences()
         {
+            try
+            {
+                OutputDieTransfer = TryGetUnit<OutputDieTransfer>("OutputDieTransfer");
+                Rotary = TryGetUnit<Rotary>("Rotary");
+                IndexUnloadAligner = TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner");
+                OutputStage = TryGetUnit<OutputStage>("OutputStage");
+
+                if (OutputDieTransfer != null)
+                {
+                    manualSequenceControl.ParentUnit = OutputDieTransfer; // 시퀀스 등록 대상 유닛 지정
+                }
+
+            }
+            catch { }
         }
         #endregion
 

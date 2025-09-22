@@ -41,6 +41,8 @@ namespace QMC.LCP_280.Process.Unit
             eRotaryAxesMoving,
             eInputStageEjectorAxesMoving,
             eInputDieTransferError,
+            eInputStageVaccum,
+            eInputDieTransferVaccum,
         }
         #region InitAlarm
         protected override void InitAlarm()
@@ -112,6 +114,23 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            //eInputStageVaccum
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputStageVaccum;
+            alarm.Title = "eInputStageVaccumError";
+            alarm.Cause = "eInputStageVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            //
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputDieTransferVaccum;
+            alarm.Title = "InputDieTransferVaccumError";
+            alarm.Cause = "InputDieTransferVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
 
@@ -1424,12 +1443,20 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!InputStage.IsVacuumOn())
                 {
-                    if (sw.ElapsedMilliseconds > 2000)
+                    if(!Config.IsSimulation)
                     {
-                        Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-                        return -1;
+                        if (sw.ElapsedMilliseconds > 2000)
+                        {
+                            PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                            Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
+                            return -1;
+                        }
+                        Thread.Sleep(1);
                     }
-                    Thread.Sleep(1);
+                    else
+                    {
+                        break;
+                    }
                 }
             }
             else
@@ -1438,7 +1465,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            return 0;
+            return nRet;
         }
 
         public int ChipPickDown(bool bFineSpeed = false)
@@ -1460,6 +1487,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
+                            PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
                             Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
                             return -1;
                         }
@@ -1483,7 +1511,6 @@ namespace QMC.LCP_280.Process.Unit
                 PostAlarm((int)AlarmKeys.eInputStageNotSafe);
                 return -1;
             }
-                
 
             this.CurrentFunc = SyncPickPinUp;
             int nRet = 0;
@@ -1544,6 +1571,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         if (sw.ElapsedMilliseconds > 1000)
                         {
+                            PostAlarm((int)AlarmKeys.eInputStageVaccum);
                             Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
                             return -1;
                         }
@@ -1560,6 +1588,7 @@ namespace QMC.LCP_280.Process.Unit
             
             if (nRet != 0) //nRet = Move
             {
+                PostAlarm((int)AlarmKeys.eInputDieTransferError);
                 Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
                 Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
                 Log.Write(UnitName, "[SyncPickPinRetreat] EjectPinReady 이동 실패");
@@ -1580,8 +1609,30 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             this.CurrentFunc = RotateToolTForPlace;
             int nIndex = GetLoadIndexNo();
-            double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
-                                AxisNames.LeftToolT);
+
+            // nIndex 처리 (0-based와 1-based 모두 지원)
+            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
+            //  - 0~7 : +1 보정하여 1~8 매핑
+            int teachingIdx = 0;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            else
+            {
+                Log.Write(UnitName, $"[RotateToolTForPlace] Invalid index {nIndex}. Range 0~7 or 1~8");
+                return -1;
+            }
+
+            string tpName = $"Place_Index{teachingIdx}";
+            var tpObj = Config.GetTeachingPosition(tpName);
+            if (tpObj == null)
+            {
+                Log.Write(UnitName, $"[RotateToolTForPlace] Teaching not found: {tpName}");
+                return -1;
+            }
+
+            double dTPos = GetTP(tpName, AxisNames.LeftToolT);
             nRet = MoveAxisPositionOne(AxisToolT, dTPos, bFineSpeed);
             if (nRet != 0)
             {
@@ -1592,6 +1643,19 @@ namespace QMC.LCP_280.Process.Unit
             isWork = true;
 
             return nRet;
+
+            //double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
+            //                    AxisNames.LeftToolT);
+            //nRet = MoveAxisPositionOne(AxisToolT, dTPos, bFineSpeed);
+            //if (nRet != 0)
+            //{
+            //    Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
+            //    return -1;
+            //}
+
+            //isWork = true;
+
+            //return nRet;
         }
 
         public int GetLoadIndexNo()
@@ -1616,11 +1680,16 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // TODO: Rotary Unit 의 특정 입력/상태 사용
                 // 임시: Rotary 정지 + Vacuum Tank OK 라면 공급 가능하다고 가정
-                if (Rotary.RequestChip && Rotary.IsAnyAxisMoving())
+                //if (Rotary.RequestChip && Rotary.IsAnyAxisMoving())
+                //    return true;
+                //else
+                //    return false;
+                if (Rotary.IsAxisMoving(AxisNames.IndexT)) //
                     return true;
                 else
                     return false;
             }
+
             try
             {
 
@@ -1637,8 +1706,12 @@ namespace QMC.LCP_280.Process.Unit
                     }
 
                     if (sw.ElapsedMilliseconds > timeoutMs)
-                        return -2;
-
+                    {
+                        PostAlarm((int)AlarmKeys.eRotatyNotSafe);
+                        Log.Write(this, "WaitRotarySupplyRequest TimeOut");
+                        return -1;
+                    }
+                        
                     // 진행 중 Interlock 재확인
                     //if (!CheckInterlocks(out alarm))
                     //{
@@ -1669,21 +1742,56 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = PlaceChipDown;
             int nRet = 0;
 
+            int armIndex = GetPlaceArmIndex();
             int nIndex = GetLoadIndexNo();
-            // Place 위치로 이동 (없으면 SafetyZone)
-            double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
-                        AxisNames.LeftPlaceZ);
-            nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos, bFineSpeed);
+
+            // nIndex 처리 (0-based와 1-based 모두 지원)
+            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
+            //  - 0~7 : +1 보정하여 1~8 매핑
+            int teachingIdx = 0;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            else
+            {
+                Log.Write(UnitName, $"[PlaceChipDown] Invalid index {nIndex}. Range 0~7 or 1~8");
+                return -1;
+            }
+
+            string tpName = $"Place_Index{teachingIdx}";
+            var tpObj = Config.GetTeachingPosition(tpName);
+            if (tpObj == null)
+            {
+                Log.Write(UnitName, $"[PlaceChipDown] Teaching not found: {tpName}");
+                return -1;
+            }
+
+            double dTPos = GetTP(tpName, AxisNames.LeftPlaceZ);
+            nRet = MoveAxisPositionOne(AxisPlaceZ, dTPos, bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
                 return -1;
             }
 
-            Rotary.SetVacuum(nIndex, true);
-            Thread.Sleep(10);
+            isWork = true;
 
             return nRet;
+
+            //// Place 위치로 이동 (없으면 SafetyZone)
+            //double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
+            //            AxisNames.LeftPlaceZ);
+            //nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos, bFineSpeed);
+            //if (nRet != 0)
+            //{
+            //    Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
+            //    return -1;
+            //}
+            //Rotary.SetVacuum(nIndex, true);
+            //SetVacuum(armIndex, false);
+            //Thread.Sleep(10);
+            //return nRet;
         }
 
         /// <summary>
@@ -1691,9 +1799,7 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int ReleaseVacuumAndPlaceUp(bool bFindSpeed = false)
         {
-            
             int nRet = 0;
-            
             try
             {
                 int armIndex = GetPlaceArmIndex();
@@ -1701,14 +1807,38 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = ReleaseVacuumAndPlaceUp;
                 LogSequence("Start");
 
-                if (armIndex < 0 || armIndex > 3) return -1;
-                Rotary.SetVacuum(nIndex, true);
-                Thread.Sleep(10);
-                // Release
-                SetVacuum(armIndex, false);
-                SetVent(armIndex, true);
-                Thread.Sleep(50);
+                if (armIndex < 0 || armIndex > 3) 
+                    return -1;
+
+                if (Rotary.SetVacuum(nIndex, true))
+                {
+                    SetVacuum(armIndex, false);
+                    SetVent(armIndex, true);
+                    SetBlow(armIndex, true);
+
+                    var sw = Stopwatch.StartNew();
+                    while (InputStage.IsVacuumOn())
+                    {
+                        if (!Config.IsSimulation)
+                        {
+                            if (sw.ElapsedMilliseconds > 2000)
+                            {
+                                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
+                        }
+                        else
+                        {
+                            break;
+                        } 
+                    }
+                }
+
+                Thread.Sleep(1);
                 SetVent(armIndex, false);
+                SetBlow(armIndex, false);
 
                 // Safety 위치로 상승
                 double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString(),

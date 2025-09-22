@@ -114,23 +114,23 @@ namespace QMC.LCP_280.Process.Unit
         public int GetLoadIndexNo()
         {
             //Todo : Implement 구영남
-            double dPos = AxisT.GetPosition();          // 현재 T축 위치
-            double dStep = 360.0 / GetIndexCount();     // 한 소켓 간격 (45°)
+            //double dPos = AxisT.GetPosition() * 1000;          // 현재 T축 위치
+            //double dStep = 360.0 / GetIndexCount();     // 한 소켓 간격 (45°)
 
-            // 각도를 0~360 범위로 정규화
-            dPos = (dPos % 360 + 360) % 360;
+            //// 각도를 0~360 범위로 정규화
+            //dPos = (dPos % 360 + 360) % 360;
 
-            // 소켓 번호 계산 (0~7)
-            int nIndex = (int)((dPos / dStep) + 0.5) % GetIndexCount();
-            return nIndex;
-            //double dPos = AxisT.GetPosition();
-            //double dStep = (360.0) / GetIndexCount();
-            //int nIndex = (int)(((360 - dPos) / dStep) + 0.5);
-            //while (nIndex < 0)
-            //{
-            //    nIndex += GetIndexCount();
-            //}
-            //return nIndex % this.GetIndexCount();
+            //// 소켓 번호 계산 (0~7)
+            //int nIndex = (int)((dPos / dStep) + 0.5) % GetIndexCount();
+            //return nIndex;
+            double dPos = AxisT.GetPosition() * 1000;
+            double dStep = (360.0) / GetIndexCount();
+            int nIndex = (int)(((360 - dPos) / dStep) + 0.5);
+            while (nIndex < 0)
+            {
+                nIndex += GetIndexCount();
+            }
+            return nIndex % this.GetIndexCount();
         }
 
 
