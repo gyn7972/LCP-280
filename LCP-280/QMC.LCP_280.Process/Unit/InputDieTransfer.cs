@@ -1609,8 +1609,30 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             this.CurrentFunc = RotateToolTForPlace;
             int nIndex = GetLoadIndexNo();
-            double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
-                                AxisNames.LeftToolT);
+
+            // nIndex 처리 (0-based와 1-based 모두 지원)
+            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
+            //  - 0~7 : +1 보정하여 1~8 매핑
+            int teachingIdx = 0;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            else
+            {
+                Log.Write(UnitName, $"[RotateToolTForPlace] Invalid index {nIndex}. Range 0~7 or 1~8");
+                return -1;
+            }
+
+            string tpName = $"Place_Index{teachingIdx}";
+            var tpObj = Config.GetTeachingPosition(tpName);
+            if (tpObj == null)
+            {
+                Log.Write(UnitName, $"[RotateToolTForPlace] Teaching not found: {tpName}");
+                return -1;
+            }
+
+            double dTPos = GetTP(tpName, AxisNames.LeftToolT);
             nRet = MoveAxisPositionOne(AxisToolT, dTPos, bFineSpeed);
             if (nRet != 0)
             {
@@ -1621,6 +1643,19 @@ namespace QMC.LCP_280.Process.Unit
             isWork = true;
 
             return nRet;
+
+            //double dTPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
+            //                    AxisNames.LeftToolT);
+            //nRet = MoveAxisPositionOne(AxisToolT, dTPos, bFineSpeed);
+            //if (nRet != 0)
+            //{
+            //    Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
+            //    return -1;
+            //}
+
+            //isWork = true;
+
+            //return nRet;
         }
 
         public int GetLoadIndexNo()
@@ -1709,21 +1744,54 @@ namespace QMC.LCP_280.Process.Unit
 
             int armIndex = GetPlaceArmIndex();
             int nIndex = GetLoadIndexNo();
-            // Place 위치로 이동 (없으면 SafetyZone)
-            double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
-                        AxisNames.LeftPlaceZ);
-            nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos, bFineSpeed);
+
+            // nIndex 처리 (0-based와 1-based 모두 지원)
+            //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
+            //  - 0~7 : +1 보정하여 1~8 매핑
+            int teachingIdx = 0;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
+            else
+            {
+                Log.Write(UnitName, $"[PlaceChipDown] Invalid index {nIndex}. Range 0~7 or 1~8");
+                return -1;
+            }
+
+            string tpName = $"Place_Index{teachingIdx}";
+            var tpObj = Config.GetTeachingPosition(tpName);
+            if (tpObj == null)
+            {
+                Log.Write(UnitName, $"[PlaceChipDown] Teaching not found: {tpName}");
+                return -1;
+            }
+
+            double dTPos = GetTP(tpName, AxisNames.LeftPlaceZ);
+            nRet = MoveAxisPositionOne(AxisPlaceZ, dTPos, bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
                 return -1;
             }
 
-            Rotary.SetVacuum(nIndex, true);
-            SetVacuum(armIndex, false);
-            Thread.Sleep(10);
+            isWork = true;
 
             return nRet;
+
+            //// Place 위치로 이동 (없으면 SafetyZone)
+            //double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
+            //            AxisNames.LeftPlaceZ);
+            //nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos, bFineSpeed);
+            //if (nRet != 0)
+            //{
+            //    Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
+            //    return -1;
+            //}
+            //Rotary.SetVacuum(nIndex, true);
+            //SetVacuum(armIndex, false);
+            //Thread.Sleep(10);
+            //return nRet;
         }
 
         /// <summary>
