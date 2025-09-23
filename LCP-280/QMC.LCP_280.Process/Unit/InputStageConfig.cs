@@ -117,8 +117,6 @@ namespace QMC.LCP_280.Process.Unit
                     value = 75;
                 }
                 dSafeSatageRaius = value;
-
-
             }
         }
 

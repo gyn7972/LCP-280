@@ -130,6 +130,8 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        
+
         #region Vision Hooks / Camera / Runner
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
@@ -179,7 +181,7 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            Config.IsSimulation = Config.IsSimulation; ;
+            Config.IsSimulation = Config.IsSimulation;
             if (Config.IsSimulation)
             {
                 _axX.Config.IsSimulation = true;
@@ -817,7 +819,7 @@ namespace QMC.LCP_280.Process.Unit
         #region High-Level Actuator API (Interlock 포함)
         public bool IsClampLiftUp()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -826,7 +828,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampLiftDown()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -835,7 +837,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampFwd()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -845,7 +847,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampBwd()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -854,7 +856,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool Ring0()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -863,7 +865,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool Ring1()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -874,7 +876,7 @@ namespace QMC.LCP_280.Process.Unit
         // === Direct Valve Control (강제 구동) ===
         public bool IsVacuumValveOn()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -882,7 +884,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampLiftUpValveOn()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -890,7 +892,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsVacuumOn()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -898,7 +900,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsPlateUp()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -906,7 +908,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsPlateDown()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -1200,7 +1202,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsRingPresent()
         {
             bool bRtn = true;
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -1245,7 +1247,7 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_StageLoadingDone = false;
 
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
-            if(!Config.IsSimulation)
+            if(!Config.IsSimulation && !Config.IsDryRun)    
             {
                 if (IsRingPresent())
                 {
@@ -1325,7 +1327,7 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
-                if (Config.IsSimulation)
+                if (Config.IsSimulation || Config.IsDryRun)
                 {
                     //Simulation - ok
                 }
@@ -1385,7 +1387,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // 아직 Wafer 안 올라옴 → 대기
             bool bRtn = Config.IsSimulation;
-            if (IsRingPresent() || bRtn)
+            if (IsRingPresent() || bRtn || Config.IsDryRun)
             {
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
@@ -1576,7 +1578,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
 
             }
@@ -1941,7 +1943,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    if (!Config.IsSimulation)
+                    if (!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (StageCamera.GrabSync(out img) != 0 || img == null)
                         {
@@ -1955,7 +1957,7 @@ namespace QMC.LCP_280.Process.Unit
                     bool found = false;
                     double visionDx = 0, visionDy = 0;
 
-                    //if (Config.IsSimulation)
+                    //if (Config.IsSimulation  || Config.IsDryRun)
                     //{
                     //    // 시뮬레이션: 예시로 모두 존재
                     //    found = true;
@@ -2299,7 +2301,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // 이미지 크기 & FOV mm
             var img = StageCamera?.LatestImage;
-            if (!Config.IsSimulation)
+            if (!Config.IsSimulation && !Config.IsDryRun)
             {
                 if (img == null || img.Header == null || img.Header.Width <= 0 || img.Header.Height <= 0)
                 {
@@ -2362,7 +2364,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
 
                     VisionImage snap = null;
-                    if (!Config.IsSimulation)
+                    if (!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (StageCamera.GrabSync(out snap) != 0 || snap == null)
                         {

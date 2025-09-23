@@ -591,7 +591,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Status Helpers
         public bool IsFeederUp()
         {
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }

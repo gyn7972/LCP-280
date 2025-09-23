@@ -138,13 +138,6 @@ namespace QMC.LCP_280.Process.Unit
         public InputDieTransferConfig InputDieTransferConfig => Config;
         #endregion
 
-        #region DryRun Simulation
-        public bool DryRun { get; private set; }
-        public void SetDryRun(bool on) => DryRun = on;
-        private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, bool> _simInputs  = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-        #endregion
-
         #region Unit
         InputStage InputStage { get; set; }
         InputStageEjector InputStageEjector { get; set; }
@@ -1063,7 +1056,6 @@ namespace QMC.LCP_280.Process.Unit
         #region Low-Level IO (Name Based + DryRun)
         public bool ReadInput(string name)
         {
-            if (DryRun) { return _simInputs.TryGetValue(name, out var v) && v; }
             var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -1073,7 +1065,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            if (DryRun) { _simOutputs[name] = on; return true; }
             var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -1184,7 +1175,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool VacTankPressureOk() => ReadInput(InputDieTransferConfig.IO.VAC_TANK_PRESSURE);
         public bool ArmFlowOk(int armIndex)
         {
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 Thread.Sleep(200);
                 return true;
@@ -1440,7 +1431,7 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!InputStage.IsVacuumOn())
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1482,7 +1473,7 @@ namespace QMC.LCP_280.Process.Unit
                     var sw = Stopwatch.StartNew();
                     while (!ArmFlowOk(0))
                     {
-                        if(!Config.IsSimulation)
+                        if(!Config.IsSimulation && !Config.IsDryRun)
                         {
                             if (sw.ElapsedMilliseconds > 2000)
                             {
@@ -1565,7 +1556,7 @@ namespace QMC.LCP_280.Process.Unit
             // Release
             if(InputStage.SetVacuum(false))
             {
-                if(Config.IsSimulation)
+                if(Config.IsSimulation || Config.IsDryRun)
                 {
                     Thread.Sleep(100);
                 }
@@ -1827,7 +1818,7 @@ namespace QMC.LCP_280.Process.Unit
                     var sw = Stopwatch.StartNew();
                     while (Rotary.SlotFlowOk(nIndex))
                     {
-                        if (!Config.IsSimulation)
+                        if (!Config.IsSimulation && !Config.IsDryRun)
                         {
                             if (sw.ElapsedMilliseconds > 2000)
                             {

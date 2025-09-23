@@ -1010,7 +1010,7 @@ namespace QMC.LCP_280.Process.Unit
                     var sw = Stopwatch.StartNew();
                     while (!ArmFlowOk(nArmindex))
                     {
-                        if (!Config.IsSimulation)
+                        if (!Config.IsSimulation && !Config.IsDryRun)
                         {
                             if (sw.ElapsedMilliseconds > 2000)
                             {
@@ -1045,7 +1045,7 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(50); // 약간의 딜레이
                 if(!Rotary.SetVent(nIndex, true))
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
                         Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
@@ -1056,7 +1056,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if(!Rotary.SetBlow(nIndex, true))
                 {
-                    if (!Config.IsSimulation)
+                    if (!Config.IsSimulation && !Config.IsDryRun)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
                         Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
@@ -1067,7 +1067,7 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!ArmFlowOk(nIndex))
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1094,7 +1094,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Rotary.SetVent(nIndex, false))
             {
-                if (!Config.IsSimulation)
+                if (!Config.IsSimulation && !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
                     Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
@@ -1104,7 +1104,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Rotary.SetBlow(nIndex, false))
             {
-                if (!Config.IsSimulation)
+                if (!Config.IsSimulation && !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
                     Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
@@ -1149,7 +1149,7 @@ namespace QMC.LCP_280.Process.Unit
                 // Release
                 if(!SetVacuum(armIndex, false))
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
                         Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] SetVacuum failed");

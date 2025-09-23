@@ -67,8 +67,10 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitSimMappingIfNeeded()
         {
-            if (!Config.IsSimulation)
+            if (!Config.IsSimulation && !Config.IsDryRun)
+            {
                 return;
+            }
 
             lock (_simMapLock)
             {
@@ -87,7 +89,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ResetSimMapping()
         {
-            if (!Config.IsSimulation)
+            if (!Config.IsSimulation || !Config.IsDryRun)
                 return;
 
             lock (_simMapLock)
@@ -212,7 +214,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool MappingSensor()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 // 시뮬레이션: 축 위치 기반 슬롯 단위 펄스 생성
                 InitSimMappingIfNeeded();
@@ -274,7 +276,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveToScanStartPositionAsync();
             while (IsEndTask(task) == false)
             {
-                if (Config.IsSimulation)
+                if (Config.IsSimulation || Config.IsDryRun)
                 {
                     Log.Write(this, "Wafer Protrusion Detected - Simulation");
                 }
@@ -525,7 +527,7 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(this, "Start ScanWafer");
 
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 // Simulation Mapping 상태 리셋
                 ResetSimMapping();
@@ -566,7 +568,7 @@ namespace QMC.LCP_280.Process.Unit
                     break;
                 }
 
-                if (Config.IsSimulation)
+                if (Config.IsSimulation || Config.IsDryRun)
                 {
                     Log.Write(this, "Wafer Protrusion Detected - Simulation");
                 }
@@ -664,7 +666,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
-            if(!Config.IsSimulation)
+            if(!Config.IsSimulation && !Config.IsDryRun)
             {
                 if (IsWaferProtrusionDetectionSensor())
                 {
@@ -679,7 +681,7 @@ namespace QMC.LCP_280.Process.Unit
             MoveAxisOnce(WaferLifterZ, dPos);
             while (!InPos(WaferLifterZ, dPos))
             {
-                if (!Config.IsSimulation)
+                if (!Config.IsSimulation && !Config.IsDryRun)
                 {
                     if (IsWaferProtrusionDetectionSensor())
                     {
