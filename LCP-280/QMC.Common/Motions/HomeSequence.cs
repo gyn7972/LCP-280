@@ -121,7 +121,6 @@ namespace QMC.Common.Motions
 
             for (int stepIndex = 0; stepIndex < _steps.Count; stepIndex++)
             {
-                // for 루프 내, step 가져온 직후에 취소 처리 보강
                 var step = _steps[stepIndex];
                 if (step == null || step.Count == 0) { continue; }
 
@@ -129,8 +128,7 @@ namespace QMC.Common.Motions
                 {
                     foreach (var ax in step) { TryStop(ax); }
                     Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
-
-                    var cancelProgressEarly = new OperationProgress
+                    RaiseProgress(new OperationProgress
                     {
                         OperationId = "HOME",
                         Title = "Home",
@@ -142,18 +140,19 @@ namespace QMC.Common.Motions
                         IsStepCompleted = true,
                         IsCanceled = true,
                         Message = "Canceled"
-                    };
-                    RaiseProgress(cancelProgressEarly);
+                    });
                     break;
                 }
 
-                var progress = new OperationProgress();
-                progress.OperationId = "HOME";
-                progress.Title = "Home";
-                progress.StepIndex = stepIndex;
-                progress.TotalSteps = _steps.Count;
-                progress.StepAxisCount = step.Count;
-                progress.StepName = string.Join(", ", step.Select(a => a.Name));
+                var progress = new OperationProgress
+                {
+                    OperationId = "HOME",
+                    Title = "Home",
+                    StepIndex = stepIndex,
+                    TotalSteps = _steps.Count,
+                    StepAxisCount = step.Count,
+                    StepName = string.Join(", ", step.Select(a => a.Name))
+                };
                 RaiseProgress(progress);
 
                 if (PreStepInterlockAsync != null)
@@ -161,49 +160,67 @@ namespace QMC.Common.Motions
                     var tuple = await PreStepInterlockAsync(stepIndex, step, token).ConfigureAwait(false);
                     if (!tuple.Ok)
                     {
-                        foreach (var ax in step)
-                        {
-                            TryStop(ax);
-                        }
+                        foreach (var ax in step) { TryStop(ax); }
                         for (int i = 0; i < step.Count; i++)
-                        {
                             all.Add(HomeAxisResult.NotStarted(step[i], tuple.Reason));
-                        }
                         Aborted = true;
                         AbortReason = $"Step {stepIndex} PreStep failed: {tuple.Reason}";
                         AbortStepIndex = stepIndex;
-
-                        var failProgress = new OperationProgress();
-                        failProgress.OperationId = "HOME";
-                        failProgress.Title = "Home";
-                        failProgress.StepIndex = stepIndex;
-                        failProgress.TotalSteps = _steps.Count;
-                        failProgress.StepAxisCount = step.Count;
-                        failProgress.StepFailCount = step.Count;
-                        failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                        failProgress.IsStepCompleted = true;
-                        failProgress.IsAborted = true;
-                        failProgress.Message = tuple.Reason;
-                        RaiseProgress(failProgress);
-
+                        RaiseProgress(new OperationProgress
+                        {
+                            OperationId = "HOME",
+                            Title = "Home",
+                            StepIndex = stepIndex,
+                            TotalSteps = _steps.Count,
+                            StepAxisCount = step.Count,
+                            StepFailCount = step.Count,
+                            StepName = string.Join(", ", step.Select(a => a.Name)),
+                            IsStepCompleted = true,
+                            IsAborted = true,
+                            Message = tuple.Reason
+                        });
                         break;
                     }
                 }
 
                 var blockedReasons = new Dictionary<MotionAxis, string>();
                 var runnable = new List<MotionAxis>(step.Count);
+                bool stepCanceled = false;
 
                 foreach (var axis in step)
                 {
+                    if (token.IsCancellationRequested)
+                    {
+                        stepCanceled = true;
+                        break;
+                    }
+
                     if (PreAxisInterlockAsync != null)
                     {
-                        var pre = await PreAxisInterlockAsync(stepIndex, axis, token).ConfigureAwait(false);
+                        (bool Ok, string Reason) pre;
+                        try
+                        {
+                            pre = await PreAxisInterlockAsync(stepIndex, axis, token).ConfigureAwait(false);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            stepCanceled = true;
+                            break;
+                        }
+
+                        if (token.IsCancellationRequested)
+                        {
+                            stepCanceled = true;
+                            break;
+                        }
+
                         if (!pre.Ok)
                         {
                             blockedReasons[axis] = pre.Reason ?? "PreAxisInterlock blocked";
                             continue;
                         }
                     }
+
                     string reason;
                     bool interlockOk = axis.CheckHomeInterlocks(out reason);
                     if (!interlockOk)
@@ -216,65 +233,81 @@ namespace QMC.Common.Motions
                     }
                 }
 
+                if (stepCanceled)
+                {
+                    foreach (var ax in step) { TryStop(ax); }
+                    var stepResults = step.Select(ax => HomeAxisResult.NotStarted(ax, "Canceled")).ToList();
+                    foreach (var r in stepResults) { all.Add(r); }
+                    Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
+
+                    RaiseProgress(new OperationProgress
+                    {
+                        OperationId = "HOME",
+                        Title = "Home",
+                        StepIndex = stepIndex,
+                        TotalSteps = _steps.Count,
+                        StepAxisCount = step.Count,
+                        StepFailCount = stepResults.Count(r => !r.Success),
+                        StepName = string.Join(", ", step.Select(a => a.Name)),
+                        IsStepCompleted = true,
+                        IsCanceled = true,
+                        Message = "Canceled"
+                    });
+
+                    if (PostStepAsync != null)
+                    {
+                        try { await PostStepAsync(stepIndex, stepResults, token).ConfigureAwait(false); } catch { }
+                    }
+                    break;
+                }
+
                 if (blockedReasons.Count > 0)
                 {
-                    foreach (var ax in step)
-                    {
-                        TryStop(ax);
-                    }
+                    foreach (var ax in step) { TryStop(ax); }
                     foreach (var ax in step)
                     {
                         string r;
-                        bool found = blockedReasons.TryGetValue(ax, out r);
-                        if (!found)
-                        {
-                            r = "Blocked by other axis interlock";
-                        }
+                        if (!blockedReasons.TryGetValue(ax, out r)) r = "Blocked by other axis interlock";
                         all.Add(HomeAxisResult.NotStarted(ax, r));
                     }
                     Aborted = true;
                     AbortReason = $"Step {stepIndex} blocked by axis interlock";
                     AbortStepIndex = stepIndex;
-
-                    var failProgress = new OperationProgress();
-                    failProgress.OperationId = "HOME";
-                    failProgress.Title = "Home";
-                    failProgress.StepIndex = stepIndex;
-                    failProgress.TotalSteps = _steps.Count;
-                    failProgress.StepAxisCount = step.Count;
-                    failProgress.StepFailCount = step.Count;
-                    failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                    failProgress.IsStepCompleted = true;
-                    failProgress.IsAborted = true;
-                    failProgress.Message = AbortReason;
-                    RaiseProgress(failProgress);
-
+                    RaiseProgress(new OperationProgress
+                    {
+                        OperationId = "HOME",
+                        Title = "Home",
+                        StepIndex = stepIndex,
+                        TotalSteps = _steps.Count,
+                        StepAxisCount = step.Count,
+                        StepFailCount = step.Count,
+                        StepName = string.Join(", ", step.Select(a => a.Name)),
+                        IsStepCompleted = true,
+                        IsAborted = true,
+                        Message = AbortReason
+                    });
                     break;
                 }
 
                 if (runnable.Count == 0)
                 {
-                    foreach (var ax in step)
-                    {
-                        TryStop(ax);
-                    }
+                    foreach (var ax in step) { TryStop(ax); }
                     Aborted = true;
                     AbortReason = $"Step {stepIndex} has no runnable axes";
                     AbortStepIndex = stepIndex;
-
-                    var failProgress = new OperationProgress();
-                    failProgress.OperationId = "HOME";
-                    failProgress.Title = "Home";
-                    failProgress.StepIndex = stepIndex;
-                    failProgress.TotalSteps = _steps.Count;
-                    failProgress.StepAxisCount = step.Count;
-                    failProgress.StepFailCount = step.Count;
-                    failProgress.StepName = string.Join(", ", step.Select(a => a.Name));
-                    failProgress.IsStepCompleted = true;
-                    failProgress.IsAborted = true;
-                    failProgress.Message = AbortReason;
-                    RaiseProgress(failProgress);
-
+                    RaiseProgress(new OperationProgress
+                    {
+                        OperationId = "HOME",
+                        Title = "Home",
+                        StepIndex = stepIndex,
+                        TotalSteps = _steps.Count,
+                        StepAxisCount = step.Count,
+                        StepFailCount = step.Count,
+                        StepName = string.Join(", ", step.Select(a => a.Name)),
+                        IsStepCompleted = true,
+                        IsAborted = true,
+                        Message = AbortReason
+                    });
                     break;
                 }
 
@@ -447,15 +480,17 @@ namespace QMC.Common.Motions
                 }
             }
 
-            var finalProgress = new OperationProgress();
-            finalProgress.OperationId = "HOME";
-            finalProgress.Title = "Home";
-            finalProgress.StepIndex = _steps.Count - 1;
-            finalProgress.TotalSteps = _steps.Count;
-            finalProgress.IsCompleted = true;
-            finalProgress.IsCanceled = Aborted && AbortReason == "Canceled";
-            finalProgress.IsAborted = Aborted;
-            finalProgress.Message = AbortReason;
+            var finalProgress = new OperationProgress
+            {
+                OperationId = "HOME",
+                Title = "Home",
+                StepIndex = _steps.Count - 1,
+                TotalSteps = _steps.Count,
+                IsCompleted = true,
+                IsCanceled = Aborted && AbortReason == "Canceled",
+                IsAborted = Aborted,
+                Message = AbortReason
+            };
             RaiseProgress(finalProgress);
 
             return all;
