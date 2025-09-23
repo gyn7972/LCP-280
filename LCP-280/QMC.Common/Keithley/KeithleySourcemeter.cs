@@ -300,7 +300,7 @@ namespace QMC.Common.Keithley
                 channel.ClearCommands();
                 foreach (var item in testItems)
                 {
-                    KeithleySourcemeterChannel.ChannelCommand command = new KeithleySourcemeterChannel.ChannelCommand();
+                    var command = new KeithleySourcemeterChannel.ChannelCommand();
                     switch (item.Type)
                     {
                         case TestItemType.VF:
@@ -355,25 +355,19 @@ namespace QMC.Common.Keithley
                                 channel.AddCommand(command);
                             }
                             break;
-                        case TestItemType.VPulseSweep:
+                        case TestItemType.VSourceAndTrigger:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.PulseSweepVAndTrigger;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.SweepVAndTrigger;
                                 command.SourceValue = item.SourceValue;
-                                command.PulseWidth = item.PulseWidth;
-                                command.PulsePeriod = item.PulsePeriod;
-                                command.PulseCount = item.PulseCount;
                                 channel.AddCommand(command);
                             }
                             break;
-                        case TestItemType.IPulseSweep:
+                        case TestItemType.ISourceAndTrigger:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.PulseSweepIAndTrigger;
+                                command.Action = KeithleySourcemeterChannel.CommandAction.SweepIAndTrigger;
                                 command.SourceValue = item.SourceValue;
-                                command.PulseWidth = item.PulseWidth;
-                                command.PulsePeriod = item.PulsePeriod;
-                                command.PulseCount = item.PulseCount;
                                 channel.AddCommand(command);
                             }
                             break;

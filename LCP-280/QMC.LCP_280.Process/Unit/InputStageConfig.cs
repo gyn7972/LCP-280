@@ -96,6 +96,33 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0.0)]
         public double dSafeHalfRangeY { get; set; } = 0.0;
 
+
+
+        [Category("Interlock"), DisplayName("Safty Stage Radius")]
+        [DefaultValue(60.0)]
+        public double SafeSatageRaius
+        {
+            get
+            {
+                return dSafeSatageRaius;
+            }
+            set
+            {
+                if (value < 20)
+                {
+                    value = 20;
+                }
+                else if (value > 75)
+                {
+                    value = 75;
+                }
+                dSafeSatageRaius = value;
+
+
+            }
+        }
+
+        public double dSafeSatageRaius;
         // Motion Done 관련 옵션
         public bool   EnablePredictiveControl   { get; set; } = false;
         public double MoveDoneRemainDistance    { get; set; } = 0.005;
@@ -172,11 +199,8 @@ namespace QMC.LCP_280.Process.Unit
                 exist.Description = tp.Description;
                 exist.ExtraInfo = tp.ExtraInfo;
             }
-            else 
-                TeachingPositions.Add(tp);
-
+            else TeachingPositions.Add(tp);
             Saveconfig();
-
         }
 
         public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
@@ -208,18 +232,12 @@ namespace QMC.LCP_280.Process.Unit
         public int Saveconfig()
         {
             var pure = TeachingPositions
-               .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
-               .ToList();
+                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
+                 .ToList();
             var backup = TeachingPositions;
             TeachingPositions = pure;
-            try 
-            { 
-                return Save(); 
-            }
-            finally 
-            { 
-                TeachingPositions = backup; 
-            }
+            try { return Save(); }
+            finally { TeachingPositions = backup; }
         }
 
         /// <summary>
@@ -229,9 +247,42 @@ namespace QMC.LCP_280.Process.Unit
         {
             int rc = Load();
             if (rc != 0) return rc;
+
+            var loaded = TeachingPositions ?? new List<TeachingPosition>();
+            var byName = new Dictionary<string, TeachingPosition>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in loaded)
+            {
+                if (t == null || string.IsNullOrWhiteSpace(t.Name)) continue;
+                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
+            }
+
+            var rebuilt = new List<TeachingPosition>();
+            foreach (TeachingPositionName en in Enum.GetValues(typeof(TeachingPositionName)))
+            {
+                string posName = en.ToString();
+                TeachingPosition tp;
+                if (byName.TryGetValue(posName, out tp) && tp != null)
+                {
+                    rebuilt.Add(tp);
+                }
+                else
+                {
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    rebuilt.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
+                }
+            }
+
+            TeachingPositions = rebuilt;
+
             ApplyAxisMapping();
-            foreach (var tp in TeachingPositions)
-                tp.BindAxes(axisManager, "Unit");
+
+            if (axisManager != null)
+            {
+                foreach (var tp in TeachingPositions)
+                    tp.BindAxes(axisManager, "Unit");
+            }
             return 0;
         }
 

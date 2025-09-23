@@ -139,10 +139,11 @@ namespace QMC.Common.Spectrometer
 
         private List<TestConditionItem> testItems = new List<TestConditionItem>();
         private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
-        private string intensityUnit = ""; // 이건 dpidCalibrationUnit 데이터를 받아서 갱신할 필요 있다...
+        private string intensityUnit = "";
         
         private DeviceInformation deviceInfo = new DeviceInformation();
         private bool useHardwareTrigger = false;
+        private bool bIsReady = false;
         #endregion
 
         #region Property
@@ -151,6 +152,7 @@ namespace QMC.Common.Spectrometer
         public List<DensityFilter> DensityFilterList => densityFilterList;
         public SpectrumData Spectrum => spectrum;
         public IDictionary<string, TestItemResult> Results => results;
+        //public bool IsReady { get => bIsReady; set => bIsReady = value; }
         #endregion
 
         #region Constructor
@@ -435,23 +437,10 @@ namespace QMC.Common.Spectrometer
                     ret = -1;
                     break;
                 }
-                if (useHardwareTrigger)
+                if (!SendMeasureCommand())
                 {
-                    // Measure with external trigger
-                    if (!SendMeasureCommandAndTrigger())
-                    {
-                        ret = -1;
-                        break;
-                    }
-                }
-                else
-                {
-                    // Normal measurement
-                    if (!SendMeasureCommand())
-                    {
-                        ret = -1;
-                        break;
-                    }
+                    ret = -1;
+                    break;
                 }
             }
             while (false);
@@ -575,6 +564,7 @@ namespace QMC.Common.Spectrometer
         }
         private bool InitializeDevice()
         {
+            bIsReady = false;
             if (!IsCreated())
                 return false;
 
@@ -595,6 +585,7 @@ namespace QMC.Common.Spectrometer
                     SetMeasurementParameter(CAS4DLL.mpidTriggerSource, CAS4DLL.trgFlipFlop);
                     SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
                     SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
+                    PrepareMeasureAndTrigger();
                     useHardwareTrigger = true;
                 }
                 else
@@ -651,6 +642,25 @@ namespace QMC.Common.Spectrometer
                 return false;
             }
         }
+        private void PrepareMeasureAndTrigger()
+        {
+            if (!IsCreated())
+                return;
+            try
+            {
+                SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, 1000);
+                CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
+            }
+            catch {}
+            finally
+            {
+                try
+                {
+                    SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
+                }
+                catch { }
+            }
+        }
 
         public bool IsCreated()
         {
@@ -673,107 +683,73 @@ namespace QMC.Common.Spectrometer
                 // Error Handling
             }
             return result;
-        }     
+        }
+        
         #endregion
 
         // Measurement Methods
         #region Measurement Methods
         private bool SendMeasureCommand()
         {
-            bool result = false;
             try
             {
                 // Data clear
-                this.result.Clear();
+                result.Clear();
                 spectrum.Clear();
 
-                // Apply measurement parameter
-                //ApplyMeasurementCondition();
+                // SPC(2) Line ON ( SMU(3))
+                if (useHardwareTrigger)
+                    OnDigitalOut(2);
 
-                // Measure
+                bIsReady = true;
                 //CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, (IntPtr)null);
                 CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
+
+                // SPC(2) Line OFF (Send Falling edge to SMU(3))
+                if (useHardwareTrigger)
+                    OffDigitalOut(2);
 
                 // Data Process
                 GetMeasureData();
                 GetSpectrumData();
-                result = true;
-
                 OnMeasureCompleted?.Invoke(this);
+                return true;
             }
             catch (Exception ex)
             {
                 // Error handling
                 Log.Write(ex);
-                this.result.Clear();
+                result.Clear();
                 spectrum.Clear();
                 OnMeasureFailed?.Invoke(this, ex.Message);
-            }
-            return result;
-        }
-        private bool SendMeasureCommandAndTrigger()
-        {
-            bool result = false;
-            try
-            {
-                // Data clear
-                this.result.Clear();
-                spectrum.Clear();
-
-                // Apply measurement parameter
-                //ApplyMeasurementCondition();
-
-                SetMeasurementParameter(CAS4DLL.mpidTriggerSource, CAS4DLL.trgFlipFlop);
-                SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
-                SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
-
-                // Set digital output for triggering & Measure
-                OnDigitalOut(2);
-                //CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, (IntPtr)null);
-                CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
-                OffDigitalOut(2);
-
-                // Data Process
-                GetMeasureData();
-                GetSpectrumData();
-                result = true;
-
-                OnMeasureCompleted?.Invoke(this);
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-                Log.Write(ex);
-                this.result.Clear();
-                spectrum.Clear();
-                OnMeasureFailed?.Invoke(this, ex.Message);
+                return false;
             }
             finally
             {
-                OffDigitalOut(2);
+                // if abort measurement -> SPC(2) Line OFF
+                if (useHardwareTrigger)
+                    OffDigitalOut(2);
             }
-            return result;
         }
         private bool SendMeasureDarkCurrentComand()
         {
-            bool result = false;
             try
             {
                 OpenShutter();
                 CheckCASErrorAndThrow(CAS4DLL.casMeasureDarkCurrent(deviceId));
                 CloseShutter();
-                result = true;
+                return true;
             }
             catch (Exception ex)
             {
                 // Error handling
                 Log.Write(ex);
+                return false;
             }
             finally
             {
                 CloseShutter();
             }
-            return result;
         }
         private void GetMeasureData()
         {
@@ -1027,7 +1003,6 @@ namespace QMC.Common.Spectrometer
         }
         private bool ApplyMeasurementCondition()
         {
-            bool result = false;
             try
             {
                 SetMeasurementParameter(CAS4DLL.mpidIntegrationTime, Config.IntegrationTime);
@@ -1037,14 +1012,14 @@ namespace QMC.Common.Spectrometer
                 SetMeasurementParameter(CAS4DLL.mpidColormetricStop, Config.ColormetricStop);
                 SetMeasurementParameter(CAS4DLL.mpidObserver, CAS4DLL.cieObserver1931);
                 SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
-                result = true;
+                return true;
             }
             catch (Exception ex)
             {
                 // Error handling
                 Log.Write(ex);
+                return false;
             }
-            return result;
         }
         #endregion
 

@@ -116,10 +116,10 @@ namespace QMC.LCP_280.Process.Unit
                     catch { /* 드라이버 예외 무시하고 알람은 계속 */ }
 
                     // 타워램프/부저: Alarm 패턴
-                    ApplyTowerPattern(TowerLampPattern.Alarm);
+                    //ApplyTowerPattern(TowerLampPattern.Alarm); // 설비 정상화시 주석 해제 할 것
 
                     // 알람 포스트
-                    PostAlarm(EMG_ALARM_CODE);
+                    //PostAlarm(EMG_ALARM_CODE); // 설비 정상화시 주석 해제 할 것
                 }
                 _prevEmg = emg;
             }

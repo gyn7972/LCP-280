@@ -15,8 +15,8 @@ namespace QMC.Common.Keithley
         {
             MeasureI,
             MeasureV,
-            PulseSweepIAndTrigger,
-            PulseSweepVAndTrigger,
+            SweepIAndTrigger,
+            SweepVAndTrigger,
         }
         public class ChannelCommand
         {
@@ -32,11 +32,6 @@ namespace QMC.Common.Keithley
             // Measure
             public double MeasureRange { get; set; }
             public double MeasureTime { get; set; }
-
-            // Pulse Sweep
-            public double PulseWidth { get; set; }
-            public double PulsePeriod { get; set; }
-            public int PulseCount { get; set; }
         }
         #endregion
 
@@ -210,26 +205,20 @@ namespace QMC.Common.Keithley
                                 cmdStrs.Add("iv(" + string.Join(",", args) + ")");
                             }
                             break;
-                        case CommandAction.PulseSweepIAndTrigger:
+                        case CommandAction.SweepIAndTrigger:
                             {
                                 args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
-                                args.Add(cmd.PulseWidth.ToString());
-                                args.Add(cmd.PulsePeriod.ToString());
-                                args.Add(cmd.PulseCount.ToString());
-                                cmdStrs.Add("iPulseAndTrigger(" + string.Join(",", args) + ")");
+                                cmdStrs.Add("sweepIAndTrig(" + string.Join(",", args) + ")");
                             }
                             break;
-                        case CommandAction.PulseSweepVAndTrigger:
+                        case CommandAction.SweepVAndTrigger:
                             {
                                 args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
-                                args.Add(cmd.PulseWidth.ToString());
-                                args.Add(cmd.PulsePeriod.ToString());
-                                args.Add(cmd.PulseCount.ToString());
-                                cmdStrs.Add("vPulseAndTrigger(" + string.Join(",", args) + ")");
+                                cmdStrs.Add("sweepVAndTrig(" + string.Join(",", args) + ")");
                             }
                             break;
                     }

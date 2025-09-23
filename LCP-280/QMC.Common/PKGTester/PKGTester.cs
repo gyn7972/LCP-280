@@ -14,12 +14,12 @@ namespace QMC.Common.PKGTester
     public class PKGTesterResult
     {
         #region Fields
-        private int binNo = -1;
+        private BinningResult binningResult = new BinningResult();
         private Dictionary<string, TestItemResult> items = new Dictionary<string, TestItemResult>();
         #endregion
 
         #region Properties
-        public int BinNo => binNo;
+        public BinningResult BinningResult => binningResult;
         public IReadOnlyDictionary<string, TestItemResult> Items => items;
         #endregion
 
@@ -32,7 +32,7 @@ namespace QMC.Common.PKGTester
         #region Methods
         public void ClearItems()
         {
-            binNo = -1;
+            binningResult.Reset();
             items.Clear();
         }
         public void AddItem(string itemName)
@@ -41,7 +41,7 @@ namespace QMC.Common.PKGTester
         }
         public void ResetItems()
         {
-            binNo = -1;
+            binningResult.Reset();
             foreach (var key in items.Keys)
             {
                 items[key].Reset();
@@ -57,14 +57,6 @@ namespace QMC.Common.PKGTester
             items[itemName].Assign(result);
             return true;
         }
-        public void SetBinNo(int binNo)
-        {
-            this.binNo = binNo;
-        }
-        public bool IsMeasured()
-        {
-            return this.binNo >= 0;
-        }
         #endregion
     }
 
@@ -74,13 +66,17 @@ namespace QMC.Common.PKGTester
         private KeithleySourcemeter sourcemeter;
         private CASSpectrometer spectrometer;
         private TestConditionSet conditionSet;
+        private BinningSpecSheet binningSpecSheet;
 
         private PKGTesterResult result = new PKGTesterResult();
         private bool isMeasuring = false;
+
+        private BinningClassifier binningClassifier = new BinningClassifier();
         #endregion
 
         #region Properties
         public TestConditionSet ConditionSet { get => conditionSet; }
+        public BinningSpecSheet BinningSpecSheet { get => binningSpecSheet; }
         public KeithleySourcemeter Sourcemeter { get => sourcemeter; }
         public CASSpectrometer Spectrometer { get => spectrometer; }
         public PKGTesterResult Result { get => result; }
@@ -177,6 +173,19 @@ namespace QMC.Common.PKGTester
             return 0;
         }
 
+        public int LoadBinningSpecSheet(BinningSpecSheet specSheet)
+        {
+            if (specSheet == null)
+                return -1;
+            if (!specSheet.Validate())
+                return -1;
+
+            binningSpecSheet = new BinningSpecSheet();
+            binningSpecSheet.CopyFrom(specSheet);
+            binningClassifier.AssignSpecSheet(binningSpecSheet);
+            return 0;
+        }
+
         #region Build Mechanism
         private int RebuildTestMechanism()
         {
@@ -263,7 +272,80 @@ namespace QMC.Common.PKGTester
         }
         #endregion
 
-        #region Result Data Process
+        #region Internal Process
+        private async Task<int> DoMeasure()
+        {
+            // 두 계측기의 시뮬레이션 측정을 비동기로 동시에 실행
+            Task<int> spcTask = Task.Run(() => DoSpectrometerMeasure());
+            //if (spectrometer.IsReady == false)
+            //{
+            //    Thread.Sleep(1000);
+            //    spectrometer.IsReady = true;
+            //}
+            Task<int> smuTask = Task.Run(() => DoSourcemeterMeasure());
+
+            try
+            {
+                ResetResultItem();
+                int[] result = await Task.WhenAll(spcTask, smuTask);
+
+                // 두 계측기 중 하나라도 실패하면 예외 처리
+                if (result.Any(r => r != 0))
+                {
+                    throw new Exception("The measurement operation of the instrument was not completed normally.");
+                }
+
+                // Get Result Data From Instruments
+                if (!GetResultProcess())
+                {
+                    throw new Exception("Failed to process data.");
+                }
+
+                // Calibrate Data
+                int rotaryIndex = 0;
+                if (!CalibrateDataProcess(rotaryIndex))
+                {
+                    throw new Exception("Failed to calibrate data.");
+                }
+
+                // Binning Data
+                if (!BinningDataProcess())
+                {
+                    throw new Exception("Failed to binning data");
+                }
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                ResetResultItem();
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+                spcTask.Dispose();
+                smuTask.Dispose();
+            }
+        }
+        private async Task<int> DoSourcemeterMeasure()
+        {
+            if (sourcemeter == null)
+                return -1;
+            int smuCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Electrical || item.GetTestItemCategory() == TestItemCategory.ElectricalSource);
+            if (smuCmdCount == 0)
+                return 0;
+            return await Task.Run(() => sourcemeter.Measure());
+        }
+        private async Task<int> DoSpectrometerMeasure()
+        {
+            if (spectrometer == null)
+                return -1;
+            int spcCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Optical);
+            if (spcCmdCount == 0)
+                return 0;
+            return await Task.Run(() => spectrometer.Measure());
+        }
+
         private bool GetResultProcess()
         {
             try
@@ -295,7 +377,7 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
-        private bool CalibrateDataProcess()
+        private bool CalibrateDataProcess(int rotaryIndex)
         {
             try
             {
@@ -307,10 +389,10 @@ namespace QMC.Common.PKGTester
 
                         // Calibrate
                         double value = itemResult.RawData;
-                        //if (item.UseGain)
-                        //    value *= item.Gain;
-                        //if (item.UseOffset)
-                        //    value += item.Offset;
+                        if (item.UseGain[rotaryIndex])
+                            value *= item.Gain[rotaryIndex];
+                        if (item.UseOffset[rotaryIndex])
+                            value += item.Offset[rotaryIndex];
 
                         itemResult.Value = value;
                     }   
@@ -323,66 +405,21 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
-        private bool GetBinFromResult()
+        private bool BinningDataProcess()
         {
             try
             {
-                
-                int binNo = 0;
-                {
-                    // Do this.
-                }
-                result.SetBinNo(binNo);
+                BinningResult binningResult = binningClassifier.Classify(result.Items);
+                if (binningResult.BinType == BinningType.None)
+                    throw new Exception("Failed to classify data.");
+
+                result.BinningResult.CopyFrom(binningResult);
                 return true;
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
                 return false;
-            }
-        }
-        #endregion
-
-        #region Run Measure Process
-        private async Task<int> DoMeasure()
-        {
-            // 두 계측기의 시뮬레이션 측정을 비동기로 동시에 실행
-            Task<int> spcTask = Task.Factory.StartNew(() => spectrometer.Measure());
-            Task<int> smuTask = Task.Factory.StartNew(() => sourcemeter.Measure());
-
-            try
-            {
-                ResetResultItem();
-                int[] result = await Task.WhenAll(spcTask, smuTask);
-
-                // 두 계측기 중 하나라도 실패하면 예외 처리
-                if (result.Any(r => r != 0))
-                {
-                    throw new Exception("The measurement operation of the instrument was not completed normally.");
-                }
-
-                // Data process
-                if (!GetResultProcess())
-                {
-                    throw new Exception("Failed to process data.");
-                }
-                if (!CalibrateDataProcess())
-                {
-                    throw new Exception("Failed to calibrate data.");
-                }
-
-                // Binning Data
-                if (!GetBinFromResult())
-                {
-                    throw new Exception("Failed to bin from result data");
-                }
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                ResetResultItem();
-                Log.Write(ex);
-                return -1;
             }
         }
         #endregion

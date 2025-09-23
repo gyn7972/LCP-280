@@ -15,6 +15,9 @@ namespace QMC.Common.Spectrometer
     public partial class CASSpectrumViewer : UserControl
     {
         private CASSpectrometer _spectrometer;
+        private double _chartMinX;
+        private double _chartMaxX;
+        private double _chartIntervalX;
 
         public CASSpectrumViewer()
         {
@@ -35,7 +38,12 @@ namespace QMC.Common.Spectrometer
 
             _spectrometer = spectrometer;
             _spectrometer.OnMeasureCompleted += Spectrometer_OnMeasureCompleted;
+
+            _chartMinX = _spectrometer.Config.ColormetricStart;
+            _chartMaxX = _spectrometer.Config.ColormetricStop;
+            _chartIntervalX = (_chartMaxX - _chartMinX) / 10;
         }
+
         public void DetachSpectrometer()
         {
             if (_spectrometer != null)
@@ -43,6 +51,10 @@ namespace QMC.Common.Spectrometer
                 _spectrometer.OnMeasureCompleted -= Spectrometer_OnMeasureCompleted;
                 _spectrometer = null;
             }
+
+            _chartMinX = 0;
+            _chartMaxX = 0;
+            _chartIntervalX = 0;
         }
 
         private void Spectrometer_OnMeasureCompleted(object sender)
@@ -63,7 +75,7 @@ namespace QMC.Common.Spectrometer
 
         private void UpdateSpectrumChart(CASSpectrometer spectrometer)
         {
-            Series series = chart.Series[0];
+            var series = chart.Series[0];
 
             if (spectrometer == null)
             {
@@ -71,7 +83,12 @@ namespace QMC.Common.Spectrometer
                 return;
             }
 
-            CASSpectrometer.SpectrumData spectrumData = spectrometer.Spectrum;
+            var area = chart.ChartAreas[0];
+            area.AxisX.Minimum = _chartMinX;
+            area.AxisX.Maximum = _chartMaxX;
+            area.AxisX.Interval = _chartIntervalX;
+
+            var spectrumData = spectrometer.Spectrum;
 
             series.Points.Clear();
             for (int i = 0; i < spectrumData.WaveLength.Length; i++)

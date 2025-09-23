@@ -115,58 +115,34 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             case TestItemCategory.Electrical:
                                 {
-                                    if (pd.Name.Contains("Pulse"))
+                                    object value = pd.GetValue(item);
+
+                                    if (value is Array arr && !(value is string))
                                     {
-                                        row.Cells[pd.Name].Value = "-";
+                                        //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
+                                        row.Cells[pd.Name].Value = "[values]";
                                     }
                                     else
                                     {
-                                        object value = pd.GetValue(item);
-
-                                        if (value is Array arr && !(value is string))
-                                        {
-                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
-                                            row.Cells[pd.Name].Value = "...";
-                                        }
-                                        else
-                                        {
-                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
-                                        }
-                                    }       
+                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                    }
                                 }
                                 break;
                             case TestItemCategory.ElectricalSource:
                                 {
-                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure"))
+                                    if (pd.Name == "Type" || pd.Name == "SourceValue")
                                     {
-                                        if (pd.Name == "SourceValue")
-                                        {
-                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
-                                        }
-                                        else
-                                        {
-                                            row.Cells[pd.Name].Value = "-";
-                                        }
+                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
                                     }
                                     else
                                     {
-                                        object value = pd.GetValue(item);
-
-                                        if (value is Array arr && !(value is string))
-                                        {
-                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
-                                            row.Cells[pd.Name].Value = "...";
-                                        }
-                                        else
-                                        {
-                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
-                                        }
+                                        row.Cells[pd.Name].Value = "-";
                                     }
                                 }
                                 break;
                             case TestItemCategory.Optical:
                                 {
-                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure") || pd.Name.Contains("Pulse"))
+                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure"))
                                     {
                                         row.Cells[pd.Name].Value = "-";
                                     }
@@ -177,7 +153,7 @@ namespace QMC.LCP_280.Process.Unit
                                         if (value is Array arr && !(value is string))
                                         {
                                             //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
-                                            row.Cells[pd.Name].Value = "...";
+                                            row.Cells[pd.Name].Value = "[values]";
                                         }
                                         else
                                         {
