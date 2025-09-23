@@ -160,7 +160,13 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name)
+        {
+            if(TeachingPositions == null)
+                return null;
+
+            return TeachingPositions.FirstOrDefault(p => p.Name == name);
+        }
 
         /// <summary>Offset 적용된 좌표 반환</summary>
         public (double z, double pinZ) GetPositionWithOffset(string name)

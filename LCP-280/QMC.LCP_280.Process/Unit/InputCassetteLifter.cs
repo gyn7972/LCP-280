@@ -713,6 +713,7 @@ namespace QMC.LCP_280.Process.Unit
             if (nRtn != 0)
             {
                 Log.Write(this, "InputStage LoadingWaferPrepare Failed");
+                return -1;
             }
             return nRtn;
         }

@@ -364,6 +364,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsStatus_StageLoadingDone { get; private set; }
         public bool IsStatus_StageUnloadingDone { get; private set; }
         public bool IsStatus_StageUnloadingReady { get; private set; }
+        public bool IsStatus_CompleteWorking { get; internal set; }
 
         public MaterialWafer GetWaferMaterial()
         {
@@ -880,12 +881,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingComp", "Done");
             return nRtn;
         }
-
-
-
-
-
-
 
         public bool IsRingPresent()
         {

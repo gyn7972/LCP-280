@@ -1389,11 +1389,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
-                if (Config.IsSimulation)
-                {
-                    Thread.Sleep(1000);
-                }
-                else if (!IsPlateUp())
+                if (!IsPlateUp() || bRtn)
                 {
                     SetClampPlate(true);
                     if (!IsPlateUp())
@@ -1609,7 +1605,6 @@ namespace QMC.LCP_280.Process.Unit
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
             {
                 return -1;
-
             }
 
             if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
@@ -1788,12 +1783,12 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (WaitUntil(() =>
-                this.InputStageEjector.IsAnyAxisMoving(),
-                MappingMoveTimeoutMs) != 0)
-                return -1;
+            //if (WaitUntil(() =>
+            //    !this.InputStageEjector.IsAnyAxisMoving(),
+            //    MappingMoveTimeoutMs) != 0)
+            //    return -1;
 
-            if (this.InputStageEjector.IsPinZSafetyPos() == false)
+            if (!this.InputStageEjector.IsPinZSafetyPos())
             {
                 PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                 return -1;
@@ -1960,13 +1955,13 @@ namespace QMC.LCP_280.Process.Unit
                     bool found = false;
                     double visionDx = 0, visionDy = 0;
 
-                    if (Config.IsSimulation)
-                    {
-                        // 시뮬레이션: 예시로 모두 존재
-                        found = true;
-                        score = 0.9;
-                    }
-                    else
+                    //if (Config.IsSimulation)
+                    //{
+                    //    // 시뮬레이션: 예시로 모두 존재
+                    //    found = true;
+                    //    score = 0.9;
+                    //}
+                    //else
                     {
                         // 예시: CenterSearch 사용 (dx,dy 만 필요)
                         var res = CenterSearchViaRunner();

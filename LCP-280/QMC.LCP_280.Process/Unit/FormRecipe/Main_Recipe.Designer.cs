@@ -33,8 +33,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         #region Windows Form Designer generated code
         private void InitializeComponent()
         {
-            this.recipeListView = new QMC.Common.ListBoxItemsView();
-            this.propertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.btnNew = new System.Windows.Forms.Button();
             this.btnOpen = new System.Windows.Forms.Button();
             this.btnCopy = new System.Windows.Forms.Button();
@@ -44,50 +42,19 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             this.panelLeftBorder = new System.Windows.Forms.Panel();
             this.panelRightBorder = new System.Windows.Forms.Panel();
             this.panelVerticalSeparator = new System.Windows.Forms.Panel();
+            this.recipeListView = new QMC.Common.ListBoxItemsView();
+            this.propertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.panelLeftBorder.SuspendLayout();
             this.panelRightBorder.SuspendLayout();
             this.SuspendLayout();
             // 
-            // recipeListView
-            // 
-            this.recipeListView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.recipeListView.BorderColor = System.Drawing.Color.Black;
-            this.recipeListView.BorderWidth = 2;
-            this.recipeListView.GroupBackColor = System.Drawing.Color.White;
-            this.recipeListView.GroupForeColor = System.Drawing.Color.Black;
-            this.recipeListView.GroupName = "Recipe List";
-            this.recipeListView.ItemBackColor = System.Drawing.Color.Black;
-            this.recipeListView.ItemForeColor = System.Drawing.Color.Lime;
-            this.recipeListView.ListBackColor = System.Drawing.Color.Black;
-            this.recipeListView.ListForeColor = System.Drawing.Color.Lime;
-            this.recipeListView.Location = new System.Drawing.Point(3, 3);
-            this.recipeListView.Name = "recipeListView";
-            this.recipeListView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
-            this.recipeListView.SelectedForeColor = System.Drawing.Color.Black;
-            this.recipeListView.SelectedIndex = -1;
-            this.recipeListView.Size = new System.Drawing.Size(297, 560);
-            this.recipeListView.TabIndex = 0;
-            // 
-            // propertyCollectionView
-            // 
-            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.propertyCollectionView.FastBuild = true;
-            this.propertyCollectionView.GroupName = "Property";
-            this.propertyCollectionView.Location = new System.Drawing.Point(3, 3);
-            this.propertyCollectionView.Name = "propertyCollectionView";
-            this.propertyCollectionView.Size = new System.Drawing.Size(624, 560);
-            this.propertyCollectionView.SuppressResizeInvalidation = true;
-            this.propertyCollectionView.TabIndex = 1;
-            // 
             // btnNew
             // 
             this.btnNew.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnNew.Location = new System.Drawing.Point(180, 569);
+            this.btnNew.Location = new System.Drawing.Point(206, 711);
+            this.btnNew.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnNew.Name = "btnNew";
-            this.btnNew.Size = new System.Drawing.Size(120, 48);
+            this.btnNew.Size = new System.Drawing.Size(137, 60);
             this.btnNew.TabIndex = 2;
             this.btnNew.Text = "New";
             this.btnNew.UseVisualStyleBackColor = true;
@@ -96,9 +63,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             // btnOpen
             // 
             this.btnOpen.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnOpen.Location = new System.Drawing.Point(3, 569);
+            this.btnOpen.Location = new System.Drawing.Point(3, 711);
+            this.btnOpen.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnOpen.Name = "btnOpen";
-            this.btnOpen.Size = new System.Drawing.Size(120, 48);
+            this.btnOpen.Size = new System.Drawing.Size(137, 60);
             this.btnOpen.TabIndex = 3;
             this.btnOpen.Text = "Open";
             this.btnOpen.UseVisualStyleBackColor = true;
@@ -107,9 +75,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             // btnCopy
             // 
             this.btnCopy.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnCopy.Location = new System.Drawing.Point(3, 623);
+            this.btnCopy.Location = new System.Drawing.Point(3, 779);
+            this.btnCopy.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnCopy.Name = "btnCopy";
-            this.btnCopy.Size = new System.Drawing.Size(87, 48);
+            this.btnCopy.Size = new System.Drawing.Size(99, 60);
             this.btnCopy.TabIndex = 4;
             this.btnCopy.Text = "Copy";
             this.btnCopy.UseVisualStyleBackColor = true;
@@ -118,9 +87,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             // btnPaste
             // 
             this.btnPaste.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.btnPaste.Location = new System.Drawing.Point(108, 623);
+            this.btnPaste.Location = new System.Drawing.Point(123, 779);
+            this.btnPaste.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnPaste.Name = "btnPaste";
-            this.btnPaste.Size = new System.Drawing.Size(87, 48);
+            this.btnPaste.Size = new System.Drawing.Size(99, 60);
             this.btnPaste.TabIndex = 5;
             this.btnPaste.Text = "Paste";
             this.btnPaste.UseVisualStyleBackColor = true;
@@ -129,9 +99,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             // btnSave
             // 
             this.btnSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnSave.Location = new System.Drawing.Point(507, 569);
+            this.btnSave.Location = new System.Drawing.Point(579, 711);
+            this.btnSave.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(120, 48);
+            this.btnSave.Size = new System.Drawing.Size(137, 60);
             this.btnSave.TabIndex = 6;
             this.btnSave.Text = "Save";
             this.btnSave.UseVisualStyleBackColor = true;
@@ -140,9 +111,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             // btnDelete
             // 
             this.btnDelete.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnDelete.Location = new System.Drawing.Point(213, 623);
+            this.btnDelete.Location = new System.Drawing.Point(243, 779);
+            this.btnDelete.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnDelete.Name = "btnDelete";
-            this.btnDelete.Size = new System.Drawing.Size(87, 48);
+            this.btnDelete.Size = new System.Drawing.Size(99, 60);
             this.btnDelete.TabIndex = 10;
             this.btnDelete.Text = "Delete";
             this.btnDelete.UseVisualStyleBackColor = true;
@@ -159,9 +131,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             this.panelLeftBorder.Controls.Add(this.btnOpen);
             this.panelLeftBorder.Controls.Add(this.btnNew);
             this.panelLeftBorder.Controls.Add(this.recipeListView);
-            this.panelLeftBorder.Location = new System.Drawing.Point(12, 12);
+            this.panelLeftBorder.Location = new System.Drawing.Point(14, 15);
+            this.panelLeftBorder.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panelLeftBorder.Name = "panelLeftBorder";
-            this.panelLeftBorder.Size = new System.Drawing.Size(312, 680);
+            this.panelLeftBorder.Size = new System.Drawing.Size(357, 850);
             this.panelLeftBorder.TabIndex = 7;
             // 
             // panelRightBorder
@@ -172,9 +145,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             this.panelRightBorder.BackColor = System.Drawing.Color.Transparent;
             this.panelRightBorder.Controls.Add(this.propertyCollectionView);
             this.panelRightBorder.Controls.Add(this.btnSave);
-            this.panelRightBorder.Location = new System.Drawing.Point(338, 12);
+            this.panelRightBorder.Location = new System.Drawing.Point(386, 15);
+            this.panelRightBorder.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panelRightBorder.Name = "panelRightBorder";
-            this.panelRightBorder.Size = new System.Drawing.Size(648, 680);
+            this.panelRightBorder.Size = new System.Drawing.Size(741, 850);
             this.panelRightBorder.TabIndex = 8;
             // 
             // panelVerticalSeparator
@@ -182,22 +156,61 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             this.panelVerticalSeparator.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.panelVerticalSeparator.BackColor = System.Drawing.Color.Silver;
-            this.panelVerticalSeparator.Location = new System.Drawing.Point(330, 12);
+            this.panelVerticalSeparator.Location = new System.Drawing.Point(377, 15);
+            this.panelVerticalSeparator.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panelVerticalSeparator.Name = "panelVerticalSeparator";
-            this.panelVerticalSeparator.Size = new System.Drawing.Size(2, 680);
+            this.panelVerticalSeparator.Size = new System.Drawing.Size(2, 850);
             this.panelVerticalSeparator.TabIndex = 9;
+            // 
+            // recipeListView
+            // 
+            this.recipeListView.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
+            this.recipeListView.BorderColor = System.Drawing.Color.Black;
+            this.recipeListView.BorderWidth = 2;
+            this.recipeListView.GroupBackColor = System.Drawing.Color.White;
+            this.recipeListView.GroupForeColor = System.Drawing.Color.Black;
+            this.recipeListView.GroupName = "Recipe List";
+            this.recipeListView.ItemBackColor = System.Drawing.Color.Black;
+            this.recipeListView.ItemForeColor = System.Drawing.Color.Lime;
+            this.recipeListView.ListBackColor = System.Drawing.Color.Black;
+            this.recipeListView.ListForeColor = System.Drawing.Color.Lime;
+            this.recipeListView.Location = new System.Drawing.Point(3, 4);
+            this.recipeListView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.recipeListView.Name = "recipeListView";
+            this.recipeListView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.recipeListView.SelectedForeColor = System.Drawing.Color.Black;
+            this.recipeListView.SelectedIndex = -1;
+            this.recipeListView.Size = new System.Drawing.Size(339, 700);
+            this.recipeListView.TabIndex = 0;
+            // 
+            // propertyCollectionView
+            // 
+            this.propertyCollectionView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.propertyCollectionView.FastBuild = true;
+            this.propertyCollectionView.GroupName = "Property";
+            this.propertyCollectionView.Location = new System.Drawing.Point(3, 4);
+            this.propertyCollectionView.Margin = new System.Windows.Forms.Padding(5);
+            this.propertyCollectionView.Name = "propertyCollectionView";
+            this.propertyCollectionView.Size = new System.Drawing.Size(713, 700);
+            this.propertyCollectionView.SuppressResizeInvalidation = true;
+            this.propertyCollectionView.TabIndex = 1;
             // 
             // Main_Recipe
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(1244, 711);
+            this.ClientSize = new System.Drawing.Size(1422, 889);
             this.Controls.Add(this.panelLeftBorder);
             this.Controls.Add(this.panelRightBorder);
             this.Controls.Add(this.panelVerticalSeparator);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "Main_Recipe";
             this.Text = "Main_Recipe";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Main_Recipe_FormClosed);
             this.panelLeftBorder.ResumeLayout(false);
             this.panelRightBorder.ResumeLayout(false);
             this.ResumeLayout(false);

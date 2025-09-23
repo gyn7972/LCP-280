@@ -661,5 +661,16 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             
         }
+
+        private void btnTest_Click(object sender, EventArgs e)
+        {
+            var eq = Equipment.Instance;
+            var r = eq.EquipmentRecipe.CurrentRecipe;
+
+            string str = r.VisionRecipePath;
+
+            // 값 읽기
+            double limit = r.Keys.Count > 0 ? r.Keys[0].UpperLimit : double.NaN;
+        }
     }
 }

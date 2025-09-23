@@ -646,42 +646,18 @@ namespace QMC.LCP_280.Process.Unit
             });
         }
 
-
-        private int BinLoadingAfterStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = BinLoadingAfterStage;
-            MaterialCassette material = GetMaterialCassette();
-
-
-            return nRtn;
-        }
-
         private int BinLoadingBeforeStage(bool bFineSpeed = false)
         {
             int nRtn = 0;
             this.CurrentFunc = BinLoadingBeforeStage;
             MaterialCassette material = GetMaterialCassette();
 
-            return nRtn;
-        }
-
-        private int BinUnloadingAfterStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = BinUnloadingAfterStage;
-            MaterialCassette material = GetMaterialCassette();
-
-
-            return nRtn;
-        }
-
-        private int BinUnloadingBeforeStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = BinUnloadingBeforeStage;
-            MaterialCassette material = GetMaterialCassette();
-
+            nRtn = OutputStage.LoadingBinPrepare();
+            if (nRtn != 0)
+            {
+                Log.Write(this, "OutputStage LoadingBinPrepare Failed");
+                return -1;
+            }
 
             return nRtn;
         }
@@ -701,62 +677,55 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
+
+        private int BinLoadingAfterStage(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = BinLoadingAfterStage;
+            MaterialCassette material = GetMaterialCassette();
+
+            nRtn = OutputStage.LoadingBinComplete();
+            if (nRtn != 0)
+            {
+                Log.Write(this, "OutputStage LoadingBinComplete Failed");
+            }
+
+            return nRtn;
+        }
+
+        private int BinUnloadingBeforeStage(bool bFineSpeed = false)
+        {
+            int nRtn = 0;
+            this.CurrentFunc = BinUnloadingBeforeStage;
+            MaterialCassette material = GetMaterialCassette();
+
+
+            return nRtn;
+        }
+
         public int BinUnloadingFeeder(bool bFineSpeed = false)
         {
             int nRet = 0;
             this.CurrentFunc = BinUnloadingFeeder;
 
-            nRet = OutputFeeder.BinUnloading();
-            if (nRet != 0)
-            {
-                Log.Write(this, "InputFeeder WaferUnloading Failed");
-                return -1;
-            }
+            //nRet = OutputFeeder.BinUnloading();
+            //if (nRet != 0)
+            //{
+            //    Log.Write(this, "InputFeeder WaferUnloading Failed");
+            //    return -1;
+            //}
 
             return nRet;
         }
 
-
-
-
-
-
-
-
-
-        public int CassetteLoading()
+        private int BinUnloadingAfterStage(bool bFineSpeed = false)
         {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
+            int nRtn = 0;
+            this.CurrentFunc = BinUnloadingAfterStage;
+            MaterialCassette material = GetMaterialCassette();
 
-        public int BinMapping()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
 
-        public int BinLoading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int BinUnloading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int CassetteUnloading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
+            return nRtn;
         }
         #endregion
     }

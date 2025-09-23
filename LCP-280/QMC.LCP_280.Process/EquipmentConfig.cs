@@ -93,7 +93,7 @@ namespace QMC.LCP_280.Process
         #endregion
 
         #region Static Loader
-        public static EquipmentConfig LoadOrCreate()
+        public EquipmentConfig LoadOrCreate()
         {
             var cfg = new EquipmentConfig();
             try

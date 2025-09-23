@@ -284,8 +284,9 @@ namespace QMC.LCP_280.Process
                     // Fallback to legacy per-camera location if not resolved
                     if (string.IsNullOrEmpty(path))
                     {
+                        
                         string camFolder = Path.Combine(_opt.RecipeRootDirectory, _camera.Name ?? "NoCamera");
-                        path = Path.Combine(camFolder, _opt.RecipeName + ".pmrecipe.json");
+                        path = Path.Combine(camFolder, _opt.RecipeName + ".Vision.json");
                     }
 
                     var container = PatternMatchingRecipeStore.Load(path);
@@ -333,7 +334,15 @@ namespace QMC.LCP_280.Process
             {
                 // Determine currently opened measurement recipe name from Equipment (if available)
                 string currentRecipeName = null;
-                try { currentRecipeName = Equipment._CurrentRecipeName; } catch { currentRecipeName = null; }
+                try 
+                {
+                    var eq = Equipment.Instance;
+                    //_currentRecipeName = Equipment._CurrentRecipeName;
+                    currentRecipeName = eq.EquipmentRecipe.CurrentRecipeName;
+                    //currentRecipeName = Equipment._CurrentRecipeName; 
+                } 
+                catch { currentRecipeName = null; }
+
                 if (string.IsNullOrWhiteSpace(currentRecipeName)) return null;
 
                 var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), currentRecipeName) as QMC.Common.BaseRecipe;
@@ -357,12 +366,14 @@ namespace QMC.LCP_280.Process
                         // 1) directory/<camera>/<name>.pmrecipe.json
                         if (!string.IsNullOrWhiteSpace(recipeName))
                         {
-                            string p1 = Path.Combine(recipePath, _camera?.Name ?? "NoCamera", recipeName + ".pmrecipe.json");
-                            if (File.Exists(p1)) return p1;
+                            string p1 = Path.Combine(recipePath, _camera?.Name ?? "NoCamera", recipeName + ".Vision.json");
+                            if (File.Exists(p1)) 
+                                return p1;
 
                             // 2) directory/<name>.pmrecipe.json
-                            string p2 = Path.Combine(recipePath, recipeName + ".pmrecipe.json");
-                            if (File.Exists(p2)) return p2;
+                            string p2 = Path.Combine(recipePath, recipeName + ".Vision.json");
+                            if (File.Exists(p2)) 
+                                return p2;
                         }
                     }
                 }
@@ -371,7 +382,7 @@ namespace QMC.LCP_280.Process
                 if (!string.IsNullOrWhiteSpace(recipeName))
                 {
                     string camFolder = Path.Combine(_opt.RecipeRootDirectory, _camera?.Name ?? "NoCamera");
-                    string p = Path.Combine(camFolder, recipeName + ".pmrecipe.json");
+                    string p = Path.Combine(camFolder, recipeName + ".Vision.json");
                     if (File.Exists(p))
                     {
                         // Also reflect chosen name for subsequent saves (optional)
