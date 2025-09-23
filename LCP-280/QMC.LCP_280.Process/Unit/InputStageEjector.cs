@@ -46,11 +46,6 @@ namespace QMC.LCP_280.Process.Unit
         public InputStageEjectorConfig InputStageEjectorConfig => Config;
         #endregion
 
-        #region DryRun
-        public bool DryRun { get; private set; }
-        public void SetDryRun(bool on) => DryRun = on;
-        #endregion
-
         #region Unit
         InputStage InputStage { get; set; }
         InputDieTransfer InputDieTransfer { get; set; }

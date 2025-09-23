@@ -180,7 +180,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MoveToScanStartPositionAsync();
             while (IsEndTask(task) == false)
             {
-                if (Config.IsSimulation)
+                if (Config.IsSimulation || Config.IsDryRun)
                 {
                     Log.Write(this, "Bin Protrusion Detected - Simulation");
                 }
@@ -444,7 +444,7 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(this, "Start ScanBin");
 
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 Log.Write(this, "Bin Protrusion Detected - Simulation");
             }
@@ -483,7 +483,7 @@ namespace QMC.LCP_280.Process.Unit
                     break;
                 }
 
-                if (Config.IsSimulation)
+                if (Config.IsSimulation || Config.IsDryRun)
                 {
                     Log.Write(this, "Wafer Protrusion Detected - Simulation");
                 }
@@ -496,7 +496,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (Config.IsSimulation)
+                if (Config.IsSimulation || Config.IsDryRun)
                 {
                     Log.Write(this, "Bin Protrusion Detected - Simulation");
 

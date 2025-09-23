@@ -192,8 +192,11 @@ namespace QMC.LCP_280.Process.Unit
             var byName = new Dictionary<string, TeachingPosition>(StringComparer.OrdinalIgnoreCase);
             foreach (var t in loaded)
             {
-                if (t == null || string.IsNullOrWhiteSpace(t.Name)) continue;
-                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
+                if (t == null || string.IsNullOrWhiteSpace(t.Name))
+                    continue;
+
+                if (!byName.ContainsKey(t.Name)) 
+                    byName[t.Name] = t;
             }
 
             var rebuilt = new List<TeachingPosition>();
@@ -209,7 +212,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var axes = GetAxisNamesForPosition(posName);
                     var axisPositions = new Dictionary<string, double>();
-                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    foreach (var a in axes) 
+                        axisPositions[a] = 0.0;
+
                     rebuilt.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
             }

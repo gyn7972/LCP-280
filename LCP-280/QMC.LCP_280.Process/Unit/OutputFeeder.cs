@@ -480,7 +480,7 @@ namespace QMC.LCP_280.Process.Unit
         #region Status Helpers
         public bool IsFeederUp()
         {
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -489,7 +489,7 @@ namespace QMC.LCP_280.Process.Unit
         
         public bool IsFeederDown()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -497,7 +497,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsUnclamped()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -505,7 +505,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsRingPresent()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -513,7 +513,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsOverload()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }

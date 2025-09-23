@@ -35,6 +35,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.groupBoxInputStageSeq = new System.Windows.Forms.GroupBox();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
+            this.checkBoxTest = new System.Windows.Forms.CheckBox();
             this._InputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.btnMapping = new QMC.Common.IndividualMenuButton();
             this.manualSequenceControlInputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
@@ -42,6 +43,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.manualSequenceControlCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
+            this.checkBoxSimulation = new System.Windows.Forms.CheckBox();
             this.groupBoxCassetteLifterSeq.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
             this.groupBoxInputStageSeq.SuspendLayout();
@@ -62,6 +64,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             // groupBoxManual
             // 
+            this.groupBoxManual.Controls.Add(this.checkBoxSimulation);
+            this.groupBoxManual.Controls.Add(this.checkBoxTest);
             this.groupBoxManual.Controls.Add(this.waferMapView);
             this.groupBoxManual.Controls.Add(this.btnMapping);
             this.groupBoxManual.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
@@ -93,6 +97,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.groupBoxImageView.TabIndex = 20;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
+            // 
+            // checkBoxTest
+            // 
+            this.checkBoxTest.AutoSize = true;
+            this.checkBoxTest.Location = new System.Drawing.Point(6, 353);
+            this.checkBoxTest.Name = "checkBoxTest";
+            this.checkBoxTest.Size = new System.Drawing.Size(92, 27);
+            this.checkBoxTest.TabIndex = 18;
+            this.checkBoxTest.Text = "DryRun";
+            this.checkBoxTest.UseVisualStyleBackColor = true;
+            this.checkBoxTest.CheckedChanged += new System.EventHandler(this.checkBoxTest_CheckedChanged);
             // 
             // _InputWaferCameraviewer
             // 
@@ -191,6 +206,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.teachingPositionControl.TabIndex = 14;
             this.teachingPositionControl.UnitName = null;
             // 
+            // checkBoxSimulation
+            // 
+            this.checkBoxSimulation.AutoSize = true;
+            this.checkBoxSimulation.Location = new System.Drawing.Point(104, 353);
+            this.checkBoxSimulation.Name = "checkBoxSimulation";
+            this.checkBoxSimulation.Size = new System.Drawing.Size(120, 27);
+            this.checkBoxSimulation.TabIndex = 19;
+            this.checkBoxSimulation.Text = "Simulation";
+            this.checkBoxSimulation.UseVisualStyleBackColor = true;
+            this.checkBoxSimulation.CheckedChanged += new System.EventHandler(this.checkBoxSimulation_CheckedChanged);
+            // 
             // InputWafer_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
@@ -207,6 +233,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.Text = "InputWafer_Working";
             this.groupBoxCassetteLifterSeq.ResumeLayout(false);
             this.groupBoxManual.ResumeLayout(false);
+            this.groupBoxManual.PerformLayout();
             this.groupBoxInputStageSeq.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._InputWaferCameraviewer)).EndInit();
@@ -226,5 +253,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private ManualSequenceControl manualSequenceControlInputStage;
         private System.Windows.Forms.GroupBox groupBoxImageView;
         private Common.Vision.VisionImageViewer _InputWaferCameraviewer;
+        private System.Windows.Forms.CheckBox checkBoxTest;
+        private System.Windows.Forms.CheckBox checkBoxSimulation;
     }
 }

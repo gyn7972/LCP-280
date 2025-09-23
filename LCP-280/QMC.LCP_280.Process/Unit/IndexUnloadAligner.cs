@@ -156,16 +156,16 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Config.IsSimulation)
+            // || Config.IsDryRun
+            if (!Config.IsSimulation && !Config.IsDryRun)
             {
-
-            }
-            else if (grabRc != 0 || img == null || img.RawData == null)
-            {
-                Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
-                img?.Dispose();
-                img = null;
-                return -1;
+                if (grabRc != 0 || img == null || img.RawData == null)
+                {
+                    Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
+                    img?.Dispose();
+                    img = null;
+                    return -1;
+                }
             }
 
             IndexOutCamera.LatestImage = img;

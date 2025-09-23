@@ -508,8 +508,7 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                bool bSimulation = Config.IsSimulation;
-                if(!bSimulation)
+                if(Config.IsSimulation && Config.IsDryRun)
                 {
                     if (!OutputFeeder.IsFeederZSafetyPosition())
                     {
@@ -693,14 +692,13 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_StageLoadingDone = false;
 
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
-            if (Config.IsSimulation)
+            if (!Config.IsSimulation && !Config.IsDryRun)
             {
-
-            }
-            else if (IsRingPresent())
-            {
-                Log.Write(UnitName, "LoadingPrep", "Bin already present -> Skip prepare");
-                return nRtn;
+                if (IsRingPresent())
+                {
+                    Log.Write(UnitName, "LoadingPrep", "Bin already present -> Skip prepare");
+                    return nRtn;
+                }
             }
 
             // 로딩 Teaching 이동
@@ -717,7 +715,7 @@ namespace QMC.LCP_280.Process.Unit
             SetClampFB(false);
             if (!IsClampBwd())
             {
-                if(!bSimulation)
+                if(!bSimulation || !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eClampFB);
                     Log.Write(this, "Fail: ClampBack");
@@ -728,7 +726,7 @@ namespace QMC.LCP_280.Process.Unit
             SetClampLift(false);
             if (!IsClampLiftDown())
             {
-                if (!bSimulation)
+                if (!bSimulation || !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eClampLift);
                     Log.Write(this, "Fail: ClampLiftDown");
@@ -740,7 +738,7 @@ namespace QMC.LCP_280.Process.Unit
             SetClampPlate(false);
             if (!IsPlateDown())
             {
-                if (!bSimulation)
+                if (!bSimulation || !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.ePlate);
                     Log.Write(this, "Fail: PlateUp");
@@ -771,38 +769,42 @@ namespace QMC.LCP_280.Process.Unit
 
             // 아직 Wafer 안 올라옴 → 대기
             bool bRtn = Config.IsSimulation;
-            if (IsRingPresent() || bRtn)
+            if (IsRingPresent() || bRtn || Config.IsDryRun)
             {
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
-
-                if (Config.IsSimulation)
-                {
-                    Thread.Sleep(1000);
-                }
-                else if (!IsPlateUp())
+                if (!IsPlateUp()|| Config.IsSimulation || Config.IsDryRun)
                 {
                     SetClampPlate(true);
                     if (!IsPlateUp())
                     {
-                        PostAlarm((int)AlarmKeys.ePlate);
-                        Log.Write(this, "Fail: PlateUp");
-                        return -1;
+                        if(!Config.IsSimulation && !Config.IsDryRun)
+                        {
+                            PostAlarm((int)AlarmKeys.ePlate);
+                            Log.Write(this, "Fail: PlateUp");
+                            return -1;
+                        }
                     }
 
                     SetClampLift(true);
                     if (!IsClampLiftUp())
                     {
-                        PostAlarm((int)AlarmKeys.eClampLift);
-                        Log.Write(this, "Fail: ClampLiftUp");
-                        return -1;
+                        if (!Config.IsSimulation && !Config.IsDryRun)
+                        {
+                            PostAlarm((int)AlarmKeys.eClampLift);
+                            Log.Write(this, "Fail: ClampLiftUp");
+                            return -1;
+                        }
                     }
 
                     SetClampFB(true);
                     if (!IsClampFwd())
                     {
-                        PostAlarm((int)AlarmKeys.eClampFB);
-                        Log.Write(this, "Fail: ClampForward");
-                        return -1;
+                        if (!Config.IsSimulation && !Config.IsDryRun)
+                        {
+                            PostAlarm((int)AlarmKeys.eClampFB);
+                            Log.Write(this, "Fail: ClampForward");
+                            return -1;
+                        }
                     }
                 }
                 else
@@ -902,7 +904,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsRingPresent()
         {
             bool bRtn = true;
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
