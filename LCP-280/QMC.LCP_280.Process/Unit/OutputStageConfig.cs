@@ -253,9 +253,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             var tp = GetTeachingPosition(name);
             if (tp == null) return (0, 0, 0);
-            double x = tp.AxisPositions.TryGetValue(AxisNames.WaferStageX, out var vx) ? vx : 0;
-            double y = tp.AxisPositions.TryGetValue(AxisNames.WaferStageY, out var vy) ? vy : 0;
-            double t = tp.AxisPositions.TryGetValue(AxisNames.WaferStageT, out var vt) ? vt : 0;
+            double x = tp.AxisPositions.TryGetValue(AxisNames.BinStageX, out var vx) ? vx : 0;
+            double y = tp.AxisPositions.TryGetValue(AxisNames.BinStageY, out var vy) ? vy : 0;
+            double t = tp.AxisPositions.TryGetValue(AxisNames.BinStageT, out var vt) ? vt : 0;
             if (Offsets.TryGetValue(name, out var off)) { x += off.dx; y += off.dy; t += off.dt; }
             return (x, y, t);
         }

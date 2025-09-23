@@ -175,7 +175,7 @@ namespace QMC.LCP_280.Process.Unit
 
         internal int AlignSocketOnceReady(bool bFineSpeed = false)
         {
-            int nRet = -1;
+            int nRet = 0;
             this.CurrentFunc = AlignSocketOnceReady;
 
             Log.Write(UnitName, "Align Start");
@@ -202,7 +202,7 @@ namespace QMC.LCP_280.Process.Unit
 
         internal int AlignSocketOnce(bool bFineSpeed = false)
         {
-            int nRet = -1;
+            int nRet = 0;
             this.CurrentFunc = AlignSocketOnce;
 
             double dx = IsStatus_LastFoundDx;

@@ -507,13 +507,19 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.eDieTransferPlaceZNotSafe);
                     return -1;
                 }
-                if (!OutputFeeder.IsFeederZSafetyPosition())
+
+                bool bSimulation = Config.IsSimulation;
+                if(!bSimulation)
                 {
-                    this.AxisX.EmgStop();
-                    this.AxisY.EmgStop();
-                    this.AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
-                    return -1;
+                    if (!OutputFeeder.IsFeederZSafetyPosition())
+                    {
+                        this.AxisX.EmgStop();
+                        this.AxisY.EmgStop();
+                        this.AxisT.EmgStop();
+                        PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
+                        return -1;
+                    }
+
                 }
 
                 if (!OutputFeeder.IsFeederYSafetyPosition())
@@ -705,30 +711,41 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            bool bSimulation = Config.IsSimulation;
+
             // Clamp Back ¡æ Lift Down
             SetClampFB(false);
             if (!IsClampBwd())
             {
-                PostAlarm((int)AlarmKeys.eClampFB);
-                Log.Write(this, "Fail: ClampBack");
-                return -1;
+                if(!bSimulation)
+                {
+                    PostAlarm((int)AlarmKeys.eClampFB);
+                    Log.Write(this, "Fail: ClampBack");
+                    return -1;
+                }
             }
 
             SetClampLift(false);
             if (!IsClampLiftDown())
             {
-                PostAlarm((int)AlarmKeys.eClampLift);
-                Log.Write(this, "Fail: ClampLiftDown");
-                return -1;
+                if (!bSimulation)
+                {
+                    PostAlarm((int)AlarmKeys.eClampLift);
+                    Log.Write(this, "Fail: ClampLiftDown");
+                    return -1;
+                }
             }
 
             //Plate Down ¡æ 
             SetClampPlate(false);
             if (!IsPlateDown())
             {
-                PostAlarm((int)AlarmKeys.ePlate);
-                Log.Write(this, "Fail: PlateUp");
-                return -1;
+                if (!bSimulation)
+                {
+                    PostAlarm((int)AlarmKeys.ePlate);
+                    Log.Write(this, "Fail: PlateUp");
+                    return -1;
+                }
             }
 
             IsStatus_StageLoadingReady = true;
@@ -900,7 +917,8 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsBinLoadingPosition()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.Loading];
-            if (tp == null) return false;
+            if (tp == null) 
+                return false;
             return InPosTeaching(tp);
         }
         public bool IsBinUnloadingPosition()

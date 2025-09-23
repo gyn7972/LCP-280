@@ -8,6 +8,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -477,11 +478,47 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Status Helpers
-        public bool IsFeederUp() => ReadInput(OutputFeederConfig.IO.FEEDER_UP);
-        public bool IsFeederDown() => ReadInput(OutputFeederConfig.IO.FEEDER_DOWN);
-        public bool IsUnclamped() => ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
-        public bool IsRingPresent() => ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
-        public bool IsOverload() => ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
+        public bool IsFeederUp()
+        {
+            if(Config.IsSimulation)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_UP);
+        }
+        
+        public bool IsFeederDown()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_DOWN);
+        }
+        public bool IsUnclamped()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
+        }
+        public bool IsRingPresent()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
+        }
+        public bool IsOverload()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
+        }
         #endregion
 
         /// ////////////////////////////////////////////////////////////////////////////////////////
