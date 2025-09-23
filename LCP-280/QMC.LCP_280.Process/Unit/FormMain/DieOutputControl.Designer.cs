@@ -1,18 +1,20 @@
 ﻿namespace QMC.LCP_280.Process.Unit.FormMain
 {
-    partial class DieInputControl
+    partial class DieOutputControl
     {
         private System.ComponentModel.IContainer components = null;
-        private System.Windows.Forms.Label lblWaferIdValue;
-        private System.Windows.Forms.Label lblDieCountValue;
         private System.Windows.Forms.Label lblWaferIdTitle;
+        private System.Windows.Forms.Label lblWaferIdValue;
         private System.Windows.Forms.Label lblDieCountTitle;
-        private QMC.Common.Controls.DisplayView displayView1;
+        private System.Windows.Forms.Label lblDieCountValue;
+        private Common.Controls.DisplayView_DieOutputControl displayView1;
 
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
+            {
                 components.Dispose();
+            }
             base.Dispose(disposing);
         }
 
@@ -22,14 +24,14 @@
             this.lblWaferIdValue = new System.Windows.Forms.Label();
             this.lblDieCountTitle = new System.Windows.Forms.Label();
             this.lblDieCountValue = new System.Windows.Forms.Label();
-            this.displayView1 = new QMC.Common.Controls.DisplayView();
+            this.displayView1 = new QMC.Common.Controls.DisplayView_DieOutputControl();
             this.SuspendLayout();
             // 
             // lblWaferIdTitle
             // 
             this.lblWaferIdTitle.AutoSize = true;
             this.lblWaferIdTitle.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lblWaferIdTitle.Location = new System.Drawing.Point(10, 8);
+            this.lblWaferIdTitle.Location = new System.Drawing.Point(10, 5);
             this.lblWaferIdTitle.Name = "lblWaferIdTitle";
             this.lblWaferIdTitle.Size = new System.Drawing.Size(73, 19);
             this.lblWaferIdTitle.TabIndex = 0;
@@ -40,7 +42,7 @@
             this.lblWaferIdValue.BackColor = System.Drawing.Color.Black;
             this.lblWaferIdValue.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.lblWaferIdValue.ForeColor = System.Drawing.Color.Lime;
-            this.lblWaferIdValue.Location = new System.Drawing.Point(160, 8);
+            this.lblWaferIdValue.Location = new System.Drawing.Point(160, 5);
             this.lblWaferIdValue.Name = "lblWaferIdValue";
             this.lblWaferIdValue.Size = new System.Drawing.Size(150, 23);
             this.lblWaferIdValue.TabIndex = 1;
@@ -51,7 +53,7 @@
             // 
             this.lblDieCountTitle.AutoSize = true;
             this.lblDieCountTitle.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lblDieCountTitle.Location = new System.Drawing.Point(10, 33);
+            this.lblDieCountTitle.Location = new System.Drawing.Point(10, 30);
             this.lblDieCountTitle.Name = "lblDieCountTitle";
             this.lblDieCountTitle.Size = new System.Drawing.Size(81, 19);
             this.lblDieCountTitle.TabIndex = 2;
@@ -62,7 +64,7 @@
             this.lblDieCountValue.BackColor = System.Drawing.Color.Black;
             this.lblDieCountValue.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.lblDieCountValue.ForeColor = System.Drawing.Color.Lime;
-            this.lblDieCountValue.Location = new System.Drawing.Point(160, 33);
+            this.lblDieCountValue.Location = new System.Drawing.Point(160, 30);
             this.lblDieCountValue.Name = "lblDieCountValue";
             this.lblDieCountValue.Size = new System.Drawing.Size(150, 23);
             this.lblDieCountValue.TabIndex = 3;
@@ -78,14 +80,14 @@
             this.displayView1.Size = new System.Drawing.Size(320, 300);
             this.displayView1.TabIndex = 4;
             // 
-            // DieInputControl
+            // DieOutputControl
             // 
             this.Controls.Add(this.lblWaferIdTitle);
             this.Controls.Add(this.lblWaferIdValue);
             this.Controls.Add(this.lblDieCountTitle);
             this.Controls.Add(this.lblDieCountValue);
             this.Controls.Add(this.displayView1);
-            this.Name = "DieInputControl";
+            this.Name = "DieOutputControl";
             this.Size = new System.Drawing.Size(320, 370);
             this.ResumeLayout(false);
             this.PerformLayout();

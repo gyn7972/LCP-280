@@ -630,7 +630,7 @@ namespace QMC.Common.Motion.Ajin
             uint upModuleID = 0;
             if ((ret = AXL.CheckErrorCode("AXD.AxdInfoGetModule", AXD.AxdInfoGetModule(module, ref node, ref moduleId, ref upModuleID))) != 0) return ret;
             moduleType = (AXT_MODULE) upModuleID;
-            return ret;
+            return ret; 
         }
 
         public static int Read(int module, int offset, ref byte value)

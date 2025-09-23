@@ -113,14 +113,46 @@ namespace QMC.LCP_280.Process.Unit
             finally { TeachingPositions = backup; }
         }
 
-        // 불러오기: 저장 데이터를 불러온 뒤, 런타임에 축 바인딩
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
             int rc = Load();
             if (rc != 0) return rc;
+
+            var loaded = TeachingPositions ?? new List<TeachingPosition>();
+            var byName = new Dictionary<string, TeachingPosition>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in loaded)
+            {
+                if (t == null || string.IsNullOrWhiteSpace(t.Name)) continue;
+                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
+            }
+
+            var rebuilt = new List<TeachingPosition>();
+            foreach (TeachingPositionName en in Enum.GetValues(typeof(TeachingPositionName)))
+            {
+                string posName = en.ToString();
+                TeachingPosition tp;
+                if (byName.TryGetValue(posName, out tp) && tp != null)
+                {
+                    rebuilt.Add(tp);
+                }
+                else
+                {
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    rebuilt.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
+                }
+            }
+
+            TeachingPositions = rebuilt;
+
             ApplyAxisMapping();
-            foreach (var tp in TeachingPositions)
-                tp.BindAxes(axisManager, "Unit");
+
+            if (axisManager != null)
+            {
+                foreach (var tp in TeachingPositions)
+                    tp.BindAxes(axisManager, "Unit");
+            }
             return 0;
         }
 

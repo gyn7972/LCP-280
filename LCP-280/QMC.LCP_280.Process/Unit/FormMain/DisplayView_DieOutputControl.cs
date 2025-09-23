@@ -6,7 +6,7 @@ using System.Windows.Forms;
 
 namespace QMC.Common.Controls   // 공용 네임스페이스
 {
-    public partial class DisplayView : UserControl
+    public partial class DisplayView_DieOutputControl : UserControl
     {
         public enum ItemState
         {
@@ -44,7 +44,7 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
         private DisplayItem _hoveredItem = null;
         private Timer _hoverTimer;
 
-        public DisplayView()
+        public DisplayView_DieOutputControl()
         {
             this.DoubleBuffered = true;
             this.BackColor = Color.LightGray;

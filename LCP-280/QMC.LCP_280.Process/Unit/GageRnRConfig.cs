@@ -57,28 +57,22 @@ namespace QMC.LCP_280.Process.Unit
         public void InitializeDefaultTeachingPositions()
         {
             if (TeachingPositions == null) TeachingPositions = new List<TeachingPosition>();
-            var existingNames = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
+            var existing = new HashSet<string>(TeachingPositions.Select(tp => tp.Name));
             foreach (TeachingPositionName name in System.Enum.GetValues(typeof(TeachingPositionName)))
             {
                 string posName = name.ToString();
-                var tp = TeachingPositions.FirstOrDefault(p => p.Name == posName);
-                if (tp == null)
+                if (!existing.Contains(posName))
                 {
-                    var axisPositions = new Dictionary<string, double>
-                    {
-                        { "Gage X Axis", 0.0 },
-                        { "Gage Y Axis", 100.0 },
-                        { "Gage Z Axis", 200.0 }
-                    };
-                    tp = new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치");
-                    TeachingPositions.Add(tp);
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    TeachingPositions.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
                 }
-                // 축 바인딩은 여기서 하지 말고!
             }
+            ApplyAxisMapping();
             Saveconfig();
         }
 
-        // 포지션 추가/업데이트
         public void SetTeachingPosition(TeachingPosition tp)
         {
             var exist = TeachingPositions.FirstOrDefault(p => p.Name == tp.Name);
@@ -96,43 +90,88 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // 포지션 조회
-        public TeachingPosition GetTeachingPosition(string name)
-            => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
 
         // 저장: 축 정보(Axes) 제외하고 순수 데이터만 저장
         public int Saveconfig()
         {
-            // 축 정보 제외하고 TeachingPositions만 저장
-            var purePositions = TeachingPositions
-                .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
-                .ToList();
-
-            // 임시로 TeachingPositions를 교체해서 저장
-            var original = TeachingPositions;
-            TeachingPositions = purePositions;
-            try
-            {
-                return Save();
-            }
-            finally
-            {
-                TeachingPositions = original;
-            }
+            var pure = TeachingPositions
+                 .Select(tp => new TeachingPosition(tp.Name, tp.AxisPositions, tp.Description) { ExtraInfo = tp.ExtraInfo })
+                 .ToList();
+            var backup = TeachingPositions;
+            TeachingPositions = pure;
+            try { return Save(); }
+            finally { TeachingPositions = backup; }
         }
 
         // 불러오기: 저장 데이터를 불러온 뒤, 런타임에 축 바인딩
         public int LoadAndBindAxes(MotionAxisManager axisManager)
         {
-            int result = Load();
-            if (result != 0) return result;
+            int rc = Load();
+            if (rc != 0) return rc;
 
-            // 각 TeachingPosition에 축 바인딩
-            foreach (var tp in TeachingPositions)
+            var loaded = TeachingPositions ?? new List<TeachingPosition>();
+            var byName = new Dictionary<string, TeachingPosition>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in loaded)
             {
-                tp.BindAxes(axisManager, "Unit"); // unitName = "Unit" (혹은 필요에 맞게)
+                if (t == null || string.IsNullOrWhiteSpace(t.Name)) continue;
+                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
             }
 
+            var rebuilt = new List<TeachingPosition>();
+            foreach (TeachingPositionName en in Enum.GetValues(typeof(TeachingPositionName)))
+            {
+                string posName = en.ToString();
+                TeachingPosition tp;
+                if (byName.TryGetValue(posName, out tp) && tp != null)
+                {
+                    rebuilt.Add(tp);
+                }
+                else
+                {
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    rebuilt.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
+                }
+            }
+
+            TeachingPositions = rebuilt;
+
+            ApplyAxisMapping();
+
+            if (axisManager != null)
+            {
+                foreach (var tp in TeachingPositions)
+                    tp.BindAxes(axisManager, "Unit");
+            }
             return 0;
+        }
+
+        public void ApplyAxisMapping()
+        {
+            foreach (var tp in TeachingPositions)
+            {
+                var allowed = GetAxisNamesForPosition(tp.Name).ToHashSet();
+                var current = tp.AxisPositions ?? new Dictionary<string, double>();
+                var next = new Dictionary<string, double>();
+                foreach (var axis in allowed)
+                {
+                    if (current.TryGetValue(axis, out var v)) next[axis] = v; else next[axis] = 0.0;
+                }
+                tp.AxisPositions = next;
+            }
+        }
+
+        public IReadOnlyList<string> GetAxisNamesForPosition(string positionName)
+        {
+            if (string.IsNullOrWhiteSpace(positionName)) return new List<string>();
+            if (System.Enum.TryParse<TeachingPositionName>(positionName, out var en))
+            {
+                if (_axisMap.TryGetValue(en, out var arr)) return arr;
+            }
+            // 기본(백워드 호환): Lifter Z 1축
+            return new[] { AxisNames.WaferLifterZ };
         }
 
         #region IPropertyOrderProvider 구현 (Category / Property 표시 순서)
