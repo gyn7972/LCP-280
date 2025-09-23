@@ -98,6 +98,7 @@ namespace QMC.LCP_280.Process.Component
                                         var s = axis.GetStatusSnapshot();
                                         if (s != null && s.IO != null && s.IO.HomeSensor)
                                         {
+                                            axis.JogStop();
                                             homeDetected = true;
                                             break;
                                         }
@@ -168,6 +169,7 @@ namespace QMC.LCP_280.Process.Component
                                         var s = axis.GetStatusSnapshot();
                                         if (s != null && s.IO != null && s.IO.HomeSensor)
                                         {
+                                            axis.JogStop();
                                             homeDetected = true;
                                             break;
                                         }
