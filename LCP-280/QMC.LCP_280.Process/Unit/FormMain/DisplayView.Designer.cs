@@ -16,6 +16,8 @@
             if (disposing && (components != null))
             {
                 components.Dispose();
+                _toolTip?.Dispose();
+                _hoverTimer?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -28,10 +30,15 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            this.SuspendLayout();
+            // 
+            // DisplayView
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "DisplayView";
+            this.Name = "DisplayView";
+            this.ResumeLayout(false);
+
         }
 
         #endregion
