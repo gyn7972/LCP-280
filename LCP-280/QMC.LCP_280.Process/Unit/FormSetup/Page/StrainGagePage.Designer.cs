@@ -35,16 +35,19 @@
             this.lbivSelect = new QMC.Common.ListBoxItemsView();
             this.pcvConfig = new QMC.Common.PropertyCollectionView();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
             this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.btnStop = new QMC.Common.IndividualMenuButton();
             this.btnStart = new QMC.Common.IndividualMenuButton();
             this.dataGrid = new System.Windows.Forms.DataGridView();
-            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.btnSave = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.chart)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).BeginInit();
+            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -65,15 +68,17 @@
             // tableLayoutPanel2
             // 
             this.tableLayoutPanel2.ColumnCount = 1;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.Controls.Add(this.lbivSelect, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.pcvConfig, 0, 1);
+            this.tableLayoutPanel2.Controls.Add(this.panel2, 0, 2);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 2;
+            this.tableLayoutPanel2.RowCount = 3;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 50F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(363, 694);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
@@ -94,7 +99,7 @@
             this.lbivSelect.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.lbivSelect.SelectedForeColor = System.Drawing.Color.Black;
             this.lbivSelect.SelectedIndex = -1;
-            this.lbivSelect.Size = new System.Drawing.Size(357, 341);
+            this.lbivSelect.Size = new System.Drawing.Size(357, 316);
             this.lbivSelect.TabIndex = 0;
             this.lbivSelect.ItemSelected += new System.EventHandler<int>(this.lbivSelect_ItemSelected);
             // 
@@ -103,9 +108,9 @@
             this.pcvConfig.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pcvConfig.FastBuild = true;
             this.pcvConfig.GroupName = "Property";
-            this.pcvConfig.Location = new System.Drawing.Point(3, 350);
+            this.pcvConfig.Location = new System.Drawing.Point(3, 325);
             this.pcvConfig.Name = "pcvConfig";
-            this.pcvConfig.Size = new System.Drawing.Size(357, 341);
+            this.pcvConfig.Size = new System.Drawing.Size(357, 316);
             this.pcvConfig.SuppressResizeInvalidation = true;
             this.pcvConfig.TabIndex = 1;
             // 
@@ -121,6 +126,25 @@
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(875, 694);
             this.panel1.TabIndex = 1;
+            // 
+            // individualMenuButton1
+            // 
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(28, 503);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(132, 43);
+            this.individualMenuButton1.TabIndex = 28;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "Stop";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
+            this.individualMenuButton1.Click += new System.EventHandler(this.individualMenuButton1_Click);
             // 
             // chart
             // 
@@ -180,24 +204,34 @@
             this.dataGrid.Size = new System.Drawing.Size(607, 314);
             this.dataGrid.TabIndex = 0;
             // 
-            // individualMenuButton1
+            // panel2
             // 
-            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton1.Location = new System.Drawing.Point(28, 503);
-            this.individualMenuButton1.Name = "individualMenuButton1";
-            this.individualMenuButton1.Size = new System.Drawing.Size(132, 43);
-            this.individualMenuButton1.TabIndex = 28;
-            this.individualMenuButton1.TabStop = false;
-            this.individualMenuButton1.Text = "Stop";
-            this.individualMenuButton1.UseVisualStyleBackColor = false;
-            this.individualMenuButton1.Click += new System.EventHandler(this.individualMenuButton1_Click);
+            this.panel2.Controls.Add(this.btnSave);
+            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel2.Location = new System.Drawing.Point(3, 647);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(357, 44);
+            this.panel2.TabIndex = 2;
+            // 
+            // btnSave
+            // 
+            this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnSave.CustomForeColor = System.Drawing.Color.Black;
+            this.btnSave.Dock = System.Windows.Forms.DockStyle.Right;
+            this.btnSave.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSave.ForeColor = System.Drawing.Color.Black;
+            this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnSave.Location = new System.Drawing.Point(259, 0);
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(98, 44);
+            this.btnSave.TabIndex = 29;
+            this.btnSave.TabStop = false;
+            this.btnSave.Text = "Save";
+            this.btnSave.UseVisualStyleBackColor = false;
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
             // StrainGagePage
             // 
@@ -211,6 +245,7 @@
             this.panel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.chart)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).EndInit();
+            this.panel2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -227,5 +262,7 @@
         private Common.IndividualMenuButton btnStart;
         private System.Windows.Forms.DataVisualization.Charting.Chart chart;
         private Common.IndividualMenuButton individualMenuButton1;
+        private System.Windows.Forms.Panel panel2;
+        private Common.IndividualMenuButton btnSave;
     }
 }

@@ -34,8 +34,8 @@ namespace QMC.Common.StrainGage
 
         public override bool Validate()
         {
-            if (string.IsNullOrWhiteSpace(LookupTableFilePath))
-                return false;
+            //if (string.IsNullOrWhiteSpace(LookupTableFilePath))
+            //    return false;
             if (string.IsNullOrWhiteSpace(ReadChannelName))
                 return false;
             if (MinVoltage > MaxVoltage)

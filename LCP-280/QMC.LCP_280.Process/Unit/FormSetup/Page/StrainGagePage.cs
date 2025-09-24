@@ -187,7 +187,28 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
 
         private void individualMenuButton1_Click(object sender, EventArgs e)
         {
+            List<NIDAQResource> list = NIDAQResourceManager.FindAll();
+            
+            StringBuilder sb = new StringBuilder();
+            foreach (var resource in list)
+            {
+                sb.AppendLine($"Dev: {resource.DeviceName}");
+                foreach (var aiChannel in resource.AIPhysicalChannels)
+                    sb.AppendLine($"ai: {aiChannel}");
+                foreach (var aoChannel in resource.AOPhysicalChannels)
+                    sb.AppendLine($"ao: {aoChannel}");
+                sb.AppendLine("");
+            }
 
+            MessageBox.Show(sb.ToString());
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            pcvConfig.Apply();
+
+            selectGage.Config.ApplyValueFromPropertyCollection(pcConfig);
+            selectGage.Config.Save();
         }
     }
 }
