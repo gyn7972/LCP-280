@@ -39,12 +39,12 @@ namespace QMC.LCP_280.Process.Component
             // 다시 보일 때 자동 재로드
             if (IsDirty())
             {
-                var r = MessageBox.Show(
-                    "저장되지 않은 변경이 있습니다.\r\n무시하고 파일에서 다시 읽을까요?",
-                    "자동 재로드",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-                if (r != DialogResult.Yes) return;
+                //var r = MessageBox.Show(
+                //    "저장되지 않은 변경이 있습니다.\r\n무시하고 파일에서 다시 읽을까요?",
+                //    "자동 재로드",
+                //    MessageBoxButtons.YesNo,
+                //    MessageBoxIcon.Question);
+                //if (r != DialogResult.Yes) return;
             }
 
             InvokeLoad(_config);

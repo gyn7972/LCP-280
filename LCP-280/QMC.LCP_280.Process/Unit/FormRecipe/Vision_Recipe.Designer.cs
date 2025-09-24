@@ -22,16 +22,17 @@
             // patternMatchingControl1
             // 
             this.patternMatchingControl1.BackColor = System.Drawing.Color.White;
-            this.patternMatchingControl1.Location = new System.Drawing.Point(4, 4);
+            this.patternMatchingControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.patternMatchingControl1.Location = new System.Drawing.Point(0, 0);
             this.patternMatchingControl1.Margin = new System.Windows.Forms.Padding(0);
-            this.patternMatchingControl1.MinimumSize = new System.Drawing.Size(900, 600);
             this.patternMatchingControl1.Name = "patternMatchingControl1";
-            this.patternMatchingControl1.Size = new System.Drawing.Size(1251, 738);
+            this.patternMatchingControl1.Size = new System.Drawing.Size(1264, 751);
             this.patternMatchingControl1.TabIndex = 0;
             // 
             // Vision_Recipe
             // 
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 751);
             this.Controls.Add(this.patternMatchingControl1);
             this.Name = "Vision_Recipe";

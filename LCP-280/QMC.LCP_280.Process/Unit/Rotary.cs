@@ -53,14 +53,9 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis AxisT => _axisT;
         private DateTime _moveStartTime;
 
-        public bool DryRun { get; private set; }
         public bool RequestChip { get; set; } = false;
 
-        public void SetDryRun(bool on) => DryRun = on;
-        private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, bool> _simInputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-
-        // ???? Safe ??? ???(??? ????)
+        // Safe
         private static readonly string[] SafeNames = new[] { "SafetyZone", "Safe", "SasfeZone", "SAFE", "SAFEZONE", "SAFE_ZONE" };
 
         public Rotary(RotaryConfig config = null) : base(new RotaryConfig())
@@ -268,13 +263,6 @@ namespace QMC.LCP_280.Process.Unit
                     : 20000;
             }
 
-            // DryRun 모드면 짧게 대기 후 OK
-            if (DryRun)
-            {
-                Thread.Sleep(20);
-                return 0;
-            }
-
             var start = DateTime.Now;
             while (true)
             {
@@ -438,7 +426,6 @@ namespace QMC.LCP_280.Process.Unit
         #region IO Helpers
         public bool ReadInput(string name)
         {
-            if (DryRun) { bool v; return _simInputs.TryGetValue(name, out v) && v; }
             var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -449,7 +436,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool WriteOutput(string name, bool on)
         {
-            if (DryRun) { _simOutputs[name] = on; return true; }
             var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -460,7 +446,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool IsOutputOn(string name)
         {
-            if (DryRun) { bool v; return _simOutputs.TryGetValue(name, out v) && v; }
             var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;

@@ -43,6 +43,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputDieTransferError;
             alarm.Title = "Output Die Transfer Error";
             alarm.Cause = "Output Die Transfer에서 알수 없는 에러가 발생했습니다.";
@@ -50,6 +51,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputStageAxesMoving;
             alarm.Title = "Output Stage Axis Moving";
             alarm.Cause = "Output Stage Axis가 동작중입니다.\n Output Stage Axis 동작이 완료된 후 다시 시작 하십시요.";
@@ -57,6 +59,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRotaryAxesMoving;
             alarm.Title = "Rotary Axis Moving";
             alarm.Cause = "Rotary Axis가 동작중입니다.\n Rotary Axis 동작이 완료된 후 다시 시작 하십시요.";
@@ -65,6 +68,7 @@ namespace QMC.LCP_280.Process.Unit
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //eOutputDieTransferVacuum
+            alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputDieTransferVacuum;
             alarm.Title = "Output Die Transfer Vacuum Error";
             alarm.Cause = "Output Die Transfer Vacuum이 Off 상태입니다.\n Vacuum 상태를 확인 후 다시 시작 하십시요.";
@@ -74,6 +78,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
             //
+            alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputDieTransferVent;
             alarm.Title = "Output Die Transfer Vent Error";
             alarm.Cause = "Output Die Transfer Vent가 Off 상태입니다.\n Vent 상태를 확인 후 다시 시작 하십시요.";
@@ -81,6 +86,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //
+            alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputDieTransferBlow;
             alarm.Title = "Output Die Transfer Blow Error";
             alarm.Cause = "Output Die Transfer Blow가 Off 상태입니다.\n Blow 상태를 확인 후 다시 시작 하십시요.";
@@ -165,7 +171,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (axis == AxisPickZ)
                 {
-                    if (OutputStage.IsAnyAxisMoving())
+                    if (!OutputStage.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -177,7 +183,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (axis == AxisPlaceZ)
                 {
-                    if (Rotary.IsAnyAxisMoving())
+                    if (!Rotary.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -312,7 +318,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockReady()
         {
             int nRet = 0;
-            if (OutputStage != null && OutputStage.IsAnyAxisMoving())
+            if (OutputStage != null && !OutputStage.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -321,7 +327,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -452,7 +458,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -555,7 +561,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockPlace()
         {
             int nRet = 0;
-            if (OutputStage != null && OutputStage.IsAnyAxisMoving())
+            if (OutputStage != null && !OutputStage.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -564,7 +570,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -1004,7 +1010,7 @@ namespace QMC.LCP_280.Process.Unit
                     var sw = Stopwatch.StartNew();
                     while (!ArmFlowOk(nArmindex))
                     {
-                        if (!Config.IsSimulation)
+                        if (!Config.IsSimulation && !Config.IsDryRun)
                         {
                             if (sw.ElapsedMilliseconds > 2000)
                             {
@@ -1039,7 +1045,7 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(50); // 약간의 딜레이
                 if(!Rotary.SetVent(nIndex, true))
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
                         Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
@@ -1050,7 +1056,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if(!Rotary.SetBlow(nIndex, true))
                 {
-                    if (!Config.IsSimulation)
+                    if (!Config.IsSimulation && !Config.IsDryRun)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
                         Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
@@ -1061,7 +1067,7 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!ArmFlowOk(nIndex))
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1088,7 +1094,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Rotary.SetVent(nIndex, false))
             {
-                if (!Config.IsSimulation)
+                if (!Config.IsSimulation && !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
                     Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
@@ -1098,7 +1104,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Rotary.SetBlow(nIndex, false))
             {
-                if (!Config.IsSimulation)
+                if (!Config.IsSimulation && !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
                     Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
@@ -1143,7 +1149,7 @@ namespace QMC.LCP_280.Process.Unit
                 // Release
                 if(!SetVacuum(armIndex, false))
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
                         Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] SetVacuum failed");

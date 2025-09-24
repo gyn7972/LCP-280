@@ -32,6 +32,9 @@ namespace QMC.Common
         private IndividualMenuButton _AlarmClearButton;
 
         public event TopAlarmClearClickEventHandler ClickTopAlarmClearButton;
+
+        private Timer _timer;
+
         #endregion
         #region Property
         #endregion
@@ -45,7 +48,28 @@ namespace QMC.Common
             InitTableLayoutPanel();
             SetControlValue();
             CreateAlarmClearButton();
+
+            // Timer 설정
+            _timer = new Timer();
+            _timer.Interval = 1000; // 1초
+            _timer.Tick += Timer_Tick;
+            _timer.Start();
+
+            // 수명주기 정리
+            this.Disposed += (s, e) =>
+            {
+                try { _timer?.Stop(); _timer?.Dispose(); } catch { }
+                _timer = null;
+            };
         }
+
+        private void Timer_Tick(object sender, EventArgs e)
+        {
+            var eq = EquipmentLocator.Instance;
+            string recipe = eq.ICurrentRecipe;
+            SetTopoContentsOperationRecipeValue(recipe);
+        }
+
 
         #region Method
 

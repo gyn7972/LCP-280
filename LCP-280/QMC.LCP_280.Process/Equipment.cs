@@ -30,7 +30,6 @@ namespace QMC.LCP_280.Process
 {
     public class Equipment : IDisposable, IEquipment
     {
-        
         public static class UnitKeys
         {
             public const string EquipmentStatus = "EquipmentStatus"; // [MOD] 상수화
@@ -135,8 +134,7 @@ namespace QMC.LCP_280.Process
 
         // [+] CKD Motor Driver (PDO Mapping) 추가
         private CKDMotorDriver _ckdDriver;
-        public static string _CurrentRecipeName = string.Empty;
-
+        
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, Camera> Cameras { get; } = new Dictionary<string, Camera>(StringComparer.OrdinalIgnoreCase);
         // === 편의 프로퍼티 추가 ===
@@ -222,7 +220,9 @@ namespace QMC.LCP_280.Process
                 EqState = EquipmentState.Stopped;
 
                 ConfigManager = new EquipmentConfigManager();
-
+                EquipmentConfig = new EquipmentConfig();
+                EquipmentRecipe = new EquipmentRecipe();
+                
                 OnStateChanged(EquipmentState.Initializing);
 
                 // 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
@@ -248,9 +248,7 @@ namespace QMC.LCP_280.Process
 
 
                 // 3) 설비 Config + 메인 Recipe 로드
-                LoadEquipmentConfigAndMainRecipe();
-
-
+                EquipmentRecipe.InitGlobalRecipe();
 
                 // [ADD] EquipmentStatus 즉시 시작 (장비 Ready 이전에 상태 수집 시작)
                 try
@@ -1460,96 +1458,95 @@ namespace QMC.LCP_280.Process
 
 
         // ===== 메인 설비 Config / Recipe 로드 추가 =====
-        public static EquipmentConfig EquipmentConfig { get; private set; }
-        public static MeasurementRecipe CurrentRecipe { get; private set; }
+        public  EquipmentConfig EquipmentConfig { get;  set; }
+        public  EquipmentRecipe EquipmentRecipe { get;  set; }
+        public string ICurrentRecipe { get; set; }
 
-        private void LoadEquipmentConfigAndMainRecipe()
-        {
-            try
-            {
-                // (1) 설비 Config
-                EquipmentConfig = EquipmentConfig.LoadOrCreate();
-                _CurrentRecipeName = EquipmentConfig?.CurrentRecipeName ?? "LCP_RECIPE";
+        //private void LoadEquipmentConfigAndMainRecipe()
+        //{
+        //    try
+        //    {
+        //        // (1) 설비 Config
+        //        EquipmentConfig = EquipmentConfig.LoadOrCreate();
+        //        _CurrentRecipeName = EquipmentConfig?.CurrentRecipeName ?? "LCP_RECIPE";
 
-                // (2) 메인 Measurement Recipe
-                MeasurementRecipe loaded = null;
-                try
-                {
-                    //var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName) as QMC.Common.BaseRecipe;
-                    var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName);
-                    loaded = obj as MeasurementRecipe;
-                }
-                catch (Exception rex)
-                {
-                    OnErrorOccurred("MeasurementRecipe 로드 실패: " + rex.Message);
-                }
+        //        // (2) 메인 Measurement Recipe
+        //        MeasurementRecipe loaded = null;
+        //        try
+        //        {
+        //            //var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName) as QMC.Common.BaseRecipe;
+        //            var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), _CurrentRecipeName);
+        //            loaded = obj as MeasurementRecipe;
+        //        }
+        //        catch (Exception rex)
+        //        {
+        //            OnErrorOccurred("MeasurementRecipe 로드 실패: " + rex.Message);
+        //        }
 
-                if (loaded == null)
-                {
-                    // 실패 시 기본 생성
-                    loaded = new MeasurementRecipe(_CurrentRecipeName);
-                    loaded.Reset();
-                    try { loaded.Save(); } catch { }
-                }
+        //        if (loaded == null)
+        //        {
+        //            // 실패 시 기본 생성
+        //            loaded = new MeasurementRecipe(_CurrentRecipeName);
+        //            loaded.Reset();
+        //            try { loaded.Save(); } catch { }
+        //        }
 
-                CurrentRecipe = loaded;
+        //        CurrentRecipe = loaded;
 
-                Console.WriteLine($"[Recipe] Main Recipe='{CurrentRecipe.Name}' 로드 완료");
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred("LoadEquipmentConfigAndMainRecipe 실패: " + ex.Message);
-            }
-        }
+        //        Console.WriteLine($"[Recipe] Main Recipe='{CurrentRecipe.Name}' 로드 완료");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        OnErrorOccurred("LoadEquipmentConfigAndMainRecipe 실패: " + ex.Message);
+        //    }
+        //}
+        //// 메인 Recipe 교체/저장 편의 메서드 (필요 시 UI에서 호출)
+        //public static bool ChangeCurrentRecipe(string newName)
+        //{
+        //    if (string.IsNullOrWhiteSpace(newName))
+        //        return false;
+        //    try
+        //    {
+        //        var sanitized = newName.Trim();
+        //        var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), sanitized) as MeasurementRecipe;
+        //        if (obj == null)
+        //        {
+        //            obj = new MeasurementRecipe(sanitized);
+        //            obj.Reset();
+        //            obj.Save();
+        //        }
+        //        CurrentRecipe = obj;
+        //        _CurrentRecipeName = sanitized;
 
-        // 메인 Recipe 교체/저장 편의 메서드 (필요 시 UI에서 호출)
-        public static bool ChangeCurrentRecipe(string newName)
-        {
-            if (string.IsNullOrWhiteSpace(newName))
-                return false;
-            try
-            {
-                var sanitized = newName.Trim();
-                var obj = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), sanitized) as MeasurementRecipe;
-                if (obj == null)
-                {
-                    obj = new MeasurementRecipe(sanitized);
-                    obj.Reset();
-                    obj.Save();
-                }
-                CurrentRecipe = obj;
-                _CurrentRecipeName = sanitized;
+        //        if (EquipmentConfig == null)
+        //            EquipmentConfig = EquipmentConfig.LoadOrCreate();
+        //        EquipmentConfig.CurrentRecipeName = sanitized;
+        //        EquipmentConfig.Save();
 
-                if (EquipmentConfig == null)
-                    EquipmentConfig = EquipmentConfig.LoadOrCreate();
-                EquipmentConfig.CurrentRecipeName = sanitized;
-                EquipmentConfig.Save();
-
-                Console.WriteLine($"[Recipe] 변경 및 저장: {sanitized}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                //OnErrorOccurred("ChangeCurrentRecipe 오류: " + ex.Message);
-                Log.Write(ex);
-                return false;
-            }
-        }
-
-        public static bool SaveCurrentRecipe()
-        {
-            try
-            {
-                CurrentRecipe?.Save();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                //OnErrorOccurred("SaveCurrentRecipe 오류: " + ex.Message);
-                Log.Write(ex);
-                return false;
-            }
-        }
+        //        Console.WriteLine($"[Recipe] 변경 및 저장: {sanitized}");
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //OnErrorOccurred("ChangeCurrentRecipe 오류: " + ex.Message);
+        //        Log.Write(ex);
+        //        return false;
+        //    }
+        //}
+        //public static bool SaveCurrentRecipe()
+        //{
+        //    try
+        //    {
+        //        CurrentRecipe?.Save();
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        //OnErrorOccurred("SaveCurrentRecipe 오류: " + ex.Message);
+        //        Log.Write(ex);
+        //        return false;
+        //    }
+        //}
 
 
 

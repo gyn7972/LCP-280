@@ -126,7 +126,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -246,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -351,7 +351,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -424,7 +424,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTForward()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -487,7 +487,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTBackward()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -556,7 +556,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTReady()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -890,7 +890,7 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int IsRotaryIdle()
         {
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();

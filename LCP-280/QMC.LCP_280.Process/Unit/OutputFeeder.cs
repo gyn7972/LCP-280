@@ -5,8 +5,10 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -30,6 +32,8 @@ namespace QMC.LCP_280.Process.Unit
             Alarm_OutputStageInterlockFailed = 2010,
             Alarm_GripperClampFailed = 2020,
             Alarm_FeederClampUp = 2021,
+            Alarm_IsBinReadyForLoading = 2022,
+            Alarm_BinLoadingPosition = 2023,
         }
 
         #region InitAlarm
@@ -67,6 +71,17 @@ namespace QMC.LCP_280.Process.Unit
             AlarmRegister((int)AlarmKeys.Alarm_FeederClampUp,
                 "Feeder Clamp Up Failed",
                 "피더 클램프 업 상태가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "Error");
+
+            // = 2022,
+            AlarmRegister((int)AlarmKeys.Alarm_IsBinReadyForLoading,
+                "Bin ReadyForLoading Failed",
+                "Ready for Loading 위치가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "Error");
+            // = 2023,
+            AlarmRegister((int)AlarmKeys.Alarm_BinLoadingPosition,
+                "Bin Loading Position Failed",
+                "Loading 위치가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
                 "Error");
         }
         #endregion
@@ -361,10 +376,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-
-
-
-
         #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
         {
@@ -459,7 +470,6 @@ namespace QMC.LCP_280.Process.Unit
             if (bUpDn) return _feederLift.Extend();
             else return _feederLift.Retract();
         }
-
         public bool SetClamp(bool bUpDn)
         {
             if (_cylClamp == null) return false;
@@ -468,67 +478,559 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Status Helpers
-        public bool IsFeederUp() => ReadInput(OutputFeederConfig.IO.FEEDER_UP);
-        public bool IsFeederDown() => ReadInput(OutputFeederConfig.IO.FEEDER_DOWN);
-        public bool IsUnclamped() => ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
-        public bool IsRingPresent() => ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
-        public bool IsOverload() => ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
+        public bool IsFeederUp()
+        {
+            if(Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_UP);
+        }
+        
+        public bool IsFeederDown()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_DOWN);
+        }
+        public bool IsUnclamped()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
+        }
+        public bool IsRingPresent()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
+        }
+        public bool IsOverload()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
+        }
         #endregion
 
         /// ////////////////////////////////////////////////////////////////////////////////////////
-
         #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
         public bool IsFeederUpValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UP_VALVE);
         public bool IsFeederDownValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_DOWN_VALVE);
         public bool IsFeederClampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_CLAMP_VALVE);
         public bool IsFeederUnclampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
+        public bool IsFeederZSafetyPosition(bool treatMissingAsSafe = true)
+        {
+            if (_feederLift == null)
+                return treatMissingAsSafe;
 
+            if (IsFeederUp())
+                return true;
 
+            if (IsFeederDown())
+                return false;
 
+            // 전이 상태(Up/Down 모두 OFF) → 안전 아님으로 판단
+            return false;
+        }
+        public bool IsFeederYSafetyPosition(double fallbackTolerance = 0.01,
+                                            bool useAxisInposTolerance = true,
+                                            bool treatMissingAsSafe = true,
+                                            bool allowPositiveBeyond = true,
+                                            IEnumerable<string> customCandidates = null)
+        {
+            if (FeederY == null)
+                return treatMissingAsSafe;
 
+            var cfg = Config;
+            if (cfg == null)
+                return treatMissingAsSafe;
 
+            // 기본 후보 목록
+            var defaultCandidates = new[] { "SafetyPos", "Safety", "Safe", "Ready" };
+            var candidates = (customCandidates == null ? defaultCandidates : customCandidates)
+                             .Where(s => !string.IsNullOrWhiteSpace(s));
+
+            string axisKey = AxisNames.BinFeederY;
+            string selectedTpName = null;
+            TeachingPosition selectedTp = null;
+
+            foreach (var name in candidates)
+            {
+                var tp = cfg.GetTeachingPosition(name);
+                if (tp == null) continue;
+
+                // Teaching 에 해당 축 좌표가 실재 포함되는지 확인
+                if (tp.AxisPositions != null &&
+                    tp.AxisPositions.Keys.Any(k =>
+                        string.Equals(k, axisKey, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(k, FeederY.Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    selectedTpName = name;
+                    selectedTp = tp;
+                    break;
+                }
+            }
+
+            if (selectedTp == null)
+                return treatMissingAsSafe;
+
+            // 목표 좌표 가져오기 (AxisPositions 사전에서 직접 조회)
+            double target;
+            if (!selectedTp.AxisPositions.TryGetValue(axisKey, out target))
+            {
+                // Axis 이름으로 재시도
+                if (!selectedTp.AxisPositions.TryGetValue(FeederY.Name, out target))
+                    return treatMissingAsSafe; // 좌표가 없으면 안전 판단 불가 → 기본 정책대로
+            }
+
+            double cur = FeederY.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (FeederY.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            if (allowPositiveBeyond)
+            {
+                // 목표 이상(+방향) 허용
+                if (cur >= target - tol) return true;
+                return false;
+            }
+            else
+            {
+                // 목표 근처만 허용
+                return System.Math.Abs(cur - target) <= tol;
+            }
+        }
 
 
         #region Runtime
-        public override int OnRun() { int ret = 0; return ret; }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
-        protected override int OnRunReady() { return 0; }
-        protected override int OnRunWork() { return 0; }
+        public override int OnRun()
+        {
+            int ret = 0;
+
+            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    ret = OnRunReady();
+                    break;
+                case ProcessState.Work:
+                    ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    ret = OnRunComplete();
+                    break;
+                default:
+                    this.State = ProcessState.Ready;
+                    break;
+            }
+
+            return ret;
+        }
+        
+        protected override int OnRunReady()
+        {
+            int ret = 0;
+            if (this.OutputStage.IsStatus_RequestBin && 
+                this.OutputCassetteLifter.IsBinReadyForUnloding)
+            {
+                this.State = ProcessState.Work;
+            }
+            else if (this.OutputStage.IsStatus_CompleteWorking)
+            {
+                this.State = ProcessState.Complete;
+            }
+            return ret;
+        }
+        protected override int OnRunWork()
+        {
+            int ret = 0;
+            //1. Bin Loading
+            ret = BinLoading();
+            if (ret != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                this.State = ProcessState.Error; return ret;
+            }
+
+            //3. Stage Loading
+            ret = StageLoading();
+
+            if (ret != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                this.State = ProcessState.Error; return ret;
+            }
+            //4. Stage Unloading
+            ret = StageUnloading();
+            if (ret != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                this.State = ProcessState.Error; return ret;
+            }
+            //5. Bin Unloading
+            ret = BinUnloading();
+
+            if (ret != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinUnloadingFailed);
+                this.State = ProcessState.Error; return ret;
+            }
+            this.State = ProcessState.Complete;
+            return ret;
+        }
         protected override int OnRunComplete() { return 0; }
+        public override int OnStop()
+        {
+            int ret = 0;
+            base.OnStop();
+            return ret;
+        }
         #endregion
 
+
+
+
         #region Seq 단위 동작 함수
-        public int BinLoading()
+        public int BinLoading(bool isFine = false)
         {
             int nRet = -1;
-            /* TODO */
+            nRet = MoveToReay(isFine);
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
+            nRet = UnClampGripper();
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
+            nRet = DownFeeder();
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
+            nRet = MoveToCassette(isFine);
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
+            nRet = BarcodeReading(isFine);
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
+            nRet = StageLoading(isFine);
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
+            nRet = MoveToReay(isFine);
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
+            nRet = UpFeeder();
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+
             return nRet;
         }
-        public int BarcodeReading()
+
+        public int BinUnloading(bool isFine = false)
         {
             int nRet = -1;
-            /* TODO */
+
+            nRet = StageUnloading(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            nRet = ClampGripper();
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            nRet = MovePositionCassette(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            nRet = UnClampGripper();
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            //회피 Position으로 사용.
+            nRet = MovePositionBarcode(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
             return nRet;
         }
-        public int StageLoading()
+
+        public int ClampGripper()
+        {
+            int nRet = 0;
+            if (this.SetClamp(true))
+            {
+                Log.Write(this, "Clamp Success");
+            }
+            else
+            {
+                Log.Write(this, "Clamp Failed");
+                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
+                nRet = -1;
+                return nRet;
+            }
+            return nRet;
+        }
+        public int UnClampGripper()
+        {
+            int nRet = 0;
+            if (this.SetClamp(false))
+            {
+                Log.Write(this, "Unclamp Success");
+            }
+            else
+            {
+                Log.Write(this, "Unclamp Failed");
+                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+        public int UpFeeder()
+        {
+            int nRet = 0;
+            if (this.SetLift(true))
+            {
+                Log.Write(this, "Feeder Up Success");
+            }
+            else
+            {
+                Log.Write(this, "Feeder Up Failed");
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+            return nRet;
+        }
+        public int DownFeeder()
+        {
+            int nRet = 0;
+            if (this.SetLift(false))
+            {
+                Log.Write(this, "Feeder Down Success");
+            }
+            else
+            {
+                Log.Write(this, "Feeder Down Failed");
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+            return nRet;
+        }
+        public int MoveToReay(bool isFine = false)
+        {
+            int nRet = 0;
+
+            nRet = MovePositionReady(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+
+        public int MoveToCassette(bool isFine = false)
+        {
+            int nRet = 0;
+            nRet = MovePositionCassette(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            nRet = ClampGripper();
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+        protected int OnMoveToCassette(bool isFine)
+        {
+            int nRet = 0;
+            if (IsInterlockOKWaferLoading() == false)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+            nRet = base.MoveTeachingPositionOnce((int)OutputFeederConfig.TeachingPositionName.Cassette, isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+            return nRet;
+        }
+        public Task<int> MoveToCassetteAsync(bool isFine)
+        {
+            return Task.Run(() => OnMoveToCassette(isFine));
+        }
+        private bool IsInterlockOKWaferLoading()
+        {
+            bool bRtn = true;
+            // Cassette or InputStage 위치 및 Signal 확인 후 진행. 
+            if (!OutputCassetteLifter.IsBinReadyForLoading())
+            {
+                PostAlarm((int)AlarmKeys.Alarm_IsBinReadyForLoading);
+                Log.Write(this, "OutputCassetteLifter Not Ready for Loading");
+                bRtn = false;
+                return bRtn;
+            }
+
+            if (!OutputStage.IsBinLoadingPosition())
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BinLoadingPosition);
+                Log.Write(this, "OutputStage Not Ready for Loading");
+                bRtn = false;
+                return bRtn;
+            }
+            return bRtn;
+        }
+
+
+        public int BarcodeReading(bool isFine = false)
+        {
+            int nRet = 0;
+
+            nRet = MovePositionBarcode(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BarcodeReadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            // Barcode Reading Logic
+            bool isRead = true; // TODO: Barcode Reading Logic
+            // isRead = BarcodeReader.Read(...);
+            if (!isRead)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_BarcodeReadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+        public int StageLoading(bool isFine = false)
+        {
+            int nRet = 0;
+
+            nRet = MovePositionStage(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            nRet = UnClampGripper();
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            return nRet;
+        }
+        public int StageUnloading(bool isFine = false)
         {
             int nRet = -1;
-            /* TODO */
+
+            nRet = UnClampGripper();
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            nRet = DownFeeder();
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
+            nRet = MovePositionStage(isFine);
+            if (nRet != 0)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                nRet = -1;
+                return nRet;
+            }
+
             return nRet;
         }
-        public int StageUnloading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-        public int BinUnloading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
+
         #endregion
     }
 }

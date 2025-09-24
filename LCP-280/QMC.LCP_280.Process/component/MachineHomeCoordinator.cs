@@ -75,7 +75,69 @@ namespace QMC.LCP_280.Process.Component
                 // 축 이름별 전처리/인터락
                 switch (axis.Name)
                 {
+                    case "Left Tool T Axis":
+                        // 현재 위치가 양수이면 Fine 속도로 - 방향 조그 → HomeSensor 감지 시 1초 추가 진행 후 정지 → 홈 진행
+                        try
+                        {
+                            var st0 = axis.GetStatusSnapshot();
+                            if (st0 != null && st0.PV != null && st0.PV.ActualPosition > 0)
+                            {
+                                var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
+                                var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
+                                var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+                                bool homeDetected = false;
+
+                                try { axis.JogStart(-vel); } catch { }
+
+                                try
+                                {
+                                    // HomeSensor 감지 대기(타임아웃 포함)
+                                    while (DateTime.UtcNow < jogUntil)
+                                    {
+                                        if (ct.IsCancellationRequested) break;
+                                        var s = axis.GetStatusSnapshot();
+                                        if (s != null && s.IO != null && s.IO.HomeSensor)
+                                        {
+                                            axis.JogStop();
+                                            homeDetected = true;
+                                            break;
+                                        }
+                                        await Task.Delay(20, ct).ConfigureAwait(false);
+                                    }
+
+                                    // 감지되면 1초 추가로 -방향 진행
+                                    if (!ct.IsCancellationRequested && homeDetected)
+                                    {
+                                        var extraUntil = DateTime.UtcNow.AddMilliseconds(1000);
+                                        while (DateTime.UtcNow < extraUntil)
+                                        {
+                                            if (ct.IsCancellationRequested) break;
+                                            await Task.Delay(20, ct).ConfigureAwait(false);
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                    try { axis.JogStop(); } catch { }
+                                }
+
+                                if (ct.IsCancellationRequested) return (false, "Canceled");
+
+                                if (!homeDetected)
+                                    return (false, "Left Tool T Axis HomeSensor Timeout");
+
+                                // 잠깐 대기 후 홈 계속 진행
+                                await Task.Delay(150, ct).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "Left Tool T Axis PreAxis Failure: " + ex.Message);
+                        }
+                        break;
+
                     case "Right Tool T Axis":
+                        // 안전 인터락: OutputStage Plate가 Down 상태여야 함
                         if (eq.Units != null && eq.Units.TryGetValue("OutputStage", out var uRt) && uRt is OutputStage outStage)
                         {
                             if (!outStage.IsPlateDown())
@@ -83,6 +145,65 @@ namespace QMC.LCP_280.Process.Component
                                 if (!outStage.SetClampPlate(false) || !outStage.IsPlateDown())
                                     return (false, "OutputStage PlateDown Required");
                             }
+                        }
+
+                        // 현재 위치가 양수이면 -방향 Fine 조그 → HomeSensor 감지 시 1초 추가 진행 후 정지 → 홈 진행
+                        try
+                        {
+                            var st0 = axis.GetStatusSnapshot();
+                            if (st0 != null && st0.PV != null && st0.PV.ActualPosition > 0)
+                            {
+                                var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
+                                var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
+                                var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+                                bool homeDetected = false;
+
+                                try { axis.JogStart(-vel); } catch { }
+
+                                try
+                                {
+                                    // HomeSensor 감지 대기(타임아웃 포함)
+                                    while (DateTime.UtcNow < jogUntil)
+                                    {
+                                        if (ct.IsCancellationRequested) break;
+                                        var s = axis.GetStatusSnapshot();
+                                        if (s != null && s.IO != null && s.IO.HomeSensor)
+                                        {
+                                            axis.JogStop();
+                                            homeDetected = true;
+                                            break;
+                                        }
+                                        await Task.Delay(20, ct).ConfigureAwait(false);
+                                    }
+
+                                    // 감지되면 1초 추가로 -방향 진행
+                                    if (!ct.IsCancellationRequested && homeDetected)
+                                    {
+                                        var extraUntil = DateTime.UtcNow.AddMilliseconds(1000);
+                                        while (DateTime.UtcNow < extraUntil)
+                                        {
+                                            if (ct.IsCancellationRequested) break;
+                                            await Task.Delay(20, ct).ConfigureAwait(false);
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                    try { axis.JogStop(); } catch { }
+                                }
+
+                                if (ct.IsCancellationRequested) return (false, "Canceled");
+
+                                if (!homeDetected)
+                                    return (false, "Right Tool T Axis HomeSensor Timeout");
+
+                                // 잠깐 대기 후 홈 계속 진행
+                                await Task.Delay(150, ct).ConfigureAwait(false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return (false, "Right Tool T Axis PreAxis Failure: " + ex.Message);
                         }
                         break;
 

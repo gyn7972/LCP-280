@@ -317,5 +317,45 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 MessageBox.Show($"Wafer 감지 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void checkBoxTest_CheckedChanged(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "DryRun 모드를 변경합니다.\n진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (checkBoxTest.Checked)
+            {
+                Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(true, save: true);
+            }
+            else if(!checkBoxTest.Checked)
+            {
+                Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(false, save: true);
+            }
+            else
+            {
+                Equipment?.ConfigManager?.ApplyGlobalDryRunAndSave(false, save: false);
+            }
+        }
+
+        private void checkBoxSimulation_CheckedChanged(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "Simulation 모드를 변경합니다.\n진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            if (checkBoxSimulation.Checked)
+            {
+                Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(true, save: true);
+            }
+            else if (!checkBoxSimulation.Checked)
+            {
+                Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(false, save: true);
+            }
+            else
+            {
+                Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(false, save: false);
+            }
+        }
     }
 }

@@ -1141,8 +1141,10 @@ namespace QMC.Common.Vision
                                 this.m_bitmap = null;
                             }
                             this.InputImage.Load(openFileDialog.FileName, selectedFilter.Value);
+                            Camera.LatestImage = this.InputImage;
                         }
 
+                        Camera.IsSimulation = true;
                         Simulated = true;
 
                         StartUpdateTask();

@@ -49,7 +49,7 @@ namespace QMC.LCP_280.Process
             ApplyFixedLayout();
 
             // 2) 최소 크기 보장
-            this.MinimumSize = new Size(900, 600);
+            //this.MinimumSize = new Size(900, 600);
 
             if (_designMode)
             {
@@ -134,7 +134,9 @@ namespace QMC.LCP_280.Process
             // 초기 현재 MeasurementRecipe에 따라 비전 레시피 명/경로 반영
             ApplyVisionRecipeFromMeasurement();
 
-            _currentRecipeName = Equipment._CurrentRecipeName;
+            var eq = Equipment.Instance;
+            //_currentRecipeName = Equipment._CurrentRecipeName;
+            _currentRecipeName = eq.EquipmentRecipe.CurrentRecipeName;
             LoadRecipe(_currentRecipeName);
             TryBindEquipmentCameras();
             InitializeCameraList();
@@ -144,13 +146,13 @@ namespace QMC.LCP_280.Process
         // 모든 하위 컨트롤에 Dock=None, Anchor=Top|Left 강제, AutoScale 끔
         private void ApplyFixedLayout()
         {
-            try
-            {
-                this.AutoScaleMode = AutoScaleMode.None;
-                this.AutoSize = false;
-                FreezeChildLayout(this);
-            }
-            catch { /* ignore */ }
+            //try
+            //{
+            //    this.AutoScaleMode = AutoScaleMode.None;
+            //    this.AutoSize = false;
+            //    FreezeChildLayout(this);
+            //}
+            //catch { /* ignore */ }
         }
 
         private void FreezeChildLayout(Control root)
@@ -158,25 +160,29 @@ namespace QMC.LCP_280.Process
             if (root == null) return;
 
             // 루트 자신(패널 포함)도 도킹 제거
-            root.Dock = DockStyle.None;
+            //root.Dock = DockStyle.None;
 
-            foreach (Control c in root.Controls)
-            {
-                try
-                {
-                    c.Dock = DockStyle.None;
-                    c.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-                    // 재귀 적용
-                    FreezeChildLayout(c);
-                }
-                catch { }
-            }
+            //foreach (Control c in root.Controls)
+            //{
+            //    try
+            //    {
+            //        c.Dock = DockStyle.None;
+            //        c.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            //        // 재귀 적용
+            //        FreezeChildLayout(c);
+            //    }
+            //    catch { }
+            //}
         }
 
         private bool IsActuallyInDesignMode()
         {
-            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return true;
-            try { return System.Diagnostics.Process.GetCurrentProcess().ProcessName.Equals("devenv", StringComparison.OrdinalIgnoreCase); }
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) 
+                return true;
+
+            try { 
+                return System.Diagnostics.Process.GetCurrentProcess().ProcessName.Equals("devenv", StringComparison.OrdinalIgnoreCase); 
+            }
             catch { return false; }
         }
 
@@ -186,8 +192,20 @@ namespace QMC.LCP_280.Process
             try
             {
                 string measName = null;
-                try { measName = Equipment._CurrentRecipeName; } catch { measName = null; }
-                if (string.IsNullOrWhiteSpace(measName)) { _currentRecipeName = _currentRecipeName ?? "Default"; return; }
+                try 
+                {
+                    var eq = Equipment.Instance;
+                    //_currentRecipeName = Equipment._CurrentRecipeName;
+                    measName = eq.EquipmentRecipe.CurrentRecipeName;
+                    //measName = Equipment._CurrentRecipeName; 
+                } 
+                catch { measName = null; }
+
+                if (string.IsNullOrWhiteSpace(measName)) 
+                { 
+                    _currentRecipeName = _currentRecipeName ?? "Default"; 
+                    return; 
+                }
 
                 var baseRec = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), measName) as QMC.Common.BaseRecipe;
                 var mr = baseRec as MeasurementRecipe;
@@ -610,12 +628,22 @@ namespace QMC.LCP_280.Process
             try
             {
                 string measName = null;
-                try { measName = Equipment._CurrentRecipeName; } catch { measName = null; }
-                if (string.IsNullOrWhiteSpace(measName)) return null;
+                try 
+                {
+                    var eq = Equipment.Instance;
+                    //_currentRecipeName = Equipment._CurrentRecipeName;
+                    measName = eq.EquipmentRecipe.CurrentRecipeName;
+                    //measName = Equipment._CurrentRecipeName; 
+                } 
+                catch { measName = null; }
+
+                if (string.IsNullOrWhiteSpace(measName)) 
+                    return null;
 
                 var br = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), measName) as QMC.Common.BaseRecipe;
                 var mr = br as MeasurementRecipe;
-                if (mr == null || !mr.UseVisionRecipe) return null;
+                if (mr == null || !mr.UseVisionRecipe) 
+                    return null;
 
                 string vName = string.IsNullOrWhiteSpace(mr.VisionRecipeName) ? fallbackRecipeName : mr.VisionRecipeName;
                 string vPath = mr.VisionRecipePath;
@@ -632,11 +660,13 @@ namespace QMC.LCP_280.Process
                         // dir/<camera>/<name>.pmrecipe.json
                         if (!string.IsNullOrWhiteSpace(vName))
                         {
-                            string p1 = Path.Combine(vPath, cameraName ?? "NoCamera", vName + ".pmrecipe.json");
-                            if (File.Exists(p1) || Directory.Exists(Path.GetDirectoryName(p1))) return p1; // 존재 안해도 저장시 사용
+                            string p1 = Path.Combine(vPath, cameraName ?? "NoCamera", vName + ".Vision.json");
+                            if (File.Exists(p1) || Directory.Exists(Path.GetDirectoryName(p1))) 
+                                return p1; // 존재 안해도 저장시 사용
 
-                            string p2 = Path.Combine(vPath, vName + ".pmrecipe.json");
-                            if (File.Exists(p2) || Directory.Exists(vPath)) return p2;
+                            string p2 = Path.Combine(vPath, vName + ".Vision.json");
+                            if (File.Exists(p2) || Directory.Exists(vPath)) 
+                                return p2;
                         }
                     }
                 }
@@ -644,7 +674,7 @@ namespace QMC.LCP_280.Process
                 if (!string.IsNullOrWhiteSpace(vName))
                 {
                     string camFolder = Path.Combine(_recipeDirectory, cameraName ?? "NoCamera");
-                    return Path.Combine(camFolder, vName + ".pmrecipe.json");
+                    return Path.Combine(camFolder, vName + ".Vision.json");
                 }
             }
             catch { }
@@ -664,16 +694,21 @@ namespace QMC.LCP_280.Process
             // fallback: 기존 구조
             string dir = Path.Combine(_recipeDirectory, cameraName ?? "NoCamera");
             Directory.CreateDirectory(dir);
-            return Path.Combine(dir, recipeName + ".pmrecipe.json");
+            return Path.Combine(dir, recipeName + ".Vision.json");
         }
         private string GetLegacyRecipePath(string recipeName)
         {
             Directory.CreateDirectory(_recipeDirectory);
-            return Path.Combine(_recipeDirectory, recipeName + ".pmrecipe.json");
+            return Path.Combine(_recipeDirectory, recipeName + ".Vision.json");
         }
-        private void SaveRecipeForCurrentCamera() => SaveRecipe(_currentRecipeName, GetCurrentCameraName());
-        private void LoadRecipeForCurrentCamera() => LoadRecipe(_currentRecipeName, GetCurrentCameraName());
-
+        private void SaveRecipeForCurrentCamera()
+        {
+            SaveRecipe(_currentRecipeName, GetCurrentCameraName());
+        }
+        private void LoadRecipeForCurrentCamera()
+        {
+            LoadRecipe(_currentRecipeName, GetCurrentCameraName());
+        }
         private void SaveRecipe(string recipeName, string cameraName = null)
         {
             try
@@ -712,7 +747,12 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                if (string.IsNullOrEmpty(cameraName)) cameraName = GetCurrentCameraName();
+                if (string.IsNullOrEmpty(cameraName))
+                {
+                    cameraName = GetCurrentCameraName();
+                }
+                    
+
                 var path = GetRecipePath(cameraName, recipeName);
                 var container = PatternMatchingRecipeStore.Load(path);
                 if (container == null && cameraName != "NoCamera")

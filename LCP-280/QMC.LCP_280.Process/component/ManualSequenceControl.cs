@@ -15,6 +15,7 @@ using System.Linq;
 using QMC.Common.Unit;
 using QMC.Common.UI;
 using System.Threading.Tasks;
+using QMC.Common;
 
 namespace QMC.LCP_280.Process.Component
 {
@@ -77,13 +78,38 @@ namespace QMC.LCP_280.Process.Component
                 
                 UpdateSeqList();
                 ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
-                form.ShowDialog();
-                if(t.Result == 0)
+
+                if(t != null)
                 {
-                    this.SelectedIndex++;
-                    this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
-                    this._lstSteps.SelectedIndex = this.SelectedIndex;
+                    try
+                    {
+                        form.ShowDialog();
+                        if (t.Status == TaskStatus.RanToCompletion && t.Result == 0)
+                        {
+                            this.SelectedIndex++;
+                            this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
+                            this._lstSteps.SelectedIndex = this.SelectedIndex;
+                        }
+                        else if (t.IsFaulted)
+                        {
+                            // 예외 메시지 표시
+                            MessageBox.Show(t.Exception?.GetBaseException().Message, "Manual Run Error");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
                 }
+
+
+                //form.ShowDialog();
+                //if(t.Result == 0)
+                //{
+                //    this.SelectedIndex++;
+                //    this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
+                //    this._lstSteps.SelectedIndex = this.SelectedIndex;
+                //}
             }
         }
 
