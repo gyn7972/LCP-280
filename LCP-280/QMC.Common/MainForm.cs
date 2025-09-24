@@ -421,7 +421,8 @@ namespace QMC.Common
             centerPanel.Controls.Clear();
             centerPanel.Controls.Add(view);
             currentCenterView = view;
-            if (!view.Visible) view.Show();
+            if (!view.Visible) 
+                view.Show();
         }
 
         private void ApplySizes()
