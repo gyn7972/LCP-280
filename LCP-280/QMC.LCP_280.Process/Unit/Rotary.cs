@@ -287,9 +287,9 @@ namespace QMC.LCP_280.Process.Unit
             // InputDieTransfer
             if (eq.Units.TryGetValue("InputDieTransfer", out var u3))
             {
-                if (!IsUnitInSafeByConnectedAxes(u3))
+                if (!IsUnitAxisInSafetyZone(u3, AxisNames.LeftPlaceZ, out var r))
                 {
-                    reason = "InputDieTransfer Not in Safety Zone";
+                    reason = r ?? "InputDieTransfer Not in Safety Zone (Left Place Z Axis)";
                     return false;
                 }
             }
@@ -317,9 +317,9 @@ namespace QMC.LCP_280.Process.Unit
             // OutputDieTransfer
             if (eq.Units.TryGetValue("OutputDieTransfer", out var u4))
             {
-                if (!IsUnitInSafeByConnectedAxes(u4))
+                if (!IsUnitAxisInSafetyZone(u4, AxisNames.RightPickZ, out var r4))
                 {
-                    reason = "OutputDieTransfer Not in Safety Zone";
+                    reason = r4 ?? "OutputDieTransfer Not in Safety Zone (Right Pick Z Axis)";
                     return false;
                 }
             }
@@ -332,11 +332,6 @@ namespace QMC.LCP_280.Process.Unit
             if (unit == null) 
                 return true;
 
-            // Config(BaseConfig) 획득
-            //var t = unit.GetType();
-            //var propConfig = t.GetProperty("Config");
-            //var cfg = propConfig?.GetValue(unit) as BaseConfig;
-            //if (cfg?.TeachingPositions == null) return true;
             // Config(BaseConfig) 획득
             var t = unit.GetType();
             var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -412,6 +407,112 @@ namespace QMC.LCP_280.Process.Unit
                     return true;
             }
 
+            return false;
+        }
+
+        // 지정 축만 SafetyZone TeachingPosition으로 확인
+        private bool IsUnitAxisInSafetyZone(object unit, string axisName, out string reason)
+        {
+            reason = null;
+            if (unit == null) { reason = "Unit null"; return false; }
+
+            // Config(BaseConfig)
+            var t = unit.GetType();
+            var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(p => p.Name == "Config" && typeof(BaseConfig).IsAssignableFrom(p.PropertyType));
+            var cfg = propConfig?.GetValue(unit) as BaseConfig;
+            if (cfg?.TeachingPositions == null)
+            {
+                reason = "TeachingPositions not found";
+                return false;
+            }
+
+            // 유닛 보유 축 사전
+            var propAxes = t.GetProperty("Axes");
+            var unitAxes = propAxes?.GetValue(unit) as System.Collections.Generic.IDictionary<string, MotionAxis>;
+
+            foreach (var safeName in SafeNames)
+            {
+                var tp = cfg.TeachingPositions.FirstOrDefault(p => string.Equals(p.Name, safeName, StringComparison.OrdinalIgnoreCase));
+                if (tp == null) continue;
+
+                // 목표 위치 찾기 (축 키 케이스 무시)
+                double target;
+                bool hasTarget = false;
+                if (tp.AxisPositions.TryGetValue(axisName, out target))
+                {
+                    hasTarget = true;
+                }
+                else
+                {
+                    var kv = tp.AxisPositions.FirstOrDefault(k => string.Equals(k.Key, axisName, StringComparison.OrdinalIgnoreCase));
+                    if (kv.Key != null)
+                    {
+                        target = kv.Value;
+                        hasTarget = true;
+                    }
+                }
+
+                if (!hasTarget)
+                {
+                    reason = $"SafetyZone target not found for '{axisName}'";
+                    return false;
+                }
+
+                // TeachingPosition에 바인딩된 축 사전
+                System.Collections.Generic.IDictionary<string, MotionAxis> tpAxes = null;
+                try
+                {
+                    var tpAxesProp = tp.GetType().GetProperty("Axes");
+                    tpAxes = tpAxesProp?.GetValue(tp) as System.Collections.Generic.IDictionary<string, MotionAxis>;
+                }
+                catch { /* ignore */ }
+
+                MotionAxis axis = null;
+
+                // 1) TeachingPosition 바인딩에서 우선 검색
+                if (tpAxes != null)
+                {
+                    if (!tpAxes.TryGetValue(axisName, out axis))
+                    {
+                        axis = tpAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisName, StringComparison.OrdinalIgnoreCase));
+                    }
+                }
+
+                // 2) 유닛 보유 축에서 검색
+                if (axis == null && unitAxes != null)
+                {
+                    if (!unitAxes.TryGetValue(axisName, out axis))
+                    {
+                        axis = unitAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisName, StringComparison.OrdinalIgnoreCase));
+                    }
+                }
+
+                if (axis == null)
+                {
+                    reason = $"Axis not bound: '{axisName}'";
+                    return false;
+                }
+
+                try
+                {
+                    if (!axis.InPosition(target))
+                    {
+                        reason = $"'{axisName}' not in SafetyZone";
+                        return false;
+                    }
+                }
+                catch
+                {
+                    reason = $"'{axisName}' safety check failed";
+                    return false;
+                }
+
+                // 지정 축만 확인 성공
+                return true;
+            }
+
+            reason = "SafetyZone TeachingPosition not found";
             return false;
         }
 
