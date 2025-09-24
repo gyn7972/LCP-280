@@ -126,7 +126,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -246,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -351,7 +351,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -424,7 +424,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTForward()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -487,7 +487,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTBackward()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -556,7 +556,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTReady()
         {
             int nRet = 0;
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -661,15 +661,18 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
+
+            //Todo : Z축 확인 후 이동 하도록 수정.
+            //foreach (var axisKey in tp.AxisPositions.Keys)
+            //{
+            //    if (Axes.TryGetValue(axisKey, out var axis))
+            //    {
+            //        double pos = tp.AxisPositions[axisKey];
+            //        int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
+            //        if (r != 0) result = r;
+            //    }
+            //}
+
             return result;
         }
         public bool InPosTeaching(string positionName)
@@ -890,7 +893,7 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int IsRotaryIdle()
         {
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();

@@ -16,16 +16,17 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         private void Vision_Recipe_Load(object sender, EventArgs e)
         {
             // 디자이너일 때는 아무 것도 하지 않음
-            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) 
+                return;
 
             // 만약 남아있는 Fill이 있으면 제거(안전보정)
-            if (patternMatchingControl1.Dock == DockStyle.Fill)
-            {
-                patternMatchingControl1.Dock = DockStyle.None;
-                patternMatchingControl1.Anchor = AnchorStyles.Top | AnchorStyles.Left;
-                // 최소 크기 보장 (디자이너에서 지정한 값보다 작아지지 않도록)
-                patternMatchingControl1.MinimumSize = new System.Drawing.Size(900, 600);
-            }
+            //if (patternMatchingControl1.Dock == DockStyle.Fill)
+            //{
+            //    patternMatchingControl1.Dock = DockStyle.None;
+            //    patternMatchingControl1.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            //    // 최소 크기 보장 (디자이너에서 지정한 값보다 작아지지 않도록)
+            //    patternMatchingControl1.MinimumSize = new System.Drawing.Size(900, 600);
+            //}
 
             try
             {

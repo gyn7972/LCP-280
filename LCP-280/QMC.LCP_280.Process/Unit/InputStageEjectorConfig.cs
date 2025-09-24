@@ -160,7 +160,13 @@ namespace QMC.LCP_280.Process.Unit
             Saveconfig();
         }
 
-        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+        public TeachingPosition GetTeachingPosition(string name)
+        {
+            if(TeachingPositions == null)
+                return null;
+
+            return TeachingPositions.FirstOrDefault(p => p.Name == name);
+        }
 
         /// <summary>Offset 적용된 좌표 반환</summary>
         public (double z, double pinZ) GetPositionWithOffset(string name)
@@ -197,9 +203,42 @@ namespace QMC.LCP_280.Process.Unit
         {
             int rc = Load();
             if (rc != 0) return rc;
+
+            var loaded = TeachingPositions ?? new List<TeachingPosition>();
+            var byName = new Dictionary<string, TeachingPosition>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in loaded)
+            {
+                if (t == null || string.IsNullOrWhiteSpace(t.Name)) continue;
+                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
+            }
+
+            var rebuilt = new List<TeachingPosition>();
+            foreach (TeachingPositionName en in Enum.GetValues(typeof(TeachingPositionName)))
+            {
+                string posName = en.ToString();
+                TeachingPosition tp;
+                if (byName.TryGetValue(posName, out tp) && tp != null)
+                {
+                    rebuilt.Add(tp);
+                }
+                else
+                {
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    rebuilt.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
+                }
+            }
+
+            TeachingPositions = rebuilt;
+
             ApplyAxisMapping();
-            foreach (var tp in TeachingPositions)
-                tp.BindAxes(axisManager, "Unit");
+
+            if (axisManager != null)
+            {
+                foreach (var tp in TeachingPositions)
+                    tp.BindAxes(axisManager, "Unit");
+            }
             return 0;
         }
 

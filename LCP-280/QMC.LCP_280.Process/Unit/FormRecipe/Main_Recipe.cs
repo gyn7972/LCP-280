@@ -27,14 +27,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
             // hook events
             this.Load += Main_Recipe_Load;
-            //this.recipeListView.ItemSelected += (s, idx) =>
-            //{
-            //    var name = this.recipeListView.SelectedItemName;
-            //    if (!string.IsNullOrWhiteSpace(name)) LoadRecipe(name);
-            //};
-
-            string name = Equipment._CurrentRecipeName;
-            LoadRecipe(name);
+            
+            //string name = Equipment._CurrentRecipeName;
+            //LoadRecipe(name);
         }
 
         private void BtnDelete_Click(object sender, EventArgs e)
@@ -72,6 +67,33 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             _recipesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Recipes", typeof(MeasurementRecipe).Name);
             Directory.CreateDirectory(_recipesDir);
             RefreshRecipeList();
+
+            // 전역 현재 레시피 UI 반영
+            var eq = Equipment.Instance;
+            _current = eq.EquipmentRecipe.GetRecipe();
+            BuildPropertyFromRecipe(_current);
+
+            // 전역 변경 이벤트 구독 (폼 닫힐 때 해제 권장)
+            EquipmentRecipe.CurrentRecipeChanged += Equipment_CurrentRecipeChanged;
+            SelectRecipeInList(_current.Name);
+        }
+
+        private void Main_Recipe_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            base.OnFormClosed(e);
+            var eq = Equipment.Instance;
+            EquipmentRecipe.CurrentRecipeChanged -= Equipment_CurrentRecipeChanged;
+        }
+
+        private void Equipment_CurrentRecipeChanged(object sender, EquipmentRecipe.MeasurementRecipeChangedEventArgs e)
+        {
+            try
+            {
+                _current = e.Recipe;
+                BuildPropertyFromRecipe(_current);
+                SelectRecipeInList(_current.Name);
+            }
+            catch { }
         }
 
         private void RefreshRecipeList()
@@ -99,11 +121,15 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         {
             try
             {
-                _current = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), name);
+                var eq = Equipment.Instance;
+                _current = eq.EquipmentRecipe.LoadRecipe(name);
                 BuildPropertyFromRecipe(_current);
+                //_current = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), name);
+                //BuildPropertyFromRecipe(_current);
             }
             catch (Exception ex)
             {
+                Log.Write(ex);
                 MessageBox.Show("레시피 로드 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -187,7 +213,8 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
 
         private void ApplyPropertiesToRecipe()
         {
-            if (_current == null || _pc == null || _propMap == null) return;
+            if (_current == null || _pc == null || _propMap == null) 
+                return;
 
             try
             {
@@ -238,12 +265,23 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             var name = PromptInput("새 레시피 이름을 입력하세요:", "New Recipe");
             if (string.IsNullOrWhiteSpace(name)) return;
             name = SanitizeFileName(name);
-            _current = new MeasurementRecipe(name);
-            _current.Reset();
-            BuildPropertyFromRecipe(_current);
-            SaveCurrent();
+
+            var r = new MeasurementRecipe(name);
+            r.Reset();
+            _current = r;
+            var eq = Equipment.Instance;
+            eq.EquipmentRecipe.SetCurrentRecipe(r, save: true);
+            BuildPropertyFromRecipe(r);
             RefreshRecipeList();
             SelectRecipeInList(name);
+            MessageBox.Show("새 레시피 생성 및 전환 완료.", "New", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            //_current = new MeasurementRecipe(name);
+            //_current.Reset();
+            //BuildPropertyFromRecipe(_current);
+            //SaveCurrent();
+            //RefreshRecipeList();
+            //SelectRecipeInList(name);
         }
 
         private void btnOpen_Click(object sender, EventArgs e)
@@ -251,12 +289,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             var name = recipeListView.SelectedItemName;
             if (string.IsNullOrWhiteSpace(name)) return;
             LoadRecipe(name);
-
-            Equipment._CurrentRecipeName = name;
-
-            Equipment.ChangeCurrentRecipe(Equipment._CurrentRecipeName);
-            Equipment.SaveCurrentRecipe();
-
         }
 
         private void btnCopy_Click(object sender, EventArgs e)
@@ -283,6 +315,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             try
             {
                 File.Copy(_clipboardRecipePath, dst, overwrite: false);
+                // 전역 전환
+                LoadRecipe(newName);
+                var eq = Equipment.Instance;
+                eq.EquipmentRecipe.SaveCurrentRecipe(); // Config에 이름 반영
                 RefreshRecipeList();
                 SelectRecipeInList(newName);
             }
@@ -301,19 +337,31 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
         {
             try
             {
-                ApplyPropertiesToRecipe();
                 if (_current == null)
                 {
                     MessageBox.Show("저장할 레시피가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
-
-                RecipeManager.Save(_current);
-                Equipment.SaveCurrentRecipe();
-
+                ApplyPropertiesToRecipe();
+                var eq = Equipment.Instance;
+                eq.EquipmentRecipe.SaveCurrentRecipe();
                 RefreshRecipeList();
                 SelectRecipeInList(_current.Name);
                 MessageBox.Show("저장 완료", "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+
+                //ApplyPropertiesToRecipe();
+                //if (_current == null)
+                //{
+                //    MessageBox.Show("저장할 레시피가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //    return;
+                //}
+
+                //RecipeManager.Save(_current);
+
+                //RefreshRecipeList();
+                //SelectRecipeInList(_current.Name);
+                //MessageBox.Show("저장 완료", "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
@@ -379,5 +427,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 this.ResumeLayout(true);
             }
         }
+
+        
     }
 }

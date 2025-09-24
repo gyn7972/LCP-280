@@ -32,19 +32,22 @@ namespace QMC.LCP_280.Process.Component
 
         private void UnitConfig_VisibleChanged(object sender, EventArgs e)
         {
-            if (!AutoReloadOnActivate) return;
-            if (!Visible) return;
-            if (_config == null) return;
+            if (!AutoReloadOnActivate) 
+                return;
+            if (!Visible) 
+                return;
+            if (_config == null) 
+                return;
 
             // 다시 보일 때 자동 재로드
             if (IsDirty())
             {
-                var r = MessageBox.Show(
-                    "저장되지 않은 변경이 있습니다.\r\n무시하고 파일에서 다시 읽을까요?",
-                    "자동 재로드",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-                if (r != DialogResult.Yes) return;
+                //var r = MessageBox.Show(
+                //    "저장되지 않은 변경이 있습니다.\r\n무시하고 파일에서 다시 읽을까요?",
+                //    "자동 재로드",
+                //    MessageBoxButtons.YesNo,
+                //    MessageBoxIcon.Question);
+                //if (r != DialogResult.Yes) return;
             }
 
             InvokeLoad(_config);
@@ -97,7 +100,9 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnApplyConfig_Click(object sender, EventArgs e)
         {
-            if (_mapper == null || _config == null) return;
+            if (_mapper == null || _config == null) 
+                return;
+
             try
             {
                 configurationPropertyView.Apply();
@@ -114,7 +119,9 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnReloadConfig_Click(object sender, EventArgs e)
         {
-            if (_config == null) return;
+            if (_config == null) 
+                return;
+
             if (IsDirty())
             {
                 if (MessageBox.Show("저장되지 않은 변경 사항이 있습니다. 폐기 후 다시 로드할까요?",

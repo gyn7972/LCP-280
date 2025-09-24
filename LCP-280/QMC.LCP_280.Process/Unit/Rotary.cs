@@ -24,7 +24,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             eIndexRotary = 4800,
             eRotaryNotSafe,
-
+            InputDieTraansferPlaceZError,
+            IndexLoadAlignerZError,
+            IndexChipProbeControllerZError,
+            OutputDieTransferPlaceZError,
         }
 
         #region InitAlarm
@@ -36,7 +39,39 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rorary Not Sfarety Pos.";
             alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.InputDieTraansferPlaceZError;
+            alarm.Title = "InputDieTraansferPlaceZ Not Sfarety Pos.";
+            alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
+            alarm.Title = "IndexLoadAlignerZ Not Sfarety Pos.";
+            alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
+            alarm.Title = "IndexChipProbeControllerZ Not Sfarety Pos.";
+            alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.OutputDieTransferPlaceZError;
+            alarm.Title = "OutputDieTransferPlaceZ Not Sfarety Pos.";
+            alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
@@ -53,14 +88,9 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis AxisT => _axisT;
         private DateTime _moveStartTime;
 
-        public bool DryRun { get; private set; }
         public bool RequestChip { get; set; } = false;
 
-        public void SetDryRun(bool on) => DryRun = on;
-        private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, bool> _simInputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-
-        // ???? Safe ??? ???(??? ????)
+        // Safe
         private static readonly string[] SafeNames = new[] { "SafetyZone", "Safe", "SasfeZone", "SAFE", "SAFEZONE", "SAFE_ZONE" };
 
         public Rotary(RotaryConfig config = null) : base(new RotaryConfig())
@@ -159,14 +189,24 @@ namespace QMC.LCP_280.Process.Unit
 
         public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
         {
-            var tp = Config.GetTeachingPosition(name); if (tp == null) return -1;
+            var tp = Config.GetTeachingPosition(name); 
+            if (tp == null) 
+                return -1;
+
             double t = Config.GetPositionWithOffset(name);
-            if (_axisT == null) return -2;
-            return _axisT.MoveAbs(t,
-                vel > 0 ? vel : _axisT.Config.MaxVelocity,
-                acc > 0 ? acc : _axisT.Config.RunAcc,
-                dec > 0 ? dec : _axisT.Config.RunDec,
-                jerk > 0 ? jerk : _axisT.Config.AccJerkPercent);
+            if (_axisT == null) 
+                return -2;
+
+            int nRtn = 0;
+
+            //Todo : 인터락 확인 후 이동 하도록 수정.
+            //nRtn =  _axisT.MoveAbs(t,
+            //    vel > 0 ? vel : _axisT.Config.MaxVelocity,
+            //    acc > 0 ? acc : _axisT.Config.RunAcc,
+            //    dec > 0 ? dec : _axisT.Config.RunDec,
+            //    jerk > 0 ? jerk : _axisT.Config.AccJerkPercent);
+
+            return nRtn; 
         }
 
         public bool InPosTeaching(string name)
@@ -179,18 +219,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Axis helpers
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
@@ -268,13 +296,6 @@ namespace QMC.LCP_280.Process.Unit
                     : 20000;
             }
 
-            // DryRun 모드면 짧게 대기 후 OK
-            if (DryRun)
-            {
-                Thread.Sleep(20);
-                return 0;
-            }
-
             var start = DateTime.Now;
             while (true)
             {
@@ -299,8 +320,10 @@ namespace QMC.LCP_280.Process.Unit
             // InputDieTransfer
             if (eq.Units.TryGetValue("InputDieTransfer", out var u3))
             {
-                if (!IsUnitInSafeByConnectedAxes(u3))
+                if (!IsUnitAxisInSafetyZone(u3, AxisNames.LeftPlaceZ, out var r))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.InputDieTraansferPlaceZError);
                     reason = "InputDieTransfer Not in Safety Zone";
                     return false;
                 }
@@ -311,6 +334,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!IsUnitInSafeByConnectedAxes(u2))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.IndexLoadAlignerZError);
                     reason = "IndexLoadAligner Not in Safety Zone";
                     return false;
                 }
@@ -321,6 +346,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!IsUnitInSafeByConnectedAxes(u1))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.IndexChipProbeControllerZError);
                     reason = "IndexChipProbeController Not in Safety Zone";
                     return false;
                 }
@@ -329,8 +356,10 @@ namespace QMC.LCP_280.Process.Unit
             // OutputDieTransfer
             if (eq.Units.TryGetValue("OutputDieTransfer", out var u4))
             {
-                if (!IsUnitInSafeByConnectedAxes(u4))
+                if (!IsUnitAxisInSafetyZone(u4, AxisNames.RightPickZ, out var r4))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.OutputDieTransferPlaceZError);
                     reason = "OutputDieTransfer Not in Safety Zone";
                     return false;
                 }
@@ -344,11 +373,6 @@ namespace QMC.LCP_280.Process.Unit
             if (unit == null) 
                 return true;
 
-            // Config(BaseConfig) 획득
-            //var t = unit.GetType();
-            //var propConfig = t.GetProperty("Config");
-            //var cfg = propConfig?.GetValue(unit) as BaseConfig;
-            //if (cfg?.TeachingPositions == null) return true;
             // Config(BaseConfig) 획득
             var t = unit.GetType();
             var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
@@ -427,6 +451,112 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
 
+        // 지정 축만 SafetyZone TeachingPosition으로 확인
+        private bool IsUnitAxisInSafetyZone(object unit, string axisName, out string reason)
+        {
+            reason = null;
+            if (unit == null) { reason = "Unit null"; return false; }
+
+            // Config(BaseConfig)
+            var t = unit.GetType();
+            var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(p => p.Name == "Config" && typeof(BaseConfig).IsAssignableFrom(p.PropertyType));
+            var cfg = propConfig?.GetValue(unit) as BaseConfig;
+            if (cfg?.TeachingPositions == null)
+            {
+                reason = "TeachingPositions not found";
+                return false;
+            }
+
+            // 유닛 보유 축 사전
+            var propAxes = t.GetProperty("Axes");
+            var unitAxes = propAxes?.GetValue(unit) as System.Collections.Generic.IDictionary<string, MotionAxis>;
+
+            foreach (var safeName in SafeNames)
+            {
+                var tp = cfg.TeachingPositions.FirstOrDefault(p => string.Equals(p.Name, safeName, StringComparison.OrdinalIgnoreCase));
+                if (tp == null) continue;
+
+                // 목표 위치 찾기 (축 키 케이스 무시)
+                double target;
+                bool hasTarget = false;
+                if (tp.AxisPositions.TryGetValue(axisName, out target))
+                {
+                    hasTarget = true;
+                }
+                else
+                {
+                    var kv = tp.AxisPositions.FirstOrDefault(k => string.Equals(k.Key, axisName, StringComparison.OrdinalIgnoreCase));
+                    if (kv.Key != null)
+                    {
+                        target = kv.Value;
+                        hasTarget = true;
+                    }
+                }
+
+                if (!hasTarget)
+                {
+                    reason = $"SafetyZone target not found for '{axisName}'";
+                    return false;
+                }
+
+                // TeachingPosition에 바인딩된 축 사전
+                System.Collections.Generic.IDictionary<string, MotionAxis> tpAxes = null;
+                try
+                {
+                    var tpAxesProp = tp.GetType().GetProperty("Axes");
+                    tpAxes = tpAxesProp?.GetValue(tp) as System.Collections.Generic.IDictionary<string, MotionAxis>;
+                }
+                catch { /* ignore */ }
+
+                MotionAxis axis = null;
+
+                // 1) TeachingPosition 바인딩에서 우선 검색
+                if (tpAxes != null)
+                {
+                    if (!tpAxes.TryGetValue(axisName, out axis))
+                    {
+                        axis = tpAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisName, StringComparison.OrdinalIgnoreCase));
+                    }
+                }
+
+                // 2) 유닛 보유 축에서 검색
+                if (axis == null && unitAxes != null)
+                {
+                    if (!unitAxes.TryGetValue(axisName, out axis))
+                    {
+                        axis = unitAxes.Values.FirstOrDefault(a => a != null && string.Equals(a.Name, axisName, StringComparison.OrdinalIgnoreCase));
+                    }
+                }
+
+                if (axis == null)
+                {
+                    reason = $"Axis not bound: '{axisName}'";
+                    return false;
+                }
+
+                try
+                {
+                    if (!axis.InPosition(target))
+                    {
+                        reason = $"'{axisName}' not in SafetyZone";
+                        return false;
+                    }
+                }
+                catch
+                {
+                    reason = $"'{axisName}' safety check failed";
+                    return false;
+                }
+
+                // 지정 축만 확인 성공
+                return true;
+            }
+
+            reason = "SafetyZone TeachingPosition not found";
+            return false;
+        }
+
         private bool IsUnitInSafe(System.Func<string, bool> inPosTeaching)
         {
             for (int i = 0; i < SafeNames.Length; i++)
@@ -438,7 +568,6 @@ namespace QMC.LCP_280.Process.Unit
         #region IO Helpers
         public bool ReadInput(string name)
         {
-            if (DryRun) { bool v; return _simInputs.TryGetValue(name, out v) && v; }
             var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -449,7 +578,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool WriteOutput(string name, bool on)
         {
-            if (DryRun) { _simOutputs[name] = on; return true; }
             var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -460,7 +588,6 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool IsOutputOn(string name)
         {
-            if (DryRun) { bool v; return _simOutputs.TryGetValue(name, out v) && v; }
             var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;

@@ -45,6 +45,8 @@ namespace QMC.Common
         DioScanService DioScan { get; }
         DIOUnit UnitIO { get; }
 
+        // 인터페이스에서는 구현 없이 선언만(C# 7.3 호환)
+        string ICurrentRecipe { get; set; }
     }
 
     public static class EquipmentLocator
@@ -59,6 +61,23 @@ namespace QMC.Common
             eq = _instance;
             return eq != null;
         }
+
+        // C# 7.3 호환: 글로벌 접근 편의를 위한 정적 프록시
+        public static string CurrentRecipe
+        {
+            get
+            {
+                if (_instance == null) 
+                    return null;
+                return _instance.ICurrentRecipe;
+            }
+            set
+            {
+                if (_instance != null)
+                    _instance.ICurrentRecipe = value;
+            }
+        }
+
         public static void ShutdownAndDisposeSafely(int stopTimeoutMs = 8000)
         {
             if (_instance == null) return;

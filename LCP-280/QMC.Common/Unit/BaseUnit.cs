@@ -197,14 +197,6 @@ namespace QMC.Common.Unit
             return alarmCode;
         }
 
-        // 단순 축 이동 (공통)
-        public virtual int MoveAxis(string axisKey, double pos, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
-        {
-            if (Axes.TryGetValue(axisKey, out var axis))
-                return axis.MoveAbs(pos, vel, acc, dec, jerk);
-            return -1;
-        }
-
         public void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
         {
             if (mgr != null && mgr.TryGet(unitName, axisName, out var axis) && axis != null)
@@ -531,7 +523,11 @@ namespace QMC.Common.Unit
                 }
             }
 
-            return axis != null && !axis.IsMoveDone();
+            if (axis != null && !axis.IsMoveDone())
+                return false;
+
+            return true;
+            //return axis != null && !axis.IsMoveDone();
         }
 
         public virtual bool IsAnyAxisMoving()
@@ -539,9 +535,9 @@ namespace QMC.Common.Unit
             foreach (var ax in Axes.Values)
             {
                 if (ax != null && !ax.IsMoveDone())
-                    return true;
+                    return false;
             }
-            return false;
+            return true;
         }
 
         public virtual IDictionary<string, bool> GetAxesMovingMap()
@@ -620,15 +616,16 @@ namespace QMC.Common.Unit
                     return 0;
                 }
 
-                double vel = cfg != null ? cfg.MaxVelocity : 0;
-                if (isFine && vel > 0)
-                    vel *= 0.2;
+                //double vel = cfg != null ? cfg.MaxVelocity : 0;
+                //if (isFine && vel > 0)
+                //    vel *= 0.2;
 
                 int rc;
-                if (cfg != null)
-                    rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
-                else
-                    rc = axis.MoveAbs(target, false);
+                rc = axis.MoveAbs(target, false);
+                //if (cfg != null)
+                //    rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
+                //else
+                //    rc = axis.MoveAbs(target, false);
 
                 if (rc != 0)
                 {

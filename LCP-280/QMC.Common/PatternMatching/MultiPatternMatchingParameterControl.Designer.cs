@@ -45,9 +45,11 @@
             this.TextMinScore = new System.Windows.Forms.TextBox();
             this.TextMaxInstance = new System.Windows.Forms.TextBox();
             this.TextBoxTolerance = new System.Windows.Forms.TextBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.baseGroupBoxMultiTrainImage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxMultiTraimImage)).BeginInit();
             this.baseGroupBoxMutiParameter.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // baseGroupBoxMultiTrainImage
@@ -59,11 +61,14 @@
             this.baseGroupBoxMultiTrainImage.Controls.Add(this.baseButtonClear);
             this.baseGroupBoxMultiTrainImage.Controls.Add(this.baseButtonRemove);
             this.baseGroupBoxMultiTrainImage.Controls.Add(this.baseButtonAdd);
+            this.baseGroupBoxMultiTrainImage.Dock = System.Windows.Forms.DockStyle.Top;
             this.baseGroupBoxMultiTrainImage.ForeColor = System.Drawing.Color.Black;
-            this.baseGroupBoxMultiTrainImage.Location = new System.Drawing.Point(6, 6);
+            this.baseGroupBoxMultiTrainImage.Location = new System.Drawing.Point(3, 21);
+            this.baseGroupBoxMultiTrainImage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseGroupBoxMultiTrainImage.Name = "baseGroupBoxMultiTrainImage";
+            this.baseGroupBoxMultiTrainImage.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseGroupBoxMultiTrainImage.Radious = 0;
-            this.baseGroupBoxMultiTrainImage.Size = new System.Drawing.Size(389, 211);
+            this.baseGroupBoxMultiTrainImage.Size = new System.Drawing.Size(455, 264);
             this.baseGroupBoxMultiTrainImage.TabIndex = 0;
             this.baseGroupBoxMultiTrainImage.TabStop = false;
             this.baseGroupBoxMultiTrainImage.Text = "MultiTrainImage";
@@ -75,9 +80,10 @@
             // 
             this.pictureBoxMultiTraimImage.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
             this.pictureBoxMultiTraimImage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBoxMultiTraimImage.Location = new System.Drawing.Point(6, 20);
+            this.pictureBoxMultiTraimImage.Location = new System.Drawing.Point(7, 25);
+            this.pictureBoxMultiTraimImage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.pictureBoxMultiTraimImage.Name = "pictureBoxMultiTraimImage";
-            this.pictureBoxMultiTraimImage.Size = new System.Drawing.Size(191, 184);
+            this.pictureBoxMultiTraimImage.Size = new System.Drawing.Size(218, 230);
             this.pictureBoxMultiTraimImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBoxMultiTraimImage.TabIndex = 19;
             this.pictureBoxMultiTraimImage.TabStop = false;
@@ -88,10 +94,11 @@
             this.baseListBoxTrainList.Font = new System.Drawing.Font("돋움", 15F);
             this.baseListBoxTrainList.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(79)))), ((int)(((byte)(79)))), ((int)(((byte)(79)))));
             this.baseListBoxTrainList.FormattingEnabled = true;
-            this.baseListBoxTrainList.ItemHeight = 20;
-            this.baseListBoxTrainList.Location = new System.Drawing.Point(203, 20);
+            this.baseListBoxTrainList.ItemHeight = 25;
+            this.baseListBoxTrainList.Location = new System.Drawing.Point(232, 25);
+            this.baseListBoxTrainList.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseListBoxTrainList.Name = "baseListBoxTrainList";
-            this.baseListBoxTrainList.Size = new System.Drawing.Size(95, 184);
+            this.baseListBoxTrainList.Size = new System.Drawing.Size(108, 229);
             this.baseListBoxTrainList.TabIndex = 18;
             this.baseListBoxTrainList.SelectedIndexChanged += new System.EventHandler(this.baseListBoxTrainList_SelectedIndexChanged);
             // 
@@ -101,9 +108,10 @@
             this.baseButtonDown.FlatAppearance.BorderSize = 0;
             this.baseButtonDown.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonDown.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonDown.Location = new System.Drawing.Point(304, 168);
+            this.baseButtonDown.Location = new System.Drawing.Point(347, 210);
+            this.baseButtonDown.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonDown.Name = "baseButtonDown";
-            this.baseButtonDown.Size = new System.Drawing.Size(75, 31);
+            this.baseButtonDown.Size = new System.Drawing.Size(86, 39);
             this.baseButtonDown.TabIndex = 17;
             this.baseButtonDown.Text = "Down";
             this.baseButtonDown.UseVisualStyleBackColor = false;
@@ -115,9 +123,10 @@
             this.baseButtonUp.FlatAppearance.BorderSize = 0;
             this.baseButtonUp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonUp.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonUp.Location = new System.Drawing.Point(304, 131);
+            this.baseButtonUp.Location = new System.Drawing.Point(347, 164);
+            this.baseButtonUp.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonUp.Name = "baseButtonUp";
-            this.baseButtonUp.Size = new System.Drawing.Size(75, 31);
+            this.baseButtonUp.Size = new System.Drawing.Size(86, 39);
             this.baseButtonUp.TabIndex = 16;
             this.baseButtonUp.Text = "Up";
             this.baseButtonUp.UseVisualStyleBackColor = false;
@@ -129,9 +138,10 @@
             this.baseButtonClear.FlatAppearance.BorderSize = 0;
             this.baseButtonClear.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonClear.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonClear.Location = new System.Drawing.Point(304, 94);
+            this.baseButtonClear.Location = new System.Drawing.Point(347, 118);
+            this.baseButtonClear.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonClear.Name = "baseButtonClear";
-            this.baseButtonClear.Size = new System.Drawing.Size(75, 31);
+            this.baseButtonClear.Size = new System.Drawing.Size(86, 39);
             this.baseButtonClear.TabIndex = 15;
             this.baseButtonClear.Text = "Clear";
             this.baseButtonClear.UseVisualStyleBackColor = false;
@@ -143,9 +153,10 @@
             this.baseButtonRemove.FlatAppearance.BorderSize = 0;
             this.baseButtonRemove.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonRemove.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonRemove.Location = new System.Drawing.Point(304, 57);
+            this.baseButtonRemove.Location = new System.Drawing.Point(347, 71);
+            this.baseButtonRemove.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonRemove.Name = "baseButtonRemove";
-            this.baseButtonRemove.Size = new System.Drawing.Size(75, 31);
+            this.baseButtonRemove.Size = new System.Drawing.Size(86, 39);
             this.baseButtonRemove.TabIndex = 14;
             this.baseButtonRemove.Text = "Remove";
             this.baseButtonRemove.UseVisualStyleBackColor = false;
@@ -157,9 +168,10 @@
             this.baseButtonAdd.FlatAppearance.BorderSize = 0;
             this.baseButtonAdd.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.baseButtonAdd.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.baseButtonAdd.Location = new System.Drawing.Point(304, 20);
+            this.baseButtonAdd.Location = new System.Drawing.Point(347, 25);
+            this.baseButtonAdd.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonAdd.Name = "baseButtonAdd";
-            this.baseButtonAdd.Size = new System.Drawing.Size(75, 31);
+            this.baseButtonAdd.Size = new System.Drawing.Size(86, 39);
             this.baseButtonAdd.TabIndex = 13;
             this.baseButtonAdd.Text = "Add";
             this.baseButtonAdd.UseVisualStyleBackColor = false;
@@ -175,11 +187,14 @@
             this.baseGroupBoxMutiParameter.Controls.Add(this.TextMinScore);
             this.baseGroupBoxMutiParameter.Controls.Add(this.TextMaxInstance);
             this.baseGroupBoxMutiParameter.Controls.Add(this.TextBoxTolerance);
+            this.baseGroupBoxMutiParameter.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.baseGroupBoxMutiParameter.ForeColor = System.Drawing.Color.Black;
-            this.baseGroupBoxMutiParameter.Location = new System.Drawing.Point(6, 223);
+            this.baseGroupBoxMutiParameter.Location = new System.Drawing.Point(3, 302);
+            this.baseGroupBoxMutiParameter.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseGroupBoxMutiParameter.Name = "baseGroupBoxMutiParameter";
+            this.baseGroupBoxMutiParameter.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseGroupBoxMutiParameter.Radious = 0;
-            this.baseGroupBoxMutiParameter.Size = new System.Drawing.Size(315, 160);
+            this.baseGroupBoxMutiParameter.Size = new System.Drawing.Size(455, 200);
             this.baseGroupBoxMutiParameter.TabIndex = 1;
             this.baseGroupBoxMutiParameter.TabStop = false;
             this.baseGroupBoxMutiParameter.Text = "Multi Pattern Matching Parameter";
@@ -193,9 +208,10 @@
             this.ToggleButtonUseMaskImage.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.ToggleButtonUseMaskImage.Font = new System.Drawing.Font("굴림", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.ToggleButtonUseMaskImage.ForeColor = System.Drawing.Color.Transparent;
-            this.ToggleButtonUseMaskImage.Location = new System.Drawing.Point(204, 123);
+            this.ToggleButtonUseMaskImage.Location = new System.Drawing.Point(233, 154);
+            this.ToggleButtonUseMaskImage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.ToggleButtonUseMaskImage.Name = "ToggleButtonUseMaskImage";
-            this.ToggleButtonUseMaskImage.Size = new System.Drawing.Size(100, 30);
+            this.ToggleButtonUseMaskImage.Size = new System.Drawing.Size(114, 38);
             this.ToggleButtonUseMaskImage.TabIndex = 15;
             this.ToggleButtonUseMaskImage.Text = "Use MaskImage";
             this.ToggleButtonUseMaskImage.UseVisualStyleBackColor = false;
@@ -204,9 +220,10 @@
             // checkBoxDupCheck
             // 
             this.checkBoxDupCheck.AutoSize = true;
-            this.checkBoxDupCheck.Location = new System.Drawing.Point(81, 131);
+            this.checkBoxDupCheck.Location = new System.Drawing.Point(93, 164);
+            this.checkBoxDupCheck.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.checkBoxDupCheck.Name = "checkBoxDupCheck";
-            this.checkBoxDupCheck.Size = new System.Drawing.Size(116, 16);
+            this.checkBoxDupCheck.Size = new System.Drawing.Size(135, 19);
             this.checkBoxDupCheck.TabIndex = 14;
             this.checkBoxDupCheck.Text = "Duplicate Check";
             this.checkBoxDupCheck.UseVisualStyleBackColor = true;
@@ -216,9 +233,9 @@
             // 
             this.LabelMinScore.Font = new System.Drawing.Font("돋움", 11F, System.Drawing.FontStyle.Bold);
             this.LabelMinScore.ForeColor = System.Drawing.Color.Black;
-            this.LabelMinScore.Location = new System.Drawing.Point(15, 91);
+            this.LabelMinScore.Location = new System.Drawing.Point(17, 114);
             this.LabelMinScore.Name = "LabelMinScore";
-            this.LabelMinScore.Size = new System.Drawing.Size(182, 16);
+            this.LabelMinScore.Size = new System.Drawing.Size(208, 20);
             this.LabelMinScore.TabIndex = 13;
             this.LabelMinScore.Text = "Min Score :";
             this.LabelMinScore.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -227,9 +244,9 @@
             // 
             this.LabelMaxInstance.Font = new System.Drawing.Font("돋움", 11F, System.Drawing.FontStyle.Bold);
             this.LabelMaxInstance.ForeColor = System.Drawing.Color.Black;
-            this.LabelMaxInstance.Location = new System.Drawing.Point(15, 60);
+            this.LabelMaxInstance.Location = new System.Drawing.Point(17, 75);
             this.LabelMaxInstance.Name = "LabelMaxInstance";
-            this.LabelMaxInstance.Size = new System.Drawing.Size(182, 23);
+            this.LabelMaxInstance.Size = new System.Drawing.Size(208, 29);
             this.LabelMaxInstance.TabIndex = 12;
             this.LabelMaxInstance.Text = "Max Instance [ea] :";
             this.LabelMaxInstance.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -238,9 +255,9 @@
             // 
             this.LabelTolerance.Font = new System.Drawing.Font("돋움", 8F, System.Drawing.FontStyle.Bold);
             this.LabelTolerance.ForeColor = System.Drawing.Color.Black;
-            this.LabelTolerance.Location = new System.Drawing.Point(16, 26);
+            this.LabelTolerance.Location = new System.Drawing.Point(18, 32);
             this.LabelTolerance.Name = "LabelTolerance";
-            this.LabelTolerance.Size = new System.Drawing.Size(182, 23);
+            this.LabelTolerance.Size = new System.Drawing.Size(208, 29);
             this.LabelTolerance.TabIndex = 11;
             this.LabelTolerance.Text = "Angle Tolerance [Degree] :";
             this.LabelTolerance.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -251,9 +268,10 @@
             this.TextMinScore.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.TextMinScore.Font = new System.Drawing.Font("굴림", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.TextMinScore.ForeColor = System.Drawing.Color.White;
-            this.TextMinScore.Location = new System.Drawing.Point(204, 94);
+            this.TextMinScore.Location = new System.Drawing.Point(233, 118);
+            this.TextMinScore.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.TextMinScore.Name = "TextMinScore";
-            this.TextMinScore.Size = new System.Drawing.Size(100, 17);
+            this.TextMinScore.Size = new System.Drawing.Size(114, 22);
             this.TextMinScore.TabIndex = 10;
             this.TextMinScore.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.TextMinScore.TextChanged += new System.EventHandler(this.ChangeParametersMinScore);
@@ -264,9 +282,10 @@
             this.TextMaxInstance.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.TextMaxInstance.Font = new System.Drawing.Font("굴림", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.TextMaxInstance.ForeColor = System.Drawing.Color.White;
-            this.TextMaxInstance.Location = new System.Drawing.Point(204, 63);
+            this.TextMaxInstance.Location = new System.Drawing.Point(233, 79);
+            this.TextMaxInstance.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.TextMaxInstance.Name = "TextMaxInstance";
-            this.TextMaxInstance.Size = new System.Drawing.Size(100, 17);
+            this.TextMaxInstance.Size = new System.Drawing.Size(114, 22);
             this.TextMaxInstance.TabIndex = 9;
             this.TextMaxInstance.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.TextMaxInstance.TextChanged += new System.EventHandler(this.ChangeParametersMaxInstnce);
@@ -277,25 +296,38 @@
             this.TextBoxTolerance.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.TextBoxTolerance.Font = new System.Drawing.Font("굴림", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.TextBoxTolerance.ForeColor = System.Drawing.Color.White;
-            this.TextBoxTolerance.Location = new System.Drawing.Point(204, 32);
+            this.TextBoxTolerance.Location = new System.Drawing.Point(233, 40);
+            this.TextBoxTolerance.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.TextBoxTolerance.Name = "TextBoxTolerance";
-            this.TextBoxTolerance.Size = new System.Drawing.Size(100, 17);
+            this.TextBoxTolerance.Size = new System.Drawing.Size(114, 22);
             this.TextBoxTolerance.TabIndex = 8;
             this.TextBoxTolerance.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.TextBoxTolerance.TextChanged += new System.EventHandler(this.ChangeParametersTolerance);
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.baseGroupBoxMultiTrainImage);
+            this.groupBox1.Controls.Add(this.baseGroupBoxMutiParameter);
+            this.groupBox1.Location = new System.Drawing.Point(3, 3);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(461, 505);
+            this.groupBox1.TabIndex = 2;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Setting";
+            // 
             // MultiPatternMatchingParameterControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.baseGroupBoxMutiParameter);
-            this.Controls.Add(this.baseGroupBoxMultiTrainImage);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.Controls.Add(this.groupBox1);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "MultiPatternMatchingParameterControl";
-            this.Size = new System.Drawing.Size(403, 391);
+            this.Size = new System.Drawing.Size(472, 516);
             this.baseGroupBoxMultiTrainImage.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxMultiTraimImage)).EndInit();
             this.baseGroupBoxMutiParameter.ResumeLayout(false);
             this.baseGroupBoxMutiParameter.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -319,5 +351,6 @@
         private System.Windows.Forms.TextBox TextBoxTolerance;
         private System.Windows.Forms.Button baseButtonAdd;
         private SimpleTrainPictureBox pictureBoxMultiTraimImage;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }

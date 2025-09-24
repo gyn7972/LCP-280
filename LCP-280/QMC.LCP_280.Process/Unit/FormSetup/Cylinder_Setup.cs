@@ -12,6 +12,7 @@ using QMC.Common.IOUtil;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    [FormOrder(5)]
     public partial class Cylinder_Setup : Form
     {
         private Timer _axisPosTimer;
@@ -386,7 +387,8 @@ namespace QMC.LCP_280.Process.Unit
 
         private void UpdateIoStates()
         {
-            if (_selectedCylinder == null || _ioStateProperties == null) return;
+            if (_selectedCylinder == null || _ioStateProperties == null) 
+                return;
 
             bool? fwdOut = TryReadDIO(_selectedCylinder.FwdOutKey);
             bool? bwdOut = TryReadDIO(_selectedCylinder.BwdOutKey);
@@ -406,35 +408,113 @@ namespace QMC.LCP_280.Process.Unit
 
         private bool? TryReadDIO(string key)
         {
-            if (string.IsNullOrWhiteSpace(key)) return null;
-            try { if (DIO.In(key, out var on)) return on; } catch { }
-            return null;
+            if (string.IsNullOrWhiteSpace(key)) 
+                return null;
+            try { 
+                if (DIO.In(key, out var on)) 
+                    return on; 
+            } 
+            catch 
+            { }
+            //return null;
+            return false;
         }
 
         private void SetStateValue(PropertyCollection pc, string title, bool? value, bool isSensor = false)
         {
-            if (pc == null) return;
+            if (pc == null) 
+                return;
             var listField = typeof(PropertyCollection).GetField("_properties", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (listField == null) return;
+            if (listField == null) 
+                return;
             var list = listField.GetValue(pc) as System.Collections.IList;
-            if (list == null) return;
+            if (list == null) 
+                return;
+
+            bool targetVal = value ?? false;
 
             foreach (var obj in list)
             {
                 if (obj is PropertyBase pb)
                 {
-                    var tProp = pb.GetType().GetProperty("Title") ?? pb.GetType().GetProperty("Name");
-                    var vProp = pb.GetType().GetProperty("Value");
-                    if (tProp == null || vProp == null) continue;
+                    // Title 또는 Name 얻기
+                    var titleProp = pb.GetType().GetProperty("Title") ?? pb.GetType().GetProperty("Name");
+                    if (titleProp == null)
+                        continue;
 
-                    var tVal = tProp.GetValue(pb)?.ToString();
-                    if (string.Equals(tVal, title, StringComparison.OrdinalIgnoreCase))
+                    var currentTitle = titleProp.GetValue(pb)?.ToString();
+                    if (!string.Equals(currentTitle, title, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    try
                     {
-                        vProp.SetValue(pb, value ?? false);
-                        break;
+                        // 1) 파생 클래스에 bool 전용 Value 프로퍼티가 있다면 그것을 우선
+                        var valueProp = pb.GetType()
+                            .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                            .Where(p => p.Name == "Value" && p.CanWrite)
+                            .OrderByDescending(p => p.PropertyType == typeof(bool)) // bool 우선
+                            .ThenBy(p => p.DeclaringType == typeof(PropertyBase) ? 1 : 0) // 파생 타입 우선
+                            .FirstOrDefault();
+
+                        if (valueProp != null)
+                        {
+                            object boxed = targetVal;
+                            // 필요 시 타입 변환 (예: int, string 등)
+                            if (valueProp.PropertyType == typeof(string))
+                                boxed = targetVal ? "True" : "False";
+                            else if (valueProp.PropertyType == typeof(int))
+                                boxed = targetVal ? 1 : 0;
+                            else if (valueProp.PropertyType == typeof(object))
+                                boxed = targetVal;
+
+                            // bool 이 아닌데 직접 변환 안 되면 Convert 시도
+                            if (boxed != null && !valueProp.PropertyType.IsAssignableFrom(boxed.GetType()))
+                            {
+                                try { boxed = Convert.ChangeType(boxed, valueProp.PropertyType, CultureInfo.InvariantCulture); }
+                                catch { /* 무시하고 기본 값 유지 */ }
+                            }
+
+                            valueProp.SetValue(pb, boxed);
+                        }
+                        else
+                        {
+                            // 2) 최후: 기반 PropertyBase.Value 직접 사용 (리플렉션 없이)
+                            pb.Value = targetVal;
+                        }
                     }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                        //Log.Write("CylinderSetup", "SetStateValue", ex.ToString());
+                    }
+                    break;
                 }
             }
+            //try
+            //{
+            //    foreach (var obj in list)
+            //    {
+            //        if (obj is PropertyBase pb)
+            //        {
+            //            var tProp = pb.GetType().GetProperty("Title") ?? pb.GetType().GetProperty("Name");
+            //            var vProp = pb.GetType().GetProperty("Value");
+            //            if (tProp == null || vProp == null)
+            //                continue;
+
+            //            var tVal = tProp.GetValue(pb)?.ToString();
+            //            if (string.Equals(tVal, title, StringComparison.OrdinalIgnoreCase))
+            //            {
+            //                vProp.SetValue(pb, value ?? false);
+            //                break;
+            //            }
+            //        }
+            //    }
+            //}
+            //catch (Exception ex)
+            //{
+            //    Log.Write(ex);
+            //}
+            
         }
 
         private void UpdateStatusLabel()

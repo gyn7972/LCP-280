@@ -24,17 +24,43 @@ namespace QMC.Common
         [DefaultValue(false)]
         public bool IsSimulation { get; set; } = false;
 
+        [Category("Common"), DisplayName("DryRun")]
+        [DefaultValue(false)]
+        public bool IsDryRun { get; set; } = false;
+
         [JsonIgnore]
         private DateTime LastModified { get; set; } = DateTime.Now;
 
         //[JsonIgnore]
         //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+
+
+        // ===== (추가) 전역 DryRun 관리 =====
+        private static readonly object _instancesLock = new object();
+        private static readonly List<BaseConfig> _instances = new List<BaseConfig>();
+        public static event Action<bool> GlobalDryRunChanged;
+        public static bool? GlobalDryRunOverride { get; set; }
+        public static event Action<bool> GlobalSimulationChanged;
+        public static bool? GlobalSimulationOverride { get; set; }
+
         // ===== 생성/초기화 =====
         protected BaseConfig(string name = null)
         {
             Name = name ?? GetType().Name;
-            Reset();   // 파생에서 기본값 세팅
+            lock (_instancesLock)
+            {
+                _instances.Add(this);
+                // 이미 전역 오버라이드가 있으면 생성 즉시 적용
+                if (GlobalDryRunOverride.HasValue)
+                    IsDryRun = GlobalDryRunOverride.Value;
+                if (GlobalSimulationOverride.HasValue)
+                    IsSimulation = GlobalSimulationOverride.Value;
+            }
+            Reset();
+
+            //Name = name ?? GetType().Name;
+            //Reset();   // 파생에서 기본값 세팅
         }
 
         /// <summary>프로퍼티 기본값(구조체/하위객체 초기화 등) - 파생에서 구현</summary>
@@ -77,6 +103,21 @@ namespace QMC.Common
                 OnSaving();
                 var path = GetFilePath();
                 SaveToFile(path);
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+        }
+
+        public int Save(string filePath)
+        {
+            try
+            {
+                OnSaving();
+                SaveToFile(filePath);
                 return 0;
             }
             catch (Exception ex)
@@ -184,5 +225,138 @@ namespace QMC.Common
             // 필요 시 파생에서 구현
             return 0;
         }
+
+
+
+        /// <summary>
+        /// 모든 살아있는 BaseConfig 인스턴스의 IsDryRun 값을 전역 설정.
+        /// </summary>
+        public static void SetGlobalDryRun(bool value)
+        {
+            GlobalDryRunOverride = value;
+            lock (_instancesLock)
+            {
+                foreach (var cfg in _instances)
+                {
+                    try 
+                    { 
+                        cfg.IsDryRun = value; 
+                    }
+                    catch (Exception ex)
+                    { Log.Write(ex); }
+                }
+            }
+            GlobalDryRunChanged?.Invoke(value);
+        }
+
+        public static void SetGlobalSimulation(bool value)
+        {
+            GlobalSimulationOverride = value;
+            lock (_instancesLock)
+            {
+                foreach (var cfg in _instances)
+                {
+                    try
+                    {
+                        cfg.IsSimulation = value;
+                    }
+                    catch (Exception ex)
+                    { Log.Write(ex); }
+                }
+            }
+            GlobalSimulationChanged?.Invoke(value);
+        }
+
+        /// <summary>
+        /// (옵션) 디스크에 존재하는 JSON 기반 Config 파일들의 IsDryRun 값을 일괄 패치.
+        /// </summary>
+        public static int PatchAllJsonConfigFilesDryRun(bool value)
+        {
+            int patched = 0;
+            try
+            {
+                var root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs");
+                if (!Directory.Exists(root)) return 0;
+
+                var files = Directory.GetFiles(root, "*.json", SearchOption.AllDirectories);
+                foreach (var f in files)
+                {
+                    try
+                    {
+                        var text = File.ReadAllText(f, Encoding.UTF8);
+                        if (string.IsNullOrWhiteSpace(text)) continue;
+
+                        // 단순 치환 (기존 키가 없으면 추가)
+                        if (text.IndexOf("\"IsDryRun\"", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            // true/false 토글 단순 정규식 대체는 위험 → JSON 파싱
+                            var jobj = Newtonsoft.Json.Linq.JObject.Parse(text);
+                            jobj["IsDryRun"] = value;
+                            File.WriteAllText(f, jobj.ToString(Formatting.Indented), Encoding.UTF8);
+                            patched++;
+                        }
+                        else
+                        {
+                            // 최상위 객체라 가정 후 속성 추가
+                            var jobj = Newtonsoft.Json.Linq.JObject.Parse(text);
+                            jobj["IsDryRun"] = value;
+                            File.WriteAllText(f, jobj.ToString(Formatting.Indented), Encoding.UTF8);
+                            patched++;
+                        }
+                    }
+                    catch (Exception ex)
+                    { Log.Write(ex); }
+                }
+            }
+            catch (Exception ex)
+            { Log.Write(ex); }
+
+            return patched;
+        }
+
+        public static int PatchAllJsonConfigFilesSimulation(bool value)
+        {
+            int patched = 0;
+            try
+            {
+                var root = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs");
+                if (!Directory.Exists(root)) return 0;
+
+                var files = Directory.GetFiles(root, "*.json", SearchOption.AllDirectories);
+                foreach (var f in files)
+                {
+                    try
+                    {
+                        var text = File.ReadAllText(f, Encoding.UTF8);
+                        if (string.IsNullOrWhiteSpace(text)) continue;
+
+                        // 단순 치환 (기존 키가 없으면 추가)
+                        if (text.IndexOf("\"IsSimulation\"", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            // true/false 토글 단순 정규식 대체는 위험 → JSON 파싱
+                            var jobj = Newtonsoft.Json.Linq.JObject.Parse(text);
+                            jobj["IsSimulation"] = value;
+                            File.WriteAllText(f, jobj.ToString(Formatting.Indented), Encoding.UTF8);
+                            patched++;
+                        }
+                        else
+                        {
+                            // 최상위 객체라 가정 후 속성 추가
+                            var jobj = Newtonsoft.Json.Linq.JObject.Parse(text);
+                            jobj["IsSimulation"] = value;
+                            File.WriteAllText(f, jobj.ToString(Formatting.Indented), Encoding.UTF8);
+                            patched++;
+                        }
+                    }
+                    catch (Exception ex)
+                    { Log.Write(ex); }
+                }
+            }
+            catch (Exception ex)
+            { Log.Write(ex); }
+
+            return patched;
+        }
+
     }
 }

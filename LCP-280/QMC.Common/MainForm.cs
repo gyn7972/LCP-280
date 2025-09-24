@@ -237,10 +237,42 @@ namespace QMC.Common
             }
         }
 
+        bool _alarmShowing;
         public void ShowAlarmForm(Form form)
         {
-            Thread.Sleep(100);                      //  창이 너무 빨리 떠서 알람 코드가 안보이나?
-            form.ShowDialog();
+            if (_alarmShowing) 
+                return;
+
+            try
+            {
+                _alarmShowing = true;
+                form.ShowDialog(this);
+            }
+            catch(Exception ex)
+            {
+                Log.Write(ex);
+            }
+            finally { _alarmShowing = false; }
+            //if (form.Visible)
+            //{
+            //    form.BringToFront();
+            //    form.Refresh();
+            //    return;
+            //}
+            ////form.ShowDialog();
+            //form.Show(); // NOT ShowDialog
+            //Thread.Sleep(100);                      //  창이 너무 빨리 떠서 알람 코드가 안보이나?
+
+        }
+
+        public void ShowAlarmModal()
+        {
+            using (var dlg = new Form_Alarm())
+            {
+                dlg.Alarms = AlarmManager.Instance.Alarms;
+                dlg.RefreshAlarmView();
+                dlg.ShowDialog(this);
+            }
         }
 
         private static void EnableDoubleBuffer(Panel panel)
@@ -389,7 +421,8 @@ namespace QMC.Common
             centerPanel.Controls.Clear();
             centerPanel.Controls.Add(view);
             currentCenterView = view;
-            if (!view.Visible) view.Show();
+            if (!view.Visible) 
+                view.Show();
         }
 
         private void ApplySizes()

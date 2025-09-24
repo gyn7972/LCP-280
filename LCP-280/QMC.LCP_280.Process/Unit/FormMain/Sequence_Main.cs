@@ -6,6 +6,7 @@ using QMC.Common;
 
 namespace QMC.LCP_280.Process
 {
+    [FormOrder(3)]
     public partial class Sequence_Main : Form
     {
         private Equipment equipment;

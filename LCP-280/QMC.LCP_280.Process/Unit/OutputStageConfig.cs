@@ -40,7 +40,7 @@ namespace QMC.LCP_280.Process.Unit
             Unloading,
             CenterPoint,
             Ready,
-            SetPosition   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
+            SetPosition,   // Positive 를 홈으로 설정, CurrentPosition 변경 용도  
             // 필요시 확장
         }
         public override bool GetTeachingPositionName(int selIndex, out string name)
@@ -159,9 +159,42 @@ namespace QMC.LCP_280.Process.Unit
         {
             int rc = Load();
             if (rc != 0) return rc;
+
+            var loaded = TeachingPositions ?? new List<TeachingPosition>();
+            var byName = new Dictionary<string, TeachingPosition>(StringComparer.OrdinalIgnoreCase);
+            foreach (var t in loaded)
+            {
+                if (t == null || string.IsNullOrWhiteSpace(t.Name)) continue;
+                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
+            }
+
+            var rebuilt = new List<TeachingPosition>();
+            foreach (TeachingPositionName en in Enum.GetValues(typeof(TeachingPositionName)))
+            {
+                string posName = en.ToString();
+                TeachingPosition tp;
+                if (byName.TryGetValue(posName, out tp) && tp != null)
+                {
+                    rebuilt.Add(tp);
+                }
+                else
+                {
+                    var axes = GetAxisNamesForPosition(posName);
+                    var axisPositions = new Dictionary<string, double>();
+                    foreach (var a in axes) axisPositions[a] = 0.0;
+                    rebuilt.Add(new TeachingPosition(posName, axisPositions, $"기본 {posName} 위치"));
+                }
+            }
+
+            TeachingPositions = rebuilt;
+
             ApplyAxisMapping();
-            foreach (var tp in TeachingPositions)
-                tp.BindAxes(axisManager, "Unit");
+
+            if (axisManager != null)
+            {
+                foreach (var tp in TeachingPositions)
+                    tp.BindAxes(axisManager, "Unit");
+            }
             return 0;
         }
 
@@ -212,6 +245,26 @@ namespace QMC.LCP_280.Process.Unit
                 "SlotPitch (mm)",
                 "SlotCount (ea)"
             };
+
+        /// 개별 Teaching Position 에 적용할 오프셋 (X / Y / T)
+        public Dictionary<string, (double dx, double dy, double dt)> Offsets { get; set; } = new Dictionary<string, (double dx, double dy, double dt)>();
+
+        public (double x, double y, double t) GetPositionWithOffset(string name)
+        {
+            var tp = GetTeachingPosition(name);
+            if (tp == null) return (0, 0, 0);
+            double x = tp.AxisPositions.TryGetValue(AxisNames.BinStageX, out var vx) ? vx : 0;
+            double y = tp.AxisPositions.TryGetValue(AxisNames.BinStageY, out var vy) ? vy : 0;
+            double t = tp.AxisPositions.TryGetValue(AxisNames.BinStageT, out var vt) ? vt : 0;
+            if (Offsets.TryGetValue(name, out var off)) { x += off.dx; y += off.dy; t += off.dt; }
+            return (x, y, t);
+        }
+
+        public void SetOffset(string name, double dx, double dy, double dt)
+        {
+            Offsets[name] = (dx, dy, dt);
+            Saveconfig();
+        }
         #endregion
     }
 }

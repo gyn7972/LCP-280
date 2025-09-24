@@ -130,6 +130,8 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        
+
         #region Vision Hooks / Camera / Runner
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
@@ -179,7 +181,7 @@ namespace QMC.LCP_280.Process.Unit
             BindIoDomains();
             BindCamera();
 
-            Config.IsSimulation = Config.IsSimulation; ;
+            Config.IsSimulation = Config.IsSimulation;
             if (Config.IsSimulation)
             {
                 _axX.Config.IsSimulation = true;
@@ -298,58 +300,6 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.WaferStageT, ref _axT);
         }
 
-        // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
-        /// <summary>
-        /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
-        /// </summary>
-        public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
-        {
-            if (axis == null) return -1;
-
-            if (CheckMoveSafety(axis) != 0)
-            {
-                return -1;
-            }
-
-            Task<int> task = MoveAxisPositionOneAsync(axis, target, isFine);
-            while (IsEndTask(task) == false)
-            {
-                // 동일 Safety Interlock
-                if (!InputStageEjector.IsPinZSafetyPos())
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
-                    return -1;
-                }
-                if (!InputStageEjector.IsEjectorZSafetyPos())
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
-                    return -1;
-                }
-                if (!InputDieTransfer.IsPickZSafetyPos())
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
-                    return -1;
-                }
-                if (!InputFeeder.IsFeederZSafetyPosition())
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
-                    return -1;
-                }
-                if (!InputFeeder.IsFeederYSafetyPosition())
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
-                    return -1;
-                }
-
-                Thread.Sleep(0);
-            }
-            return task.Result;
-        }
 
         //가공시에 스테이지 Area 밖으로 나가는것을 방지하기 위한 함수
         public override int CheckMoveSafety(MotionAxis ax)
@@ -454,13 +404,61 @@ namespace QMC.LCP_280.Process.Unit
             return xOk && yOk;
         }
 
-        //protected override MotionAxis ResolveAxis(string name)
-        //{
-        //    // 특수 축 우선 매핑 후
-        //    return base.ResolveAxis(name);
-        //}
 
 
+
+        // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
+        /// <summary>
+        /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
+        /// </summary>
+        public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
+        {
+            if (axis == null) return -1;
+
+            if(CheckMoveSafety(axis) != 0)
+            {
+                return -1;
+            }
+
+            Task<int> task = MoveAxisPositionOneAsync(axis, target, isFine);
+            while (IsEndTask(task) == false)
+            {
+                // 동일 Safety Interlock
+                if (!InputStageEjector.IsPinZSafetyPos())
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                    return -1;
+                }
+                if (!InputStageEjector.IsEjectorZSafetyPos())
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                    return -1;
+                }
+                if (!InputDieTransfer.IsPickZSafetyPos())
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
+                    return -1;
+                }
+                if (!InputFeeder.IsFeederZSafetyPosition())
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
+                    return -1;
+                }
+                if (!InputFeeder.IsFeederYSafetyPosition())
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eInputFeederYNotSafe);
+                    return -1;
+                }
+
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
         public int MoveApplyOffset(string positionName, double dx, double dy, double dt)
         {
             int nRtn = 0;
@@ -488,7 +486,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return 0;
         }
-
         /// //////////////////////////////////////////////////////////////////////////////////////////////
         // UI, sequence 용 Move 함수
         public int MoveTeachingPositionOnce(InputStageConfig.TeachingPositionName name, bool isFine)
@@ -564,7 +561,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int)InputStageConfig.TeachingPositionName.Ready, isFine);
         }
-
+        #endregion
 
         public bool InPosTeaching(string name)
         {
@@ -620,7 +617,6 @@ namespace QMC.LCP_280.Process.Unit
             return InPos(axis, target);
         }
         protected bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        #endregion
 
         #region Teaching Position Move (Batch Style)
         public int MoveToTeachingPosition(string positionName, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
@@ -629,9 +625,12 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return -1;
             var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
             int rc = 0;
-            if (AxisX != null) rc |= AxisX.MoveAbs(x, vel > 0 ? vel : AxisX.Config.MaxVelocity, acc > 0 ? acc : AxisX.Config.RunAcc, dec > 0 ? dec : AxisX.Config.RunDec, jerk > 0 ? jerk : AxisX.Config.AccJerkPercent);
-            if (AxisY != null) rc |= AxisY.MoveAbs(y, vel > 0 ? vel : AxisY.Config.MaxVelocity, acc > 0 ? acc : AxisY.Config.RunAcc, dec > 0 ? dec : AxisY.Config.RunDec, jerk > 0 ? jerk : AxisY.Config.AccJerkPercent);
-            if (AxisT != null) rc |= AxisT.MoveAbs(t, vel > 0 ? vel : AxisT.Config.MaxVelocity, acc > 0 ? acc : AxisT.Config.RunAcc, dec > 0 ? dec : AxisT.Config.RunDec, jerk > 0 ? jerk : AxisT.Config.AccJerkPercent);
+
+            //Todo : 인터락 확인 후 이동 하도록 수정.
+            //if (AxisX != null) rc |= AxisX.MoveAbs(x, vel > 0 ? vel : AxisX.Config.MaxVelocity, acc > 0 ? acc : AxisX.Config.RunAcc, dec > 0 ? dec : AxisX.Config.RunDec, jerk > 0 ? jerk : AxisX.Config.AccJerkPercent);
+            //if (AxisY != null) rc |= AxisY.MoveAbs(y, vel > 0 ? vel : AxisY.Config.MaxVelocity, acc > 0 ? acc : AxisY.Config.RunAcc, dec > 0 ? dec : AxisY.Config.RunDec, jerk > 0 ? jerk : AxisY.Config.AccJerkPercent);
+            //if (AxisT != null) rc |= AxisT.MoveAbs(t, vel > 0 ? vel : AxisT.Config.MaxVelocity, acc > 0 ? acc : AxisT.Config.RunAcc, dec > 0 ? dec : AxisT.Config.RunDec, jerk > 0 ? jerk : AxisT.Config.AccJerkPercent);
+
             return rc;
         }
         public bool InPosTeaching(TeachingPosition tp)
@@ -823,7 +822,7 @@ namespace QMC.LCP_280.Process.Unit
         #region High-Level Actuator API (Interlock 포함)
         public bool IsClampLiftUp()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -832,7 +831,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampLiftDown()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -841,7 +840,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampFwd()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -851,7 +850,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampBwd()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -860,7 +859,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool Ring0()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -869,20 +868,18 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool Ring1()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
 
             return ReadInput(InputStageConfig.IO.RING_CHECK1);
         }
-
         #endregion
-
         // === Direct Valve Control (강제 구동) ===
         public bool IsVacuumValveOn()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -890,7 +887,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsClampLiftUpValveOn()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -898,25 +895,23 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsVacuumOn()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
             return ReadInput(InputStageConfig.IO.VAC_OK_SNS);
         }
-
         public bool IsPlateUp()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
             return ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
         }
-
         public bool IsPlateDown()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -1210,7 +1205,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsRingPresent()
         {
             bool bRtn = true;
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -1225,7 +1220,9 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsWaferLoadingPosition()
         {
             var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
-            if (tp == null) return false;
+            if (tp == null) 
+                return false;
+
             return InPosTeaching(tp);
         }
         public bool IsWaferUnloadingPosition()
@@ -1253,15 +1250,15 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_StageLoadingDone = false;
 
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
-            if (Config.IsSimulation)
+            if(!Config.IsSimulation && !Config.IsDryRun)    
             {
-
+                if (IsRingPresent())
+                {
+                    Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
+                    return nRtn;
+                }
             }
-            else if (IsRingPresent())
-            {
-                Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
-                return nRtn;
-            }
+            
 
             // 로딩 Teaching 이동
             nRtn = MoveToStageLoadPosition();
@@ -1333,7 +1330,7 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
-                if (Config.IsSimulation)
+                if (Config.IsSimulation || Config.IsDryRun)
                 {
                     //Simulation - ok
                 }
@@ -1393,15 +1390,11 @@ namespace QMC.LCP_280.Process.Unit
 
             // 아직 Wafer 안 올라옴 → 대기
             bool bRtn = Config.IsSimulation;
-            if (IsRingPresent() || bRtn)
+            if (IsRingPresent() || bRtn || Config.IsDryRun)
             {
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
-                if (Config.IsSimulation)
-                {
-                    Thread.Sleep(1000);
-                }
-                else if (!IsPlateUp())
+                if (!IsPlateUp() || bRtn)
                 {
                     SetClampPlate(true);
                     if (!IsPlateUp())
@@ -1588,7 +1581,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
 
             }
@@ -1617,11 +1610,11 @@ namespace QMC.LCP_280.Process.Unit
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
             {
                 return -1;
-
             }
 
             if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eVisionTsearch);
                 Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
                 return -1;
@@ -1718,6 +1711,7 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eVisionXYsearch);
                 Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
                 return -1;
@@ -1796,13 +1790,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (WaitUntil(() =>
-                this.InputStageEjector.IsAnyAxisMoving(),
-                MappingMoveTimeoutMs) != 0)
-                return -1;
+            //if (WaitUntil(() =>
+            //    !this.InputStageEjector.IsAnyAxisMoving(),
+            //    MappingMoveTimeoutMs) != 0)
+            //    return -1;
 
-            if (this.InputStageEjector.IsPinZSafetyPos() == false)
+            if (!this.InputStageEjector.IsPinZSafetyPos())
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                 return -1;
             }
@@ -1812,14 +1807,14 @@ namespace QMC.LCP_280.Process.Unit
                 ret = this.AxisX.MoveAbs(x, bFineSpeed);
                 if (ret != 0)
                 {
-                    this.AxisX.EmgStop();
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                     return ret;
                 }
                 ret = this.AxisY.MoveAbs(y, bFineSpeed);
                 if (ret != 0)
                 {
-                    this.AxisY.EmgStop();
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                     return ret;
                 }
@@ -1872,7 +1867,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
-
 
         public int PerformChipMapping(bool bFineSpeed = false)
         {
@@ -1942,6 +1936,7 @@ namespace QMC.LCP_280.Process.Unit
                     nRet = MoveStage(targetX, targetY, bFineSpeed);
                     if (nRet != 0)
                     {
+                        AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                         Log.Write(UnitName, "ChipMap", $"MoveStage fail r={r} c={c} x={targetX:F3} y={targetY:F3}");
                         PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                         return -1;
@@ -1954,7 +1949,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    if (!Config.IsSimulation)
+                    if (!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (StageCamera.GrabSync(out img) != 0 || img == null)
                         {
@@ -1968,13 +1963,13 @@ namespace QMC.LCP_280.Process.Unit
                     bool found = false;
                     double visionDx = 0, visionDy = 0;
 
-                    if (Config.IsSimulation)
-                    {
-                        // 시뮬레이션: 예시로 모두 존재
-                        found = true;
-                        score = 0.9;
-                    }
-                    else
+                    //if (Config.IsSimulation  || Config.IsDryRun)
+                    //{
+                    //    // 시뮬레이션: 예시로 모두 존재
+                    //    found = true;
+                    //    score = 0.9;
+                    //}
+                    //else
                     {
                         // 예시: CenterSearch 사용 (dx,dy 만 필요)
                         var res = CenterSearchViaRunner();
@@ -2312,7 +2307,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // 이미지 크기 & FOV mm
             var img = StageCamera?.LatestImage;
-            if (!Config.IsSimulation)
+            if (!Config.IsSimulation && !Config.IsDryRun)
             {
                 if (img == null || img.Header == null || img.Header.Width <= 0 || img.Header.Height <= 0)
                 {
@@ -2375,7 +2370,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
 
                     VisionImage snap = null;
-                    if (!Config.IsSimulation)
+                    if (!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (StageCamera.GrabSync(out snap) != 0 || snap == null)
                         {

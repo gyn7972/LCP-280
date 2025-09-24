@@ -32,14 +32,16 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             this.components = new System.ComponentModel.Container();
             this.groupBoxCassetteLifterSeq = new System.Windows.Forms.GroupBox();
+            this.manualSequenceControlCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.checkBoxSimulation = new System.Windows.Forms.CheckBox();
+            this.checkBoxTest = new System.Windows.Forms.CheckBox();
+            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
+            this.btnMapping = new QMC.Common.IndividualMenuButton();
             this.groupBoxInputStageSeq = new System.Windows.Forms.GroupBox();
+            this.manualSequenceControlInputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this._InputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
-            this.btnMapping = new QMC.Common.IndividualMenuButton();
-            this.manualSequenceControlInputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
-            this.manualSequenceControlCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
             this.groupBoxCassetteLifterSeq.SuspendLayout();
@@ -60,8 +62,21 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.groupBoxCassetteLifterSeq.TabStop = false;
             this.groupBoxCassetteLifterSeq.Text = "Input Wafer Seq";
             // 
+            // manualSequenceControlCassette
+            // 
+            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlCassette.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(297, 250);
+            this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
+            this.manualSequenceControlCassette.ParentUnit = null;
+            this.manualSequenceControlCassette.Size = new System.Drawing.Size(389, 316);
+            this.manualSequenceControlCassette.TabIndex = 13;
+            // 
             // groupBoxManual
             // 
+            this.groupBoxManual.Controls.Add(this.checkBoxSimulation);
+            this.groupBoxManual.Controls.Add(this.checkBoxTest);
             this.groupBoxManual.Controls.Add(this.waferMapView);
             this.groupBoxManual.Controls.Add(this.btnMapping);
             this.groupBoxManual.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
@@ -71,6 +86,58 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.groupBoxManual.TabIndex = 19;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
+            // 
+            // checkBoxSimulation
+            // 
+            this.checkBoxSimulation.AutoSize = true;
+            this.checkBoxSimulation.Location = new System.Drawing.Point(104, 353);
+            this.checkBoxSimulation.Name = "checkBoxSimulation";
+            this.checkBoxSimulation.Size = new System.Drawing.Size(120, 27);
+            this.checkBoxSimulation.TabIndex = 19;
+            this.checkBoxSimulation.Text = "Simulation";
+            this.checkBoxSimulation.UseVisualStyleBackColor = true;
+            this.checkBoxSimulation.Visible = false;
+            this.checkBoxSimulation.CheckedChanged += new System.EventHandler(this.checkBoxSimulation_CheckedChanged);
+            // 
+            // checkBoxTest
+            // 
+            this.checkBoxTest.AutoSize = true;
+            this.checkBoxTest.Location = new System.Drawing.Point(6, 353);
+            this.checkBoxTest.Name = "checkBoxTest";
+            this.checkBoxTest.Size = new System.Drawing.Size(92, 27);
+            this.checkBoxTest.TabIndex = 18;
+            this.checkBoxTest.Text = "DryRun";
+            this.checkBoxTest.UseVisualStyleBackColor = true;
+            this.checkBoxTest.Visible = false;
+            this.checkBoxTest.CheckedChanged += new System.EventHandler(this.checkBoxTest_CheckedChanged);
+            // 
+            // waferMapView
+            // 
+            this.waferMapView.Location = new System.Drawing.Point(6, 25);
+            this.waferMapView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.waferMapView.Name = "waferMapView";
+            this.waferMapView.Size = new System.Drawing.Size(157, 205);
+            this.waferMapView.TabIndex = 16;
+            // 
+            // btnMapping
+            // 
+            this.btnMapping.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMapping.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnMapping.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMapping.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMapping.CustomForeColor = System.Drawing.Color.Black;
+            this.btnMapping.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMapping.ForeColor = System.Drawing.Color.Black;
+            this.btnMapping.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnMapping.Location = new System.Drawing.Point(170, 25);
+            this.btnMapping.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.btnMapping.Name = "btnMapping";
+            this.btnMapping.Size = new System.Drawing.Size(103, 44);
+            this.btnMapping.TabIndex = 17;
+            this.btnMapping.TabStop = false;
+            this.btnMapping.Text = "Mapping";
+            this.btnMapping.UseVisualStyleBackColor = false;
+            this.btnMapping.Click += new System.EventHandler(this.btnMapping_Click);
             // 
             // groupBoxInputStageSeq
             // 
@@ -82,6 +149,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.groupBoxInputStageSeq.TabIndex = 19;
             this.groupBoxInputStageSeq.TabStop = false;
             this.groupBoxInputStageSeq.Text = "InputStage Manual Seq";
+            // 
+            // manualSequenceControlInputStage
+            // 
+            this.manualSequenceControlInputStage.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlInputStage.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControlInputStage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlInputStage.MinimumSize = new System.Drawing.Size(297, 250);
+            this.manualSequenceControlInputStage.Name = "manualSequenceControlInputStage";
+            this.manualSequenceControlInputStage.ParentUnit = null;
+            this.manualSequenceControlInputStage.Size = new System.Drawing.Size(389, 316);
+            this.manualSequenceControlInputStage.TabIndex = 13;
             // 
             // groupBoxImageView
             // 
@@ -114,56 +192,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this._InputWaferCameraviewer.TabStop = false;
             this._InputWaferCameraviewer.UpdateDelayTime = 80;
             this._InputWaferCameraviewer.VisibleCrossLine = true;
-            // 
-            // btnMapping
-            // 
-            this.btnMapping.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnMapping.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnMapping.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnMapping.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnMapping.CustomForeColor = System.Drawing.Color.Black;
-            this.btnMapping.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnMapping.ForeColor = System.Drawing.Color.Black;
-            this.btnMapping.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMapping.Location = new System.Drawing.Point(170, 25);
-            this.btnMapping.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.btnMapping.Name = "btnMapping";
-            this.btnMapping.Size = new System.Drawing.Size(103, 44);
-            this.btnMapping.TabIndex = 17;
-            this.btnMapping.TabStop = false;
-            this.btnMapping.Text = "Mapping";
-            this.btnMapping.UseVisualStyleBackColor = false;
-            this.btnMapping.Click += new System.EventHandler(this.btnMapping_Click);
-            // 
-            // manualSequenceControlInputStage
-            // 
-            this.manualSequenceControlInputStage.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlInputStage.Location = new System.Drawing.Point(3, 26);
-            this.manualSequenceControlInputStage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlInputStage.MinimumSize = new System.Drawing.Size(297, 250);
-            this.manualSequenceControlInputStage.Name = "manualSequenceControlInputStage";
-            this.manualSequenceControlInputStage.ParentUnit = null;
-            this.manualSequenceControlInputStage.Size = new System.Drawing.Size(389, 316);
-            this.manualSequenceControlInputStage.TabIndex = 13;
-            // 
-            // waferMapView
-            // 
-            this.waferMapView.Location = new System.Drawing.Point(6, 25);
-            this.waferMapView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.waferMapView.Name = "waferMapView";
-            this.waferMapView.Size = new System.Drawing.Size(157, 205);
-            this.waferMapView.TabIndex = 16;
-            // 
-            // manualSequenceControlCassette
-            // 
-            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlCassette.Location = new System.Drawing.Point(3, 26);
-            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(297, 250);
-            this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
-            this.manualSequenceControlCassette.ParentUnit = null;
-            this.manualSequenceControlCassette.Size = new System.Drawing.Size(389, 316);
-            this.manualSequenceControlCassette.TabIndex = 13;
             // 
             // dioControl
             // 
@@ -207,6 +235,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.Text = "InputWafer_Working";
             this.groupBoxCassetteLifterSeq.ResumeLayout(false);
             this.groupBoxManual.ResumeLayout(false);
+            this.groupBoxManual.PerformLayout();
             this.groupBoxInputStageSeq.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._InputWaferCameraviewer)).EndInit();
@@ -226,5 +255,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private ManualSequenceControl manualSequenceControlInputStage;
         private System.Windows.Forms.GroupBox groupBoxImageView;
         private Common.Vision.VisionImageViewer _InputWaferCameraviewer;
+        private System.Windows.Forms.CheckBox checkBoxTest;
+        private System.Windows.Forms.CheckBox checkBoxSimulation;
     }
 }

@@ -44,9 +44,11 @@
             this.baseGroupBoxPatternMatching.Controls.Add(this.baseToggleButtonAvg);
             this.baseGroupBoxPatternMatching.ForeColor = System.Drawing.Color.Black;
             this.baseGroupBoxPatternMatching.Location = new System.Drawing.Point(0, 0);
+            this.baseGroupBoxPatternMatching.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseGroupBoxPatternMatching.Name = "baseGroupBoxPatternMatching";
+            this.baseGroupBoxPatternMatching.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseGroupBoxPatternMatching.Radious = 0;
-            this.baseGroupBoxPatternMatching.Size = new System.Drawing.Size(470, 275);
+            this.baseGroupBoxPatternMatching.Size = new System.Drawing.Size(537, 344);
             this.baseGroupBoxPatternMatching.TabIndex = 1;
             this.baseGroupBoxPatternMatching.TabStop = false;
             this.baseGroupBoxPatternMatching.Text = "PatternMatching";
@@ -56,9 +58,10 @@
             // 
             // baseButtonTrain
             // 
-            this.baseButtonTrain.Location = new System.Drawing.Point(334, 231);
+            this.baseButtonTrain.Location = new System.Drawing.Point(382, 289);
+            this.baseButtonTrain.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonTrain.Name = "baseButtonTrain";
-            this.baseButtonTrain.Size = new System.Drawing.Size(92, 31);
+            this.baseButtonTrain.Size = new System.Drawing.Size(105, 39);
             this.baseButtonTrain.TabIndex = 11;
             this.baseButtonTrain.Text = "Train";
             this.baseButtonTrain.UseVisualStyleBackColor = true;
@@ -67,19 +70,21 @@
             // baseListBoxTrainList
             // 
             this.baseListBoxTrainList.FormattingEnabled = true;
-            this.baseListBoxTrainList.ItemHeight = 12;
-            this.baseListBoxTrainList.Location = new System.Drawing.Point(236, 41);
+            this.baseListBoxTrainList.ItemHeight = 15;
+            this.baseListBoxTrainList.Location = new System.Drawing.Point(270, 51);
+            this.baseListBoxTrainList.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseListBoxTrainList.Name = "baseListBoxTrainList";
-            this.baseListBoxTrainList.Size = new System.Drawing.Size(129, 184);
+            this.baseListBoxTrainList.Size = new System.Drawing.Size(147, 229);
             this.baseListBoxTrainList.TabIndex = 10;
             this.baseListBoxTrainList.SelectedIndexChanged += new System.EventHandler(this.baseListBoxTrainList_SelectedIndexChanged);
             // 
             // pictureBoxTrainImage
             // 
             this.pictureBoxTrainImage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.pictureBoxTrainImage.Location = new System.Drawing.Point(13, 41);
+            this.pictureBoxTrainImage.Location = new System.Drawing.Point(15, 51);
+            this.pictureBoxTrainImage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.pictureBoxTrainImage.Name = "pictureBoxTrainImage";
-            this.pictureBoxTrainImage.Size = new System.Drawing.Size(212, 220);
+            this.pictureBoxTrainImage.Size = new System.Drawing.Size(242, 274);
             this.pictureBoxTrainImage.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBoxTrainImage.TabIndex = 9;
             this.pictureBoxTrainImage.TabStop = false;
@@ -87,9 +92,10 @@
             // 
             // baseButtonDown
             // 
-            this.baseButtonDown.Location = new System.Drawing.Point(371, 192);
+            this.baseButtonDown.Location = new System.Drawing.Point(424, 240);
+            this.baseButtonDown.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonDown.Name = "baseButtonDown";
-            this.baseButtonDown.Size = new System.Drawing.Size(92, 31);
+            this.baseButtonDown.Size = new System.Drawing.Size(105, 39);
             this.baseButtonDown.TabIndex = 7;
             this.baseButtonDown.Text = "Down";
             this.baseButtonDown.UseVisualStyleBackColor = true;
@@ -97,9 +103,10 @@
             // 
             // baseButtonUp
             // 
-            this.baseButtonUp.Location = new System.Drawing.Point(371, 154);
+            this.baseButtonUp.Location = new System.Drawing.Point(424, 192);
+            this.baseButtonUp.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonUp.Name = "baseButtonUp";
-            this.baseButtonUp.Size = new System.Drawing.Size(92, 31);
+            this.baseButtonUp.Size = new System.Drawing.Size(105, 39);
             this.baseButtonUp.TabIndex = 6;
             this.baseButtonUp.Text = "Up";
             this.baseButtonUp.UseVisualStyleBackColor = true;
@@ -107,9 +114,10 @@
             // 
             // baseButtonClear
             // 
-            this.baseButtonClear.Location = new System.Drawing.Point(371, 116);
+            this.baseButtonClear.Location = new System.Drawing.Point(424, 145);
+            this.baseButtonClear.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonClear.Name = "baseButtonClear";
-            this.baseButtonClear.Size = new System.Drawing.Size(92, 31);
+            this.baseButtonClear.Size = new System.Drawing.Size(105, 39);
             this.baseButtonClear.TabIndex = 5;
             this.baseButtonClear.Text = "Clear";
             this.baseButtonClear.UseVisualStyleBackColor = true;
@@ -117,9 +125,10 @@
             // 
             // baseButtonRemove
             // 
-            this.baseButtonRemove.Location = new System.Drawing.Point(371, 78);
+            this.baseButtonRemove.Location = new System.Drawing.Point(424, 98);
+            this.baseButtonRemove.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonRemove.Name = "baseButtonRemove";
-            this.baseButtonRemove.Size = new System.Drawing.Size(92, 31);
+            this.baseButtonRemove.Size = new System.Drawing.Size(105, 39);
             this.baseButtonRemove.TabIndex = 4;
             this.baseButtonRemove.Text = "Remove";
             this.baseButtonRemove.UseVisualStyleBackColor = true;
@@ -127,9 +136,10 @@
             // 
             // baseButtonAdd
             // 
-            this.baseButtonAdd.Location = new System.Drawing.Point(371, 40);
+            this.baseButtonAdd.Location = new System.Drawing.Point(424, 50);
+            this.baseButtonAdd.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseButtonAdd.Name = "baseButtonAdd";
-            this.baseButtonAdd.Size = new System.Drawing.Size(92, 31);
+            this.baseButtonAdd.Size = new System.Drawing.Size(105, 39);
             this.baseButtonAdd.TabIndex = 3;
             this.baseButtonAdd.Text = "Add";
             this.baseButtonAdd.UseVisualStyleBackColor = true;
@@ -137,9 +147,10 @@
             // 
             // baseToggleButtonAvg
             // 
-            this.baseToggleButtonAvg.Location = new System.Drawing.Point(236, 231);
+            this.baseToggleButtonAvg.Location = new System.Drawing.Point(270, 289);
+            this.baseToggleButtonAvg.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.baseToggleButtonAvg.Name = "baseToggleButtonAvg";
-            this.baseToggleButtonAvg.Size = new System.Drawing.Size(92, 31);
+            this.baseToggleButtonAvg.Size = new System.Drawing.Size(105, 39);
             this.baseToggleButtonAvg.TabIndex = 1;
             this.baseToggleButtonAvg.Text = "Avg";
             this.baseToggleButtonAvg.UseVisualStyleBackColor = true;
@@ -147,11 +158,12 @@
             // 
             // PatternMatchingParamControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this.baseGroupBoxPatternMatching);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "PatternMatchingParamControl";
-            this.Size = new System.Drawing.Size(470, 280);
+            this.Size = new System.Drawing.Size(537, 350);
             this.baseGroupBoxPatternMatching.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBoxTrainImage)).EndInit();
             this.ResumeLayout(false);

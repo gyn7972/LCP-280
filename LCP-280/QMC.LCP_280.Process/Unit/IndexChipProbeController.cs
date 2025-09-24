@@ -174,7 +174,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -251,7 +251,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -328,7 +328,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -443,7 +443,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -519,9 +519,7 @@ namespace QMC.LCP_280.Process.Unit
             //  - 1~8 : 그대로 사용 (Place_Index1 ~ Place_Index8)
             //  - 0~7 : +1 보정하여 1~8 매핑
             int teachingIdx = 0;
-            if (nIndex >= 1 && nIndex <= 8)
-                teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
+            if (nIndex >= 0 && nIndex < 8)
                 teachingIdx = nIndex + 1; // 0-based 입력으로 판단
             else
             {
@@ -551,7 +549,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -715,7 +713,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -835,7 +833,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeZ?.EmgStop();
                 AxisProbeCardX?.EmgStop();
@@ -1106,7 +1104,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool ProbeVacOk() => _vacProbeCard?.IsOk() ?? false;
         public bool IsSphereForward()
         {
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -1115,7 +1113,7 @@ namespace QMC.LCP_280.Process.Unit
         } 
         public bool IsSphereBackward()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
@@ -1141,7 +1139,7 @@ namespace QMC.LCP_280.Process.Unit
 
         public int IsRotaryIdle()
         {
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisProbeCardX.EmgStop();
                 AxisProbeCardY.EmgStop();
@@ -1160,7 +1158,7 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
         }
 
-        public bool IsBottomRequired()
+        public bool IsTopRequired()
         {
             //Todo: Recipe Data로 사용해야함.
             return Config.ContectMode;
@@ -1227,11 +1225,7 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = ContactBottomOrTop;
             LogSequence("Start");
 
-            // (선택) 모드 분기 예시
-            // if (Config.ContactMode == ProbeContactMode.Bottom) return BottomContactOnce(bFineSpeed);
-            // if (Config.ContactMode == ProbeContactMode.Top)    return TopContact(bFineSpeed);
-
-            if(IsBottomRequired())
+            if(IsTopRequired())
             {
                 nRet = TopContactOnce(bFineSpeed);
                 if (nRet != 0)
@@ -1430,7 +1424,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[BottomContactWait] IndexChipProber null");
                 return -1;
             }
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 Thread.Sleep(1000);
                 return 0;
@@ -1461,7 +1455,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 // (선택) Rotary 움직임 감시하여 비정상 시 탈출 가능
-                if (Rotary != null && Rotary.IsAnyAxisMoving())
+                if (Rotary != null && !Rotary.IsAnyAxisMoving())
                 {
                     Log.Write(UnitName, "[BottomContactWait] Rotary moving detected - abort wait");
                     return -1;

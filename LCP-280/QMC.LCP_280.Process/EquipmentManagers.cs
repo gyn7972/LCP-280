@@ -73,112 +73,229 @@ namespace QMC.LCP_280.Process
         }
 
         /// <summary>
-        /// 모든 Config 저장 (XML 형식)
+        /// 모든 Unit Config JSON 저장 (각 Config 의 GetFilePath 사용 또는 지정 폴더).
         /// </summary>
         public bool SaveAllConfigs(string directoryPath = null)
         {
             lock (_saveLock)
             {
-                try
+                bool allOk = true;
+                foreach (var kv in _unitConfigs)
                 {
-                    directoryPath = directoryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
-                    
-                    if (!Directory.Exists(directoryPath))
-                    {
-                        Directory.CreateDirectory(directoryPath);
-                    }
-
-                    bool allSuccess = true;
-
-                    foreach (var kvp in _unitConfigs)
-                    {
-                        var unitName = kvp.Key;
-                        var config = kvp.Value;
-                        
-                        try
-                        {
-                            var filePath = Path.Combine(directoryPath, $"{unitName}_Config.xml");
-                            
-                            var serializer = new XmlSerializer(config.GetType());
-                            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
-                            {
-                                serializer.Serialize(writer, config);
-                            }
-                            
-                            Console.WriteLine($"Unit '{unitName}' Config 저장됨: {filePath}");
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Unit '{unitName}' Config 저장 실패: {ex.Message}");
-                            allSuccess = false;
-                        }
-                    }
-
-                    return allSuccess;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Config 저장 중 오류: {ex.Message}");
-                    return false;
-                }
-            }
-        }
-
-        /// <summary>
-        /// 모든 Config 로드 (XML 형식)
-        /// </summary>
-        public bool LoadAllConfigs(string directoryPath = null)
-        {
-            try
-            {
-                directoryPath = directoryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
-                
-                if (!Directory.Exists(directoryPath))
-                {
-                    Console.WriteLine($"Config 디렉토리가 없습니다: {directoryPath}");
-                    return false;
-                }
-
-                var configFiles = Directory.GetFiles(directoryPath, "*_Config.xml");
-                bool allSuccess = true;
-
-                foreach (var filePath in configFiles)
-                {
+                    var unitName = kv.Key;
+                    var cfg = kv.Value;
                     try
                     {
-                        var fileName = Path.GetFileNameWithoutExtension(filePath);
-                        var unitName = fileName.Replace("_Config", "");
-                        
-                        // 현재 등록된 Config 타입을 기반으로 역직렬화
-                        if (_unitConfigs.TryGetValue(unitName, out var existingConfig))
+                        string targetPath;
+                        if (directoryPath == null)
                         {
-                            var serializer = new XmlSerializer(existingConfig.GetType());
-                            using (var reader = new StreamReader(filePath))
-                            {
-                                var loadedConfig = serializer.Deserialize(reader);
-                                if (loadedConfig is BaseConfig baseConfig)
-                                {
-                                    _unitConfigs[unitName] = baseConfig;
-                                    Console.WriteLine($"Unit '{unitName}' Config 로드됨: {filePath}");
-                                }
-                            }
+                            targetPath = cfg.GetFilePath();
+                        }
+                        else
+                        {
+                            Directory.CreateDirectory(directoryPath);
+                            var fileName = Path.GetFileName(cfg.GetFilePath());
+                            targetPath = Path.Combine(directoryPath, fileName);
+                        }
+
+                        if (cfg.Save(targetPath) != 0)
+                        {
+                            Console.WriteLine($"Unit '{unitName}' Config 저장 실패(rc!=0)");
+                            allOk = false;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Unit '{unitName}' Config 저장: {targetPath}");
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Config 파일 로드 실패 {filePath}: {ex.Message}");
-                        allSuccess = false;
+                        Console.WriteLine($"Unit '{unitName}' Config 저장 예외: {ex.Message}");
+                        allOk = false;
                     }
                 }
+                return allOk;
 
-                return allSuccess;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Config 로드 중 오류: {ex.Message}");
-                return false;
+                //try
+                //{
+                //    directoryPath = directoryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
+
+                //    if (!Directory.Exists(directoryPath))
+                //    {
+                //        Directory.CreateDirectory(directoryPath);
+                //    }
+
+                //    bool allSuccess = true;
+
+                //    foreach (var kvp in _unitConfigs)
+                //    {
+                //        var unitName = kvp.Key;
+                //        var config = kvp.Value;
+
+                //        try
+                //        {
+                //            var filePath = Path.Combine(directoryPath, $"{unitName}_Config.xml");
+
+                //            var serializer = new XmlSerializer(config.GetType());
+                //            using (var writer = new StreamWriter(filePath, false, Encoding.UTF8))
+                //            {
+                //                serializer.Serialize(writer, config);
+                //            }
+
+                //            Console.WriteLine($"Unit '{unitName}' Config 저장됨: {filePath}");
+                //        }
+                //        catch (Exception ex)
+                //        {
+                //            Console.WriteLine($"Unit '{unitName}' Config 저장 실패: {ex.Message}");
+                //            allSuccess = false;
+                //        }
+                //    }
+
+                //    return allSuccess;
+                //}
+                //catch (Exception ex)
+                //{
+                //    Console.WriteLine($"Config 저장 중 오류: {ex.Message}");
+                //    return false;
+                //}
             }
         }
+
+        /// <summary>
+        /// 모든 Unit Config JSON 로드 (파일 없으면 건너뜀).
+        /// directoryPath 지정 시 그 폴더에서 동일 파일명 찾아 로드.
+        /// </summary>
+        public bool LoadAllConfigs(string directoryPath = null)
+        {
+            bool allOk = true;
+            foreach (var kv in _unitConfigs)
+            {
+                var unitName = kv.Key;
+                var cfg = kv.Value;
+                try
+                {
+                    string sourcePath;
+                    if (directoryPath == null)
+                    {
+                        sourcePath = cfg.GetFilePath();
+                    }
+                    else
+                    {
+                        var fileName = Path.GetFileName(cfg.GetFilePath());
+                        sourcePath = Path.Combine(directoryPath, fileName);
+                    }
+
+                    if (!File.Exists(sourcePath))
+                    {
+                        // 없으면 스킵
+                        continue;
+                    }
+
+                    // 임시 로드 방식: cfg.Load() 를 그대로 쓰되 경로가 다르면 수동 디시리얼라이즈
+                    if (directoryPath == null)
+                    {
+                        cfg.Load();
+                    }
+                    else
+                    {
+                        var json = File.ReadAllText(sourcePath, Encoding.UTF8);
+                        var settings = QMC.Common.ConfigStore.DefaultJsonSettings;
+                        var temp = Newtonsoft.Json.JsonConvert.DeserializeObject(json, cfg.GetType(), settings);
+                        if (temp != null)
+                        {
+                            foreach (var p in cfg.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+                            {
+                                if (p.CanRead && p.CanWrite)
+                                {
+                                    p.SetValue(cfg, p.GetValue(temp));
+                                }
+                            }
+                        }
+                    }
+                    Console.WriteLine($"Unit '{unitName}' Config 로드: {sourcePath}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Unit '{unitName}' Config 로드 실패: {ex.Message}");
+                    allOk = false;
+                }
+            }
+            return allOk;
+        }
+
+        /// <summary>
+        /// 전역 DryRun 적용 후 전체 저장.
+        /// </summary>
+        public void ApplyGlobalDryRunAndSave(bool isDryRun, bool save = false)
+        {
+            BaseConfig.SetGlobalDryRun(isDryRun);
+            if (save)
+                SaveAllConfigs();
+        }
+
+        public void ApplyGlobalSimulationAndSave(bool isDryRun, bool save = false)
+        {
+            BaseConfig.SetGlobalSimulation(isDryRun);
+            //if (save)
+            //    SaveAllConfigs();
+        }
+
+        ///// <summary>
+        ///// 모든 Config 로드 (XML 형식)
+        ///// </summary>
+        //public bool LoadAllConfigs(string directoryPath = null)
+        //{
+        //    try
+        //    {
+        //        directoryPath = directoryPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Config");
+
+        //        if (!Directory.Exists(directoryPath))
+        //        {
+        //            Console.WriteLine($"Config 디렉토리가 없습니다: {directoryPath}");
+        //            return false;
+        //        }
+
+        //        var configFiles = Directory.GetFiles(directoryPath, "*_Config.xml");
+        //        bool allSuccess = true;
+
+        //        foreach (var filePath in configFiles)
+        //        {
+        //            try
+        //            {
+        //                var fileName = Path.GetFileNameWithoutExtension(filePath);
+        //                var unitName = fileName.Replace("_Config", "");
+
+        //                // 현재 등록된 Config 타입을 기반으로 역직렬화
+        //                if (_unitConfigs.TryGetValue(unitName, out var existingConfig))
+        //                {
+        //                    var serializer = new XmlSerializer(existingConfig.GetType());
+        //                    using (var reader = new StreamReader(filePath))
+        //                    {
+        //                        var loadedConfig = serializer.Deserialize(reader);
+        //                        if (loadedConfig is BaseConfig baseConfig)
+        //                        {
+        //                            _unitConfigs[unitName] = baseConfig;
+        //                            Console.WriteLine($"Unit '{unitName}' Config 로드됨: {filePath}");
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                Console.WriteLine($"Config 파일 로드 실패 {filePath}: {ex.Message}");
+        //                allSuccess = false;
+        //            }
+        //        }
+
+        //        return allSuccess;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"Config 로드 중 오류: {ex.Message}");
+        //        return false;
+        //    }
+        //}
+
     }
 
     /// <summary>

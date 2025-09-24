@@ -31,17 +31,20 @@
             this.components = new System.ComponentModel.Container();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.manualSequenceControlCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this._OutputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
             this.btnMapping = new QMC.Common.IndividualMenuButton();
+            this.groupBoxOutputStageSeq = new System.Windows.Forms.GroupBox();
+            this.manualSequenceControlOutputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBox1.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._OutputWaferCameraviewer)).BeginInit();
             this.groupBoxManual.SuspendLayout();
+            this.groupBoxOutputStageSeq.SuspendLayout();
             this.SuspendLayout();
             // 
             // dioControl
@@ -70,20 +73,20 @@
             this.teachingPositionControl.TabIndex = 14;
             this.teachingPositionControl.UnitName = null;
             // 
-            // manualSequenceControl
+            // manualSequenceControlCassette
             // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControl.Location = new System.Drawing.Point(3, 26);
-            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControl.MinimumSize = new System.Drawing.Size(297, 250);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(389, 318);
-            this.manualSequenceControl.TabIndex = 13;
+            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlCassette.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(297, 250);
+            this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
+            this.manualSequenceControlCassette.ParentUnit = null;
+            this.manualSequenceControlCassette.Size = new System.Drawing.Size(389, 318);
+            this.manualSequenceControlCassette.TabIndex = 13;
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.manualSequenceControl);
+            this.groupBox1.Controls.Add(this.manualSequenceControlCassette);
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
             this.groupBox1.Location = new System.Drawing.Point(1027, 6);
             this.groupBox1.Name = "groupBox1";
@@ -163,11 +166,34 @@
             this.btnMapping.Text = "Mapping";
             this.btnMapping.UseVisualStyleBackColor = false;
             // 
+            // groupBoxOutputStageSeq
+            // 
+            this.groupBoxOutputStageSeq.Controls.Add(this.manualSequenceControlOutputStage);
+            this.groupBoxOutputStageSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
+            this.groupBoxOutputStageSeq.Location = new System.Drawing.Point(1027, 416);
+            this.groupBoxOutputStageSeq.Name = "groupBoxOutputStageSeq";
+            this.groupBoxOutputStageSeq.Size = new System.Drawing.Size(395, 335);
+            this.groupBoxOutputStageSeq.TabIndex = 23;
+            this.groupBoxOutputStageSeq.TabStop = false;
+            this.groupBoxOutputStageSeq.Text = "OutputStage Manual Seq";
+            // 
+            // manualSequenceControlOutputStage
+            // 
+            this.manualSequenceControlOutputStage.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlOutputStage.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControlOutputStage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlOutputStage.MinimumSize = new System.Drawing.Size(297, 250);
+            this.manualSequenceControlOutputStage.Name = "manualSequenceControlOutputStage";
+            this.manualSequenceControlOutputStage.ParentUnit = null;
+            this.manualSequenceControlOutputStage.Size = new System.Drawing.Size(389, 316);
+            this.manualSequenceControlOutputStage.TabIndex = 13;
+            // 
             // OutputWafer_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1580, 939);
+            this.Controls.Add(this.groupBoxOutputStageSeq);
             this.Controls.Add(this.groupBoxImageView);
             this.Controls.Add(this.groupBoxManual);
             this.Controls.Add(this.groupBox1);
@@ -180,6 +206,7 @@
             this.groupBoxImageView.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._OutputWaferCameraviewer)).EndInit();
             this.groupBoxManual.ResumeLayout(false);
+            this.groupBoxOutputStageSeq.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -187,12 +214,14 @@
         #endregion
         private Component.DIOControl dioControl;
         private Component.TeachingPositionControl teachingPositionControl;
-        private Component.ManualSequenceControl manualSequenceControl;
+        private Component.ManualSequenceControl manualSequenceControlCassette;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.GroupBox groupBoxImageView;
         private Common.Vision.VisionImageViewer _OutputWaferCameraviewer;
         private System.Windows.Forms.GroupBox groupBoxManual;
         private Component.WaferMapView waferMapView;
         private Common.IndividualMenuButton btnMapping;
+        private System.Windows.Forms.GroupBox groupBoxOutputStageSeq;
+        private Component.ManualSequenceControl manualSequenceControlOutputStage;
     }
 }

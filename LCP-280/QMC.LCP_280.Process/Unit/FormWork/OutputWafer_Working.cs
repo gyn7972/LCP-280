@@ -2,6 +2,7 @@
 using System;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using QMC.Common;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -17,9 +18,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private const string WORK_NAME = "WaferBin";
         private Equipment Equipment => Equipment.Instance;
 
-        private OutputStage _OutputStage { get; set; }
-        private OutputFeeder _OutputFeederUnit { get; set; }
-        private OutputCassetteLifter _OutputCassetteLifterUnit { get; set; }
+        private OutputStage OutputStage { get; set; }
+        private OutputFeeder OutputFeeder { get; set; }
+        private OutputCassetteLifter OutputCassetteLifter { get; set; }
 
         private bool _initialized;          // 실제 UI 바인딩 완료 여부 (텍스트/핸들)
         private bool _preloadRequested;     // PreloadUI 호출 여부(1회)
@@ -35,9 +36,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         public OutputWafer_Working(OutputStage outputStage, OutputFeeder ringTransfer, OutputCassetteLifter cassetteLifter)
         {
             InitializeComponent();
-            _OutputStage = outputStage;
-            _OutputFeederUnit = ringTransfer;
-            _OutputCassetteLifterUnit = cassetteLifter;
+            OutputStage = outputStage;
+            OutputFeeder = ringTransfer;
+            OutputCassetteLifter = cassetteLifter;
 
             Load += WaferBin_Working_Load;
             FormClosing += WaferBin_Working_FormClosing;
@@ -111,25 +112,25 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (teachingPositionControl == null) return;
                 teachingPositionControl.ClearUnits();
 
-                if (_OutputFeederUnit != null)
+                if (OutputFeeder != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "OutputFeeder",
-                        _OutputFeederUnit,
-                        () => _OutputFeederUnit.Config?.TeachingPositions,
-                        (name, vel) => _OutputFeederUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _OutputFeederUnit.Config?.SetTeachingPosition(tp),
+                        OutputFeeder,
+                        () => OutputFeeder.Config?.TeachingPositions,
+                        (name, vel) => OutputFeeder.MoveToTeachingPosition(name, vel: vel),
+                        tp => OutputFeeder.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
-                if (_OutputCassetteLifterUnit != null)
+                if (OutputCassetteLifter != null)
                 {
                     teachingPositionControl.RegisterUnit(
                         "OutputCassetteLifter",
-                        _OutputCassetteLifterUnit,
-                        () => _OutputCassetteLifterUnit.Config?.TeachingPositions,
-                        (name, vel) => _OutputCassetteLifterUnit.MoveToTeachingPosition(name, vel: vel),
-                        tp => _OutputCassetteLifterUnit.Config?.SetTeachingPosition(tp),
+                        OutputCassetteLifter,
+                        () => OutputCassetteLifter.Config?.TeachingPositions,
+                        (name, vel) => OutputCassetteLifter.MoveToTeachingPosition(name, vel: vel),
+                        tp => OutputCassetteLifter.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }
 
@@ -148,20 +149,20 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 if (dioControl == null) return;
                 dioControl.IoSortMode = DIOControl.SortingMode.Insertion;
 
-                if (_OutputFeederUnit != null)
+                if (OutputFeeder != null)
                 {
                     dioControl.BindDIOInput(() => false, "---- OutputFeeder ----", "SEP_ORT");
                     StrongBindOutputFeeder();
                 }
 
-                if (_OutputCassetteLifterUnit != null)
+                if (OutputCassetteLifter != null)
                 {
                     dioControl.BindDIOInput(() => false, "---- OutputCassetteLifter ----", "SEP_OCL");
-                    dioControl.BindDIOInput(() => _OutputCassetteLifterUnit.CassettePresent0(), "Cassette Present 0", "OCL_Cass0");
-                    dioControl.BindDIOInput(() => _OutputCassetteLifterUnit.CassettePresent1(), "Cassette Present 1", "OCL_Cass1");
-                    dioControl.BindDIOInput(() => _OutputCassetteLifterUnit.AnyCassettePresent(), "Cassette Any", "OCL_CassAny");
-                    dioControl.BindDIOInput(() => _OutputCassetteLifterUnit.RingJut(), "Ring Jut", "OCL_RingJut");
-                    dioControl.BindDIOInput(() => _OutputCassetteLifterUnit.MappingSensor(), "Mapping Sensor", "OCL_Mapping");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent0(), "Cassette Present 0", "OCL_Cass0");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent1(), "Cassette Present 1", "OCL_Cass1");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsAnyCassettePresent(), "Cassette Any", "OCL_CassAny");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.RingJut(), "Ring Jut", "OCL_RingJut");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.MappingSensor(), "Mapping Sensor", "OCL_Mapping");
                 }
 
                 dioControl.RebuildLists();
@@ -171,23 +172,23 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
         private void StrongBindOutputFeeder()
         {
-            if (_OutputFeederUnit == null || dioControl == null) return;
+            if (OutputFeeder == null || dioControl == null) return;
             try
             {
                 // Sensors
-                dioControl.BindDIOInput(() => _OutputFeederUnit.IsFeederUp(), "Feeder UP Sns", "ORT_FeederUp");
-                dioControl.BindDIOInput(() => _OutputFeederUnit.IsFeederDown(), "Feeder DOWN Sns", "ORT_FeederDown");
-                dioControl.BindDIOInput(() => _OutputFeederUnit.IsUnclamped(), "Feeder UNCLAMP Sns", "ORT_Unclamp");
-                dioControl.BindDIOInput(() => _OutputFeederUnit.IsRingPresent(), "Feeder RING Sns", "ORT_Ring");
-                dioControl.BindDIOInput(() => _OutputFeederUnit.IsOverload(), "Feeder OVERLOAD Sns", "ORT_Overload");
+                dioControl.BindDIOInput(() => OutputFeeder.IsFeederUp(), "Feeder UP Sns", "ORT_FeederUp");
+                dioControl.BindDIOInput(() => OutputFeeder.IsFeederDown(), "Feeder DOWN Sns", "ORT_FeederDown");
+                dioControl.BindDIOInput(() => OutputFeeder.IsUnclamped(), "Feeder UNCLAMP Sns", "ORT_Unclamp");
+                dioControl.BindDIOInput(() => OutputFeeder.IsRingPresent(), "Feeder RING Sns", "ORT_Ring");
+                dioControl.BindDIOInput(() => OutputFeeder.IsOverload(), "Feeder OVERLOAD Sns", "ORT_Overload");
 
                 // Feeder Up/Down (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Up/Down",
-                    extend: () => _OutputFeederUnit.SetLift(true),
-                    retract: () => _OutputFeederUnit.SetLift(false),
-                    isExtended: () => _OutputFeederUnit.IsFeederUpValveOn(),
-                    isRetracted: () => _OutputFeederUnit.IsFeederDownValveOn(),
+                    extend: () => OutputFeeder.SetLift(true),
+                    retract: () => OutputFeeder.SetLift(false),
+                    isExtended: () => OutputFeeder.IsFeederUpValveOn(),
+                    isRetracted: () => OutputFeeder.IsFeederDownValveOn(),
                     displayKey: "FeederUpDn",
                     showSensors: false,
                     extendedName: "UP",
@@ -197,10 +198,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Feeder Clamp/Unclamp (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Clamp/Unclamp",
-                    extend: () => _OutputFeederUnit.SetClamp(true),
-                    retract: () => _OutputFeederUnit.SetClamp(false), 
-                    isExtended: () => _OutputFeederUnit.IsFeederClampValveOn(),
-                    isRetracted: () => _OutputFeederUnit.IsFeederUnclampValveOn(),
+                    extend: () => OutputFeeder.SetClamp(true),
+                    retract: () => OutputFeeder.SetClamp(false), 
+                    isExtended: () => OutputFeeder.IsFeederClampValveOn(),
+                    isRetracted: () => OutputFeeder.IsFeederUnclampValveOn(),
                     displayKey: "FeederClamp",
                     showSensors: false,
                     extendedName: "CLAMP",
@@ -245,11 +246,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try
             {
-                if (_OutputWaferCameraviewer != null && _OutputStage?.StageCamera != null)
+                if (_OutputWaferCameraviewer != null && OutputStage?.OutStageCamera != null)
                 {
-                    if (_OutputWaferCameraviewer.Camera != _OutputStage.StageCamera)
-                        _OutputWaferCameraviewer.Camera = _OutputStage.StageCamera;
-                    try { _OutputStage.StageCamera.StartLive(); } catch { }
+                    if (_OutputWaferCameraviewer.Camera != OutputStage.OutStageCamera)
+                        _OutputWaferCameraviewer.Camera = OutputStage.OutStageCamera;
+                    try { OutputStage.OutStageCamera.StartLive(); } catch { }
                     try { _OutputWaferCameraviewer.StartUpdateTask(); } catch { }
                 }
             }
@@ -260,6 +261,28 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         #region Sequences (Placeholder)
         private void InitSequences()
         {
+            try
+            {
+                // 시퀀스 초기화
+                OutputCassetteLifter = TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter");
+                OutputFeeder = TryGetUnit<OutputFeeder>("OutputFeeder");
+                OutputStage = TryGetUnit<OutputStage>("OutputStage");
+
+                if(OutputCassetteLifter != null)
+                {
+                    manualSequenceControlCassette.ParentUnit = OutputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
+                }
+
+                if(OutputStage != null)
+                {
+                    manualSequenceControlOutputStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
         #endregion
 

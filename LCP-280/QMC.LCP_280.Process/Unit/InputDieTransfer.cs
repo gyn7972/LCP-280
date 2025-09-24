@@ -138,13 +138,6 @@ namespace QMC.LCP_280.Process.Unit
         public InputDieTransferConfig InputDieTransferConfig => Config;
         #endregion
 
-        #region DryRun Simulation
-        public bool DryRun { get; private set; }
-        public void SetDryRun(bool on) => DryRun = on;
-        private readonly Dictionary<string, bool> _simOutputs = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, bool> _simInputs  = new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
-        #endregion
-
         #region Unit
         InputStage InputStage { get; set; }
         InputStageEjector InputStageEjector { get; set; }
@@ -208,7 +201,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if(axis == AxisPickZ)
                 {
-                    if (InputStage.IsAnyAxisMoving())
+                    if (!InputStage.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -220,7 +213,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (axis == AxisPlaceZ)
                 {
-                    if (Rotary.IsAnyAxisMoving())
+                    if (!Rotary.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -382,7 +375,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockPickUp()
         {
             int nRet = 0;
-            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            if (InputStage != null && !InputStage.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -391,7 +384,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
+            if (InputStageEjector != null && !InputStageEjector.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -400,7 +393,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -521,7 +514,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -646,7 +639,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            if (Rotary != null && !Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -866,7 +859,7 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
 
             // 사전 Interlock (다른 관련 Unit 축 동작 중이면 시작하지 않음)
-            if (InputStage != null && InputStage.IsAnyAxisMoving())
+            if (InputStage != null && !InputStage.IsAnyAxisMoving())
             {
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
@@ -879,7 +872,7 @@ namespace QMC.LCP_280.Process.Unit
             //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
             //    return -1;
             //}
-            if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
+            if (InputStageEjector != null && !InputStageEjector.IsAnyAxisMoving())
             {
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
@@ -954,7 +947,7 @@ namespace QMC.LCP_280.Process.Unit
                     
 
                 // 진행 중 Interlock 감시 (기존 MoveAxisWithSafety 로직과 유사)
-                if (InputStage != null && InputStage.IsAnyAxisMoving())
+                if (InputStage != null && !InputStage.IsAnyAxisMoving())
                 {
                     pick.EmgStop(); pin.EmgStop();
                     AxisToolT.EmgStop();
@@ -976,7 +969,7 @@ namespace QMC.LCP_280.Process.Unit
                 //}
                 // Ejector 다른 축(EjectorZ) 움직임 감시
                 if (InputStageEjector != null && 
-                    InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
+                    !InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
                 {
                     pick.EmgStop(); pin.EmgStop();
                     AxisToolT.EmgStop();
@@ -1036,10 +1029,14 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(name);
             if (tp == null) return -1;
             var (t, pz, plz) = Config.GetPositionWithOffset(name);
+
             int rc = 0;
-            if (_toolT != null)  rc |= _toolT.MoveAbs(t,   vel > 0 ? vel : _toolT.Config.MaxVelocity,  acc > 0 ? acc : _toolT.Config.RunAcc,  dec > 0 ? dec : _toolT.Config.RunDec,  jerk > 0 ? jerk : _toolT.Config.AccJerkPercent);
-            if (_pickZ != null)  rc |= _pickZ.MoveAbs(pz,  vel > 0 ? vel : _pickZ.Config.MaxVelocity,  acc > 0 ? acc : _pickZ.Config.RunAcc,  dec > 0 ? dec : _pickZ.Config.RunDec,  jerk > 0 ? jerk : _pickZ.Config.AccJerkPercent);
-            if (_placeZ != null) rc |= _placeZ.MoveAbs(plz, vel > 0 ? vel : _placeZ.Config.MaxVelocity, acc > 0 ? acc : _placeZ.Config.RunAcc, dec > 0 ? dec : _placeZ.Config.RunDec, jerk > 0 ? jerk : _placeZ.Config.AccJerkPercent);
+
+            //Todo : Z축 확인 후 이동 하도록 수정.
+            //if (_toolT != null)  rc |= _toolT.MoveAbs(t,   vel > 0 ? vel : _toolT.Config.MaxVelocity,  acc > 0 ? acc : _toolT.Config.RunAcc,  dec > 0 ? dec : _toolT.Config.RunDec,  jerk > 0 ? jerk : _toolT.Config.AccJerkPercent);
+            //if (_pickZ != null)  rc |= _pickZ.MoveAbs(pz,  vel > 0 ? vel : _pickZ.Config.MaxVelocity,  acc > 0 ? acc : _pickZ.Config.RunAcc,  dec > 0 ? dec : _pickZ.Config.RunDec,  jerk > 0 ? jerk : _pickZ.Config.AccJerkPercent);
+            //if (_placeZ != null) rc |= _placeZ.MoveAbs(plz, vel > 0 ? vel : _placeZ.Config.MaxVelocity, acc > 0 ? acc : _placeZ.Config.RunAcc, dec > 0 ? dec : _placeZ.Config.RunDec, jerk > 0 ? jerk : _placeZ.Config.AccJerkPercent);
+
             return rc;
         }
         public bool InPosTeaching(string positionName)
@@ -1063,7 +1060,6 @@ namespace QMC.LCP_280.Process.Unit
         #region Low-Level IO (Name Based + DryRun)
         public bool ReadInput(string name)
         {
-            if (DryRun) { return _simInputs.TryGetValue(name, out var v) && v; }
             var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (hi == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -1073,7 +1069,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool WriteOutput(string name, bool on)
         {
-            if (DryRun) { _simOutputs[name] = on; return true; }
             var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
             if (ho == null) return false;
             var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
@@ -1184,7 +1179,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool VacTankPressureOk() => ReadInput(InputDieTransferConfig.IO.VAC_TANK_PRESSURE);
         public bool ArmFlowOk(int armIndex)
         {
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 Thread.Sleep(200);
                 return true;
@@ -1350,9 +1345,6 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
         #region Seq 단위 동작 함수
-
-
-
         /// <summary>
         /// 첫번째 칩 XY 오프셋 취득 (Stage Center 기준). 실제 Mapping 연동 시 구현.
         /// 현재는 (0,0) 고정 반환. (TODO)
@@ -1443,7 +1435,7 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!InputStage.IsVacuumOn())
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1485,13 +1477,21 @@ namespace QMC.LCP_280.Process.Unit
                     var sw = Stopwatch.StartNew();
                     while (!ArmFlowOk(0))
                     {
-                        if (sw.ElapsedMilliseconds > 2000)
+                        if(!Config.IsSimulation && !Config.IsDryRun)
                         {
-                            PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
-                            Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
-                            return -1;
+                            if (sw.ElapsedMilliseconds > 2000)
+                            {
+                                PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
+                                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
+                                return -1;
+                            }
+                            Thread.Sleep(1);
                         }
-                        Thread.Sleep(1);
+                        else
+                        {
+                            break;
+                        }
+                        
                     }
                 }
 
@@ -1560,7 +1560,7 @@ namespace QMC.LCP_280.Process.Unit
             // Release
             if(InputStage.SetVacuum(false))
             {
-                if(Config.IsSimulation)
+                if(Config.IsSimulation || Config.IsDryRun)
                 {
                     Thread.Sleep(100);
                 }
@@ -1588,6 +1588,9 @@ namespace QMC.LCP_280.Process.Unit
             
             if (nRet != 0) //nRet = Move
             {
+                AxisToolT.EmgStop();
+                AxisPickZ.EmgStop();
+                AxisPlaceZ.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputDieTransferError);
                 Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
                 Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");
@@ -1722,7 +1725,6 @@ namespace QMC.LCP_280.Process.Unit
                     //}
                     Thread.Sleep(pollMs);
                 }
-
             }
             catch (Exception ex)
             {
@@ -1823,7 +1825,7 @@ namespace QMC.LCP_280.Process.Unit
                     var sw = Stopwatch.StartNew();
                     while (Rotary.SlotFlowOk(nIndex))
                     {
-                        if (!Config.IsSimulation)
+                        if (!Config.IsSimulation && !Config.IsDryRun)
                         {
                             if (sw.ElapsedMilliseconds > 2000)
                             {
