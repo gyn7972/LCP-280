@@ -1584,6 +1584,9 @@ namespace QMC.LCP_280.Process.Unit
             
             if (nRet != 0) //nRet = Move
             {
+                AxisToolT.EmgStop();
+                AxisPickZ.EmgStop();
+                AxisPlaceZ.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputDieTransferError);
                 Log.Write(UnitName, "[SyncPickPinRetreat] AxisPickZ SafetyZone 이동 실패");
                 Log.Write(UnitName, "[SyncPickPinRetreat] EjectBlockReady 이동 실패");

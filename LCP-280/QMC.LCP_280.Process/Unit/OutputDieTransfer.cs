@@ -1172,6 +1172,9 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
+                AxisToolT?.EmgStop();
+                AxisPickZ?.EmgStop();
+                AxisPlaceZ?.EmgStop();
                 Log.Write(ex);
                 nRet = -1;
                 PostAlarm((int)AlarmKeys.eOutputDieTransferError);

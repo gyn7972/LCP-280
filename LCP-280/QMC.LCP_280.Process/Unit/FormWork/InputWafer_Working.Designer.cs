@@ -32,18 +32,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             this.components = new System.ComponentModel.Container();
             this.groupBoxCassetteLifterSeq = new System.Windows.Forms.GroupBox();
-            this.groupBoxManual = new System.Windows.Forms.GroupBox();
-            this.groupBoxInputStageSeq = new System.Windows.Forms.GroupBox();
-            this.groupBoxImageView = new System.Windows.Forms.GroupBox();
-            this.checkBoxTest = new System.Windows.Forms.CheckBox();
-            this._InputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
-            this.btnMapping = new QMC.Common.IndividualMenuButton();
-            this.manualSequenceControlInputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
             this.manualSequenceControlCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.groupBoxManual = new System.Windows.Forms.GroupBox();
+            this.checkBoxSimulation = new System.Windows.Forms.CheckBox();
+            this.checkBoxTest = new System.Windows.Forms.CheckBox();
+            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
+            this.btnMapping = new QMC.Common.IndividualMenuButton();
+            this.groupBoxInputStageSeq = new System.Windows.Forms.GroupBox();
+            this.manualSequenceControlInputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.groupBoxImageView = new System.Windows.Forms.GroupBox();
+            this._InputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.checkBoxSimulation = new System.Windows.Forms.CheckBox();
             this.groupBoxCassetteLifterSeq.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
             this.groupBoxInputStageSeq.SuspendLayout();
@@ -62,6 +62,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.groupBoxCassetteLifterSeq.TabStop = false;
             this.groupBoxCassetteLifterSeq.Text = "Input Wafer Seq";
             // 
+            // manualSequenceControlCassette
+            // 
+            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlCassette.Location = new System.Drawing.Point(3, 26);
+            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(297, 250);
+            this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
+            this.manualSequenceControlCassette.ParentUnit = null;
+            this.manualSequenceControlCassette.Size = new System.Drawing.Size(389, 316);
+            this.manualSequenceControlCassette.TabIndex = 13;
+            // 
             // groupBoxManual
             // 
             this.groupBoxManual.Controls.Add(this.checkBoxSimulation);
@@ -76,27 +87,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
             // 
-            // groupBoxInputStageSeq
+            // checkBoxSimulation
             // 
-            this.groupBoxInputStageSeq.Controls.Add(this.manualSequenceControlInputStage);
-            this.groupBoxInputStageSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
-            this.groupBoxInputStageSeq.Location = new System.Drawing.Point(1029, 417);
-            this.groupBoxInputStageSeq.Name = "groupBoxInputStageSeq";
-            this.groupBoxInputStageSeq.Size = new System.Drawing.Size(395, 335);
-            this.groupBoxInputStageSeq.TabIndex = 19;
-            this.groupBoxInputStageSeq.TabStop = false;
-            this.groupBoxInputStageSeq.Text = "InputStage Manual Seq";
-            // 
-            // groupBoxImageView
-            // 
-            this.groupBoxImageView.Controls.Add(this._InputWaferCameraviewer);
-            this.groupBoxImageView.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBoxImageView.Location = new System.Drawing.Point(631, 7);
-            this.groupBoxImageView.Name = "groupBoxImageView";
-            this.groupBoxImageView.Size = new System.Drawing.Size(392, 400);
-            this.groupBoxImageView.TabIndex = 20;
-            this.groupBoxImageView.TabStop = false;
-            this.groupBoxImageView.Text = "ImageView";
+            this.checkBoxSimulation.AutoSize = true;
+            this.checkBoxSimulation.Location = new System.Drawing.Point(104, 353);
+            this.checkBoxSimulation.Name = "checkBoxSimulation";
+            this.checkBoxSimulation.Size = new System.Drawing.Size(120, 27);
+            this.checkBoxSimulation.TabIndex = 19;
+            this.checkBoxSimulation.Text = "Simulation";
+            this.checkBoxSimulation.UseVisualStyleBackColor = true;
+            this.checkBoxSimulation.Visible = false;
+            this.checkBoxSimulation.CheckedChanged += new System.EventHandler(this.checkBoxSimulation_CheckedChanged);
             // 
             // checkBoxTest
             // 
@@ -107,28 +108,16 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.checkBoxTest.TabIndex = 18;
             this.checkBoxTest.Text = "DryRun";
             this.checkBoxTest.UseVisualStyleBackColor = true;
+            this.checkBoxTest.Visible = false;
             this.checkBoxTest.CheckedChanged += new System.EventHandler(this.checkBoxTest_CheckedChanged);
             // 
-            // _InputWaferCameraviewer
+            // waferMapView
             // 
-            this._InputWaferCameraviewer.BackColor = System.Drawing.Color.Black;
-            this._InputWaferCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this._InputWaferCameraviewer.Camera = null;
-            this._InputWaferCameraviewer.CameraSwitch = null;
-            this._InputWaferCameraviewer.Dock = System.Windows.Forms.DockStyle.Top;
-            this._InputWaferCameraviewer.FrameRate = 1D;
-            this._InputWaferCameraviewer.InputImage = null;
-            this._InputWaferCameraviewer.IsViewCustomizedImage = false;
-            this._InputWaferCameraviewer.Location = new System.Drawing.Point(3, 26);
-            this._InputWaferCameraviewer.Name = "_InputWaferCameraviewer";
-            this._InputWaferCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
-            this._InputWaferCameraviewer.Simulated = false;
-            this._InputWaferCameraviewer.Size = new System.Drawing.Size(386, 324);
-            this._InputWaferCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this._InputWaferCameraviewer.TabIndex = 12;
-            this._InputWaferCameraviewer.TabStop = false;
-            this._InputWaferCameraviewer.UpdateDelayTime = 80;
-            this._InputWaferCameraviewer.VisibleCrossLine = true;
+            this.waferMapView.Location = new System.Drawing.Point(6, 25);
+            this.waferMapView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.waferMapView.Name = "waferMapView";
+            this.waferMapView.Size = new System.Drawing.Size(157, 205);
+            this.waferMapView.TabIndex = 16;
             // 
             // btnMapping
             // 
@@ -150,6 +139,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.btnMapping.UseVisualStyleBackColor = false;
             this.btnMapping.Click += new System.EventHandler(this.btnMapping_Click);
             // 
+            // groupBoxInputStageSeq
+            // 
+            this.groupBoxInputStageSeq.Controls.Add(this.manualSequenceControlInputStage);
+            this.groupBoxInputStageSeq.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold);
+            this.groupBoxInputStageSeq.Location = new System.Drawing.Point(1029, 417);
+            this.groupBoxInputStageSeq.Name = "groupBoxInputStageSeq";
+            this.groupBoxInputStageSeq.Size = new System.Drawing.Size(395, 335);
+            this.groupBoxInputStageSeq.TabIndex = 19;
+            this.groupBoxInputStageSeq.TabStop = false;
+            this.groupBoxInputStageSeq.Text = "InputStage Manual Seq";
+            // 
             // manualSequenceControlInputStage
             // 
             this.manualSequenceControlInputStage.Dock = System.Windows.Forms.DockStyle.Top;
@@ -161,24 +161,37 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.manualSequenceControlInputStage.Size = new System.Drawing.Size(389, 316);
             this.manualSequenceControlInputStage.TabIndex = 13;
             // 
-            // waferMapView
+            // groupBoxImageView
             // 
-            this.waferMapView.Location = new System.Drawing.Point(6, 25);
-            this.waferMapView.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.waferMapView.Name = "waferMapView";
-            this.waferMapView.Size = new System.Drawing.Size(157, 205);
-            this.waferMapView.TabIndex = 16;
+            this.groupBoxImageView.Controls.Add(this._InputWaferCameraviewer);
+            this.groupBoxImageView.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBoxImageView.Location = new System.Drawing.Point(631, 7);
+            this.groupBoxImageView.Name = "groupBoxImageView";
+            this.groupBoxImageView.Size = new System.Drawing.Size(392, 400);
+            this.groupBoxImageView.TabIndex = 20;
+            this.groupBoxImageView.TabStop = false;
+            this.groupBoxImageView.Text = "ImageView";
             // 
-            // manualSequenceControlCassette
+            // _InputWaferCameraviewer
             // 
-            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControlCassette.Location = new System.Drawing.Point(3, 26);
-            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(297, 250);
-            this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
-            this.manualSequenceControlCassette.ParentUnit = null;
-            this.manualSequenceControlCassette.Size = new System.Drawing.Size(389, 316);
-            this.manualSequenceControlCassette.TabIndex = 13;
+            this._InputWaferCameraviewer.BackColor = System.Drawing.Color.Black;
+            this._InputWaferCameraviewer.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this._InputWaferCameraviewer.Camera = null;
+            this._InputWaferCameraviewer.CameraSwitch = null;
+            this._InputWaferCameraviewer.Dock = System.Windows.Forms.DockStyle.Top;
+            this._InputWaferCameraviewer.FrameRate = 1D;
+            this._InputWaferCameraviewer.InputImage = null;
+            this._InputWaferCameraviewer.IsViewCustomizedImage = false;
+            this._InputWaferCameraviewer.Location = new System.Drawing.Point(3, 26);
+            this._InputWaferCameraviewer.Name = "_InputWaferCameraviewer";
+            this._InputWaferCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
+            this._InputWaferCameraviewer.Simulated = false;
+            this._InputWaferCameraviewer.Size = new System.Drawing.Size(386, 324);
+            this._InputWaferCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this._InputWaferCameraviewer.TabIndex = 12;
+            this._InputWaferCameraviewer.TabStop = false;
+            this._InputWaferCameraviewer.UpdateDelayTime = 80;
+            this._InputWaferCameraviewer.VisibleCrossLine = true;
             // 
             // dioControl
             // 
@@ -205,17 +218,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.teachingPositionControl.Size = new System.Drawing.Size(615, 400);
             this.teachingPositionControl.TabIndex = 14;
             this.teachingPositionControl.UnitName = null;
-            // 
-            // checkBoxSimulation
-            // 
-            this.checkBoxSimulation.AutoSize = true;
-            this.checkBoxSimulation.Location = new System.Drawing.Point(104, 353);
-            this.checkBoxSimulation.Name = "checkBoxSimulation";
-            this.checkBoxSimulation.Size = new System.Drawing.Size(120, 27);
-            this.checkBoxSimulation.TabIndex = 19;
-            this.checkBoxSimulation.Text = "Simulation";
-            this.checkBoxSimulation.UseVisualStyleBackColor = true;
-            this.checkBoxSimulation.CheckedChanged += new System.EventHandler(this.checkBoxSimulation_CheckedChanged);
             // 
             // InputWafer_Working
             // 

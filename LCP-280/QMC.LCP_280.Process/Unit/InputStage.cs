@@ -1611,6 +1611,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eVisionTsearch);
                 Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
                 return -1;
@@ -1707,6 +1708,7 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eVisionXYsearch);
                 Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
                 return -1;
@@ -1792,6 +1794,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!this.InputStageEjector.IsPinZSafetyPos())
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                 return -1;
             }
@@ -1801,14 +1804,14 @@ namespace QMC.LCP_280.Process.Unit
                 ret = this.AxisX.MoveAbs(x, bFineSpeed);
                 if (ret != 0)
                 {
-                    this.AxisX.EmgStop();
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                     return ret;
                 }
                 ret = this.AxisY.MoveAbs(y, bFineSpeed);
                 if (ret != 0)
                 {
-                    this.AxisY.EmgStop();
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                     return ret;
                 }
@@ -1861,7 +1864,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
-
 
         public int PerformChipMapping(bool bFineSpeed = false)
         {
@@ -1931,6 +1933,7 @@ namespace QMC.LCP_280.Process.Unit
                     nRet = MoveStage(targetX, targetY, bFineSpeed);
                     if (nRet != 0)
                     {
+                        AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                         Log.Write(UnitName, "ChipMap", $"MoveStage fail r={r} c={c} x={targetX:F3} y={targetY:F3}");
                         PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                         return -1;

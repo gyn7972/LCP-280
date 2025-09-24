@@ -24,7 +24,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             eIndexRotary = 4800,
             eRotaryNotSafe,
-
+            InputDieTraansferPlaceZError,
+            IndexLoadAlignerZError,
+            IndexChipProbeControllerZError,
+            OutputDieTransferPlaceZError,
         }
 
         #region InitAlarm
@@ -36,7 +39,39 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rorary Not Sfarety Pos.";
             alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.InputDieTraansferPlaceZError;
+            alarm.Title = "InputDieTraansferPlaceZ Not Sfarety Pos.";
+            alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
+            alarm.Title = "IndexLoadAlignerZ Not Sfarety Pos.";
+            alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
+            alarm.Title = "IndexChipProbeControllerZ Not Sfarety Pos.";
+            alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.OutputDieTransferPlaceZError;
+            alarm.Title = "OutputDieTransferPlaceZ Not Sfarety Pos.";
+            alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
@@ -289,6 +324,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!IsUnitInSafeByConnectedAxes(u3))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.InputDieTraansferPlaceZError);
                     reason = "InputDieTransfer Not in Safety Zone";
                     return false;
                 }
@@ -299,6 +336,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!IsUnitInSafeByConnectedAxes(u2))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.IndexLoadAlignerZError);
                     reason = "IndexLoadAligner Not in Safety Zone";
                     return false;
                 }
@@ -309,6 +348,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!IsUnitInSafeByConnectedAxes(u1))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.IndexChipProbeControllerZError);
                     reason = "IndexChipProbeController Not in Safety Zone";
                     return false;
                 }
@@ -319,6 +360,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (!IsUnitInSafeByConnectedAxes(u4))
                 {
+                    AxisT.EmgStop();
+                    PostAlarm((int)AlarmKeys.OutputDieTransferPlaceZError);
                     reason = "OutputDieTransfer Not in Safety Zone";
                     return false;
                 }

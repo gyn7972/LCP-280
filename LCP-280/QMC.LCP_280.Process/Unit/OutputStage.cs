@@ -829,6 +829,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 // 우선 대기? // 신호 이상?
                 PostAlarm((int)AlarmKeys.eNoBinDetected);
                 Log.Write(UnitName, "LoadingComp", "No Bin detected");
