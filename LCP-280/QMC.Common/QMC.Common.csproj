@@ -106,6 +106,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Cameras\HIKVISION\Library\MvCameraControl.Net.dll</HintPath>
     </Reference>
+    <Reference Include="NationalInstruments.DAQmx, Version=18.5.45.1, Culture=neutral, PublicKeyToken=4febd62461bf11a4, processorArchitecture=AMD64" />
     <Reference Include="NationalInstruments.Visa, Version=15.5.0.49152, Culture=neutral, PublicKeyToken=2eaa5af0834e221d, processorArchitecture=MSIL" />
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -168,6 +169,7 @@
     <Compile Include="Common\ParamGroup.cs" />
     <Compile Include="Common\PointD.cs" />
     <Compile Include="Common\PropertyCollectionJsonConverter.cs" />
+    <Compile Include="Common\QmcLowPassFilter.cs" />
     <Compile Include="Common\Quadrangle.cs" />
     <Compile Include="Common\Range.cs" />
     <Compile Include="Common\RectangleD.cs" />
@@ -411,6 +413,17 @@
     <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="PKGTester\TestItemResult.cs" />
+    <Compile Include="StrainGage\NIDAQResourceManager.cs" />
+    <Compile Include="StrainGage\StrainGage.cs" />
+    <Compile Include="StrainGage\StrainGageConfig.cs" />
+    <Compile Include="StrainGage\StrainGageLookupTable.cs" />
+    <Compile Include="StrainGage\StrainGageMonitorViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="StrainGage\StrainGageMonitorViewer.Designer.cs">
+      <DependentUpon>StrainGageMonitorViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StrainGage\StrainGageVoltageMonitor.cs" />
     <Compile Include="UI\ProgressForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -530,6 +543,9 @@
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
     <Compile Include="Vision\VisionUnit.cs" />
+    <EmbeddedResource Include="StrainGage\StrainGageMonitorViewer.resx">
+      <DependentUpon>StrainGageMonitorViewer.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\ProgressForm.resx" />
     <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
