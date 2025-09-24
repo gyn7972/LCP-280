@@ -8,7 +8,23 @@ namespace QMC.LCP_280.Process
         /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
+        private GroupBox groupBoxdieInputControl;
+        private QMC.LCP_280.Process.Unit.FormMain.DieInputControl dieInputControl1;
 
+        private GroupBox groupBoxdieIndexSelectControl;
+        private QMC.LCP_280.Process.Unit.FormMain.DieIndexSelectControl dieIndexSelectControl1;
+
+        private GroupBox groupBoxdieOutputControl;
+        private QMC.LCP_280.Process.Unit.FormMain.DieOutputControl dieOutputControl1;
+
+        private GroupBox groupBoxMeasurementControl;
+        private QMC.LCP_280.Process.Unit.FormMain.MeasurementControl measurementControl1;
+
+        private GroupBox groupBoxInputWaferCarrierControl;
+        private QMC.LCP_280.Process.Unit.FormMain.InputWaferCarrierControl inputWaferCarrierControl1;
+
+        private GroupBox groupBoxOutputWaferCarrierControl;
+        private QMC.LCP_280.Process.Unit.FormMain.OutputWaferCarrierControl outputWaferCarrierControl1;
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -205,23 +221,5 @@ namespace QMC.LCP_280.Process
         }
 
         #endregion
-
-        private GroupBox groupBoxdieInputControl;
-        private QMC.LCP_280.Process.Unit.FormMain.DieInputControl dieInputControl1;
-
-        private GroupBox groupBoxdieIndexSelectControl;
-        private QMC.LCP_280.Process.Unit.FormMain.DieIndexSelectControl dieIndexSelectControl1;
-
-        private GroupBox groupBoxdieOutputControl;
-        private QMC.LCP_280.Process.Unit.FormMain.DieOutputControl dieOutputControl1;
-
-        private GroupBox groupBoxMeasurementControl;
-        private QMC.LCP_280.Process.Unit.FormMain.MeasurementControl measurementControl1;
-
-        private GroupBox groupBoxInputWaferCarrierControl;
-        private QMC.LCP_280.Process.Unit.FormMain.InputWaferCarrierControl inputWaferCarrierControl1;
-
-        private GroupBox groupBoxOutputWaferCarrierControl;
-        private QMC.LCP_280.Process.Unit.FormMain.OutputWaferCarrierControl outputWaferCarrierControl1;
     }
 }

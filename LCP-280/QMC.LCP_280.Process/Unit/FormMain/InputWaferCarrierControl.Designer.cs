@@ -8,7 +8,7 @@
         private System.Windows.Forms.Label lblWaferCountTitle;
         private System.Windows.Forms.Label lblWaferCountValue;
         private QMC.LCP_280.Process.Unit.FormMain.DisplayView_InputWaferCarrierControl displayView1;
-
+        private QMC.LCP_280.Process.Component.WaferMapView waferMapView; // 수정: 네임스페이스 완전 지정
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -104,6 +104,6 @@
 
         }
 
-        private Component.WaferMapView waferMapView;
+        
     }
 }

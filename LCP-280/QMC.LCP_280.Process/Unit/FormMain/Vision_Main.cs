@@ -124,11 +124,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 }
 
                 //Output Wafer Camera
-                if (OutputWaferCamera != null && OutputStage?.StageCamera != null)
+                if (OutputWaferCamera != null && OutputStage?.OutStageCamera != null)
                 {
-                    if (OutputWaferCamera.Camera != OutputStage.StageCamera)
-                        OutputWaferCamera.Camera = OutputStage.StageCamera;
-                    try { OutputStage.StageCamera.StartLive(); } catch { }
+                    if (OutputWaferCamera.Camera != OutputStage.OutStageCamera)
+                        OutputWaferCamera.Camera = OutputStage.OutStageCamera;
+                    try { OutputStage.OutStageCamera.StartLive(); } catch { }
                     try { OutputWaferCamera.StartUpdateTask(); } catch { }
                 }
 
