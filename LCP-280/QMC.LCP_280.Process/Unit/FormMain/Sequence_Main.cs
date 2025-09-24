@@ -1,8 +1,9 @@
+using QMC.Common;
 using System;
+using System.ComponentModel; // DesignMode 판단
 using System.Drawing;
 using System.Windows.Forms;
-using System.ComponentModel; // DesignMode 판단
-using QMC.Common;
+using static QMC.Common.Unit.BaseUnit;
 
 namespace QMC.LCP_280.Process
 {
@@ -96,10 +97,20 @@ namespace QMC.LCP_280.Process
         #region Update Logic
         private void UpdateUnitStatus()
         {
-            if (IsInDesignMode()) return;
-            if (lstUnitStatus == null || equipment == null) return;
-            if (InvokeRequired) { BeginInvoke(new Action(UpdateUnitStatus)); return; }
+            if (IsInDesignMode()) 
+                return;
+
+            if (lstUnitStatus == null || equipment == null) 
+                return;
+
+            if (InvokeRequired) 
+            { 
+                BeginInvoke(new Action(UpdateUnitStatus)); 
+                return; 
+            }
+
             EnsureListViewConfigured();
+
             try
             {
                 var statuses = equipment.GetAllUnitStatus();
@@ -139,16 +150,16 @@ namespace QMC.LCP_280.Process
         private ListViewItem CreateListViewItemFromStatus(UnitStatusInfo s)
         {
             var item = new ListViewItem(s.UnitName ?? "-");
-            item.SubItems.Add(s.State.ToString());
+            item.SubItems.Add(s.RunUnitStatus.ToString());
             item.SubItems.Add(s.ComponentCount.ToString());
             item.SubItems.Add(FormatRuntime(s));
-            ApplyStateColor(item, s.State);
+            ApplyStateColor(item, s.RunUnitStatus);
             return item;
         }
 
         private void UpdateListViewItem(ListViewItem item, UnitStatusInfo s)
         {
-            var st = s.State.ToString(); 
+            var st = s.RunUnitStatus.ToString(); 
             if (item.SubItems[1].Text != st) 
                 item.SubItems[1].Text = st;
 
@@ -161,19 +172,19 @@ namespace QMC.LCP_280.Process
             if (item.SubItems[3].Text != rt) 
                 item.SubItems[3].Text = rt;
 
-            ApplyStateColor(item, s.State);
+            ApplyStateColor(item, s.RunUnitStatus);
         }
 
         private string FormatRuntime(UnitStatusInfo s) { try { return s.RunningTime.ToString(@"hh\:mm\:ss"); } catch { return "00:00:00"; } }
 
-        private void ApplyStateColor(ListViewItem item, UnitState state)
+        private void ApplyStateColor(ListViewItem item, UnitStatus state)
         {
             switch (state)
             {
-                case UnitState.Running: item.BackColor = Color.LightGreen; break;
-                case UnitState.Error: item.BackColor = Color.LightCoral; break;
-                case UnitState.Starting:
-                case UnitState.Stopping: item.BackColor = Color.LightYellow; break;
+                case UnitStatus.Running: item.BackColor = Color.LightGreen; break;
+                case UnitStatus.Error: item.BackColor = Color.LightCoral; break;
+                case UnitStatus.Starting:
+                case UnitStatus.Stopping: item.BackColor = Color.LightYellow; break;
                 default: item.BackColor = Color.White; break;
             }
         }
@@ -189,8 +200,25 @@ namespace QMC.LCP_280.Process
                 Invoke(new Action(() => Equipment_UnitStateChanged(sender, e))); 
                 return; 
             } 
-            LogMessage($"Unit '{e.UnitName}' 상태 변경: {e.State}"); 
-            UpdateUnitStatus();
+            LogMessage($"Unit '{e.UnitName}' 상태 변경: {e.RunUnitStatus}");
+
+            // 빠른 단일 업데이트
+            UpdateSingleUnitRow(e.UnitName, e.RunUnitStatus);
+
+            //UpdateUnitStatus();
+        }
+        private void UpdateSingleUnitRow(string unitName, UnitStatus newState)
+        {
+            if (lstUnitStatus == null) return;
+            foreach (ListViewItem item in lstUnitStatus.Items)
+            {
+                if (item.SubItems[0].Text.Equals(unitName, StringComparison.OrdinalIgnoreCase))
+                {
+                    item.SubItems[1].Text = newState.ToString();
+                    ApplyStateColor(item, newState);
+                    return;
+                }
+            }
         }
 
         private void Equipment_ErrorOccurred(object sender, EquipmentErrorEventArgs e) { if (InvokeRequired) { Invoke(new Action(() => Equipment_ErrorOccurred(sender, e))); return; } LogMessage($"Equipment 오류: {e.ErrorMessage}", Color.Red); }
@@ -222,12 +250,35 @@ namespace QMC.LCP_280.Process
                 var result = await equipment.StartUnitAsync(unitName);
                 LogMessage(result ? $"Unit '{unitName}' 시작 완료" : $"Unit '{unitName}' 시작 실패");
             }
-            catch (Exception ex) { LogMessage($"Unit '{unitName}' 시작 오류: {ex.Message}"); }
-            finally { UpdateUnitStatus(); }
+            catch (Exception ex) 
+            {
+                Log.Write(ex);
+                LogMessage($"Unit '{unitName}' 시작 오류: {ex.Message}"); 
+            }
+            finally 
+            { UpdateUnitStatus(); }
         }
 
         private async void BtnStopAll_Click(object sender, EventArgs e)
-        { try { btnStopAll.Enabled = false; LogMessage("설비 전체 정지 중..."); var result = await equipment.StopAllUnitsAsync(false); LogMessage(result ? "설비 전체 정지 완료" : "설비 전체 정지 실패"); } catch (Exception ex) { LogMessage($"설비 정지 오류: {ex.Message}"); } finally { btnStopAll.Enabled = true; UpdateUnitStatus(); UpdateUnitComboBox(); } }
+        { 
+            try 
+            { 
+                btnStopAll.Enabled = false; 
+                LogMessage("설비 전체 정지 중..."); 
+                var result = await equipment.StopAllUnitsAsync(false); 
+                LogMessage(result ? "설비 전체 정지 완료" : "설비 전체 정지 실패"); 
+            } 
+            catch (Exception ex) 
+            { 
+                LogMessage($"설비 정지 오류: {ex.Message}"); 
+            } 
+            finally 
+            { 
+                btnStopAll.Enabled = true; 
+                UpdateUnitStatus(); 
+                UpdateUnitComboBox(); 
+            } 
+        }
         private void BtnSaveAllConfigs_Click(object sender, EventArgs e) { try { var result = equipment.SaveAllConfigs(); LogMessage(result ? "모든 Config 저장 완료" : "Config 저장 실패"); } catch (Exception ex) { LogMessage($"Config 저장 오류: {ex.Message}"); } }
         private void BtnLoadAllConfigs_Click(object sender, EventArgs e) { try { var result = equipment.LoadAllConfigs(); LogMessage(result ? "모든 Config 로드 완료" : "Config 로드 실패"); } catch (Exception ex) { LogMessage($"Config 로드 오류: {ex.Message}"); } }
         private void BtnSaveAllRecipes_Click(object sender, EventArgs e) 
@@ -332,5 +383,8 @@ namespace QMC.LCP_280.Process
             base.OnFormClosing(e);
         }
         #endregion
+
+        
+
     }
 }

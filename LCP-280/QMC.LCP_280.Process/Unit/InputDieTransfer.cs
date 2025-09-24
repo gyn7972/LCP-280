@@ -1203,8 +1203,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (this.Status == UnitRunStatus.Stop || 
-                this.Status == UnitRunStatus.CycleStop)
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
                 ret = 1;
@@ -1233,13 +1234,11 @@ namespace QMC.LCP_280.Process.Unit
                 catch (Exception ex)
                 {
                     ret = -1;
-                    
                 }
             }
 
             if (ret != 0)
             {
-                this.State = ProcessState.Stop;
                 this.OnStop();
             }
 
@@ -1249,6 +1248,7 @@ namespace QMC.LCP_280.Process.Unit
         { 
             int ret = 0;
 
+            this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
             base.OnStop(); 
             return ret; 
@@ -1259,6 +1259,15 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
+            //여기서 앞의 공정 InputWafer_working 신호 대기
+
+            //신호 들어오면 Stage Center 기준에서 n번째 칩 위치로 이동
+            //ChipData와 Mapping 연동 필요.
+
+            //Stage 이동 완료 후에.
+
+            //OnRunWork로 상태 변경
+
             State = ProcessState.Work;
             return 0;
         }
@@ -1267,6 +1276,7 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
 
             // Test 완료 후에.
+            State = ProcessState.Complete;
             return 0;
 
 

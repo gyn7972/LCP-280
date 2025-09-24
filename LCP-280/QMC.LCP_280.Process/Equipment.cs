@@ -25,6 +25,8 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Collections.ObjectModel;
+using static QMC.Common.Unit.BaseUnit;
 
 namespace QMC.LCP_280.Process
 {
@@ -83,6 +85,11 @@ namespace QMC.LCP_280.Process
         /// Unit별 실행 상태 관리
         /// </summary>
         private ConcurrentDictionary<string, UnitExecutionInfo> _unitExecutions;
+
+        // ==== Unit 상태 브로드캐스트 캐시 ====
+        private readonly ConcurrentDictionary<string, UnitStatus> _lastBroadcastUnitStatus =
+            new ConcurrentDictionary<string, UnitStatus>(StringComparer.OrdinalIgnoreCase);
+        // ==================================
 
         /// <summary>
         /// 설비 전체 상태
@@ -510,14 +517,16 @@ namespace QMC.LCP_280.Process
                 var bu = unitObj as QMC.Common.Unit.BaseUnit;
                 if (execInfo.IsRunning)
                 {
-                    var rs = bu?.RunStatus;
-                    if (rs == QMC.Common.Unit.BaseUnit.UnitRunStatus.Stop ||
-                        rs == QMC.Common.Unit.BaseUnit.UnitRunStatus.CycleStop)
+                    var rs = bu?.RunUnitStatus;
+                    if (rs == UnitStatus.Stopped ||
+                        rs == UnitStatus.Stopping ||
+                        rs == UnitStatus.CycleStop)
                     {
                         // 실제로는 정지 상태인데 플래그만 Running이던 경우 정정
                         execInfo.IsRunning = false;
                         execInfo.StopTime = DateTime.Now;
-                        OnUnitStateChanged(unitName, UnitState.Stopped);
+                        SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
+                        //OnUnitStateChanged(unitName, UnitStatus.Stopped);
                     }
                     else
                     {
@@ -526,7 +535,8 @@ namespace QMC.LCP_280.Process
                     }
                 }
 
-                OnUnitStateChanged(unitName, UnitState.Starting);
+                SetAndRaiseUnitState(unitName, UnitStatus.Starting);
+                //OnUnitStateChanged(unitName, UnitStatus.Starting);
 
                 if (_equipmentCancellationTokenSource == null)
                     _equipmentCancellationTokenSource = new CancellationTokenSource();
@@ -535,79 +545,25 @@ namespace QMC.LCP_280.Process
                     ? new CancellationTokenSource()
                     : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
 
-                (unitObj as BaseUnit)?.Start();
 
                 execInfo.IsRunning = true;
                 execInfo.StartTime = DateTime.Now;
-                OnUnitStateChanged(unitName, UnitState.Running);
+                SetAndRaiseUnitState(unitName, UnitStatus.Running);
+                //OnUnitStateChanged(unitName, UnitStatus.Running);
+
+                (unitObj as BaseUnit)?.Start();
+
                 return true;
             }
             catch (Exception ex)
             {
-                OnUnitStateChanged(unitName, UnitState.Error);
+                Log.Write(ex);
+                SetAndRaiseUnitState(unitName, UnitStatus.Error);
+                //OnUnitStateChanged(unitName, UnitStatus.Error);
                 OnErrorOccurred($"Unit '{unitName}' 시작 중 오류: {ex.Message}");
                 return false;
             }
         }
-        //public async Task<bool> StartUnitAsync(string unitName)
-        //{
-        //    if (!Units.TryGetValue(unitName, out var unitObj))
-        //    {
-        //        OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
-        //        return false;
-        //    }
-        //    if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
-        //    {
-        //        OnErrorOccurred($"Unit '{unitName}' 실행 정보를 찾을 수 없습니다.");
-        //        return false;
-        //    }
-
-        //    try
-        //    {
-        //        if (execInfo.IsRunning)
-        //        {
-        //            Console.WriteLine($"Unit '{unitName}'는 이미 실행 중입니다.");
-        //            return true;
-        //        }
-
-        //        OnUnitStateChanged(unitName, UnitState.Starting);
-
-        //        // Equipment 취소 토큰이 없으면 생성
-        //        if (_equipmentCancellationTokenSource == null)
-        //            _equipmentCancellationTokenSource = new CancellationTokenSource();
-
-        //        // [MOD] 보호 유닛은 글로벌 토큰과 링크하지 않음
-        //        execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
-        //            ? new CancellationTokenSource()
-        //            : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
-
-        //        // Unit 시작
-        //        (unitObj as BaseUnit)?.Start();
-        //        //unit.OnRun();
-
-        //        execInfo.IsRunning = true;
-        //        execInfo.StartTime = DateTime.Now;
-        //        OnUnitStateChanged(unitName, UnitState.Running);
-
-        //        //// Unit 실행 Task 생성 및 시작
-        //        //execInfo.ExecutionTask = Task.Run(async () =>
-        //        //    await RunUnitLoopAsync(unitName, unit, execInfo.CancellationTokenSource.Token),
-        //        //    execInfo.CancellationTokenSource.Token);
-
-        //        //execInfo.IsRunning = true;
-        //        //execInfo.StartTime = DateTime.Now;
-
-        //        //OnUnitStateChanged(unitName, UnitState.Running);
-        //        //Console.WriteLine($"Unit '{unitName}' 시작됨");
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnUnitStateChanged(unitName, UnitState.Error);
-        //        OnErrorOccurred($"Unit '{unitName}' 시작 중 오류: {ex.Message}");
-        //        return false;
-        //    }
-        //}
 
         /// <summary>
         /// Unit 실행 루프
@@ -632,7 +588,8 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                OnUnitStateChanged(unitName, UnitState.Error);
+                OnUnitStateChanged(unitName, UnitStatus.Error);
+                Log.Write(ex);
                 OnErrorOccurred($"Unit '{unitName}' 실행 중 오류: {ex.Message}");
             }
             finally
@@ -643,7 +600,7 @@ namespace QMC.LCP_280.Process
                     try
                     {
                         unit.OnStop();
-                        OnUnitStateChanged(unitName, UnitState.Stopped);
+                        OnUnitStateChanged(unitName, UnitStatus.Stopped);
                     }
                     catch (Exception ex)
                     {
@@ -722,7 +679,8 @@ namespace QMC.LCP_280.Process
 
                     if (execInfo.IsRunning)
                     {
-                        OnUnitStateChanged(unitName, UnitState.Stopping);
+                        SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
+                        //OnUnitStateChanged(unitName, UnitStatus.Stopping);
 
                         // [FIX] 실제 유닛도 멈추도록 호출
                         if (Units.TryGetValue(unitName, out var u))
@@ -736,7 +694,8 @@ namespace QMC.LCP_280.Process
                             stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
 
                         // [FIX] 즉시 Stopped 알림 (Task 루프 미사용 구조 대응)
-                        OnUnitStateChanged(unitName, UnitState.Stopped);
+                        SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
+                        //OnUnitStateChanged(unitName, UnitStatus.Stopped);
                     }
                 }
 
@@ -754,73 +713,9 @@ namespace QMC.LCP_280.Process
                 return false;
             }
         }
-        //public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true)
-        //{
-        //    if (State == EquipmentState.Stopped)
-        //    {
-        //        Console.WriteLine("설비가 이미 정지되어 있습니다.");
-        //        return true;
-        //    }
-
-        //    try
-        //    {
-        //        OnStateChanged(EquipmentState.Stopping);
-
-        //        // 전체 시퀀스 취소 토큰 취소
-        //        _equipmentCancellationTokenSource?.Cancel();
-
-        //        var stopTasks = new List<Task<bool>>();
-
-        //        foreach (var kvp in _unitExecutions)
-        //        {
-        //            var unitName = kvp.Key;
-        //            var execInfo = kvp.Value;
-
-        //            // 보호 유닛 처리
-        //            if (IsProtectedUnit(unitName))
-        //            {
-        //                if (!includeEquipmentStatus)
-        //                {
-        //                    continue; // 유지
-        //                }
-        //            }
-
-        //            if (execInfo.IsRunning)
-        //            {
-        //                OnUnitStateChanged(unitName, UnitState.Stopping);
-
-        //                execInfo.CancellationTokenSource?.Cancel();
-        //                execInfo.IsRunning = false;
-        //                execInfo.StopTime = DateTime.Now;
-
-        //                if (execInfo.ExecutionTask != null)
-        //                {
-        //                    stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
-        //                }
-        //            }
-        //        }
-
-        //        if (stopTasks.Count > 0)
-        //        {
-        //            await Task.WhenAll(stopTasks);
-        //        }
-
-        //        OnStateChanged(EquipmentState.Stopped);
-        //        Console.WriteLine("설비 전체 정지 완료");
-        //        return true;
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        OnStateChanged(EquipmentState.Error);
-        //        OnErrorOccurred($"설비 정지 중 오류 발생: {ex.Message}");
-        //        return false;
-        //    }
-        //}
-
         // 기존 Equipment 구현(이미 public) + IDisposable
         //public async System.Threading.Tasks.Task<bool> StopAllUnitsAsync() => await StopAllUnitsAsync(); // 기존 메서드 연결
         // Dispose()는 기존 구현 사용
-
         /// <summary>
         /// 개별 Unit 정지
         /// </summary>
@@ -847,22 +742,27 @@ namespace QMC.LCP_280.Process
 
             try
             {
+                if (execInfo.IsRunning)
+                    SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
+
                 (unitObj as QMC.Common.Unit.BaseUnit)?.Stop();
 
                 execInfo.IsRunning = false;
                 execInfo.StopTime = DateTime.Now;
 
 
-                // [FIX] Stopping → Stopped 까지 반영
-                OnUnitStateChanged(unitName, UnitState.Stopping);
-                OnUnitStateChanged(unitName, UnitState.Stopped);
+                SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
+                SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
+                //OnUnitStateChanged(unitName, UnitStatus.Stopping);
+                //OnUnitStateChanged(unitName, UnitStatus.Stopped);
 
                 Console.WriteLine($"Unit '{unitName}' 정지 완료");
                 return true;
             }
             catch (Exception ex)
             {
-                OnUnitStateChanged(unitName, UnitState.Error);
+                SetAndRaiseUnitState(unitName, UnitStatus.Error);
+                //OnUnitStateChanged(unitName, UnitStatus.Error);
                 OnErrorOccurred($"Unit '{unitName}' 정지 중 오류: {ex.Message}");
                 return false;
             }
@@ -881,7 +781,9 @@ namespace QMC.LCP_280.Process
                 if (completedTask == timeoutTask)
                 {
                     OnErrorOccurred($"Unit '{unitName}' 정지 타임아웃");
-                    OnUnitStateChanged(unitName, UnitState.Error);
+
+                    SetAndRaiseUnitState(unitName, UnitStatus.Error);
+                    //OnUnitStateChanged(unitName, UnitStatus.Error);
                     return false;
                 }
 
@@ -890,7 +792,8 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                OnUnitStateChanged(unitName, UnitState.Error);
+                SetAndRaiseUnitState(unitName, UnitStatus.Error);
+                //OnUnitStateChanged(unitName, UnitStatus.Error);
                 OnErrorOccurred($"Unit '{unitName}' 정지 중 오류: {ex.Message}");
                 return false;
             }
@@ -966,7 +869,7 @@ namespace QMC.LCP_280.Process
                     UnitName = name,
                     Description = exec?.Description ?? "",
                     IsRunning = exec?.IsRunning ?? false,
-                    State = GetUnitCurrentState(name),
+                    RunUnitStatus = GetUnitCurrentState(name),
                     ComponentCount = compCount,
                     StartTime = exec?.StartTime,
                     RunningTime = (exec?.IsRunning == true && exec.StartTime.HasValue)
@@ -980,20 +883,32 @@ namespace QMC.LCP_280.Process
 
         public List<string> GetRegisteredUnitNames() => Units?.Keys.ToList() ?? new List<string>();
 
-        private UnitState GetUnitCurrentState(string unitName)
+        // GetUnitCurrentState 우선 BaseUnit.RunUnitStatus 사용하도록 재정렬 (이미 유사 로직 있으나 명확화)
+        private UnitStatus GetUnitCurrentState(string unitName)
         {
-            if (_unitExecutions.TryGetValue(unitName, out var exec))
+            if (Units != null && Units.TryGetValue(unitName, out var u) && u is BaseUnit bu)
             {
-                if (exec.IsRunning) 
-                    return UnitState.Running;
-
-                else if (exec.ExecutionTask?.IsFaulted == true) 
-                    return UnitState.Error;
-
-                else 
-                    return UnitState.Stopped;
+                if (bu.RunUnitStatus != UnitStatus.Unknown)
+                    return bu.RunUnitStatus;
             }
-            return UnitState.Unknown;
+
+            if (_unitExecutions != null && _unitExecutions.TryGetValue(unitName, out var exec))
+                return exec.IsRunning ? UnitStatus.Running : UnitStatus.Stopped;
+
+            return UnitStatus.Unknown;
+
+            //if (_unitExecutions.TryGetValue(unitName, out var exec))
+            //{
+            //    if (exec.IsRunning) 
+            //        return UnitStatus.Running;
+
+            //    else if (exec.ExecutionTask?.IsFaulted == true)
+            //        return UnitStatus.Error;
+
+            //    else
+            //        return UnitStatus.Stopped;
+            //}
+            //return UnitStatus.Unknown;
         }
 
         #endregion
@@ -1006,8 +921,80 @@ namespace QMC.LCP_280.Process
             EqState = newState;
             StateChanged?.Invoke(this, new EquipmentStateChangedEventArgs(old, newState));
         }
-        private void OnUnitStateChanged(string unitName, UnitState newState)
-            => UnitStateChanged?.Invoke(this, new UnitStateChangedEventArgs(unitName, newState));
+
+
+
+        /// <summary>
+        /// Unit 상태를 실제 객체(BaseUnit), 실행정보(UnitExecutionInfo)에 반영 후 이벤트 발행.
+        /// (외부에서 상태 올릴 때 이 함수만 호출하도록 정리)
+        /// </summary>
+        public void SetAndRaiseUnitState(string unitName, UnitStatus newState)
+        {
+            if (string.IsNullOrWhiteSpace(unitName))
+                return;
+
+            // 1) BaseUnit 반영
+            if (Units != null && Units.TryGetValue(unitName, out var u) && u is BaseUnit bu)
+            {
+                if (bu.RunUnitStatus != newState)
+                    bu.RunUnitStatus = newState;
+
+                switch (newState)
+                {
+                    case UnitStatus.Starting:
+                        bu.RunUnitStatus = UnitStatus.Starting;
+                        break;
+                    case UnitStatus.Running:
+                        bu.RunUnitStatus = UnitStatus.Running;
+                        //bu.IsRunning = true;
+                        break;
+                    case UnitStatus.Stopping:
+                        bu.RunUnitStatus = UnitStatus.Stopping;
+                        break;
+                    case UnitStatus.CycleStop:
+                        bu.RunUnitStatus = UnitStatus.CycleStop;
+                        break;
+                    case UnitStatus.Stopped:
+                        bu.RunUnitStatus = UnitStatus.Stopped;
+                        break;
+                    case UnitStatus.Error:
+                        bu.RunUnitStatus = UnitStatus.Error;
+                        break;
+                    case UnitStatus.Unknown:
+                        bu.RunUnitStatus = UnitStatus.Unknown;
+                        //bu.IsRunning = false;
+                        break;
+                }
+            }
+
+            // 2) 실행정보 반영
+            if (_unitExecutions != null && _unitExecutions.TryGetValue(unitName, out var exec))
+            {
+                bool running = (newState == UnitStatus.Running || newState == UnitStatus.Starting);
+                if (exec.IsRunning != running)
+                {
+                    exec.IsRunning = running;
+                    if (running)
+                        exec.StartTime = DateTime.Now;
+                    else
+                        exec.StopTime = DateTime.Now;
+                }
+            }
+
+            // 3) 중복 상태면 이벤트 생략
+            if (_lastBroadcastUnitStatus.TryGetValue(unitName, out var last) && last == newState)
+                return;
+            _lastBroadcastUnitStatus[unitName] = newState;
+
+            // 4) 실제 이벤트
+            OnUnitStateChanged(unitName, newState);
+        }
+        private void OnUnitStateChanged(string unitName, UnitStatus newState)
+        {
+            // 순수 이벤트 브로드캐스트(상태 동기화는 SetAndRaiseUnitState에서 처리)
+            UnitStateChanged?.Invoke(this, new UnitStateChangedEventArgs(unitName, newState));
+        }
+
         private void OnErrorOccurred(string msg)
         {
             ErrorOccurred?.Invoke(this, new EquipmentErrorEventArgs(msg));
@@ -1554,9 +1541,6 @@ namespace QMC.LCP_280.Process
     }
 
     #region Supporting Classes and Enums
-
-    
-
     /// <summary>
     /// Unit 실행 정보
     /// </summary>
@@ -1586,7 +1570,7 @@ namespace QMC.LCP_280.Process
         public string UnitName { get; set; }
         public string Description { get; set; }
         public bool IsRunning { get; set; }
-        public UnitState State { get; set; }
+        public UnitStatus RunUnitStatus { get; set; }
         public int ComponentCount { get; set; }
         public DateTime? StartTime { get; set; }
         public TimeSpan RunningTime { get; set; }
@@ -1614,12 +1598,12 @@ namespace QMC.LCP_280.Process
     public class UnitStateChangedEventArgs : EventArgs
     {
         public string UnitName { get; }
-        public UnitState State { get; }
+        public UnitStatus RunUnitStatus { get; }
 
-        public UnitStateChangedEventArgs(string unitName, UnitState state)
+        public UnitStateChangedEventArgs(string unitName, UnitStatus state)
         {
             UnitName = unitName;
-            State = state;
+            RunUnitStatus = state;
         }
     }
 

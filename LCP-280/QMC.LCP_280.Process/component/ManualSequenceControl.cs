@@ -133,9 +133,132 @@ namespace QMC.LCP_280.Process.Component
         }
 
 
-        private void _btnPlay_Click(object sender, EventArgs e)
+        private async void _btnPlay_Click(object sender, EventArgs e)
         {
+            if (m_ParentUnit == null) 
+                return;
 
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq == null)
+                {
+                    MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var unitName = m_ParentUnit.UnitName;
+                if (string.IsNullOrEmpty(unitName))
+                {
+                    MessageBox.Show("UnitName 이 비어있습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
+                if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                {
+                    MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+
+                var btn = sender as Button;
+                bool restore = false;
+                if (btn != null && btn.Enabled)
+                {
+                    btn.Enabled = false;
+                    restore = true;
+                }
+                Cursor prev = Cursor.Current;
+                Cursor.Current = Cursors.WaitCursor;
+
+                bool ok = await eq.StartUnitAsync(unitName);
+                if (!ok)
+                {
+                    MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    // 필요 시 목록/상태 갱신
+                    UpdateSeqList();
+                }
+
+                Cursor.Current = prev;
+                if (restore) btn.Enabled = true;
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+        }
+
+        private async void _btnStop_Click(object sender, EventArgs e)
+        {
+            if (m_ParentUnit == null) 
+                return;
+
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq == null)
+                {
+                    MessageBox.Show("Equipment 인스턴스가 없습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var unitName = m_ParentUnit.UnitName;
+                if (string.IsNullOrEmpty(unitName))
+                {
+                    MessageBox.Show("UnitName 이 비어 있습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 이미 정지 상태이면 반환
+                if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopping ||
+                    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopped ||
+                    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.CycleStop)
+                {
+                    MessageBox.Show($"Unit '{unitName}' 는 이미 정지 상태입니다.", "정보",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var btn = sender as Button;
+                bool restore = false;
+                if (btn != null && btn.Enabled)
+                {
+                    btn.Enabled = false;
+                    restore = true;
+                }
+                var prevCursor = Cursor.Current;
+                Cursor.Current = Cursors.WaitCursor;
+
+                bool ok = await eq.StopUnitAsync(unitName);
+                if (!ok)
+                {
+                    MessageBox.Show($"Unit '{unitName}' 정지 실패.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    UpdateSeqList();
+                }
+
+                Cursor.Current = prevCursor;
+                if (restore) btn.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show(ex.Message, "정지 처리 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
