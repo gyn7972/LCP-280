@@ -1,4 +1,5 @@
-﻿using QMC.Common.Controls;
+﻿using QMC.Common;
+using QMC.Common.Controls;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit;
 using QMC.LCP_280.Process.Unit.FormMain;
@@ -14,6 +15,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process
 {
+    [FormOrder(1)]
     public partial class Monitoring_Main : Form
     {
         private InputCassetteLifter CassetteLifter { get; set; }

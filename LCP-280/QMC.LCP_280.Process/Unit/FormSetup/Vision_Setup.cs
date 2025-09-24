@@ -12,6 +12,7 @@ using QMC.LCP_280.Process.Component;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    [FormOrder(2)]
     public partial class Vision_Setup : Form
     {
         private readonly Equipment equipment = Equipment.Instance;

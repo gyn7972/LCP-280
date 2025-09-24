@@ -12,6 +12,7 @@ using QMC.Common.IOUtil;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    [FormOrder(5)]
     public partial class Cylinder_Setup : Form
     {
         private Timer _axisPosTimer;

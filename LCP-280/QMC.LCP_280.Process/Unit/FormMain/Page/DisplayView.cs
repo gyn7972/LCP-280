@@ -1,0 +1,333 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace QMC.Common.Controls   // 공용 네임스페이스
+{
+    public partial class DisplayView : UserControl
+    {
+        public enum ItemState
+        {
+            Empty,   // 흰색
+            Present, // 검은색
+            Picked   // 초록색
+        }
+
+        public class DisplayItem
+        {
+            public Point Position { get; set; }   // 중심 (0,0) 기준 좌표
+            public ItemState State { get; set; }  // 상태
+            public string Info { get; set; } = "";  // 추가 정보 (BinCode, Test결과 등)
+            public int DieId { get; set; }       // 다이 ID
+        }
+
+        public class DisplayItemEventArgs : EventArgs
+        {
+            public DisplayItem Item { get; set; }
+            public Point ScreenPosition { get; set; }
+        }
+
+        // 이벤트 정의
+        public event EventHandler<DisplayItemEventArgs> ItemDoubleClicked;
+        public event EventHandler<DisplayItemEventArgs> ItemHovered;
+        public event EventHandler<DisplayItemEventArgs> MotorMoveRequested;
+
+        private List<DisplayItem> _items = new List<DisplayItem>();
+        private float _scale = 1.0f;
+        private PointF _offset = PointF.Empty;
+        private bool _dragging = false;
+        private Point _lastMouse;
+
+        // 툴팁 관련
+        private ToolTip _toolTip;
+        private DisplayItem _hoveredItem = null;
+        private Timer _hoverTimer;
+
+        public DisplayView()
+        {
+            this.DoubleBuffered = true;
+            this.BackColor = Color.LightGray;
+
+            // 툴팁 초기화
+            _toolTip = new ToolTip();
+            _toolTip.AutoPopDelay = 5000;
+            _toolTip.InitialDelay = 500;
+            _toolTip.ReshowDelay = 100;
+
+            // 호버 타이머 초기화
+            _hoverTimer = new Timer();
+            _hoverTimer.Interval = 100;
+            _hoverTimer.Tick += HoverTimer_Tick;
+
+            this.MouseWheel += DisplayView_MouseWheel;
+            this.MouseDown += DisplayView_MouseDown;
+            this.MouseMove += DisplayView_MouseMove;
+            this.MouseUp += DisplayView_MouseUp;
+            this.MouseDoubleClick += Display_MouseDoubleClick;
+            this.MouseClick += Display_MouseClick;
+            this.MouseLeave += DisplayView_MouseLeave;
+        }
+
+        /// <summary>데이터 세팅</summary>
+        public void SetItems(List<DisplayItem> items)
+        {
+            _items = items ?? new List<DisplayItem>();
+            this.Invalidate();
+        }
+
+        /// <summary>마우스 위치에서 아이템 찾기</summary>
+        private DisplayItem GetItemAtPosition(Point mousePos)
+        {
+            if (_items == null || _items.Count == 0) return null;
+
+            int cx = this.Width / 2;
+            int cy = this.Height / 2;
+
+            // 데이터 범위 계산
+            int maxX = _items.Max(d => Math.Abs(d.Position.X));
+            int maxY = _items.Max(d => Math.Abs(d.Position.Y));
+            if (maxX == 0) maxX = 1;
+            if (maxY == 0) maxY = 1;
+
+            float baseScale = Math.Min(
+                (float)(this.Width / 2 - 20) / maxX,
+                (float)(this.Height / 2 - 20) / maxY
+            );
+
+            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5f));
+            int hitRadius = Math.Max(itemSize / 2, 3); // 최소 3픽셀 클릭 영역
+
+            foreach (var item in _items)
+            {
+                int x = (int)(cx + item.Position.X * baseScale * _scale + _offset.X);
+                int y = (int)(cy - item.Position.Y * baseScale * _scale + _offset.Y);
+
+                double distance = Math.Sqrt(Math.Pow(mousePos.X - x, 2) + Math.Pow(mousePos.Y - y, 2));
+                if (distance <= hitRadius)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>줌 기능 (휠)</summary>
+        private void DisplayView_MouseWheel(object sender, MouseEventArgs e)
+        {
+            _scale *= (e.Delta > 0) ? 1.1f : 0.9f;
+            _scale = Math.Max(0.1f, Math.Min(10f, _scale));
+            this.Invalidate();
+        }
+
+        private void DisplayView_MouseDown(object sender, MouseEventArgs e)
+        {
+            _dragging = true;
+            _lastMouse = e.Location;
+        }
+
+        private void DisplayView_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_dragging)
+            {
+                _offset.X += (e.X - _lastMouse.X);
+                _offset.Y += (e.Y - _lastMouse.Y);
+                _lastMouse = e.Location;
+                this.Invalidate();
+            }
+            else
+            {
+                // 호버 처리
+                var item = GetItemAtPosition(e.Location);
+                if (item != _hoveredItem)
+                {
+                    _hoveredItem = item;
+                    _hoverTimer.Stop();
+                    _hoverTimer.Start();
+                }
+                this.Invalidate();
+            }
+        }
+
+        private void DisplayView_MouseUp(object sender, MouseEventArgs e)
+        {
+            _dragging = false;
+        }
+
+        private void DisplayView_MouseLeave(object sender, EventArgs e)
+        {
+            _hoveredItem = null;
+            _toolTip.Hide(this);
+            _hoverTimer.Stop();
+        }
+
+        private void HoverTimer_Tick(object sender, EventArgs e)
+        {
+            _hoverTimer.Stop();
+
+            if (_hoveredItem != null)
+            {
+                // 툴팁 표시
+                string tooltipText = $"Position: ({_hoveredItem.Position.X}, {_hoveredItem.Position.Y})\n";
+                tooltipText += $"State: {_hoveredItem.State}\n";
+                tooltipText += $"Die ID: {_hoveredItem.DieId}";
+
+                if (!string.IsNullOrEmpty(_hoveredItem.Info))
+                    tooltipText += $"\nInfo: {_hoveredItem.Info}";
+
+                _toolTip.Show(tooltipText, this, Cursor.Position.X - this.PointToScreen(Point.Empty).X + 10,
+                             Cursor.Position.Y - this.PointToScreen(Point.Empty).Y - 10);
+
+                // 호버 이벤트 발생
+                ItemHovered?.Invoke(this, new DisplayItemEventArgs
+                {
+                    Item = _hoveredItem,
+                    ScreenPosition = Cursor.Position
+                });
+            }
+            else
+            {
+                _toolTip.Hide(this);
+            }
+        }
+
+        private void Display_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case MouseButtons.Left:
+                    var item = GetItemAtPosition(e.Location);
+                    if (item != null)
+                    {
+                        // 모터 이동 팝업 표시
+                        ShowMotorMovePopup(item);
+                    }
+                    break;
+
+                case MouseButtons.Right:
+                    _scale = 1.0f;
+                    _offset = PointF.Empty;
+                    this.Invalidate();
+                    break;
+            }
+
+        }
+
+
+        private void Display_MouseClick(object sender, MouseEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case MouseButtons.Left:
+                    var item = GetItemAtPosition(e.Location);
+                    if (item != null)
+                    {
+                        // 더블클릭 이벤트 발생
+                        ItemDoubleClicked?.Invoke(this, new DisplayItemEventArgs
+                        {
+                            Item = item,
+                            ScreenPosition = e.Location
+                        });
+                    }
+                    break;
+
+                case MouseButtons.Right:
+                    break;
+            }
+        }
+
+        /// <summary>모터 이동 확인 팝업</summary>
+        private void ShowMotorMovePopup(DisplayItem item)
+        {
+            var result = MessageBox.Show(
+                $"모터 좌표 X:{item.Position.X}, Y:{item.Position.Y} 로 이동하시겠습니까?",
+                "모터 이동 확인",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                // 모터 이동 이벤트 발생
+                MotorMoveRequested?.Invoke(this, new DisplayItemEventArgs
+                {
+                    Item = item,
+                    ScreenPosition = Point.Empty
+                });
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.Clear(Color.LightGray);
+
+            if (_items == null || _items.Count == 0) return;
+
+            int cx = this.Width / 2;
+            int cy = this.Height / 2;
+
+            // 데이터 범위 계산
+            int maxX = _items.Max(d => Math.Abs(d.Position.X));
+            int maxY = _items.Max(d => Math.Abs(d.Position.Y));
+            if (maxX == 0) maxX = 1;
+            if (maxY == 0) maxY = 1;
+
+            // 전체 데이터가 화면에 들어오도록 기본 스케일
+            float baseScale = Math.Min(
+                (float)(this.Width / 2 - 20) / maxX,
+                (float)(this.Height / 2 - 20) / maxY
+            );
+
+            // 칩 크기
+            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5f));
+
+            foreach (var item in _items)
+            {
+                Brush brush = Brushes.White;
+                Pen pen = Pens.Gray;
+
+                switch (item.State)
+                {
+                    case ItemState.Present:
+                        brush = Brushes.Black;
+                        pen = Pens.DarkGray;
+                        break;
+                    case ItemState.Picked:
+                        brush = Brushes.LimeGreen;
+                        pen = Pens.Green;
+                        break;
+                    case ItemState.Empty:
+                        brush = Brushes.White;
+                        pen = Pens.LightGray;
+                        break;
+                }
+
+                int x = (int)(cx + item.Position.X * baseScale * _scale + _offset.X);
+                int y = (int)(cy - item.Position.Y * baseScale * _scale + _offset.Y);
+
+                // 아이템 그리기
+                g.FillEllipse(brush, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+
+                // 테두리 그리기 (확대 시에만)
+                if (itemSize > 4)
+                {
+                    g.DrawEllipse(pen, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);
+                }
+
+                // 호버된 아이템 하이라이트
+                if (item == _hoveredItem && itemSize > 2)
+                {
+                    using (Pen highlightPen = new Pen(Color.Red, 2))
+                    {
+                        g.DrawEllipse(highlightPen, x - itemSize / 2 - 2, y - itemSize / 2 - 2, itemSize + 4, itemSize + 4);
+                    }
+                }
+            }
+        }
+    }
+}
