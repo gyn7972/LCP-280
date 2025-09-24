@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -102,19 +104,46 @@ namespace QMC.Common.PKGTester
         }
         public bool InArea(double x, double y)
         {
-            // Using the ray-casting algorithm to determine if the point is inside the polygon
-            int n = 4; // Number of vertices
-            bool inside = false;
-            PointD[] vertices = { topLeft, topRight, bottomRight, bottomLeft };
-            for (int i = 0, j = n - 1; i < n; j = i++)
+            if (x < 0 || x > 1 || y < 0 || y > 1)
+                return false;
+
+            using (var path = GetPolygon())
             {
-                if ((vertices[i].Y > y) != (vertices[j].Y > y) &&
-                    (x < (vertices[j].X - vertices[i].X) * (y - vertices[i].Y) / (vertices[j].Y - vertices[i].Y + 1e-10) + vertices[i].X))
-                {
-                    inside = !inside;
-                }
+                return path.IsVisible((float)x, (float)y);
             }
-            return inside;
+        }
+        public bool IsOverlap(ColorRegion other)
+        {
+            if (other == null)
+                return false;
+            
+            using (var pathA = GetPolygon())
+            using (var pathB = other.GetPolygon())
+            {
+                return PolygonsOverlap(pathA, pathB);
+            }
+        }
+        private GraphicsPath GetPolygon()
+        {
+            GraphicsPath path = new GraphicsPath();
+            PointF[] points = new PointF[]
+            {
+                new PointF((float)topLeft.X, (float)topLeft.Y),
+                new PointF((float)topRight.X, (float)topRight.Y),
+                new PointF((float)bottomRight.X, (float)bottomRight.Y),
+                new PointF((float)bottomLeft.X, (float)bottomLeft.Y)
+            };
+            path.AddPolygon(points);
+            return path;
+        }
+        private bool PolygonsOverlap(GraphicsPath a, GraphicsPath b)
+        {
+            using (var regA = new Region(a))
+            using (var regB = new Region(b))
+            {
+                regA.Intersect(regB);
+                return !regA.IsEmpty(Graphics.FromHwnd(IntPtr.Zero));
+            }
         }
         #endregion
     }
@@ -130,9 +159,83 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Constuctors
+        public ColorRegionCollection()
+        {
+        }
         #endregion
 
         #region Methods
+        public void Clear()
+        {
+            regions.Clear();
+        }
+        public bool AddRegion(ColorRegion region)
+        {
+            if (region == null)     
+                return false;
+
+            regions.Add(region);
+            return true;
+        }
+        public bool Validate()
+        {
+            // 모든 멤버가 유효한지 확인
+            for (int i = 0; i < regions.Count; i++)
+            {
+                if (regions[i] == null)
+                    return false;
+                if (!regions[i].Validate())
+                    return false;
+            }
+
+            // 멤버 간에 겹치는 영역이 있는지 확인
+            for (int i = 0; i < regions.Count; i++)
+            {
+                var regionA = regions[i];
+                for (int j = i + 1; j < regions.Count; j++)
+                {
+                    var regionB = regions[j];
+                    if (regionA.IsOverlap(regionB))
+                        return false;
+                }
+            }
+            return true;
+        }
+        public bool LoadFromFile(string filePath)
+        {
+            try
+            {
+                Clear();
+                using (var reader = new System.IO.StreamReader(filePath, System.Text.Encoding.UTF8))
+                {
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+        public bool SaveToFile(string filePath)
+        {
+            try
+            {
+                var dir = System.IO.Path.GetDirectoryName(filePath);
+                if (!System.IO.Directory.Exists(dir))
+                {
+                    System.IO.Directory.CreateDirectory(dir);
+                }
+
+                using (var writer = new System.IO.StreamWriter(filePath, false, System.Text.Encoding.UTF8))
+                {
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
         #endregion
     }
 
