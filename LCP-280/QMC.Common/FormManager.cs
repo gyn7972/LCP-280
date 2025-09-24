@@ -5,6 +5,17 @@ using System.Windows.Forms;
 
 namespace QMC.Common
 {
+    [AttributeUsage(AttributeTargets.Class)]
+    public class FormOrderAttribute : Attribute
+    {
+        public int Order { get; }
+
+        public FormOrderAttribute(int order)
+        {
+            Order = order;
+        }
+    }
+
     /// <summary>
     /// 메뉴 타입별로 폼을 등록하고 관리하는 클래스
     /// </summary>
@@ -52,6 +63,28 @@ namespace QMC.Common
                 FormType = formType,
                 DisplayName = displayName,
                 Description = description ?? displayName
+            };
+
+            _registeredForms[menuType].Add(formInfo);
+        }
+
+        // FormManager.cs에 오버로드 메서드 추가
+        /// <summary>
+        /// 폼을 특정 메뉴 타입에 순서와 함께 등록
+        /// </summary>
+        public void RegisterForm(MenuButtonType menuType, Type formType, string displayName, string description = null, int order = int.MaxValue)
+        {
+            if (!typeof(Form).IsAssignableFrom(formType))
+            {
+                throw new ArgumentException($"{formType.Name}은 Form을 상속받아야 합니다.");
+            }
+
+            var formInfo = new FormInfo
+            {
+                FormType = formType,
+                DisplayName = displayName,
+                Description = description ?? displayName,
+                Order = order
             };
 
             _registeredForms[menuType].Add(formInfo);
@@ -118,5 +151,7 @@ namespace QMC.Common
         public Type FormType { get; set; }
         public string DisplayName { get; set; }
         public string Description { get; set; }
+        public int Order { get; set; } = int.MaxValue; // 기본값은 가장 뒤로, 순서 때문에 추가
+
     }
 }

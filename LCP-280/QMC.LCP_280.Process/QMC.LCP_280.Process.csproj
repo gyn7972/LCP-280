@@ -207,58 +207,58 @@
     <Compile Include="Component\VisionRunnerHub.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
-    <Compile Include="Unit\FormMain\DieInputControl.cs">
+    <Compile Include="Unit\FormMain\Page\DieInputControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DieInputControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DieInputControl.Designer.cs">
       <DependentUpon>DieInputControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\DieOutputControl.cs">
+    <Compile Include="Unit\FormMain\Page\DieOutputControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DieOutputControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DieOutputControl.Designer.cs">
       <DependentUpon>DieOutputControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView.Designer.cs">
       <DependentUpon>DisplayView.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_DieIndexSelectControl.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieIndexSelectControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_DieIndexSelectControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieIndexSelectControl.Designer.cs">
       <DependentUpon>DisplayView_DieIndexSelectControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_DieOutputControl.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieOutputControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_DieOutputControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_DieOutputControl.Designer.cs">
       <DependentUpon>DisplayView_DieOutputControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_InputWaferCarrierControl.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_InputWaferCarrierControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_InputWaferCarrierControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_InputWaferCarrierControl.Designer.cs">
       <DependentUpon>DisplayView_InputWaferCarrierControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_OutputWaferCarrierControl.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_OutputWaferCarrierControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DisplayView_OutputWaferCarrierControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DisplayView_OutputWaferCarrierControl.Designer.cs">
       <DependentUpon>DisplayView_OutputWaferCarrierControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\InputWaferCarrierControl.cs">
+    <Compile Include="Unit\FormMain\Page\InputWaferCarrierControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\InputWaferCarrierControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\InputWaferCarrierControl.Designer.cs">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\MeasurementControl.cs">
+    <Compile Include="Unit\FormMain\Page\MeasurementControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\MeasurementControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\MeasurementControl.Designer.cs">
       <DependentUpon>MeasurementControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormMain\Monitoring_Main.cs">
@@ -267,10 +267,10 @@
     <Compile Include="Unit\FormMain\Monitoring_Main.Designer.cs">
       <DependentUpon>Monitoring_Main.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\OutputWaferCarrierControl.cs">
+    <Compile Include="Unit\FormMain\Page\OutputWaferCarrierControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\OutputWaferCarrierControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\OutputWaferCarrierControl.Designer.cs">
       <DependentUpon>OutputWaferCarrierControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormMain\Sequence_Main.cs">
@@ -536,10 +536,10 @@
     <Compile Include="Unit\FormSetup\Vision_Setup.Designer.cs">
       <DependentUpon>Vision_Setup.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\DieIndexSelectControl.cs">
+    <Compile Include="Unit\FormMain\Page\DieIndexSelectControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\DieIndexSelectControl.Designer.cs">
+    <Compile Include="Unit\FormMain\Page\DieIndexSelectControl.Designer.cs">
       <DependentUpon>DieIndexSelectControl.cs</DependentUpon>
     </Compile>
     <Compile Include="WaferData.cs" />
@@ -578,22 +578,22 @@
     <EmbeddedResource Include="Component\UnitConfig.resx">
       <DependentUpon>UnitConfig.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\DieInputControl.resx">
+    <EmbeddedResource Include="Unit\FormMain\Page\DieInputControl.resx">
       <DependentUpon>DieInputControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\DieIndexSelectControl.resx">
+    <EmbeddedResource Include="Unit\FormMain\Page\DieIndexSelectControl.resx">
       <DependentUpon>DieIndexSelectControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\DieOutputControl.resx">
+    <EmbeddedResource Include="Unit\FormMain\Page\DieOutputControl.resx">
       <DependentUpon>DieOutputControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\DisplayView.resx">
+    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView.resx">
       <DependentUpon>DisplayView.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\InputWaferCarrierControl.resx">
+    <EmbeddedResource Include="Unit\FormMain\Page\InputWaferCarrierControl.resx">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\MeasurementControl.resx">
+    <EmbeddedResource Include="Unit\FormMain\Page\MeasurementControl.resx">
       <DependentUpon>MeasurementControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Monitoring_Main.resx">
@@ -609,7 +609,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <EmbeddedResource Include="Unit\FormMain\OutputWaferCarrierControl.resx">
+    <EmbeddedResource Include="Unit\FormMain\Page\OutputWaferCarrierControl.resx">
       <DependentUpon>OutputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Sequence_Main.resx">
