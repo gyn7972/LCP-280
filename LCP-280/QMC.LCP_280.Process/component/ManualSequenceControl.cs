@@ -138,6 +138,10 @@ namespace QMC.LCP_280.Process.Component
             if (m_ParentUnit == null) 
                 return;
 
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "시컨스를 진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
             try
             {
                 var eq = Equipment.Instance;

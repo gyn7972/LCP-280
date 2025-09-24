@@ -392,54 +392,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             if (Equipment == null)
                 return;
-            var unitName = "IndexLoadAligner";
-            int selSocket = 1;
 
-            CancellationTokenSource cts = null;
-            try
-            {
-                if (comboBoxIndexSocketNo != null)
-                {
-                    if (comboBoxIndexSocketNo.SelectedItem is int v)
-                        selSocket = v;                  // 1~8 그대로
-                    else if (comboBoxIndexSocketNo.SelectedIndex >= 0)
-                        selSocket = comboBoxIndexSocketNo.SelectedIndex + 1;
-                }
-            }
-            catch { selSocket = 1; }
-
-            try
-            {
-                btnInputMAlign.Enabled = false;
-
-                // 선택 값 전달
-                IndexLoadAligner.ManualSocketIndex = selSocket;
-
-                IndexLoadAligner.ManualState = Common.Unit.BaseUnit.ProcessState.Manual;
-                IndexLoadAligner.StepManual = 1;
-                var result = await Equipment.StartUnitAsync(unitName);
-
-                cts = new CancellationTokenSource();
-                int rc = await IndexLoadAligner.WaitManualStepAsync(1, cts.Token);
-
-                if (rc == 0)
-                    MessageBox.Show(this, "Step1 완료", "OK",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                else
-                    MessageBox.Show(this, $"Step1 실패 (rc={rc})", "Fail",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (OperationCanceledException)
-            {
-                MessageBox.Show(this, "취소됨", "Canceled",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (Exception ex) { Log.Write(ex); MessageBox.Show(this, ex.Message, "예외", MessageBoxButtons.OK, MessageBoxIcon.Error); }
-            finally
-            {
-                btnInputMAlign.Enabled = true;
-                cts?.Dispose();
-            }
         }
 
         private void comboBoxIndexSocketNo_SelectedIndexChanged(object sender, EventArgs e)

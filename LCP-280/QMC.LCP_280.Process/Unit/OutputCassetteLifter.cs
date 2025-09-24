@@ -53,8 +53,6 @@ namespace QMC.LCP_280.Process.Unit
         #region Axis
         private MotionAxis _BinLiftZ;
         public MotionAxis AxisBinLiftZ => _BinLiftZ;
-
-        public bool IsBinReadyForUnloding { get; private set; }
         #endregion
 
         #region ctor / Initialization
@@ -275,6 +273,11 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
+        #region seq signals
+        public bool IsBinReadyForUnloding { get; set; } = false;
+        public bool RequestStageLoading { get; set; } = false;
+        #endregion
+
         #region Lifecycle
         public override int OnRun()
         {
@@ -298,6 +301,10 @@ namespace QMC.LCP_280.Process.Unit
                     break;
                 case ProcessState.Complete:
                     ret = OnRunComplete();
+                    if(ret == 0)
+                    {
+                        RequestStageLoading = true;
+                    }
                     break;
                 default:
                     this.IsBinReadyForUnloding = false;
@@ -315,6 +322,8 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnStop()
         {
             int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }

@@ -86,10 +86,66 @@ namespace QMC.LCP_280.Process.Unit
                 IndexOutCamera = eq.IndexUnloaderCam; // fallback
         }
         #endregion
-        
+
+        #region seq signals
+        public bool CompleteUnloadAligner { get; internal set; } = false;
+        #endregion
+
         #region Lifecycle
-        public override int OnRun() { int ret = 0; return ret; }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        public override int OnRun()
+        {
+            int ret = 0;
+
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                ret = 1;
+            }
+            else
+            {
+                switch (State)
+                {
+                    case ProcessState.Ready:
+                        if (Rotary.RequestUnloaderAligner)
+                        {
+                            CompleteUnloadAligner = false;
+                            ret = OnRunReady();
+                        }
+                        break;
+                    case ProcessState.Work:
+                        ret = OnRunWork();
+                        break;
+                    case ProcessState.Complete:
+                        ret = OnRunComplete();
+                        if (ret == 0)
+                        {
+                            CompleteUnloadAligner = true;
+                        }
+                        break;
+                    default:
+                        this.State = ProcessState.Ready;
+                        break;
+                }
+            }
+
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+
+            return ret;
+        }
+        public override int OnStop() 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
+        }
         protected override int OnRunReady() { return 0; }
         protected override int OnRunWork() { return 0; }
         protected override int OnRunComplete() { return 0; }
@@ -114,7 +170,7 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsStatus_AlignDone { get; set; }
         public double IsStatus_LastFoundDx { get; set; }
         public double IsStatus_LastFoundDy { get; set; }
-
+        
         private (bool ok, double x, double y) CenterSearchViaRunner()
         {
             var res = VisionRunnerHub.SearchCenterOffset(

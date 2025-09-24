@@ -354,19 +354,6 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
         #endregion
 
-        public bool IsStatus_RequestBin { get; set; }
-        public bool IsStatus_StageLoadingReady { get; private set; }
-        public bool IsStatus_StageLoadingDone { get; private set; }
-        public bool IsStatus_StageUnloadingDone { get; private set; }
-        public bool IsStatus_StageUnloadingReady { get; private set; }
-        public bool IsStatus_CompleteWorking { get; internal set; }
-
-        public MaterialWafer GetWaferMaterial()
-        {
-            throw new NotImplementedException();
-        }
-
-
         // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
         /// <summary>
         /// 단일 축 이동 (Safety 인터락 포함). 이동 완료까지 블록.
@@ -672,13 +659,79 @@ namespace QMC.LCP_280.Process.Unit
             return result;
         }
 
+        #region seq signals
+        public bool IsStatus_RequestBin { get; set; }
+        public bool IsStatus_StageLoadingReady { get; private set; }
+        public bool IsStatus_StageLoadingDone { get; private set; }
+        public bool IsStatus_StageUnloadingDone { get; private set; }
+        public bool IsStatus_StageUnloadingReady { get; private set; }
+        public bool IsStatus_CompleteWorking { get; internal set; }
+        public bool RequestInputDie { get; internal set; }
 
-        public override int OnRun() { int ret = 0; return ret; }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        public MaterialWafer GetWaferMaterial()
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
+        #region Lifecycle
+        public override int OnRun()
+        {
+            int ret = 0;
+
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    if(OutputCassetteLifter.RequestStageLoading)
+                    {
+                        RequestInputDie = false;
+                        ret = OnRunReady();
+                    }
+                    break;
+                case ProcessState.Work:
+                    ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    ret = OnRunComplete();
+                    if (ret == 0)
+                    {
+                        RequestInputDie = true;
+                    }
+                    break;
+                default:
+                    //IsStatus_StageLoadingReady = false;
+                    //IsStatus_StageLoadingDone = false;
+                    this.State = ProcessState.Ready;
+                    break;
+            }
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+
+            return ret;
+        }
+        public override int OnStop() 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
+        }
         protected override int OnRunReady() { return 0; }
         protected override int OnRunWork() { return 0; }
         protected override int OnRunComplete() { return 0; }
-
+        #endregion
 
         #region Seq 단위 동작 함수
         public int LoadingBinPrepare()

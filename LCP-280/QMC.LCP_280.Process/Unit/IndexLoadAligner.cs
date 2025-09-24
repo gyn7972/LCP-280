@@ -690,6 +690,11 @@ namespace QMC.LCP_280.Process.Unit
         public bool WriteOutput(string name, bool on) => false; // No IO defined yet
         #endregion
 
+
+        #region seq signal
+        public bool CompleteLoadAligner { get; internal set; } = false;
+        #endregion
+
         #region Lifecycle
         public override int OnRun()
         {
@@ -706,27 +711,25 @@ namespace QMC.LCP_280.Process.Unit
             {
                 switch (State)
                 {
-                    case ProcessState.Manual:
-                        ret = OnRunManual();
-                        break;
                     case ProcessState.Ready:
-                        ret = OnRunReady();
+                        if (Rotary.RequestLoadAligner)
+                        {
+                            CompleteLoadAligner = false;
+                            ret = OnRunReady();
+                        }
                         break;
                     case ProcessState.Work:
                         ret = OnRunWork();
                         break;
                     case ProcessState.Complete:
                         ret = OnRunComplete();
+                        if(ret == 0)
+                        {
+                            CompleteLoadAligner = true;
+                        }
                         break;
                     default:
-                        if (ManualState == ProcessState.Manual)
-                        {
-                            this.State = ProcessState.Manual;
-                        }
-                        else
-                        {
-                            this.State = ProcessState.Ready;
-                        }
+                        this.State = ProcessState.Ready;
                         break;
                 }
             }
@@ -740,116 +743,10 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
-        // 클래스 상단 필드들 근처 (ManualState / StepManual 선언 위/아래 적절한 위치에 추가)
-        // ===== Manual Step Signal 추가 =====
-        public event Action<IndexLoadAligner, int, int> ManualStepCompleted; // (unit, stepNo, result)
-        public int LastManualStepNumber { get; private set; } = 0;
-        public int LastManualStepResult { get; private set; } = 0;
-        private TaskCompletionSource<int> _manualStepTcs;
-
-        private void CompleteManualStep(int step, int result)
-        {
-            LastManualStepNumber = step;
-            LastManualStepResult = result;
-
-            // 이벤트/대기 중인 Task 신호
-            try 
-            { 
-                ManualStepCompleted?.Invoke(this, step, result); 
-            } 
-            catch { }
-
-            _manualStepTcs?.TrySetResult(result);
-            _manualStepTcs = null;
-
-            // 기존 패턴 유지: StepManual = 0 으로 수동동작 종료
-            StepManual = 0;
-        }
-
-        public Task<int> WaitManualStepAsync(int expectedStep, CancellationToken ct = default(CancellationToken))
-        {
-            // 이미 끝난 경우 즉시 반환
-            if (StepManual == 0 && LastManualStepNumber == expectedStep)
-                return Task.FromResult(LastManualStepResult);
-
-            if (_manualStepTcs != null)
-                throw new InvalidOperationException("이미 다른 수동 Step 대기 중입니다.");
-
-            _manualStepTcs = new TaskCompletionSource<int>();
-
-            void Handler(IndexLoadAligner u, int step, int result)
-            {
-                if (step == expectedStep)
-                {
-                    ManualStepCompleted -= Handler;
-                    _manualStepTcs.TrySetResult(result);
-                }
-            }
-            ManualStepCompleted += Handler;
-
-            if (ct.CanBeCanceled)
-            {
-                ct.Register(() =>
-                {
-                    ManualStepCompleted -= Handler;
-                    _manualStepTcs?.TrySetCanceled();
-                });
-            }
-
-            return _manualStepTcs.Task;
-        }
-
-        // ====== Manual 순차 루프 설정 ======
-        private const int MANUAL_FIRST_STEP = 1;
-        private const int MANUAL_BASE_LAST_STEP = 7; // 기본 마지막 스텝
-        public bool ManualSequentialLoop { get; set; } = false; // true 이면 1~N 반복
-        public bool UseCompositeStep8 { get; set; } = false;   // true 이면 1~8 반복(8은 복합)
-        private int ManualLastStep => UseCompositeStep8 ? 8 : MANUAL_BASE_LAST_STEP;
-
-        public ProcessState ManualState { get; set; }
-        public int StepManual = 0;
-        public int ManualSocketIndex = 1;
-        private int OnRunManual()
-        {
-            // 1) 현재 실행 중 Step 이 없는 상태(StepManual==0)이고 루프 모드라면 다음 Step 스케줄
-            if (ManualSequentialLoop && StepManual == 0)
-            {
-                int next = LastManualStepNumber + 1;
-                if (next < MANUAL_FIRST_STEP || next > ManualLastStep)
-                    next = MANUAL_FIRST_STEP;
-                StepManual = next; // 다음 Step 실행 예약
-                return 0;          // 다음 OnRun 호출 때 실제 수행
-            }
-
-            if (StepManual == 0)
-                return 0; // 대기 (비루프 모드이거나 외부에서 StepManual 세팅 대기)
-
-            int step = StepManual;
-            int ret = 0;
-
-            switch (step)
-            {
-                case 1:
-                    ret = AlignSocketOnce();
-                    if (ret != 0) 
-                    { 
-                        OnStop(); 
-                        CompleteManualStep(step, ret); 
-                        return ret; 
-                    }
-                    
-                    CompleteManualStep(step, 0);
-                    break;
-            }
-
-            // 3) CompleteManualStep 호출 시 StepManual=0 으로 리셋됨
-            //    루프 모드이면 다음 OnRunManual 진입 시 다시 다음 Step 스케줄
-            return 0;
-        }
         public override int OnStop()
         {
             int ret = 0;
-
+            this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
             base.OnStop();
             return ret;

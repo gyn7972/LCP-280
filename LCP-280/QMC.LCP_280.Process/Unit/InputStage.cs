@@ -952,17 +952,8 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-        #region Seq
 
-        public MaterialWafer GetWaferMaterial()
-        {
-            var mat = GetMaterial();
-            return mat as MaterialWafer;
-        }
-
-        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
-        public bool IsStatus_RequestWafer { get; internal set; } = false;
-
+        #region Seq Signal
         // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
         public bool IsStatus_StageLoadingReady { get; private set; }
         public bool IsStatus_StageLoadingDone { get; private set; }
@@ -988,7 +979,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-
         // ====== Align Refactor: 상태/결과 보관 필드 ======
         public bool IsStatus_TAlignPrepared { get; private set; }
         public bool IsStatus_TAlignDone { get; private set; }
@@ -999,8 +989,24 @@ namespace QMC.LCP_280.Process.Unit
         public double IsStatus_LastFoundDx { get; private set; }
         public double IsStatus_LastFoundDy { get; private set; }
 
+        // ====== InputDieTr Signal
+        public bool RequestOutputDie { get; set; } = false;
+
+        #endregion
 
 
+        #region Seq
+
+        public MaterialWafer GetWaferMaterial()
+        {
+            var mat = GetMaterial();
+            return mat as MaterialWafer;
+        }
+
+        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
+        public bool IsStatus_RequestWafer { get; internal set; } = false;
+
+        
 
         public override int OnRun()
         {
@@ -1042,7 +1048,8 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnStop()
         {
             int ret = 0;
-            State = ProcessState.Stop;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -1202,6 +1209,8 @@ namespace QMC.LCP_280.Process.Unit
         // 반환 코드 규약 (선택적): 0 = OK, 1 = 대기(조건 미충족), -1 = 오류
 
         #region Seq 단위 동작 함수
+        
+
 
 
         public bool IsRingPresent()
@@ -2200,6 +2209,8 @@ namespace QMC.LCP_280.Process.Unit
 
         public ChipMapResult CurrentChipMap { get; private set; }
         public bool ChipMappingDone { get; private set; }
+        
+
         private int _chipPickupCursor = 0;
 
         public class ChipMapEntry
