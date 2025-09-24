@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QMC.Common;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -10,6 +11,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
+    [FormOrder(2)]
     public partial class Vision_Main : Form
     {
         // Units
