@@ -302,6 +302,12 @@
     <Compile Include="Component\Form_AxisJogPopup.Designer.cs">
       <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\FormMain\Vision_Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\FormMain\Vision_Main.Designer.cs">
+      <DependentUpon>Vision_Main.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\FormRecipe\Page\RankSetPage.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -615,6 +621,9 @@
     <EmbeddedResource Include="Unit\CommonUnitConfig.resx">
       <DependentUpon>CommonUnitConfig.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Vision_Main.resx">
+      <DependentUpon>Vision_Main.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormRecipe\Main_Recipe.resx">
       <DependentUpon>Main_Recipe.cs</DependentUpon>
     </EmbeddedResource>
@@ -761,5 +770,6 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

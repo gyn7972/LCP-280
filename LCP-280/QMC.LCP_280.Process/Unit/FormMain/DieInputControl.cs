@@ -23,11 +23,21 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             public DieState State { get; set; }
         }
 
+        public event EventHandler<DisplayView.DisplayItemEventArgs> MotorMoveRequested;
+
         private List<Die> _dies = new List<Die>();
 
         public DieInputControl()
         {
             InitializeComponent();
+
+            // DisplayView 이벤트 연결
+            displayView1.MotorMoveRequested += OnDisplayView_MotorMoveRequested;
+        }
+
+        private void OnDisplayView_MotorMoveRequested(object sender, DisplayView.DisplayItemEventArgs e)
+        {
+            MotorMoveRequested?.Invoke(this, e);
         }
 
         public void SetWaferId(string waferId)

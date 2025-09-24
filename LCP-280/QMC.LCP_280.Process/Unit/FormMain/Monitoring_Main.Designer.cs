@@ -166,7 +166,7 @@ namespace QMC.LCP_280.Process
             this.groupBoxOutputWaferCarrierControl.Size = new System.Drawing.Size(320, 370);
             this.groupBoxOutputWaferCarrierControl.TabIndex = 3;
             this.groupBoxOutputWaferCarrierControl.TabStop = false;
-            this.groupBoxOutputWaferCarrierControl.Text = "Input Wafer Carrier";
+            this.groupBoxOutputWaferCarrierControl.Text = "Output Wafer Carrier";
             // 
             // outputWaferCarrierControl1
             // 

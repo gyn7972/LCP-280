@@ -83,7 +83,7 @@
             // 
             // waferMapView
             // 
-            this.waferMapView.Location = new System.Drawing.Point(63, 107);
+            this.waferMapView.Location = new System.Drawing.Point(63, 101);
             this.waferMapView.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.waferMapView.Name = "waferMapView";
             this.waferMapView.Size = new System.Drawing.Size(195, 227);

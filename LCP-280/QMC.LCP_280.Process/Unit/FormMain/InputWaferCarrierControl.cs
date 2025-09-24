@@ -14,41 +14,14 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 {
     public partial class InputWaferCarrierControl : UserControl
     {
-        private InputCassetteLifter CassetteLifter;
-        private InputFeeder Feeder;
-        private InputStage Stage;
-
-        public InputWaferCarrierControl() : this(
-            TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
-            TryGetUnit<InputFeeder>("InputFeeder"),
-            TryGetUnit<InputStage>("InputStage")
-            )
-        {
-
-        }
-
-        public InputWaferCarrierControl(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, InputStage inputStage)
+        public InputWaferCarrierControl()
         {
             InitializeComponent();
-
-            CassetteLifter = cassetteLifter;
-            Feeder = ringTransfer;
-            Stage = inputStage;
-
-            var materialCassette = CassetteLifter.GetMaterialCassette();
-            waferMapView.SetMaterialCassette(materialCassette);
         }
 
-        private static T TryGetUnit<T>(string unitName) where T : class
+        public Component.WaferMapView GetWaferMapView()
         {
-            try
-            {
-                var eq = Equipment.Instance;
-                if (eq?.Units != null && eq.Units.TryGetValue(unitName, out var u))
-                    return u as T;
-            }
-            catch { }
-            return null;
+            return waferMapView;
         }
 
         public void SetWaferCarrierId(string id)
