@@ -838,7 +838,7 @@ namespace QMC.LCP_280.Process.Unit
         public int UnClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(false))
+            if (!this.SetClamp(false))
             {
                 Log.Write(this, "Unclamp Success");
             }
@@ -872,7 +872,7 @@ namespace QMC.LCP_280.Process.Unit
         public int DownFeeder()
         {
             int nRet = 0;
-            if (this.SetLift(false))
+            if (!this.SetLift(false))
             {
                 Log.Write(this, "Feeder Down Success");
             }
