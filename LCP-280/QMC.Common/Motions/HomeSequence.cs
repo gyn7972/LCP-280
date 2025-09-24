@@ -311,15 +311,12 @@ namespace QMC.Common.Motions
                     break;
                 }
 
-                // 변경: 실행 중에도 취소되면 해당 스텝 축들을 즉시 정지시키도록 토큰 콜백 등록
-                // RunAsync 내부, runnable 생성 직후 기존 tasks 리스트 대신 axis-task 페어로 관리
                 var jobs = new List<(MotionAxis Axis, Task<HomeAxisResult> Task)>(runnable.Count);
                 foreach (var axis in runnable)
                 {
                     jobs.Add((axis, HomeOneAsync(axis, token)));
                 }
 
-                // 취소 시 현재 스텝 축 즉시 정지
                 using (var cancelReg = token.Register(() =>
                 {
                     foreach (var ax in runnable)
@@ -334,18 +331,23 @@ namespace QMC.Common.Motions
                         bool earlyFail = false;
                         string earlyFailReason = null;
 
+                        // 취소 대기 태스크 추가: 취소 즉시 WhenAny가 깨어나도록 함
+                        var cancelWait = Task.Delay(Timeout.Infinite, token);
+
                         while (pending.Count > 0)
                         {
-                            // [중요] 취소 들어오면 완료 대기하지 말고 부분 수집 후 즉시 종료
-                            if (token.IsCancellationRequested)
+                            var any = await Task.WhenAny(pending.Cast<Task>().Concat(new[] { cancelWait })).ConfigureAwait(false);
+
+                            // 취소가 먼저 도착했으면 즉시 스텝 종료
+                            if (any == cancelWait)
                             {
                                 foreach (var ax in runnable) { TryStop(ax); }
 
                                 var stepResults = new List<HomeAxisResult>(jobs.Count);
                                 foreach (var j in jobs)
                                 {
-                                    if (j.Task.IsCompleted)
-                                        stepResults.Add(await j.Task.ConfigureAwait(false));
+                                    if (j.Task.Status == TaskStatus.RanToCompletion)
+                                        stepResults.Add(j.Task.Result);
                                     else
                                         stepResults.Add(HomeAxisResult.NotStarted(j.Axis, "Canceled"));
                                 }
@@ -377,9 +379,52 @@ namespace QMC.Common.Motions
                                 break;
                             }
 
-                            var finished = await Task.WhenAny(pending).ConfigureAwait(false);
+                            // 작업 하나 완료됨
+                            var finished = (Task<HomeAxisResult>)any;
                             pending.Remove(finished);
-                            var res = await finished.ConfigureAwait(false);
+
+                            HomeAxisResult res;
+                            try
+                            {
+                                res = await finished.ConfigureAwait(false);
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                // 개별 태스크가 취소로 완료된 경우: 전체를 취소 처리
+                                foreach (var ax in runnable) { TryStop(ax); }
+
+                                var stepResults = new List<HomeAxisResult>(jobs.Count);
+                                foreach (var j in jobs)
+                                {
+                                    if (j.Task.Status == TaskStatus.RanToCompletion)
+                                        stepResults.Add(j.Task.Result);
+                                    else
+                                        stepResults.Add(HomeAxisResult.NotStarted(j.Axis, "Canceled"));
+                                }
+                                foreach (var r in stepResults) { all.Add(r); }
+
+                                Aborted = true; AbortReason = "Canceled"; AbortStepIndex = stepIndex;
+                                RaiseProgress(new OperationProgress
+                                {
+                                    OperationId = "HOME",
+                                    Title = "Home",
+                                    StepIndex = stepIndex,
+                                    TotalSteps = _steps.Count,
+                                    StepAxisCount = step.Count,
+                                    StepFailCount = stepResults.Count(r => !r.Success),
+                                    StepName = string.Join(", ", step.Select(a => a.Name)),
+                                    IsStepCompleted = true,
+                                    IsCanceled = true,
+                                    Message = "Canceled"
+                                });
+
+                                if (PostStepAsync != null)
+                                {
+                                    try { await PostStepAsync(stepIndex, stepResults, token).ConfigureAwait(false); } catch { }
+                                }
+                                break;
+                            }
+
                             if (!res.Success)
                             {
                                 earlyFail = true;
@@ -397,11 +442,10 @@ namespace QMC.Common.Motions
                         {
                             foreach (var ax in step) { TryStop(ax); }
 
-                            // [중요] 조기 실패도 전체 대기하지 말고 부분 수집
                             var stepResults = new List<HomeAxisResult>(jobs.Count);
                             foreach (var j in jobs)
                             {
-                                if (j.Task.IsCompleted)
+                                if (j.Task.Status == TaskStatus.RanToCompletion)
                                     stepResults.Add(await j.Task.ConfigureAwait(false));
                                 else
                                     stepResults.Add(HomeAxisResult.NotStarted(j.Axis, "Aborted by early failure"));
@@ -435,7 +479,6 @@ namespace QMC.Common.Motions
                         }
                         else
                         {
-                            // 정상 완료 시에만 전체 수집
                             var results = await Task.WhenAll(jobs.Select(j => j.Task)).ConfigureAwait(false);
                             foreach (var r in results) { all.Add(r); }
 
