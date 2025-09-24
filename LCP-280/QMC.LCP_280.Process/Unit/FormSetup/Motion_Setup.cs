@@ -15,6 +15,7 @@ using QMC.LCP_280.Process.Component; // InterlockManager, MachineHomeCoordinator
 
 namespace QMC.LCP_280.Process.Unit
 {
+    [FormOrder(1)]
     /// <summary>
     /// Motion Setup: UI event + data/logic (Designer partial holds only GUI declarations)
     /// Config / Setup 자동 매핑 (ConfigReflectionMapper 사용)

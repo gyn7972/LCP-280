@@ -17,6 +17,16 @@ namespace QMC.LCP_280.Process
         {
             Log.Write("LCP_280", "Program Start--------------------.");
 
+
+
+
+            Application.ThreadException += new System.Threading.ThreadExceptionEventHandler(exceptionDump);
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+
+            
+
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -27,5 +37,15 @@ namespace QMC.LCP_280.Process
             
             Application.Run(new QMC.Common.MainForm()); // 정확한 네임스페이스 지정
         }
+
+        static void exceptionDump(object sender, System.Threading.ThreadExceptionEventArgs args)
+        {
+            MinidumpHelp.Minidump.install_self_mini_dump();
+        }
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            MinidumpHelp.Minidump.install_self_mini_dump();
+        }
+
     }
 }

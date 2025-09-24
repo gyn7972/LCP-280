@@ -9,6 +9,7 @@ using QMC.Common.DIO; // DioScanService 사용
 
 namespace QMC.LCP_280.Process.Unit
 {
+    [FormOrder(4)]
     /// <summary>
     /// DigitalIO Setup 폼 - UI 로직 및 데이터 처리 (Designer에는 순수 UI만 존재)
     /// </summary>

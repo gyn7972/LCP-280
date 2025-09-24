@@ -118,10 +118,10 @@ namespace QMC.LCP_280.Process
                 // ServoOn / MoveRelative / IsBusy / Stop
                 axis.Servo(true);
 
-                axis.MoveAbs(dist);
+                axis.MoveAbs(dist, false);
                 while (axis.InPosition(dist)) await Task.Delay(20);
 
-                axis.MoveAbs(-dist);
+                axis.MoveAbs(-dist, false);
                 while (axis.InPosition(-dist)) await Task.Delay(20);
 
                 MessageBox.Show($"[{axis.Name}] ({comboUnit.SelectedItem})  ±{dist:F3} mm 이동 완료.", "완료",

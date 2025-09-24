@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -29,9 +31,10 @@ namespace QMC.Common
         /// <param name="formType">Config 폼 타입</param>
         /// <param name="displayName">표시명</param>
         /// <param name="description">설명</param>
-        public void RegisterConfigForm(Type formType, string displayName, string description = null)
+        /// <param name="order">순서 (작을수록 앞에 표시)</param>
+        public void RegisterConfigForm(Type formType, string displayName, string description = null, int order = int.MaxValue)
         {
-            FormManager.Instance.RegisterForm(MenuButtonType.Config, formType, displayName, description ?? displayName);
+            FormManager.Instance.RegisterForm(MenuButtonType.Config, formType, displayName, description ?? displayName, order);
         }
 
         /// <summary>
@@ -54,6 +57,8 @@ namespace QMC.Common
                 }
 
                 var types = assemblyToSearch.GetTypes();
+                var formTypes = new List<(Type type, int order)>();
+
                 foreach (var type in types)
                 {
                     // Form을 상속받고 이름이 "Config"로 끝나는 클래스 찾기
@@ -61,10 +66,20 @@ namespace QMC.Common
                         !type.IsAbstract &&
                         (type.Name.Contains("Unit_Config") || type.Name.Contains("UnitConfig") || type.Name.EndsWith("Config")))
                     {
-                        // Unit 이름 추출
-                        string unitName = ExtractUnitNameFromType(type);
-                        RegisterConfigForm(type, unitName, $"{unitName} Unit Configuration");
+                        // FormOrder Attribute 확인
+                        var orderAttr = type.GetCustomAttribute<FormOrderAttribute>();
+                        int order = orderAttr?.Order ?? int.MaxValue;
+
+                        formTypes.Add((type, order));
                     }
+                }
+
+                // Order 순으로 정렬한 후 등록
+                foreach (var (type, order) in formTypes.OrderBy(x => x.order).ThenBy(x => x.type.Name))
+                {
+                    string unitName = ExtractUnitNameFromType(type);
+                    RegisterConfigForm
+                        (type, unitName, $"{unitName} Unit Configuration", order);
                 }
             }
             catch (Exception ex)

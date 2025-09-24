@@ -1,4 +1,8 @@
-﻿using QMC.LCP_280.Process.Unit.FormMain;
+﻿using QMC.Common;
+using QMC.Common.Controls;
+using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit;
+using QMC.LCP_280.Process.Unit.FormMain;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,12 +15,128 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process
 {
+    [FormOrder(1)]
     public partial class Monitoring_Main : Form
     {
-        public Monitoring_Main()
+        private InputCassetteLifter CassetteLifter { get; set; }
+        private InputFeeder Feeder { get; set; }
+        private InputStage Stage { get; set; }
+
+        public Monitoring_Main() : this(
+            TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
+            TryGetUnit<InputFeeder>("InputFeeder"),
+            TryGetUnit<InputStage>("InputStage")
+            )
+        {
+
+        }
+
+        public Monitoring_Main(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, InputStage inputStage)
         {
             InitializeComponent();
+
+            #region Chart
+            CassetteLifter = cassetteLifter;
+            Feeder = ringTransfer;
+            Stage = inputStage;
+
+            var materialCassette = CassetteLifter.GetMaterialCassette();
+
+            inputWaferCarrierControl1.GetWaferMapView().SetMaterialCassette(materialCassette);
+            outputWaferCarrierControl1.GetWaferMapView().SetMaterialCassette(materialCassette);
+            #endregion
+
+            // 이벤트 구독 - Input Control
+            dieInputControl1.MotorMoveRequested += OnDieInput_MotorMoveRequested;
         }
+
+        private static T TryGetUnit<T>(string unitName) where T : class
+        {
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq?.Units != null && eq.Units.TryGetValue(unitName, out var u))
+                    return u as T;
+            }
+            catch { }
+            return null;
+        }
+
+        #region Input Die 이벤트 처리
+        private void OnDieInput_MotorMoveRequested(object sender, DisplayView.DisplayItemEventArgs e)
+        {
+            Console.WriteLine($"[Input] 모터 이동 요청: X={e.Item.Position.X}, Y={e.Item.Position.Y}");
+
+            // 실제 모터 제어 로직
+            MovePickMotorTo(e.Item.Position.X, e.Item.Position.Y);
+
+            // UI 업데이트
+            ShowMotorMovingStatus($"Input 모터가 ({e.Item.Position.X}, {e.Item.Position.Y})로 이동 중...");
+        }
+        #endregion
+
+        #region 헬퍼 메서드
+        private void UpdateStatusInfo(string message)
+        {
+            // 상태바나 정보 패널 업데이트
+            // statusStrip1.Text = message; // 예시
+            Console.WriteLine($"[Status] {message}");
+        }
+
+        private void ShowMotorMovingStatus(string message)
+        {
+            // 모터 이동 상태 표시
+            // progressBar1.Visible = true; // 예시
+            Console.WriteLine($"[Motor] {message}");
+        }
+
+        private void MovePickMotorTo(int x, int y)
+        {
+            try
+            {
+                // 실제 Pick 모터 제어 코드
+                // Stage?.MoveToPosition(x, y);
+                Console.WriteLine($"Pick 모터 이동: ({x}, {y})");
+
+                // 이동 완료 후 다이 상태 업데이트
+                System.Threading.Tasks.Task.Delay(1000).ContinueWith(t =>
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        dieInputControl1.UpdateDie(new Point(x, y), DieInputControl.DieState.Picked);
+                        ShowMotorMovingStatus("Pick 모터 이동 완료");
+                    }));
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"모터 이동 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void MovePlaceMotorTo(int x, int y)
+        {
+            try
+            {
+                // 실제 Place 모터 제어 코드
+                Console.WriteLine($"Place 모터 이동: ({x}, {y})");
+
+                // 이동 완료 후 다이 상태 업데이트
+                System.Threading.Tasks.Task.Delay(1000).ContinueWith(t =>
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        dieOutputControl1.UpdateDie(new Point(x, y), DieOutputControl.DieState.Present);
+                        ShowMotorMovingStatus("Place 모터 이동 완료");
+                    }));
+                });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"모터 이동 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+        #endregion
 
         private void Monitoring_Main_Load(object sender, EventArgs e)
         {

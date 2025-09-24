@@ -226,18 +226,18 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 전역 DryRun 적용 후 전체 저장.
         /// </summary>
-        public void ApplyGlobalDryRunAndSave(bool isDryRun, bool save = true)
+        public void ApplyGlobalDryRunAndSave(bool isDryRun, bool save = false)
         {
             BaseConfig.SetGlobalDryRun(isDryRun);
             if (save)
                 SaveAllConfigs();
         }
 
-        public void ApplyGlobalSimulationAndSave(bool isDryRun, bool save = true)
+        public void ApplyGlobalSimulationAndSave(bool isDryRun, bool save = false)
         {
             BaseConfig.SetGlobalSimulation(isDryRun);
-            if (save)
-                SaveAllConfigs();
+            //if (save)
+            //    SaveAllConfigs();
         }
 
         ///// <summary>
@@ -295,18 +295,6 @@ namespace QMC.LCP_280.Process
         //        return false;
         //    }
         //}
-
-        /// <summary>
-        /// 모든 등록된 Config에 전역 DryRun 적용 (및 저장 옵션)
-        /// </summary>
-        public void SetDryRunForAll(bool dryRun, bool save = false)
-        {
-            BaseConfig.SetGlobalDryRun(dryRun);
-            if (save)
-            {
-                
-            }
-        }
 
     }
 
