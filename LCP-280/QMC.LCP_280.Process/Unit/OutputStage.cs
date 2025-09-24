@@ -166,12 +166,7 @@ namespace QMC.LCP_280.Process.Unit
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
+        
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public bool InPosTeaching(TeachingPosition tp)
         {
@@ -662,15 +657,18 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
+
+            //Todo : 인터락 확인 후 이동 하도록 수정.
+            //foreach (var axisKey in tp.AxisPositions.Keys)
+            //{
+            //    if (Axes.TryGetValue(axisKey, out var axis))
+            //    {
+            //        double pos = tp.AxisPositions[axisKey];
+            //        int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
+            //        if (r != 0) result = r;
+            //    }
+            //}
+
             return result;
         }
 

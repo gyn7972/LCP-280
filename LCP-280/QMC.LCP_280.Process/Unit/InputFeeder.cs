@@ -382,12 +382,6 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
         
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
