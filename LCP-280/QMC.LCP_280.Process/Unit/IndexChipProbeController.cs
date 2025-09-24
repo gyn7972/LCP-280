@@ -246,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionSphereZDown(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Up, isFine);
+            return MoveTeachingPositionOnce((int)IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Down, isFine);
         }
         private int IsMoveInterLockSphereZDown()
         {
@@ -969,7 +969,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             // Up ¿ì¼±
             if (IsAxisInTeachingPosition(AxisSphereZ,
-                    IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Up.ToString(),
+                    IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready.ToString(),
                     AxisNames.SphereZ))
                 return true;
 
