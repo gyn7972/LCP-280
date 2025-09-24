@@ -450,6 +450,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else if (IsBinProtrusionDetectionSensor())
             {
+                this.AxisBinLiftZ.EmgStop();
                 Log.Write(this, "Bin Protrusion Detected");
                 PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
                 return -1;
@@ -615,6 +616,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (IsBinProtrusionDetectionSensor())
             {
+                this.AxisBinLiftZ.EmgStop();
                 Log.Write(this, "Wafer Protrusion Detected");
                 PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
                 return -1;
