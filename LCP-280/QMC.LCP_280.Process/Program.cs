@@ -40,24 +40,10 @@ namespace QMC.LCP_280.Process
 
         static void exceptionDump(object sender, System.Threading.ThreadExceptionEventArgs args)
         {
-            //Exception e = args.Exception;
-            //Console.WriteLine("errMsg: " + e.Message);
-            //Console.WriteLine("errPos: " + e.TargetSite);
-
-            //덤프 파일 경로 설정(MinidumpHelp.cs 에서도 수정)
-            //MinidumpHelp.Minidump.install_self_mini_dump(Application.StartupPath);
-
             MinidumpHelp.Minidump.install_self_mini_dump();
         }
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            //Exception e = args.Exception;
-            //Console.WriteLine("errMsg: " + e.Message);
-            //Console.WriteLine("errPos: " + e.TargetSite);
-
-            //덤프 파일 경로 설정(MinidumpHelp.cs 에서도 수정)
-            //MinidumpHelp.Minidump.install_self_mini_dump(Application.StartupPath);
-
             MinidumpHelp.Minidump.install_self_mini_dump();
         }
 

@@ -13,6 +13,7 @@ using QMC.Common.Motions;
 using QMC.Common.Motions.CKD;
 using QMC.Common.PKGTester;
 using QMC.Common.Spectrometer;
+using QMC.Common.StrainGage;
 using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit;
@@ -194,6 +195,19 @@ namespace QMC.LCP_280.Process
         // PKG Tester
         public PKGTester Tester { get; private set; }
 
+        // Strain Gage
+        public Dictionary<string, StrainGage> StrainGages { get; } = new Dictionary<string, StrainGage>(StringComparer.OrdinalIgnoreCase);
+        // == 편의 프로퍼티 추가 ==
+        public StrainGage TopLeftGage => GetStrainGage("Top_Left_Gage");
+        public StrainGage TopRightGage => GetStrainGage("Top_Right_Gage");
+        public StrainGage BottomLeftGage => GetStrainGage("Bottom_Left_Gage");
+        public StrainGage BottomRightGage => GetStrainGage("Bottom_Right_Gage");
+
+        private StrainGage GetStrainGage(string key)
+        {
+            return StrainGages.TryGetValue(key, out var sg) ? sg : null;
+        }
+
         // [ADD] 생성여부 노출 (ProcessExit 등에서 강제 생성 방지)
         public static bool IsCreated => _instance != null;
         public static bool TryGet(out Equipment inst) 
@@ -248,11 +262,13 @@ namespace QMC.LCP_280.Process
                 // === PKG Tester 초기화 ===
                 InitializePKGTester();
 
+                // === Strain Gage 초기화 ===
+                InitializeStrainGages();
+
                 // 기본 Unit들 자동 등록 (개발자가 필요에 따라 추가)
                 AutoRegisterUnits();
 
                 BindUnit();
-
 
                 // 3) 설비 Config + 메인 Recipe 로드
                 EquipmentRecipe.InitGlobalRecipe();
@@ -1434,6 +1450,28 @@ namespace QMC.LCP_280.Process
         {
             try { Tester = new PKGTester("PKGTester", Sourcemeter, Spectrometer); }
             catch (Exception ex) { Log.Write(ex); }
+        }
+
+        private void InitializeStrainGages()
+        {
+            var list = new List<string> { "Top_Left_Gage", "Top_Right_Gage", "Bottom_Left_Gage", "Bottom_Right_Gage" };
+            foreach (var name in list)
+            {
+                try
+                {
+                    var gage = new StrainGage(name);
+                    int ret = gage.Config.Load();
+                    if (ret != 0)
+                    {
+                        Log.Write("Equipment", $"[StrainGage] '{name}' config load failed rc=0x{ret:X8}");
+                        gage.Config.Reset();
+                        gage.Config.Save();
+                    }
+                    StrainGages[name] = gage;
+                    Console.WriteLine($"[StrainGage] {name} ready");
+                }
+                catch (Exception ex) { Log.Write(ex); }
+            }
         }
 
         public BaseUnit GetUnit(string name)
