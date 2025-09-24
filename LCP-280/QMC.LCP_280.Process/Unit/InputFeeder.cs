@@ -779,7 +779,7 @@ namespace QMC.LCP_280.Process.Unit
         public int ClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(true))
+            if (!this.SetClamp(true))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Clamp Success");
             }
@@ -795,7 +795,7 @@ namespace QMC.LCP_280.Process.Unit
         public int UnClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(false))
+            if (!this.SetClamp(false))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Unclamp Success");
             }
@@ -828,7 +828,7 @@ namespace QMC.LCP_280.Process.Unit
         public int DownFeeder()
         {
             int nRet = 0;
-            if (this.SetLift(false))
+            if (!this.SetLift(false))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Success");
             }

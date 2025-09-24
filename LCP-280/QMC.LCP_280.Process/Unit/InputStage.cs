@@ -1394,7 +1394,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
-                if (!IsPlateUp() || bRtn)
+                if (!IsPlateUp() || bRtn || Config.IsDryRun)
                 {
                     SetClampPlate(true);
                     if (!IsPlateUp())
@@ -1614,17 +1614,24 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
             {
-                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                PostAlarm((int)AlarmKeys.eVisionTsearch);
-                Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
-                return -1;
+                if(!Config.IsDryRun)
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eVisionTsearch);
+                    Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
+                    return -1;
+                }
+                
             }
 
             var stats = ComputeAngleStats(angleList, excludeExtremes: true);
             if (stats.RawCount == 0)
             {
-                Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
-                return -1;
+                if (!Config.IsDryRun)
+                {
+                    Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
+                    return -1;
+                }
             }
 
             double rawAngle = stats.Representative;
@@ -1706,15 +1713,21 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "XY_Align", "Prepare Start");
 
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
+            {
                 return -1;
+            }
+                
 
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
-                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                PostAlarm((int)AlarmKeys.eVisionXYsearch);
-                Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
-                return -1;
+                if(!Config.IsDryRun)
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eVisionXYsearch);
+                    Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
+                    return -1;
+                }
             }
 
             IsStatus_LastFoundDx = res.x;
@@ -2036,8 +2049,11 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                Log.Write(UnitName, "ChipMap", "No chip found");
-                return -1;
+                if(!Config.IsDryRun)
+                {
+                    Log.Write(UnitName, "ChipMap", "No chip found");
+                    return -1;
+                }
             }
 
             CurrentChipMap = map;
