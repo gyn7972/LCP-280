@@ -559,20 +559,61 @@ namespace QMC.Common.Motions
             return false;
         }
 
-        private static double NormalizeAngle360(double angle)
+        // 360도 래핑 공용 헬퍼 (Simulation 전용 사용)
+        private static double Wrap360(double angle)
         {
             angle %= 360.0;
             if (angle < 0) angle += 360.0;
-            if (Math.Abs(angle - 360.0) < 1e-9) angle = 0.0;
+
+            // 360.0(또는 근사치) → 0 강제
+            if (Math.Abs(angle - 360.0) < 1e-6) angle = 0.0;
+            // -0 방지
+            if (Math.Abs(angle) < 1e-12) angle = 0.0;
+
             return angle;
+        }
+        // Simulation 모드에서 360도 래핑
+        private void NormalizeSimAngle()
+        {
+            if (!IsSim) return;
+
+            double pos = GetPosition();   // 현재 시뮬 논리 위치
+            double wrapped = Wrap360(pos);
+
+            if (Math.Abs(pos - wrapped) > 1e-9)
+            {
+                SetPositionLogical(wrapped);
+            }
+            else
+            {
+                // pos == wrapped 이지만 360.0 그대로 들어온 경우(이론상 없음) 방어
+                if (Math.Abs(pos - 360.0) < 1e-9)
+                    SetPositionLogical(0.0);
+            }
         }
 
         public int MoveNextIndex()
         {
             if (IsSim)
             {
-                // Div8 => 45도 가정
-                return MoveRel(45.0, Config.MaxVelocity > 0 ? Config.MaxVelocity : 5, 0, 0, 0);
+                // Div8 기준 45도 (필요 시 Setup/Config 값으로 일반화 가능)
+                const double stepDeg = -45.0;
+
+                // 비동기 이동 종료 시점에 Normalize 호출이 안 되어 360이 남는 문제 → 목표를 선행 래핑
+                double cur = GetPosition();
+                double target = Wrap360(cur + stepDeg);
+
+                // 상대이동 대신 절대이동으로 직접 목표 지정 (이유: MoveRel 후 즉시 NormalizeSimAngle 호출 시 아직 도달 전이라 미적용 문제 회피)
+                int rc = MoveAbs(target,
+                                 Config.MaxVelocity > 0 ? Config.MaxVelocity : 5,
+                                 0, 0, 0);
+
+                if (rc == 0)
+                {
+                    // 혹시 이동 중간에 다른 연산 후 최종 360 남을 가능성 최소화
+                    NormalizeSimAngle();
+                }
+                return rc;
             }
             if (_ckdDriver != null)
             {
@@ -588,7 +629,20 @@ namespace QMC.Common.Motions
         {
             if (IsSim)
             {
-                return MoveRel(-45.0, Config.MaxVelocity > 0 ? Config.MaxVelocity : 5, 0, 0, 0);
+                const double stepDeg = +45.0;
+
+                double cur = GetPosition();
+                double target = Wrap360(cur + stepDeg);
+
+                int rc = MoveAbs(target,
+                                 Config.MaxVelocity > 0 ? Config.MaxVelocity : 5,
+                                 0, 0, 0);
+
+                if (rc == 0)
+                {
+                    NormalizeSimAngle();
+                }
+                return rc;
             }
             if (_ckdDriver != null)
             {
@@ -1491,7 +1545,19 @@ namespace QMC.Common.Motions
 
         private void CancelSimCts_NoLock()
         {
-            try { if (_simMoveCts != null) { _simMoveCts.Cancel(); _simMoveCts.Dispose(); _simMoveCts = null; } } catch { }
+            try 
+            { 
+                if (_simMoveCts != null) 
+                { 
+                    _simMoveCts.Cancel();
+                    _simMoveCts.Dispose(); 
+                    _simMoveCts = null; 
+                } 
+            } 
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
         }
 
         public bool IsMoveDone()

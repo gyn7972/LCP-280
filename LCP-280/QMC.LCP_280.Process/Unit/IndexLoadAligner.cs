@@ -692,7 +692,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #region seq signal
-        public bool CompleteLoadAligner { get; internal set; } = false;
+        public bool CompleteLoadAligner { get; set; } = false;
         #endregion
 
         #region Lifecycle

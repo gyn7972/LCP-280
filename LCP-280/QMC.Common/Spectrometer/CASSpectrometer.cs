@@ -573,11 +573,13 @@ namespace QMC.Common.Spectrometer
                 // Set parameter
                 SetDeviceParameter(CAS4DLL.dpidConfigFileName, Config.ConfigFileName);
                 SetDeviceParameter(CAS4DLL.dpidCalibFileName, Config.CalibFileName);
-                ApplyMeasurementCondition();
 
                 // Device Initialize
                 CheckCASErrorAndThrow(CAS4DLL.casInitialize(deviceId, CAS4DLL.InitOnce));
                 GetDeviceParameter(CAS4DLL.dpidCalibrationUnit, ref intensityUnit);
+
+                // Set Measurement Condition
+                ApplyMeasurementCondition();
 
                 // Set trigger mode
                 if (Config.UseHardwareTrigger)

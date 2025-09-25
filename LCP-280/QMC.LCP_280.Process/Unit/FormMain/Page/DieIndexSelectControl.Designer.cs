@@ -14,9 +14,10 @@
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                _toolTip?.Dispose();
+                _hoverTimer?.Dispose();
             }
             base.Dispose(disposing);
         }
@@ -29,6 +30,7 @@
             this.lblDieNumber = new System.Windows.Forms.Label();
             this.lblDieNumberValue = new System.Windows.Forms.Label();
             this.displayPanel = new System.Windows.Forms.Panel();
+            this.btnRotateCounterClockwise = new System.Windows.Forms.Button();
             this.btnReset = new System.Windows.Forms.Button();
             this.btnAutoSequence = new System.Windows.Forms.Button();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
@@ -66,6 +68,7 @@
             // 
             resources.ApplyResources(this.displayPanel, "displayPanel");
             this.displayPanel.BackColor = System.Drawing.Color.LightGray;
+            this.displayPanel.Controls.Add(this.btnRotateCounterClockwise);
             this.displayPanel.Controls.Add(this.btnReset);
             this.displayPanel.Controls.Add(this.btnAutoSequence);
             this.displayPanel.Name = "displayPanel";
@@ -73,6 +76,17 @@
             this.displayPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.DisplayPanel_MouseClick);
             this.displayPanel.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DisplayPanel_MouseMove);
             this.displayPanel.Resize += new System.EventHandler(this.DisplayPanel_Resize);
+            // 
+            // btnRotateCounterClockwise
+            // 
+            resources.ApplyResources(this.btnRotateCounterClockwise, "btnRotateCounterClockwise");
+            this.btnRotateCounterClockwise.BackColor = System.Drawing.Color.Green;
+            this.btnRotateCounterClockwise.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRotateCounterClockwise.FlatAppearance.BorderSize = 0;
+            this.btnRotateCounterClockwise.ForeColor = System.Drawing.Color.White;
+            this.btnRotateCounterClockwise.Name = "btnRotateCounterClockwise";
+            this.btnRotateCounterClockwise.UseVisualStyleBackColor = false;
+            this.btnRotateCounterClockwise.Click += new System.EventHandler(this.btnRotateCounterClockwise_Click);
             // 
             // btnReset
             // 
@@ -137,6 +151,7 @@
 
         private System.Windows.Forms.TableLayoutPanel tlpMain;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.Button btnRotateCounterClockwise;
     }
 
 }

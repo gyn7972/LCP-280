@@ -67,6 +67,8 @@ namespace QMC.LCP_280.Process.Unit
 
         public override void AddComponents()
         {
+            base.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
+            base.Config.InitializeDefaultTeachingPositions();
             BindCamera();
         }
         #endregion
@@ -88,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region seq signals
-        public bool CompleteUnloadAligner { get; internal set; } = false;
+        public bool CompleteUnloadAligner { get; set; } = false;
         #endregion
 
         #region Lifecycle
@@ -229,7 +231,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRtn;
         }
 
-        internal int AlignSocketOnceReady(bool bFineSpeed = false)
+        public int AlignSocketOnceReady(bool bFineSpeed = false)
         {
             int nRet = 0;
             this.CurrentFunc = AlignSocketOnceReady;
@@ -256,7 +258,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        internal int AlignSocketOnce(bool bFineSpeed = false)
+        public int AlignSocketOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
             this.CurrentFunc = AlignSocketOnce;
@@ -281,6 +283,21 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
+        public int GetUnloadIndexNo()
+        {
+            if (Rotary == null)
+                return 0;
+
+            int loadIndex = Rotary.GetLoadIndexNo();
+
+            // 반시계 방향으로 2칸 이동
+            int probeIndex = (loadIndex - this.Config.IndexOfOutAlign + Rotary.GetIndexCount()) % Rotary.GetIndexCount();
+
+            return probeIndex;
+
+        }
+
         #endregion
     }
 }

@@ -581,6 +581,19 @@ namespace QMC.LCP_280.Process
                 return false;
             }
         }
+        // === 기존 StartUnitAsync 아래에 추가 (동기 Wrapper) ===
+        public bool StartUnitSync(string unitName)
+        {
+            try
+            {
+                return StartUnitAsync(unitName).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"StartUnitSync 실패: {unitName} / {ex.Message}");
+                return false;
+            }
+        }
 
         /// <summary>
         /// Unit 실행 루프
@@ -781,6 +794,18 @@ namespace QMC.LCP_280.Process
                 SetAndRaiseUnitState(unitName, UnitStatus.Error);
                 //OnUnitStateChanged(unitName, UnitStatus.Error);
                 OnErrorOccurred($"Unit '{unitName}' 정지 중 오류: {ex.Message}");
+                return false;
+            }
+        }
+        public bool StopUnitSync(string unitName)
+        {
+            try
+            {
+                return StopUnitAsync(unitName).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"StartUnitSync 실패: {unitName} / {ex.Message}");
                 return false;
             }
         }
@@ -1440,6 +1465,11 @@ namespace QMC.LCP_280.Process
                         smu.Config.Reset();
                         smu.Config.Save();
                     }
+                    ret = smu.Initialize();
+                    if (ret != 0)
+                    {
+                        MessageBox.Show($"Sourcemeter [{smu.Name}] initialize NG.");
+                    }
                     Sourcemeters[name] = smu;
                     Console.WriteLine($"[Sourcemeter] {name} ready");
                 }
@@ -1461,6 +1491,11 @@ namespace QMC.LCP_280.Process
                         Log.Write("Equipment", $"[Spectrometer] '{name}' config load failed rc=0x{ret:X8}");
                         spc.Config.Reset();
                         spc.Config.Save();
+                    }
+                    ret = spc.Initialize();
+                    if (ret != 0)
+                    {
+                        MessageBox.Show($"Spectrometer [{spc.Name}] initialize NG.");
                     }
                     Spectrometers[name] = spc;
                     Console.WriteLine($"[Spectrometer] {name} ready");

@@ -62,13 +62,23 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                BinVisionList();
                 WireAxisSelectionEvent();
+                BinVisionList();
                 InitializeRadioButtonView();
             }
             catch (Exception ex)
             {
                 Log.Write("LCP-280", $"InitializeUI error: {ex}");
+            }
+        }
+
+        // ===== Event Wiring =====
+        private void WireAxisSelectionEvent()
+        {
+            if(cameraListBoxItemsView != null)
+            {
+                cameraListBoxItemsView.ItemSelected -= OnVisionItemSelected;
+                cameraListBoxItemsView.ItemSelected += OnVisionItemSelected;
             }
         }
 
@@ -100,14 +110,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write("LCP-280", $"BindVisionList error: {ex}");
                 cameraListBoxItemsView?.SetItems();
             }
-        }
-
-        // ===== Event Wiring =====
-        private void WireAxisSelectionEvent()
-        {
-            if (cameraListBoxItemsView == null) return;
-            cameraListBoxItemsView.ItemSelected -= OnVisionItemSelected;
-            cameraListBoxItemsView.ItemSelected += OnVisionItemSelected;
         }
 
         private void OnVisionItemSelected(object sender, int selectedIndex)

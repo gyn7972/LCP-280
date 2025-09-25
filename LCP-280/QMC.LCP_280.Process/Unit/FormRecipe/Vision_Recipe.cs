@@ -8,10 +8,49 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
     [FormOrder(2)]
     public partial class Vision_Recipe : Form
     {
+        private bool _visionInitStarted;
+
         public Vision_Recipe()
         {
             InitializeComponent();
-            this.Load += Vision_Recipe_Load;
+
+            //this.Load += Vision_Recipe_Load;
+            this.Shown += Vision_Recipe_Shown;
+        }
+
+        private void Vision_Recipe_Shown(object sender, EventArgs e)
+        {
+            if (_visionInitStarted) 
+                return;
+
+            _visionInitStarted = true;
+
+            // 폼이 먼저 그려진 뒤 실행
+            this.BeginInvoke((Action)SafeInitVision);
+        }
+
+        private void SafeInitVision()
+        {
+            if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
+                return;
+
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq != null && eq.Cameras.Count > 0)
+                {
+                    this.Cursor = Cursors.WaitCursor;
+                    patternMatchingControl1.SetCameras(eq.Cameras.Values);
+                }
+            }
+            catch (Exception)
+            {
+                // 필요 시 Log.Write(ex);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
         }
 
         private void Vision_Recipe_Load(object sender, EventArgs e)

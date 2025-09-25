@@ -12,17 +12,15 @@ namespace QMC.Common.StrainGage
     {
         #region Fields
         private double voltage = 0;
-        private double zeroSetVoltage = 0;
-        private StrainGageLookupTable lookupTable = new StrainGageLookupTable();
-
         private QmcLowPassFilter lowPassFilter = new QmcLowPassFilter();
+        private bool lowPassFilterHasPrev = false;
         #endregion
 
         #region Properties
         public double Voltage => voltage;
-        public double Pressure => GetPressure();
-        public StrainGageLookupTable LookupTable => lookupTable;
+        public double Force => GetForce();
         public new StrainGageConfig Config { get; private set; }
+        public double ZeroVoltage { get; private set; } = 0;
         #endregion
 
         #region Constructor
@@ -39,56 +37,70 @@ namespace QMC.Common.StrainGage
             {
                 if (!Config.Validate())
                     return -1;
-                if (!LoadLookupTable(Config.LookupTableFilePath))
-                    return -1;
+
+                // set low pass filter
+                lowPassFilter.CutoffFrequence = Config.LowPassFilterCutoffFrequency;
             }
             catch (Exception ex)
             {
+                Log.Write(ex);
                 return -1;
             }
             return 0;
         }
-        public override int Create()
-        {
-            return base.Create();
-        }
-        public override void Close()
-        {
-            base.Close();
-        }
         #endregion
 
         #region Methods
-        public void UpdateVoltage(double voltage)
+        public void UpdateVoltage(double value)
         {
-            this.voltage = voltage;
+            double newvalue = value;
+            if (Config.UseLowPassFilter)
+            {
+                if (!lowPassFilterHasPrev)
+                {
+                    lowPassFilter.ResetValue(value);
+                    lowPassFilterHasPrev = true;
+                }
+                lowPassFilter.AddValue(value);
+                this.voltage = lowPassFilter.CurrentValue;
+
+                //if (this.Config.UseAutoZeroSet)
+                //{
+                //    AutoZeroTracking(value, this.voltage);
+                //}
+            }
+            else
+            {
+                this.voltage = value;
+            }
         }
-        public void UpdateZeroSetVoltage(double voltage)
+        public void SetZero()
         {
-            // low pass filter 적용
-            double filteredVoltage = lowPassFilter.AddValue(voltage);
-            this.zeroSetVoltage = filteredVoltage;
+            this.ZeroVoltage = this.voltage;
         }
-        public void ClearLookupTable()
+        private void AutoZeroTracking(double value, double voltage)
         {
-            lookupTable.Clear();
+
+           if((voltage - this.ZeroVoltage) <  0.001 )
+            {
+                this.ZeroVoltage = voltage;
+            }
+            
         }
-        public bool LoadLookupTable(string filePath)
+
+        private double GetForce()
         {
-            return lookupTable.LoadFromFile(filePath);
-        }
-        public bool SaveLookupTable(string filePath)
-        {
-            return lookupTable.SaveToFile(filePath);
-        }
-        private double GetPressure()
-        {
-            if (lookupTable == null)
-                return 0;
-            if (lookupTable.items.Count == 0)
+            if (!Config.Validate())
                 return 0;
 
-            return lookupTable.VoltageToPressure(voltage);
+            //if (voltage < Config.MinVoltage)
+            //    return Config.MinForce;
+            //if (voltage > Config.MaxVoltage)
+            //    return Config.MaxForce;
+
+            double scale = (Config.MaxForce - Config.MinForce) / (Config.MaxVoltage - Config.MinVoltage);
+            double force = (voltage -this.ZeroVoltage) * scale;
+            return force;
         }
         #endregion
     }

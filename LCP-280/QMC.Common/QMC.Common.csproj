@@ -473,15 +473,21 @@
     <Compile Include="PKGTester\TestItemResult.cs" />
     <Compile Include="StrainGage\NIDAQResourceManager.cs" />
     <Compile Include="StrainGage\StrainGage.cs" />
-    <Compile Include="StrainGage\StrainGageConfig.cs" />
-    <Compile Include="StrainGage\StrainGageLookupTable.cs" />
-    <Compile Include="StrainGage\StrainGageMonitorViewer.cs">
+    <Compile Include="StrainGage\StrainGageChart.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="StrainGage\StrainGageMonitorViewer.Designer.cs">
-      <DependentUpon>StrainGageMonitorViewer.cs</DependentUpon>
+    <Compile Include="StrainGage\StrainGageChart.Designer.cs">
+      <DependentUpon>StrainGageChart.cs</DependentUpon>
     </Compile>
-    <Compile Include="StrainGage\StrainGageVoltageMonitor.cs" />
+    <Compile Include="StrainGage\StrainGageConfig.cs" />
+    <Compile Include="StrainGage\StrainGageDataGridViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="StrainGage\StrainGageDataGridViewer.Designer.cs">
+      <DependentUpon>StrainGageDataGridViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="StrainGage\StrainGageLookupTable.cs" />
+    <Compile Include="StrainGage\StrainGageMonitor.cs" />
     <Compile Include="UI\ProgressForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -601,8 +607,11 @@
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
     <Compile Include="Vision\VisionUnit.cs" />
-    <EmbeddedResource Include="StrainGage\StrainGageMonitorViewer.resx">
-      <DependentUpon>StrainGageMonitorViewer.cs</DependentUpon>
+    <EmbeddedResource Include="StrainGage\StrainGageChart.resx">
+      <DependentUpon>StrainGageChart.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="StrainGage\StrainGageDataGridViewer.resx">
+      <DependentUpon>StrainGageDataGridViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ProgressForm.resx" />
     <None Include="WMX\WmxLib.cs" />

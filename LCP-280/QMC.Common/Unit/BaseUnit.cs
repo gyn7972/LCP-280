@@ -1,5 +1,4 @@
 // QMC.Common\Unit\BaseUnit.cs
-using Cognex.VisionPro.Implementation.Internal;
 using Ivi.Visa;
 using QMC.Common;
 using QMC.Common.Alarm;
