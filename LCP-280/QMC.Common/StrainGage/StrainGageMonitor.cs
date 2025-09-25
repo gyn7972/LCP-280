@@ -5,12 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace QMC.Common.StrainGage
 {
-    public class StrainGageVoltageMonitor : IDisposable
+    public class StrainGageMonitor : IDisposable
     {
-        private const int MonitoringIntervalMs = 50;
+        private const int MonitoringIntervalMs = 1;
 
         #region Fields
         NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
@@ -24,11 +25,11 @@ namespace QMC.Common.StrainGage
         #endregion
 
         #region Properties
-        IReadOnlyList<(StrainGage strainGage, string channelName)> Items => items.AsReadOnly();
+        public IReadOnlyList<(StrainGage strainGage, string channelName)> Items => items.AsReadOnly();
         #endregion
 
         #region Constructor
-        public StrainGageVoltageMonitor()
+        public StrainGageMonitor()
         {
         }
         #endregion
@@ -60,6 +61,24 @@ namespace QMC.Common.StrainGage
         #endregion
 
         #region Methods
+        public bool Clear()
+        {
+            Stop();
+            try
+            {
+                readerTask.Stop();
+                readerTask.Dispose();
+                readerTask = new NationalInstruments.DAQmx.Task();
+
+                items.Clear();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
         public bool Add(StrainGage strainGage)
         {
             if (strainGage == null)
@@ -69,12 +88,15 @@ namespace QMC.Common.StrainGage
 
             try
             {
-                readerTask.AIChannels.CreateVoltageChannel(strainGage.Config.ReadChannelName
-                    , $"channel{items.Count}"
+                if (!strainGage.Config.IsSimulation)
+                {
+                    readerTask.AIChannels.CreateVoltageChannel(strainGage.Config.ReadChannelName
+                    , $"id{items.Count}"
                     , AITerminalConfiguration.Rse
                     , strainGage.Config.MinVoltage
                     , strainGage.Config.MaxVoltage
                     , AIVoltageUnits.Volts);
+                }
 
                 items.Add((strainGage, strainGage.Config.ReadChannelName));
                 return true;
@@ -103,10 +125,17 @@ namespace QMC.Common.StrainGage
             }
             try { monitoringTask?.Wait(); } catch { /* ignore */ }
         }
+
+        private Random _rand = new Random();
+        private int _simStep = 0;
+
         private async System.Threading.Tasks.Task RunMonitoring(CancellationToken token)
         {
             var reader = new AnalogMultiChannelReader(readerTask.Stream);
-            Random rdm = new Random();
+
+            double amplitude = 1.0; // 사인파 진폭
+            double frequency = 0.5; // Hz (1초에 0.5회)
+            double noiseLevel = 1;  // 노이즈 진폭
 
             while (!token.IsCancellationRequested)
             {
@@ -115,15 +144,21 @@ namespace QMC.Common.StrainGage
                     double[] data = reader.ReadSingleSample();
                     for (int i = 0; i < items.Count; i++)
                     {
-                        items[i].strainGage.UpdateVoltage(data[i]);
-                    }
+                        if (!items[i].strainGage.Config.IsSimulation)
+                        {
+                            items[i].strainGage.UpdateVoltage(data[i]);
+                        }
+                        else
+                        {
+                            _simStep++;
+                            double t = _simStep * 0.001; // 0.05초(50ms) 간격 기준, 필요시 타이머 간격에 맞게 조정
+                            double sine = amplitude * Math.Sin(2 * Math.PI * frequency * t);
+                            double noise = (2 * _rand.NextDouble() - 1) * noiseLevel; // -noiseLevel ~ +noiseLevel
+                            double simulatedVoltage = sine + noise;
 
-                    //double[] data = new double[items.Count];
-                    //for (int i = 0; i < items.Count; i++)
-                    //{
-                    //    data[i] = rdm.NextDouble() * 0.4 + 0.1;
-                    //    items[i].strainGage.UpdateVoltage(data[i]);
-                    //}
+                            items[i].strainGage.UpdateVoltage(simulatedVoltage);
+                        }
+                    }
 
                     // Event
                     OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
