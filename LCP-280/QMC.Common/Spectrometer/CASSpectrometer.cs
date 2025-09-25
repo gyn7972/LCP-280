@@ -573,8 +573,7 @@ namespace QMC.Common.Spectrometer
                 // Set parameter
                 SetDeviceParameter(CAS4DLL.dpidConfigFileName, Config.ConfigFileName);
                 SetDeviceParameter(CAS4DLL.dpidCalibFileName, Config.CalibFileName);
-                ApplyMeasurementCondition();
-
+                
                 // Device Initialize
                 CheckCASErrorAndThrow(CAS4DLL.casInitialize(deviceId, CAS4DLL.InitOnce));
                 GetDeviceParameter(CAS4DLL.dpidCalibrationUnit, ref intensityUnit);
@@ -632,6 +631,8 @@ namespace QMC.Common.Spectrometer
 
                 deviceInfo.InterfaceOption = devInfOption.ToString();
                 OnDeviceCreated?.Invoke(this);
+                ApplyMeasurementCondition();
+
                 return true;
             }
             catch (Exception ex)
@@ -1007,7 +1008,13 @@ namespace QMC.Common.Spectrometer
             {
                 SetMeasurementParameter(CAS4DLL.mpidIntegrationTime, Config.IntegrationTime);
                 SetMeasurementParameter(CAS4DLL.mpidAverages, Config.Averages);
-                SetMeasurementParameter(CAS4DLL.mpidDensityFilter, Config.DensityFilter);
+                double dvalue = 0;
+                GetDeviceParameter(CAS4DLL.dpidNeedDensityFilterChange, ref dvalue);
+                if(Math.Round(dvalue,0) != 0 )
+                {
+                    SetMeasurementParameter(CAS4DLL.mpidDensityFilter, Config.DensityFilter);
+                }
+                
                 SetMeasurementParameter(CAS4DLL.mpidColormetricStart, Config.ColormetricStart);
                 SetMeasurementParameter(CAS4DLL.mpidColormetricStop, Config.ColormetricStop);
                 SetMeasurementParameter(CAS4DLL.mpidObserver, CAS4DLL.cieObserver1931);
