@@ -1926,7 +1926,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 _pmRunner.LoadRecipe();
             }
-            
+
             //StageCamera.CameraConfig.Scale
         }
 

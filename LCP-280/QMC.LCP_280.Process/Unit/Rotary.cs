@@ -12,6 +12,7 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using static QMC.LCP_280.Process.Equipment;
@@ -301,24 +302,61 @@ namespace QMC.LCP_280.Process.Unit
          */
         public int GetLoadIndexNo()
         {
-
-            double dPos = 0.0;
-            if(Config.IsSimulation)
+            // 1. 축 객체 확인
+            if (AxisT == null)
             {
-                dPos = AxisT.GetPosition();
+                return 0;
+            }
+
+            // 2. 원시 위치 읽기 (논리 단위: 시뮬레이션은 그대로, 실기는 *1000 스케일 사용 중)
+            double rawLogicalPosition = AxisT.GetPosition();
+            double dPos = 0.0;
+
+            if (Config.IsSimulation)
+            {
+                // 시뮬레이션 모드: 이미 degree 단위라고 가정
+                dPos = rawLogicalPosition;
             }
             else
             {
-                dPos = AxisT.GetPosition() * 1000;
+                // 실기: 기존 코드 관례 유지 (축 값 * 1000 → degree 로 사용)
+                dPos = rawLogicalPosition * 1000.0;
             }
 
-            double dStep = (360.0) / GetIndexCount();
-            int nIndex = (int)(((360 - dPos) / dStep) + 0.5);
-            while (nIndex < 0)
+            // 3. (선택) 방향 반전 필요 시 설정
+            //    - 현재 장비에서 CCW(반시계) 증가가 0→1→2 로 진행된다면 true 유지
+            //    - 만약 증가 방향이 반대라면 false 로 바꾸거나 Config 플래그로 치환
+            bool invertDirection = true;
+            if (invertDirection)
             {
-                nIndex += GetIndexCount();
+                dPos = 360.0 - dPos;
             }
-            return nIndex % this.GetIndexCount();
+
+            // 4. 기계적 0점 보정 (Teaching 등으로 세팅된 _angleOffsetDeg 적용)
+            dPos = NormalizeAngle(dPos - _angleOffsetDeg);
+
+            // 5. 인덱스 계산 준비
+            int count = GetIndexCount();          // 예: 8
+            double step = 360.0 / count;          // 예: 45도
+
+            // 6. 중앙 기준 라운딩: 경계 근처(예 44.9 / 45.1) 안정화 위해 half-step 이동 후 Floor
+            double shifted = dPos + (step / 2.0);
+
+            // 7. 임시 인덱스 산출
+            int index = (int)Math.Floor(shifted / step);
+
+            // 8. 범위 정규화 (wrap)
+            if (index >= count)
+            {
+                index -= count;
+            }
+            if (index < 0)
+            {
+                index += count;
+            }
+
+            // 9. 결과(물리 소켓 ID: 0 ~ count-1)
+            return index;
         }
 
         public int GetIndexCount()
