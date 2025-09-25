@@ -106,7 +106,6 @@
             this.dataGridResult.MultiSelect = false;
             this.dataGridResult.Name = "dataGridResult";
             this.dataGridResult.ReadOnly = true;
-            this.dataGridResult.RowHeadersVisible = false;
             this.dataGridResult.RowTemplate.Height = 23;
             this.dataGridResult.Size = new System.Drawing.Size(1099, 441);
             this.dataGridResult.TabIndex = 0;
@@ -233,13 +232,23 @@
             this.nudIntervalDelay.Font = new System.Drawing.Font("맑은 고딕", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.nudIntervalDelay.Location = new System.Drawing.Point(150, 35);
             this.nudIntervalDelay.Maximum = new decimal(new int[] {
-            5000,
+            100000,
+            0,
+            0,
+            0});
+            this.nudIntervalDelay.Minimum = new decimal(new int[] {
+            10,
             0,
             0,
             0});
             this.nudIntervalDelay.Name = "nudIntervalDelay";
             this.nudIntervalDelay.Size = new System.Drawing.Size(147, 27);
             this.nudIntervalDelay.TabIndex = 23;
+            this.nudIntervalDelay.Value = new decimal(new int[] {
+            100,
+            0,
+            0,
+            0});
             // 
             // customBorderLabel1
             // 
