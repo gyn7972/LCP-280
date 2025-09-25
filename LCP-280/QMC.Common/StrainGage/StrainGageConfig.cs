@@ -11,10 +11,14 @@ namespace QMC.Common.StrainGage
     public class StrainGageConfig : BaseConfig
     {
         #region Properties
-        public double MinVoltage { get; set; }
-        public double MaxVoltage { get; set; }
-        public string LookupTableFilePath { get; set; }
+        public double MinVoltage { get; set; } // V
+        public double MaxVoltage { get; set; } // V
+        public double MinForce { get; set; } // g
+        public double MaxForce { get; set; } // g
         public string ReadChannelName { get; set; }
+        public bool UseLowPassFilter { get; set; }
+        public double LowPassFilterCutoffFrequency { get; set; }
+        public bool UseAutoZeroSet { get; internal set; } = true;
         #endregion
 
         #region Constructor
@@ -26,21 +30,31 @@ namespace QMC.Common.StrainGage
         #region Methods
         public override void Reset()
         {
-            MinVoltage = -2.0;
+            MinVoltage = 0;
             MaxVoltage = 2.0;
-            LookupTableFilePath = "";
+            MinForce = 0;
+            MaxForce = 10;
             ReadChannelName = "";
+            UseLowPassFilter = true;
+            LowPassFilterCutoffFrequency = 0.03;
         }
 
         public override bool Validate()
         {
-            //if (string.IsNullOrWhiteSpace(LookupTableFilePath))
-            //    return false;
-            if (string.IsNullOrWhiteSpace(ReadChannelName))
-                return false;
             if (MinVoltage > MaxVoltage)
                 return false;
-
+            if (MinForce > MaxForce)
+                return false;
+            if (UseLowPassFilter == true)
+            {
+                if (!(0 <= LowPassFilterCutoffFrequency && LowPassFilterCutoffFrequency <= 1))
+                    return false;
+            }
+            if (IsSimulation == false)
+            {
+                if (string.IsNullOrWhiteSpace(ReadChannelName))
+                    return false;
+            }
             return true;
         }
         public override PropertyCollection GetPropertyCollection()
@@ -53,9 +67,12 @@ namespace QMC.Common.StrainGage
             // Value
             pc.Add(nameof(MinVoltage), MinVoltage);
             pc.Add(nameof(MaxVoltage), MaxVoltage);
-            pc.Add(nameof(LookupTableFilePath), LookupTableFilePath);
+            pc.Add(nameof(MinForce), MinForce);
+            pc.Add(nameof(MaxForce), MaxForce);
             pc.Add(nameof(ReadChannelName), ReadChannelName);
-
+            pc.Add(nameof(UseLowPassFilter), UseLowPassFilter);
+            pc.Add(nameof(LowPassFilterCutoffFrequency), LowPassFilterCutoffFrequency);
+            pc.Add(nameof(IsSimulation), IsSimulation);
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -67,8 +84,12 @@ namespace QMC.Common.StrainGage
             {
                 MinVoltage = pc.GetValue<double>(nameof(MinVoltage));
                 MaxVoltage = pc.GetValue<double>(nameof(MaxVoltage));
-                LookupTableFilePath = pc.GetValue<string>(nameof(LookupTableFilePath));
+                MinForce = pc.GetValue<double>(nameof(MinForce));
+                MaxForce = pc.GetValue<double>(nameof(MaxForce));
                 ReadChannelName = pc.GetValue<string>(nameof(ReadChannelName));
+                UseLowPassFilter = pc.GetValue<bool>(nameof(UseLowPassFilter));
+                LowPassFilterCutoffFrequency = pc.GetValue<double>(nameof(LowPassFilterCutoffFrequency));
+                IsSimulation = pc.GetValue<bool>(nameof(IsSimulation));
             }
             catch (Exception ex)
             {

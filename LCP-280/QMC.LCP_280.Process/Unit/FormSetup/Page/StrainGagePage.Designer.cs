@@ -28,26 +28,22 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.lbivSelect = new QMC.Common.ListBoxItemsView();
             this.pcvConfig = new QMC.Common.PropertyCollectionView();
-            this.panel1 = new System.Windows.Forms.Panel();
-            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
-            this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.btnStop = new QMC.Common.IndividualMenuButton();
-            this.btnStart = new QMC.Common.IndividualMenuButton();
-            this.dataGrid = new System.Windows.Forms.DataGridView();
             this.panel2 = new System.Windows.Forms.Panel();
             this.btnSave = new QMC.Common.IndividualMenuButton();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.strainGageChart1 = new QMC.Common.StrainGage.StrainGageChart();
+            this.strainGageDataGridViewer1 = new QMC.Common.StrainGage.StrainGageDataGridViewer();
+            this.btnDeviceInfo = new QMC.Common.IndividualMenuButton();
+            this.btnStop = new QMC.Common.IndividualMenuButton();
+            this.btnStart = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
-            this.panel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.chart)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).BeginInit();
             this.panel2.SuspendLayout();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -114,96 +110,6 @@
             this.pcvConfig.SuppressResizeInvalidation = true;
             this.pcvConfig.TabIndex = 1;
             // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.individualMenuButton1);
-            this.panel1.Controls.Add(this.chart);
-            this.panel1.Controls.Add(this.btnStop);
-            this.panel1.Controls.Add(this.btnStart);
-            this.panel1.Controls.Add(this.dataGrid);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel1.Location = new System.Drawing.Point(372, 3);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(875, 694);
-            this.panel1.TabIndex = 1;
-            // 
-            // individualMenuButton1
-            // 
-            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton1.Location = new System.Drawing.Point(28, 503);
-            this.individualMenuButton1.Name = "individualMenuButton1";
-            this.individualMenuButton1.Size = new System.Drawing.Size(132, 43);
-            this.individualMenuButton1.TabIndex = 28;
-            this.individualMenuButton1.TabStop = false;
-            this.individualMenuButton1.Text = "Stop";
-            this.individualMenuButton1.UseVisualStyleBackColor = false;
-            this.individualMenuButton1.Click += new System.EventHandler(this.individualMenuButton1_Click);
-            // 
-            // chart
-            // 
-            chartArea1.Name = "ChartArea1";
-            this.chart.ChartAreas.Add(chartArea1);
-            legend1.Name = "Legend1";
-            this.chart.Legends.Add(legend1);
-            this.chart.Location = new System.Drawing.Point(166, 367);
-            this.chart.Name = "chart";
-            this.chart.Size = new System.Drawing.Size(621, 249);
-            this.chart.TabIndex = 27;
-            // 
-            // btnStop
-            // 
-            this.btnStop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStop.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnStop.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStop.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStop.CustomForeColor = System.Drawing.Color.Black;
-            this.btnStop.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnStop.ForeColor = System.Drawing.Color.Black;
-            this.btnStop.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStop.Location = new System.Drawing.Point(13, 408);
-            this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(132, 43);
-            this.btnStop.TabIndex = 26;
-            this.btnStop.TabStop = false;
-            this.btnStop.Text = "Stop";
-            this.btnStop.UseVisualStyleBackColor = false;
-            this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
-            // 
-            // btnStart
-            // 
-            this.btnStart.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStart.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnStart.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStart.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStart.CustomForeColor = System.Drawing.Color.Black;
-            this.btnStart.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnStart.ForeColor = System.Drawing.Color.Black;
-            this.btnStart.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStart.Location = new System.Drawing.Point(13, 350);
-            this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(132, 43);
-            this.btnStart.TabIndex = 25;
-            this.btnStart.TabStop = false;
-            this.btnStart.Text = "Start";
-            this.btnStart.UseVisualStyleBackColor = false;
-            this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
-            // 
-            // dataGrid
-            // 
-            this.dataGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGrid.Location = new System.Drawing.Point(13, 20);
-            this.dataGrid.Name = "dataGrid";
-            this.dataGrid.RowTemplate.Height = 23;
-            this.dataGrid.Size = new System.Drawing.Size(607, 314);
-            this.dataGrid.TabIndex = 0;
-            // 
             // panel2
             // 
             this.panel2.Controls.Add(this.btnSave);
@@ -233,6 +139,90 @@
             this.btnSave.UseVisualStyleBackColor = false;
             this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.strainGageChart1);
+            this.panel1.Controls.Add(this.strainGageDataGridViewer1);
+            this.panel1.Controls.Add(this.btnDeviceInfo);
+            this.panel1.Controls.Add(this.btnStop);
+            this.panel1.Controls.Add(this.btnStart);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(372, 3);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(875, 694);
+            this.panel1.TabIndex = 1;
+            // 
+            // strainGageChart1
+            // 
+            this.strainGageChart1.Location = new System.Drawing.Point(8, 203);
+            this.strainGageChart1.Name = "strainGageChart1";
+            this.strainGageChart1.Size = new System.Drawing.Size(859, 482);
+            this.strainGageChart1.TabIndex = 30;
+            // 
+            // strainGageDataGridViewer1
+            // 
+            this.strainGageDataGridViewer1.Location = new System.Drawing.Point(8, 3);
+            this.strainGageDataGridViewer1.Name = "strainGageDataGridViewer1";
+            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(417, 194);
+            this.strainGageDataGridViewer1.TabIndex = 29;
+            // 
+            // btnDeviceInfo
+            // 
+            this.btnDeviceInfo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDeviceInfo.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnDeviceInfo.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnDeviceInfo.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnDeviceInfo.CustomForeColor = System.Drawing.Color.Black;
+            this.btnDeviceInfo.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnDeviceInfo.ForeColor = System.Drawing.Color.Black;
+            this.btnDeviceInfo.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnDeviceInfo.Location = new System.Drawing.Point(431, 154);
+            this.btnDeviceInfo.Name = "btnDeviceInfo";
+            this.btnDeviceInfo.Size = new System.Drawing.Size(132, 43);
+            this.btnDeviceInfo.TabIndex = 28;
+            this.btnDeviceInfo.TabStop = false;
+            this.btnDeviceInfo.Text = "Show Device";
+            this.btnDeviceInfo.UseVisualStyleBackColor = false;
+            this.btnDeviceInfo.Click += new System.EventHandler(this.btnDeviceInfo_Click);
+            // 
+            // btnStop
+            // 
+            this.btnStop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStop.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnStop.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStop.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStop.CustomForeColor = System.Drawing.Color.Black;
+            this.btnStop.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnStop.ForeColor = System.Drawing.Color.Black;
+            this.btnStop.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnStop.Location = new System.Drawing.Point(431, 62);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(132, 43);
+            this.btnStop.TabIndex = 26;
+            this.btnStop.TabStop = false;
+            this.btnStop.Text = "Monitoring Stop";
+            this.btnStop.UseVisualStyleBackColor = false;
+            this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
+            // 
+            // btnStart
+            // 
+            this.btnStart.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStart.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnStart.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStart.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStart.CustomForeColor = System.Drawing.Color.Black;
+            this.btnStart.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnStart.ForeColor = System.Drawing.Color.Black;
+            this.btnStart.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnStart.Location = new System.Drawing.Point(431, 11);
+            this.btnStart.Name = "btnStart";
+            this.btnStart.Size = new System.Drawing.Size(132, 43);
+            this.btnStart.TabIndex = 25;
+            this.btnStart.TabStop = false;
+            this.btnStart.Text = "Monitoring Start";
+            this.btnStart.UseVisualStyleBackColor = false;
+            this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
+            // 
             // StrainGagePage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -242,10 +232,8 @@
             this.Size = new System.Drawing.Size(1250, 700);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.chart)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).EndInit();
             this.panel2.ResumeLayout(false);
+            this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -257,12 +245,12 @@
         private Common.ListBoxItemsView lbivSelect;
         private Common.PropertyCollectionView pcvConfig;
         private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.DataGridView dataGrid;
         private Common.IndividualMenuButton btnStop;
         private Common.IndividualMenuButton btnStart;
-        private System.Windows.Forms.DataVisualization.Charting.Chart chart;
-        private Common.IndividualMenuButton individualMenuButton1;
+        private Common.IndividualMenuButton btnDeviceInfo;
         private System.Windows.Forms.Panel panel2;
         private Common.IndividualMenuButton btnSave;
+        private Common.StrainGage.StrainGageDataGridViewer strainGageDataGridViewer1;
+        private Common.StrainGage.StrainGageChart strainGageChart1;
     }
 }
