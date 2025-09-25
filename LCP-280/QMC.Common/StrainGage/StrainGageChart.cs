@@ -16,6 +16,9 @@ namespace QMC.Common.StrainGage
         private StrainGageMonitor _monitor;
         private Color[] colors = new Color[] { Color.Red, Color.Blue, Color.Green, Color.Orange, Color.Purple, Color.Brown, Color.Cyan, Color.Magenta };
 
+        private double minForce = 0;
+        private double maxForce = 0;
+
         public StrainGageChart()
         {
             InitializeComponent();
@@ -44,11 +47,13 @@ namespace QMC.Common.StrainGage
             {
                 chart.ChartAreas[0].AxisY.Minimum = Double.NaN;
                 chart.ChartAreas[0].AxisY.Maximum = Double.NaN;
+                chart.ChartAreas[0].AxisY.Interval = Double.NaN;
             }
             else
             {
-                chart.ChartAreas[0].AxisY.Minimum = -0.1;
-                chart.ChartAreas[0].AxisY.Maximum = 2;
+                chart.ChartAreas[0].AxisY.Minimum = minForce;
+                chart.ChartAreas[0].AxisY.Maximum = maxForce;
+                chart.ChartAreas[0].AxisY.Interval = Double.NaN;
             }
 
             chart.Legends[0].Enabled = true;
@@ -84,6 +89,20 @@ namespace QMC.Common.StrainGage
 
             _monitor = monitor;
             _monitor.OnVoltageUpdated += Monitor_OnVoltageUpdated;
+
+            minForce = 0;
+            maxForce = 0;
+            foreach (var item in _monitor.Items)
+            {
+                var gage = item.strainGage;
+                if (gage != null)
+                {
+                    if (minForce > gage.Config.MinForce)
+                        minForce = gage.Config.MinForce;
+                    if (maxForce < gage.Config.MaxForce)
+                        maxForce = gage.Config.MaxForce;
+                }
+            }
 
             InitializeUI();
         }
@@ -145,11 +164,13 @@ namespace QMC.Common.StrainGage
                 {
                     chart.ChartAreas[0].AxisY.Minimum = Double.NaN;
                     chart.ChartAreas[0].AxisY.Maximum = Double.NaN;
+                    chart.ChartAreas[0].AxisY.Interval = Double.NaN;
                 }
                 else
                 {
-                    chart.ChartAreas[0].AxisY.Minimum = -0.1;
-                    chart.ChartAreas[0].AxisY.Maximum = 2;
+                    chart.ChartAreas[0].AxisY.Minimum = minForce;
+                    chart.ChartAreas[0].AxisY.Maximum = maxForce;
+                    chart.ChartAreas[0].AxisY.Interval = Double.NaN;
                 }
             }
         }
@@ -163,13 +184,14 @@ namespace QMC.Common.StrainGage
             }
             else
             {
+                chart.SuspendLayout();
                 foreach (var item in _monitor.Items)
                 {
                     var gage = item.strainGage;
                     var series = chart.Series[gage.Name];
                     if (series != null)
                     {
-                        series.Points.AddY(gage.Voltage);
+                        series.Points.AddY(gage.Force);
                         if (series.Points.Count > (int)nudDataCount.Value)
                         {
                             series.Points.RemoveAt(0);
@@ -177,10 +199,14 @@ namespace QMC.Common.StrainGage
 
                         if (cbAutoScale.Checked)
                         {
+                            chart.ChartAreas[0].AxisY.Minimum = Double.NaN;
+                            chart.ChartAreas[0].AxisY.Maximum = Double.NaN;
+                            chart.ChartAreas[0].AxisY.Interval = Double.NaN;
                             chart.ChartAreas[0].RecalculateAxesScale();
                         }
                     }
                 }
+                chart.ResumeLayout();
             }
         }
     }

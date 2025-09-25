@@ -18,6 +18,7 @@ namespace QMC.Common.StrainGage
         public string ReadChannelName { get; set; }
         public bool UseLowPassFilter { get; set; }
         public double LowPassFilterCutoffFrequency { get; set; }
+        public bool UseAutoZeroSet { get; internal set; } = true;
         #endregion
 
         #region Constructor

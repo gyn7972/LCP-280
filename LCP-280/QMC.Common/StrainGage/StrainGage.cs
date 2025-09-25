@@ -20,6 +20,7 @@ namespace QMC.Common.StrainGage
         public double Voltage => voltage;
         public double Force => GetForce();
         public new StrainGageConfig Config { get; private set; }
+        public double ZeroVoltage { get; private set; } = 0;
         #endregion
 
         #region Constructor
@@ -62,24 +63,43 @@ namespace QMC.Common.StrainGage
                 }
                 lowPassFilter.AddValue(value);
                 this.voltage = lowPassFilter.CurrentValue;
+
+                //if (this.Config.UseAutoZeroSet)
+                //{
+                //    AutoZeroTracking(value, this.voltage);
+                //}
             }
             else
             {
                 this.voltage = value;
             }
         }
+        public void SetZero()
+        {
+            this.ZeroVoltage = this.voltage;
+        }
+        private void AutoZeroTracking(double value, double voltage)
+        {
+
+           if((voltage - this.ZeroVoltage) <  0.001 )
+            {
+                this.ZeroVoltage = voltage;
+            }
+            
+        }
+
         private double GetForce()
         {
             if (!Config.Validate())
                 return 0;
 
-            if (voltage < Config.MinVoltage)
-                return Config.MinForce;
-            if (voltage > Config.MaxVoltage)
-                return Config.MaxForce;
+            //if (voltage < Config.MinVoltage)
+            //    return Config.MinForce;
+            //if (voltage > Config.MaxVoltage)
+            //    return Config.MaxForce;
 
             double scale = (Config.MaxForce - Config.MinForce) / (Config.MaxVoltage - Config.MinVoltage);
-            double force = (voltage - Config.MinForce) * scale + Config.MinForce;
+            double force = (voltage -this.ZeroVoltage) * scale;
             return force;
         }
         #endregion

@@ -10,7 +10,7 @@ namespace QMC.Common.StrainGage
 {
     public class StrainGageMonitor : IDisposable
     {
-        private const int MonitoringIntervalMs = 20;
+        private const int MonitoringIntervalMs = 5;
 
         #region Fields
         NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
