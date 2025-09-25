@@ -1383,8 +1383,6 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        
-
         /// <summary>
         /// Bottom Contact 1개 소켓 검사 시컨스
         /// 순서:

@@ -669,6 +669,8 @@ namespace QMC.LCP_280.Process.Unit
 
             string str = r.VisionRecipePath;
 
+            
+
             // 값 읽기
             double limit = r.Keys.Count > 0 ? r.Keys[0].UpperLimit : double.NaN;
         }

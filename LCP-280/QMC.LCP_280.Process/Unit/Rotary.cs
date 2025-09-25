@@ -149,7 +149,9 @@ namespace QMC.LCP_280.Process.Unit
             double step = 360.0 / cnt;
             _sockets = new SocketInfo[cnt];
             for (int i = 0; i < cnt; i++)
+            {
                 _sockets[i] = new SocketInfo(i, i * step);
+            }
         }
 
         // 외부에서(디버그/보정) 기준 회전 오프셋 적용
@@ -161,7 +163,10 @@ namespace QMC.LCP_280.Process.Unit
         // 현재 축 위치 → 가장 가까운 소켓 번호(0~7)
         private int GetNearestSocketIndexByPosition()
         {
-            if (AxisT == null) return 0;
+            if (AxisT == null)
+            {
+                return 0;
+            }
 
             // 기존 코드가 AxisT.GetPosition() * 1000 사용 → 유지
             double rawDeg = AxisT.GetPosition() * 1000.0;
@@ -193,22 +198,41 @@ namespace QMC.LCP_280.Process.Unit
             return bestIdx;
         }
 
-        // 외부 사용: 현재 로드 스테이션(Load 위치)에 존재하는 소켓 번호(1~8 표기용)
-        public int CurrentLoadSocketNo => GetNearestSocketIndexByPosition() + 1;
+        /// 외부 사용: 현재 로드 스테이션(Load 위치)에 존재하는 "소켓 번호(1~8)" (물리 소켓 ID +1)
+        public int CurrentLoadSocketNo
+        {
+            get
+            {
+                int idx = GetLoadIndexNo();
+                return idx + 1;
+            }
+        }
 
         // 소켓 상태 Get/Set
         public RotarySocketState GetSocketState(int socketNo1Based)
         {
             int idx = socketNo1Based - 1;
-            if (idx < 0 || idx >= GetIndexCount()) return RotarySocketState.Error;
-            lock (_socketLock) return _sockets[idx].State;
+            if (idx < 0 || idx >= GetIndexCount())
+            {
+                return RotarySocketState.Error;
+            }
+            lock (_socketLock)
+            {
+                return _sockets[idx].State;
+            }
         }
 
         public bool SetSocketState(int socketNo1Based, RotarySocketState state)
         {
             int idx = socketNo1Based - 1;
-            if (idx < 0 || idx >= GetIndexCount()) return false;
-            lock (_socketLock) _sockets[idx].SetState(state);
+            if (idx < 0 || idx >= GetIndexCount())
+            {
+                return false;
+            }
+            lock (_socketLock)
+            {
+                _sockets[idx].SetState(state);
+            }
             return true;
         }
 
@@ -217,7 +241,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             lock (_socketLock)
             {
-                foreach (var s in _sockets) s.SetState(init);
+                foreach (var s in _sockets)
+                {
+                    s.SetState(init);
+                }
             }
         }
 
@@ -248,7 +275,10 @@ namespace QMC.LCP_280.Process.Unit
         private static double NormalizeAngle(double deg)
         {
             deg = deg % 360.0;
-            if (deg < 0) deg += 360.0;
+            if (deg < 0)
+            {
+                deg += 360.0;
+            }
             return deg;
         }
 
@@ -259,19 +289,29 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
+        /*
+         * GetLoadIndexNo()
+         *  - 매우 중요: "현재 Load 위치(기계 고정 스테이션)에 물리적으로 서 있는 소켓 번호(0~7)" 를 반환
+         *  - 다른 Unit 들(예: InputDieTransfer, Align, Probe 등)이 이 값을 기반으로
+         *    '현재 나에게 온 소켓이 몇 번 소켓인가?' 를 판단하는 구조
+         *  - 따라서 이 함수는 '스테이션 위치 Index' 가 아니라 '물리 소켓 ID' 를 반환해야 한다.
+         *  - Load 위치 자체는 기구적으로 고정되어 있고 회전은 소켓이 돌아오므로
+         *    서보 각도 -> 소켓ID 매핑을 통해 계산한다.
+         *  - (주의) 아래 계산식의 방향(360 - dPos)은 실제 회전 방향(시계/반시계)에 따라 조정 가능
+         */
         public int GetLoadIndexNo()
         {
-            //Todo : Implement 구영남
-            //double dPos = AxisT.GetPosition() * 1000;          // 현재 T축 위치
-            //double dStep = 360.0 / GetIndexCount();     // 한 소켓 간격 (45°)
 
-            //// 각도를 0~360 범위로 정규화
-            //dPos = (dPos % 360 + 360) % 360;
+            double dPos = 0.0;
+            if(Config.IsSimulation)
+            {
+                dPos = AxisT.GetPosition();
+            }
+            else
+            {
+                dPos = AxisT.GetPosition() * 1000;
+            }
 
-            //// 소켓 번호 계산 (0~7)
-            //int nIndex = (int)((dPos / dStep) + 0.5) % GetIndexCount();
-            //return nIndex;
-            double dPos = AxisT.GetPosition() * 1000;
             double dStep = (360.0) / GetIndexCount();
             int nIndex = (int)(((360 - dPos) / dStep) + 0.5);
             while (nIndex < 0)
@@ -286,6 +326,69 @@ namespace QMC.LCP_280.Process.Unit
             return 8;
         }
         #endregion
+
+        #region Socket Helper (추가 Refactoring)
+        /*
+         * 추가된 Helper 함수들
+         *  - 다른 로직에서 스테이션 Offset 기반 접근을 반복 작성하지 않도록 캡슐화
+         *  - "Load 기준 Offset" 을 넣으면 그 위치에 '현재 물리적으로 서 있는 소켓의 물리 ID(0~7)' 를 반환
+         *  - 단, 소켓 상태 배열은 물리 ID 순서이므로 상태 접근 시 (index = 물리ID)
+         */
+        private int GetPhysicalSocketIndexAtStationOffset(int stationOffset)
+        {
+            int loadPhysical = GetLoadIndexNo(); // 현재 Load에 있는 물리 소켓 ID
+            int count = GetIndexCount();
+
+            int idx = loadPhysical + stationOffset;
+            idx = idx % count;
+            if (idx < 0)
+            {
+                idx += count;
+            }
+            return idx;
+        }
+
+        private SocketInfo GetSocketInfoAtStationOffset(int stationOffset)
+        {
+            int physicalIdx = GetPhysicalSocketIndexAtStationOffset(stationOffset);
+            lock (_socketLock)
+            {
+                return _sockets[physicalIdx];
+            }
+        }
+
+        // 1-based 소켓 번호 (UI 용)
+        public int GetLoadSocketNo1Based()
+        {
+            int val = GetLoadIndexNo();
+            val = val + 1;
+            return val;
+        }
+
+        // 디버깅용: 스테이션 offset 별 현재 소켓/상태 문자열
+        public string GetStationsSnapshot(params int[] stationOffsets)
+        {
+            if (stationOffsets == null || stationOffsets.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            List<string> list = new List<string>();
+            foreach (var off in stationOffsets)
+            {
+                int pIdx = GetPhysicalSocketIndexAtStationOffset(off);
+                RotarySocketState st;
+                lock (_socketLock)
+                {
+                    st = _sockets[pIdx].State;
+                }
+                list.Add($"Off{off}:Sock{pIdx + 1}[{st}]");
+            }
+            string joined = string.Join(", ", list);
+            return joined;
+        }
+        #endregion
+
 
 
         public Rotary(RotaryConfig config = null) : base(new RotaryConfig())
@@ -398,22 +501,15 @@ namespace QMC.LCP_280.Process.Unit
             var axis = _axisT;
             if (axis == null)
             {
-                reason = "T???? ???ε????? ???????.";
+                reason = "TAxis Null.";
                 return false;
             }
 
-            // 1) ???? Safe-Zone ?????: 4?? ?????? Safe TeachingPosition?? ???? ??
+            // 1) Safe-Zone check.
             if (!VerifyAllUnitsSafe(out reason))
                 return false;
 
-            // 2) InterlockManager ??? ???(???? + ?? ????)
-            //var il = InterlockManager.Instance;
-            //if (!il.ValidateAxisForHome(axis, out reason))
-            //    return false;
-            //if (!il.ValidateForHomeStep(new[] { axis }, out reason))
-            //    return false;
-
-            // 3) ???? ?ε??? ???
+            // 3) Move Check.
             int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
             if (rc != 0)
             {
@@ -425,7 +521,6 @@ namespace QMC.LCP_280.Process.Unit
             return true;
         }
 
-        
         private bool IsIndexMoveDone()
         {
             if (AxisT == null) 
@@ -1098,23 +1193,18 @@ namespace QMC.LCP_280.Process.Unit
         {
             public string Name;
             public int Offset; // Load 기준 상대 인덱스
-            public Func<bool> IsUnitComplete;         // 해당 스테이션 Unit 완료 신호
-            public RotarySocketState[] BlockingStates;// 해당 스테이션에서 '아직 처리 중' 으로 간주되는 소켓 상태
-            public bool ProductRequired;              // 제품(소켓 비 Empty) 있을 때만 Complete 신호를 의미 있게 본다
+            public Func<bool> IsUnitComplete;
+            public RotarySocketState[] BlockingStates;
+            public bool ProductRequired;
         }
 
         private StationRule[] _stationRules;
 
         private void InitStationRules()
         {
-            // 오프셋은 설비 실제 배열에 맞게 조정
-            // 예시: Load(0) -> Align(+1) -> Probe(+2) -> Unload(+3) -> Output(+4)
             const int LOAD_OFFSET = 0;
             const int ALIGN_OFFSET = 1;
             const int PROBE_OFFSET = 2;
-            //const int UNLOAD_OFFSET = 3;
-            //const int OUTPUT_OFFSET = 4;
-            // 통합 스테이션 위치
             const int UNLOAD_OUTPUT_OFFSET = 4;
 
             _stationRules = new[]
@@ -1123,7 +1213,6 @@ namespace QMC.LCP_280.Process.Unit
                     Name = "Load",
                     Offset = LOAD_OFFSET,
                     IsUnitComplete = () => InputDieTransfer == null || InputDieTransfer.CompleteInputDie,
-                    // Loading / Loaded 동안에는 Load Unit 완료 신호(false)면 회전 BLOCK
                     BlockingStates = new[]{ RotarySocketState.Loading, RotarySocketState.Loaded },
                     ProductRequired = true
                 },
@@ -1131,7 +1220,6 @@ namespace QMC.LCP_280.Process.Unit
                     Name = "Align",
                     Offset = ALIGN_OFFSET,
                     IsUnitComplete = () => IndexLoadAligner == null || IndexLoadAligner.CompleteLoadAligner,
-                    // Aligning 동안만 BLOCK, Aligned 는 완료로 간주(회전 허용)
                     BlockingStates = new[]{ RotarySocketState.Aligning },
                     ProductRequired = true
                 },
@@ -1139,32 +1227,29 @@ namespace QMC.LCP_280.Process.Unit
                     Name = "Probe",
                     Offset = PROBE_OFFSET,
                     IsUnitComplete = () => IndexChipProbeController == null || IndexChipProbeController.CompleteProbe,
-                    // Probing 중이면 BLOCK
                     BlockingStates = new[]{ RotarySocketState.Probing },
                     ProductRequired = true
                 },
                 new StationRule {
-                    // UnloadAlign → (완료 후) OutputDieTransfer 동작까지 같은 위치
                     Name = "UnloadOutput",
                     Offset = UNLOAD_OUTPUT_OFFSET,
                     IsUnitComplete = () =>
                     {
-                        // 두 단계를 모두 고려:
-                        // 1) Unloading 단계일 때는 UnloadAligner 완료만 의미 있음
-                        // 2) Outputting 단계일 때는 OutputDieTransfer 완료만 의미 있음
                         int loadIdx = GetLoadIndexNo();
                         int idx = (loadIdx + UNLOAD_OUTPUT_OFFSET) % GetIndexCount();
                         RotarySocketState curState;
                         lock (_socketLock) curState = _sockets[idx].State;
 
                         if (curState == RotarySocketState.Unloading)
+                        {
                             return IndexUnloadAligner == null || IndexUnloadAligner.CompleteUnloadAligner;
+                        }
                         if (curState == RotarySocketState.Outputting)
+                        {
                             return OutputDieTransfer == null || OutputDieTransfer.CompleteOutputDie;
-                        // 다른 상태일 경우 이 스테이션에서 대기 조건 아님
+                        }
                         return true;
                     },
-                    // 진행 중으로 간주되는 상태: Unloading, Outputting
                     BlockingStates = new[]{ RotarySocketState.Unloading, RotarySocketState.Outputting },
                     ProductRequired = true
                 }
@@ -1176,16 +1261,17 @@ namespace QMC.LCP_280.Process.Unit
             return st != RotarySocketState.Empty;
         }
 
-
-        // - Unit Complete 신호를 무조건 보지 않고: "소켓에 제품이 있고 그 소켓이 해당 스테이션에서 아직 처리 상태(BlockingStates)에 속하며 Unit Complete == false" 인 경우에만 BLOCK
+        // - Unit Complete 신호를 무조건 보지 않고:
+        // "소켓에 제품이 있고 그 소켓이 해당 스테이션에서 아직 처리 상태
+        // (BlockingStates)에 속하며 Unit Complete == false" 인 경우에만 BLOCK
         // ==== Rotate Check Codes ====
-        private const int ROT_CHK_OK = 0;   // 회전 수행
-        private const int ROT_CHK_SKIP_NO_DEMAND = 1;   // 회전 수요 없음(그냥 다음 Step 진행 가능)
-        private const int ROT_CHK_WAIT_STATION_BUSY = 2;   // 공정 진행 중(완료 대기) → 대기
-        private const int ROT_CHK_ERR_AXIS_NULL = -1;  // 축 없음
-        private const int ROT_CHK_ERR_AXIS_BUSY = -2;  // 축 현재 이동/Busy
-        private const int ROT_CHK_ERR_NOT_SAFE = -3;  // 안전위치 아님
-        private const int ROT_CHK_ERR_SOCKET_ARRAY = -4;  // 소켓 배열 없음
+        private const int ROT_CHK_OK = 0;
+        private const int ROT_CHK_SKIP_NO_DEMAND = 1;
+        private const int ROT_CHK_WAIT_STATION_BUSY = 2;
+        private const int ROT_CHK_ERR_AXIS_NULL = -1;
+        private const int ROT_CHK_ERR_AXIS_BUSY = -2;
+        private const int ROT_CHK_ERR_NOT_SAFE = -3;
+        private const int ROT_CHK_ERR_SOCKET_ARRAY = -4;
         private string GetRotateCheckMessage(int code)
         {
             switch (code)
@@ -1227,8 +1313,10 @@ namespace QMC.LCP_280.Process.Unit
                 reason = "Socket array NULL";
                 return ROT_CHK_ERR_SOCKET_ARRAY;
             }
-            if (_stationRules == null) 
+            if (_stationRules == null)
+            {
                 InitStationRules();
+            }
 
             int loadIdx = GetLoadIndexNo();
             int cnt = GetIndexCount();
@@ -1237,11 +1325,16 @@ namespace QMC.LCP_280.Process.Unit
             foreach (var rule in _stationRules)
             {
                 int idx = (loadIdx + rule.Offset) % cnt;
-                if (idx < 0) idx += cnt;
+                if (idx < 0)
+                {
+                    idx += cnt;
+                }
 
                 RotarySocketState st;
                 lock (_socketLock)
+                {
                     st = _sockets[idx].State;
+                }
 
                 bool productExists = HasProduct(st);
 
@@ -1283,7 +1376,9 @@ namespace QMC.LCP_280.Process.Unit
                 return false;
             }
             if (_stationRules == null)
+            {
                 InitStationRules();
+            }
 
             int loadIdx = GetLoadIndexNo();
             int alignIdx = (loadIdx + 1) % GetIndexCount(); // STATION_OFFSET_ALIGN
@@ -1369,11 +1464,15 @@ namespace QMC.LCP_280.Process.Unit
         //      4) Completed 는 이후 회전 시 Empty 로 재사용 (정책에 따라 즉시 Empty 로 바꿀 수도 있음)
         private void UpdateUnloadOutputComposite()
         {
-            if (_sockets == null) 
+            if (_sockets == null)
+            {
                 return;
+            }
 
-            if (_stationRules == null) 
+            if (_stationRules == null)
+            {
                 InitStationRules();
+            }
 
 
             // InitStationRules 내부 상수와 동일하게 유지
@@ -1384,23 +1483,12 @@ namespace QMC.LCP_280.Process.Unit
 
             RotarySocketState state;
             lock (_socketLock)
+            {
                 state = _sockets[idx].State;
+            }
 
-            // 0) Completed -> (정책) 다음 회전 이후 Empty 로 재활용
-            //    - 회전 직후 PostRotateStateTransition 이 호출되므로 그 시점에서 Completed 소켓을 Empty 로 바꾸고 싶다면
-            //      아래 주석을 해제하고 조건 추가 가능.
-            // if (state == RotarySocketState.Completed)
-            // {
-            //     lock (_socketLock) _sockets[idx].SetState(RotarySocketState.Empty);
-            //     return;
-            // }
-
-            // 1) Probed 도착: 아직 Unloading 시작 안했으면 Unloading 진입
             if (state == RotarySocketState.Probed)
             {
-                // Unloading 시작 조건:
-                //  - UnloadAligner 사용 가능 (추가 인터락 필요 시 여기에)
-                //  - (선택) IndexUnloadAligner.CompleteUnloadAligner 가 true(대기) 상태
                 lock (_socketLock)
                 {
                     _sockets[idx].SetState(RotarySocketState.Unloading);
@@ -1409,7 +1497,6 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            // 2) Unloading 진행 중 → 완료되면 Outputting 전이
             if (state == RotarySocketState.Unloading)
             {
                 if (IndexUnloadAligner == null || IndexUnloadAligner.CompleteUnloadAligner)
@@ -1424,7 +1511,6 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            // 3) Outputting 진행 중 → 완료되면 Completed
             if (state == RotarySocketState.Outputting)
             {
                 if (OutputDieTransfer == null || OutputDieTransfer.CompleteOutputDie)
@@ -1438,36 +1524,39 @@ namespace QMC.LCP_280.Process.Unit
                 return;
             }
 
-            // 4) Completed 상태 처리(추가 정책 적용 가능)
-            //    예: 일정 시간 지난 뒤 Empty 로 전환
             if (state == RotarySocketState.Completed)
             {
-                // 예시 정책: 5초 이상 경과 시 자동 Empty
                 lock (_socketLock)
                 {
                     var s = _sockets[idx];
                     if ((DateTime.Now - s.LastUpdated).TotalSeconds > 5)
+                    {
                         s.SetState(RotarySocketState.Empty);
+                    }
                 }
             }
         }
 
         private void PostRotateStateTransition()
         {
-            if (_sockets == null) return;
+            if (_sockets == null)
+            {
+                return;
+            }
 
-            // 간단 예시:
-            //  - 새로 Load 위치에 들어온 소켓이 Empty → Loading 상태로 전환
             int loadIdx = GetLoadIndexNo();
             lock (_socketLock)
             {
                 var s = _sockets[loadIdx];
-                if (s.State == RotarySocketState.Empty && RequestInputDieTrDie)
+                //if (s.State == RotarySocketState.Empty && RequestInputDieTrDie)
+                if (s.State == RotarySocketState.Empty && 
+                    InputDieTransfer.CompleteInputDie)
                 {
                     s.SetState(RotarySocketState.Loading);
                 }
             }
         }
+
 
         public int CanRotate(bool isFine = false)
         {
@@ -1478,36 +1567,25 @@ namespace QMC.LCP_280.Process.Unit
             UpdateUnloadOutputComposite();
 
             string reason;
-            // 회전 판단 (int 코드 기반)
             int chk = CanRotate(out reason);
             if (chk == ROT_CHK_OK)
             {
-                // 회전 가능
                 nRet = 0;
             }
             else if (chk == ROT_CHK_SKIP_NO_DEMAND)
             {
-                // 회전 수요 없음 → 다음 Step 진행
                 nRet = 1;
             }
             else if (chk == ROT_CHK_WAIT_STATION_BUSY)
             {
-                // 공정 진행 중 → 대기
                 nRet = 0;
             }
             else
             {
-                // 오류
                 Log.Write(UnitName, $"CanRotate Error: {GetRotateCheckMessage(chk)}");
                 nRet = -1;
                 return nRet;
             }
-            //if(!CanRotate(out reason))
-            //{
-            //    Log.Write(UnitName, $"CanRotate Fail: {reason}");
-            //    nRet = -1;
-            //    return nRet;
-            //}
 
             return nRet;
         }
