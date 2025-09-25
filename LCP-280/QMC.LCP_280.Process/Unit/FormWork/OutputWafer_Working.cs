@@ -6,6 +6,7 @@ using QMC.Common;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
+    [FormOrder(4)]
     /// <summary>
     /// WaferBin Working Form
     /// - TeachingPositionControl: OutputFeeder, OutputCassetteLifter

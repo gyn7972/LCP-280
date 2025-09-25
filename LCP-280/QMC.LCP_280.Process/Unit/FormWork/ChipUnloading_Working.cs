@@ -1,13 +1,15 @@
-﻿using QMC.Common.Cameras;
+﻿using QMC.Common;
+using QMC.Common.Cameras;
 using QMC.LCP_280.Process.Component;
 using System;
-using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // ODT IO 상수
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;             // Rotary IO 상수/배열
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
+    [FormOrder(5)]
     /// <summary>
     /// ChipUnloading Working Form
     /// - TeachingPositionControl: OutputStage, OutputDieTransfer, Rotary

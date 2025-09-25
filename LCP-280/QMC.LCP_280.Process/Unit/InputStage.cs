@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using static QMC.LCP_280.Process.Equipment;
+using static QMC.LCP_280.Process.PatternMatchingRunner;
 using static QMC.LCP_280.Process.Unit.InputCassetteLifter;
 using static System.Windows.Forms.AxHost;
 
@@ -136,8 +137,21 @@ namespace QMC.LCP_280.Process.Unit
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
 
+        public PatternMatchingRunner _pmRunner;
+
         // Pattern Matching Runner (간소화: Recipe 자동 관리)
-        private PatternMatchingRunner _pmRunner;
+        public PatternMatchingRunner PmRunner
+        { 
+            get
+            {
+                if(_pmRunner == null)
+                {
+                    _pmRunner = VisionRunnerHub.GetOrCreate(StageCameraKey);
+                }
+                return _pmRunner;
+            }
+        }
+
         private bool _runnerInitTried;
 
         // Pixel -> mm scale
@@ -1616,6 +1630,11 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_LastAppliedTAngle = 0;
             _lastCenterAlignTp = null;
 
+            if(this.Config.IsSimulation)
+            {
+                IsStatus_TAlignPrepared = true;
+                return 0;
+            }
             Log.Write(UnitName, "T_Align", "Prepare Start");
 
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
@@ -1659,6 +1678,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
+            if(Config.IsSimulation)
+            {
+                IsStatus_LastAppliedTAngle = 0;
+                IsStatus_TAlignDone = true;
+                return 0;
+
+            }
             if (!IsStatus_TAlignPrepared || _lastCenterAlignTp == null)
             {
                 Log.Write(UnitName, "T_Align", "Not prepared");
@@ -1723,6 +1749,13 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(UnitName, "XY_Align", "Prepare Start");
 
+            if(this.Config.IsSimulation)
+            {
+
+                IsStatus_XYAlignPrepared = true;
+                return 0;
+            }
+
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
             {
                 return -1;
@@ -1753,6 +1786,13 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int AlignXYApply(bool bFineSpeed = false)
         {
+            if(this.Config.IsSimulation)
+            {
+                _lastCenterAlignTp = new TeachingPosition();
+
+                IsStatus_XYAlignDone = true;
+                return 0;
+            }
             if (!IsStatus_XYAlignPrepared || _lastCenterAlignTp == null)
             {
                 Log.Write(UnitName, "XY_Align", "Not prepared");
@@ -1897,9 +1937,6 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             this.CurrentFunc = PerformChipMapping;
 
-            ChipMappingDone = false;
-            CurrentChipMap = null;
-
             // 기본 인터락
             if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
             {
@@ -1911,170 +1948,94 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "ChipMap", "Wafer (Ring) not present");
                 return -1;
             }
-
-            // Center Teaching
-            var centerTp = Config.GetTeachingPosition(InputStageConfig.TeachingPositionName.CenterPoint.ToString());
-            if (centerTp == null)
+            MakeScanPath(out List<PointD> path);
+            foreach (var pt in path)
             {
-                Log.Write(UnitName, "ChipMap", "Center Teaching not found");
-                return -1;
-            }
-            var (baseX, baseY, baseT) = Config.GetPositionWithOffset(centerTp.Name);
-
-            // ROI 그리드계산
-            if (ChipPitchXmm <= 0 || ChipPitchYmm <= 0)
-            {
-                Log.Write(UnitName, "ChipMap", "Invalid ChipPitch");
-                return -1;
-            }
-
-            int cols = (int)Math.Floor(MappingRoiWidthMm / ChipPitchXmm) + 1;
-            int rows = (int)Math.Floor(MappingRoiHeightMm / ChipPitchYmm) + 1;
-            if (rows <= 0 || cols <= 0)
-            {
-                Log.Write(UnitName, "ChipMap", "Invalid ROI or Pitch");
-                return -1;
-            }
-
-            double leftTopX = baseX - (MappingRoiWidthMm * 0.5);
-            double leftTopY = baseY + (MappingRoiHeightMm * 0.5); // 좌표계 방향(Y+ up/down 프로젝트 기준 확인 필요)
-
-            var map = new ChipMapResult
-            {
-                Rows = rows,
-                Cols = cols,
-                PitchX = ChipPitchXmm,
-                PitchY = ChipPitchYmm
-            };
-
-            int globalIndex = 0;
-            VisionImage img = null;
-
-            for (int r = 0; r < rows; r++)
-            {
-                for (int c = 0; c < cols; c++)
+                nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
+                if (nRet != 0)
                 {
-                    double targetX = leftTopX + c * ChipPitchXmm;
-                    double targetY = leftTopY - r * ChipPitchYmm; // 위에서 아래로
-
-                    nRet = MoveStage(targetX, targetY, bFineSpeed);
-                    if (nRet != 0)
-                    {
-                        AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                        Log.Write(UnitName, "ChipMap", $"MoveStage fail r={r} c={c} x={targetX:F3} y={targetY:F3}");
-                        PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
-                        return -1;
-                    }
-
-                    // Grab
-                    if (StageCamera == null)
-                    {
-                        Log.Write(UnitName, "ChipMap", "Camera null");
-                        return -1;
-                    }
-
-                    if (!Config.IsSimulation && !Config.IsDryRun)
-                    {
-                        if (StageCamera.GrabSync(out img) != 0 || img == null)
-                        {
-                            Log.Write(UnitName, "ChipMap", $"Grab fail r={r} c={c}");
-                            continue;
-                        }
-                    }
-
-                    // Vision 패턴 검색 (간단: MultiAngles 재사용 or CenterSearch)
-                    double score = 0;
-                    bool found = false;
-                    double visionDx = 0, visionDy = 0;
-
-                    //if (Config.IsSimulation  || Config.IsDryRun)
-                    //{
-                    //    // 시뮬레이션: 예시로 모두 존재
-                    //    found = true;
-                    //    score = 0.9;
-                    //}
-                    //else
-                    {
-                        // 예시: CenterSearch 사용 (dx,dy 만 필요)
-                        var res = CenterSearchViaRunner();
-                        if (res.ok)
-                        {
-                            // dx,dy 는 이미지 중심 기준 mm 오프셋
-                            visionDx = res.x;
-                            visionDy = res.y;
-                            score = 0.8; // 별도 Run 에서 Score 전달받도록 Runner 확장 가능
-                            found = (score >= MarkMinScore);
-                        }
-                    }
-
-                    double finalX = targetX;
-                    double finalY = targetY;
-
-                    if (found && UseVisionOffsetApply)
-                    {
-                        finalX += visionDx;
-                        finalY += visionDy;
-                    }
-
-                    // 중복 검사
-                    if (found)
-                    {
-                        if (map.Entries.Any(e =>
-                            Math.Abs(e.Xmm - finalX) <= DuplicateDistMm &&
-                            Math.Abs(e.Ymm - finalY) <= DuplicateDistMm))
-                        {
-                            // 중복 → Skip
-                            found = false;
-                        }
-                    }
-
-                    var entry = new ChipMapEntry
-                    {
-                        Index = globalIndex++,
-                        Row = r,
-                        Col = c,
-                        Xmm = finalX,
-                        Ymm = finalY,
-                        Present = found,
-                        Enabled = found, // Missing 은 기본 false (사용자가 Enable 할 수도 있음)
-                        Score = score
-                    };
-                    if (!found)
-                    {
-                        entry.Enabled = false;
-                        entry.Score = 0;
-                    }
-                    map.Entries.Add(entry);
-
-                    img?.Dispose();
-                    img = null;
+                    Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
+                    return -1;
                 }
-            }
-
-            // Origin 결정: 첫 Present 칩
-            var first = map.Entries.FirstOrDefault(e => e.Present && e.Enabled);
-            if (first != null)
-            {
-                map.OriginX = first.Xmm;
-                map.OriginY = first.Ymm;
-            }
-            else
-            {
-                if(!Config.IsDryRun)
+                // 그랩 및 매핑
+                
+                if (nRet != 0)
                 {
-                    Log.Write(UnitName, "ChipMap", "No chip found");
+                    Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
                     return -1;
                 }
             }
-
-            CurrentChipMap = map;
-            _chipPickupCursor = 0;
-            ChipMappingDone = true;
-
-            Log.Write(UnitName, "ChipMap",
-                $"Done Rows={rows} Cols={cols} Found={map.Entries.Count(e => e.Present)} Missing={map.Entries.Count(e => !e.Present)}");
-
             return nRet;
+        }
+
+        private void MakeScanPath(out List<PointD> path)
+        {
+            path = new List<PointD>();
+            try
+            {
+                
+                double centerTpX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisX.Name);
+                double centerTpY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+                double dRadius = recip.WaferDiameter / 2;
+                 
+                try
+                {
+
+                    if (PmRunner.IsRecipeLoaded == false)
+                    {
+                        PmRunner.LoadRecipe();
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                    Log.Write(ex);
+                }
+                double dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                double dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                if (dRoiWidth <= 0 || dRoiHeight <= 0)
+                {
+                    dRoiWidth = MappingRoiWidthMm;
+                    dRoiHeight = MappingRoiHeightMm;
+                }
+
+                double dChipPitchX = ChipPitchXmm;
+                double dChipPitchY = ChipPitchYmm;
+                if (dChipPitchX <= 0) dChipPitchX = 0.5;
+                if (dChipPitchY <= 0) dChipPitchY = 0.5;
+
+                int nHorzCount = (int)((dRadius - dChipPitchX) * 2 / dRoiWidth) + 1;
+                int nVertCount = (int)((dRadius - dChipPitchY) * 2 / dRoiHeight) + 1;
+                if (nHorzCount < 1) nHorzCount = 1;
+                if (nVertCount < 1) nVertCount = 1;
+                double startX = centerTpX - (nHorzCount - 1) * dRoiWidth / 2;
+                double startY = centerTpY - (nVertCount - 1) * dRoiHeight / 2;
+
+                for (int iy = 0; iy < nVertCount; iy++)
+                {
+                    double y = startY + iy * dRoiHeight;
+                    for (int ix = 0; ix < nHorzCount; ix++)
+                    {
+                        double x = startX + ix * dRoiWidth;
+                        double dx = x - centerTpX;
+                        double dy = y - centerTpY;
+                        double dist = Math.Sqrt(dx * dx + dy * dy);
+                        if (dist <= dRadius)
+                        {
+                            path.Add(new PointD(x, y));
+                        }
+                    }
+                }
+                Log.Write(UnitName, "MakeScanPath", $"Count={path.Count} Radius={dRadius} Center=({centerTpX:F3},{centerTpY:F3}) ROI=({dRoiWidth:F3},{dRoiHeight:F3}) ChipPitch=({dChipPitchX:F3},{dChipPitchY:F3})");
+
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            //StageCamera.CameraConfig.Scale
         }
 
         //MoveToUnlaod_Stage
@@ -2378,7 +2339,7 @@ namespace QMC.LCP_280.Process.Unit
             };
 
             List<ChipMapEntry> tempEntries = new List<ChipMapEntry>();
-
+            
             for (int ty = 0; ty < tilesY; ty++)
             {
                 for (int tx = 0; tx < tilesX; tx++)
@@ -2408,60 +2369,11 @@ namespace QMC.LCP_280.Process.Unit
                         }
                     }
 
-                    var (ok, matches) = MultiPatternSearchViaRunner();
-                    if (!ok || matches == null) continue;
-
-                    double cxPix = imgW / 2.0;
-                    double cyPix = imgH / 2.0;
-                    double stageTdeg = AxisT?.GetPosition() ?? 0.0;
-                    bool useRotation = Math.Abs(stageTdeg) > 0.0005; // 필요시
-
-                    foreach (var m in matches)
+                    bool flowControl = SearchChip(imgW, imgH, tempEntries, ty, tx, targetX, targetY, snap);
+                    if (!flowControl)
                     {
-                        // 픽셀 → mm (카메라 좌표 오프셋)
-                        double dxPix = m.X - cxPix;
-                        double dyPix = m.Y - cyPix;
-                        double dxMm = dxPix * PixelSizeXmm;
-                        double dyMm = dyPix * PixelSizeYmm;
-
-                        // 회전 보정 (Stage T 적용)
-                        if (useRotation)
-                        {
-                            var rot = qGeometry.CalculateRotationTransformation(
-                                new PointD(0, 0),
-                                new PointD(dxMm, dyMm),
-                                stageTdeg);
-                            dxMm = rot.X; dyMm = rot.Y;
-                        }
-
-                        double absX = targetX + dxMm;
-                        double absY = targetY + dyMm;
-
-                        // 중복 검사
-                        if (tempEntries.Any(e =>
-                        {
-                            double ddx = e.Xmm - absX;
-                            double ddy = e.Ymm - absY;
-                            return Math.Sqrt(ddx * ddx + ddy * ddy) <= DuplicateDistMm;
-                        }))
-                        {
-                            continue;
-                        }
-
-                        tempEntries.Add(new ChipMapEntry
-                        {
-                            Index = -1, // 나중 재할당
-                            Row = -1,
-                            Col = -1,
-                            Xmm = absX,
-                            Ymm = absY,
-                            Present = true,
-                            Enabled = true,
-                            Score = m.Score
-                        });
+                        continue;
                     }
-
-                    snap?.Dispose();
                 }
             }
 
@@ -2509,6 +2421,69 @@ namespace QMC.LCP_280.Process.Unit
                 $"Tiles=({tilesX}x{tilesY}) Chips={map.Entries.Count(e => e.Present)} Rows={rows} Cols={cols} Pitch=({ChipPitchXmm:F3},{ChipPitchYmm:F3})");
 
             return 0;
+        }
+
+        private bool SearchChip(int imgW, int imgH, List<ChipMapEntry> tempEntries, int ty, int tx, double targetX, double targetY, VisionImage snap)
+        {
+            PatternMatchRunResult pmrr = PmRunner.Search(snap);
+            if (!pmrr.Success)
+            {
+                Log.Write(UnitName, "ChipMapV2", $"Vision search fail tile ({tx},{ty})");
+                snap?.Dispose();
+                return false;
+            }
+            double cxPix = imgW / 2.0;
+            double cyPix = imgH / 2.0;
+            double stageTdeg = AxisT?.GetPosition() ?? 0.0;
+            bool useRotation = Math.Abs(stageTdeg) > 0.0005; // 필요시
+
+            foreach (var m in pmrr.Matches)
+            {
+                // 픽셀 → mm (카메라 좌표 오프셋)
+                double dxPix = m.X - cxPix;
+                double dyPix = m.Y - cyPix;
+                double dxMm = dxPix * PixelSizeXmm;
+                double dyMm = dyPix * PixelSizeYmm;
+
+                // 회전 보정 (Stage T 적용)
+                if (useRotation)
+                {
+                    var rot = qGeometry.CalculateRotationTransformation(
+                        new PointD(0, 0),
+                        new PointD(dxMm, dyMm),
+                        stageTdeg);
+                    dxMm = rot.X; dyMm = rot.Y;
+                }
+
+                double absX = targetX + dxMm;
+                double absY = targetY + dyMm;
+
+                // 중복 검사
+                if (tempEntries.Any(e =>
+                {
+                    double ddx = e.Xmm - absX;
+                    double ddy = e.Ymm - absY;
+                    return Math.Sqrt(ddx * ddx + ddy * ddy) <= DuplicateDistMm;
+                }))
+                {
+                    continue;
+                }
+
+                tempEntries.Add(new ChipMapEntry
+                {
+                    Index = -1, // 나중 재할당
+                    Row = -1,
+                    Col = -1,
+                    Xmm = absX,
+                    Ymm = absY,
+                    Present = true,
+                    Enabled = true,
+                    Score = m.Score
+                });
+            }
+
+            snap?.Dispose();
+            return true;
         }
 
         private void EstimatePitch(List<ChipMapEntry> list, out double pitchX, out double pitchY)

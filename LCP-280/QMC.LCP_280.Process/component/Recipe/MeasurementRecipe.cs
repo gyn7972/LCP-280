@@ -41,8 +41,8 @@ namespace QMC.LCP_280.Process.Component
         // 3. WaferMap (웨이퍼 맵) 정보 (웨이퍼 직경, 칩 크기, 행/열 개수 등)
         // ===== Wafer Map =====
         [Category("Wafer Map"), DisplayName("Wafer Diameter (mm)")]
-        [DefaultValue(300.0)]
-        public double WaferDiameter { get; set; } = 300.0;
+        [DefaultValue(100.0)]
+        public double WaferDiameter { get; set; } = 100.0;
 
         [Category("Wafer Map"), DisplayName("Chip Width (mm)")]
         [DefaultValue(5.0)]

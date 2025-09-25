@@ -126,12 +126,15 @@ namespace QMC.LCP_280.Process
             // 
             // btnStartAll
             // 
+            this.btnStartAll.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStartAll.BackColor = System.Drawing.Color.LightGreen;
             this.btnStartAll.Enabled = false;
             this.btnStartAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStartAll.Location = new System.Drawing.Point(3, 3);
             this.btnStartAll.Name = "btnStartAll";
-            this.btnStartAll.Size = new System.Drawing.Size(200, 30);
+            this.btnStartAll.Size = new System.Drawing.Size(200, 34);
             this.btnStartAll.TabIndex = 0;
             this.btnStartAll.Text = "Start All";
             this.btnStartAll.UseVisualStyleBackColor = false;
@@ -139,8 +142,10 @@ namespace QMC.LCP_280.Process
             // 
             // btnStopAll
             // 
+            this.btnStopAll.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStopAll.BackColor = System.Drawing.Color.LightCoral;
-            this.btnStopAll.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStopAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStopAll.Location = new System.Drawing.Point(209, 3);
             this.btnStopAll.Name = "btnStopAll";
@@ -151,8 +156,10 @@ namespace QMC.LCP_280.Process
             // 
             // btnSaveAllConfigs
             // 
+            this.btnSaveAllConfigs.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSaveAllConfigs.BackColor = System.Drawing.Color.LightBlue;
-            this.btnSaveAllConfigs.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnSaveAllConfigs.Location = new System.Drawing.Point(415, 3);
             this.btnSaveAllConfigs.Name = "btnSaveAllConfigs";
             this.btnSaveAllConfigs.Size = new System.Drawing.Size(200, 30);
@@ -162,8 +169,10 @@ namespace QMC.LCP_280.Process
             // 
             // btnLoadAllConfigs
             // 
+            this.btnLoadAllConfigs.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnLoadAllConfigs.BackColor = System.Drawing.Color.LightYellow;
-            this.btnLoadAllConfigs.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnLoadAllConfigs.Location = new System.Drawing.Point(621, 3);
             this.btnLoadAllConfigs.Name = "btnLoadAllConfigs";
             this.btnLoadAllConfigs.Size = new System.Drawing.Size(200, 30);
@@ -173,8 +182,10 @@ namespace QMC.LCP_280.Process
             // 
             // btnSaveAllRecipes
             // 
+            this.btnSaveAllRecipes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSaveAllRecipes.BackColor = System.Drawing.Color.LightCyan;
-            this.btnSaveAllRecipes.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnSaveAllRecipes.Location = new System.Drawing.Point(827, 3);
             this.btnSaveAllRecipes.Name = "btnSaveAllRecipes";
             this.btnSaveAllRecipes.Size = new System.Drawing.Size(200, 30);
@@ -184,8 +195,10 @@ namespace QMC.LCP_280.Process
             // 
             // btnLoadAllRecipes
             // 
+            this.btnLoadAllRecipes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnLoadAllRecipes.BackColor = System.Drawing.Color.LightPink;
-            this.btnLoadAllRecipes.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnLoadAllRecipes.Location = new System.Drawing.Point(1033, 3);
             this.btnLoadAllRecipes.Name = "btnLoadAllRecipes";
             this.btnLoadAllRecipes.Size = new System.Drawing.Size(202, 30);
@@ -227,7 +240,9 @@ namespace QMC.LCP_280.Process
             // 
             // lblUnit
             // 
-            this.lblUnit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblUnit.Location = new System.Drawing.Point(3, 0);
             this.lblUnit.Name = "lblUnit";
             this.lblUnit.Size = new System.Drawing.Size(303, 31);
@@ -246,10 +261,13 @@ namespace QMC.LCP_280.Process
             // 
             // btnStartUnit
             // 
+            this.btnStartUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStartUnit.BackColor = System.Drawing.Color.PaleGreen;
             this.btnStartUnit.Location = new System.Drawing.Point(745, 3);
             this.btnStartUnit.Name = "btnStartUnit";
-            this.btnStartUnit.Size = new System.Drawing.Size(241, 25);
+            this.btnStartUnit.Size = new System.Drawing.Size(241, 29);
             this.btnStartUnit.TabIndex = 2;
             this.btnStartUnit.Text = "Start Unit";
             this.btnStartUnit.UseVisualStyleBackColor = false;
@@ -257,8 +275,10 @@ namespace QMC.LCP_280.Process
             // 
             // btnStopUnit
             // 
+            this.btnStopUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStopUnit.BackColor = System.Drawing.Color.PaleVioletRed;
-            this.btnStopUnit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStopUnit.Location = new System.Drawing.Point(992, 3);
             this.btnStopUnit.Name = "btnStopUnit";
             this.btnStopUnit.Size = new System.Drawing.Size(243, 25);
@@ -282,7 +302,9 @@ namespace QMC.LCP_280.Process
             // 
             // lblEquipmentInfo
             // 
-            this.lblEquipmentInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblEquipmentInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblEquipmentInfo.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F);
             this.lblEquipmentInfo.Location = new System.Drawing.Point(10, 58);
             this.lblEquipmentInfo.Name = "lblEquipmentInfo";
@@ -292,7 +314,9 @@ namespace QMC.LCP_280.Process
             // 
             // lblEquipmentState
             // 
-            this.lblEquipmentState.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblEquipmentState.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblEquipmentState.Font = new System.Drawing.Font("¸¼Àº °íµñ", 12F, System.Drawing.FontStyle.Bold);
             this.lblEquipmentState.Location = new System.Drawing.Point(10, 28);
             this.lblEquipmentState.Name = "lblEquipmentState";
@@ -315,7 +339,9 @@ namespace QMC.LCP_280.Process
             // 
             // lstUnitStatus
             // 
-            this.lstUnitStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstUnitStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lstUnitStatus.Font = new System.Drawing.Font("Consolas", 9F);
             this.lstUnitStatus.FullRowSelect = true;
             this.lstUnitStatus.GridLines = true;
@@ -342,8 +368,10 @@ namespace QMC.LCP_280.Process
             // 
             // rtbLog
             // 
+            this.rtbLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.rtbLog.BackColor = System.Drawing.Color.Black;
-            this.rtbLog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.rtbLog.Font = new System.Drawing.Font("Consolas", 9F);
             this.rtbLog.ForeColor = System.Drawing.Color.LimeGreen;
             this.rtbLog.Location = new System.Drawing.Point(10, 28);

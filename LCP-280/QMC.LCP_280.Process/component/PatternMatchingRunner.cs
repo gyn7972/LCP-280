@@ -1,3 +1,9 @@
+using QMC.Common;
+using QMC.Common.Cameras;
+using QMC.Common.Vision;
+using QMC.Common.Vision.Tools;
+using QMC.Common.VisionPart;
+using QMC.LCP_280.Process.Component; // added for MeasurementRecipe & RecipeManager
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -12,12 +18,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using QMC.Common;
-using QMC.Common.Cameras;
-using QMC.Common.Vision;
-using QMC.Common.Vision.Tools;
-using QMC.Common.VisionPart;
-using QMC.LCP_280.Process.Component; // added for MeasurementRecipe & RecipeManager
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace QMC.LCP_280.Process
 {
@@ -215,6 +216,7 @@ namespace QMC.LCP_280.Process
         private readonly VisionImageViewer _viewer; // null 가능
         private readonly MultiPatternMatchingVisionPart _part;
         private MultiPatternMatchingParameters _parameters;
+        
         private bool _recipeLoaded;
         private bool _disposed;
         private Point _lastPoint = Point.Empty;
@@ -272,6 +274,9 @@ namespace QMC.LCP_280.Process
         #endregion
 
         #region Public API
+
+        public PatternMatchingRoiJson _Roi { get; set; }
+
         public bool LoadRecipe()
         {
             lock (_sync)
@@ -297,6 +302,8 @@ namespace QMC.LCP_280.Process
                         return false;
                     }
                     _parameters = container.Parameters?.Clone();
+                    _Roi = container.Roi;
+
                     if (_parameters == null)
                     {
                         _lastFailReason = "Recipe 파라미터 없음";
@@ -315,6 +322,7 @@ namespace QMC.LCP_280.Process
                         }
                         catch { }
                     }
+
                     _recipeLoaded = true;
                     return true;
                 }

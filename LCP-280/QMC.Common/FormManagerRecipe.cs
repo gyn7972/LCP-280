@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace QMC.Common
@@ -29,9 +31,9 @@ namespace QMC.Common
         /// <param name="formType">Recipe 폼 타입</param>
         /// <param name="displayName">표시명</param>
         /// <param name="description">설명</param>
-        public void RegisterRecipeForm(Type formType, string displayName, string description = null)
+        public void RegisterRecipeForm(Type formType, string displayName, string description = null, int order = int.MaxValue)
         {
-            FormManager.Instance.RegisterForm(MenuButtonType.Recipe, formType, displayName, description ?? displayName);
+            FormManager.Instance.RegisterForm(MenuButtonType.Recipe, formType, displayName, description ?? displayName, order);
         }
 
         /// <summary>
@@ -54,17 +56,27 @@ namespace QMC.Common
                 }
 
                 var types = assemblyToSearch.GetTypes();
+                var formTypes = new List<(Type type, int order)>();
+
                 foreach (var type in types)
                 {
-                    // Form을 상속받고 이름이 "Recipe"로 끝나는 클래스 찾기
                     if (typeof(Form).IsAssignableFrom(type) &&
                         !type.IsAbstract &&
                         (type.Name.Contains("Unit_Recipe") || type.Name.Contains("UnitRecipe") || type.Name.EndsWith("Recipe")))
                     {
-                        // Unit 이름 추출
-                        string unitName = ExtractUnitNameFromType(type);
-                        RegisterRecipeForm(type, unitName, $"{unitName} Recipe Management");
+                        // FormOrder Attribute 확인
+                        var orderAttr = type.GetCustomAttribute<FormOrderAttribute>();
+                        int order = orderAttr?.Order ?? int.MaxValue;
+
+                        formTypes.Add((type, order));
                     }
+                }
+
+                // Order 순으로 정렬한 후 등록
+                foreach (var (type, order) in formTypes.OrderBy(x => x.order).ThenBy(x => x.type.Name))
+                {
+                    string unitName = ExtractUnitNameFromType(type);
+                    RegisterRecipeForm(type, unitName, $"{unitName} Recipe Management");
                 }
             }
             catch (Exception ex)
