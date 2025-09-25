@@ -1,11 +1,10 @@
-﻿//using NationalInstruments.DAQmx;
+﻿using NationalInstruments.DAQmx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace QMC.Common.StrainGage
 {
@@ -14,7 +13,7 @@ namespace QMC.Common.StrainGage
         private const int MonitoringIntervalMs = 1;
 
         #region Fields
-        //NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
+        NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
         List<(StrainGage strainGage, string channelName)> items = new List<(StrainGage strainGage, string channelName)>();
 
         private CancellationTokenSource cts;
