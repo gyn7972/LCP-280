@@ -1,4 +1,4 @@
-﻿using NationalInstruments.DAQmx;
+﻿//using NationalInstruments.DAQmx;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +13,7 @@ namespace QMC.Common.StrainGage
         private const int MonitoringIntervalMs = 50;
 
         #region Fields
-        NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
+        //NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
         List<(StrainGage strainGage, string channelName)> items = new List<(StrainGage strainGage, string channelName)>();
 
         private CancellationTokenSource cts;
@@ -69,12 +69,12 @@ namespace QMC.Common.StrainGage
 
             try
             {
-                readerTask.AIChannels.CreateVoltageChannel(strainGage.Config.ReadChannelName
-                    , $"channel{items.Count}"
-                    , AITerminalConfiguration.Rse
-                    , strainGage.Config.MinVoltage
-                    , strainGage.Config.MaxVoltage
-                    , AIVoltageUnits.Volts);
+                //readerTask.AIChannels.CreateVoltageChannel(strainGage.Config.ReadChannelName
+                //    , $"channel{items.Count}"
+                //    , AITerminalConfiguration.Rse
+                //    , strainGage.Config.MinVoltage
+                //    , strainGage.Config.MaxVoltage
+                //    , AIVoltageUnits.Volts);
 
                 items.Add((strainGage, strainGage.Config.ReadChannelName));
                 return true;
@@ -105,32 +105,32 @@ namespace QMC.Common.StrainGage
         }
         private async System.Threading.Tasks.Task RunMonitoring(CancellationToken token)
         {
-            var reader = new AnalogMultiChannelReader(readerTask.Stream);
-            Random rdm = new Random();
+            //var reader = new AnalogMultiChannelReader(readerTask.Stream);
+            //Random rdm = new Random();
 
-            while (!token.IsCancellationRequested)
-            {
-                try
-                {
-                    double[] data = reader.ReadSingleSample();
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        items[i].strainGage.UpdateVoltage(data[i]);
-                    }
+            //while (!token.IsCancellationRequested)
+            //{
+            //    try
+            //    {
+            //        double[] data = reader.ReadSingleSample();
+            //        for (int i = 0; i < items.Count; i++)
+            //        {
+            //            items[i].strainGage.UpdateVoltage(data[i]);
+            //        }
 
-                    //double[] data = new double[items.Count];
-                    //for (int i = 0; i < items.Count; i++)
-                    //{
-                    //    data[i] = rdm.NextDouble() * 0.4 + 0.1;
-                    //    items[i].strainGage.UpdateVoltage(data[i]);
-                    //}
+            //        //double[] data = new double[items.Count];
+            //        //for (int i = 0; i < items.Count; i++)
+            //        //{
+            //        //    data[i] = rdm.NextDouble() * 0.4 + 0.1;
+            //        //    items[i].strainGage.UpdateVoltage(data[i]);
+            //        //}
 
-                    // Event
-                    OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
-                }
-                catch {}
-                await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
-            }
+            //        // Event
+            //        OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
+            //    }
+            //    catch {}
+            //    await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
+            //}
         }
         #endregion
     }
