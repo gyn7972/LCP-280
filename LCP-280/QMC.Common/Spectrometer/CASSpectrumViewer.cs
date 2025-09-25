@@ -83,12 +83,20 @@ namespace QMC.Common.Spectrometer
                 return;
             }
 
+            var spectrumData = spectrometer.Spectrum;
+
+            lbMaxIntensity.Text = $"Max Intensity = {spectrumData.MaximumIntensity:F3}";     
+
             var area = chart.ChartAreas[0];
             area.AxisX.Minimum = _chartMinX;
             area.AxisX.Maximum = _chartMaxX;
             area.AxisX.Interval = _chartIntervalX;
 
-            var spectrumData = spectrometer.Spectrum;
+            area.AxisY.Minimum = spectrumData.MinimumIntensity;
+            area.AxisY.Maximum = spectrumData.MaximumIntensity;
+            area.AxisY.IsMarginVisible = false;
+            area.AxisY.MajorTickMark.Size = 0;
+            area.AxisY.MinorTickMark.Size = 0;
 
             series.Points.Clear();
             for (int i = 0; i < spectrumData.WaveLength.Length; i++)
