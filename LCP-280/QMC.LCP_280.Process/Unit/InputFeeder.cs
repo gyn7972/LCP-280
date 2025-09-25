@@ -195,6 +195,7 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             if(!IsFeederUp())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
                 nRet = -1;
                 return nRet;
@@ -202,6 +203,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if(!InputStage.IsAnyAxisMoving())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                 nRet = -1;
                 return nRet;
@@ -209,6 +211,15 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+        public bool IsFeederReadyPosition()
+        {
+            var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Ready];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+
+        
 
 
         public int MovePositionStage(bool isFine = false)
@@ -239,6 +250,7 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             if (!IsFeederUp())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
                 nRet = -1;
                 return nRet;
@@ -246,6 +258,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!InputStage.IsAnyAxisMoving())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                 nRet = -1;
                 return nRet;
@@ -283,6 +296,7 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             if (!IsFeederUp())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
                 nRet = -1;
                 return nRet;
@@ -290,6 +304,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!InputStage.IsAnyAxisMoving())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                 nRet = -1;
                 return nRet;
@@ -297,6 +312,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if(!InputCassetteLifter.IsAnyAxisMoving())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                 nRet = -1;
                 return nRet;
@@ -313,10 +329,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (IsInterlockOKMoveToCassette() == false)
                 {
-                    foreach (var ax in Axes.Values)
-                    {
-                        ax.EmgStop();
-                    }
+                    FeederY.EmgStop();
                     PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                     return -1;
                 }
@@ -344,6 +357,7 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             if (!IsFeederUp())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
                 nRet = -1;
                 return nRet;
@@ -351,6 +365,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!InputStage.IsAnyAxisMoving())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                 nRet = -1;
                 return nRet;
@@ -358,6 +373,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!InputCassetteLifter.IsAnyAxisMoving())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                 nRet = -1;
                 return nRet;
@@ -365,16 +381,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
-
-
-
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
+        
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(string tpName, string axisName)
         {
@@ -392,7 +399,6 @@ namespace QMC.LCP_280.Process.Unit
             var tp = new TeachingPosition(positionName, axisPositions, description);
             Config.SetTeachingPosition(tp);
         }
-
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
             var tp = Config.GetTeachingPosition(positionName);
@@ -409,7 +415,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-
+        public bool InPosTeaching(TeachingPosition tp)
+        {
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp.Name);
+        }
         public bool InPosTeaching(string positionName)
         {
             var tp = Config.GetTeachingPosition(positionName);
@@ -435,73 +446,18 @@ namespace QMC.LCP_280.Process.Unit
         /// false: 목표 위치 근처(± tolerance)에서만 OK
         /// </param>
         /// <param name="customCandidates">사용자 정의 Teaching 우선순위 (null 이면 기본 후보 사용)</param>
-        public bool IsFeederYSafetyPosition(double fallbackTolerance = 0.01,
-                                            bool useAxisInposTolerance = true,
-                                            bool treatMissingAsSafe = true,
-                                            bool allowPositiveBeyond = true,
-                                            IEnumerable<string> customCandidates = null)
+        public bool IsFeederYSafetyPosition()
         {
+            bool bRtn = false;
             if (FeederY == null)
-                return treatMissingAsSafe;
+                return bRtn;
 
             var cfg = Config;
             if (cfg == null)
-                return treatMissingAsSafe;
+                return bRtn;
 
-            // 기본 후보 목록
-            var defaultCandidates = new[] { "SafetyPos", "Safety", "Safe", "Ready" };
-            var candidates = (customCandidates == null ? defaultCandidates : customCandidates)
-                             .Where(s => !string.IsNullOrWhiteSpace(s));
-
-            string axisKey = AxisNames.WaferFeederY;
-            string selectedTpName = null;
-            TeachingPosition selectedTp = null;
-
-            foreach (var name in candidates)
-            {
-                var tp = cfg.GetTeachingPosition(name);
-                if (tp == null) continue;
-
-                // Teaching 에 해당 축 좌표가 실재 포함되는지 확인
-                if (tp.AxisPositions != null &&
-                    tp.AxisPositions.Keys.Any(k =>
-                        string.Equals(k, axisKey, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(k, FeederY.Name, StringComparison.OrdinalIgnoreCase)))
-                {
-                    selectedTpName = name;
-                    selectedTp = tp;
-                    break;
-                }
-            }
-
-            if (selectedTp == null)
-                return treatMissingAsSafe;
-
-            // 목표 좌표 가져오기 (AxisPositions 사전에서 직접 조회)
-            double target;
-            if (!selectedTp.AxisPositions.TryGetValue(axisKey, out target))
-            {
-                // Axis 이름으로 재시도
-                if (!selectedTp.AxisPositions.TryGetValue(FeederY.Name, out target))
-                    return treatMissingAsSafe; // 좌표가 없으면 안전 판단 불가 → 기본 정책대로
-            }
-
-            double cur = FeederY.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (FeederY.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            if (allowPositiveBeyond)
-            {
-                // 목표 이상(+방향) 허용
-                if (cur >= target - tol) return true;
-                return false;
-            }
-            else
-            {
-                // 목표 근처만 허용
-                return System.Math.Abs(cur - target) <= tol;
-            }
+            bRtn = IsFeederReadyPosition();
+            return bRtn;
         }
 
         /// <summary>
@@ -512,10 +468,12 @@ namespace QMC.LCP_280.Process.Unit
         /// - Lift 객체 자체가 없으면 treatMissingAsSafe 플래그에 따름
         /// </summary>
         /// <param name="treatMissingAsSafe">Lift 미바인딩 시 true 로 처리할지 여부</param>
-        public bool IsFeederZSafetyPosition(bool treatMissingAsSafe = true)
+        public bool IsFeederZSafetyPosition()
         {
+            bool bRtn = false;
+
             if (_feederLift == null)
-                return treatMissingAsSafe;
+                return bRtn;
 
             if (IsFeederUp())
                 return true;
@@ -524,7 +482,7 @@ namespace QMC.LCP_280.Process.Unit
                 return false;
 
             // 전이 상태(Up/Down 모두 OFF) → 안전 아님으로 판단
-            return false;
+            return bRtn;
         }
 
 
@@ -617,7 +575,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
                 return 1;
@@ -660,7 +620,8 @@ namespace QMC.LCP_280.Process.Unit
             //1. Wafer Loading
             ret = WaferLoading();
             if (ret != 0) 
-            { 
+            {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 this.State = ProcessState.Error; return ret; 
             }
@@ -669,14 +630,16 @@ namespace QMC.LCP_280.Process.Unit
             ret = StageLoading();
             
             if (ret != 0) 
-            { 
+            {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                 this.State = ProcessState.Error; return ret;
             }
             //4. Stage Unloading
             ret = StageUnloading();
             if (ret != 0) 
-            { 
+            {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 this.State = ProcessState.Error; return ret;
             }
@@ -684,7 +647,8 @@ namespace QMC.LCP_280.Process.Unit
             ret = WaferUnloading();
             
             if (ret != 0) 
-            { 
+            {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferUnloadingFailed);
                 this.State = ProcessState.Error; return ret;
             }
@@ -692,10 +656,12 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
         public override int OnStop() 
-        { 
-            int ret = 0; 
-            base.OnStop(); 
-            return ret; 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
         }
 
         //protected override void OnMakeSequence()
@@ -765,6 +731,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = StageUnloading(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 nRet = -1;
                 return nRet;
@@ -773,6 +740,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = ClampGripper();
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 nRet = -1;
                 return nRet;
@@ -781,6 +749,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionCassette(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 nRet = -1;
                 return nRet;
@@ -789,6 +758,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = UnClampGripper();
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 nRet = -1;
                 return nRet;
@@ -798,6 +768,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionBarcode(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 nRet = -1;
                 return nRet;
@@ -812,7 +783,7 @@ namespace QMC.LCP_280.Process.Unit
         public int ClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(true))
+            if (!this.SetClamp(true))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Clamp Success");
             }
@@ -828,7 +799,7 @@ namespace QMC.LCP_280.Process.Unit
         public int UnClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(false))
+            if (!this.SetClamp(false))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Unclamp Success");
             }
@@ -861,7 +832,7 @@ namespace QMC.LCP_280.Process.Unit
         public int DownFeeder()
         {
             int nRet = 0;
-            if (this.SetLift(false))
+            if (!this.SetLift(false))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Success");
             }
@@ -881,6 +852,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionReady(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
@@ -895,6 +867,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionCassette(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
@@ -921,6 +894,7 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             if (IsInterlockOKWaferLoading() == false)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
@@ -928,6 +902,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = base.MoveTeachingPositionOnce((int)InputFeederConfig.TeachingPositionName.Cassette, isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
@@ -944,6 +919,7 @@ namespace QMC.LCP_280.Process.Unit
             // Cassette or InputStage 위치 및 Signal 확인 후 진행. 
             if(!InputCassetteLifter.IsWaferReadyForLoading())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_IsWaferReadyForLoading);
                 Log.Write(this, "InputCassetteLifter Not Ready for Loading");
                 bRtn = false;
@@ -952,6 +928,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if(!InputStage.IsWaferLoadingPosition())
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingPosition);
                 Log.Write(this, "InputStage Not Ready for Loading");
                 bRtn = false;
@@ -968,6 +945,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionBarcode(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_BarcodeReadingFailed);
                 nRet = -1;
                 return nRet;
@@ -978,6 +956,7 @@ namespace QMC.LCP_280.Process.Unit
             // isRead = BarcodeReader.Read(...);
             if (!isRead)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_BarcodeReadingFailed);
                 nRet = -1;
                 return nRet;
@@ -992,6 +971,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionStage(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                 nRet = -1;
                 return nRet;
@@ -1000,6 +980,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = UnClampGripper();
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                 nRet = -1;
                 return nRet;
@@ -1022,6 +1003,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = DownFeeder();
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 nRet = -1;
                 return nRet;
@@ -1030,6 +1012,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionStage(isFine);
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
                 nRet = -1;
                 return nRet;

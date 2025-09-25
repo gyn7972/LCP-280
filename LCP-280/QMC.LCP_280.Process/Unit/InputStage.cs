@@ -625,9 +625,12 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return -1;
             var (x, y, t) = Config.GetPositionWithOffset(positionName);   //Offset 포함 위치 - Align 수행 시 data 있음.
             int rc = 0;
-            if (AxisX != null) rc |= AxisX.MoveAbs(x, vel > 0 ? vel : AxisX.Config.MaxVelocity, acc > 0 ? acc : AxisX.Config.RunAcc, dec > 0 ? dec : AxisX.Config.RunDec, jerk > 0 ? jerk : AxisX.Config.AccJerkPercent);
-            if (AxisY != null) rc |= AxisY.MoveAbs(y, vel > 0 ? vel : AxisY.Config.MaxVelocity, acc > 0 ? acc : AxisY.Config.RunAcc, dec > 0 ? dec : AxisY.Config.RunDec, jerk > 0 ? jerk : AxisY.Config.AccJerkPercent);
-            if (AxisT != null) rc |= AxisT.MoveAbs(t, vel > 0 ? vel : AxisT.Config.MaxVelocity, acc > 0 ? acc : AxisT.Config.RunAcc, dec > 0 ? dec : AxisT.Config.RunDec, jerk > 0 ? jerk : AxisT.Config.AccJerkPercent);
+
+            //Todo : 인터락 확인 후 이동 하도록 수정.
+            //if (AxisX != null) rc |= AxisX.MoveAbs(x, vel > 0 ? vel : AxisX.Config.MaxVelocity, acc > 0 ? acc : AxisX.Config.RunAcc, dec > 0 ? dec : AxisX.Config.RunDec, jerk > 0 ? jerk : AxisX.Config.AccJerkPercent);
+            //if (AxisY != null) rc |= AxisY.MoveAbs(y, vel > 0 ? vel : AxisY.Config.MaxVelocity, acc > 0 ? acc : AxisY.Config.RunAcc, dec > 0 ? dec : AxisY.Config.RunDec, jerk > 0 ? jerk : AxisY.Config.AccJerkPercent);
+            //if (AxisT != null) rc |= AxisT.MoveAbs(t, vel > 0 ? vel : AxisT.Config.MaxVelocity, acc > 0 ? acc : AxisT.Config.RunAcc, dec > 0 ? dec : AxisT.Config.RunDec, jerk > 0 ? jerk : AxisT.Config.AccJerkPercent);
+
             return rc;
         }
         public bool InPosTeaching(TeachingPosition tp)
@@ -949,17 +952,8 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-        #region Seq
 
-        public MaterialWafer GetWaferMaterial()
-        {
-            var mat = GetMaterial();
-            return mat as MaterialWafer;
-        }
-
-        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
-        public bool IsStatus_RequestWafer { get; internal set; } = false;
-
+        #region Seq Signal
         // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
         public bool IsStatus_StageLoadingReady { get; private set; }
         public bool IsStatus_StageLoadingDone { get; private set; }
@@ -985,7 +979,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-
         // ====== Align Refactor: 상태/결과 보관 필드 ======
         public bool IsStatus_TAlignPrepared { get; private set; }
         public bool IsStatus_TAlignDone { get; private set; }
@@ -996,14 +989,32 @@ namespace QMC.LCP_280.Process.Unit
         public double IsStatus_LastFoundDx { get; private set; }
         public double IsStatus_LastFoundDy { get; private set; }
 
+        // ====== InputDieTr Signal
+        public bool RequestOutputDie { get; set; } = false;
+
+        #endregion
 
 
+        #region Seq
+
+        public MaterialWafer GetWaferMaterial()
+        {
+            var mat = GetMaterial();
+            return mat as MaterialWafer;
+        }
+
+        public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
+        public bool IsStatus_RequestWafer { get; internal set; } = false;
+
+        
 
         public override int OnRun()
         {
             int ret = 0;
 
-            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
                 return 1;
@@ -1037,7 +1048,8 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnStop()
         {
             int ret = 0;
-            State = ProcessState.Stop;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -1197,6 +1209,8 @@ namespace QMC.LCP_280.Process.Unit
         // 반환 코드 규약 (선택적): 0 = OK, 1 = 대기(조건 미충족), -1 = 오류
 
         #region Seq 단위 동작 함수
+        
+
 
 
         public bool IsRingPresent()
@@ -1391,7 +1405,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
-                if (!IsPlateUp() || bRtn)
+                if (!IsPlateUp() || bRtn || Config.IsDryRun)
                 {
                     SetClampPlate(true);
                     if (!IsPlateUp())
@@ -1611,16 +1625,24 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
             {
-                PostAlarm((int)AlarmKeys.eVisionTsearch);
-                Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
-                return -1;
+                if(!Config.IsDryRun)
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eVisionTsearch);
+                    Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
+                    return -1;
+                }
+                
             }
 
             var stats = ComputeAngleStats(angleList, excludeExtremes: true);
             if (stats.RawCount == 0)
             {
-                Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
-                return -1;
+                if (!Config.IsDryRun)
+                {
+                    Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
+                    return -1;
+                }
             }
 
             double rawAngle = stats.Representative;
@@ -1702,14 +1724,21 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "XY_Align", "Prepare Start");
 
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
+            {
                 return -1;
+            }
+                
 
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
-                PostAlarm((int)AlarmKeys.eVisionXYsearch);
-                Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
-                return -1;
+                if(!Config.IsDryRun)
+                {
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                    PostAlarm((int)AlarmKeys.eVisionXYsearch);
+                    Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
+                    return -1;
+                }
             }
 
             IsStatus_LastFoundDx = res.x;
@@ -1792,6 +1821,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!this.InputStageEjector.IsPinZSafetyPos())
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
                 return -1;
             }
@@ -1801,14 +1831,14 @@ namespace QMC.LCP_280.Process.Unit
                 ret = this.AxisX.MoveAbs(x, bFineSpeed);
                 if (ret != 0)
                 {
-                    this.AxisX.EmgStop();
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                     return ret;
                 }
                 ret = this.AxisY.MoveAbs(y, bFineSpeed);
                 if (ret != 0)
                 {
-                    this.AxisY.EmgStop();
+                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                     return ret;
                 }
@@ -1861,7 +1891,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
-
 
         public int PerformChipMapping(bool bFineSpeed = false)
         {
@@ -1931,6 +1960,7 @@ namespace QMC.LCP_280.Process.Unit
                     nRet = MoveStage(targetX, targetY, bFineSpeed);
                     if (nRet != 0)
                     {
+                        AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                         Log.Write(UnitName, "ChipMap", $"MoveStage fail r={r} c={c} x={targetX:F3} y={targetY:F3}");
                         PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
                         return -1;
@@ -2030,8 +2060,11 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                Log.Write(UnitName, "ChipMap", "No chip found");
-                return -1;
+                if(!Config.IsDryRun)
+                {
+                    Log.Write(UnitName, "ChipMap", "No chip found");
+                    return -1;
+                }
             }
 
             CurrentChipMap = map;
@@ -2192,6 +2225,8 @@ namespace QMC.LCP_280.Process.Unit
 
         public ChipMapResult CurrentChipMap { get; private set; }
         public bool ChipMappingDone { get; private set; }
+        
+
         private int _chipPickupCursor = 0;
 
         public class ChipMapEntry

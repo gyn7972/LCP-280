@@ -30,7 +30,14 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         public override int OnRun() { int ret = 0; return ret; }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        public override int OnStop() 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
+        }
         protected override int OnRunReady() { return 0; }
         protected override int OnRunWork() { return 0; }
         protected override int OnRunComplete() { return 0; }
@@ -78,12 +85,6 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion

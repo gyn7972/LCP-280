@@ -25,6 +25,7 @@ namespace QMC.LCP_280.Process.Unit
         public enum AlarmKeys
         {
             eWaferProtrusionDetected = 1001,
+            eFeederYSafetyPosition,
         }
 
         #region InitAlarm
@@ -35,6 +36,15 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eWaferProtrusionDetected;
             alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
             alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            //eFeederYSafetyPosition
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eFeederYSafetyPosition;
+            alarm.Title = "eFeederY SafetyPosition이 아닙니다.";
+            alarm.Cause = "FeederY Axis 확인바랍니다.\n FeederY Axis 점검 하고 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -89,15 +99,15 @@ namespace QMC.LCP_280.Process.Unit
 
         private void ResetSimMapping()
         {
-            if (!Config.IsSimulation || !Config.IsDryRun)
-                return;
-
-            lock (_simMapLock)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
-                _simLastMappingSlot = -1;
-                _simSimMappingInitialized = false;
+                lock (_simMapLock)
+                {
+                    _simLastMappingSlot = -1;
+                    _simSimMappingInitialized = false;
+                }
+                InitSimMappingIfNeeded();
             }
-            InitSimMappingIfNeeded();
         }
         #endregion
 
@@ -286,6 +296,15 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                     return -1;
                 }
+
+                if (!InputFeeder.IsFeederYSafetyPosition())
+                {
+                    WaferLifterZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                    Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                    return -1;
+                }
+
                 Thread.Sleep(0);
             }
             return task.Result;
@@ -314,13 +333,21 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                     return -1;
                 }
+
+                if (!InputFeeder.IsFeederYSafetyPosition())
+                {
+                    WaferLifterZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                    Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                    return -1;
+                }
                 Thread.Sleep(0);
             }
             return task.Result;
         }
         public int OnMoveToScanEndPosition(bool isFine = false)
         {
-             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
+            var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
             axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
             int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
 
@@ -353,7 +380,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            if (this.RunUnitStatus == UnitStatus.Stopped || 
+                this.RunUnitStatus == UnitStatus.Stopping || 
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
                 return 1;
@@ -386,6 +415,8 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnStop()
         {
             int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -535,8 +566,17 @@ namespace QMC.LCP_280.Process.Unit
             }
             else if (IsWaferProtrusionDetectionSensor())
             {
+                WaferLifterZ.EmgStop();
                 Log.Write(this, "Wafer Protrusion Detected");
                 PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
+                return -1;
+            }
+
+            if (!InputFeeder.IsFeederYSafetyPosition())
+            {
+                WaferLifterZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                Log.Write(this, "Feeder Y Axis is not in Safety Position");
                 return -1;
             }
 
@@ -578,6 +618,14 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(this, "Wafer Protrusion Detected");
                     PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
 
+                    return -1;
+                }
+
+                if (!InputFeeder.IsFeederYSafetyPosition())
+                {
+                    WaferLifterZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                    Log.Write(this, "Feeder Y Axis is not in Safety Position");
                     return -1;
                 }
 
@@ -666,10 +714,12 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
-            if(!Config.IsSimulation && !Config.IsDryRun)
+            int nRtn = 0;
+            if (!Config.IsSimulation && !Config.IsDryRun)
             {
                 if (IsWaferProtrusionDetectionSensor())
                 {
+                    WaferLifterZ.EmgStop();
                     Log.Write(this, "Wafer Protrusion Detected");
                     PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                     return -1;
@@ -690,11 +740,20 @@ namespace QMC.LCP_280.Process.Unit
                         PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
                         return -1;
                     }
+
+                    if(!InputFeeder.IsFeederYSafetyPosition())
+                    {
+                        WaferLifterZ.EmgStop();
+                        PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                        Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                        return -1;
+                    }
+
                     Thread.Sleep(0);
                 }  
             }
             this.IsWaferReadyForUnloding = true;
-            return 0;
+            return nRtn;
         }
         public Task<int> MoveToSlotAsync(int slotIndex)
         {

@@ -31,16 +31,24 @@ namespace QMC.Common.Unit
             ePrepareFailed = 1000,
         }
 
-        public enum UnitRunStatus
+        /// <summary>
+        /// Unit 상태
+        /// </summary>
+        public enum UnitStatus
         {
-            Run,
-            Stop,
+            Stopped = 0,
+            Starting,
+            Running,
+            Stopping,
             CycleStop,
+            Error,
+            Unknown
         }
+
         public enum UnitRunMode
         {
-            Manual,
-            Auto,
+            Auto = 0,
+            Manual = 1
         }
 
         public enum ProcessState
@@ -89,15 +97,34 @@ namespace QMC.Common.Unit
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
         public Thread m_workThread { get; set; }
-        public UnitRunStatus RunStatus { get; set; } = UnitRunStatus.Stop;
+
+        //public UnitStatus RunUnitStatus { get; set; } = UnitStatus.Stopped;
+        private UnitStatus _runUnitStatus = UnitStatus.Stopped;
+        public UnitStatus RunUnitStatus
+        {
+            get => _runUnitStatus;
+            set
+            {
+                if (_runUnitStatus == value) return;
+                _runUnitStatus = value;
+
+                var eq = EquipmentLocator.Instance as IEquipment;
+                //eq.TryGet(out var eq);
+                eq?.SetAndRaiseUnitState(this.UnitName, value);
+
+                //EquipmentLocator.Instance.TryGet(out var eq);
+                //eq?.SetAndRaiseUnitState(this.UnitName, value);
+            }
+        }
         public UnitRunMode RunMode { get; set; } = UnitRunMode.Manual;
-        public bool IsRunning => RunStatus == UnitRunStatus.Run;
+
+        public bool IsRunning => RunUnitStatus == UnitStatus.Running;
         public bool IsAutoMode => RunMode == UnitRunMode.Auto;
         public bool IsManualMode => RunMode == UnitRunMode.Manual;
-        public bool IsCycleStop => RunStatus == UnitRunStatus.CycleStop;
+        public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
 
-        public UnitRunStatus Status { get; protected set; }
-        public ProcessState State { get; protected set; }
+        
+        public ProcessState State { get; set; }
         
         // 등록 축 사전 (Key: 논리 축명)
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();
@@ -195,14 +222,6 @@ namespace QMC.Common.Unit
                 Log.Write(ex);
             }
             return alarmCode;
-        }
-
-        // 단순 축 이동 (공통)
-        public virtual int MoveAxis(string axisKey, double pos, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
-        {
-            if (Axes.TryGetValue(axisKey, out var axis))
-                return axis.MoveAbs(pos, vel, acc, dec, jerk);
-            return -1;
         }
 
         public void BindAxis(MotionAxisManager mgr, string unitName, string axisName, ref MotionAxis field)
@@ -624,15 +643,16 @@ namespace QMC.Common.Unit
                     return 0;
                 }
 
-                double vel = cfg != null ? cfg.MaxVelocity : 0;
-                if (isFine && vel > 0)
-                    vel *= 0.2;
+                //double vel = cfg != null ? cfg.MaxVelocity : 0;
+                //if (isFine && vel > 0)
+                //    vel *= 0.2;
 
                 int rc;
-                if (cfg != null)
-                    rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
-                else
-                    rc = axis.MoveAbs(target, false);
+                rc = axis.MoveAbs(target, false);
+                //if (cfg != null)
+                //    rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
+                //else
+                //    rc = axis.MoveAbs(target, false);
 
                 if (rc != 0)
                 {

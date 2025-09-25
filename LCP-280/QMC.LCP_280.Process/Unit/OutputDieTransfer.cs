@@ -109,6 +109,7 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis AxisToolT => _toolT;
         public MotionAxis AxisPickZ => _pickZ;
         public MotionAxis AxisPlaceZ => _placeZ;
+
         private void BindAxes()
         {
             var mgr = Equipment.Instance?.AxisManager;
@@ -770,15 +771,18 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
+
+            //Todo : Z축 확인 후 이동 하도록 수정.
+            //foreach (var axisKey in tp.AxisPositions.Keys)
+            //{
+            //    if (Axes.TryGetValue(axisKey, out var axis))
+            //    {
+            //        double pos = tp.AxisPositions[axisKey];
+            //        int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
+            //        if (r != 0) result = r;
+            //    }
+            //}
+
             return result;
         }
 
@@ -799,12 +803,6 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(tpName);
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
-        }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         
@@ -945,20 +943,84 @@ namespace QMC.LCP_280.Process.Unit
         /// //////////////////////////////////////////////////////////////////
 
 
+        #region seq signals
+        public bool CompleteOutputDie { get; internal set; } = false;
+        #endregion
+
+        #region Lifecycle
         public override int OnRun()
         {
-            return base.OnRun();
+            int ret = 0;
+
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                ret = 1;
+            }
+            else
+            {
+                try
+                {
+                    switch (State)
+                    {
+                        case ProcessState.Ready:
+                            //여기서 앞의 공정 InputWafer_working 신호 대기
+                            if (OutputStage.RequestInputDie)
+                            {
+                                CompleteOutputDie = false;
+                                ret = OnRunReady();
+                            }
+                            break;
+                        case ProcessState.Work:
+                            ret = OnRunWork();
+                            break;
+                        case ProcessState.Complete:
+                            OutputStage.RequestInputDie = false;
+                            // 여기서 인덱스 투입 신호 받고 수행.
+                            if (Rotary.RequestInputDieTrDie)
+                            {
+                                ret = OnRunComplete();
+                                if (ret == 0)
+                                {
+                                    CompleteOutputDie = true;
+                                    Rotary.RequestInputDieTrDie = false;
+                                }
+                            }
+                            break;
+                        default:
+                            this.State = ProcessState.Ready;
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ret = -1;
+                }
+            }
+
+            if (ret != 0)
+            {
+                this.OnStop();
+            }
+
+            return ret;
         }
 
         public override int OnStop()
         {
-            return base.OnStop();
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
         }
 
         protected override int OnRunReady() { return 0; }
         protected override int OnRunWork() { return 0; }
         protected override int OnRunComplete() { return 0; }
-
+        #endregion
 
         #region Sequence 등록
 
@@ -1172,6 +1234,9 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
+                AxisToolT?.EmgStop();
+                AxisPickZ?.EmgStop();
+                AxisPlaceZ?.EmgStop();
                 Log.Write(ex);
                 nRet = -1;
                 PostAlarm((int)AlarmKeys.eOutputDieTransferError);

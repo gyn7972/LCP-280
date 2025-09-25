@@ -456,7 +456,6 @@ namespace QMC.Common.Motions
 
         public int MoveAbs(double logicalTarget, bool isFine)
         {
-
             double defaultFineVel = 5.0;
             double defaultCoarseVel = 20.0;
             double defaultAcc = 10.0;
@@ -464,21 +463,14 @@ namespace QMC.Common.Motions
             double defaultJerk = 50.0;
 
             double vel = isFine ? (this.Config != null && this.Config.JogFineVelocity > 0 ? this.Config.JogFineVelocity : defaultFineVel)
-                                        : (this.Config != null && this.Config.JogCoarseVelocity > 0 ? this.Config.JogCoarseVelocity : defaultCoarseVel);
+                                  : (this.Config != null && this.Config.JogCoarseVelocity > 0 ? this.Config.JogCoarseVelocity : defaultCoarseVel);
+
             double acc = this.Config != null && this.Config.JogAcc > 0 ? this.Config.JogAcc : defaultAcc;
             double dec = this.Config != null && this.Config.JogDec > 0 ? this.Config.JogDec : defaultDec;
             double jerk = this.Config != null ? (this.Config.AccJerkPercent + this.Config.DecJerkPercent) / 2.0 : defaultJerk;
             return MoveAbs(logicalTarget,vel,acc,dec,jerk);
         }
 
-        public int MoveAbs(double logicalTarget)
-        {
-            return MoveAbs(logicalTarget, false);
-        }
-        public int MoveAbsFine(double logicalTarget)
-        {
-            return MoveAbs(logicalTarget, true);
-        }
         public int MoveAbs(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
             if (IsSim)

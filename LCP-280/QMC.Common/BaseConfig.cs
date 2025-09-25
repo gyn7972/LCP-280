@@ -40,9 +40,9 @@ namespace QMC.Common
         private static readonly object _instancesLock = new object();
         private static readonly List<BaseConfig> _instances = new List<BaseConfig>();
         public static event Action<bool> GlobalDryRunChanged;
-        public static bool? GlobalDryRunOverride { get; private set; }
+        public static bool? GlobalDryRunOverride { get; set; }
         public static event Action<bool> GlobalSimulationChanged;
-        public static bool? GlobalSimulationOverride { get; private set; }
+        public static bool? GlobalSimulationOverride { get; set; }
 
         // ===== 생성/초기화 =====
         protected BaseConfig(string name = null)

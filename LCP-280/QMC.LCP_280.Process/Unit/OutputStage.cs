@@ -166,12 +166,7 @@ namespace QMC.LCP_280.Process.Unit
             if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
             return 0.0;
         }
-        public void MoveAxisOnce(MotionAxis ax, double target)
-        {
-            if (ax == null) return;
-            if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
-        }
+        
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public bool InPosTeaching(TeachingPosition tp)
         {
@@ -358,19 +353,6 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
         public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
         #endregion
-
-        public bool IsStatus_RequestBin { get; set; }
-        public bool IsStatus_StageLoadingReady { get; private set; }
-        public bool IsStatus_StageLoadingDone { get; private set; }
-        public bool IsStatus_StageUnloadingDone { get; private set; }
-        public bool IsStatus_StageUnloadingReady { get; private set; }
-        public bool IsStatus_CompleteWorking { get; internal set; }
-
-        public MaterialWafer GetWaferMaterial()
-        {
-            throw new NotImplementedException();
-        }
-
 
         // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
         /// <summary>
@@ -662,25 +644,94 @@ namespace QMC.LCP_280.Process.Unit
             var tp = Config.GetTeachingPosition(positionName);
             if (tp == null) return -1;
             int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
+
+            //Todo : 인터락 확인 후 이동 하도록 수정.
+            //foreach (var axisKey in tp.AxisPositions.Keys)
+            //{
+            //    if (Axes.TryGetValue(axisKey, out var axis))
+            //    {
+            //        double pos = tp.AxisPositions[axisKey];
+            //        int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
+            //        if (r != 0) result = r;
+            //    }
+            //}
+
             return result;
         }
 
+        #region seq signals
+        public bool IsStatus_RequestBin { get; set; }
+        public bool IsStatus_StageLoadingReady { get; private set; }
+        public bool IsStatus_StageLoadingDone { get; private set; }
+        public bool IsStatus_StageUnloadingDone { get; private set; }
+        public bool IsStatus_StageUnloadingReady { get; private set; }
+        public bool IsStatus_CompleteWorking { get; internal set; }
+        public bool RequestInputDie { get; internal set; }
 
-        public override int OnRun() { int ret = 0; return ret; }
-        public override int OnStop() { int ret = 0; base.OnStop(); return ret; }
+        public MaterialWafer GetWaferMaterial()
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
+        #region Lifecycle
+        public override int OnRun()
+        {
+            int ret = 0;
+
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                return 1;
+            }
+
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    if(OutputCassetteLifter.RequestStageLoading)
+                    {
+                        RequestInputDie = false;
+                        ret = OnRunReady();
+                    }
+                    break;
+                case ProcessState.Work:
+                    ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    ret = OnRunComplete();
+                    if (ret == 0)
+                    {
+                        RequestInputDie = true;
+                    }
+                    break;
+                default:
+                    //IsStatus_StageLoadingReady = false;
+                    //IsStatus_StageLoadingDone = false;
+                    this.State = ProcessState.Ready;
+                    break;
+            }
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+
+            return ret;
+        }
+        public override int OnStop() 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
+        }
         protected override int OnRunReady() { return 0; }
         protected override int OnRunWork() { return 0; }
         protected override int OnRunComplete() { return 0; }
-
+        #endregion
 
         #region Seq 단위 동작 함수
         public int LoadingBinPrepare()
@@ -829,6 +880,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                 // 우선 대기? // 신호 이상?
                 PostAlarm((int)AlarmKeys.eNoBinDetected);
                 Log.Write(UnitName, "LoadingComp", "No Bin detected");

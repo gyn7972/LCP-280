@@ -24,7 +24,7 @@ namespace QMC.Common.PKGTester
         #region Method
         public void Reset()
         {
-            RawData = 0;
+            //RawData = 0;
             Value = 0;
             Unit = "";
         }
@@ -42,7 +42,8 @@ namespace QMC.Common.PKGTester
             if (string.IsNullOrEmpty(Unit))
                 return Value.ToString("F6");
 
-            return Value.ToString("F6") + " " + Unit;
+            //return Value.ToString("F6") + " " + Unit;
+            return Value.ToString("F6");
         }
         #endregion
     }
