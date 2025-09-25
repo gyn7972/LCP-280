@@ -7,7 +7,8 @@
         private System.Windows.Forms.Label lblWaferIdValue;
         private System.Windows.Forms.Label lblWaferCountTitle;
         private System.Windows.Forms.Label lblWaferCountValue;
-        private QMC.LCP_280.Process.Component.WaferMapView waferMapView; // 수정: 네임스페이스 완전 지정
+        //private QMC.LCP_280.Process.Component.WaferMapView waferMapView; // 수정: 네임스페이스 완전 지정
+        private QMC.LCP_280.Process.Component.WaferSelectMapView waferSelectMapView; // 수정: 네임스페이스 완전 지정
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -23,7 +24,8 @@
             this.lblWaferIdValue = new System.Windows.Forms.Label();
             this.lblWaferCountTitle = new System.Windows.Forms.Label();
             this.lblWaferCountValue = new System.Windows.Forms.Label();
-            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
+            //this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
+            this.waferSelectMapView = new QMC.LCP_280.Process.Component.WaferSelectMapView();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tlpMain.SuspendLayout();
@@ -87,22 +89,34 @@
             this.lblWaferCountValue.TabIndex = 3;
             this.lblWaferCountValue.Text = "0";
             this.lblWaferCountValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            //// 
+            //// waferMapView
+            //// 
+            //this.waferMapView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            //| System.Windows.Forms.AnchorStyles.Left) 
+            //| System.Windows.Forms.AnchorStyles.Right)));
+            //this.waferMapView.Location = new System.Drawing.Point(3, 72);
+            //this.waferMapView.Name = "waferMapView";
+            //this.waferMapView.Size = new System.Drawing.Size(415, 295);
+            //this.waferMapView.TabIndex = 17;
+
             // 
-            // waferMapView
+            // waferSelectMapView
             // 
-            this.waferMapView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.waferSelectMapView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.waferMapView.Location = new System.Drawing.Point(3, 72);
-            this.waferMapView.Name = "waferMapView";
-            this.waferMapView.Size = new System.Drawing.Size(415, 295);
-            this.waferMapView.TabIndex = 17;
+            this.waferSelectMapView.Location = new System.Drawing.Point(3, 72);
+            this.waferSelectMapView.Name = "waferSelectMapView";
+            this.waferSelectMapView.Size = new System.Drawing.Size(415, 295);
+            this.waferSelectMapView.TabIndex = 17;
             // 
             // tlpMain
             // 
             this.tlpMain.ColumnCount = 1;
             this.tlpMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tlpMain.Controls.Add(this.waferMapView, 0, 1);
+            //this.tlpMain.Controls.Add(this.waferMapView, 0, 1);
+            this.tlpMain.Controls.Add(this.waferSelectMapView, 0, 1);
             this.tlpMain.Controls.Add(this.tableLayoutPanel1, 0, 0);
             this.tlpMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tlpMain.Location = new System.Drawing.Point(0, 0);
