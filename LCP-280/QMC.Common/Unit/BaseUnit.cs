@@ -83,7 +83,16 @@ namespace QMC.Common.Unit
             }
             set
             {
-                _currentFunc = value;
+                if(_currentFunc != null)
+                {
+
+                    Log.Write(this.UnitName, "Before Function : " + _currentFunc.Method.Name);
+                }
+                if(value !=null)
+                {
+                    Log.Write(this.UnitName, "Current Function : " + value.Method.Name);
+                }
+                 _currentFunc = value;
                 _currentIndex = _sequencePlayers.IndexOf(value);
                 if (_currentIndex == -1)
                     _currentIndex = 0;
