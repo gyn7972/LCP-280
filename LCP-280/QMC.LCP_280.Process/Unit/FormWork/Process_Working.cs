@@ -196,8 +196,32 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // 예시: 현재 로드 위치 인덱스 라벨 업데이트
                 try
                 {
+                    int nIndexNo = -1;
+                    string socketNoText = "---";
                     if (labelsocketNumberInput != null)
-                        labelsocketNumberInput.Text = Rotary?.GetLoadIndexNo().ToString() ?? "-";
+                    {
+                        nIndexNo = Rotary.GetLoadIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberInput.Text = socketNoText;
+                    }
+                    if (labelsocketNumberLAlign != null)
+                    {
+                        nIndexNo = IndexLoadAligner.GetAlignIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberLAlign.Text = socketNoText;
+                    }
+                    if (labelsocketNumberProbe != null)
+                    {
+                        nIndexNo = IndexChipProbeController.GetProbeIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberProbe.Text = socketNoText;
+                    }
+                    if (labelsocketNumberUnload != null)
+                    {
+                        nIndexNo = IndexUnloadAligner.GetUnloadIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberUnload.Text = socketNoText;
+                    }
                 }
                 catch { }
 
