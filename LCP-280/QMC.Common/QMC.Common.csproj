@@ -471,6 +471,12 @@
     <Compile Include="PKGTester\DataBinning.cs" />
     <Compile Include="PKGTester\PKGTester.cs" />
     <Compile Include="PKGTester\TestItemResult.cs" />
+    <Compile Include="StrainGage\FormStrainGageDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="StrainGage\FormStrainGageDialog.Designer.cs">
+      <DependentUpon>FormStrainGageDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="StrainGage\NIDAQResourceManager.cs" />
     <Compile Include="StrainGage\StrainGage.cs" />
     <Compile Include="StrainGage\StrainGageChart.cs">
@@ -607,6 +613,9 @@
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
     <Compile Include="Vision\VisionUnit.cs" />
+    <EmbeddedResource Include="StrainGage\FormStrainGageDialog.resx">
+      <DependentUpon>FormStrainGageDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="StrainGage\StrainGageChart.resx">
       <DependentUpon>StrainGageChart.cs</DependentUpon>
     </EmbeddedResource>

@@ -208,6 +208,8 @@ namespace QMC.LCP_280.Process
             return StrainGages.TryGetValue(key, out var sg) ? sg : null;
         }
 
+        public StrainGageMonitor StrainGageMonitor { get; } = new StrainGageMonitor("Index_Prober_StrainGage_Monitor");
+
         // [ADD] 생성여부 노출 (ProcessExit 등에서 강제 생성 방지)
         public static bool IsCreated => _instance != null;
         public static bool TryGet(out Equipment inst) 
@@ -1477,8 +1479,26 @@ namespace QMC.LCP_280.Process
                         gage.Config.Reset();
                         gage.Config.Save();
                     }
+                    ret = gage.Initialize();
+                    if (ret != 0)
+                    {
+                        MessageBox.Show($"StrainGage [{gage.Name}] initialize NG.");
+                    }
                     StrainGages[name] = gage;
                     Console.WriteLine($"[StrainGage] {name} ready");
+                }
+                catch (Exception ex) { Log.Write(ex); }
+            }
+
+            foreach (var gage in StrainGages.Values)
+            {
+                try
+                {
+                    if (!StrainGageMonitor.Add(gage))
+                        throw new Exception("StrainGageMonitor Add fail");
+
+                    StrainGageMonitor.Start();
+                    Console.WriteLine($"[StrainGage] {gage.Name} ready");
                 }
                 catch (Exception ex) { Log.Write(ex); }
             }

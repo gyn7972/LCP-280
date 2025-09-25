@@ -1,19 +1,21 @@
 ﻿using NationalInstruments.DAQmx;
+using QMC.Common.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace QMC.Common.StrainGage
 {
-    public class StrainGageMonitor : IDisposable
+    public class StrainGageMonitor : BaseComponent, IDisposable
     {
-        private const int MonitoringIntervalMs = 5;
+        private const int MonitoringIntervalMs = 20;
 
         #region Fields
-        NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
         List<(StrainGage strainGage, string channelName)> items = new List<(StrainGage strainGage, string channelName)>();
 
         private CancellationTokenSource cts;
@@ -28,7 +30,7 @@ namespace QMC.Common.StrainGage
         #endregion
 
         #region Constructor
-        public StrainGageMonitor()
+        public StrainGageMonitor(string name) : base(name)
         {
         }
         #endregion
@@ -60,23 +62,9 @@ namespace QMC.Common.StrainGage
         #endregion
 
         #region Methods
-        public bool Clear()
+        public void Clear()
         {
-            Stop();
-            try
-            {
-                readerTask.Stop();
-                readerTask.Dispose();
-                readerTask = new NationalInstruments.DAQmx.Task();
-
-                items.Clear();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                return false;
-            }
+            items.Clear();
         }
         public bool Add(StrainGage strainGage)
         {
@@ -85,30 +73,12 @@ namespace QMC.Common.StrainGage
             if (items.Any(item => item.strainGage == strainGage))
                 return false;
 
-            try
-            {
-                if (!strainGage.Config.IsSimulation)
-                {
-                    readerTask.AIChannels.CreateVoltageChannel(strainGage.Config.ReadChannelName
-                    , $"id{items.Count}"
-                    , AITerminalConfiguration.Rse
-                    , strainGage.Config.MinVoltage
-                    , strainGage.Config.MaxVoltage
-                    , AIVoltageUnits.Volts);
-                }
-
-                items.Add((strainGage, strainGage.Config.ReadChannelName));
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                return false;
-            }
+            items.Add((strainGage, strainGage.Config.ReadChannelName));
+            return true;
         }
         public void Start()
         {
-            //lock (gate)
+            lock (gate)
             {
                 if (monitoringTask != null && !monitoringTask.IsCompleted)
                     return;
@@ -118,7 +88,7 @@ namespace QMC.Common.StrainGage
         }
         public void Stop()
         {
-            //lock (gate)
+            lock (gate)
             {
                 cts?.Cancel();
                 monitoringTask?.Wait(500);
@@ -142,45 +112,82 @@ namespace QMC.Common.StrainGage
 
             if (!IsSimulation)
             {
-                var reader = new AnalogMultiChannelReader(readerTask.Stream);
-                while (!token.IsCancellationRequested)
+                NationalInstruments.DAQmx.Task readerTask = null;
+                try
                 {
-                    try
-                    {
-                        double[] data = reader.ReadSingleSample();
-                        for (int i = 0; i < items.Count; i++)
-                        {
-                            items[i].strainGage.UpdateVoltage(data[i]);
-                        }
+                    // Create DAQmx Task
+                    readerTask = new NationalInstruments.DAQmx.Task();
 
-                        // Event
-                        OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
-                        await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
+                    // Create Voltage Channels
+                    foreach (var item in items)
+                    {
+                        var gage = item.strainGage;
+                        readerTask.AIChannels.CreateVoltageChannel(gage.Config.ReadChannelName
+                            , $"id{items.Count}"
+                            , AITerminalConfiguration.Rse
+                            , gage.Config.MinVoltage
+                            , gage.Config.MaxVoltage
+                            , AIVoltageUnits.Volts);
                     }
-                    catch { }
+
+                    // Create Reader & Start Read Sample
+                    var reader = new AnalogMultiChannelReader(readerTask.Stream);
+                    while (!token.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            double[] data = reader.ReadSingleSample();
+                            for (int i = 0; i < items.Count; i++)
+                            {
+                                items[i].strainGage.UpdateVoltage(data[i]);
+                            }
+
+                            // Event
+                            OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
+                            await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    return;
+                }
+                finally
+                {
+                    if (readerTask != null)
+                    {
+                        readerTask.Stop();
+                        readerTask.Dispose();
+                    }
                 }
             }
             else
             {
-                double amplitude = 1.0; // 사인파 진폭
-                double noiseLevel = 0.2;  // 노이즈 진폭
-
-                Random _rand = new Random();
-                int _simStep = 0;
+                Random random = new Random();
+                int step = 0;
 
                 while (!token.IsCancellationRequested)
                 {
                     try
                     {
-                        _simStep++;
-                        double sine = amplitude * Math.Sin(2 * Math.PI * _simStep * 0.02);
-                        double noise = (2 * _rand.NextDouble() - 1) * noiseLevel; // -noiseLevel ~ +noiseLevel
-                        double simulatedVoltage = sine + noise;
+                        step++;
 
                         for (int i = 0; i < items.Count; i++)
                         {
                             if (items[i].strainGage.Config.IsSimulation)
+                            {
+                                // calculate simulated voltage for each strain gage if needed
+                                double noiseLevel = 0.1;
+                                double sine = Math.Sin(Math.PI * step * 0.05) + 1;
+                                double noise = (2 * random.NextDouble() - 1) * noiseLevel;
+
+                                double simulatedVoltage = sine + noise;
+                                simulatedVoltage = simulatedVoltage * (items[i].strainGage.Config.MaxVoltage - items[i].strainGage.Config.MinVoltage) / 5.0;
+
                                 items[i].strainGage.UpdateVoltage(simulatedVoltage);
+                            }
                             else
                                 items[i].strainGage.UpdateVoltage(0);
                         }
@@ -191,7 +198,7 @@ namespace QMC.Common.StrainGage
                     }
                     catch { }
                 }
-            }      
+            }
         }
         #endregion
     }
