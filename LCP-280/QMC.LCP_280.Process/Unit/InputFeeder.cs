@@ -575,7 +575,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
                 return 1;
@@ -654,10 +656,12 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
         public override int OnStop() 
-        { 
-            int ret = 0; 
-            base.OnStop(); 
-            return ret; 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
         }
 
         //protected override void OnMakeSequence()
@@ -779,7 +783,7 @@ namespace QMC.LCP_280.Process.Unit
         public int ClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(true))
+            if (!this.SetClamp(true))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Clamp Success");
             }
@@ -795,7 +799,7 @@ namespace QMC.LCP_280.Process.Unit
         public int UnClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(false))
+            if (!this.SetClamp(false))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Unclamp Success");
             }
@@ -828,7 +832,7 @@ namespace QMC.LCP_280.Process.Unit
         public int DownFeeder()
         {
             int nRet = 0;
-            if (this.SetLift(false))
+            if (!this.SetLift(false))
             {
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Success");
             }

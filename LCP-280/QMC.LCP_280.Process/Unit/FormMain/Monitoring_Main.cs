@@ -46,8 +46,11 @@ namespace QMC.LCP_280.Process
             outputWaferCarrierControl1.GetWaferMapView().SetMaterialCassette(materialCassette);
             #endregion
 
-            // 이벤트 구독 - Input Control
+            // 이벤트 - Input Control
             dieInputControl1.MotorMoveRequested += OnDieInput_MotorMoveRequested;
+
+            // 이벤트 - Select Control
+            dieIndexSelectControl1.DieClicked += OnDieClick_Requested;
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -60,6 +63,7 @@ namespace QMC.LCP_280.Process
             }
             catch { }
             return null;
+
         }
 
         #region Input Die 이벤트 처리
@@ -73,6 +77,14 @@ namespace QMC.LCP_280.Process
             // UI 업데이트
             ShowMotorMovingStatus($"Input 모터가 ({e.Item.Position.X}, {e.Item.Position.Y})로 이동 중...");
         }
+        #endregion
+
+        #region 이벤트 처리
+        private void OnDieClick_Requested(object sender, DieIndexSelectControl.Die e)
+        {
+            Console.WriteLine($"[Select] Die Num: {e.Number}");
+        }
+
         #endregion
 
         #region 헬퍼 메서드
@@ -174,8 +186,8 @@ namespace QMC.LCP_280.Process
 
             // 디버그 출력
             Console.WriteLine($"총 칩 개수 = {dies.Count}");
-            
-            
+
+
             dieInputControl1.SetDieList(dies);
 
 
@@ -202,66 +214,46 @@ namespace QMC.LCP_280.Process
             dieInputControl1.UpdateDie(new Point(0, 0), DieInputControl.DieState.Picked);
             #endregion
 
-            #region Output Control
+            #region Output Control - Square Shape
             dieOutputControl1.SetWaferId("WAFER 098123");
 
             var dies_Output = new List<DieOutputControl.Die>();
             idx = 0;
-            
-            radius = 50;
+
+            // 사각형 크기 설정
+            int squareSize = 50; // -50 ~ +50 범위 (100x100 사각형)
 
             // 원하는 개수 근사치
             targetCount = 10000;
 
-            // 격자 step 계산 (원의 면적 / targetCount = 1칩당 면적)
-            area = Math.PI * radius * radius;    // ≈ 7853
-            dieArea = area / targetCount;        // ≈ 0.785
-            step = Math.Sqrt(dieArea);           // ≈ 0.89
+            // 격자 step 계산 (사각형 면적 / targetCount = 1칩당 면적)
+            area = (squareSize * 2) * (squareSize * 2);  // 100 * 100 = 10000
+            dieArea = area / targetCount;                 // 1.0
+            step = Math.Sqrt(dieArea);                    // 1.0
 
-            for (double x = -radius; x <= radius; x += step)
+            Console.WriteLine($"Square area: {area}, step: {step}");
+
+            for (double x = -squareSize; x <= squareSize; x += step)
             {
-                for (double y = -radius; y <= radius; y += step)
+                for (double y = -squareSize; y <= squareSize; y += step)
                 {
-                    if (x * x + y * y <= radius * radius)
+                    // 사각형 영역 내부 조건 (원형 조건 제거)
+                    dies_Output.Add(new DieOutputControl.Die
                     {
-                        dies_Output.Add(new DieOutputControl.Die
-                        {
-                            Index = idx++,
-                            Position = new Point((int)Math.Round(x), (int)Math.Round(y)),
-                            State = DieOutputControl.DieState.Empty
-                        });
-                    }
+                        Index = idx++,
+                        Position = new Point((int)Math.Round(x), (int)Math.Round(y)),
+                        State = DieOutputControl.DieState.Empty
+                    });
                 }
             }
 
             // 디버그 출력
-            Console.WriteLine($"총 칩 개수 = {dies_Output.Count}");
-
+            Console.WriteLine($"총 칩 개수 (Square) = {dies_Output.Count}");
 
             dieOutputControl1.SetDieList(dies_Output);
 
-
-            //var dies = new List<DieInputControl.Die>();
-            //int idx = 0;
-            //for (int x = -50; x <= 50; x += 5)
-            //{
-            //    for (int y = -50; y <= 50; y += 5)
-            //    {
-            //        if (x * x + y * y <= 50 * 50) // 원형 영역 안에 있는 칩만
-            //        {
-            //            dies.Add(new DieInputControl.Die
-            //            {
-            //                Index = idx++,
-            //                Position = new Point(x, y),
-            //                State = DieInputControl.DieState.Present
-            //            });
-            //        }
-            //    }
-            //}
-            //dieOutputControl1.SetDieList(dies);
-
-            // 특정 칩 상태 변경 (중심 칩 가져감)
-            dieOutputControl1.UpdateDie(new Point(0, 0), DieOutputControl.DieState.Picked);
+            // 특정 칩 상태 변경 (중심 칩)
+            dieOutputControl1.UpdateDie(new Point(0, 0), DieOutputControl.DieState.Present);
             #endregion
 
 

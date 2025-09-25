@@ -83,6 +83,7 @@ namespace QMC.LCP_280.Process.Component
             this._btnStop.TabIndex = 2;
             this._btnStop.Text = "Stop";
             this._btnStop.UseVisualStyleBackColor = true;
+            this._btnStop.Click += new System.EventHandler(this._btnStop_Click);
             // 
             // _btnNext
             // 

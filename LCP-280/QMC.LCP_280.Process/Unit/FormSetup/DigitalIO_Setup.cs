@@ -405,5 +405,15 @@ namespace QMC.LCP_280.Process.Unit
             public bool Equals((string section, string title) x, (string section, string title) y) => _cmp.Equals(x.section, y.section) && _cmp.Equals(x.title, y.title);
             public int GetHashCode((string section, string title) obj) => HashCode.Combine(_cmp.GetHashCode(obj.section ?? string.Empty), _cmp.GetHashCode(obj.title ?? string.Empty));
         }
+
+        private void DigitalIO_Setup_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void dioModuleListBoxItemsView_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

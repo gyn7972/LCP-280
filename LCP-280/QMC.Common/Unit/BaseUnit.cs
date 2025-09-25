@@ -31,16 +31,24 @@ namespace QMC.Common.Unit
             ePrepareFailed = 1000,
         }
 
-        public enum UnitRunStatus
+        /// <summary>
+        /// Unit 상태
+        /// </summary>
+        public enum UnitStatus
         {
-            Run,
-            Stop,
+            Stopped = 0,
+            Starting,
+            Running,
+            Stopping,
             CycleStop,
+            Error,
+            Unknown
         }
+
         public enum UnitRunMode
         {
-            Manual,
-            Auto,
+            Auto = 0,
+            Manual = 1
         }
 
         public enum ProcessState
@@ -89,15 +97,34 @@ namespace QMC.Common.Unit
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
         public Thread m_workThread { get; set; }
-        public UnitRunStatus RunStatus { get; set; } = UnitRunStatus.Stop;
+
+        //public UnitStatus RunUnitStatus { get; set; } = UnitStatus.Stopped;
+        private UnitStatus _runUnitStatus = UnitStatus.Stopped;
+        public UnitStatus RunUnitStatus
+        {
+            get => _runUnitStatus;
+            set
+            {
+                if (_runUnitStatus == value) return;
+                _runUnitStatus = value;
+
+                var eq = EquipmentLocator.Instance as IEquipment;
+                //eq.TryGet(out var eq);
+                eq?.SetAndRaiseUnitState(this.UnitName, value);
+
+                //EquipmentLocator.Instance.TryGet(out var eq);
+                //eq?.SetAndRaiseUnitState(this.UnitName, value);
+            }
+        }
         public UnitRunMode RunMode { get; set; } = UnitRunMode.Manual;
-        public bool IsRunning => RunStatus == UnitRunStatus.Run;
+
+        public bool IsRunning => RunUnitStatus == UnitStatus.Running;
         public bool IsAutoMode => RunMode == UnitRunMode.Auto;
         public bool IsManualMode => RunMode == UnitRunMode.Manual;
-        public bool IsCycleStop => RunStatus == UnitRunStatus.CycleStop;
+        public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
 
-        public UnitRunStatus Status { get; protected set; }
-        public ProcessState State { get; protected set; }
+        
+        public ProcessState State { get; set; }
         
         // 등록 축 사전 (Key: 논리 축명)
         public Dictionary<string, MotionAxis> Axes { get; } = new Dictionary<string, MotionAxis>();

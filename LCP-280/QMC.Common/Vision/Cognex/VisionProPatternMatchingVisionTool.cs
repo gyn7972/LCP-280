@@ -533,7 +533,8 @@ namespace QMC.Common.Vision.Cognex
             get { return this.m_Type; }
             set
             {
-                if (this.m_Type == value) return;
+                if (this.m_Type 
+                    == value) return;
                 this.m_Type = value;
                 this.HasChanged = true;
             }
