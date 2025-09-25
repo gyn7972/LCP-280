@@ -10,7 +10,7 @@ namespace QMC.Common.StrainGage
 {
     public class StrainGageMonitor : IDisposable
     {
-        private const int MonitoringIntervalMs = 1;
+        private const int MonitoringIntervalMs = 20;
 
         #region Fields
         NationalInstruments.DAQmx.Task readerTask = new NationalInstruments.DAQmx.Task();
@@ -108,7 +108,7 @@ namespace QMC.Common.StrainGage
         }
         public void Start()
         {
-            lock (gate)
+            //lock (gate)
             {
                 if (monitoringTask != null && !monitoringTask.IsCompleted)
                     return;
@@ -118,53 +118,80 @@ namespace QMC.Common.StrainGage
         }
         public void Stop()
         {
-            lock (gate)
+            //lock (gate)
             {
                 cts?.Cancel();
+                monitoringTask?.Wait(500);
+                cts?.Dispose();
+                cts = null;
             }
-            try { monitoringTask?.Wait(); } catch { /* ignore */ }
+            //try { monitoringTask?.Wait(); } catch { /* ignore */ }
         }
-
-        private Random _rand = new Random();
-        private int _simStep = 0;
 
         private async System.Threading.Tasks.Task RunMonitoring(CancellationToken token)
         {
-            var reader = new AnalogMultiChannelReader(readerTask.Stream);
-
-            double amplitude = 1.0; // 사인파 진폭
-            double frequency = 0.5; // Hz (1초에 0.5회)
-            double noiseLevel = 1;  // 노이즈 진폭
-
-            while (!token.IsCancellationRequested)
+            bool IsSimulation = false;
+            foreach (var item in items)
             {
-                try
+                if (item.strainGage.Config.IsSimulation)
                 {
-                    double[] data = reader.ReadSingleSample();
-                    for (int i = 0; i < items.Count; i++)
+                    IsSimulation = true;
+                    break;
+                }
+            }
+
+            if (!IsSimulation)
+            {
+                var reader = new AnalogMultiChannelReader(readerTask.Stream);
+                while (!token.IsCancellationRequested)
+                {
+                    try
                     {
-                        if (!items[i].strainGage.Config.IsSimulation)
+                        double[] data = reader.ReadSingleSample();
+                        for (int i = 0; i < items.Count; i++)
                         {
                             items[i].strainGage.UpdateVoltage(data[i]);
                         }
-                        else
-                        {
-                            _simStep++;
-                            double t = _simStep * 0.001; // 0.05초(50ms) 간격 기준, 필요시 타이머 간격에 맞게 조정
-                            double sine = amplitude * Math.Sin(2 * Math.PI * frequency * t);
-                            double noise = (2 * _rand.NextDouble() - 1) * noiseLevel; // -noiseLevel ~ +noiseLevel
-                            double simulatedVoltage = sine + noise;
 
-                            items[i].strainGage.UpdateVoltage(simulatedVoltage);
-                        }
+                        // Event
+                        OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
+                        await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
                     }
-
-                    // Event
-                    OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
+                    catch { }
                 }
-                catch {}
-                await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
             }
+            else
+            {
+                double amplitude = 1.0; // 사인파 진폭
+                double noiseLevel = 0.2;  // 노이즈 진폭
+
+                Random _rand = new Random();
+                int _simStep = 0;
+
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        _simStep++;
+                        double sine = amplitude * Math.Sin(2 * Math.PI * _simStep * 0.02);
+                        double noise = (2 * _rand.NextDouble() - 1) * noiseLevel; // -noiseLevel ~ +noiseLevel
+                        double simulatedVoltage = sine + noise;
+
+                        for (int i = 0; i < items.Count; i++)
+                        {
+                            if (items[i].strainGage.Config.IsSimulation)
+                                items[i].strainGage.UpdateVoltage(simulatedVoltage);
+                            else
+                                items[i].strainGage.UpdateVoltage(0);
+                        }
+
+                        // Event
+                        OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
+                        await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
+                    }
+                    catch { }
+                }
+            }      
         }
         #endregion
     }

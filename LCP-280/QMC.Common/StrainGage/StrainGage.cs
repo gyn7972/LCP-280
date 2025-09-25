@@ -13,6 +13,7 @@ namespace QMC.Common.StrainGage
         #region Fields
         private double voltage = 0;
         private QmcLowPassFilter lowPassFilter = new QmcLowPassFilter();
+        private bool lowPassFilterHasPrev = false;
         #endregion
 
         #region Properties
@@ -54,6 +55,11 @@ namespace QMC.Common.StrainGage
             double newvalue = value;
             if (Config.UseLowPassFilter)
             {
+                if (!lowPassFilterHasPrev)
+                {
+                    lowPassFilter.ResetValue(value);
+                    lowPassFilterHasPrev = true;
+                }
                 lowPassFilter.AddValue(value);
                 this.voltage = lowPassFilter.CurrentValue;
             }
