@@ -30,11 +30,11 @@
             this.lblDieNumber = new System.Windows.Forms.Label();
             this.lblDieNumberValue = new System.Windows.Forms.Label();
             this.displayPanel = new System.Windows.Forms.Panel();
+            this.btnRotateCounterClockwise = new System.Windows.Forms.Button();
             this.btnReset = new System.Windows.Forms.Button();
             this.btnAutoSequence = new System.Windows.Forms.Button();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.btnRotateCounterClockwise = new System.Windows.Forms.Button();
             this.displayPanel.SuspendLayout();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -77,6 +77,17 @@
             this.displayPanel.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DisplayPanel_MouseMove);
             this.displayPanel.Resize += new System.EventHandler(this.DisplayPanel_Resize);
             // 
+            // btnRotateCounterClockwise
+            // 
+            resources.ApplyResources(this.btnRotateCounterClockwise, "btnRotateCounterClockwise");
+            this.btnRotateCounterClockwise.BackColor = System.Drawing.Color.Green;
+            this.btnRotateCounterClockwise.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnRotateCounterClockwise.FlatAppearance.BorderSize = 0;
+            this.btnRotateCounterClockwise.ForeColor = System.Drawing.Color.White;
+            this.btnRotateCounterClockwise.Name = "btnRotateCounterClockwise";
+            this.btnRotateCounterClockwise.UseVisualStyleBackColor = false;
+            this.btnRotateCounterClockwise.Click += new System.EventHandler(this.btnRotateCounterClockwise_Click);
+            // 
             // btnReset
             // 
             resources.ApplyResources(this.btnReset, "btnReset");
@@ -115,17 +126,6 @@
             this.tableLayoutPanel1.Controls.Add(this.lblDieNumberValue, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.lblDieNumber, 0, 1);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            // 
-            // btnRotateCounterClockwise
-            // 
-            resources.ApplyResources(this.btnRotateCounterClockwise, "btnRotateCounterClockwise");
-            this.btnRotateCounterClockwise.BackColor = System.Drawing.Color.Green;
-            this.btnRotateCounterClockwise.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnRotateCounterClockwise.FlatAppearance.BorderSize = 0;
-            this.btnRotateCounterClockwise.ForeColor = System.Drawing.Color.White;
-            this.btnRotateCounterClockwise.Name = "btnRotateCounterClockwise";
-            this.btnRotateCounterClockwise.UseVisualStyleBackColor = false;
-            this.btnRotateCounterClockwise.Click += new System.EventHandler(this.btnRotateCounterClockwise_Click);
             // 
             // DieIndexSelectControl
             // 

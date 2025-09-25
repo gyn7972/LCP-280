@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QMC.Common;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -63,6 +64,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private const float MAX_SCALE = 3.0f;
         private const float SCALE_FACTOR = 1.1f;
         private const float BASE_DIE_SIZE = 40f; // 기본 다이 크기를 작게 조정
+
+        // 고정 라벨 시스템
+        private List<PointF> _fixedLabelPositions = new List<PointF>();
+        private bool _labelPositionsInitialized = false;
 
         public DieIndexSelectControl()
         {
@@ -129,11 +134,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             for (int i = 0; i < _dies.Count; i++)
             {
-                // 회전 오프셋 적용 - 반시계방향
-                int adjustedIndex = (i + _rotationOffset) % 8;
-
-                // 3시 방향(0도)에서 시작하여 반시계방향으로 45도씩 회전
-                double angleRadians = adjustedIndex * 45 * Math.PI / 180;
+                // 9시 방향(180도)에서 시작하여 반시계방향으로 45도씩
+                // 180도에서 시작: 180, 225, 270, 315, 0(360), 45, 90, 135
+                double startAngle = 180; // 9시 방향
+                double angleRadians = (startAngle + (i + _rotationOffset) * 45) * Math.PI / 180;
 
                 float x = centerX + radius * (float)Math.Cos(angleRadians);
                 float y = centerY - radius * (float)Math.Sin(angleRadians); // Y축 반전
@@ -190,6 +194,21 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 DrawDie(g, die, dieSize);
             }
+
+            // 최초 위치에 고정 라벨 그리기
+            if (!_labelPositionsInitialized && _dies.Count > 0)
+            {
+                // 최초 위치 저장
+                _fixedLabelPositions.Clear();
+                foreach (var die in _dies)
+                {
+                    _fixedLabelPositions.Add(die.Position);
+                }
+                _labelPositionsInitialized = true;
+            }
+
+            // 고정 라벨 그리기 (최초 위치 기준)
+            DrawFixedLabels(g, dieSize);
 
             g.ResetTransform();
         }
@@ -262,6 +281,75 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 {
                     g.DrawEllipse(glowPen, bounds);
                 }
+            }
+        }
+
+        /// <summary>고정된 위치에 라벨 표시</summary>
+        private void DrawFixedLabels(Graphics g, float dieSize)
+        {
+            if (_fixedLabelPositions.Count < 8) return;
+
+            for (int i = 0; i < 8; i++)
+            {
+                int dieNumber = i + 1;
+                string labelText = GetDieLabelText(dieNumber);
+
+                if (!string.IsNullOrEmpty(labelText))
+                {
+                    PointF fixedPosition = _fixedLabelPositions[i];
+                    PointF labelPosition = GetLabelPosition(fixedPosition, dieNumber, dieSize);
+
+                    // 라벨 텍스트 그리기
+                    using (var labelBrush = new SolidBrush(Color.Black))
+                    using (var labelFont = new Font("맑은 고딕", 8f / _scale, FontStyle.Regular))
+                    {
+                        using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                        {
+                            g.DrawString(labelText, labelFont, labelBrush, labelPosition, sf);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>Die 번호에 따른 라벨 텍스트 반환</summary>
+        private string GetDieLabelText(int dieNumber)
+        {
+            switch (dieNumber)
+            {
+                case 1: return "로더";
+                case 2: return "메카";
+                case 3: return "프로버\n검사";
+                case 4: return "";
+                case 5: return "언로더\n비전얼라인";
+                case 6: return "";
+                case 7: return "";
+                case 8: return "";
+                default: return "";
+            }
+        }
+
+        /// <summary>Die 위치에 따른 라벨 위치 계산</summary>
+        private PointF GetLabelPosition(PointF diePosition, int dieNumber, float dieSize)
+        {
+            float labelDistance = dieSize * 1.8f;
+
+            switch (dieNumber)
+            {
+                case 1: // 9시 방향 -> 왼쪽에 라벨
+                    return new PointF(diePosition.X - labelDistance, diePosition.Y);
+
+                case 2: // 8시 방향 -> 왼쪽 아래에 라벨
+                    return new PointF(diePosition.X - labelDistance * 0.7f, diePosition.Y + labelDistance * 0.7f);
+
+                case 3: // 6시 방향 -> 아래에 라벨
+                    return new PointF(diePosition.X, diePosition.Y + labelDistance);
+
+                case 5: // 3시 방향 -> 오른쪽에 라벨
+                    return new PointF(diePosition.X + labelDistance, diePosition.Y);
+
+                default:
+                    return diePosition;
             }
         }
 
@@ -440,14 +528,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void OnDieClick(Die die)
         {
-            var result = MessageBox.Show(
-                $"현재 상태: '{die.State.ToString()}', Die Index: '{die.Number}'번으로 선택하시겠습니까?",
-                "Die Index Select",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
-
-            if (result == DialogResult.Yes)
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Die Index 선택", $"현재 상태: '{die.State.ToString()}', Die Index: '{die.Number}'번으로 선택하시겠습니까?") == DialogResult.Yes)
             {
                 if (_isAutoSequencing) return;
 
@@ -560,14 +642,24 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         /// <summary>반시계방향 한 스텝 회전 (45도)</summary>
         private void RotateOneStep()
         {
-            _rotationOffset = (_rotationOffset + 1) % 8; // 0~7 순환
-            CalculateDiePositions();
-            displayPanel.Invalidate();
-
             // 회전 요청 이벤트 발생 (실제 장비 제어는 Monitoring_Main에서)
+            // 로딩 시에 현재 스텝 위치도 넣어주면 좋을듯..?
             RotationRequested?.Invoke(this, _rotationOffset);
 
-            Console.WriteLine($"회전: {_rotationOffset * 45}도 (Step {_rotationOffset})");
+            Console.WriteLine($"현재 Step {_rotationOffset})");
+        }
+
+        public void UpdateRotationUI(int newRotationOffset)
+        {
+            _rotationOffset = newRotationOffset % 8;
+            CalculateDiePositions();
+            displayPanel.Invalidate();
+        }
+
+        public void UpdateLoadingNumber(int num)
+        {
+            _rotationOffset = num;
+            UpdateRotationUI(_rotationOffset);
         }
 
 
