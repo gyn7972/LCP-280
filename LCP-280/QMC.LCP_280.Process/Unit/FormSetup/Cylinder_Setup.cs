@@ -629,5 +629,15 @@ namespace QMC.LCP_280.Process.Unit
             Invalidate();
         }
         #endregion
+
+        private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void tableLayoutPanel5_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
     }
 }

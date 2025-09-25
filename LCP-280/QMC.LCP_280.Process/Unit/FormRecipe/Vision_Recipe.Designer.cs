@@ -31,10 +31,11 @@
             // 
             // Vision_Recipe
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 751);
             this.Controls.Add(this.patternMatchingControl1);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Vision_Recipe";
             this.Text = "Vision Recipe";
             this.ResumeLayout(false);

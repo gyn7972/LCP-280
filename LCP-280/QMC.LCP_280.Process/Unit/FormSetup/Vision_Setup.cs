@@ -600,5 +600,10 @@ namespace QMC.LCP_280.Process.Unit
         // ===== Paint / Resize =====
         protected override void OnPaint(PaintEventArgs e) { base.OnPaint(e); }
         protected override void OnResize(EventArgs e) { base.OnResize(e); this.Invalidate(); }
+
+        private void cameraListBoxItemsView_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

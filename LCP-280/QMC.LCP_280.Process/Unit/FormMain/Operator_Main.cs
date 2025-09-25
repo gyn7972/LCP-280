@@ -12,7 +12,7 @@ using System.Windows.Forms;
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
     [FormOrder(2)]
-    public partial class Vision_Main : Form
+    public partial class Operator_Main : Form
     {
         // Units
         private InputStage InputStage { get; set; }
@@ -25,13 +25,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private bool _deferredInitDone; // 지연 초기화 완료 여부
         private bool _isLayoutEditMode;
 
-        public Vision_Main() : this(
+        public Operator_Main() : this(
             TryGetUnit<InputStage>("InputStage"),
             TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner"),
             TryGetUnit<OutputStage>("OutputStage")){ 
         }
 
-        public Vision_Main(InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage)
+        public Operator_Main(InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage)
         {
             InitializeComponent();
 

@@ -600,5 +600,15 @@ namespace QMC.LCP_280.Process.Unit
             Console.WriteLine($"Motion_Setup.SetPanelSize → {width}x{height}");
         }
         #endregion
+
+        private void gbAxisPositions_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void gbAxisProperty_Enter(object sender, EventArgs e)
+        {
+
+        }
     }
 }

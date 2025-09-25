@@ -10,6 +10,7 @@ using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
+    [FormOrder(3)]
     /// <summary>
     /// 공정 메인 Working Form
     ///  - TeachingPositionControl : IndexLoadAligner / IndexUnloadAligner / IndexChipProber / IndexChipProbeController / Rotary 등록
