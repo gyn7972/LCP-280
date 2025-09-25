@@ -1200,7 +1200,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
 
-        public bool CompleteInputDie { get; internal set; } = false;
+        public bool CompleteInputDie { get; set; } = false;
 
         #region Lifecycle
         public override int OnRun() 

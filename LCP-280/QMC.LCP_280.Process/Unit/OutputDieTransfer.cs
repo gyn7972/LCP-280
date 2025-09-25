@@ -944,7 +944,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #region seq signals
-        public bool CompleteOutputDie { get; internal set; } = false;
+        public bool CompleteOutputDie { get; set; } = false;
         #endregion
 
         #region Lifecycle

@@ -1133,7 +1133,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region seq Signals
 
-        public bool CompleteProbe { get; internal set; } = false;
+        public bool CompleteProbe { get; set; } = false;
 
         #endregion
 
