@@ -1096,5 +1096,25 @@ namespace QMC.LCP_280.Process
                 MessageBox.Show(this, "저장 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void txtResultT_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void tableLayoutPanel8_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void lblRX_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void _btnClose_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

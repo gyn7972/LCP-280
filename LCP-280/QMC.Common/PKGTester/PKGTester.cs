@@ -279,7 +279,7 @@ namespace QMC.Common.PKGTester
             Task<int> spcTask = Task.Run(() => DoSpectrometerMeasure());
             //if (spectrometer.IsReady == false)
             //{
-            //    Thread.Sleep(1000);
+            Thread.Sleep(100);
             //    spectrometer.IsReady = true;
             //}
             Task<int> smuTask = Task.Run(() => DoSourcemeterMeasure());

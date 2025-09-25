@@ -615,7 +615,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
                 return 1;
@@ -699,6 +701,8 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnStop()
         {
             int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
             base.OnStop();
             return ret;
         }
@@ -834,7 +838,7 @@ namespace QMC.LCP_280.Process.Unit
         public int UnClampGripper()
         {
             int nRet = 0;
-            if (this.SetClamp(false))
+            if (!this.SetClamp(false))
             {
                 Log.Write(this, "Unclamp Success");
             }
@@ -868,7 +872,7 @@ namespace QMC.LCP_280.Process.Unit
         public int DownFeeder()
         {
             int nRet = 0;
-            if (this.SetLift(false))
+            if (!this.SetLift(false))
             {
                 Log.Write(this, "Feeder Down Success");
             }

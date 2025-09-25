@@ -261,12 +261,6 @@
     <Compile Include="Unit\FormMain\Page\MeasurementControl.Designer.cs">
       <DependentUpon>MeasurementControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\Monitoring_Main.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Unit\FormMain\Monitoring_Main.Designer.cs">
-      <DependentUpon>Monitoring_Main.cs</DependentUpon>
-    </Compile>
     <Compile Include="Unit\FormMain\Page\OutputWaferCarrierControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -302,11 +296,17 @@
     <Compile Include="Component\Form_AxisJogPopup.Designer.cs">
       <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
     </Compile>
-    <Compile Include="Unit\FormMain\Vision_Main.cs">
+    <Compile Include="Unit\FormMain\Monitoring_Main.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Unit\FormMain\Vision_Main.Designer.cs">
-      <DependentUpon>Vision_Main.cs</DependentUpon>
+    <Compile Include="Unit\FormMain\Monitoring_Main.Designer.cs">
+      <DependentUpon>Monitoring_Main.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\FormMain\Operator_Main.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\FormMain\Operator_Main.Designer.cs">
+      <DependentUpon>Operator_Main.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormRecipe\Page\RankSetPage.cs">
       <SubType>UserControl</SubType>
@@ -343,6 +343,12 @@
     </Compile>
     <Compile Include="Unit\FormConfig\InputStageUnit_Config.Designer.cs">
       <DependentUpon>InputStageUnit_Config.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\FormSetup\Page\StrainGagePage.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\FormSetup\Page\StrainGagePage.Designer.cs">
+      <DependentUpon>StrainGagePage.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormWork\ChipUnloading_Working.cs">
       <SubType>Form</SubType>
@@ -596,9 +602,6 @@
     <EmbeddedResource Include="Unit\FormMain\Page\MeasurementControl.resx">
       <DependentUpon>MeasurementControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\Monitoring_Main.resx">
-      <DependentUpon>Monitoring_Main.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -621,8 +624,11 @@
     <EmbeddedResource Include="Unit\CommonUnitConfig.resx">
       <DependentUpon>CommonUnitConfig.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Unit\FormMain\Vision_Main.resx">
-      <DependentUpon>Vision_Main.cs</DependentUpon>
+    <EmbeddedResource Include="Unit\FormMain\Monitoring_Main.resx">
+      <DependentUpon>Monitoring_Main.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Operator_Main.resx">
+      <DependentUpon>Operator_Main.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormRecipe\Main_Recipe.resx">
       <DependentUpon>Main_Recipe.cs</DependentUpon>
@@ -656,6 +662,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormSetup\Page\SpectrometerPage.resx">
       <DependentUpon>SpectrometerPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormSetup\Page\StrainGagePage.resx">
+      <DependentUpon>StrainGagePage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormWork\ChipUnloading_Working.resx">
       <DependentUpon>ChipUnloading_Working.cs</DependentUpon>

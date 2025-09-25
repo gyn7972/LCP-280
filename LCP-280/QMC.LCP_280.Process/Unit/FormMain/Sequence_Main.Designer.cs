@@ -117,21 +117,24 @@ namespace QMC.LCP_280.Process
             this.tlpEquip.Controls.Add(this.btnSaveAllRecipes, 4, 0);
             this.tlpEquip.Controls.Add(this.btnLoadAllRecipes, 5, 0);
             this.tlpEquip.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpEquip.Location = new System.Drawing.Point(10, 24);
+            this.tlpEquip.Location = new System.Drawing.Point(10, 28);
             this.tlpEquip.Name = "tlpEquip";
             this.tlpEquip.RowCount = 1;
             this.tlpEquip.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tlpEquip.Size = new System.Drawing.Size(1238, 40);
+            this.tlpEquip.Size = new System.Drawing.Size(1238, 36);
             this.tlpEquip.TabIndex = 0;
             // 
             // btnStartAll
             // 
+            this.btnStartAll.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStartAll.BackColor = System.Drawing.Color.LightGreen;
             this.btnStartAll.Enabled = false;
             this.btnStartAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStartAll.Location = new System.Drawing.Point(3, 3);
             this.btnStartAll.Name = "btnStartAll";
-            this.btnStartAll.Size = new System.Drawing.Size(200, 30);
+            this.btnStartAll.Size = new System.Drawing.Size(200, 34);
             this.btnStartAll.TabIndex = 0;
             this.btnStartAll.Text = "Start All";
             this.btnStartAll.UseVisualStyleBackColor = false;
@@ -139,56 +142,66 @@ namespace QMC.LCP_280.Process
             // 
             // btnStopAll
             // 
+            this.btnStopAll.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStopAll.BackColor = System.Drawing.Color.LightCoral;
-            this.btnStopAll.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStopAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStopAll.Location = new System.Drawing.Point(209, 3);
             this.btnStopAll.Name = "btnStopAll";
-            this.btnStopAll.Size = new System.Drawing.Size(200, 34);
+            this.btnStopAll.Size = new System.Drawing.Size(200, 30);
             this.btnStopAll.TabIndex = 1;
             this.btnStopAll.Text = "Stop All";
             this.btnStopAll.UseVisualStyleBackColor = false;
             // 
             // btnSaveAllConfigs
             // 
+            this.btnSaveAllConfigs.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSaveAllConfigs.BackColor = System.Drawing.Color.LightBlue;
-            this.btnSaveAllConfigs.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnSaveAllConfigs.Location = new System.Drawing.Point(415, 3);
             this.btnSaveAllConfigs.Name = "btnSaveAllConfigs";
-            this.btnSaveAllConfigs.Size = new System.Drawing.Size(200, 34);
+            this.btnSaveAllConfigs.Size = new System.Drawing.Size(200, 30);
             this.btnSaveAllConfigs.TabIndex = 2;
             this.btnSaveAllConfigs.Text = "Save Configs";
             this.btnSaveAllConfigs.UseVisualStyleBackColor = false;
             // 
             // btnLoadAllConfigs
             // 
+            this.btnLoadAllConfigs.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnLoadAllConfigs.BackColor = System.Drawing.Color.LightYellow;
-            this.btnLoadAllConfigs.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnLoadAllConfigs.Location = new System.Drawing.Point(621, 3);
             this.btnLoadAllConfigs.Name = "btnLoadAllConfigs";
-            this.btnLoadAllConfigs.Size = new System.Drawing.Size(200, 34);
+            this.btnLoadAllConfigs.Size = new System.Drawing.Size(200, 30);
             this.btnLoadAllConfigs.TabIndex = 3;
             this.btnLoadAllConfigs.Text = "Load Configs";
             this.btnLoadAllConfigs.UseVisualStyleBackColor = false;
             // 
             // btnSaveAllRecipes
             // 
+            this.btnSaveAllRecipes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSaveAllRecipes.BackColor = System.Drawing.Color.LightCyan;
-            this.btnSaveAllRecipes.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnSaveAllRecipes.Location = new System.Drawing.Point(827, 3);
             this.btnSaveAllRecipes.Name = "btnSaveAllRecipes";
-            this.btnSaveAllRecipes.Size = new System.Drawing.Size(200, 34);
+            this.btnSaveAllRecipes.Size = new System.Drawing.Size(200, 30);
             this.btnSaveAllRecipes.TabIndex = 4;
             this.btnSaveAllRecipes.Text = "Save Recipes";
             this.btnSaveAllRecipes.UseVisualStyleBackColor = false;
             // 
             // btnLoadAllRecipes
             // 
+            this.btnLoadAllRecipes.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnLoadAllRecipes.BackColor = System.Drawing.Color.LightPink;
-            this.btnLoadAllRecipes.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnLoadAllRecipes.Location = new System.Drawing.Point(1033, 3);
             this.btnLoadAllRecipes.Name = "btnLoadAllRecipes";
-            this.btnLoadAllRecipes.Size = new System.Drawing.Size(202, 34);
+            this.btnLoadAllRecipes.Size = new System.Drawing.Size(202, 30);
             this.btnLoadAllRecipes.TabIndex = 5;
             this.btnLoadAllRecipes.Text = "Load Recipes";
             this.btnLoadAllRecipes.UseVisualStyleBackColor = false;
@@ -218,19 +231,21 @@ namespace QMC.LCP_280.Process
             this.tlpUnitCtrl.Controls.Add(this.btnStartUnit, 2, 0);
             this.tlpUnitCtrl.Controls.Add(this.btnStopUnit, 3, 0);
             this.tlpUnitCtrl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpUnitCtrl.Location = new System.Drawing.Point(10, 24);
+            this.tlpUnitCtrl.Location = new System.Drawing.Point(10, 28);
             this.tlpUnitCtrl.Name = "tlpUnitCtrl";
             this.tlpUnitCtrl.RowCount = 1;
             this.tlpUnitCtrl.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tlpUnitCtrl.Size = new System.Drawing.Size(1238, 35);
+            this.tlpUnitCtrl.Size = new System.Drawing.Size(1238, 31);
             this.tlpUnitCtrl.TabIndex = 0;
             // 
             // lblUnit
             // 
-            this.lblUnit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblUnit.Location = new System.Drawing.Point(3, 0);
             this.lblUnit.Name = "lblUnit";
-            this.lblUnit.Size = new System.Drawing.Size(303, 35);
+            this.lblUnit.Size = new System.Drawing.Size(303, 31);
             this.lblUnit.TabIndex = 0;
             this.lblUnit.Text = "Select Unit:";
             this.lblUnit.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -241,15 +256,18 @@ namespace QMC.LCP_280.Process
             this.cmbUnits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbUnits.Location = new System.Drawing.Point(312, 3);
             this.cmbUnits.Name = "cmbUnits";
-            this.cmbUnits.Size = new System.Drawing.Size(427, 20);
+            this.cmbUnits.Size = new System.Drawing.Size(427, 23);
             this.cmbUnits.TabIndex = 1;
             // 
             // btnStartUnit
             // 
+            this.btnStartUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStartUnit.BackColor = System.Drawing.Color.PaleGreen;
             this.btnStartUnit.Location = new System.Drawing.Point(745, 3);
             this.btnStartUnit.Name = "btnStartUnit";
-            this.btnStartUnit.Size = new System.Drawing.Size(241, 25);
+            this.btnStartUnit.Size = new System.Drawing.Size(241, 29);
             this.btnStartUnit.TabIndex = 2;
             this.btnStartUnit.Text = "Start Unit";
             this.btnStartUnit.UseVisualStyleBackColor = false;
@@ -257,11 +275,13 @@ namespace QMC.LCP_280.Process
             // 
             // btnStopUnit
             // 
+            this.btnStopUnit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.btnStopUnit.BackColor = System.Drawing.Color.PaleVioletRed;
-            this.btnStopUnit.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStopUnit.Location = new System.Drawing.Point(992, 3);
             this.btnStopUnit.Name = "btnStopUnit";
-            this.btnStopUnit.Size = new System.Drawing.Size(243, 29);
+            this.btnStopUnit.Size = new System.Drawing.Size(243, 25);
             this.btnStopUnit.TabIndex = 3;
             this.btnStopUnit.Text = "Stop Unit";
             this.btnStopUnit.UseVisualStyleBackColor = false;
@@ -282,19 +302,23 @@ namespace QMC.LCP_280.Process
             // 
             // lblEquipmentInfo
             // 
-            this.lblEquipmentInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblEquipmentInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblEquipmentInfo.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F);
-            this.lblEquipmentInfo.Location = new System.Drawing.Point(10, 54);
+            this.lblEquipmentInfo.Location = new System.Drawing.Point(10, 58);
             this.lblEquipmentInfo.Name = "lblEquipmentInfo";
-            this.lblEquipmentInfo.Size = new System.Drawing.Size(606, 287);
+            this.lblEquipmentInfo.Size = new System.Drawing.Size(606, 283);
             this.lblEquipmentInfo.TabIndex = 0;
             this.lblEquipmentInfo.Text = "Equipment: LCP-280\nManufacturer: QMC\nRegistered Units: 0";
             // 
             // lblEquipmentState
             // 
-            this.lblEquipmentState.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lblEquipmentState.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblEquipmentState.Font = new System.Drawing.Font("¸¼Àº °íµñ", 12F, System.Drawing.FontStyle.Bold);
-            this.lblEquipmentState.Location = new System.Drawing.Point(10, 24);
+            this.lblEquipmentState.Location = new System.Drawing.Point(10, 28);
             this.lblEquipmentState.Name = "lblEquipmentState";
             this.lblEquipmentState.Size = new System.Drawing.Size(606, 30);
             this.lblEquipmentState.TabIndex = 1;
@@ -315,14 +339,16 @@ namespace QMC.LCP_280.Process
             // 
             // lstUnitStatus
             // 
-            this.lstUnitStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lstUnitStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lstUnitStatus.Font = new System.Drawing.Font("Consolas", 9F);
             this.lstUnitStatus.FullRowSelect = true;
             this.lstUnitStatus.GridLines = true;
             this.lstUnitStatus.HideSelection = false;
-            this.lstUnitStatus.Location = new System.Drawing.Point(10, 24);
+            this.lstUnitStatus.Location = new System.Drawing.Point(10, 28);
             this.lstUnitStatus.Name = "lstUnitStatus";
-            this.lstUnitStatus.Size = new System.Drawing.Size(606, 317);
+            this.lstUnitStatus.Size = new System.Drawing.Size(606, 313);
             this.lstUnitStatus.TabIndex = 0;
             this.lstUnitStatus.UseCompatibleStateImageBehavior = false;
             this.lstUnitStatus.View = System.Windows.Forms.View.Details;
@@ -342,14 +368,16 @@ namespace QMC.LCP_280.Process
             // 
             // rtbLog
             // 
+            this.rtbLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.rtbLog.BackColor = System.Drawing.Color.Black;
-            this.rtbLog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.rtbLog.Font = new System.Drawing.Font("Consolas", 9F);
             this.rtbLog.ForeColor = System.Drawing.Color.LimeGreen;
-            this.rtbLog.Location = new System.Drawing.Point(10, 24);
+            this.rtbLog.Location = new System.Drawing.Point(10, 28);
             this.rtbLog.Name = "rtbLog";
             this.rtbLog.ReadOnly = true;
-            this.rtbLog.Size = new System.Drawing.Size(1238, 199);
+            this.rtbLog.Size = new System.Drawing.Size(1238, 195);
             this.rtbLog.TabIndex = 0;
             this.rtbLog.Text = "";
             // 

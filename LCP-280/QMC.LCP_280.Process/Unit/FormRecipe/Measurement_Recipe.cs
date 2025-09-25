@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QMC.Common;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -11,6 +12,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
+    [FormOrder(3)]
     public partial class Measurement_Recipe : Form
     {
         public Measurement_Recipe()

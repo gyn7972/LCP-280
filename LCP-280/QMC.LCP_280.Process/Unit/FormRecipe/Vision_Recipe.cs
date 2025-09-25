@@ -5,6 +5,7 @@ using QMC.Common;
 
 namespace QMC.LCP_280.Process.Unit.FormRecipe
 {
+    [FormOrder(2)]
     public partial class Vision_Recipe : Form
     {
         public Vision_Recipe()

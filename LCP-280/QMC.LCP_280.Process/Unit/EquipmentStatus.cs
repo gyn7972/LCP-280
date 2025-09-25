@@ -56,7 +56,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            if (this.Status == UnitRunStatus.Stop || this.Status == UnitRunStatus.CycleStop)
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
                 return 1;
@@ -86,10 +88,12 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
         public override int OnStop() 
-        { 
-            int ret = 0; 
-            base.OnStop(); 
-            return ret; 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+            base.OnStop();
+            return ret;
         }
 
         protected override int OnRunReady() 

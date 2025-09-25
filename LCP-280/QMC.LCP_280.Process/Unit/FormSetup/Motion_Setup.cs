@@ -384,14 +384,33 @@ namespace QMC.LCP_280.Process.Unit
                 var runTask = seq.RunAsync(token);
 
                 dlg.Show(this);
-
                 dlg.BringToFront();
 
+                // 취소/완료 중 먼저 끝난 것 대기
                 var completed = await Task.WhenAny(runTask, Task.Delay(Timeout.Infinite, token)).ConfigureAwait(true);
+
                 if (completed != runTask)
                 {
-                    await Task.WhenAny(runTask, Task.Delay(2000)).ConfigureAwait(true);
+                    // 취소됨: 2초 유예 후 여전히 미완료면 더 기다리지 않고 종료
+                    var grace = await Task.WhenAny(runTask, Task.Delay(2000)).ConfigureAwait(true);
+                    if (grace != runTask)
+                    {
+                        dlg.SafeUpdate(new OperationProgress
+                        {
+                            OperationId = "HOME",
+                            Title = "Home",
+                            StepIndex = seq.TotalSteps - 1,
+                            TotalSteps = seq.TotalSteps,
+                            IsCompleted = true,
+                            IsCanceled = true,
+                            IsAborted = true,
+                            Message = "Canceled"
+                        });
+                        MessageBox.Show("Home 취소됨");
+                        return;
+                    }
                 }
+
                 var results = await runTask.ConfigureAwait(true);
                 dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = seq.TotalSteps - 1, TotalSteps = seq.TotalSteps, IsCompleted = true, IsCanceled = token.IsCancellationRequested, IsAborted = seq.Aborted, Message = seq.AbortReason });
                 int success = results.Count(r => r.Success);
@@ -581,5 +600,15 @@ namespace QMC.LCP_280.Process.Unit
             Console.WriteLine($"Motion_Setup.SetPanelSize → {width}x{height}");
         }
         #endregion
+
+        private void gbAxisPositions_Enter(object sender, EventArgs e)
+        {
+
+        }
+
+        private void gbAxisProperty_Enter(object sender, EventArgs e)
+        {
+
+        }
     }
 }

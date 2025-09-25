@@ -195,14 +195,22 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
 
         private void Display_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            if (e.Button == MouseButtons.Left)
+            switch (e.Button)
             {
-                var item = GetItemAtPosition(e.Location);
-                if (item != null)
-                {
-                    // 모터 이동 팝업 표시
-                    ShowMotorMovePopup(item);
-                }
+                case MouseButtons.Left:
+                    var item = GetItemAtPosition(e.Location);
+                    if (item != null)
+                    {
+                        // 모터 이동 팝업 표시
+                        ShowMotorMovePopup(item);
+                    }
+                    break;
+
+                case MouseButtons.Right:
+                    _scale = 1.0f;
+                    _offset = PointF.Empty;
+                    this.Invalidate();
+                    break;
             }
         }
 
@@ -225,9 +233,6 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                     break;
 
                 case MouseButtons.Right:
-                    _scale = 1.0f;
-                    _offset = PointF.Empty;
-                    this.Invalidate();
                     break;
             }
         }
