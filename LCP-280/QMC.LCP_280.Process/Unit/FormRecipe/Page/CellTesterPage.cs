@@ -116,6 +116,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         {
             int rowIndex = dataGridResult.Rows.Add();
             var row = dataGridResult.Rows[rowIndex];
+            dataGridResult.Rows[rowIndex].HeaderCell.Value = $"{dataGridResult.Rows.Count - 1}";
 
             PKGTesterResult result = tester.Result;
 
