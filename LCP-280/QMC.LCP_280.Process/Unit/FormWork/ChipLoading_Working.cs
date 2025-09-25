@@ -8,6 +8,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit
 {
+
     /// <summary>
     /// ChipLoading Working Form
     ///  - TeachingPositionControl : InputStage / InputStageEjector / InputDieTransfer 등록
@@ -17,6 +18,9 @@ namespace QMC.LCP_280.Process.Unit
     ///  - Vision : Stage Camera Live 연결
     ///  - Manual Sequence : (InputStage Align / Mapping / Pick / Place 등 등록)
     /// </summary>
+    /// 
+
+    [FormOrder(1)]
     public partial class ChipLoading_Working : Form
     {
         private const string WORK_NAME = "ChipLoading";

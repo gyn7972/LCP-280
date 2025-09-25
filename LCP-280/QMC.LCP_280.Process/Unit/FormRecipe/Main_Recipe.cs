@@ -12,6 +12,7 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormRecipe
 {
+    [FormOrder(1)]
     public partial class Main_Recipe : Form
     {
         // Data
@@ -427,7 +428,5 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 this.ResumeLayout(true);
             }
         }
-
-        
     }
 }

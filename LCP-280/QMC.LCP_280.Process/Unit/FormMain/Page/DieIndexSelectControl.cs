@@ -16,7 +16,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         public enum DieState
         {
             Empty,    // 회색
-            Present,  // 검은색
             Picked    // 초록색
         }
 
@@ -69,6 +68,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             displayPanel.MouseDown += DisplayPanel_MouseDown;
             displayPanel.MouseUp += DisplayPanel_MouseUp;
             displayPanel.MouseClick += Display_MouseClick;
+            displayPanel.MouseDoubleClick += Display_MouseDoubleClick;
         }
 
         private void InitializeDies()
@@ -76,8 +76,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             _dies.Clear();
 
             // 패널의 중심점 (실제 좌표계)
-            float centerX = 160f; // 320의 절반
-            float centerY = 150f; // 300의 절반
+            float centerX = displayPanel.Width / 2f; // 320의 절반
+            float centerY = displayPanel.Height / 2f; // 300의 절반
             float radius = 80f;   // 반경을 작게 조정
 
             // 8개 위치 (이미지와 동일한 배치)
@@ -100,7 +100,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     Number = i + 1,
                     Id = $"DIE_{(i + 1):D3}",
                     Position = positions[i],
-                    State = DieState.Present
+                    State = DieState.Empty
                 });
             }
         }
@@ -136,10 +136,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 case DieState.Empty:
                     dieColor = Color.FromArgb(153, 153, 153);
                     textColor = Color.FromArgb(85, 85, 85);
-                    break;
-                case DieState.Present:
-                    dieColor = Color.Black;
-                    textColor = Color.Lime;
                     break;
                 case DieState.Picked:
                     dieColor = Color.FromArgb(0, 170, 0);
@@ -266,12 +262,26 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     break;
 
                 case MouseButtons.Right:
+                    break;
+            }
+        }
+
+        private void Display_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case MouseButtons.Left:
+                    break;
+
+                case MouseButtons.Right:
                     _scale = 1.0f;
                     _offset = PointF.Empty;
                     displayPanel.Invalidate();
                     break;
             }
+
         }
+
 
         private void DisplayPanel_MouseClick(object sender, MouseEventArgs e)
         {
@@ -335,34 +345,43 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void OnDieClick(Die die)
         {
-            if (_isAutoSequencing) return;
+            var result = MessageBox.Show(
+                $"현재 상태: '{die.State.ToString()}', Die Index: '{die.Number}'번으로 선택하시겠습니까?",
+                "Die Index Select",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
 
-            // 상태 변경 (Present -> Picked -> Empty -> Present)
-            switch (die.State)
+            if (result == DialogResult.Yes)
             {
-                case DieState.Present:
-                    die.State = DieState.Picked;
-                    break;
-                case DieState.Picked:
-                    die.State = DieState.Empty;
-                    break;
-                case DieState.Empty:
-                    die.State = DieState.Present;
-                    break;
+                if (_isAutoSequencing) return;
+
+                // 상태 변경 (Picked -> Empty -> Picked -> Empty)
+                switch (die.State)
+                {
+                    case DieState.Picked:
+                        die.State = DieState.Empty;
+                        break;
+                    case DieState.Empty:
+                        die.State = DieState.Picked;
+                        break;
+                }
+
+                // 선택된 다이 업데이트
+                SelectDie(die);
+
+                // 이벤트 발생
+                DieClicked?.Invoke(this, die);
+                DieStateChanged?.Invoke(this, die);
+
+                displayPanel.Invalidate();
             }
-
-            // 선택된 다이 업데이트
-            SelectDie(die);
-
-            // 이벤트 발생
-            DieClicked?.Invoke(this, die);
-            DieStateChanged?.Invoke(this, die);
-
-            displayPanel.Invalidate();
         }
 
         private void DisplayPanel_Resize(object sender, EventArgs e)
         {
+            // 크기 변경 시 다이 위치 재계산
+            InitializeDies();
             displayPanel.Invalidate();
         }
 
@@ -465,7 +484,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             foreach (var die in _dies)
             {
-                die.State = DieState.Present;
+                die.State = DieState.Empty;
             }
             _selectedDie = null;
             UpdateDieInfo();

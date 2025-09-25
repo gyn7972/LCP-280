@@ -8,6 +8,7 @@ using QMC.Common.UI;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
+    [FormOrder(2)]
     /// <summary>
     /// WaferRing Working Form
     /// - TeachingPositionControl: InputFeeder, InputCassetteLifter
