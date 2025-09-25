@@ -29,30 +29,34 @@ namespace QMC.LCP_280.Process.Unit
             name = tpn.ToString();
             return true;
         }
+
         [JsonIgnore]
-        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
+        private static readonly Dictionary<TeachingPositionName, string[]> _axisMap =
+            new Dictionary<TeachingPositionName, string[]>
         {
         };
 
         #region Hard IO Tables
         [JsonIgnore]
         public HardInputDef[] HardInputs => _hardInputs;
-        [JsonIgnore]
         private static readonly HardInputDef[] _hardInputs = Array.Empty<HardInputDef>();
 
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs;
-        [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
 
 
-        [Category("SetupConfig"), DisplayName("IndexOfOutAlign")]
+        [Category("SetupConfig"), DisplayName("Index Of OutAlign")]
         [DefaultValue(0)]
         public int IndexOfOutAlign { get; set; } = 0;
 
 
-        public IndexUnloadAlignerConfig() : base("IndexUnloadAlignerConfig") { }
+        public IndexUnloadAlignerConfig() 
+            : base("IndexUnloadAlignerConfig") 
+        {
+
+        }
 
         // enum 기반으로 기본 TeachingPosition 생성
         public void InitializeDefaultTeachingPositions()

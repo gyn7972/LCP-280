@@ -107,7 +107,9 @@ namespace QMC.LCP_280.Process.Component
             {
                 configurationPropertyView.Apply();
                 var pc = configurationPropertyView.GetCurrentProperties();
-                if (pc != null) _mapper.ApplyToObject(pc);
+                if (pc != null) 
+                    _mapper.ApplyToObject(pc);
+
                 InvokeSave(_config);
                 MessageBox.Show("저장 완료", "Config", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -143,7 +145,10 @@ namespace QMC.LCP_280.Process.Component
                 if (mi != null && mi.GetParameters().Length == 0)
                     mi.Invoke(cfg, null);
             }
-            catch { }
+            catch (Exception ex) 
+            {
+                Log.Write(ex);
+            }
         }
 
         private void InvokeLoad(object cfg)

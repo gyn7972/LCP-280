@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.RotaryConfig.IO;
+using Timer = System.Windows.Forms.Timer;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -163,10 +164,74 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 BindDioControls();
                 BindCamera();
                 InitSequences();
+                SetupStatusTimer();
 
                 InitSocketIndexCombo();
             }
             catch { }
+        }
+
+        private Timer _statusTimer;
+        private int _statusTimerBusy; // 재진입 방지 플래그
+        private void SetupStatusTimer()
+        {
+            try
+            {
+                if (_statusTimer != null) return;
+                _statusTimer = new Timer();
+                _statusTimer.Interval = 500; // ms 단위 (필요 시 조정)
+                _statusTimer.Tick += StatusTimer_Tick;
+                _statusTimer.Start();
+            }
+            catch { }
+        }
+
+        // ====== 추가: Tick 이벤트 핸들러 ======
+        private void StatusTimer_Tick(object sender, EventArgs e)
+        {
+            if (IsDisposed || Disposing) return;
+            if (Interlocked.Exchange(ref _statusTimerBusy, 1) == 1) return; // 재진입 방지
+            try
+            {
+                // 예시: 현재 로드 위치 인덱스 라벨 업데이트
+                try
+                {
+                    int nIndexNo = -1;
+                    string socketNoText = "---";
+                    if (labelsocketNumberInput != null)
+                    {
+                        nIndexNo = Rotary.GetLoadIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberInput.Text = socketNoText;
+                    }
+                    if (labelsocketNumberLAlign != null)
+                    {
+                        nIndexNo = IndexLoadAligner.GetAlignIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberLAlign.Text = socketNoText;
+                    }
+                    if (labelsocketNumberProbe != null)
+                    {
+                        nIndexNo = IndexChipProbeController.GetProbeIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberProbe.Text = socketNoText;
+                    }
+                    if (labelsocketNumberUnload != null)
+                    {
+                        nIndexNo = IndexUnloadAligner.GetUnloadIndexNo() + 1;
+                        socketNoText = nIndexNo.ToString() ?? "---";
+                        labelsocketNumberUnload.Text = socketNoText;
+                    }
+                }
+                catch { }
+
+                // 필요 시 다른 상태 UI 업데이트 영역 추가
+                // e.g. 장치 상태, 시퀀스 진행도, 알람 여부 등
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _statusTimerBusy, 0);
+            }
         }
 
         #region Teaching Positions
@@ -399,6 +464,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void comboBoxIndexSocketNo_SelectedIndexChanged(object sender, EventArgs e)
         {
             //Rotary.
+        }
+
+        private void btnRotary_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "다음 소켓으로 구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            Rotary.Rotate();
         }
     }
 }

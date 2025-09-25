@@ -40,10 +40,40 @@ namespace QMC.LCP_280.Process
             Feeder = ringTransfer;
             Stage = inputStage;
 
-            var materialCassette = CassetteLifter.GetMaterialCassette();
+            var materialCassette = CassetteLifter?.GetMaterialCassette();
 
-            inputWaferCarrierControl1.GetWaferMapView().SetMaterialCassette(materialCassette);
-            outputWaferCarrierControl1.GetWaferMapView().SetMaterialCassette(materialCassette);
+            // WaferSelectMapView 이벤트 구독
+            if (inputWaferCarrierControl1?.GetWaferSelectMapView() != null)
+            {
+                inputWaferCarrierControl1.GetWaferSelectMapView().SlotClicked += OnInputWaferSlot_Clicked;
+                inputWaferCarrierControl1.GetWaferSelectMapView().SlotSelectionChanged += OnInputWaferSlot_SelectionChanged;
+
+                if (materialCassette != null)
+                {
+                    inputWaferCarrierControl1.GetWaferSelectMapView().SetMaterialCassette(materialCassette);
+                }
+                else
+                {
+                    // 테스트용 카세트 생성
+                    inputWaferCarrierControl1.GetWaferSelectMapView().CreateTestCassette(20);
+                }
+            }
+
+            if (outputWaferCarrierControl1?.GetWaferSelectMapView() != null)
+            {
+                outputWaferCarrierControl1.GetWaferSelectMapView().SlotClicked += OnInputWaferSlot_Clicked;
+                outputWaferCarrierControl1.GetWaferSelectMapView().SlotSelectionChanged += OnInputWaferSlot_SelectionChanged;
+
+                if (materialCassette != null)
+                {
+                    outputWaferCarrierControl1.GetWaferSelectMapView().SetMaterialCassette(materialCassette);
+                }
+                else
+                {
+                    // 테스트용 카세트 생성
+                    outputWaferCarrierControl1.GetWaferSelectMapView().CreateTestCassette(20);
+                }
+            }
             #endregion
 
             // 이벤트 - Input Control
@@ -51,6 +81,7 @@ namespace QMC.LCP_280.Process
 
             // 이벤트 - Select Control
             dieIndexSelectControl1.DieClicked += OnDieClick_Requested;
+            dieIndexSelectControl1.RotationRequested += OnDieRotation_Requested;
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -65,6 +96,99 @@ namespace QMC.LCP_280.Process
             return null;
 
         }
+
+        #region Wafer Select Map 이벤트 처리
+
+        private void OnInputWaferSlot_Clicked(object sender, WaferSelectMapView.SlotClickedEventArgs e)
+        {
+            Console.WriteLine($"[WaferMap] Slot {e.SlotNumber} clicked. State: {e.State}");
+
+            // 실제 웨이퍼 선택 로직
+            // 예: 선택된 웨이퍼 정보를 다른 시스템에 전달
+            HandleWaferSlotSelection(e.SlotNumber, e.State);
+        }
+
+        private void OnInputWaferSlot_SelectionChanged(object sender, WaferSelectMapView.SlotSelectionChangedEventArgs e)
+        {
+            if (e.IsSelected)
+            {
+                Console.WriteLine($"[WaferMap] Slot {e.SlotNumber} selected with order {e.SelectionOrder}. State: {e.State}");
+
+                // 웨이퍼 선택 시 처리
+                OnWaferSlotSelected(e.SlotNumber, e.SelectionOrder, e.State);
+            }
+            else
+            {
+                Console.WriteLine($"[WaferMap] Slot {e.SlotNumber} deselected");
+
+                // 웨이퍼 선택 해제 시 처리
+                OnWaferSlotDeselected(e.SlotNumber);
+            }
+
+            // UI 상태 업데이트
+            UpdateWaferSelectionStatus();
+        }
+
+        private void HandleWaferSlotSelection(int slotNumber, WaferSelectMapView.SlotDisplayState state)
+        {
+            // 실제 웨이퍼 슬롯 선택 시 비즈니스 로직
+            switch (state)
+            {
+                case WaferSelectMapView.SlotDisplayState.Present:
+                    // 웨이퍼가 있는 슬롯 선택 시 처리
+                    Console.WriteLine($"웨이퍼가 있는 Slot {slotNumber} 처리");
+                    break;
+
+                case WaferSelectMapView.SlotDisplayState.Empty:
+                    // 빈 슬롯 선택 시 처리
+                    Console.WriteLine($"빈 Slot {slotNumber} 처리");
+                    break;
+            }
+        }
+
+        private void OnWaferSlotSelected(int slotNumber, int selectionOrder, WaferSelectMapView.SlotDisplayState state)
+        {
+            // 웨이퍼 선택 시 실제 장비 제어 로직
+
+            // 예: 선택 순서에 따른 처리 계획 수립
+            Console.WriteLine($"웨이퍼 처리 순서 {selectionOrder}: Slot {slotNumber}");
+
+            // 실제 장비 연동
+            // 예: CassetteLifter?.PrepareSlot(slotNumber);
+
+            // 상태 업데이트
+            UpdateStatusInfo($"Slot {slotNumber} 선택됨 (순서: {selectionOrder})");
+        }
+
+        private void OnWaferSlotDeselected(int slotNumber)
+        {
+            // 웨이퍼 선택 해제 시 처리
+            Console.WriteLine($"Slot {slotNumber} 선택 해제");
+
+            // 실제 장비 연동
+            // 예: CassetteLifter?.CancelSlotPreparation(slotNumber);
+
+            // 상태 업데이트
+            UpdateStatusInfo($"Slot {slotNumber} 선택 해제됨");
+        }
+
+        private void UpdateWaferSelectionStatus()
+        {
+            var waferMapView = inputWaferCarrierControl1?.GetWaferSelectMapView();
+            if (waferMapView != null)
+            {
+                var selectedSlots = waferMapView.GetSelectedSlotsInOrder();
+                var selectedCount = waferMapView.GetSelectedCount();
+
+                Console.WriteLine($"현재 선택된 웨이퍼: {selectedCount}개");
+                Console.WriteLine($"처리 순서: {string.Join(" → ", selectedSlots.Select(s => $"Slot{s}"))}");
+
+                // 실제 UI 상태 업데이트
+                // 예: statusLabel.Text = $"선택된 웨이퍼: {selectedCount}개";
+            }
+        }
+
+        #endregion
 
         #region Input Die 이벤트 처리
         private void OnDieInput_MotorMoveRequested(object sender, DisplayView.DisplayItemEventArgs e)
@@ -83,6 +207,24 @@ namespace QMC.LCP_280.Process
         private void OnDieClick_Requested(object sender, DieIndexSelectControl.Die e)
         {
             Console.WriteLine($"[Select] Die Num: {e.Number}");
+        }
+
+        private void OnDieRotation_Requested(object sender, int rotationOffset)
+        {
+            Console.WriteLine($"[Select] Rotation Offset: {rotationOffset}");
+
+            // 실제 회전 처리 로직
+            // 예: 회전 테이블 제어
+            // RotationTable?.RotateToPosition(rotationOffset);
+
+            // 회전 완료 후 상태 업데이트
+            UpdateRotationStatus(rotationOffset);
+        }
+
+        private void UpdateRotationStatus(int offset)
+        {
+            // 상태 표시 업데이트
+            Console.WriteLine($"회전 테이블이 {offset * 45}도 회전했습니다.");
         }
 
         #endregion

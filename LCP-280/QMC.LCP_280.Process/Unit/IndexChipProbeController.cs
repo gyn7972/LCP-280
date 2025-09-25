@@ -1531,7 +1531,7 @@ namespace QMC.LCP_280.Process.Unit
             IndexChipProber.RequestChipInsp = bRtn;
         }
 
-        private int GetProbeIndexNo()
+        public int GetProbeIndexNo()
         {
             if (Rotary == null)
                 return 0;
