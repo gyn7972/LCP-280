@@ -1417,6 +1417,11 @@ namespace QMC.LCP_280.Process
                         smu.Config.Reset();
                         smu.Config.Save();
                     }
+                    ret = smu.Initialize();
+                    if (ret != 0)
+                    {
+                        MessageBox.Show($"Sourcemeter [{smu.Name}] initialize NG.");
+                    }
                     Sourcemeters[name] = smu;
                     Console.WriteLine($"[Sourcemeter] {name} ready");
                 }
@@ -1438,6 +1443,11 @@ namespace QMC.LCP_280.Process
                         Log.Write("Equipment", $"[Spectrometer] '{name}' config load failed rc=0x{ret:X8}");
                         spc.Config.Reset();
                         spc.Config.Save();
+                    }
+                    ret = spc.Initialize();
+                    if (ret != 0)
+                    {
+                        MessageBox.Show($"Spectrometer [{spc.Name}] initialize NG.");
                     }
                     Spectrometers[name] = spc;
                     Console.WriteLine($"[Spectrometer] {name} ready");

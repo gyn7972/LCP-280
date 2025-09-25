@@ -19,9 +19,14 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             InitializeComponent();
         }
 
-        public Component.WaferMapView GetWaferMapView()
+        //public Component.WaferMapView GetWaferMapView()
+        //{
+        //    return waferMapView;
+        //}
+
+        public Component.WaferSelectMapView GetWaferSelectMapView()
         {
-            return waferMapView;
+            return waferSelectMapView;
         }
 
         public void SetWaferCarrierId(string id)

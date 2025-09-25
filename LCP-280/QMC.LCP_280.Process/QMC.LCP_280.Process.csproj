@@ -169,6 +169,12 @@
     <Compile Include="Component\ProcessData\WaferMapView.designer.cs">
       <DependentUpon>WaferMapView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Component\ProcessData\WaferSelectMapView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\ProcessData\WaferSelectMapView.Designer.cs">
+      <DependentUpon>WaferSelectMapView.cs</DependentUpon>
+    </Compile>
     <Compile Include="Component\Recipe\MeasurementKey.cs" />
     <Compile Include="Component\PatternMatchingControl.cs">
       <SubType>UserControl</SubType>
@@ -577,6 +583,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Component\ProcessData\WaferMapView.resx">
       <DependentUpon>WaferMapView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Component\ProcessData\WaferSelectMapView.resx">
+      <DependentUpon>WaferSelectMapView.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Component\TeachingPositionControl.resx">
       <DependentUpon>TeachingPositionControl.cs</DependentUpon>

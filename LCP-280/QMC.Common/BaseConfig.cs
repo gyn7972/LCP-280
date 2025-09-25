@@ -182,7 +182,8 @@ namespace QMC.Common
 
             var json = File.ReadAllText(filePath, Encoding.UTF8);
             var deserialized = JsonConvert.DeserializeObject(json, GetType(), settings);
-            if (deserialized == null) return;
+            if (deserialized == null) 
+                return;
 
             // 역직렬화된 값으로 복사(공개 get/set 대상)
             foreach (var p in deserialized.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))

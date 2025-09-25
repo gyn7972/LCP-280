@@ -230,7 +230,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             // teachingPositionControl
             // 
-            this.teachingPositionControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.teachingPositionControl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
             | System.Windows.Forms.AnchorStyles.Left)));
             this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
             this.teachingPositionControl.Location = new System.Drawing.Point(2, 4);

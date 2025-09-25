@@ -285,7 +285,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionBarcode(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)InputFeederConfig.TeachingPositionName.Barcode, isFine);
+            return MoveTeachingPositionOnce((int)OutputFeederConfig.TeachingPositionName.Barcode, isFine);
         }
         private int IsMoveInterLockBarcode()
         {
@@ -346,7 +346,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private int OnMovePositionCassette(bool isFine = false)
         {
-            return MoveTeachingPositionOnce((int)InputFeederConfig.TeachingPositionName.Cassette, isFine);
+            return MoveTeachingPositionOnce((int)OutputFeederConfig.TeachingPositionName.Cassette, isFine);
         }
         private int IsMoveInterLockCassette()
         {
