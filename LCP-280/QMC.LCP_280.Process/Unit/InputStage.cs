@@ -137,8 +137,21 @@ namespace QMC.LCP_280.Process.Unit
         public HIKGigECamera StageCamera { get; private set; }
         public string StageCameraKey { get; set; } = "In_Stage";
 
+        public PatternMatchingRunner _pmRunner;
+
         // Pattern Matching Runner (간소화: Recipe 자동 관리)
-        private PatternMatchingRunner _pmRunner;
+        public PatternMatchingRunner PmRunner
+        { 
+            get
+            {
+                if(_pmRunner == null)
+                {
+                    _pmRunner = VisionRunnerHub.GetOrCreate(StageCameraKey);
+                }
+                return _pmRunner;
+            }
+        }
+
         private bool _runnerInitTried;
 
         // Pixel -> mm scale
@@ -1617,6 +1630,11 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_LastAppliedTAngle = 0;
             _lastCenterAlignTp = null;
 
+            if(this.Config.IsSimulation)
+            {
+                IsStatus_TAlignPrepared = true;
+                return 0;
+            }
             Log.Write(UnitName, "T_Align", "Prepare Start");
 
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
@@ -1660,6 +1678,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
+            if(Config.IsSimulation)
+            {
+                IsStatus_LastAppliedTAngle = 0;
+                IsStatus_TAlignDone = true;
+                return 0;
+
+            }
             if (!IsStatus_TAlignPrepared || _lastCenterAlignTp == null)
             {
                 Log.Write(UnitName, "T_Align", "Not prepared");
@@ -1724,6 +1749,13 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(UnitName, "XY_Align", "Prepare Start");
 
+            if(this.Config.IsSimulation)
+            {
+
+                IsStatus_XYAlignPrepared = true;
+                return 0;
+            }
+
             if (PrepareForAlign(out var centerTp, out var _img) != 0)
             {
                 return -1;
@@ -1754,6 +1786,13 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int AlignXYApply(bool bFineSpeed = false)
         {
+            if(this.Config.IsSimulation)
+            {
+                _lastCenterAlignTp = new TeachingPosition();
+
+                IsStatus_XYAlignDone = true;
+                return 0;
+            }
             if (!IsStatus_XYAlignPrepared || _lastCenterAlignTp == null)
             {
                 Log.Write(UnitName, "XY_Align", "Not prepared");
@@ -1910,23 +1949,92 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             MakeScanPath(out List<PointD> path);
-
+            foreach (var pt in path)
+            {
+                nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
+                    return -1;
+                }
+                // 그랩 및 매핑
+                
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
+                    return -1;
+                }
+            }
             return nRet;
         }
 
         private void MakeScanPath(out List<PointD> path)
         {
             path = new List<PointD>();
-            double centerTpX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(),AxisX.Name);
-            double centerTpY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
-            var eq = Equipment.Instance;
-            var recip = eq.EquipmentRecipe.CurrentRecipe;
-            double dRadius = recip.WaferDiameter / 2;
-            if(_pmRunner.IsRecipeLoaded == false)
+            try
             {
-                _pmRunner.LoadRecipe();
+                
+                double centerTpX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisX.Name);
+                double centerTpY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+                double dRadius = recip.WaferDiameter / 2;
+                 
+                try
+                {
+
+                    if (PmRunner.IsRecipeLoaded == false)
+                    {
+                        PmRunner.LoadRecipe();
+                    }
+                }
+                catch (Exception ex)
+                {
+
+                    Log.Write(ex);
+                }
+                double dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                double dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                if (dRoiWidth <= 0 || dRoiHeight <= 0)
+                {
+                    dRoiWidth = MappingRoiWidthMm;
+                    dRoiHeight = MappingRoiHeightMm;
+                }
+
+                double dChipPitchX = ChipPitchXmm;
+                double dChipPitchY = ChipPitchYmm;
+                if (dChipPitchX <= 0) dChipPitchX = 0.5;
+                if (dChipPitchY <= 0) dChipPitchY = 0.5;
+
+                int nHorzCount = (int)((dRadius - dChipPitchX) * 2 / dRoiWidth) + 1;
+                int nVertCount = (int)((dRadius - dChipPitchY) * 2 / dRoiHeight) + 1;
+                if (nHorzCount < 1) nHorzCount = 1;
+                if (nVertCount < 1) nVertCount = 1;
+                double startX = centerTpX - (nHorzCount - 1) * dRoiWidth / 2;
+                double startY = centerTpY - (nVertCount - 1) * dRoiHeight / 2;
+
+                for (int iy = 0; iy < nVertCount; iy++)
+                {
+                    double y = startY + iy * dRoiHeight;
+                    for (int ix = 0; ix < nHorzCount; ix++)
+                    {
+                        double x = startX + ix * dRoiWidth;
+                        double dx = x - centerTpX;
+                        double dy = y - centerTpY;
+                        double dist = Math.Sqrt(dx * dx + dy * dy);
+                        if (dist <= dRadius)
+                        {
+                            path.Add(new PointD(x, y));
+                        }
+                    }
+                }
+                Log.Write(UnitName, "MakeScanPath", $"Count={path.Count} Radius={dRadius} Center=({centerTpX:F3},{centerTpY:F3}) ROI=({dRoiWidth:F3},{dRoiHeight:F3}) ChipPitch=({dChipPitchX:F3},{dChipPitchY:F3})");
+
             }
-            
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
             //StageCamera.CameraConfig.Scale
         }
 
@@ -2231,7 +2339,7 @@ namespace QMC.LCP_280.Process.Unit
             };
 
             List<ChipMapEntry> tempEntries = new List<ChipMapEntry>();
-            _pmRunner = VisionRunnerHub.GetOrCreate(CameraKey);
+            
             for (int ty = 0; ty < tilesY; ty++)
             {
                 for (int tx = 0; tx < tilesX; tx++)
@@ -2317,7 +2425,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private bool SearchChip(int imgW, int imgH, List<ChipMapEntry> tempEntries, int ty, int tx, double targetX, double targetY, VisionImage snap)
         {
-            PatternMatchRunResult pmrr = _pmRunner.Search(snap);
+            PatternMatchRunResult pmrr = PmRunner.Search(snap);
             if (!pmrr.Success)
             {
                 Log.Write(UnitName, "ChipMapV2", $"Vision search fail tile ({tx},{ty})");

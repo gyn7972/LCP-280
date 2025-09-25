@@ -475,6 +475,10 @@ namespace QMC.LCP_280.Process.Unit
             if (_feederLift == null)
                 return bRtn;
 
+            if(this.Config.IsSimulation)
+            {
+                return true;
+            }
             if (IsFeederUp())
                 return true;
 
