@@ -240,14 +240,8 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
         /// <summary>모터 이동 확인 팝업</summary>
         private void ShowMotorMovePopup(DisplayItem item)
         {
-            var result = MessageBox.Show(
-                $"모터 좌표 X:{item.Position.X}, Y:{item.Position.Y} 로 이동하시겠습니까?",
-                "모터 이동 확인",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
-
-            if (result == DialogResult.Yes)
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("모터 이동 확인", $"모터 좌표 X:{item.Position.X}, Y:{item.Position.Y} 로 이동하시겠습니까?") == DialogResult.Yes)
             {
                 // 모터 이동 이벤트 발생
                 MotorMoveRequested?.Invoke(this, new DisplayItemEventArgs
@@ -255,31 +249,6 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                     Item = item,
                     ScreenPosition = Point.Empty
                 });
-
-                ////이벤트 발생.
-                ////이벤트 데이터 생성
-                //var eventArgs = new DisplayItemEventArgs
-                //{
-                //    Item = item,
-                //    ScreenPosition = Point.Empty
-                //};
-
-                ////이벤트 전달
-                //MotorMoveRequested(this, eventArgs);
-
-                ////Monitoring_Main.cs에서 이벤트 데이터 받아야함.
-                //// 이벤트 구독
-                //displayView.MotorMoveRequested += OnMotorMoveRequested;
-
-                //// 이벤트 핸들러
-                //private void OnMotorMoveRequested(object sender, DisplayItemEventArgs e)
-                //        {
-                //            // sender = DisplayView 인스턴스
-                //            // e.Item = 클릭된 아이템 정보
-                //            // e.ScreenPosition = 화면 위치
-
-                //            Console.WriteLine($"X: {e.Item.Position.X}, Y: {e.Item.Position.Y}");
-                //        }
             }
         }
 

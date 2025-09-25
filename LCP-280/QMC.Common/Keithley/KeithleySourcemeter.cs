@@ -157,25 +157,31 @@ namespace QMC.Common.Keithley
                     throw new Exception($"Failed to send user script. (FileName: {Config.ScriptFileName})");
                 }
 
-                // Apply Channel Config
-                if (ApplyParameter() != 0)
-                {
-                    throw new Exception("Failed to apply parameter.");
-                }
-
-                //// Initialize SMU
+                // Initialize
                 if (Init() != 0)
                 {
                     throw new Exception("Failed to initialize sourcemeter.");
                 }
-
-                //// Initialize SMU Channels
                 foreach (var item in Channels)
                 {
                     var channel = item.Value;
                     if (!channel.Init())
                     {
                         throw new Exception($"Failed to initialize channel [{channel.Name}].");
+                    }
+                }
+
+                // Apply SMU Config 
+                if (ApplyConfig() != 0)
+                {
+                    throw new Exception("Failed to apply parameter.");
+                }
+                foreach (var item in Channels)
+                {
+                    var channel = item.Value;
+                    if (!channel.ApplyConfig())
+                    {
+                        throw new Exception($"Failed to apply config channel [{channel.Name}].");
                     }
                 }
 
@@ -194,22 +200,12 @@ namespace QMC.Common.Keithley
         }
         #endregion
 
-        public int ApplyParameter()
+        public int ApplyConfig()
         {
             try
             {
                 // Sourcemeter Parameter 적용
                 // -
-
-                // Sourcemeter Channel Parameter 적용
-                foreach (var item in Channels)
-                {
-                    var channel = item.Value;
-                    if (!channel.ApplyConfig())
-                    {
-                        throw new Exception($"Failed to apply channel [{channel.Name}] config.");
-                    }
-                }
             }
             catch (Exception ex)
             {

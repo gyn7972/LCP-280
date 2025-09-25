@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QMC.Common;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -25,6 +26,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             public string Id { get; set; }       // Die ID
             public PointF Position { get; set; }  // 실제 위치 (변환 전)
             public DieState State { get; set; }
+            public string Info { get; set; } = ""; // 추가 정보
+
             public RectangleF GetBounds(float size)
             {
                 return new RectangleF(
@@ -39,10 +42,18 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         public event EventHandler<Die> DieClicked;
         public event EventHandler<Die> DieStateChanged;
         public event EventHandler<Die> DieSelected;
+        public event EventHandler<Die> DieHovered;
+        public event EventHandler<int> RotationRequested; // 회전 요청 이벤트
 
         private List<Die> _dies = new List<Die>();
         private Die _selectedDie = null;
+        private Die _hoveredDie = null;
         private bool _isAutoSequencing = false;
+        private int _rotationOffset = 0; // 현재 회전 오프셋 (0~7)
+
+        // ToolTip 관련
+        private ToolTip _toolTip;
+        private Timer _hoverTimer;
 
         // Transform 관련
         private float _scale = 1.0f;
@@ -54,11 +65,28 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private const float SCALE_FACTOR = 1.1f;
         private const float BASE_DIE_SIZE = 40f; // 기본 다이 크기를 작게 조정
 
+        // 고정 라벨 시스템
+        private List<PointF> _fixedLabelPositions = new List<PointF>();
+        private bool _labelPositionsInitialized = false;
+
         public DieIndexSelectControl()
         {
             InitializeComponent();
+            InitializeToolTip();
             InitializeDies();
             SetupMouseHandlers();
+        }
+
+        private void InitializeToolTip()
+        {
+            _toolTip = new ToolTip();
+            _toolTip.AutoPopDelay = 5000;
+            _toolTip.InitialDelay = 300;
+            _toolTip.ReshowDelay = 100;
+
+            _hoverTimer = new Timer();
+            _hoverTimer.Interval = 100;
+            _hoverTimer.Tick += HoverTimer_Tick;
         }
 
         private void SetupMouseHandlers()
@@ -67,43 +95,88 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             displayPanel.MouseWheel += DisplayPanel_MouseWheel;
             displayPanel.MouseDown += DisplayPanel_MouseDown;
             displayPanel.MouseUp += DisplayPanel_MouseUp;
-            displayPanel.MouseClick += Display_MouseClick;
-            displayPanel.MouseDoubleClick += Display_MouseDoubleClick;
+            displayPanel.MouseMove += DisplayPanel_MouseMove;
+            displayPanel.MouseClick += DisplayPanel_MouseClick;
+            displayPanel.MouseDoubleClick += DisplayPanel_MouseDoubleClick;
+            displayPanel.MouseLeave += DisplayPanel_MouseLeave;
         }
 
         private void InitializeDies()
         {
             _dies.Clear();
+            CalculateDiePositions();
 
-            // 패널의 중심점 (실제 좌표계)
-            float centerX = displayPanel.Width / 2f; // 320의 절반
-            float centerY = displayPanel.Height / 2f; // 300의 절반
-            float radius = 80f;   // 반경을 작게 조정
-
-            // 8개 위치 (이미지와 동일한 배치)
-            var positions = new[]
-            {
-                new PointF(centerX - radius, centerY),                    // 1번: 왼쪽
-                new PointF(centerX - radius * 0.7f, centerY + radius * 0.7f), // 2번: 왼쪽 아래
-                new PointF(centerX, centerY + radius),                    // 3번: 아래
-                new PointF(centerX + radius * 0.7f, centerY + radius * 0.7f), // 4번: 오른쪽 아래
-                new PointF(centerX + radius, centerY),                    // 5번: 오른쪽
-                new PointF(centerX + radius * 0.7f, centerY - radius * 0.7f), // 6번: 오른쪽 위
-                new PointF(centerX, centerY - radius),                    // 7번: 위
-                new PointF(centerX - radius * 0.7f, centerY - radius * 0.7f)  // 8번: 왼쪽 위
-            };
-
+            // 8개 Die 초기화
             for (int i = 0; i < 8; i++)
             {
                 _dies.Add(new Die
                 {
                     Number = i + 1,
                     Id = $"DIE_{(i + 1):D3}",
-                    Position = positions[i],
-                    State = DieState.Empty
+                    Position = PointF.Empty, // CalculateDiePositions에서 설정
+                    State = DieState.Empty,
+                    Info = $"Index: {i + 1}, Status: Ready"
                 });
             }
+
+            CalculateDiePositions();
         }
+
+        /// <summary>반시계방향 위치 계산</summary>
+        /// 
+        private void CalculateDiePositions()
+        {
+            if (_dies.Count == 0) return;
+
+            float centerX = displayPanel.Width / 2f;
+            float centerY = displayPanel.Height / 2f;
+            float radius = 80f;
+
+            for (int i = 0; i < _dies.Count; i++)
+            {
+                // 9시 방향(180도)에서 시작하여 반시계방향으로 45도씩
+                // 180도에서 시작: 180, 225, 270, 315, 0(360), 45, 90, 135
+                double startAngle = 180; // 9시 방향
+                double angleRadians = (startAngle + (i + _rotationOffset) * 45) * Math.PI / 180;
+
+                float x = centerX + radius * (float)Math.Cos(angleRadians);
+                float y = centerY - radius * (float)Math.Sin(angleRadians); // Y축 반전
+
+                _dies[i].Position = new PointF(x, y);
+            }
+        }
+
+
+        #region ToolTip
+
+        private void HoverTimer_Tick(object sender, EventArgs e)
+        {
+            _hoverTimer.Stop();
+
+            if (_hoveredDie != null)
+            {
+                string tooltipText = $"Die Number: {_hoveredDie.Number}\n";
+                tooltipText += $"State: {_hoveredDie.State}\n";
+                tooltipText += $"Die ID: {_hoveredDie.Id}";
+
+                if (!string.IsNullOrEmpty(_hoveredDie.Info))
+                    tooltipText += $"\nInfo: {_hoveredDie.Info}";
+
+                Point mousePos = displayPanel.PointToClient(Cursor.Position);
+                _toolTip.Show(tooltipText, displayPanel, mousePos.X + 10, mousePos.Y - 10);
+
+                // 호버 이벤트 발생
+                DieHovered?.Invoke(this, _hoveredDie);
+            }
+            else
+            {
+                _toolTip.Hide(displayPanel);
+            }
+        }
+
+        #endregion
+
+        #region Mouse Events
 
         private void DisplayPanel_Paint(object sender, PaintEventArgs e)
         {
@@ -121,6 +194,21 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 DrawDie(g, die, dieSize);
             }
+
+            // 최초 위치에 고정 라벨 그리기
+            if (!_labelPositionsInitialized && _dies.Count > 0)
+            {
+                // 최초 위치 저장
+                _fixedLabelPositions.Clear();
+                foreach (var die in _dies)
+                {
+                    _fixedLabelPositions.Add(die.Position);
+                }
+                _labelPositionsInitialized = true;
+            }
+
+            // 고정 라벨 그리기 (최초 위치 기준)
+            DrawFixedLabels(g, dieSize);
 
             g.ResetTransform();
         }
@@ -193,6 +281,75 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 {
                     g.DrawEllipse(glowPen, bounds);
                 }
+            }
+        }
+
+        /// <summary>고정된 위치에 라벨 표시</summary>
+        private void DrawFixedLabels(Graphics g, float dieSize)
+        {
+            if (_fixedLabelPositions.Count < 8) return;
+
+            for (int i = 0; i < 8; i++)
+            {
+                int dieNumber = i + 1;
+                string labelText = GetDieLabelText(dieNumber);
+
+                if (!string.IsNullOrEmpty(labelText))
+                {
+                    PointF fixedPosition = _fixedLabelPositions[i];
+                    PointF labelPosition = GetLabelPosition(fixedPosition, dieNumber, dieSize);
+
+                    // 라벨 텍스트 그리기
+                    using (var labelBrush = new SolidBrush(Color.Black))
+                    using (var labelFont = new Font("맑은 고딕", 8f / _scale, FontStyle.Regular))
+                    {
+                        using (var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+                        {
+                            g.DrawString(labelText, labelFont, labelBrush, labelPosition, sf);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>Die 번호에 따른 라벨 텍스트 반환</summary>
+        private string GetDieLabelText(int dieNumber)
+        {
+            switch (dieNumber)
+            {
+                case 1: return "로더";
+                case 2: return "메카";
+                case 3: return "프로버\n검사";
+                case 4: return "";
+                case 5: return "언로더\n비전얼라인";
+                case 6: return "";
+                case 7: return "";
+                case 8: return "";
+                default: return "";
+            }
+        }
+
+        /// <summary>Die 위치에 따른 라벨 위치 계산</summary>
+        private PointF GetLabelPosition(PointF diePosition, int dieNumber, float dieSize)
+        {
+            float labelDistance = dieSize * 1.8f;
+
+            switch (dieNumber)
+            {
+                case 1: // 9시 방향 -> 왼쪽에 라벨
+                    return new PointF(diePosition.X - labelDistance, diePosition.Y);
+
+                case 2: // 8시 방향 -> 왼쪽 아래에 라벨
+                    return new PointF(diePosition.X - labelDistance * 0.7f, diePosition.Y + labelDistance * 0.7f);
+
+                case 3: // 6시 방향 -> 아래에 라벨
+                    return new PointF(diePosition.X, diePosition.Y + labelDistance);
+
+                case 5: // 3시 방향 -> 오른쪽에 라벨
+                    return new PointF(diePosition.X + labelDistance, diePosition.Y);
+
+                default:
+                    return diePosition;
             }
         }
 
@@ -300,10 +457,36 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
             else
             {
-                // 커서 업데이트
+                // 호버 처리
+                Die hoveredDie = GetDieAtPoint(e.Location);
+                if (hoveredDie != _hoveredDie)
+                {
+                    _hoveredDie = hoveredDie;
+                    _hoverTimer.Stop();
+                    _hoverTimer.Start();
+                    displayPanel.Invalidate();
+                }
                 UpdateCursor(e.Location);
             }
         }
+
+        private void DisplayPanel_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                // 우클릭 더블클릭으로 뷰 리셋
+                ResetView();
+            }
+        }
+
+        private void DisplayPanel_MouseLeave(object sender, EventArgs e)
+        {
+            _hoveredDie = null;
+            _toolTip.Hide(displayPanel);
+            _hoverTimer.Stop();
+            displayPanel.Invalidate();
+        }
+        #endregion
 
         private void UpdateCursor(Point location)
         {
@@ -345,14 +528,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void OnDieClick(Die die)
         {
-            var result = MessageBox.Show(
-                $"현재 상태: '{die.State.ToString()}', Die Index: '{die.Number}'번으로 선택하시겠습니까?",
-                "Die Index Select",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question
-            );
-
-            if (result == DialogResult.Yes)
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Die Index 선택", $"현재 상태: '{die.State.ToString()}', Die Index: '{die.Number}'번으로 선택하시겠습니까?") == DialogResult.Yes)
             {
                 if (_isAutoSequencing) return;
 
@@ -414,6 +591,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
+        private void btnRotateCounterClockwise_Click(object sender, EventArgs e)
+        {
+            if (_isAutoSequencing) return;
+
+            RotateCounterClockwise();
+        }
+
         private async void BtnAutoSequence_Click(object sender, EventArgs e)
         {
             if (_isAutoSequencing) return;
@@ -448,6 +632,36 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         }
 
         #region Public Methods
+
+        /// <summary>반시계방향으로 한 칸 회전</summary>
+        public void RotateCounterClockwise()
+        {
+            RotateOneStep();
+        }
+
+        /// <summary>반시계방향 한 스텝 회전 (45도)</summary>
+        private void RotateOneStep()
+        {
+            // 회전 요청 이벤트 발생 (실제 장비 제어는 Monitoring_Main에서)
+            // 로딩 시에 현재 스텝 위치도 넣어주면 좋을듯..?
+            RotationRequested?.Invoke(this, _rotationOffset);
+
+            Console.WriteLine($"현재 Step {_rotationOffset})");
+        }
+
+        public void UpdateRotationUI(int newRotationOffset)
+        {
+            _rotationOffset = newRotationOffset % 8;
+            CalculateDiePositions();
+            displayPanel.Invalidate();
+        }
+
+        public void UpdateLoadingNumber(int num)
+        {
+            _rotationOffset = num;
+            UpdateRotationUI(_rotationOffset);
+        }
+
 
         public void SetDieState(int dieNumber, DieState state)
         {
@@ -506,5 +720,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         }
 
         #endregion
+
+
     }
 }

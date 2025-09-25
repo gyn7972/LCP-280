@@ -55,6 +55,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Off_Illuminator = new QMC.Common.IndividualMenuButton();
             this.btn_On_Illuminator = new QMC.Common.IndividualMenuButton();
             this.gbIlluminatorControl = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btn_Save_Camera_Setup = new QMC.Common.IndividualMenuButton();
             this.btn_Save_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
             this.btn_JogPopup = new QMC.Common.IndividualMenuButton();
@@ -63,21 +64,20 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.cameraPropertyCollectionView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).BeginInit();
             this.illuminatorPropertyCollectionView.SuspendLayout();
             this.gbIlluminatorControl.SuspendLayout();
+            this.tableLayoutPanel7.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
-            this.tableLayoutPanel3.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
-            this.tableLayoutPanel7.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // cameraListBoxItemsView
@@ -108,9 +108,9 @@ namespace QMC.LCP_280.Process.Unit
             this.cameraPropertyCollectionView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cameraPropertyCollectionView.FastBuild = true;
             this.cameraPropertyCollectionView.GroupName = "Property";
-            this.cameraPropertyCollectionView.Location = new System.Drawing.Point(3, 524);
+            this.cameraPropertyCollectionView.Location = new System.Drawing.Point(3, 323);
             this.cameraPropertyCollectionView.Name = "cameraPropertyCollectionView";
-            this.cameraPropertyCollectionView.Size = new System.Drawing.Size(430, 165);
+            this.cameraPropertyCollectionView.Size = new System.Drawing.Size(430, 366);
             this.cameraPropertyCollectionView.SuppressResizeInvalidation = true;
             this.cameraPropertyCollectionView.TabIndex = 13;
             // 
@@ -145,7 +145,7 @@ namespace QMC.LCP_280.Process.Unit
             this.visionImageViewer.Name = "visionImageViewer";
             this.visionImageViewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.visionImageViewer.Simulated = false;
-            this.visionImageViewer.Size = new System.Drawing.Size(424, 495);
+            this.visionImageViewer.Size = new System.Drawing.Size(424, 294);
             this.visionImageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
             this.visionImageViewer.TabIndex = 16;
             this.visionImageViewer.TabStop = false;
@@ -312,6 +312,21 @@ namespace QMC.LCP_280.Process.Unit
             this.gbIlluminatorControl.TabStop = false;
             this.gbIlluminatorControl.Text = "Control";
             // 
+            // tableLayoutPanel7
+            // 
+            this.tableLayoutPanel7.ColumnCount = 2;
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Controls.Add(this.btn_Off_Illuminator, 1, 0);
+            this.tableLayoutPanel7.Controls.Add(this.btn_On_Illuminator, 0, 0);
+            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
+            this.tableLayoutPanel7.RowCount = 1;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(426, 49);
+            this.tableLayoutPanel7.TabIndex = 2;
+            // 
             // btn_Save_Camera_Setup
             // 
             this.btn_Save_Camera_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -376,7 +391,7 @@ namespace QMC.LCP_280.Process.Unit
             this.groupBoxImageView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxImageView.Location = new System.Drawing.Point(3, 3);
             this.groupBoxImageView.Name = "groupBoxImageView";
-            this.groupBoxImageView.Size = new System.Drawing.Size(430, 515);
+            this.groupBoxImageView.Size = new System.Drawing.Size(430, 314);
             this.groupBoxImageView.TabIndex = 26;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
@@ -451,23 +466,6 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel4.Size = new System.Drawing.Size(183, 745);
             this.tableLayoutPanel4.TabIndex = 2;
             // 
-            // tableLayoutPanel3
-            // 
-            this.tableLayoutPanel3.ColumnCount = 1;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Controls.Add(this.groupBoxImageView, 0, 0);
-            this.tableLayoutPanel3.Controls.Add(this.cameraPropertyCollectionView, 0, 1);
-            this.tableLayoutPanel3.Controls.Add(this.btn_Save_Camera_Setup, 0, 2);
-            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(192, 3);
-            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 3;
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 70F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 23F));
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 7F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(436, 745);
-            this.tableLayoutPanel3.TabIndex = 1;
-            // 
             // tableLayoutPanel6
             // 
             this.tableLayoutPanel6.ColumnCount = 2;
@@ -482,20 +480,22 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel6.Size = new System.Drawing.Size(177, 46);
             this.tableLayoutPanel6.TabIndex = 3;
             // 
-            // tableLayoutPanel7
+            // tableLayoutPanel3
             // 
-            this.tableLayoutPanel7.ColumnCount = 2;
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Controls.Add(this.btn_Off_Illuminator, 1, 0);
-            this.tableLayoutPanel7.Controls.Add(this.btn_On_Illuminator, 0, 0);
-            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 17);
-            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 1;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(426, 49);
-            this.tableLayoutPanel7.TabIndex = 2;
+            this.tableLayoutPanel3.ColumnCount = 1;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Controls.Add(this.groupBoxImageView, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.cameraPropertyCollectionView, 0, 1);
+            this.tableLayoutPanel3.Controls.Add(this.btn_Save_Camera_Setup, 0, 2);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(192, 3);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 3;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 43F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 7F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(436, 745);
+            this.tableLayoutPanel3.TabIndex = 1;
             // 
             // Vision_Setup
             // 
@@ -509,14 +509,14 @@ namespace QMC.LCP_280.Process.Unit
             ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).EndInit();
             this.illuminatorPropertyCollectionView.ResumeLayout(false);
             this.gbIlluminatorControl.ResumeLayout(false);
+            this.tableLayoutPanel7.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel4.ResumeLayout(false);
-            this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
-            this.tableLayoutPanel7.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
