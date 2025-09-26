@@ -103,12 +103,12 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Methods
-        public async Task<int> MeasureAsync()
+        public async Task<int> MeasureAsync(int rotaryIndex = -1)
         {
             try
             {
                 isMeasuring = true;
-                int ret = await DoMeasure();
+                int ret = await DoMeasure(rotaryIndex);
                 if (ret == 0)
                 {
                     OnMeasureCompleted?.Invoke(this);
@@ -131,12 +131,12 @@ namespace QMC.Common.PKGTester
                 isMeasuring = false;
             }
         }
-        public async Task<int> ManualMeasureAsync()
+        public async Task<int> ManualMeasureAsync(int rotaryIndex = -1)
         {
             try
             {
                 isMeasuring = true;
-                int ret = await DoMeasure();
+                int ret = await DoMeasure(rotaryIndex);
                 if (ret == 0)
                 {
                     OnManualMeasureCompleted?.Invoke(this);
@@ -273,15 +273,11 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Internal Process
-        private async Task<int> DoMeasure()
+        private async Task<int> DoMeasure(int rotaryIndex)
         {
             // 두 계측기의 시뮬레이션 측정을 비동기로 동시에 실행
             Task<int> spcTask = Task.Run(() => DoSpectrometerMeasure());
-            //if (spectrometer.IsReady == false)
-            //{
             Thread.Sleep(100);
-            //    spectrometer.IsReady = true;
-            //}
             Task<int> smuTask = Task.Run(() => DoSourcemeterMeasure());
 
             try
@@ -302,10 +298,12 @@ namespace QMC.Common.PKGTester
                 }
 
                 // Calibrate Data
-                int rotaryIndex = 0;
-                if (!CalibrateDataProcess(rotaryIndex))
+                if (rotaryIndex != -1)
                 {
-                    throw new Exception("Failed to calibrate data.");
+                    if (!CalibrateDataProcess(rotaryIndex))
+                    {
+                        throw new Exception("Failed to calibrate data.");
+                    }
                 }
 
                 // Binning Data

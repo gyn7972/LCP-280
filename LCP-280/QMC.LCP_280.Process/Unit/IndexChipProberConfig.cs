@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -47,6 +48,10 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly HardOutputDef[] _hardOutputs = Array.Empty<HardOutputDef>();
         #endregion
+
+        [Category("SetupConfig"), DisplayName("Index Of Probe")]
+        [DefaultValue(0)]
+        public int IndexOfProbe { get; set; } = 0;
 
         public IndexChipProberConfig() : base("IndexChipProberConfig")
         {
