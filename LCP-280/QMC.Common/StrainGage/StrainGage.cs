@@ -73,7 +73,7 @@ namespace QMC.Common.StrainGage
             }
             catch (Exception ex)
             {
-                Log.Write(ex);
+                Log.Write(this, ex.Message);
                 return -1;
             }
             return 0;
