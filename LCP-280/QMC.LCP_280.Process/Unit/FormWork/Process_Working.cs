@@ -472,7 +472,23 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             if (ask.ShowDialog("확인", "다음 소켓으로 구동 하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            Rotary.Rotate();
+            int nRet = 0;
+
+            nRet = Rotary.MovePositionRotate();
+            if(nRet != 0)
+            {
+                Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
+                return;
+            }
+
+            //nRet = Rotary.WaitIndexMoveDone();
+            //if (nRet != 0)
+            //{
+            //    Log.Write(Rotary.UnitName, "Rotary Rotate 실패");
+            //    return;
+            //}
+
+            int a = 0;
         }
     }
 }
