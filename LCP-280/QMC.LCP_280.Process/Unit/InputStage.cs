@@ -1855,7 +1855,7 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
 
             //if (WaitUntil(() =>
-            //    !this.InputStageEjector.IsAnyAxisMoving(),
+            //    this.InputStageEjector.IsAnyAxisMoving(),
             //    MappingMoveTimeoutMs) != 0)
             //    return -1;
 

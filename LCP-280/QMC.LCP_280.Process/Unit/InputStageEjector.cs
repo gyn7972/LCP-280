@@ -200,7 +200,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (InputStage != null && !InputStage.IsAnyAxisMoving())
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
@@ -289,7 +289,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (InputStage != null && !InputStage.IsAnyAxisMoving())
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
@@ -442,7 +442,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (InputStage != null && !InputStage.IsAnyAxisMoving())
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
