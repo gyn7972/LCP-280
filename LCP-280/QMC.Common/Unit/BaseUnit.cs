@@ -1,5 +1,4 @@
 // QMC.Common\Unit\BaseUnit.cs
-using Cognex.VisionPro.Implementation.Internal;
 using Ivi.Visa;
 using QMC.Common;
 using QMC.Common.Alarm;
@@ -132,7 +131,8 @@ namespace QMC.Common.Unit
         public bool IsManualMode => RunMode == UnitRunMode.Manual;
         public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
 
-        
+        public CancellationTokenSource CalcelToken { get;  set; }
+
         public ProcessState State { get; set; }
         
         // 등록 축 사전 (Key: 논리 축명)
@@ -539,6 +539,7 @@ namespace QMC.Common.Unit
             }
         }
 
+        // NEW: 올바른 의미. 이동 중이면 true.
         public virtual bool IsAxisMoving(string axisKeyOrName)
         {
             if (string.IsNullOrWhiteSpace(axisKeyOrName) || Axes.Count == 0)
@@ -551,22 +552,34 @@ namespace QMC.Common.Unit
                 {
                     if (kv.Value == null) continue;
                     if (kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase) ||
-                        kv.Key.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
+                        kv.Key.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase) ||
+                        kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
                     {
                         axis = kv.Value;
                         break;
                     }
                 }
             }
-
-            if (axis != null && !axis.IsMoveDone())
+            if (axis == null) 
                 return false;
-
-            return true;
-            //return axis != null && !axis.IsMoveDone();
+            return !axis.IsMoveDone();
         }
 
+        // 이동 완료 여부 바로 얻고 싶을 때(가독성):
+        public virtual bool IsAxisStopped(string axisKeyOrName) => !IsAxisMoving(axisKeyOrName);
+
+        // 하나라도 이동 중이면 true, 전부 멈췄으면 false
         public virtual bool IsAnyAxisMoving()
+        {
+            foreach (var ax in Axes.Values)
+            {
+                if (ax != null && !ax.IsMoveDone())
+                    return true;
+            }
+            return false;
+        }
+        // 모든 축이 멈췄는지 확인 (가독성 보조용)
+        public virtual bool AreAllAxesStopped()
         {
             foreach (var ax in Axes.Values)
             {
@@ -755,12 +768,19 @@ namespace QMC.Common.Unit
         public Task<int> RunManualFunction(Func<bool, int> func)
         {
             Task<int> task = null;
+            
             if (func != null && !IsRunning)
             {
 
                 CurrentFunc = func;
+                if (this.CalcelToken == null || this.CalcelToken.IsCancellationRequested) 
+                {
+                    this.CalcelToken?.Dispose();
+                    this.CalcelToken = new CancellationTokenSource(); 
+                }
                 task = Task.Factory.StartNew(() =>
                     {
+                        int ret = 0;
                         try
                         {
                             if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
@@ -771,13 +791,34 @@ namespace QMC.Common.Unit
                             }
                         }
                         catch { }
+                        try
+                        {
+                            ret = func(false);
 
+                        }
+                        catch(Exception ex)
+                        {
+                            Log.Write(ex);
+                        }
 
-                        return func(false);
+                        return ret;
                     }
                 );
             }
             return task;
+        }
+
+        public void CancelSequence()
+        {
+            try
+            {
+                this.CalcelToken?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+
+            }
         }
 
         ~BaseUnit()

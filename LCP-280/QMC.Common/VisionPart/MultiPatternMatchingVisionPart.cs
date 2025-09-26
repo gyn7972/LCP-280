@@ -32,18 +32,27 @@ namespace QMC.Common.VisionPart
         public MultiPatternMatchingVisionPart(string strName) : base(strName)
         {
             //m_MultiPatternMatchingTool = new VisionProMultiPatternMatchingVisionTool();
-            m_MultiPatternMatchingTool = new VisionProPatternMatchingVisionTool();
-            m_RoiTrain = new VisionProRoiVisionTool();
-            m_RoiInspect = new VisionProRoiVisionTool();
+            try
+            {
 
-            TestImage = new VisionImage();
-            TrainImage = new VisionImage();
+                m_MultiPatternMatchingTool = new VisionProPatternMatchingVisionTool();
+                m_RoiTrain = new VisionProRoiVisionTool();
+                m_RoiInspect = new VisionProRoiVisionTool();
 
-            OffsetTolerrance = 0;
+                TestImage = new VisionImage();
+                TrainImage = new VisionImage();
 
-            // ROI 사용 플래그 활성화 (저장/로드 및 UI 로직에서 사용)
-            UseTrainRoi = true;
-            UseInspectRoi = true;
+                OffsetTolerrance = 0;
+
+                // ROI 사용 플래그 활성화 (저장/로드 및 UI 로직에서 사용)
+                UseTrainRoi = true;
+                UseInspectRoi = true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write( ex);
+
+            }
         }
         #endregion
 

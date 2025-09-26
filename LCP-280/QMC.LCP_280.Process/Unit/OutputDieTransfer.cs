@@ -172,7 +172,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (axis == AxisPickZ)
                 {
-                    if (!OutputStage.IsAnyAxisMoving())
+                    if (OutputStage.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -184,7 +184,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (axis == AxisPlaceZ)
                 {
-                    if (!Rotary.IsAnyAxisMoving())
+                    if (Rotary.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -319,7 +319,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockReady()
         {
             int nRet = 0;
-            if (OutputStage != null && !OutputStage.IsAnyAxisMoving())
+            if (OutputStage != null && OutputStage.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -328,7 +328,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -459,7 +459,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -562,7 +562,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockPlace()
         {
             int nRet = 0;
-            if (OutputStage != null && !OutputStage.IsAnyAxisMoving())
+            if (OutputStage != null && OutputStage.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -571,7 +571,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -944,7 +944,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #region seq signals
-        public bool CompleteOutputDie { get; internal set; } = false;
+        public bool CompleteOutputDie { get; set; } = false;
         #endregion
 
         #region Lifecycle

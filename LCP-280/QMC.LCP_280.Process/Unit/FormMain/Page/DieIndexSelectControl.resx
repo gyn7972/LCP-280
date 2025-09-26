@@ -292,7 +292,7 @@
     <value>5</value>
   </data>
   <data name="btnRotateCounterClockwise.Text" xml:space="preserve">
-    <value>Rotate Test</value>
+    <value>Next Index</value>
   </data>
   <data name="&gt;&gt;btnRotateCounterClockwise.Name" xml:space="preserve">
     <value>btnRotateCounterClockwise</value>

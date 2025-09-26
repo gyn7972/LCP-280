@@ -23,8 +23,8 @@
             this.lblWaferCountTitle = new System.Windows.Forms.Label();
             this.lblWaferCountValue = new System.Windows.Forms.Label();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.waferSelectMapView = new QMC.LCP_280.Process.Component.WaferSelectMapView();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
@@ -102,6 +102,14 @@
             this.tlpMain.Size = new System.Drawing.Size(421, 370);
             this.tlpMain.TabIndex = 19;
             // 
+            // waferSelectMapView
+            // 
+            this.waferSelectMapView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.waferSelectMapView.Location = new System.Drawing.Point(3, 72);
+            this.waferSelectMapView.Name = "waferSelectMapView";
+            this.waferSelectMapView.Size = new System.Drawing.Size(415, 295);
+            this.waferSelectMapView.TabIndex = 18;
+            // 
             // tableLayoutPanel1
             // 
             this.tableLayoutPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -122,16 +130,6 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(415, 63);
             this.tableLayoutPanel1.TabIndex = 5;
-            // 
-            // waferSelectMapView
-            // 
-            this.waferSelectMapView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.waferSelectMapView.Location = new System.Drawing.Point(3, 72);
-            this.waferSelectMapView.Name = "waferSelectMapView";
-            this.waferSelectMapView.Size = new System.Drawing.Size(415, 295);
-            this.waferSelectMapView.TabIndex = 18;
             // 
             // OutputWaferCarrierControl
             // 

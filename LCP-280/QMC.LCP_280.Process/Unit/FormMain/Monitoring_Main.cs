@@ -22,16 +22,18 @@ namespace QMC.LCP_280.Process
         private InputFeeder Feeder { get; set; }
         private InputStage Stage { get; set; }
 
+        private Rotary Rotary;
+
         public Monitoring_Main() : this(
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
             TryGetUnit<InputFeeder>("InputFeeder"),
-            TryGetUnit<InputStage>("InputStage")
-            )
+            TryGetUnit<InputStage>("InputStage"),
+            TryGetUnit<Rotary>("Rotary"))
         {
 
         }
 
-        public Monitoring_Main(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, InputStage inputStage)
+        public Monitoring_Main(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, InputStage inputStage, Rotary rotary)
         {
             InitializeComponent();
 
@@ -39,6 +41,7 @@ namespace QMC.LCP_280.Process
             CassetteLifter = cassetteLifter;
             Feeder = ringTransfer;
             Stage = inputStage;
+            Rotary = rotary;
 
             var materialCassette = CassetteLifter?.GetMaterialCassette();
 
@@ -211,20 +214,26 @@ namespace QMC.LCP_280.Process
 
         private void OnDieRotation_Requested(object sender, int rotationOffset)
         {
-            Console.WriteLine($"[Select] Rotation Offset: {rotationOffset}");
-
             // 실제 회전 처리 로직
             // 예: 회전 테이블 제어
             // RotationTable?.RotateToPosition(rotationOffset);
 
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "다음 소켓으로 구동 하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            Rotary.Rotate();
+
             // 회전 완료 후 상태 업데이트
-            UpdateRotationStatus(rotationOffset);
+            UpdateRotationStatus(Rotary.GetLoadIndexNo() + 1);
         }
 
         private void UpdateRotationStatus(int offset)
         {
             // 상태 표시 업데이트
-            Console.WriteLine($"회전 테이블이 {offset * 45}도 회전했습니다.");
+            Console.WriteLine($"로더 위치는 '{offset}'입니다.");
+
+            dieIndexSelectControl1.UpdateRotationUI(offset);
         }
 
         #endregion

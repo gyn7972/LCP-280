@@ -626,9 +626,11 @@
     <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
       <DependentUpon>Form_Alarm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="BottomMenuButtonControl.resx">
       <DependentUpon>BottomMenuButtonControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="FormBottom.resx">
       <DependentUpon>FormBottom.cs</DependentUpon>

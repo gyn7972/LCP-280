@@ -50,11 +50,9 @@ namespace QMC.LCP_280.Process.Component
         private int _hoveredSlot = -1;
 
         // 테스트 버튼들
-        private Button btnSequentialSelect;
-        private Button btnClearSelection;
-        private Button btnToggleStates;
+        private Button btnAll;
         private Button btnResetAll;
-        private Button btnSelectFirst5;
+
         private Label lblSelectedCount;
         private Label lblSelectedCountValue;
         private Label lblNextOrder;
@@ -109,10 +107,10 @@ namespace QMC.LCP_280.Process.Component
             int spacing = 30;
             int buttonWidth = 80;
 
-            // 순차 선택 버튼
-            btnSequentialSelect = new Button
+            // 전체 선택 버튼
+            btnAll = new Button
             {
-                Text = "순차선택",
+                Text = "전체 선택",
                 Location = new Point(5, yPos),
                 Size = new Size(buttonWidth, buttonHeight),
                 BackColor = Color.DarkGray,
@@ -120,59 +118,14 @@ namespace QMC.LCP_280.Process.Component
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Arial", 8)
             };
-            btnSequentialSelect.Click += BtnSequentialSelect_Click;
-            rightPanel.Controls.Add(btnSequentialSelect);
-            yPos += spacing;
-
-            // 처음 5개 선택 버튼
-            btnSelectFirst5 = new Button
-            {
-                Text = "처음5개",
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, buttonHeight),
-                BackColor = Color.DarkGray,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Arial", 8)
-            };
-            btnSelectFirst5.Click += BtnSelectFirst5_Click;
-            rightPanel.Controls.Add(btnSelectFirst5);
-            yPos += spacing;
-
-            // 선택 해제 버튼
-            btnClearSelection = new Button
-            {
-                Text = "선택해제",
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, buttonHeight),
-                BackColor = Color.DarkGray,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Arial", 8)
-            };
-            btnClearSelection.Click += BtnClearSelection_Click;
-            rightPanel.Controls.Add(btnClearSelection);
-            yPos += spacing;
-
-            // 상태 토글 버튼
-            btnToggleStates = new Button
-            {
-                Text = "상태토글",
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, buttonHeight),
-                BackColor = Color.DarkGray,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Arial", 8)
-            };
-            btnToggleStates.Click += BtnToggleStates_Click;
-            rightPanel.Controls.Add(btnToggleStates);
+            btnAll.Click += BtnAll_Click;
+            rightPanel.Controls.Add(btnAll);
             yPos += spacing;
 
             // 전체 초기화 버튼
             btnResetAll = new Button
             {
-                Text = "전체초기화",
+                Text = "전체 초기화",
                 Location = new Point(5, yPos),
                 Size = new Size(buttonWidth, buttonHeight),
                 BackColor = Color.DarkGray,
@@ -183,18 +136,6 @@ namespace QMC.LCP_280.Process.Component
             btnResetAll.Click += BtnResetAll_Click;
             rightPanel.Controls.Add(btnResetAll);
             yPos += spacing;
-
-            // 구분선
-            yPos += 10;
-            var separator = new Label
-            {
-                BorderStyle = BorderStyle.Fixed3D,
-                Height = 2,
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, 2)
-            };
-            rightPanel.Controls.Add(separator);
-            yPos += 15;
 
             // 선택된 슬롯 수 라벨
             lblSelectedCount = new Label
@@ -247,7 +188,7 @@ namespace QMC.LCP_280.Process.Component
                 Font = new Font("Arial", 7, FontStyle.Bold)
             };
             rightPanel.Controls.Add(lblSelectedList);
-            yPos += 20;
+            yPos += 15;
 
             // 선택된 슬롯 목록 리스트박스
             listSelectedSlots = new ListBox
@@ -277,65 +218,19 @@ namespace QMC.LCP_280.Process.Component
         }
 
         #region 버튼 이벤트 핸들러
-
-        private void BtnSequentialSelect_Click(object sender, EventArgs e)
+        private void BtnAll_Click(object sender, EventArgs e)
         {
             if (_materialCassette == null) return;
 
             ClearSelection();
 
-            // 1번부터 5번까지 순차적으로 선택
-            int maxSelect = Math.Min(5, _materialCassette.SlotCount);
-            for (int i = 1; i <= maxSelect; i++)
-            {
-                var wafer = _materialCassette.GetWafer(i - 1);
-                SlotDisplayState state = GetSlotDisplayState(wafer);
-                SelectSlot(i, state);
-            }
-
-            Console.WriteLine("순차 선택 완료: 1→2→3→4→5");
-        }
-
-        private void BtnSelectFirst5_Click(object sender, EventArgs e)
-        {
-            if (_materialCassette == null) return;
-
-            ClearSelection();
-
-            // 처음 5개 슬롯 선택
-            int maxSelect = Math.Min(5, _materialCassette.SlotCount);
-            for (int i = 1; i <= maxSelect; i++)
-            {
-                var wafer = _materialCassette.GetWafer(i - 1);
-                SlotDisplayState state = GetSlotDisplayState(wafer);
-                SelectSlot(i, state);
-            }
-        }
-
-        private void BtnClearSelection_Click(object sender, EventArgs e)
-        {
-            ClearSelection();
-            Console.WriteLine("모든 선택 해제");
-        }
-
-        private void BtnToggleStates_Click(object sender, EventArgs e)
-        {
-            if (_materialCassette == null) return;
-
-            Random rand = new Random();
-
-            // 랜덤하게 슬롯 상태 변경
+            // 모든 슬롯을 "있는" 상태로 초기화
             for (int i = 0; i < _materialCassette.SlotCount; i++)
             {
-                var wafer = _materialCassette.GetWafer(i);
-                if (wafer != null)
-                {
-                    wafer.Presence = rand.Next(2) == 0 ? MaterialPresence.Exist : MaterialPresence.NotExist;
-                }
+                var wafer = _materialCassette.GetWafer(i + 1);
+                SlotDisplayState state = GetSlotDisplayState(wafer);
+                SelectSlot(i + 1, state);
             }
-
-            NotifyCassetteChanged();
-            Console.WriteLine("슬롯 상태 랜덤화 완료");
         }
 
         private void BtnResetAll_Click(object sender, EventArgs e)
@@ -345,7 +240,7 @@ namespace QMC.LCP_280.Process.Component
             ClearSelection();
 
             // 모든 슬롯을 "없음" 상태로 초기화
-            for (int i = 0; i < _materialCassette.SlotCount; i++)
+            for (int i = 0; i < _materialCassette.SlotCount + 1; i++)
             {
                 var wafer = _materialCassette.GetWafer(i);
                 if (wafer != null)
@@ -788,7 +683,15 @@ namespace QMC.LCP_280.Process.Component
             var selectedInOrder = GetSelectedSlotsInOrder();
 
             lblSelectedCountValue.Text = selectedSlots.Count.ToString();
-            lblNextOrderValue.Text = (_nextSelectionNumber).ToString();
+            
+
+            if(_nextSelectionNumber > _materialCassette.SlotCount)
+            {
+                lblNextOrderValue.Text = "1";
+            } else
+            {
+                lblNextOrderValue.Text = (_nextSelectionNumber).ToString();
+            }
 
             // 선택된 슬롯 목록 업데이트
             listSelectedSlots.Items.Clear();

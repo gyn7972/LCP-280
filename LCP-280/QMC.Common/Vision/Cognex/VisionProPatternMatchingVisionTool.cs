@@ -14,6 +14,7 @@ using System;
 using System.ComponentModel;
 using System.Drawing;
 using System.IO;
+using System.Threading;
 
 using QMC.Common.Vision.Tools;
 
@@ -47,7 +48,10 @@ namespace QMC.Common.Vision.Cognex
 
         #region Field
         [NonSerialized]
-        private CogPMAlignTool m_Tool;
+        //private CogPMAlignTool m_Tool;
+        private Lazy<CogPMAlignTool> _lazyTool = 
+            new Lazy<CogPMAlignTool>(() => new CogPMAlignTool(), LazyThreadSafetyMode.ExecutionAndPublication);
+
         private VisionImage m_LatestImage;
         #endregion
 
@@ -55,8 +59,9 @@ namespace QMC.Common.Vision.Cognex
         public VisionProPatternMatchingVisionTool(string name) : base(name)
         {
             this.Parameter = new VisionProPatternMatchingVisionToolParameter();
-            m_Tool = new CogPMAlignTool();
+            //m_Tool = new CogPMAlignTool();
         }
+
         public VisionProPatternMatchingVisionTool() : this("") { }
         #endregion
 
@@ -67,8 +72,14 @@ namespace QMC.Common.Vision.Cognex
         [Browsable(false)]
         public CogPMAlignTool Tool
         {
-            get { return this.m_Tool; }
-            private set { this.m_Tool = value; }
+            get { return _lazyTool.Value; }
+            // 재초기화가 필요할 때 OnPrepare에서 강제로 교체할 수 있도록 private set 구현
+            private set
+            {
+                _lazyTool = new Lazy<CogPMAlignTool>(() => value, LazyThreadSafetyMode.ExecutionAndPublication);
+            }
+            //get { return this.m_Tool; }
+            //private set { this.m_Tool = value; }
         }
         #endregion
 
@@ -462,10 +473,16 @@ namespace QMC.Common.Vision.Cognex
         protected override int OnPrepare()
         {
             int ret = 0;
-            this.Tool = new CogPMAlignTool();
+            // 필요 시 강제 재생성
             this.Tool.InputImage = new CogImage8Grey();
             this.Result = new PatternMatchingResult(this.Name);
             return ret;
+
+            //int ret = 0;
+            //this.Tool = new CogPMAlignTool();
+            //this.Tool.InputImage = new CogImage8Grey();
+            //this.Result = new PatternMatchingResult(this.Name);
+            //return ret;
         }
         #endregion
 

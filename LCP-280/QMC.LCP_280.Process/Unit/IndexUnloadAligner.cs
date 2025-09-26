@@ -90,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region seq signals
-        public bool CompleteUnloadAligner { get; internal set; } = false;
+        public bool CompleteUnloadAligner { get; set; } = false;
         #endregion
 
         #region Lifecycle

@@ -203,7 +203,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if(axis == AxisPickZ)
                 {
-                    if (!InputStage.IsAnyAxisMoving())
+                    if (InputStage.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -215,7 +215,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (axis == AxisPlaceZ)
                 {
-                    if (!Rotary.IsAnyAxisMoving())
+                    if (Rotary.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
                         AxisPickZ.EmgStop();
@@ -377,7 +377,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockPickUp()
         {
             int nRet = 0;
-            if (InputStage != null && !InputStage.IsAnyAxisMoving())
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -386,7 +386,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (InputStageEjector != null && !InputStageEjector.IsAnyAxisMoving())
+            if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -395,7 +395,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -516,7 +516,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -641,7 +641,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
                 AxisPickZ?.EmgStop();
@@ -861,7 +861,7 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
 
             // 사전 Interlock (다른 관련 Unit 축 동작 중이면 시작하지 않음)
-            if (InputStage != null && !InputStage.IsAnyAxisMoving())
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
@@ -874,7 +874,7 @@ namespace QMC.LCP_280.Process.Unit
             //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
             //    return -1;
             //}
-            if (InputStageEjector != null && !InputStageEjector.IsAnyAxisMoving())
+            if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
             {
                 AxisToolT.EmgStop();
                 AxisPickZ.EmgStop();
@@ -949,7 +949,7 @@ namespace QMC.LCP_280.Process.Unit
                     
 
                 // 진행 중 Interlock 감시 (기존 MoveAxisWithSafety 로직과 유사)
-                if (InputStage != null && !InputStage.IsAnyAxisMoving())
+                if (InputStage != null && InputStage.IsAnyAxisMoving())
                 {
                     pick.EmgStop(); pin.EmgStop();
                     AxisToolT.EmgStop();
@@ -971,7 +971,7 @@ namespace QMC.LCP_280.Process.Unit
                 //}
                 // Ejector 다른 축(EjectorZ) 움직임 감시
                 if (InputStageEjector != null && 
-                    !InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
+                    InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
                 {
                     pick.EmgStop(); pin.EmgStop();
                     AxisToolT.EmgStop();
@@ -1200,7 +1200,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
 
-        public bool CompleteInputDie { get; internal set; } = false;
+        public bool CompleteInputDie { get; set; } = false;
 
         #region Lifecycle
         public override int OnRun() 
@@ -1296,13 +1296,13 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            nRtn = EjectorVacuumOn();
+            nRtn = ChipPickDown();
             if (nRtn != 0)
             {
                 return -1;
             }
 
-            nRtn = ChipPickDown();
+            nRtn = EjectorVacuumOn();
             if (nRtn != 0)
             {
                 return -1;
@@ -1353,8 +1353,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.OnMakeSequence();
             this.SequencePlayers.Add(RaiseEjectorForPick);
-            this.SequencePlayers.Add(EjectorVacuumOn);
             this.SequencePlayers.Add(ChipPickDown);
+            this.SequencePlayers.Add(EjectorVacuumOn);
             this.SequencePlayers.Add(SyncPickPinUp);
             this.SequencePlayers.Add(SyncPickPinRetreat);
             this.SequencePlayers.Add(WaitRotarySupplyRequest);
