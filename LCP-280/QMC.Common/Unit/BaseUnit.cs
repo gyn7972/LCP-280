@@ -453,7 +453,9 @@ namespace QMC.Common.Unit
                         }
                     }
                 }
-                if (axis == null) continue;
+                if (axis == null) 
+                    continue;
+
                 axis.MoveAbs(target, isFine);
             }
 
