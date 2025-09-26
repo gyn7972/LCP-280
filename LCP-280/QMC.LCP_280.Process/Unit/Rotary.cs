@@ -1111,7 +1111,6 @@ namespace QMC.LCP_280.Process.Unit
 
             Equipment.Instance.StartUnitSync(unit.UnitName);
         }
-
         private void TryStopUnitIfNeeded(BaseUnit unit)
         {
             if (unit == null) return;
@@ -1148,9 +1147,9 @@ namespace QMC.LCP_280.Process.Unit
                     break;
                 default:
                     RequestInputDieTrDie = false;
-                    //RequestLoadAligner = false;
-                    //RequestProbe = false;
-                    //RequestUnloaderAligner = false;
+                    RequestLoadAligner = false;
+                    RequestProbe = false;
+                    RequestUnloaderAligner = false;
                     RequestOutputDieTrDie = false;
                     this.State = ProcessState.Ready;
                     break;
@@ -1182,6 +1181,10 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunReady() 
         {
             int nRtn = 0;
+            if (IsAxisMoving(AxisNames.IndexT))
+            {
+                return 0;
+            }
 
             //TryStartUnitIfNeeded(IndexLoadAligner);
             //TryStartUnitIfNeeded(IndexChipProbeController);
@@ -1235,15 +1238,17 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            //시컨스로 안할때
             nRtn = ExecuteUnitLoadMAlign();
             if (nRtn != 0)
             {
                 return -1;
             }
-
             IndexLoadAligner.CompleteLoadAligner = true;
             IndexChipProbeController.CompleteProbe = true;
             IndexUnloadAligner.CompleteUnloadAligner = true;
+
+
 
             // 회전 수행 후 다음 단계 요청 신호 셋업
             RequestInputDieTrDie = true;
@@ -1278,9 +1283,9 @@ namespace QMC.LCP_280.Process.Unit
             if (!Config.IsSimulation)
             {
                 if (InputDieTransfer.CompleteInputDie &&
-                //IndexLoadAligner.CompleteLoadAligner &&
-                //IndexChipProbeController.CompleteProbe &&
-                //IndexUnloadAligner.CompleteUnloadAligner &&
+                IndexLoadAligner.CompleteLoadAligner &&
+                IndexChipProbeController.CompleteProbe &&
+                IndexUnloadAligner.CompleteUnloadAligner &&
                 OutputDieTransfer.CompleteOutputDie)
                 {
                     // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
@@ -1297,14 +1302,14 @@ namespace QMC.LCP_280.Process.Unit
             {
                 InputDieTransfer.CompleteInputDie = true;
                 //IndexLoadAligner.CompleteLoadAligner = true;
-                //IndexChipProbeController.CompleteProbe = true;
-                //IndexUnloadAligner.CompleteUnloadAligner = true;
+                IndexChipProbeController.CompleteProbe = true;
+                IndexUnloadAligner.CompleteUnloadAligner = true;
                 OutputDieTransfer.CompleteOutputDie = true;
 
                 if (InputDieTransfer.CompleteInputDie &&
-                //IndexLoadAligner.CompleteLoadAligner &&
-                //IndexChipProbeController.CompleteProbe &&
-                //IndexUnloadAligner.CompleteUnloadAligner &&
+                IndexLoadAligner.CompleteLoadAligner &&
+                IndexChipProbeController.CompleteProbe &&
+                IndexUnloadAligner.CompleteUnloadAligner &&
                 OutputDieTransfer.CompleteOutputDie)
                 {
                     // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
