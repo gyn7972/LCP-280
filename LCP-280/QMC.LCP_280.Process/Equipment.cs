@@ -123,7 +123,7 @@ namespace QMC.LCP_280.Process
         public event EventHandler<EquipmentErrorEventArgs> ErrorOccurred;
 
 
-        private AjinAxlBoardHost _axlHost;                 // Ajin 보드 수명 관리(AXL.Open/Close + MOT 로드)
+        private AjinAxlBoardHost _axlHost = null;                 // Ajin 보드 수명 관리(AXL.Open/Close + MOT 로드)
         // ==== Motion 관리 ====
         private readonly MotionAxisManager _axisManager = new MotionAxisManager();
         //private readonly string _axisRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Axes");
@@ -248,6 +248,7 @@ namespace QMC.LCP_280.Process
 
                 // 여기서 모든 유닛 축을 직접 생성/로드하여 붙인다.
                 BootstrapAxesDirect();
+
                 BootstrapIODirect();
 
                 // === 카메라 초기화 ===
@@ -301,7 +302,7 @@ namespace QMC.LCP_280.Process
             {
                 OnStateChanged(EquipmentState.Error);
                 OnErrorOccurred($"설비 초기화 중 오류 발생: {ex.Message}");
-                throw;
+                //throw;
             }
         }
 
@@ -1201,7 +1202,19 @@ namespace QMC.LCP_280.Process
             {
                 var motPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LCP-280.mot");
                 _axlHost = new AjinAxlBoardHost(motPath);
-                if (File.Exists(motPath)) _axlHost.Open();
+
+                if (File.Exists(motPath))
+                {
+                    try
+                    {
+                        _axlHost.Open();
+                    }
+                    catch (Exception ex)
+                    {
+
+                        Log.Write(ex);
+                    }
+                }
             }
             if (_ckdDriver == null)
             {
@@ -1306,7 +1319,17 @@ namespace QMC.LCP_280.Process
             }
             IoBindings.RegisterAll();
 
-            if (_axlHost != null && !_axlHost.IsOpen)
+            bool bIsOpen = false;
+
+            try
+            {
+                bIsOpen = _axlHost.IsOpen;
+            }catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+            //if (_axlHost != null && !bIsOpen)
+            if (!bIsOpen)
             {
                 var mb = new MessageBoxOk();
                 mb.ShowDialog("Error!", "MOTION, I/O INIT FAIL.");

@@ -943,7 +943,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private int WaitUntil(Func<bool> cond, int timeoutMs)
         {
-            int nRtn = -1;
+            int nRtn = 0;
             var sw = Stopwatch.StartNew();
             while (sw.ElapsedMilliseconds < timeoutMs)
             {
@@ -1884,7 +1884,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 if (WaitUntil(() =>
-                    AxisX.InPosition(x) && AxisY.InPosition(y) && IsStageInterLockOK() == false,
+                    AxisX.InPosition(x) && AxisY.InPosition(y),
                     MappingMoveTimeoutMs) != 0)
                     return -1;
             }
@@ -1949,22 +1949,36 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             MakeScanPath(out List<PointD> path);
-            foreach (var pt in path)
+            try
             {
-                nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
-                if (nRet != 0)
+                foreach (var pt in path)
                 {
-                    Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
-                    return -1;
+                    this.CalcelToken?.Token.ThrowIfCancellationRequested();
+                    nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
+                        return -1;
+                    }
+                    // 그랩 및 매핑
+
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
+                        return -1;
+                    }
                 }
-                // 그랩 및 매핑
-                
-                if (nRet != 0)
-                {
-                    Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
-                    return -1;
-                }
+            }catch(OperationCanceledException)
+            {
+                Log.Write(UnitName, "ChipMap", "Cancelled");
+                return -1;
             }
+            catch(Exception ex)
+            {
+                Log.Write(UnitName, "ChipMap", "Exception: " + ex.Message);
+                return -1;
+            }
+
             return nRet;
         }
 
@@ -1993,19 +2007,22 @@ namespace QMC.LCP_280.Process.Unit
 
                     Log.Write(ex);
                 }
+                StageCamera.CameraConfig.Scale.X = 0.00345;
+                StageCamera.CameraConfig.Scale.Y = 0.00345;
                 double dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
                 double dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
-                if (dRoiWidth <= 0 || dRoiHeight <= 0)
-                {
-                    dRoiWidth = MappingRoiWidthMm;
-                    dRoiHeight = MappingRoiHeightMm;
-                }
+
 
                 double dChipPitchX = ChipPitchXmm;
                 double dChipPitchY = ChipPitchYmm;
+
                 if (dChipPitchX <= 0) dChipPitchX = 0.5;
                 if (dChipPitchY <= 0) dChipPitchY = 0.5;
 
+
+
+                dRoiWidth -= dChipPitchX * 2;
+                dRoiHeight -= dChipPitchY * 2;
                 int nHorzCount = (int)((dRadius - dChipPitchX) * 2 / dRoiWidth) + 1;
                 int nVertCount = (int)((dRadius - dChipPitchY) * 2 / dRoiHeight) + 1;
                 if (nHorzCount < 1) nHorzCount = 1;
@@ -2013,14 +2030,23 @@ namespace QMC.LCP_280.Process.Unit
                 double startX = centerTpX - (nHorzCount - 1) * dRoiWidth / 2;
                 double startY = centerTpY - (nVertCount - 1) * dRoiHeight / 2;
 
-                for (int iy = 0; iy < nVertCount; iy++)
+                for (int ix = 0; ix < nHorzCount; ix++)
                 {
-                    double y = startY + iy * dRoiHeight;
-                    for (int ix = 0; ix < nHorzCount; ix++)
+                    double x = startX + ix * dRoiWidth;
+                    for (int iy = 0; iy < nVertCount; iy++)
                     {
-                        double x = startX + ix * dRoiWidth;
+                        double y = startY + iy * dRoiHeight;
+
+                        // 지그재그 패턴: X 열 기준으로 Y 스캔 방향 전환
+                        if (ix % 2 == 1)
+                        {
+                            // 홀수 열은 Y를 반대 방향으로 스캔
+                            y = startY + (nVertCount - 1 - iy) * dRoiHeight;
+                        }
+
                         double dx = x - centerTpX;
                         double dy = y - centerTpY;
+
                         double dist = Math.Sqrt(dx * dx + dy * dy);
                         if (dist <= dRadius)
                         {

@@ -131,7 +131,8 @@ namespace QMC.Common.Unit
         public bool IsManualMode => RunMode == UnitRunMode.Manual;
         public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
 
-        
+        public CancellationTokenSource CalcelToken { get;  set; }
+
         public ProcessState State { get; set; }
         
         // 등록 축 사전 (Key: 논리 축명)
@@ -767,12 +768,19 @@ namespace QMC.Common.Unit
         public Task<int> RunManualFunction(Func<bool, int> func)
         {
             Task<int> task = null;
+            
             if (func != null && !IsRunning)
             {
 
                 CurrentFunc = func;
+                if (this.CalcelToken == null || this.CalcelToken.IsCancellationRequested) 
+                {
+                    this.CalcelToken?.Dispose();
+                    this.CalcelToken = new CancellationTokenSource(); 
+                }
                 task = Task.Factory.StartNew(() =>
                     {
+                        int ret = 0;
                         try
                         {
                             if (string.IsNullOrEmpty(Thread.CurrentThread.Name))
@@ -783,13 +791,34 @@ namespace QMC.Common.Unit
                             }
                         }
                         catch { }
+                        try
+                        {
+                            ret = func(false);
 
+                        }
+                        catch(Exception ex)
+                        {
+                            Log.Write(ex);
+                        }
 
-                        return func(false);
+                        return ret;
                     }
                 );
             }
             return task;
+        }
+
+        public void CancelSequence()
+        {
+            try
+            {
+                this.CalcelToken?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+
+            }
         }
 
         ~BaseUnit()
