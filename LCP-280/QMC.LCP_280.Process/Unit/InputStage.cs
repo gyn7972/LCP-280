@@ -67,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Die Tr Z-Axis Not Sfarety Pos.";
             alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -75,7 +75,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Feeder Z-Cylinder Not Sfarety Pos.";
             alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //,
@@ -84,7 +84,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "EjectorPin Z-Axis Not Sfarety Pos.";
             alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //,
             alarm = new AlarmInfo();
@@ -92,7 +92,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Ejector Z-Axis Not Sfarety Pos.";
             alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //
@@ -101,7 +101,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Feeder Y-Axis Not Sfarety Pos.";
             alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -109,7 +109,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Vision T Search.";
             alarm.Cause = "Vision T Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //
             alarm = new AlarmInfo();
@@ -117,7 +117,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Vision XY Search.";
             alarm.Cause = "Vision XY Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -125,7 +125,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "스테이지 이동에 실패 하였습니다.";
             alarm.Cause = "모터상태를 확인 하여주십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
         }
@@ -2507,6 +2507,9 @@ namespace QMC.LCP_280.Process.Unit
                     Score = m.Score
                 });
             }
+
+            double dscaleX = StageCamera.CameraConfig.Scale.X;
+            double dscaleY = StageCamera.CameraConfig.Scale.Y;
 
             snap?.Dispose();
             return true;

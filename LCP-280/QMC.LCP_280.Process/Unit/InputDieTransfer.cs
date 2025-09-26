@@ -53,7 +53,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "InputStage Not Sfarety Pos.";
             alarm.Cause = "InputStage가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -61,7 +61,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rotaty Not Sfarety Pos.";
             alarm.Cause = "Rotaty가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //,
@@ -70,7 +70,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "EjectorPin Z-Axis Not Sfarety Pos.";
             alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //,
             alarm = new AlarmInfo();
@@ -78,7 +78,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Ejector Z-Axis Not Sfarety Pos.";
             alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -86,7 +86,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "InputStage Axis Moving";
             alarm.Cause = "InputStage 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -94,7 +94,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rotary Axis Moving";
             alarm.Cause = "Rotary 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -102,7 +102,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Ejector Axis Moving";
             alarm.Cause = "InputStageEjector 축이 이동 중입니다. 정지 후 다시 시도하십시오.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
 
@@ -111,7 +111,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "InputDieTransferError";
             alarm.Cause = "InputDieTransfer명령중 예기치 않은 에러를 만났습니다. 관리자에게 문의 하여 주십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //eInputStageVaccum
@@ -120,7 +120,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "eInputStageVaccumError";
             alarm.Cause = "eInputStageVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //
@@ -129,7 +129,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "InputDieTransferVaccumError";
             alarm.Cause = "InputDieTransferVaccum 에러를 만났습니다. 공압 확인 바랍니다.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion

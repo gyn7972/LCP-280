@@ -50,7 +50,7 @@ namespace QMC.Common.Alarm
         public void SetDefaultValues()
         {
             Title = "";
-            Grade = AlarmType.Warning.ToString();
+            Grade = AlarmType.Error.ToString();
             Source = "";
             Code = 0;
             Cause = "";

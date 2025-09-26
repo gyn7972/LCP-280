@@ -37,7 +37,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
             alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //eFeederYSafetyPosition
@@ -46,7 +46,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "eFeederY SafetyPosition이 아닙니다.";
             alarm.Cause = "FeederY Axis 확인바랍니다.\n FeederY Axis 점검 하고 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
