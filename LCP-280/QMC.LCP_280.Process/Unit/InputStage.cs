@@ -2508,6 +2508,9 @@ namespace QMC.LCP_280.Process.Unit
                 });
             }
 
+            double dscaleX = StageCamera.CameraConfig.Scale.X;
+            double dscaleY = StageCamera.CameraConfig.Scale.Y;
+
             snap?.Dispose();
             return true;
         }

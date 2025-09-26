@@ -331,6 +331,19 @@ namespace QMC.Common.Cameras
             get { return CameraConfig.WaitToGrabTimeout; }
         }
 
+        [Category("Scale")]
+        public double ScaleX
+        {
+            get { return CameraConfig.ScaleX; }
+            set { CameraConfig.ScaleX = value; }
+        }
+        [Category("Scale")]
+        public double ScaleY
+        {
+            get { return CameraConfig.ScaleY; }
+            set { CameraConfig.ScaleY = value; }
+        }
+
         #endregion
         #endregion
         [Browsable(false)]

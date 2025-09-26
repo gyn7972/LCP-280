@@ -81,6 +81,34 @@ namespace QMC.Common.Cameras
         public VisionScale Scale { get; set; }
 
         [DefaultValue(typeof(Size), "0,0")]
+        public double ScaleX {             
+            get 
+            { 
+                return Scale?.X ?? 0.0; 
+            }
+            set
+            {
+                if (Scale == null) Scale = new VisionScale();
+                Scale.X = value;
+            }
+        }
+
+        [DefaultValue(typeof(Size), "0,0")]
+        public double ScaleY
+        {
+            get
+            {
+                return Scale?.Y ?? 0.0;
+            }
+            set
+            {
+                if (Scale == null) Scale = new VisionScale();
+                Scale.Y = value;
+            }
+        }
+
+
+        [DefaultValue(typeof(Size), "0,0")]
         public Size Resolution
         {
             set { CameraResolution = value; }
