@@ -4,34 +4,19 @@ using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using QMC.Common.Controls;   // 공용 DisplayView 사용
+using QMC.LCP_280.Process.Component; // MaterialChip, ChipProcessState
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
     public partial class DieInputControl : UserControl
     {
-        public enum DieState
-        {
-            Empty,
-            Present,
-            Picked
-        }
-
-        public class Die
-        {
-            public int Index { get; set; }
-            public Point Position { get; set; }
-            public DieState State { get; set; }
-        }
-
         public event EventHandler<DisplayView.DisplayItemEventArgs> MotorMoveRequested;
 
-        private List<Die> _dies = new List<Die>();
+        private List<MaterialChip> _chips = new List<MaterialChip>();
 
         public DieInputControl()
         {
             InitializeComponent();
-
-            // DisplayView 이벤트 연결
             displayView1.MotorMoveRequested += OnDisplayView_MotorMoveRequested;
         }
 
@@ -47,34 +32,52 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void UpdateDieCount()
         {
-            int count = _dies.Count(d => d.State == DieState.Present);
+            // Present 개수 = Mapped 상태 칩 수 (필요 시 Exists 로 변경 가능)
+            int count = _chips.Count(c => c.State == ChipProcessState.Mapped || c.State == ChipProcessState.Picked);
             lblDieCountValue.Text = count.ToString();
         }
 
-        public void SetDieList(List<Die> dies)
+        // 이름 호환성을 위해 SetDieList 유지 (MaterialChip 사용)
+        public void SetDieList(List<MaterialChip> chips)
         {
-            _dies = dies ?? new List<Die>();
+            _chips = chips ?? new List<MaterialChip>();
             UpdateDieCount();
 
-            // 공용 DisplayView 아이템 변환
-            var items = _dies.Select(d => new DisplayView.DisplayItem
+            var items = _chips.Select(c => new DisplayView.DisplayItem
             {
-                Position = d.Position,
-                State = (DisplayView.ItemState)Enum.Parse(typeof(DisplayView.ItemState), d.State.ToString())
+                Position = new Point(c.MapX, c.MapY),
+                State = ConvertState(c.State)
             }).ToList();
 
             displayView1.SetItems(items);
         }
 
-        public void UpdateDie(Point coord, DieState state)
+        private DisplayView.ItemState ConvertState(ChipProcessState state)
         {
-            var die = _dies.FirstOrDefault(d => d.Position == coord);
-            if (die != null)
+            // DisplayView.ItemState 는 Empty/Present/Picked 라고 가정
+            switch (state)
             {
-                die.State = state;
-                UpdateDieCount();
+                case ChipProcessState.Picked: return DisplayView.ItemState.Picked;
+                case ChipProcessState.Mapped:
+                case ChipProcessState.Inspecting:
+                case ChipProcessState.Inspected:
+                case ChipProcessState.Placed:
+                case ChipProcessState.Rejected:
+                    return DisplayView.ItemState.Present;
+                default:
+                    return DisplayView.ItemState.Empty;
+            }
+        }
 
-                SetDieList(_dies); // 다시 반영
+        public void UpdateChip(Point mapCoord, ChipProcessState state)
+        {
+            var chip = _chips.FirstOrDefault(c => c.MapX == mapCoord.X && c.MapY == mapCoord.Y);
+            if (chip != null)
+            {
+                chip.State = state;
+                UpdateDieCount();
+                // Refresh view
+                SetDieList(_chips);
             }
         }
     }

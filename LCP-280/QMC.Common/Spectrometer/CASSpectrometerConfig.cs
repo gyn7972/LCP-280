@@ -124,9 +124,8 @@ namespace QMC.Common.Spectrometer
                 UseHardwareTrigger = pc.GetValue<bool>(nameof(UseHardwareTrigger));
                 IsSimulated = pc.GetValue<bool>(nameof(IsSimulated));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log.Write(ex);
                 return -1;
             }
 

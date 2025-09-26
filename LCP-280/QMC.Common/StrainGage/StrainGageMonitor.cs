@@ -119,11 +119,12 @@ namespace QMC.Common.StrainGage
                     readerTask = new NationalInstruments.DAQmx.Task();
 
                     // Create Voltage Channels
+                    int idIndex = 0;
                     foreach (var item in items)
                     {
                         var gage = item.strainGage;
                         readerTask.AIChannels.CreateVoltageChannel(gage.Config.ReadChannelName
-                            , $"id{items.Count}"
+                            , $"id{idIndex++}"
                             , AITerminalConfiguration.Rse
                             , gage.Config.MinVoltage
                             , gage.Config.MaxVoltage
@@ -149,9 +150,8 @@ namespace QMC.Common.StrainGage
                         catch { }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Log.Write(ex);
                     return;
                 }
                 finally

@@ -15,8 +15,8 @@ namespace QMC.Common.Keithley
         {
             MeasureI,
             MeasureV,
-            SweepIAndTrigger,
-            SweepVAndTrigger,
+            MeasureIAndTrig,
+            MeasureVAndTrig,
         }
         public class ChannelCommand
         {
@@ -205,20 +205,30 @@ namespace QMC.Common.Keithley
                                 cmdStrs.Add("iv(" + string.Join(",", args) + ")");
                             }
                             break;
-                        case CommandAction.SweepIAndTrigger:
+                        case CommandAction.MeasureIAndTrig:
                             {
                                 args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
-                                cmdStrs.Add("sweepIAndTrig(" + string.Join(",", args) + ")");
+                                args.Add(cmd.SourceRange.ToString());
+                                args.Add(cmd.SourceTime.ToString());
+                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureRange.ToString());
+                                args.Add(cmd.MeasureTime.ToString());
+                                cmdStrs.Add("vi_trig(" + string.Join(",", args) + ")");
                             }
                             break;
-                        case CommandAction.SweepVAndTrigger:
+                        case CommandAction.MeasureVAndTrig:
                             {
                                 args.Clear();
                                 args.Add(Name);
                                 args.Add(cmd.SourceValue.ToString());
-                                cmdStrs.Add("sweepVAndTrig(" + string.Join(",", args) + ")");
+                                args.Add(cmd.SourceRange.ToString());
+                                args.Add(cmd.SourceTime.ToString());
+                                args.Add(cmd.SourceLimit.ToString());
+                                args.Add(cmd.MeasureRange.ToString());
+                                args.Add(cmd.MeasureTime.ToString());
+                                cmdStrs.Add("iv_trig(" + string.Join(",", args) + ")");
                             }
                             break;
                     }

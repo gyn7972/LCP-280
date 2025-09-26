@@ -128,18 +128,6 @@ namespace QMC.LCP_280.Process.Unit
                                     }
                                 }
                                 break;
-                            case TestItemCategory.ElectricalSource:
-                                {
-                                    if (pd.Name == "Type" || pd.Name == "SourceValue")
-                                    {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
-                                    }
-                                    else
-                                    {
-                                        row.Cells[pd.Name].Value = "-";
-                                    }
-                                }
-                                break;
                             case TestItemCategory.Optical:
                                 {
                                     if (pd.Name.Contains("Source") || pd.Name.Contains("Measure"))
