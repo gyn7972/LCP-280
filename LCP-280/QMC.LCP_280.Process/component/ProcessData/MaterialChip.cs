@@ -19,7 +19,7 @@ namespace QMC.LCP_280.Process.Component
     }
 
     [Serializable]
-    public class ChipData : Material
+    public class MaterialChip : Material
     {
         // ===== 식별 =====
         [DefaultValue(-1)] public int Index { get; set; } = -1;

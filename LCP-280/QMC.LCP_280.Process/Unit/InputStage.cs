@@ -1931,7 +1931,32 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
+        PointD GetPixelToMmScale(double dX,double dY)
+        {
+            double mmPerPixelX = (dX - StageCamera.CameraConfig.Resolution.Width /2 ) * StageCamera.CameraConfig.Scale.X;
+            double mmPerPixelY = (dY - StageCamera.CameraConfig.Resolution.Height /2 ) * StageCamera.CameraConfig.Scale.Y;
+            return new PointD(mmPerPixelX, mmPerPixelY);
+        }
+        public int SearchChips(VisionImage visionImage, ref List<PointD> points, double x, double y)
+        {
+            int ret = 0;
+            var result = this.PmRunner.Search(visionImage);
 
+            if(result.Success)
+            {
+                foreach(var v in result.Matches)
+                {
+                    lock(points)
+                    {
+                        PointD pt = GetPixelToMmScale(v.X, v.Y);
+                        pt.X += x;
+                        pt.Y += y;
+                        points.Add(new PointD(pt.X, pt.Y));
+                    }
+                }
+            }
+            return ret;
+        }
         public int PerformChipMapping(bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -1949,6 +1974,8 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             MakeScanPath(out List<PointD> path);
+            List<PointD> chips = new List<PointD>();
+            Task<int> tImageProcess = null;
             try
             {
                 foreach (var pt in path)
@@ -1960,13 +1987,43 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
                         return -1;
                     }
-                    // ±×·¦ ¹× ¸ÅÇÎ
 
+                    if(this.Config.IsSimulation)
+                    {
+                        //½Ã¹Ä·¹ÀÌ¼Ç
+                        Random rnd = new Random();
+                        int nChips = rnd.Next(5, 15);
+                        for(int i=0; i< nChips; i++)
+                        {
+                            double rx = (rnd.NextDouble() - 0.5) * 10;
+                            double ry = (rnd.NextDouble() - 0.5) * 10;
+                            chips.Add( new PointD(pt.X + rx, pt.Y + ry));
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        StageCamera.GrabSync(out VisionImage grabImage);
+                        if (tImageProcess != null)
+                        {
+                            tImageProcess.Wait();
+                        }
+                        tImageProcess = Task.Factory.StartNew(() => {
+
+                            return SearchChips(grabImage, ref chips, pt.X, pt.Y);
+                        });
+                    }
+                        
+                    
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
                         return -1;
                     }
+                }
+                if(tImageProcess != null)
+                {
+                    tImageProcess.Wait();
                 }
             }catch(OperationCanceledException)
             {
@@ -1978,8 +2035,24 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "ChipMap", "Exception: " + ex.Message);
                 return -1;
             }
-
+            UpdateChipInfo(chips);
             return nRet;
+        }
+
+        private void UpdateChipInfo(List<PointD> chips)
+        {
+            MaterialWafer materialWafer =  GetWaferMaterial();
+            materialWafer.Chips.Clear();
+            materialWafer.UpdateChipInfo(chips,this.ChipPitchXmm,this.ChipPitchYmm);
+            var list= materialWafer.Chips.OrderBy(t=>t.MapX).ThenBy(t=>t.MapY);
+            foreach(var c in list)
+            {
+                Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
+
+            }
+
+
+
         }
 
         private void MakeScanPath(out List<PointD> path)
