@@ -103,7 +103,7 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Methods
-        public async Task<int> MeasureAsync(int rotaryIndex = -1)
+        public async Task<int> MeasureAsync(int rotaryIndex = 0)
         {
             try
             {
@@ -131,7 +131,7 @@ namespace QMC.Common.PKGTester
                 isMeasuring = false;
             }
         }
-        public async Task<int> ManualMeasureAsync(int rotaryIndex = -1)
+        public async Task<int> ManualMeasureAsync(int rotaryIndex = 0)
         {
             try
             {
@@ -275,17 +275,35 @@ namespace QMC.Common.PKGTester
         #region Internal Process
         private async Task<int> DoMeasure(int rotaryIndex)
         {
-            // 두 계측기의 시뮬레이션 측정을 비동기로 동시에 실행
-            Task<int> spcTask = Task.Run(() => DoSpectrometerMeasure());
-            Thread.Sleep(100);
-            Task<int> smuTask = Task.Run(() => DoSourcemeterMeasure());
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            CASSpectrometer.DeviceEventHandler handler = (s) => { tcs.TrySetResult(true); };
+            spectrometer.OnMeasureCommandSended += handler;
+
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));
+
+            Task<int> spcTask = null;
+            Task<int> smuTask = null;
 
             try
             {
                 ResetResultItem();
-                int[] result = await Task.WhenAll(spcTask, smuTask);
 
-                // 두 계측기 중 하나라도 실패하면 예외 처리
+                // Spectrometer task start
+                spcTask = Task.Run(() => DoSpectrometerMeasure());
+
+                // Wait spectrometer command sent
+                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+                if (completedTask == timeoutTask)
+                {
+                    throw new TimeoutException("Spectrometer send measurement command timed out.");
+                }
+                Thread.Sleep(10);
+
+                // Sourcemeter task start
+                spcTask = Task.Run(() => DoSourcemeterMeasure());
+
+                // Wait for both tasks to complete
+                int[] result = await Task.WhenAll(spcTask, smuTask);
                 if (result.Any(r => r != 0))
                 {
                     throw new Exception("The measurement operation of the instrument was not completed normally.");
@@ -298,12 +316,9 @@ namespace QMC.Common.PKGTester
                 }
 
                 // Calibrate Data
-                if (rotaryIndex != -1)
+                if (!CalibrateDataProcess(rotaryIndex))
                 {
-                    if (!CalibrateDataProcess(rotaryIndex))
-                    {
-                        throw new Exception("Failed to calibrate data.");
-                    }
+                    throw new Exception("Failed to calibrate data.");
                 }
 
                 // Binning Data
@@ -321,26 +336,39 @@ namespace QMC.Common.PKGTester
             }
             finally
             {
-                spcTask.Dispose();
-                smuTask.Dispose();
+                spectrometer.OnMeasureCommandSended -= handler;
+
+                if (spcTask != null )
+                {
+                    spcTask.Dispose();
+                }
+                if (smuTask != null)
+                {
+                    smuTask.Dispose();
+                }
             }
         }
+
         private async Task<int> DoSourcemeterMeasure()
         {
             if (sourcemeter == null)
                 return -1;
+
             int smuCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Electrical || item.GetTestItemCategory() == TestItemCategory.ElectricalSource);
             if (smuCmdCount == 0)
                 return 0;
+
             return await Task.Run(() => sourcemeter.Measure());
         }
         private async Task<int> DoSpectrometerMeasure()
         {
             if (spectrometer == null)
                 return -1;
+
             int spcCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Optical);
             if (spcCmdCount == 0)
                 return 0;
+            
             return await Task.Run(() => spectrometer.Measure());
         }
 
@@ -367,14 +395,14 @@ namespace QMC.Common.PKGTester
                     if (!result.AssignItem(key, spectrometer.Results[key]))
                         throw new Exception($"Failed to assign result item from spectrometer. (key: {key})");
                 }
+                return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log.Write(ex);
                 return false;
             }
-            return true;
         }
+
         private bool CalibrateDataProcess(int rotaryIndex)
         {
             try
@@ -395,13 +423,12 @@ namespace QMC.Common.PKGTester
                         itemResult.Value = value;
                     }   
                 }
+                return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log.Write(ex);
                 return false;
             }
-            return true;
         }
         private bool BinningDataProcess()
         {
@@ -411,12 +438,10 @@ namespace QMC.Common.PKGTester
                 if (binningResult.BinType == BinningType.None)
                     throw new Exception("Failed to classify data.");
 
-                result.BinningResult.CopyFrom(binningResult);
-                return true;
+                return result.BinningResult.CopyFrom(binningResult);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log.Write(ex);
                 return false;
             }
         }
