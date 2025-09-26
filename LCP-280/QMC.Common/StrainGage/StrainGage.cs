@@ -47,7 +47,7 @@ namespace QMC.Common.StrainGage
         #endregion
 
         #region Properties
-        public double Voltage => voltage;
+        public double Voltage => (voltage - zeroVoltage);
         public double ZeroVoltage => zeroVoltage;
         public double Force => GetForce();
         public new StrainGageConfig Config { get; private set; }
@@ -104,9 +104,9 @@ namespace QMC.Common.StrainGage
         {
             zeroVoltage = 0;
         }
-        public void SetZeroVoltage(double value)
+        public void SetZeroVoltage()
         {
-            zeroVoltage = value;
+            zeroVoltage = voltage;
         }
         private double GetForce()
         {

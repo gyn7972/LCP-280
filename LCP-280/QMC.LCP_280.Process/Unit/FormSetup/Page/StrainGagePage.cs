@@ -98,7 +98,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             selectGage.Initialize();
         }
 
-        private void individualMenuButton1_Click(object sender, EventArgs e)
+        private void btnShowDialog_Click(object sender, EventArgs e)
         {
             if (dialog == null || dialog.IsDisposed)
             {
@@ -110,6 +110,35 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             {
                 dialog.BringToFront();
             }
+        }
+
+        private void btnZeroSet_Click(object sender, EventArgs e)
+        {
+            if (selectGage == null)
+                return;
+
+            var result = MessageBox.Show($"[{selectGage.Name}] Do you want to set the zero voltage to the current voltage?"
+                , ""
+                , MessageBoxButtons.YesNo
+                , MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                selectGage.SetZeroVoltage();
+            }
+        }
+
+        private void btnResetZeroSet_Click(object sender, EventArgs e)
+        {
+            if (selectGage == null)
+                return;
+
+            var result = MessageBox.Show($"[{selectGage.Name}] Do you want to reset the zero voltage?"
+                , ""
+                , MessageBoxButtons.YesNo
+                , MessageBoxIcon.Question);
+
+            selectGage.ResetZeroVoltage();
         }
     }
 }

@@ -791,13 +791,13 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
             this.SequencePlayers.Add(AlignSocketOnceReady);
             this.SequencePlayers.Add(AlignSocketOnce);
         }
+
         #region Seq 단위 동작 함수
 
         /// <summary>
