@@ -95,10 +95,12 @@ namespace QMC.LCP_280.Process.Unit
                                  .Distinct(StringComparer.OrdinalIgnoreCase)
                                  .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
                                  .ToArray();
+
                 selectAxisListBoxItemsView.GroupName = "Select Axis";
                 selectAxisListBoxItemsView.SetItems(names);
                 if (names.Length > 0) selectAxisListBoxItemsView.SelectedIndex = 0;
             }
+
             catch (Exception ex)
             {
                 Log.Write("MotionSetup", "BindAxisList", ex.ToString());

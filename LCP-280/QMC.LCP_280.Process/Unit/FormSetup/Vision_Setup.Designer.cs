@@ -353,7 +353,6 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Illuninator_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btn_Save_Illuninator_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Save_Illuninator_Setup.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Illuninator_Setup.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btn_Save_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Save_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Save_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
@@ -421,8 +420,8 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel5.Controls.Add(this.iluminatorChannelListBoxItemsView, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.gbIlluminatorControl, 0, 3);
-            this.tableLayoutPanel5.Controls.Add(this.btn_Save_Illuninator_Setup, 0, 1);
             this.tableLayoutPanel5.Controls.Add(this.illuminatorPropertyCollectionView, 0, 2);
+            this.tableLayoutPanel5.Controls.Add(this.btn_Save_Illuninator_Setup, 0, 1);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel5.Location = new System.Drawing.Point(823, 3);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
