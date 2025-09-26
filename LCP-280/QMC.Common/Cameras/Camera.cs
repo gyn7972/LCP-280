@@ -331,7 +331,7 @@ namespace QMC.Common.Cameras
             get { return CameraConfig.WaitToGrabTimeout; }
         }
 
-        [Category("Scale")]
+        [Category("Scale")]  
         public double ScaleX
         {
             get { return CameraConfig.ScaleX; }
