@@ -16,8 +16,10 @@ namespace QMC.Common.StrainGage
         private StrainGageMonitor _monitor;
         private Color[] colors = new Color[] { Color.Red, Color.Blue, Color.Green, Color.Orange, Color.Purple, Color.Brown, Color.Cyan, Color.Magenta };
 
-        private double minForce = 0;
-        private double maxForce = 0;
+        private const double minYDefault = 0;
+        private const double maxYDefault = 4;
+        private double minY = minYDefault;
+        private double maxY = maxYDefault;
 
         public StrainGageChart()
         {
@@ -40,21 +42,10 @@ namespace QMC.Common.StrainGage
                 chart.Series.Add(series);
             }
 
-            chart.ChartAreas[0].AxisX.Minimum = 0;
-            chart.ChartAreas[0].AxisX.Maximum = (double)nudDataCount.Value;
-
-            if (cbAutoScale.Checked)
-            {
-                chart.ChartAreas[0].AxisY.Minimum = Double.NaN;
-                chart.ChartAreas[0].AxisY.Maximum = Double.NaN;
-                chart.ChartAreas[0].AxisY.Interval = Double.NaN;
-            }
-            else
-            {
-                chart.ChartAreas[0].AxisY.Minimum = minForce;
-                chart.ChartAreas[0].AxisY.Maximum = maxForce;
-                chart.ChartAreas[0].AxisY.Interval = Double.NaN;
-            }
+            var chartArea = chart.ChartAreas[0];
+            chartArea.AxisX.Minimum = 0;
+            chartArea.AxisX.Maximum = (double)nudDataCount.Value;
+            UpdateChartAreaYRange();
 
             chart.Legends[0].Enabled = true;
 
@@ -66,6 +57,10 @@ namespace QMC.Common.StrainGage
             }
             cbDisplayItem.Items.Add("All");
             cbDisplayItem.SelectedIndex = cbDisplayItem.Items.Count - 1; // Select "All"
+
+            // text box
+            tbAxisYMin.Text = minY.ToString();
+            tbAxisYMax.Text = maxY.ToString();
         }
 
         private void Monitor_OnVoltageUpdated(object sender, EventArgs e)
@@ -90,20 +85,6 @@ namespace QMC.Common.StrainGage
             _monitor = monitor;
             _monitor.OnVoltageUpdated += Monitor_OnVoltageUpdated;
 
-            minForce = 0;
-            maxForce = 0;
-            foreach (var item in _monitor.Items)
-            {
-                var gage = item.strainGage;
-                if (gage != null)
-                {
-                    if (minForce > gage.Config.MinForce)
-                        minForce = gage.Config.MinForce;
-                    if (maxForce < gage.Config.MaxForce)
-                        maxForce = gage.Config.MaxForce;
-                }
-            }
-
             InitializeUI();
         }
 
@@ -113,6 +94,28 @@ namespace QMC.Common.StrainGage
             {
                 _monitor.OnVoltageUpdated -= Monitor_OnVoltageUpdated;
                 _monitor = null;
+            }
+        }
+
+        private void UpdateChartAreaYRange()
+        {
+            var chartArea = chart.ChartAreas[0];
+            if (cbAutoScale.Checked)
+            {
+                chartArea.AxisY.Minimum = Double.NaN;
+                chartArea.AxisY.Maximum = Double.NaN;
+                chartArea.AxisY.Interval = Double.NaN;
+            }
+            else
+            {
+                if (minY >= maxY)
+                {
+                    minY = minYDefault;
+                    maxY = maxYDefault;
+                }
+
+                chartArea.AxisY.Minimum = minY;
+                chartArea.AxisY.Maximum = maxY;
             }
         }
 
@@ -142,8 +145,9 @@ namespace QMC.Common.StrainGage
         {
             lock (chart)
             {
-                chart.ChartAreas[0].AxisX.Minimum = 0;
-                chart.ChartAreas[0].AxisX.Maximum = (double)nudDataCount.Value;
+                var chartArea = chart.ChartAreas[0];
+                chartArea.AxisX.Minimum = 0;
+                chartArea.AxisX.Maximum = (double)nudDataCount.Value;
 
                 int maxCount = (int)nudDataCount.Value;
                 foreach (var series in chart.Series)
@@ -152,25 +156,6 @@ namespace QMC.Common.StrainGage
                     {
                         series.Points.RemoveAt(0);
                     }
-                }
-            }
-        }
-
-        private void cbAutoScale_CheckedChanged(object sender, EventArgs e)
-        {
-            lock (chart)
-            {
-                if (cbAutoScale.Checked)
-                {
-                    chart.ChartAreas[0].AxisY.Minimum = Double.NaN;
-                    chart.ChartAreas[0].AxisY.Maximum = Double.NaN;
-                    chart.ChartAreas[0].AxisY.Interval = Double.NaN;
-                }
-                else
-                {
-                    chart.ChartAreas[0].AxisY.Minimum = minForce;
-                    chart.ChartAreas[0].AxisY.Maximum = maxForce;
-                    chart.ChartAreas[0].AxisY.Interval = Double.NaN;
                 }
             }
         }
@@ -191,23 +176,57 @@ namespace QMC.Common.StrainGage
                     var series = chart.Series[gage.Name];
                     if (series != null)
                     {
-                        series.Points.AddY(gage.Force);
+                        series.Points.AddY((cbDisplayVoltage.Checked ? gage.Voltage : gage.Force));
                         if (series.Points.Count > (int)nudDataCount.Value)
                         {
                             series.Points.RemoveAt(0);
                         }
 
-                        if (cbAutoScale.Checked)
-                        {
-                            chart.ChartAreas[0].AxisY.Minimum = Double.NaN;
-                            chart.ChartAreas[0].AxisY.Maximum = Double.NaN;
-                            chart.ChartAreas[0].AxisY.Interval = Double.NaN;
-                            chart.ChartAreas[0].RecalculateAxesScale();
-                        }
+                        UpdateChartAreaYRange();
                     }
                 }
                 chart.ResumeLayout();
             }
+        }
+
+        private void btnApplyRange_Click(object sender, EventArgs e)
+        {
+            double min = 0;
+            double max = 0;
+            try
+            {
+                min = double.Parse(tbAxisYMin.Text);
+                max = double.Parse(tbAxisYMax.Text);
+            }
+            catch
+            {
+                MessageBox.Show("Invalid range value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (min >= max)
+            {
+                MessageBox.Show("Min value must be less than Max value.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            minY = min;
+            maxY = max;
+        }
+
+        private void cbDisplayVoltage_CheckedChanged(object sender, EventArgs e)
+        {
+            chart.SuspendLayout();
+            foreach (var item in _monitor.Items)
+            {
+                var gage = item.strainGage;
+                var series = chart.Series[gage.Name];
+                if (series != null)
+                {
+                    series.Points.Clear();
+                }
+            }
+            chart.ResumeLayout();
         }
     }
 }

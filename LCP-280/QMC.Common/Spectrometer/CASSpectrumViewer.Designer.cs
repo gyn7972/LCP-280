@@ -30,31 +30,18 @@
         {
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.gbSpectrum = new System.Windows.Forms.GroupBox();
-            ((System.ComponentModel.ISupportInitialize)(this.chart)).BeginInit();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.lbMaxIntensity = new System.Windows.Forms.Label();
             this.gbSpectrum.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.chart)).BeginInit();
             this.SuspendLayout();
-            // 
-            // chart
-            // 
-            chartArea1.Name = "ChartArea1";
-            this.chart.ChartAreas.Add(chartArea1);
-            this.chart.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chart.Location = new System.Drawing.Point(10, 28);
-            this.chart.Name = "chart";
-            series1.BorderWidth = 2;
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
-            series1.Color = System.Drawing.Color.Blue;
-            series1.Name = "Spectrum";
-            this.chart.Series.Add(series1);
-            this.chart.Size = new System.Drawing.Size(380, 212);
-            this.chart.TabIndex = 0;
             // 
             // gbSpectrum
             // 
-            this.gbSpectrum.Controls.Add(this.chart);
+            this.gbSpectrum.Controls.Add(this.tableLayoutPanel1);
             this.gbSpectrum.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbSpectrum.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.gbSpectrum.Location = new System.Drawing.Point(0, 0);
@@ -65,6 +52,46 @@
             this.gbSpectrum.TabStop = false;
             this.gbSpectrum.Text = "Spectrum";
             // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 1;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Controls.Add(this.chart, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.lbMaxIntensity, 0, 0);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(10, 28);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(380, 212);
+            this.tableLayoutPanel1.TabIndex = 1;
+            // 
+            // chart
+            // 
+            chartArea1.Name = "ChartArea1";
+            this.chart.ChartAreas.Add(chartArea1);
+            this.chart.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.chart.Location = new System.Drawing.Point(3, 23);
+            this.chart.Name = "chart";
+            series1.BorderWidth = 2;
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            series1.Color = System.Drawing.Color.Blue;
+            series1.Name = "Spectrum";
+            this.chart.Series.Add(series1);
+            this.chart.Size = new System.Drawing.Size(374, 186);
+            this.chart.TabIndex = 1;
+            // 
+            // lbMaxIntensity
+            // 
+            this.lbMaxIntensity.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbMaxIntensity.Location = new System.Drawing.Point(3, 0);
+            this.lbMaxIntensity.Name = "lbMaxIntensity";
+            this.lbMaxIntensity.Size = new System.Drawing.Size(374, 20);
+            this.lbMaxIntensity.TabIndex = 2;
+            this.lbMaxIntensity.Text = "Maximum Intensity = 0";
+            // 
             // CASSpectrumViewer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -72,15 +99,17 @@
             this.Controls.Add(this.gbSpectrum);
             this.Name = "CASSpectrumViewer";
             this.Size = new System.Drawing.Size(400, 250);
-            ((System.ComponentModel.ISupportInitialize)(this.chart)).EndInit();
             this.gbSpectrum.ResumeLayout(false);
+            this.tableLayoutPanel1.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.chart)).EndInit();
             this.ResumeLayout(false);
 
         }
 
         #endregion
-
-        private System.Windows.Forms.DataVisualization.Charting.Chart chart;
         private System.Windows.Forms.GroupBox gbSpectrum;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chart;
+        private System.Windows.Forms.Label lbMaxIntensity;
     }
 }

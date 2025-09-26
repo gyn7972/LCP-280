@@ -35,7 +35,7 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.btnSave = new QMC.Common.IndividualMenuButton();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.strainGageChart1 = new QMC.Common.StrainGage.StrainGageChart();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
             this.strainGageDataGridViewer1 = new QMC.Common.StrainGage.StrainGageDataGridViewer();
             this.btnDeviceInfo = new QMC.Common.IndividualMenuButton();
             this.btnStop = new QMC.Common.IndividualMenuButton();
@@ -141,7 +141,7 @@
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.strainGageChart1);
+            this.panel1.Controls.Add(this.individualMenuButton1);
             this.panel1.Controls.Add(this.strainGageDataGridViewer1);
             this.panel1.Controls.Add(this.btnDeviceInfo);
             this.panel1.Controls.Add(this.btnStop);
@@ -152,18 +152,30 @@
             this.panel1.Size = new System.Drawing.Size(875, 694);
             this.panel1.TabIndex = 1;
             // 
-            // strainGageChart1
+            // individualMenuButton1
             // 
-            this.strainGageChart1.Location = new System.Drawing.Point(8, 203);
-            this.strainGageChart1.Name = "strainGageChart1";
-            this.strainGageChart1.Size = new System.Drawing.Size(859, 482);
-            this.strainGageChart1.TabIndex = 30;
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(707, 111);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(132, 43);
+            this.individualMenuButton1.TabIndex = 31;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "Show Device";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
+            this.individualMenuButton1.Click += new System.EventHandler(this.individualMenuButton1_Click);
             // 
             // strainGageDataGridViewer1
             // 
             this.strainGageDataGridViewer1.Location = new System.Drawing.Point(8, 3);
             this.strainGageDataGridViewer1.Name = "strainGageDataGridViewer1";
-            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(417, 194);
+            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(617, 194);
             this.strainGageDataGridViewer1.TabIndex = 29;
             // 
             // btnDeviceInfo
@@ -176,7 +188,7 @@
             this.btnDeviceInfo.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDeviceInfo.ForeColor = System.Drawing.Color.Black;
             this.btnDeviceInfo.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnDeviceInfo.Location = new System.Drawing.Point(431, 154);
+            this.btnDeviceInfo.Location = new System.Drawing.Point(631, 154);
             this.btnDeviceInfo.Name = "btnDeviceInfo";
             this.btnDeviceInfo.Size = new System.Drawing.Size(132, 43);
             this.btnDeviceInfo.TabIndex = 28;
@@ -195,7 +207,7 @@
             this.btnStop.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStop.ForeColor = System.Drawing.Color.Black;
             this.btnStop.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStop.Location = new System.Drawing.Point(431, 62);
+            this.btnStop.Location = new System.Drawing.Point(631, 62);
             this.btnStop.Name = "btnStop";
             this.btnStop.Size = new System.Drawing.Size(132, 43);
             this.btnStop.TabIndex = 26;
@@ -214,7 +226,7 @@
             this.btnStart.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStart.ForeColor = System.Drawing.Color.Black;
             this.btnStart.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStart.Location = new System.Drawing.Point(431, 11);
+            this.btnStart.Location = new System.Drawing.Point(631, 13);
             this.btnStart.Name = "btnStart";
             this.btnStart.Size = new System.Drawing.Size(132, 43);
             this.btnStart.TabIndex = 25;
@@ -251,6 +263,6 @@
         private System.Windows.Forms.Panel panel2;
         private Common.IndividualMenuButton btnSave;
         private Common.StrainGage.StrainGageDataGridViewer strainGageDataGridViewer1;
-        private Common.StrainGage.StrainGageChart strainGageChart1;
+        private Common.IndividualMenuButton individualMenuButton1;
     }
 }

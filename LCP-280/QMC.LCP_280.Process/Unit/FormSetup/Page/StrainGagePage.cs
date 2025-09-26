@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,28 +19,19 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
     {
         private Equipment equipment => Equipment.Instance;
 
-        // Strain Gage
         private StrainGage selectGage;
         private PropertyCollection pcConfig;
 
-        // Timer
-        private StrainGageMonitor monitor = new StrainGageMonitor();
+        private StrainGageMonitor monitor => equipment.StrainGageMonitor;
 
-        // Graph
-        private const int GraphDisplayDataCount = 100;
+        private FormStrainGageDialog dialog;
 
         public StrainGagePage()
         {
             InitializeComponent();
             InitializeSourcemeterListView();
 
-            // monitor
-            foreach (var gage in equipment.StrainGages.Values)
-            {
-                monitor.Add(gage);
-            }
             strainGageDataGridViewer1.AttachMonitor(monitor);
-            strainGageChart1.AttachMonitor(monitor);
         }
 
         private void InitializeSourcemeterListView()
@@ -104,6 +96,20 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             selectGage.Config.ApplyValueFromPropertyCollection(pcConfig);
             selectGage.Config.Save();
             selectGage.Initialize();
+        }
+
+        private void individualMenuButton1_Click(object sender, EventArgs e)
+        {
+            if (dialog == null || dialog.IsDisposed)
+            {
+                dialog = new FormStrainGageDialog(monitor);
+                dialog.FormClosed += (s, args) => { dialog = null; };
+                dialog.Show();
+            }
+            else
+            {
+                dialog.BringToFront();
+            }
         }
     }
 }

@@ -65,6 +65,7 @@ namespace QMC.Common.StrainGage
 
                 dataGrid.Rows[i].Cells[0].Value = "";
                 dataGrid.Rows[i].Cells[1].Value = "";
+                dataGrid.Rows[i].Cells[2].Value = "";
             }
         }
 
@@ -84,7 +85,8 @@ namespace QMC.Common.StrainGage
                     if (i < dataGrid.Rows.Count)
                     {
                         dataGrid.Rows[i].Cells[0].Value = gage.Voltage.ToString("F3");
-                        dataGrid.Rows[i].Cells[1].Value = gage.Force.ToString("F3");
+                        dataGrid.Rows[i].Cells[1].Value = gage.ZeroVoltage.ToString("F3");
+                        dataGrid.Rows[i].Cells[2].Value = gage.Force.ToString("F3");
                     }
                 }
                 dataGrid.ResumeLayout();

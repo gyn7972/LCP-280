@@ -77,6 +77,7 @@ namespace QMC.Common.Spectrometer
             #region Properties
             public double[] WaveLength { get; set; }
             public double[] Intensity { get; set; }
+            public double MinimumIntensity { get; set; }
             public double MaximumIntensity { get; set; }
             #endregion
 
@@ -87,6 +88,7 @@ namespace QMC.Common.Spectrometer
                 WaveLength = new double[0];
                 Intensity = null;
                 Intensity = new double[0];
+                MinimumIntensity = 0;
                 MaximumIntensity = 0;
             }
             #endregion
@@ -834,6 +836,7 @@ namespace QMC.Common.Spectrometer
             for (int i = 0; i < spectrum.WaveLength.Length; i++)
             {
                 spectrum.Intensity[i] = CAS4DLL.casGetData(deviceId, i + deadPixels);
+                spectrum.MinimumIntensity = Math.Min(spectrum.MinimumIntensity, spectrum.Intensity[i]);
                 spectrum.MaximumIntensity = Math.Max(spectrum.MaximumIntensity, spectrum.Intensity[i]);
 
                 spectrum.WaveLength[i] = CAS4DLL.casGetXArray(deviceId, i + deadPixels);
