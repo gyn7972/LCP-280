@@ -1545,7 +1545,7 @@ namespace QMC.LCP_280.Process
                     if (!StrainGageMonitor.Add(gage))
                         throw new Exception("StrainGageMonitor Add fail");
 
-                    StrainGageMonitor.Start();
+                    //StrainGageMonitor.Start();
                     Console.WriteLine($"[StrainGage] {gage.Name} ready");
                 }
                 catch (Exception ex) { Log.Write(ex); }
