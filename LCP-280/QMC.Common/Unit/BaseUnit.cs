@@ -356,7 +356,7 @@ namespace QMC.Common.Unit
                     Title = "Unknown",
                     Cause = "Unknown",
                     Source = UnitName,
-                    Grade = "Warning"
+                    Grade = "Error"
                 };
             }
             return m_dicAlarms[999];

@@ -44,11 +44,13 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Bind Unit
         Rotary Rotary { get; set; }
+        IndexChipProbeController IndexChipProbeController { get; set; }
 
         protected override void OnBindUnit()
         {
             base.OnBindUnit();
             Rotary = Equipment.Instance.GetUnit(UnitKeys.Rotary) as Rotary;
+            IndexChipProbeController = Equipment.Instance.GetUnit(UnitKeys.IndexChipProbeController) as IndexChipProbeController;
         }
         #endregion
 
@@ -164,10 +166,11 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 LogSequence("Start");
-                int nIndex = Rotary.GetLoadIndexNo();
+                //int nIndex = Rotary.GetLoadIndexNo();
+                int nIndex = IndexChipProbeController.GetProbeIndexNo();
 
                 // 1) Check Can Measure
-
+                InspectDone = false;
 
                 // 2) Measure Chip
                 bRet &= Measure();
@@ -178,6 +181,8 @@ namespace QMC.LCP_280.Process.Unit
                 bRet &= AssignDataToMaterialObject();
                 if (bRet != 0)
                     return -1;
+
+                InspectDone = true;
             }
             catch (Exception ex)
             {
