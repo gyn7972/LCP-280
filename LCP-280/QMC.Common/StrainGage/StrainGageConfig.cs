@@ -95,9 +95,8 @@ namespace QMC.Common.StrainGage
                 //UseAutoZeroTracking = pc.GetValue<bool>(nameof(UseAutoZeroTracking));
                 IsSimulation = pc.GetValue<bool>(nameof(IsSimulation));
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Log.Write(ex);
                 return -1;
             }
 

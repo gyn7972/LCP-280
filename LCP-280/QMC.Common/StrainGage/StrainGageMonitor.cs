@@ -149,9 +149,8 @@ namespace QMC.Common.StrainGage
                         catch { }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Log.Write(ex);
                     return;
                 }
                 finally

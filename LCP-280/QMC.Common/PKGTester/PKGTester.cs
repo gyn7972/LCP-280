@@ -185,6 +185,7 @@ namespace QMC.Common.PKGTester
             binningClassifier.AssignSpecSheet(binningSpecSheet);
             return 0;
         }
+        #endregion
 
         #region Build Mechanism
         private int RebuildTestMechanism()
@@ -330,15 +331,17 @@ namespace QMC.Common.PKGTester
             }
             catch (Exception ex)
             {
+                // Error handling
                 ResetResultItem();
-                Log.Write(ex);
+
+                Log.Write(this, ex.Message);
                 return -1;
             }
             finally
             {
                 spectrometer.OnMeasureCommandSended -= handler;
 
-                if (spcTask != null )
+                if (spcTask != null)
                 {
                     spcTask.Dispose();
                 }
@@ -368,7 +371,7 @@ namespace QMC.Common.PKGTester
             int spcCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Optical);
             if (spcCmdCount == 0)
                 return 0;
-            
+
             return await Task.Run(() => spectrometer.Measure());
         }
 
@@ -389,7 +392,7 @@ namespace QMC.Common.PKGTester
                 // Spectrometer
                 if (!spectrometer.GetResultProcess())
                     throw new Exception("Failed to process result data from spectrometer.");
-                
+
                 foreach (var key in spectrometer.Results.Keys)
                 {
                     if (!result.AssignItem(key, spectrometer.Results[key]))
@@ -397,8 +400,9 @@ namespace QMC.Common.PKGTester
                 }
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Write(this, ex.Message);
                 return false;
             }
         }
@@ -421,12 +425,13 @@ namespace QMC.Common.PKGTester
                             value += item.Offset[rotaryIndex];
 
                         itemResult.Value = value;
-                    }   
+                    }
                 }
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Write(this, ex.Message);
                 return false;
             }
         }
@@ -440,12 +445,12 @@ namespace QMC.Common.PKGTester
 
                 return result.BinningResult.CopyFrom(binningResult);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Write(this, ex.Message);
                 return false;
             }
         }
-        #endregion
         #endregion
     }
 }
