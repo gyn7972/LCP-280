@@ -65,9 +65,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private const float SCALE_FACTOR = 1.1f;
         private const float BASE_DIE_SIZE = 40f; // 기본 다이 크기를 작게 조정
 
-        // 고정 라벨 시스템
-        private List<PointF> _fixedLabelPositions = new List<PointF>();
+        // 고정 라벨 시스템 - 절대 위치로 관리
+        private Dictionary<int, PointF> _fixedLabelPositions = new Dictionary<int, PointF>();
         private bool _labelPositionsInitialized = false;
+        private SizeF _baseSize = new SizeF(400, 300); // 기준 크기 고정
 
         public DieIndexSelectControl()
         {
@@ -104,7 +105,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private void InitializeDies()
         {
             _dies.Clear();
-            CalculateDiePositions();
 
             // 8개 Die 초기화
             for (int i = 0; i < 8; i++)
@@ -120,16 +120,17 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
 
             CalculateDiePositions();
+            InitializeFixedLabelPositions();
         }
 
         /// <summary>반시계방향 위치 계산</summary>
-        /// 
         private void CalculateDiePositions()
         {
             if (_dies.Count == 0) return;
 
-            float centerX = displayPanel.Width / 2f;
-            float centerY = displayPanel.Height / 2f;
+            // 기준 크기를 사용하여 일관된 중심점 계산
+            float centerX = _baseSize.Width / 2f;
+            float centerY = _baseSize.Height / 2f;
             float radius = 80f;
 
             for (int i = 0; i < _dies.Count; i++)
@@ -146,6 +147,36 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
+        /// <summary>고정 라벨 위치 초기화 - 최초 한 번만 실행</summary>
+        private void InitializeFixedLabelPositions()
+        {
+            if (_labelPositionsInitialized) return;
+
+            _fixedLabelPositions.Clear();
+            float centerX = _baseSize.Width / 2f;
+            float centerY = _baseSize.Height / 2f;
+            float radius = 80f;
+            float dieSize = BASE_DIE_SIZE;
+
+            // 각 Die 번호별로 고정 위치 계산 (회전 없는 초기 상태 기준)
+            for (int dieNumber = 1; dieNumber <= 8; dieNumber++)
+            {
+                // Die 번호에 따른 초기 각도 (회전 없는 상태)
+                int arrayIndex = dieNumber - 1;
+                double startAngle = 180; // 9시 방향
+                double angleRadians = (startAngle + arrayIndex * 45) * Math.PI / 180;
+
+                float dieX = centerX + radius * (float)Math.Cos(angleRadians);
+                float dieY = centerY - radius * (float)Math.Sin(angleRadians);
+                PointF diePosition = new PointF(dieX, dieY);
+
+                // 라벨 위치 계산
+                PointF labelPosition = GetLabelPosition(diePosition, dieNumber, dieSize);
+                _fixedLabelPositions[dieNumber] = labelPosition;
+            }
+
+            _labelPositionsInitialized = true;
+        }
 
         #region ToolTip
 
@@ -184,8 +215,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             g.SmoothingMode = SmoothingMode.AntiAlias;
             g.Clear(displayPanel.BackColor);
 
-            // 변환 적용
-            g.TranslateTransform(_offset.X, _offset.Y);
+            // 폼 크기 변경 시 자동 중심 조정을 위한 오프셋 계산
+            float centerOffsetX = (displayPanel.Width - _baseSize.Width) / 2f;
+            float centerOffsetY = (displayPanel.Height - _baseSize.Height) / 2f;
+
+            // 변환 적용 (중심 조정 포함)
+            g.TranslateTransform(_offset.X + centerOffsetX, _offset.Y + centerOffsetY);
             g.ScaleTransform(_scale, _scale);
 
             // 다이 그리기
@@ -195,19 +230,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 DrawDie(g, die, dieSize);
             }
 
-            // 최초 위치에 고정 라벨 그리기
-            if (!_labelPositionsInitialized && _dies.Count > 0)
-            {
-                // 최초 위치 저장
-                _fixedLabelPositions.Clear();
-                foreach (var die in _dies)
-                {
-                    _fixedLabelPositions.Add(die.Position);
-                }
-                _labelPositionsInitialized = true;
-            }
-
-            // 고정 라벨 그리기 (최초 위치 기준)
+            // 고정 라벨 그리기
             DrawFixedLabels(g, dieSize);
 
             g.ResetTransform();
@@ -287,18 +310,16 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         /// <summary>고정된 위치에 라벨 표시</summary>
         private void DrawFixedLabels(Graphics g, float dieSize)
         {
-            if (_fixedLabelPositions.Count < 8) return;
+            if (!_labelPositionsInitialized) return;
 
-            for (int i = 0; i < 8; i++)
+            foreach (var kvp in _fixedLabelPositions)
             {
-                int dieNumber = i + 1;
+                int dieNumber = kvp.Key;
+                PointF labelPosition = kvp.Value;
                 string labelText = GetDieLabelText(dieNumber);
 
                 if (!string.IsNullOrEmpty(labelText))
                 {
-                    PointF fixedPosition = _fixedLabelPositions[i];
-                    PointF labelPosition = GetLabelPosition(fixedPosition, dieNumber, dieSize);
-
                     // 라벨 텍스트 그리기
                     using (var labelBrush = new SolidBrush(Color.Black))
                     using (var labelFont = new Font("맑은 고딕", 8f / _scale, FontStyle.Regular))
@@ -355,8 +376,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void DisplayPanel_MouseWheel(object sender, MouseEventArgs e)
         {
-            // 마우스 위치를 중심으로 줌
-            PointF mousePos = new PointF(e.X, e.Y);
+            // 폼 크기 변경을 고려한 마우스 위치 계산
+            float centerOffsetX = (displayPanel.Width - _baseSize.Width) / 2f;
+            float centerOffsetY = (displayPanel.Height - _baseSize.Height) / 2f;
+            PointF mousePos = new PointF(e.X - centerOffsetX, e.Y - centerOffsetY);
 
             float oldScale = _scale;
 
@@ -496,7 +519,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private Die GetDieAtPoint(Point screenPoint)
         {
-            // 화면 좌표를 실제 좌표로 변환
+            // 화면 좌표를 실제 좌표로 변환 (중심 오프셋 고려)
             PointF realPoint = ScreenToReal(screenPoint);
             float dieSize = BASE_DIE_SIZE;
 
@@ -520,9 +543,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private PointF ScreenToReal(Point screenPoint)
         {
-            // 화면 좌표를 실제 좌표로 변환
-            float x = (screenPoint.X - _offset.X) / _scale;
-            float y = (screenPoint.Y - _offset.Y) / _scale;
+            // 폼 크기 변경을 고려한 화면 좌표를 실제 좌표로 변환
+            float centerOffsetX = (displayPanel.Width - _baseSize.Width) / 2f;
+            float centerOffsetY = (displayPanel.Height - _baseSize.Height) / 2f;
+
+            float x = (screenPoint.X - _offset.X - centerOffsetX) / _scale;
+            float y = (screenPoint.Y - _offset.Y - centerOffsetY) / _scale;
             return new PointF(x, y);
         }
 
@@ -557,8 +583,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void DisplayPanel_Resize(object sender, EventArgs e)
         {
-            // 크기 변경 시 다이 위치 재계산
-            InitializeDies();
+            // 크기 변경 시에도 동일한 기준 크기를 사용하므로 Die와 라벨 위치는 변경되지 않음
+            // 단지 화면에서 중심 조정만 수행
             displayPanel.Invalidate();
         }
 
@@ -662,7 +688,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             UpdateRotationUI(_rotationOffset);
         }
 
-
         public void SetDieState(int dieNumber, DieState state)
         {
             var die = _dies.FirstOrDefault(d => d.Number == dieNumber);
@@ -719,8 +744,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             displayPanel.Invalidate();
         }
 
+        /// <summary>라벨 위치를 강제로 재초기화</summary>
+        public void ResetLabelPositions()
+        {
+            _labelPositionsInitialized = false;
+            _fixedLabelPositions.Clear();
+            InitializeFixedLabelPositions();
+            displayPanel.Invalidate();
+        }
+
         #endregion
-
-
     }
-}
+} 

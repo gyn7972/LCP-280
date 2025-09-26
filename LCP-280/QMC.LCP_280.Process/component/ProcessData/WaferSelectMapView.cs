@@ -188,7 +188,7 @@ namespace QMC.LCP_280.Process.Component
                 Font = new Font("Arial", 7, FontStyle.Bold)
             };
             rightPanel.Controls.Add(lblSelectedList);
-            yPos += 20;
+            yPos += 15;
 
             // 선택된 슬롯 목록 리스트박스
             listSelectedSlots = new ListBox
