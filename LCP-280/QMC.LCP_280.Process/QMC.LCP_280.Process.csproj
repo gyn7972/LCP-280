@@ -605,6 +605,9 @@
     <EmbeddedResource Include="Unit\FormMain\Page\DisplayView.resx">
       <DependentUpon>DisplayView.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_InputWaferCarrierControl.resx">
+      <DependentUpon>DisplayView_InputWaferCarrierControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\InputWaferCarrierControl.resx">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>

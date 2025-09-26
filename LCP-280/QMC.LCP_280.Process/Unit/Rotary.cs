@@ -121,6 +121,7 @@ namespace QMC.LCP_280.Process.Unit
             public RotarySocketState State;                    // 현재 상태
             public DateTime LastUpdated;
             public object Tag;                                 // 필요 시 임시 데이터(Chip ID 등)
+            public bool UseSocket;
 
             public SocketInfo(int no, double angleDeg)
             {
