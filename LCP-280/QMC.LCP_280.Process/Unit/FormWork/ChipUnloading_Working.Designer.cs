@@ -36,10 +36,12 @@
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this._ChipUnloadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox1.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ChipUnloadingCameraviewer)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
             this.SuspendLayout();
             // 
             // dioControl
@@ -83,9 +85,9 @@
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.groupBox1.Location = new System.Drawing.Point(886, 2);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
             this.groupBox1.Size = new System.Drawing.Size(376, 371);
             this.groupBox1.TabIndex = 17;
             this.groupBox1.TabStop = false;
@@ -93,13 +95,13 @@
             // 
             // groupBoxImageView
             // 
-            this.groupBoxImageView.Controls.Add(this._ChipUnloadingCameraviewer);
+            this.groupBoxImageView.Controls.Add(this.tableLayoutPanel5);
             this.groupBoxImageView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxImageView.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.groupBoxImageView.Location = new System.Drawing.Point(507, 2);
-            this.groupBoxImageView.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxImageView.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxImageView.Name = "groupBoxImageView";
-            this.groupBoxImageView.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.groupBoxImageView.Padding = new System.Windows.Forms.Padding(2);
             this.groupBoxImageView.Size = new System.Drawing.Size(375, 371);
             this.groupBoxImageView.TabIndex = 18;
             this.groupBoxImageView.TabStop = false;
@@ -115,12 +117,12 @@
             this._ChipUnloadingCameraviewer.FrameRate = 1D;
             this._ChipUnloadingCameraviewer.InputImage = null;
             this._ChipUnloadingCameraviewer.IsViewCustomizedImage = false;
-            this._ChipUnloadingCameraviewer.Location = new System.Drawing.Point(2, 20);
-            this._ChipUnloadingCameraviewer.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this._ChipUnloadingCameraviewer.Location = new System.Drawing.Point(2, 2);
+            this._ChipUnloadingCameraviewer.Margin = new System.Windows.Forms.Padding(2);
             this._ChipUnloadingCameraviewer.Name = "_ChipUnloadingCameraviewer";
             this._ChipUnloadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._ChipUnloadingCameraviewer.Simulated = false;
-            this._ChipUnloadingCameraviewer.Size = new System.Drawing.Size(371, 349);
+            this._ChipUnloadingCameraviewer.Size = new System.Drawing.Size(367, 275);
             this._ChipUnloadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._ChipUnloadingCameraviewer.TabIndex = 12;
             this._ChipUnloadingCameraviewer.TabStop = false;
@@ -146,19 +148,34 @@
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
             this.tableLayoutPanel1.TabIndex = 19;
             // 
+            // tableLayoutPanel5
+            // 
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this._ChipUnloadingCameraviewer, 0, 0);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
+            this.tableLayoutPanel5.TabIndex = 1;
+            // 
             // ChipUnloading_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1264, 751);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "ChipUnloading_Working";
             this.Text = "ChipUnloading_Working";
             this.groupBox1.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._ChipUnloadingCameraviewer)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -171,5 +188,6 @@
         private System.Windows.Forms.GroupBox groupBoxImageView;
         private Common.Vision.VisionImageViewer _ChipUnloadingCameraviewer;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
     }
 }

@@ -65,7 +65,7 @@ namespace QMC.LCP_280.Process.Unit
             this._btnVisionSetting.Location = new System.Drawing.Point(2, 2);
             this._btnVisionSetting.Margin = new System.Windows.Forms.Padding(2);
             this._btnVisionSetting.Name = "_btnVisionSetting";
-            this._btnVisionSetting.Size = new System.Drawing.Size(178, 36);
+            this._btnVisionSetting.Size = new System.Drawing.Size(178, 42);
             this._btnVisionSetting.TabIndex = 13;
             this._btnVisionSetting.Text = "VisionSetting";
             this._btnVisionSetting.UseVisualStyleBackColor = true;
@@ -77,7 +77,7 @@ namespace QMC.LCP_280.Process.Unit
             this.buttonDataManual.Location = new System.Drawing.Point(184, 2);
             this.buttonDataManual.Margin = new System.Windows.Forms.Padding(2);
             this.buttonDataManual.Name = "buttonDataManual";
-            this.buttonDataManual.Size = new System.Drawing.Size(179, 36);
+            this.buttonDataManual.Size = new System.Drawing.Size(179, 42);
             this.buttonDataManual.TabIndex = 14;
             this.buttonDataManual.Text = "ManualData";
             this.buttonDataManual.UseVisualStyleBackColor = true;
@@ -106,9 +106,10 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel4.Location = new System.Drawing.Point(2, 20);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
-            this.tableLayoutPanel4.RowCount = 2;
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 87F));
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 13F));
+            this.tableLayoutPanel4.RowCount = 3;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 15F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
             this.tableLayoutPanel4.Size = new System.Drawing.Size(371, 349);
             this.tableLayoutPanel4.TabIndex = 15;
             // 
@@ -127,7 +128,7 @@ namespace QMC.LCP_280.Process.Unit
             this._ChipLoadingCameraviewer.Name = "_ChipLoadingCameraviewer";
             this._ChipLoadingCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._ChipLoadingCameraviewer.Simulated = false;
-            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(367, 299);
+            this._ChipLoadingCameraviewer.Size = new System.Drawing.Size(367, 275);
             this._ChipLoadingCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._ChipLoadingCameraviewer.TabIndex = 12;
             this._ChipLoadingCameraviewer.TabStop = false;
@@ -142,11 +143,11 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.Controls.Add(this._btnVisionSetting, 0, 0);
             this.tableLayoutPanel5.Controls.Add(this.buttonDataManual, 1, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 306);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 282);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 1;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(365, 40);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(365, 46);
             this.tableLayoutPanel5.TabIndex = 15;
             // 
             // groupBoxManualTrSeq

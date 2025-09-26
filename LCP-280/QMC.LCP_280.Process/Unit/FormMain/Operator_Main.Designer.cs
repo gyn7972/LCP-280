@@ -38,6 +38,9 @@
             this.OutputWaferCamera = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBoxImageView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.InputWaferCamera)).BeginInit();
             this.groupBox1.SuspendLayout();
@@ -46,11 +49,14 @@
             ((System.ComponentModel.ISupportInitialize)(this.OutputWaferCamera)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
+            this.tableLayoutPanel4.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBoxImageView
             // 
-            this.groupBoxImageView.Controls.Add(this.InputWaferCamera);
+            this.groupBoxImageView.Controls.Add(this.tableLayoutPanel5);
             this.groupBoxImageView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxImageView.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.groupBoxImageView.Location = new System.Drawing.Point(2, 2);
@@ -72,12 +78,12 @@
             this.InputWaferCamera.FrameRate = 1D;
             this.InputWaferCamera.InputImage = null;
             this.InputWaferCamera.IsViewCustomizedImage = false;
-            this.InputWaferCamera.Location = new System.Drawing.Point(2, 21);
+            this.InputWaferCamera.Location = new System.Drawing.Point(2, 2);
             this.InputWaferCamera.Margin = new System.Windows.Forms.Padding(2);
             this.InputWaferCamera.Name = "InputWaferCamera";
             this.InputWaferCamera.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.InputWaferCamera.Simulated = false;
-            this.InputWaferCamera.Size = new System.Drawing.Size(411, 342);
+            this.InputWaferCamera.Size = new System.Drawing.Size(407, 303);
             this.InputWaferCamera.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.InputWaferCamera.TabIndex = 12;
             this.InputWaferCamera.TabStop = false;
@@ -101,7 +107,7 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.IndexOutputCamera);
+            this.groupBox1.Controls.Add(this.tableLayoutPanel3);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.groupBox1.Location = new System.Drawing.Point(421, 2);
@@ -123,12 +129,12 @@
             this.IndexOutputCamera.FrameRate = 1D;
             this.IndexOutputCamera.InputImage = null;
             this.IndexOutputCamera.IsViewCustomizedImage = false;
-            this.IndexOutputCamera.Location = new System.Drawing.Point(2, 21);
+            this.IndexOutputCamera.Location = new System.Drawing.Point(2, 2);
             this.IndexOutputCamera.Margin = new System.Windows.Forms.Padding(2);
             this.IndexOutputCamera.Name = "IndexOutputCamera";
             this.IndexOutputCamera.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.IndexOutputCamera.Simulated = false;
-            this.IndexOutputCamera.Size = new System.Drawing.Size(411, 342);
+            this.IndexOutputCamera.Size = new System.Drawing.Size(407, 303);
             this.IndexOutputCamera.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.IndexOutputCamera.TabIndex = 12;
             this.IndexOutputCamera.TabStop = false;
@@ -140,7 +146,7 @@
             this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox2.Controls.Add(this.OutputWaferCamera);
+            this.groupBox2.Controls.Add(this.tableLayoutPanel4);
             this.groupBox2.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.groupBox2.Location = new System.Drawing.Point(840, 2);
             this.groupBox2.Margin = new System.Windows.Forms.Padding(2);
@@ -161,12 +167,12 @@
             this.OutputWaferCamera.FrameRate = 1D;
             this.OutputWaferCamera.InputImage = null;
             this.OutputWaferCamera.IsViewCustomizedImage = false;
-            this.OutputWaferCamera.Location = new System.Drawing.Point(2, 21);
+            this.OutputWaferCamera.Location = new System.Drawing.Point(2, 2);
             this.OutputWaferCamera.Margin = new System.Windows.Forms.Padding(2);
             this.OutputWaferCamera.Name = "OutputWaferCamera";
             this.OutputWaferCamera.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this.OutputWaferCamera.Simulated = false;
-            this.OutputWaferCamera.Size = new System.Drawing.Size(412, 342);
+            this.OutputWaferCamera.Size = new System.Drawing.Size(408, 303);
             this.OutputWaferCamera.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.OutputWaferCamera.TabIndex = 12;
             this.OutputWaferCamera.TabStop = false;
@@ -206,6 +212,48 @@
             this.tableLayoutPanel2.Size = new System.Drawing.Size(1258, 369);
             this.tableLayoutPanel2.TabIndex = 0;
             // 
+            // tableLayoutPanel5
+            // 
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.InputWaferCamera, 0, 0);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 21);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 90F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(411, 342);
+            this.tableLayoutPanel5.TabIndex = 3;
+            // 
+            // tableLayoutPanel3
+            // 
+            this.tableLayoutPanel3.ColumnCount = 1;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Controls.Add(this.IndexOutputCamera, 0, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 21);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 2;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 90F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(411, 342);
+            this.tableLayoutPanel3.TabIndex = 4;
+            // 
+            // tableLayoutPanel4
+            // 
+            this.tableLayoutPanel4.ColumnCount = 1;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel4.Controls.Add(this.OutputWaferCamera, 0, 0);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(2, 21);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 2;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 90F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(412, 342);
+            this.tableLayoutPanel4.TabIndex = 5;
+            // 
             // Operator_Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -222,6 +270,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.OutputWaferCamera)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
+            this.tableLayoutPanel4.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -236,5 +287,8 @@
         private Common.Vision.VisionImageViewer OutputWaferCamera;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
     }
 }
