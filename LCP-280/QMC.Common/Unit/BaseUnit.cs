@@ -453,7 +453,9 @@ namespace QMC.Common.Unit
                         }
                     }
                 }
-                if (axis == null) continue;
+                if (axis == null) 
+                    continue;
+
                 axis.MoveAbs(target, isFine);
             }
 
@@ -539,6 +541,7 @@ namespace QMC.Common.Unit
             }
         }
 
+        // NEW: 올바른 의미. 이동 중이면 true.
         public virtual bool IsAxisMoving(string axisKeyOrName)
         {
             if (string.IsNullOrWhiteSpace(axisKeyOrName) || Axes.Count == 0)
@@ -551,22 +554,34 @@ namespace QMC.Common.Unit
                 {
                     if (kv.Value == null) continue;
                     if (kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase) ||
-                        kv.Key.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
+                        kv.Key.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase) ||
+                        kv.Value.Name.Equals(axisKeyOrName, StringComparison.OrdinalIgnoreCase))
                     {
                         axis = kv.Value;
                         break;
                     }
                 }
             }
-
-            if (axis != null && !axis.IsMoveDone())
+            if (axis == null) 
                 return false;
-
-            return true;
-            //return axis != null && !axis.IsMoveDone();
+            return !axis.IsMoveDone();
         }
 
+        // 이동 완료 여부 바로 얻고 싶을 때(가독성):
+        public virtual bool IsAxisStopped(string axisKeyOrName) => !IsAxisMoving(axisKeyOrName);
+
+        // 하나라도 이동 중이면 true, 전부 멈췄으면 false
         public virtual bool IsAnyAxisMoving()
+        {
+            foreach (var ax in Axes.Values)
+            {
+                if (ax != null && !ax.IsMoveDone())
+                    return true;
+            }
+            return false;
+        }
+        // 모든 축이 멈췄는지 확인 (가독성 보조용)
+        public virtual bool AreAllAxesStopped()
         {
             foreach (var ax in Axes.Values)
             {

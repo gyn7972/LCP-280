@@ -8,6 +8,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Reflection;
@@ -565,7 +566,7 @@ namespace QMC.LCP_280.Process.Unit
             if (AxisT == null) 
                 return true;
 
-            if (!IsAxisMoving(AxisNames.IndexT)) 
+            if (IsAxisMoving(AxisNames.IndexT)) 
                 return true;
 
             if ((DateTime.Now - _moveStartTime).TotalMilliseconds > AxisT.Setup.MoveTimeoutMs)
@@ -579,7 +580,8 @@ namespace QMC.LCP_280.Process.Unit
         // 인덱스 이동 완료 대기 (성공:0, 타임아웃:-1)
         public int WaitIndexMoveDone(int timeoutMs = -1, int pollMs = 5)
         {
-            if (AxisT == null) return -1;
+            if (AxisT == null) 
+                return -1;
 
             if (timeoutMs <= 0)
             {
@@ -588,12 +590,15 @@ namespace QMC.LCP_280.Process.Unit
                     ? AxisT.Setup.MoveTimeoutMs
                     : 20000;
             }
-
+            Thread.Sleep(100);
             var start = DateTime.Now;
             while (true)
             {
+                // 이동 중이면 계속 대기
                 if (!IsAxisMoving(AxisNames.IndexT))
+                {
                     return 0; // 완료
+                }
 
                 if ((DateTime.Now - start).TotalMilliseconds > timeoutMs)
                 {
@@ -604,6 +609,20 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        public int PollIntervalMs { get; set; } = 30;
+        private int WaitUntil(Func<bool> cond, int timeoutMs)
+        {
+            int nRtn = 0;
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                if (cond()) return nRtn;
+                Thread.Sleep(PollIntervalMs);
+            }
+
+            nRtn = 0;
+            return nRtn;
+        }
         private bool VerifyAllUnitsSafe(out string reason)
         {
             reason = null;
@@ -1055,9 +1074,30 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq Signal
         public bool RequestInputDieTrDie { get; set; } = false;
-        public bool RequestLoadAligner { get; set; } = false;
-        public bool RequestProbe { get; set; } = false;
-        public bool RequestUnloaderAligner { get; set; } = false;
+        // Thread-safe 플래그 (기존 이름 유지해 외부 영향 최소화)
+        private int _reqLoadAligner;
+        public bool RequestLoadAligner
+        {
+            get; set;
+            //get { return System.Threading.Thread.VolatileRead(ref _reqLoadAligner) != 0; }
+            //set { System.Threading.Interlocked.Exchange(ref _reqLoadAligner, value ? 1 : 0); }
+        }
+
+        private int _reqProbe;
+        public bool RequestProbe
+        {
+            get; set;
+            //get { return System.Threading.Thread.VolatileRead(ref _reqProbe) != 0; }
+            //set { System.Threading.Interlocked.Exchange(ref _reqProbe, value ? 1 : 0); }
+        }
+
+        private int _reqUnloadAligner;
+        public bool RequestUnloaderAligner
+        {
+            get; set;
+            //get { return System.Threading.Thread.VolatileRead(ref _reqUnloadAligner) != 0; }
+            //set { System.Threading.Interlocked.Exchange(ref _reqUnloadAligner, value ? 1 : 0); }
+        }
         public bool RequestOutputDieTrDie { get; set; } = false;
         #endregion
 
@@ -1071,7 +1111,6 @@ namespace QMC.LCP_280.Process.Unit
 
             Equipment.Instance.StartUnitSync(unit.UnitName);
         }
-
         private void TryStopUnitIfNeeded(BaseUnit unit)
         {
             if (unit == null) return;
@@ -1098,9 +1137,6 @@ namespace QMC.LCP_280.Process.Unit
             switch (State)
             {
                 case ProcessState.Ready:
-                    
-
-
                     nRtn = OnRunReady();
                     break;
                 case ProcessState.Work:
@@ -1145,11 +1181,14 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunReady() 
         {
             int nRtn = 0;
+            if (IsAxisMoving(AxisNames.IndexT))
+            {
+                return 0;
+            }
 
             //TryStartUnitIfNeeded(IndexLoadAligner);
             //TryStartUnitIfNeeded(IndexChipProbeController);
             //TryStartUnitIfNeeded(IndexUnloadAligner);
-
             //TryStartUnitIfNeeded(InputDieTransfer);
             //TryStartUnitIfNeeded(OutputDieTransfer);
 
@@ -1162,12 +1201,10 @@ namespace QMC.LCP_280.Process.Unit
             switch (chk)
             {
                 case ROT_CHK_OK:
-
                     State = ProcessState.Work;
                     return nRtn;
 
                 case ROT_CHK_SKIP_NO_DEMAND:
-                    // 회전 없이도 다음 Step 진행
                     RequestInputDieTrDie = true;
                     RequestLoadAligner = true;
                     RequestProbe = true;
@@ -1194,17 +1231,30 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            if (Rotate() != 0)
+            nRtn = Rotate();
+            if (nRtn != 0)
             {
                 Log.Write(UnitName, "[Rotate] Failed");
                 return -1;
             }
 
+            //시컨스로 안할때
+            nRtn = ExecuteUnitLoadMAlign();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+            IndexLoadAligner.CompleteLoadAligner = true;
+            IndexChipProbeController.CompleteProbe = true;
+            IndexUnloadAligner.CompleteUnloadAligner = true;
+
+
+
             // 회전 수행 후 다음 단계 요청 신호 셋업
             RequestInputDieTrDie = true;
-            RequestLoadAligner = true;
-            RequestProbe = true;
-            RequestUnloaderAligner = true;
+            //RequestLoadAligner = true;
+            //RequestProbe = true;
+            //RequestUnloaderAligner = true;
             State = ProcessState.Complete;
 
             return nRtn;
@@ -1214,11 +1264,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            if (!IsAxisMoving(AxisNames.IndexT))
+            if (IsAxisMoving(AxisNames.IndexT))
             {
                 return 0;
             }
-
+            
             if (!Config.IsSimulation)
             {
                 if (IndexUnloadAligner.CompleteUnloadAligner)
@@ -1240,25 +1290,37 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
                     PostRotateStateTransition();
+
+                    // (추가) 공정 상태 갱신
+                    UpdateProcessStates();
+
+                    Thread.Sleep(2000); // 시뮬레이션용 대기
                     State = ProcessState.None;
                 }
             }
             else
             {
                 InputDieTransfer.CompleteInputDie = true;
-                IndexLoadAligner.CompleteLoadAligner = true;
+                //IndexLoadAligner.CompleteLoadAligner = true;
                 IndexChipProbeController.CompleteProbe = true;
                 IndexUnloadAligner.CompleteUnloadAligner = true;
                 OutputDieTransfer.CompleteOutputDie = true;
 
-                // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
-                PostRotateStateTransition();
+                if (InputDieTransfer.CompleteInputDie &&
+                IndexLoadAligner.CompleteLoadAligner &&
+                IndexChipProbeController.CompleteProbe &&
+                IndexUnloadAligner.CompleteUnloadAligner &&
+                OutputDieTransfer.CompleteOutputDie)
+                {
+                    // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
+                    PostRotateStateTransition();
 
-                // (추가) 공정 상태 갱신
-                UpdateProcessStates();
+                    // (추가) 공정 상태 갱신
+                    UpdateProcessStates();
 
-                Thread.Sleep(2000); // 시뮬레이션용 대기
-                State = ProcessState.None;
+                    //Thread.Sleep(2000); // 시뮬레이션용 대기
+                    State = ProcessState.None;
+                }
             }
 
             return nRtn; 
@@ -1406,73 +1468,38 @@ namespace QMC.LCP_280.Process.Unit
             if (alignState == RotarySocketState.Loaded)
             {
                 // 아직 Align 동작 시작 안했고 Align Unit 이 처리 가능 상태라면 시작
-                //if (IndexLoadAligner != null && !IndexLoadAligner.CompleteLoadAligner)
-                if (IndexLoadAligner != null && IndexLoadAligner.CompleteLoadAligner)
+                if (IndexLoadAligner != null)// && IndexLoadAligner.CompleteLoadAligner)
                 {
                     lock (_socketLock)
                     {
                         if (_sockets[alignIdx].State == RotarySocketState.Loaded)
                         {
                             _sockets[alignIdx].SetState(RotarySocketState.Aligned);
-                            RequestLoadAligner = true;
+                            //RequestLoadAligner = true;
                         }
                     }
                 }
             }
-            //else if (alignState == RotarySocketState.Aligning)
-            //{
-            //    if (IndexLoadAligner == null || IndexLoadAligner.CompleteLoadAligner)
-            //    {
-            //        lock (_socketLock)
-            //        {
-            //            if (_sockets[alignIdx].State == RotarySocketState.Aligning)
-            //            {
-            //                _sockets[alignIdx].SetState(RotarySocketState.Aligned);
-            //                RequestLoadAligner = false;
-            //            }
-            //        }
-            //    }
-            //}
 
             // 3) Probe 스테이션 상태 전이
             if (probeState == RotarySocketState.Aligned)
             {
-                if (IndexChipProbeController != null && IndexChipProbeController.CompleteProbe)
+                if (IndexChipProbeController != null)// && IndexChipProbeController.CompleteProbe)
                 {
                     lock (_socketLock)
                     {
                         if (_sockets[probeIdx].State == RotarySocketState.Aligned)
                         {
                             _sockets[probeIdx].SetState(RotarySocketState.Probed);
-                            RequestProbe = true;
+                            //RequestProbe = true;
                         }
                     }
                 }
             }
-            //else if (probeState == RotarySocketState.Probing)
-            //{
-            //    if (IndexChipProbeController == null || IndexChipProbeController.CompleteProbe)
-            //    {
-            //        lock (_socketLock)
-            //        {
-            //            if (_sockets[probeIdx].State == RotarySocketState.Probing)
-            //            {
-            //                _sockets[probeIdx].SetState(RotarySocketState.Probed);
-            //                RequestProbe = false;
-            //            }
-            //        }
-            //    }
-            //}
             
             // 4) Unload/Output 스테이션은 기존 UpdateUnloadOutputComposite() 호출로 상태 전이 관리(Probed 이후)
             UpdateUnloadOutputComposite();
         }
-
-
-
-
-
-
 
         private int CanRotate(out string reason)
         {
@@ -1487,7 +1514,7 @@ namespace QMC.LCP_280.Process.Unit
                 reason = "AxisT NULL";
                 return ROT_CHK_ERR_AXIS_NULL;
             }
-            if (!IsAxisMoving(AxisNames.IndexT))
+            if (IsAxisMoving(AxisNames.IndexT))
             {
                 PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 reason = "AxisT Busy";
@@ -1581,7 +1608,7 @@ namespace QMC.LCP_280.Process.Unit
                 try { alignIdx = IndexLoadAligner.GetAlignIndexNo(); } catch { alignIdx = -1; }
             }
             if (alignIdx < 0) // fallback
-                alignIdx = IndexLoadAligner.GetAlignIndexNo(); //(loadIdx + 1) % GetIndexCount();
+                alignIdx = (loadIdx + 1) % GetIndexCount();
 
             int probeIdx = -1;
             if (IndexChipProbeController != null)
@@ -1589,7 +1616,7 @@ namespace QMC.LCP_280.Process.Unit
                 try { probeIdx = IndexChipProbeController.GetProbeIndexNo(); } catch { probeIdx = -1; }
             }
             if (probeIdx < 0)
-                probeIdx = IndexChipProbeController.GetProbeIndexNo();  //(loadIdx + 2) % GetIndexCount();
+                probeIdx = (loadIdx + 2) % GetIndexCount();
 
             int unloadIdx = -1;
             if (IndexUnloadAligner != null)
@@ -1597,7 +1624,7 @@ namespace QMC.LCP_280.Process.Unit
                 try { unloadIdx = IndexUnloadAligner.GetUnloadIndexNo(); } catch { unloadIdx = -1; }
             }
             if (unloadIdx < 0)
-                unloadIdx = IndexUnloadAligner.GetUnloadIndexNo(); //(loadIdx + 4) % GetIndexCount();
+                unloadIdx = (loadIdx + 4) % GetIndexCount();
 
             RotarySocketState loadState, alignState, probeState, unloadState;
             lock (_socketLock)
@@ -1770,11 +1797,6 @@ namespace QMC.LCP_280.Process.Unit
                 InitStationRules();
             }
 
-
-            // InitStationRules 내부 상수와 동일하게 유지
-            const int UNLOAD_OUTPUT_OFFSET = 4;
-
-            int loadIdx = GetLoadIndexNo();
             int idx = IndexUnloadAligner.GetUnloadIndexNo();  //(loadIdx + UNLOAD_OUTPUT_OFFSET) % GetIndexCount();
 
             RotarySocketState state;
@@ -1788,20 +1810,20 @@ namespace QMC.LCP_280.Process.Unit
                 lock (_socketLock)
                 {
                     _sockets[idx].SetState(RotarySocketState.Unloading);
-                    RequestUnloaderAligner = true;
+                    //RequestUnloaderAligner = true;
                 }
                 return;
             }
 
             if (state == RotarySocketState.Unloading)
             {
-                if (IndexUnloadAligner == null || IndexUnloadAligner.CompleteUnloadAligner)
+                if (IndexUnloadAligner != null)// || IndexUnloadAligner.CompleteUnloadAligner)
                 {
                     lock (_socketLock)
                     {
                         _sockets[idx].SetState(RotarySocketState.Outputting);
-                        RequestUnloaderAligner = false;
-                        RequestOutputDieTrDie = true;
+                        //RequestUnloaderAligner = false;
+                        //RequestOutputDieTrDie = true;
                     }
                 }
                 return;
@@ -1809,12 +1831,12 @@ namespace QMC.LCP_280.Process.Unit
 
             if (state == RotarySocketState.Outputting)
             {
-                if (OutputDieTransfer == null || OutputDieTransfer.CompleteOutputDie)
+                if (OutputDieTransfer != null || OutputDieTransfer.CompleteOutputDie)
                 {
                     lock (_socketLock)
                     {
                         _sockets[idx].SetState(RotarySocketState.Completed);
-                        RequestOutputDieTrDie = false;
+                        //RequestOutputDieTrDie = false;
                     }
                 }
                 return;
@@ -1887,11 +1909,30 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int Rotate(bool isFine = false)
+        public int MovePositionRotate(bool isFine = false)
+        {
+            Task<int> task = MovePositionAsyncRotate(isFine);
+            while (IsEndTask(task) == false)
+            {
+                //Safety
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+
+        public Task<int> MovePositionAsyncRotate(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnMovePositionRotate(isFine);
+                return 0;
+            });
+        }
+
+        private int OnMovePositionRotate(bool isFine = false)
         {
             int nRet = 0;
-
-            this.CurrentFunc = Rotate;
+            //nRet = Rotate(isFine);
 
             string reason;
             if (!TryMoveIndexNext(out reason))
@@ -1906,14 +1947,35 @@ namespace QMC.LCP_280.Process.Unit
             if (nRet != 0)
             {
                 // 필요 시 Alarm 발생 가능
-                // RaiseAlarm((int)AlarmKeys.eIndexRotary, "Index Move Timeout");
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
+
+            if (nRet != 0)
+            {
+                return nRet;
+            }
+            return nRet;
+        }
+
+        public int Rotate(bool isFine = false)
+        {
+            int nRet = 0;
+            this.CurrentFunc = Rotate;
+
+            nRet = MovePositionRotate();
+            if(nRet != 0)
+            {
+                Log.Write(UnitName, "Rotate Fail");
+                return -1;
+            }
+
 
             // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
             PostRotateStateTransition();
             return nRet;
         }
+
         //사전에 Unit 상태 및 안전 위치 확인 함수.
         public int IsExecuteUnitLoadDie()
         {
@@ -2090,28 +2152,6 @@ namespace QMC.LCP_280.Process.Unit
 
             RequestOutputDieTrDie = true;
 
-            return nRtn;
-        }
-
-
-        public int RunReady(bool isFine = false)
-        {
-            int nRtn = 0;
-            OnRunReady();
-            return nRtn;
-        }
-
-        public int RunWork(bool isFine = false)
-        {
-            int nRtn = 0;
-            OnRunWork();
-            return nRtn;
-        }
-
-        public int RunComplete(bool isFine = false)
-        {
-            int nRtn = 0;
-            OnRunComplete();
             return nRtn;
         }
 

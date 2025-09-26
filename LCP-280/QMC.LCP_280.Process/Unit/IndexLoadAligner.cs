@@ -126,7 +126,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -246,7 +246,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -351,7 +351,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
@@ -424,7 +424,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTForward()
         {
             int nRet = 0;
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -487,7 +487,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTBackward()
         {
             int nRet = 0;
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -556,7 +556,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockAlignTReady()
         {
             int nRet = 0;
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ?.EmgStop();
                 AxisAlignT?.EmgStop();
@@ -725,7 +725,7 @@ namespace QMC.LCP_280.Process.Unit
                         ret = OnRunComplete();
                         if(ret == 0)
                         {
-                            CompleteLoadAligner = true;
+                            
                         }
                         break;
                     default:
@@ -753,27 +753,43 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnRunReady()
         {
-            int ret = 0;
+            int nRet = 0;
+
+            nRet = AlignSocketOnceReady();
+            if(nRet != 0)
+            {
+                return -1;
+            }
 
             State = ProcessState.Work;
-            return 0;
+            return nRet;
         }
         protected override int OnRunWork()
         {
-            int ret = 0;
+            int nRet = 0;
+
+            nRet = AlignSocketOnce();
+            if (nRet != 0)
+            {
+                return -1;
+            }
 
             State = ProcessState.Complete;
-            return 0;
+            return nRet;
         }
         protected override int OnRunComplete()
         {
             int ret = 0;
 
-            State = ProcessState.None;
+            CompleteLoadAligner = true;
+            if (!Rotary.RequestLoadAligner)
+            {
+                State = ProcessState.None;
+            }
+
             return 0;
         }
         #endregion
-
 
         protected override void OnMakeSequence()
         {
@@ -781,8 +797,8 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(AlignSocketOnceReady);
             this.SequencePlayers.Add(AlignSocketOnce);
         }
-        #region Seq 단위 동작 함수
 
+        #region Seq 단위 동작 함수
 
         /// <summary>
         /// Rotary(인덱스)가 정지 상태인지 즉시 확인.
@@ -791,11 +807,13 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public int IsRotaryIdle()
         {
-            if (Rotary != null && !Rotary.IsAnyAxisMoving())
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisIndexZ.EmgStop();
                 AxisAlignT.EmgStop();
-                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+
+                //확인용이니깐 알람은 울리지 말자.
+                //PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
             return 0;
@@ -812,8 +830,13 @@ namespace QMC.LCP_280.Process.Unit
                 int nIndex = GetAlignIndexNo();
 
                 bRtn = IsRotaryIdle();
-                if (bRtn != 0)
-                    return -1;
+                if(bRtn != 0)
+                {
+                    return 0;
+                }
+
+                //if (bRtn != 0)
+                //    return -1;
 
                 // 2) T Ready
                 bRtn = MovePositionAlignTReady(bFineSpeed);
@@ -849,13 +872,18 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = AlignSocketOnce;
             try
             {
+                bRtn = IsRotaryIdle();
+                if(bRtn != 0)
+                {
+                    return 0;
+                }
+                //if (bRtn != 0)
+                //    return -1;
+
                 LogSequence("Start");
                 this.CurrentFunc = AlignSocketOnce;
                 int nIndex = GetAlignIndexNo();
 
-                bRtn = IsRotaryIdle();
-                if (bRtn != 0)
-                    return -1;
 
                 // 2) T Ready
                 bRtn &= MovePositionAlignTReady(bFineSpeed);

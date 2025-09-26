@@ -18,7 +18,7 @@ namespace QMC.Common.StrainGage
         public string ReadChannelName { get; set; }
         public bool UseLowPassFilter { get; set; }
         public double LowPassFilterCutoffFrequency { get; set; }
-        public bool UseAutoZeroSet { get; internal set; } = true;
+        //public bool UseAutoZeroTracking { get; set; };
         #endregion
 
         #region Constructor
@@ -31,12 +31,14 @@ namespace QMC.Common.StrainGage
         public override void Reset()
         {
             MinVoltage = 0;
-            MaxVoltage = 2.0;
+            MaxVoltage = 0.5;
             MinForce = 0;
-            MaxForce = 10;
+            MaxForce = 11;
             ReadChannelName = "";
-            UseLowPassFilter = true;
-            LowPassFilterCutoffFrequency = 0.03;
+            UseLowPassFilter = false;
+            LowPassFilterCutoffFrequency = 0.3;
+            IsSimulation = true;
+            //UseAutoZeroTracking = false;
         }
 
         public override bool Validate()
@@ -72,6 +74,7 @@ namespace QMC.Common.StrainGage
             pc.Add(nameof(ReadChannelName), ReadChannelName);
             pc.Add(nameof(UseLowPassFilter), UseLowPassFilter);
             pc.Add(nameof(LowPassFilterCutoffFrequency), LowPassFilterCutoffFrequency);
+            //pc.Add(nameof(UseAutoZeroTracking), UseAutoZeroTracking);
             pc.Add(nameof(IsSimulation), IsSimulation);
             return pc;
         }
@@ -89,6 +92,7 @@ namespace QMC.Common.StrainGage
                 ReadChannelName = pc.GetValue<string>(nameof(ReadChannelName));
                 UseLowPassFilter = pc.GetValue<bool>(nameof(UseLowPassFilter));
                 LowPassFilterCutoffFrequency = pc.GetValue<double>(nameof(LowPassFilterCutoffFrequency));
+                //UseAutoZeroTracking = pc.GetValue<bool>(nameof(UseAutoZeroTracking));
                 IsSimulation = pc.GetValue<bool>(nameof(IsSimulation));
             }
             catch (Exception ex)

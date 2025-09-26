@@ -201,7 +201,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            if(!InputStage.IsAnyAxisMoving())
+            if(InputStage.IsAnyAxisMoving())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
@@ -256,7 +256,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            if (!InputStage.IsAnyAxisMoving())
+            if (InputStage.IsAnyAxisMoving())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
@@ -302,7 +302,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            if (!InputStage.IsAnyAxisMoving())
+            if (InputStage.IsAnyAxisMoving())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
@@ -310,7 +310,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            if(!InputCassetteLifter.IsAnyAxisMoving())
+            if(InputCassetteLifter.IsAnyAxisMoving())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
@@ -363,7 +363,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            if (!InputStage.IsAnyAxisMoving())
+            if (InputStage.IsAnyAxisMoving())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
@@ -371,7 +371,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            if (!InputCassetteLifter.IsAnyAxisMoving())
+            if (InputCassetteLifter.IsAnyAxisMoving())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);

@@ -31,7 +31,8 @@
             this.dataGrid = new System.Windows.Forms.DataGridView();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.Voltage = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.Pressure = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.ZeroOffset = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.Force = new System.Windows.Forms.DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
@@ -43,7 +44,8 @@
             this.dataGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGrid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Voltage,
-            this.Pressure});
+            this.ZeroOffset,
+            this.Force});
             this.dataGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataGrid.Location = new System.Drawing.Point(7, 25);
             this.dataGrid.MultiSelect = false;
@@ -51,7 +53,7 @@
             this.dataGrid.ReadOnly = true;
             this.dataGrid.RowHeadersWidth = 200;
             this.dataGrid.RowTemplate.Height = 23;
-            this.dataGrid.Size = new System.Drawing.Size(405, 162);
+            this.dataGrid.Size = new System.Drawing.Size(605, 162);
             this.dataGrid.TabIndex = 0;
             // 
             // groupBox1
@@ -62,7 +64,7 @@
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(7);
-            this.groupBox1.Size = new System.Drawing.Size(419, 194);
+            this.groupBox1.Size = new System.Drawing.Size(619, 194);
             this.groupBox1.TabIndex = 1;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Strain Gage Data";
@@ -70,16 +72,25 @@
             // Voltage
             // 
             this.Voltage.Frozen = true;
-            this.Voltage.HeaderText = "Voltage";
+            this.Voltage.HeaderText = "Voltage (V)";
             this.Voltage.Name = "Voltage";
             this.Voltage.ReadOnly = true;
+            this.Voltage.Width = 150;
             // 
-            // Pressure
+            // ZeroOffset
             // 
-            this.Pressure.Frozen = true;
-            this.Pressure.HeaderText = "Pressure";
-            this.Pressure.Name = "Pressure";
-            this.Pressure.ReadOnly = true;
+            this.ZeroOffset.Frozen = true;
+            this.ZeroOffset.HeaderText = "ZeroOffset (V)";
+            this.ZeroOffset.Name = "ZeroOffset";
+            this.ZeroOffset.ReadOnly = true;
+            this.ZeroOffset.Width = 150;
+            // 
+            // Force
+            // 
+            this.Force.Frozen = true;
+            this.Force.HeaderText = "Force (g)";
+            this.Force.Name = "Force";
+            this.Force.ReadOnly = true;
             // 
             // StrainGageDataGridViewer
             // 
@@ -87,7 +98,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this.groupBox1);
             this.Name = "StrainGageDataGridViewer";
-            this.Size = new System.Drawing.Size(419, 194);
+            this.Size = new System.Drawing.Size(619, 194);
             ((System.ComponentModel.ISupportInitialize)(this.dataGrid)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.ResumeLayout(false);
@@ -99,6 +110,7 @@
         private System.Windows.Forms.DataGridView dataGrid;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.DataGridViewTextBoxColumn Voltage;
-        private System.Windows.Forms.DataGridViewTextBoxColumn Pressure;
+        private System.Windows.Forms.DataGridViewTextBoxColumn ZeroOffset;
+        private System.Windows.Forms.DataGridViewTextBoxColumn Force;
     }
 }

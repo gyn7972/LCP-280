@@ -7,6 +7,7 @@ namespace QMC.Common
     {
         double m_dCutoffFrequence;
         double m_dX;
+        bool m_hasPrev = false;
         public QmcLowPassFilter()
         {
             m_dCutoffFrequence = 0.03;
@@ -30,11 +31,17 @@ namespace QMC.Common
         }
         public double AddValue(double dValue)
         {
+            if (!m_hasPrev)
+            {
+                ResetValue(dValue);
+                m_hasPrev = true;
+            }
+
             //if(m_dX == 0)
             //{
             //    m_dX = dValue;
             //}
-            //else
+            else
             { 
                 m_dX = m_dX * (1 - m_dCutoffFrequence) + dValue * m_dCutoffFrequence;
             }

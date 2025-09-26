@@ -222,7 +222,7 @@ namespace QMC.LCP_280.Process
             if (ask.ShowDialog("확인", "다음 소켓으로 구동 하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            Rotary.Rotate();
+            Rotary.MovePositionRotate();
 
             // 회전 완료 후 상태 업데이트
             UpdateRotationStatus(Rotary.GetLoadIndexNo() + 1);
