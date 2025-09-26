@@ -629,11 +629,18 @@ namespace QMC.LCP_280.Process.Unit
             _viewerPopupForm = new Form
             {
                 Text = "Camera View",
-                FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                FormBorderStyle = FormBorderStyle.Sizable,          //FormBorderStyle.SizableToolWindow,
                 StartPosition = FormStartPosition.CenterParent,
                 ClientSize = new Size(1000, 700),
-                ShowInTaskbar = false
+                ShowInTaskbar = true,
+                Owner = null
             };
+            _viewerPopupForm.Load += (s, e) =>
+            {
+                TaskbarHelper.SetAppId(_viewerPopupForm.Handle, "MyApp.Vision");
+            };
+
+
             _viewerPopupForm.FormClosed += (s, e) => { if (!_restoringViewer) RestoreViewer(); };
 
             // 탭 컨트롤 생성 및 카메라 이름으로 탭 구성

@@ -184,6 +184,7 @@ namespace QMC.Common.Unit
             m_dicAlarms.Add(alarm.Code, alarm);
         }
 
+        
         private Material m_currentMaterial;
 
         public virtual void AddComponents() { }

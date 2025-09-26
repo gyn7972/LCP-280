@@ -645,12 +645,12 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunReady()
         {
             int ret = 0;
-            if (this.OutputStage.IsStatus_RequestBin && 
+            if (this.OutputStage.RequestBin && 
                 this.OutputCassetteLifter.IsBinReadyForUnloding)
             {
                 this.State = ProcessState.Work;
             }
-            else if (this.OutputStage.IsStatus_CompleteWorking)
+            else if (this.OutputStage.BinCompleteWorking)
             {
                 this.State = ProcessState.Complete;
             }
