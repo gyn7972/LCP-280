@@ -312,7 +312,7 @@ namespace QMC.Common.PKGTester
                 Thread.Sleep(10);
 
                 // Sourcemeter task start
-                spcTask = Task.Run(() => DoSourcemeterMeasure());
+                smuTask = Task.Run(() => DoSourcemeterMeasure());
 
                 // Wait for both tasks to complete
                 int[] result = await Task.WhenAll(spcTask, smuTask);

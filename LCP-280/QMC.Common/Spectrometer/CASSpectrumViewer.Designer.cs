@@ -69,6 +69,8 @@
             // 
             // chart
             // 
+            chartArea1.AxisY.IsMarksNextToAxis = false;
+            chartArea1.AxisY.LabelStyle.Enabled = false;
             chartArea1.Name = "ChartArea1";
             this.chart.ChartAreas.Add(chartArea1);
             this.chart.Dock = System.Windows.Forms.DockStyle.Fill;
