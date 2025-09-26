@@ -35,7 +35,9 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.btnSave = new QMC.Common.IndividualMenuButton();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.btnZeroSet = new QMC.Common.IndividualMenuButton();
+            this.btnResetZeroSet = new QMC.Common.IndividualMenuButton();
+            this.btnShowDialog = new QMC.Common.IndividualMenuButton();
             this.strainGageDataGridViewer1 = new QMC.Common.StrainGage.StrainGageDataGridViewer();
             this.btnDeviceInfo = new QMC.Common.IndividualMenuButton();
             this.btnStop = new QMC.Common.IndividualMenuButton();
@@ -141,7 +143,9 @@
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.individualMenuButton1);
+            this.panel1.Controls.Add(this.btnZeroSet);
+            this.panel1.Controls.Add(this.btnResetZeroSet);
+            this.panel1.Controls.Add(this.btnShowDialog);
             this.panel1.Controls.Add(this.strainGageDataGridViewer1);
             this.panel1.Controls.Add(this.btnDeviceInfo);
             this.panel1.Controls.Add(this.btnStop);
@@ -152,24 +156,62 @@
             this.panel1.Size = new System.Drawing.Size(875, 694);
             this.panel1.TabIndex = 1;
             // 
-            // individualMenuButton1
+            // btnZeroSet
             // 
-            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton1.Location = new System.Drawing.Point(707, 111);
-            this.individualMenuButton1.Name = "individualMenuButton1";
-            this.individualMenuButton1.Size = new System.Drawing.Size(132, 43);
-            this.individualMenuButton1.TabIndex = 31;
-            this.individualMenuButton1.TabStop = false;
-            this.individualMenuButton1.Text = "Show Device";
-            this.individualMenuButton1.UseVisualStyleBackColor = false;
-            this.individualMenuButton1.Click += new System.EventHandler(this.individualMenuButton1_Click);
+            this.btnZeroSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnZeroSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnZeroSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnZeroSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnZeroSet.CustomForeColor = System.Drawing.Color.Black;
+            this.btnZeroSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnZeroSet.ForeColor = System.Drawing.Color.Black;
+            this.btnZeroSet.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnZeroSet.Location = new System.Drawing.Point(631, 109);
+            this.btnZeroSet.Name = "btnZeroSet";
+            this.btnZeroSet.Size = new System.Drawing.Size(132, 39);
+            this.btnZeroSet.TabIndex = 33;
+            this.btnZeroSet.TabStop = false;
+            this.btnZeroSet.Text = "ZeroSet";
+            this.btnZeroSet.UseVisualStyleBackColor = false;
+            this.btnZeroSet.Click += new System.EventHandler(this.btnZeroSet_Click);
+            // 
+            // btnResetZeroSet
+            // 
+            this.btnResetZeroSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnResetZeroSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnResetZeroSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnResetZeroSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnResetZeroSet.CustomForeColor = System.Drawing.Color.Black;
+            this.btnResetZeroSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnResetZeroSet.ForeColor = System.Drawing.Color.Black;
+            this.btnResetZeroSet.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnResetZeroSet.Location = new System.Drawing.Point(631, 158);
+            this.btnResetZeroSet.Name = "btnResetZeroSet";
+            this.btnResetZeroSet.Size = new System.Drawing.Size(132, 39);
+            this.btnResetZeroSet.TabIndex = 32;
+            this.btnResetZeroSet.TabStop = false;
+            this.btnResetZeroSet.Text = "Reset ZeroSet";
+            this.btnResetZeroSet.UseVisualStyleBackColor = false;
+            this.btnResetZeroSet.Click += new System.EventHandler(this.btnResetZeroSet_Click);
+            // 
+            // btnShowDialog
+            // 
+            this.btnShowDialog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnShowDialog.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnShowDialog.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnShowDialog.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnShowDialog.CustomForeColor = System.Drawing.Color.Black;
+            this.btnShowDialog.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnShowDialog.ForeColor = System.Drawing.Color.Black;
+            this.btnShowDialog.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnShowDialog.Location = new System.Drawing.Point(8, 252);
+            this.btnShowDialog.Name = "btnShowDialog";
+            this.btnShowDialog.Size = new System.Drawing.Size(132, 56);
+            this.btnShowDialog.TabIndex = 31;
+            this.btnShowDialog.TabStop = false;
+            this.btnShowDialog.Text = "Show Monitoring Dialog";
+            this.btnShowDialog.UseVisualStyleBackColor = false;
+            this.btnShowDialog.Click += new System.EventHandler(this.btnShowDialog_Click);
             // 
             // strainGageDataGridViewer1
             // 
@@ -188,7 +230,7 @@
             this.btnDeviceInfo.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnDeviceInfo.ForeColor = System.Drawing.Color.Black;
             this.btnDeviceInfo.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnDeviceInfo.Location = new System.Drawing.Point(631, 154);
+            this.btnDeviceInfo.Location = new System.Drawing.Point(8, 203);
             this.btnDeviceInfo.Name = "btnDeviceInfo";
             this.btnDeviceInfo.Size = new System.Drawing.Size(132, 43);
             this.btnDeviceInfo.TabIndex = 28;
@@ -207,9 +249,9 @@
             this.btnStop.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStop.ForeColor = System.Drawing.Color.Black;
             this.btnStop.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStop.Location = new System.Drawing.Point(631, 62);
+            this.btnStop.Location = new System.Drawing.Point(631, 60);
             this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(132, 43);
+            this.btnStop.Size = new System.Drawing.Size(132, 39);
             this.btnStop.TabIndex = 26;
             this.btnStop.TabStop = false;
             this.btnStop.Text = "Monitoring Stop";
@@ -226,9 +268,9 @@
             this.btnStart.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStart.ForeColor = System.Drawing.Color.Black;
             this.btnStart.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStart.Location = new System.Drawing.Point(631, 13);
+            this.btnStart.Location = new System.Drawing.Point(631, 12);
             this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(132, 43);
+            this.btnStart.Size = new System.Drawing.Size(132, 39);
             this.btnStart.TabIndex = 25;
             this.btnStart.TabStop = false;
             this.btnStart.Text = "Monitoring Start";
@@ -263,6 +305,8 @@
         private System.Windows.Forms.Panel panel2;
         private Common.IndividualMenuButton btnSave;
         private Common.StrainGage.StrainGageDataGridViewer strainGageDataGridViewer1;
-        private Common.IndividualMenuButton individualMenuButton1;
+        private Common.IndividualMenuButton btnShowDialog;
+        private Common.IndividualMenuButton btnZeroSet;
+        private Common.IndividualMenuButton btnResetZeroSet;
     }
 }

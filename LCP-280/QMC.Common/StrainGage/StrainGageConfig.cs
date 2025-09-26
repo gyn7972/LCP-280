@@ -31,12 +31,13 @@ namespace QMC.Common.StrainGage
         public override void Reset()
         {
             MinVoltage = 0;
-            MaxVoltage = 2.0;
+            MaxVoltage = 0.5;
             MinForce = 0;
-            MaxForce = 10;
+            MaxForce = 11;
             ReadChannelName = "";
-            UseLowPassFilter = true;
-            LowPassFilterCutoffFrequency = 0.03;
+            UseLowPassFilter = false;
+            LowPassFilterCutoffFrequency = 0.3;
+            IsSimulation = true;
             //UseAutoZeroTracking = false;
         }
 
