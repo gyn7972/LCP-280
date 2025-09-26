@@ -119,7 +119,6 @@ namespace QMC.LCP_280.Process.Unit
 
                                     if (value is Array arr && !(value is string))
                                     {
-                                        //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
                                         row.Cells[pd.Name].Value = "[values]";
                                     }
                                     else
@@ -140,13 +139,24 @@ namespace QMC.LCP_280.Process.Unit
 
                                         if (value is Array arr && !(value is string))
                                         {
-                                            //row.Cells[pd.Name].Value = string.Join(", ", arr.Cast<object>());
                                             row.Cells[pd.Name].Value = "[values]";
                                         }
                                         else
                                         {
                                             row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
                                         }
+                                    }
+                                }
+                                break;
+                            case TestItemCategory.UserDefined:
+                                {
+                                    if (pd.Name == "Type" || pd.Name == "Expression")
+                                    {
+                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                    }
+                                    else
+                                    {
+                                        row.Cells[pd.Name].Value = "-";
                                     }
                                 }
                                 break;

@@ -94,9 +94,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             ClearResultGrid();
             foreach (var item in tester.ConditionSet.Items)
             {
-                if (!item.IsMeasureItem())
-                    continue;
-
                 DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn();
                 col.Name = item.Name;
                 col.HeaderText = item.Name;

@@ -45,9 +45,11 @@ namespace QMC.Common.PKGTester
         [Category("Optical")] PickValue,
         [Category("Optical")] ADC,
 
-        [Category("Undefined")] KELFS,
-        [Category("Undefined")] KELDG,
-        [Category("Undefined")] TOV,
+        [Category("UserDefined")] UserDefine,
+
+        //[Category("Undefined")] KELFS,
+        //[Category("Undefined")] KELDG,
+        //[Category("Undefined")] TOV,
     };
 
     public static class TestItemHelper

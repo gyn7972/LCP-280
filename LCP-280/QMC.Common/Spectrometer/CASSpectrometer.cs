@@ -1104,6 +1104,7 @@ namespace QMC.Common.Spectrometer
         }
         private int MeasureSimulation()
         {
+            OnMeasureCommandSended?.Invoke(this);
             GetSimulationMeasureData();
             GetSimulationSpectrumData();
             OnMeasureCompleted?.Invoke(this);
