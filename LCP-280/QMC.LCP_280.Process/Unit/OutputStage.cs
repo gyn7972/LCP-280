@@ -39,7 +39,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Die TrZAxis Not Sfarety Pos.";
             alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -47,7 +47,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Feeder Z-Cylinder Not Sfarety Pos.";
             alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //
@@ -56,7 +56,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Feeder Y-Axis Not Sfarety Pos.";
             alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //eNoBinDetected
@@ -65,7 +65,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "No Bin Detected";
             alarm.Cause = "Bin이 감지되지 않았습니다.\n Bin이 있는지 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //,
@@ -74,7 +74,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Clamp F/B Not Pos.";
             alarm.Cause = "Clamp F/B가 지정 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //,
             alarm = new AlarmInfo();
@@ -82,7 +82,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Clamp Lift Not Pos.";
             alarm.Cause = "Clamp Lift가 지정 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //,
             alarm = new AlarmInfo();
@@ -90,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Plate Not Pos.";
             alarm.Cause = "Plate가 지정 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
 
@@ -660,12 +660,12 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region seq signals
-        public bool IsStatus_RequestBin { get; set; }
-        public bool IsStatus_StageLoadingReady { get; private set; }
-        public bool IsStatus_StageLoadingDone { get; private set; }
-        public bool IsStatus_StageUnloadingDone { get; private set; }
-        public bool IsStatus_StageUnloadingReady { get; private set; }
-        public bool IsStatus_CompleteWorking { get; internal set; }
+        public bool RequestBin { get; set; }
+        public bool BinLoadingReady { get; private set; }
+        public bool BinLoadingDone { get; private set; }
+        public bool BinUnloadingDone { get; private set; }
+        public bool BinUnloadingReady { get; private set; }
+        public bool BinCompleteWorking { get; internal set; }
         public bool RequestInputDie { get; internal set; }
 
         public MaterialWafer GetWaferMaterial()
@@ -739,8 +739,8 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
 
             Log.Write(this, "Start LoadingBinPrepare");
-            IsStatus_StageLoadingReady = true;
-            IsStatus_StageLoadingDone = false;
+            BinLoadingReady = true;
+            BinLoadingDone = false;
 
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
             if (!Config.IsSimulation && !Config.IsDryRun)
@@ -797,7 +797,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            IsStatus_StageLoadingReady = true;
+            BinLoadingReady = true;
             Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
 
             Log.Write(this, "End LoadingBinPrepare");
@@ -808,11 +808,11 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
 
             // 이미 완료
-            if (IsStatus_StageLoadingDone)
+            if (BinLoadingDone)
                 return 0;
 
             // 준비 안 되었으면 호출 순서 오류
-            if (!IsStatus_StageLoadingReady && !IsRingPresent())
+            if (!BinLoadingReady && !IsRingPresent())
             {
                 Log.Write(UnitName, "LoadingComp", "Not prepared (call LoadingBinComplete first)");
                 return -1;
@@ -872,8 +872,8 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
-                IsStatus_StageLoadingDone = true;
-                IsStatus_StageLoadingReady = false;
+                BinLoadingDone = true;
+                BinLoadingReady = false;
                 Log.Write(UnitName, "LoadingComp", "Done");
 
                 return 0;
@@ -894,13 +894,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
             Log.Write(UnitName, "UnloadingPrep", "Start");
-            IsStatus_StageUnloadingDone = false;
-            IsStatus_StageUnloadingReady = false;
+            BinUnloadingDone = false;
+            BinUnloadingReady = false;
 
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingPrep", "No Bin -> Skip");
-                IsStatus_StageUnloadingDone = true;
+                BinUnloadingDone = true;
                 return 0;
             }
 
@@ -932,7 +932,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            IsStatus_StageUnloadingReady = true;
+            BinUnloadingReady = true;
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
@@ -941,14 +941,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            if (!IsStatus_StageUnloadingReady && IsRingPresent())
+            if (!BinUnloadingReady && IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingComp", "Not prepared");
                 return -1;
             }
 
-            IsStatus_StageUnloadingDone = true;
-            IsStatus_StageUnloadingReady = false;
+            BinUnloadingDone = true;
+            BinUnloadingReady = false;
             Log.Write(UnitName, "UnloadingComp", "Done");
             return nRtn;
         }
@@ -987,11 +987,6 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
-
-
-
-
-
 
         public int BinLoading()
         {

@@ -40,7 +40,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Die Tr Z-Axis Not Sfarety Pos.";
             alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -48,7 +48,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Output Die Transfer Error";
             alarm.Cause = "Output Die Transfer에서 알수 없는 에러가 발생했습니다.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -56,7 +56,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Output Stage Axis Moving";
             alarm.Cause = "Output Stage Axis가 동작중입니다.\n Output Stage Axis 동작이 완료된 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -64,7 +64,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rotary Axis Moving";
             alarm.Cause = "Rotary Axis가 동작중입니다.\n Rotary Axis 동작이 완료된 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //eOutputDieTransferVacuum
@@ -73,7 +73,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Output Die Transfer Vacuum Error";
             alarm.Cause = "Output Die Transfer Vacuum이 Off 상태입니다.\n Vacuum 상태를 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
 
@@ -83,7 +83,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Output Die Transfer Vent Error";
             alarm.Cause = "Output Die Transfer Vent가 Off 상태입니다.\n Vent 상태를 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //
             alarm = new AlarmInfo();
@@ -91,7 +91,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Output Die Transfer Blow Error";
             alarm.Cause = "Output Die Transfer Blow가 Off 상태입니다.\n Blow 상태를 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
         }
@@ -1017,9 +1017,64 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
-        protected override int OnRunReady() { return 0; }
-        protected override int OnRunWork() { return 0; }
-        protected override int OnRunComplete() { return 0; }
+        protected override int OnRunReady()
+        {
+            int nRtn = 0;
+
+            //신호 들어오면 Stage Center 기준에서 n번째 칩 위치로 이동
+            //ChipData와 Mapping 연동 필요.
+
+            //Stage 이동 완료 후에.
+
+            //OnRunWork로 상태 변경
+            State = ProcessState.Work;
+            return nRtn;
+        }
+        protected override int OnRunWork()
+        {
+            int nRtn = 0;
+
+            nRtn = MoveOutStage();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = ChipPickDown();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = ChipPickUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            State = ProcessState.Complete;
+            return 0;
+        }
+        protected override int OnRunComplete()
+        {
+            int nRtn = 0;
+
+            nRtn = RotateToolTForPlace();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = ReleaseVacuumAndPlaceUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            State = ProcessState.None;
+            return 0;
+        }
+
         #endregion
 
         #region Sequence 등록

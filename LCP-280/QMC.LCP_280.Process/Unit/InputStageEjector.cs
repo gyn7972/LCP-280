@@ -37,7 +37,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "InputStage Not Sfarety Pos.";
             alarm.Cause = "InputStage가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
         }

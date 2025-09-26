@@ -77,6 +77,7 @@ namespace QMC.Common.Spectrometer
             #region Properties
             public double[] WaveLength { get; set; }
             public double[] Intensity { get; set; }
+            public double MinimumIntensity { get; set; }
             public double MaximumIntensity { get; set; }
             #endregion
 
@@ -87,6 +88,7 @@ namespace QMC.Common.Spectrometer
                 WaveLength = new double[0];
                 Intensity = null;
                 Intensity = new double[0];
+                MinimumIntensity = 0;
                 MaximumIntensity = 0;
             }
             #endregion
@@ -143,7 +145,6 @@ namespace QMC.Common.Spectrometer
         
         private DeviceInformation deviceInfo = new DeviceInformation();
         private bool useHardwareTrigger = false;
-        private bool bIsReady = false;
         #endregion
 
         #region Property
@@ -199,6 +200,7 @@ namespace QMC.Common.Spectrometer
 
         public event DeviceEventHandler OnDeviceCreated;
         public event DeviceEventHandler OnDeviceTerminated;
+        public event DeviceEventHandler OnMeasureCommandSended;
         public event DeviceEventHandler OnMeasureCompleted;
         public event EventHandler<string> OnMeasureFailed;
         #endregion
@@ -491,7 +493,6 @@ namespace QMC.Common.Spectrometer
             if (IsCreated())
                 return true;
 
-            bool result = false;
             try
             {
                 // Create device
@@ -526,18 +527,16 @@ namespace QMC.Common.Spectrometer
                 UpdateSupportDensityFilterList();
 
                 deviceId = newId;
-                result = true;
+                return true;
             }
             catch (Exception ex)
             {
-                // Error handling
-                Log.Write(ex);
+                Log.Write(this, ex.Message);
+                return false;
             }
-            return result;
         }        
         private bool TerminateDevice()
         {
-            bool result = false;
             try
             {
                 bool tryDoneDevice = false;
@@ -548,23 +547,21 @@ namespace QMC.Common.Spectrometer
                 }
                 deviceId = -1;
                 deviceInfo.Clear();
-                result = true;
 
                 if (tryDoneDevice)
                 {
                     OnDeviceTerminated?.Invoke(this);
                 }
+                return true;
             }
             catch (Exception ex)
             {
-                // Error handling
-                Log.Write(ex);
+                Log.Write(this, ex.Message);
+                return false;
             }
-            return result;
         }
         private bool InitializeDevice()
         {
-            bIsReady = false;
             if (!IsCreated())
                 return false;
 
@@ -587,7 +584,7 @@ namespace QMC.Common.Spectrometer
                     SetMeasurementParameter(CAS4DLL.mpidTriggerSource, CAS4DLL.trgFlipFlop);
                     SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
                     SetDeviceParameter(CAS4DLL.dpidLine1FlipFlop, 0);
-                    PrepareMeasureAndTrigger();
+                    //PrepareMeasureAndTrigger();
                     useHardwareTrigger = true;
                 }
                 else
@@ -640,51 +637,34 @@ namespace QMC.Common.Spectrometer
             {
                 // Error handling
                 deviceInfo.Clear();
-                Log.Write(ex);
+
+                Log.Write(this, ex.Message);
                 return false;
             }
         }
-        private void PrepareMeasureAndTrigger()
-        {
-            if (!IsCreated())
-                return;
-            try
-            {
-                SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, 1000);
-                CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
-            }
-            catch {}
-            finally
-            {
-                try
-                {
-                    SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
-                }
-                catch { }
-            }
-        }
+        //private void PrepareMeasureAndTrigger()
+        //{
+        //    if (!IsCreated())
+        //        return;
+        //    try
+        //    {
+        //        SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, 1000);
+        //        CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
+        //    }
+        //    catch {}
+        //    finally
+        //    {
+        //        try
+        //        {
+        //            SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
+        //        }
+        //        catch {}
+        //    }
+        //}
 
         public bool IsCreated()
         {
             return (deviceId >= 0);
-        }
-        public bool IsInitialized()
-        {
-            if (!IsCreated())
-                return false;
-
-            bool result = false;
-            try
-            {
-                double value = 0;
-                GetDeviceParameter(CAS4DLL.dpidInitialized, ref value);
-                result = (value != 0);
-            }
-            catch (Exception ex)
-            {
-                // Error Handling
-            }
-            return result;
         }
         
         #endregion
@@ -703,8 +683,9 @@ namespace QMC.Common.Spectrometer
                 if (useHardwareTrigger)
                     OnDigitalOut(2);
 
-                bIsReady = true;
                 //CAS4DLL.casPerformActionEx(deviceId, CAS4DLL.paPrepareMeasurement, 0, 0, (IntPtr)null);
+
+                OnMeasureCommandSended?.Invoke(this);
                 CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
 
                 // SPC(2) Line OFF (Send Falling edge to SMU(3))
@@ -720,17 +701,22 @@ namespace QMC.Common.Spectrometer
             catch (Exception ex)
             {
                 // Error handling
-                Log.Write(ex);
                 result.Clear();
                 spectrum.Clear();
                 OnMeasureFailed?.Invoke(this, ex.Message);
+
+                Log.Write(this, ex.Message);
                 return false;
             }
             finally
             {
-                // if abort measurement -> SPC(2) Line OFF
-                if (useHardwareTrigger)
-                    OffDigitalOut(2);
+                try
+                {
+                    // if abort measurement -> SPC(2) Line OFF
+                    if (useHardwareTrigger)
+                        OffDigitalOut(2);
+                }
+                catch {}
             }
         }
         private bool SendMeasureDarkCurrentComand()
@@ -744,13 +730,16 @@ namespace QMC.Common.Spectrometer
             }
             catch (Exception ex)
             {
-                // Error handling
-                Log.Write(ex);
+                Log.Write(this, ex.Message);
                 return false;
             }
             finally
             {
-                OpenShutter();
+                try 
+                { 
+                    OpenShutter(); 
+                } 
+                catch {}
             }
         }
         private void GetMeasureData()
@@ -834,6 +823,7 @@ namespace QMC.Common.Spectrometer
             for (int i = 0; i < spectrum.WaveLength.Length; i++)
             {
                 spectrum.Intensity[i] = CAS4DLL.casGetData(deviceId, i + deadPixels);
+                spectrum.MinimumIntensity = Math.Min(spectrum.MinimumIntensity, spectrum.Intensity[i]);
                 spectrum.MaximumIntensity = Math.Max(spectrum.MaximumIntensity, spectrum.Intensity[i]);
 
                 spectrum.WaveLength[i] = CAS4DLL.casGetXArray(deviceId, i + deadPixels);
@@ -841,81 +831,35 @@ namespace QMC.Common.Spectrometer
         }
         #endregion
 
-        // Control Methods
         #region Control Methods
-        private bool OnDigitalOut(int port)
+        private void OnDigitalOut(int port)
         {
-            bool result = false;
-            try
-            {
-                CAS4DLL.casSetDigitalOut(deviceId, port, 1);
-                CheckCASErrorAndThrow();
-                result = true;
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-                Log.Write(ex);
-            }
-            return result;
+            CAS4DLL.casSetDigitalOut(deviceId, port, 1);
+            CheckCASErrorAndThrow();
         }
-        private bool OffDigitalOut(int port)
+        private void OffDigitalOut(int port)
         {
-            bool result = false;
-            try
-            {
-                CAS4DLL.casSetDigitalOut(deviceId, port, 0);
-                CheckCASErrorAndThrow();
-                result = true;
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-                Log.Write(ex);
-            }
-            return result;
+            CAS4DLL.casSetDigitalOut(deviceId, port, 0);
+            CheckCASErrorAndThrow();
         }
-        private bool OpenShutter()
+        private void OpenShutter()
         {
             if (!IsCreated())
-                return false;
+                return;
 
-            bool result = false;
-            try
-            {
-                CAS4DLL.casSetShutter(deviceId, CAS4DLL.casShutterOpen);
-                CheckCASErrorAndThrow();
-                result = true;
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-                Log.Write(ex);
-            }
-            return result;
+            CAS4DLL.casSetShutter(deviceId, CAS4DLL.casShutterOpen);
+            CheckCASErrorAndThrow();
         }
-        private bool CloseShutter()
+        private void CloseShutter()
         {
             if (!IsCreated())
-                return false;
+                return;
 
-            bool result = false;
-            try
-            {
-                CAS4DLL.casSetShutter(deviceId, CAS4DLL.casShutterClose);
-                CheckCASErrorAndThrow();
-                result = true;
-            }
-            catch (Exception ex)
-            {
-                // Error handling
-                Log.Write(ex);
-            }
-            return result;
+            CAS4DLL.casSetShutter(deviceId, CAS4DLL.casShutterClose);
+            CheckCASErrorAndThrow();
         }
         #endregion
 
-        // Parameter Methods
         #region Parameter Methods
         private void SetDeviceParameter(int what, double value)
         {
@@ -971,7 +915,6 @@ namespace QMC.Common.Spectrometer
         }
         private bool LoadMeasurementCondition()
         {
-            bool result = false;
             try
             {
                 double integrationTime = 0;
@@ -994,14 +937,12 @@ namespace QMC.Common.Spectrometer
                 Config.ColormetricStart = (int)Math.Round(colormetricStart);
                 Config.ColormetricStop = (int)Math.Round(colormetricStop);
                 Config.TriggerTimeout = (int)Math.Round(triggerTimeout);
-                result = true;
+                return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Error handling
-                Log.Write(ex);
+                return false;
             }
-            return result;
         }
         private bool ApplyMeasurementCondition()
         {
@@ -1016,16 +957,13 @@ namespace QMC.Common.Spectrometer
                 SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
                 return true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Error handling
-                Log.Write(ex);
                 return false;
             }
         }
         #endregion
 
-        // Density Filter Methods
         #region Density Filter Methods
         private void UpdateSupportDensityFilterList()
         {

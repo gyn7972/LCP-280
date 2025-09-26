@@ -43,7 +43,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rorary Not Sfarety Pos.";
             alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -51,7 +51,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Probe Timeout.";
             alarm.Cause = "Probe Timeout입니다.\n Probe 확인 및 재 측정 바랍니다.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -59,7 +59,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Sphere Cylinder Not Forward.";
             alarm.Cause = "Sphere Cylinder가 Forward 위치가 아닙니다.\n 포지션 확인 바랍니다.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -67,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Sphere Cylinder Forward/Backward Timeout.";
             alarm.Cause = "Sphere Cylinder Forward/Backward Timeout입니다.\n Cylinder 확인 바랍니다.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
         }
@@ -422,7 +422,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            string tpName = $"TopContact_index{teachingIdx}_Up";
+            string tpName = $"TopContact_Index{teachingIdx}_Up";
             var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
@@ -1261,7 +1261,8 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            nRet = MovePositionSphereZReady();
+            //nRet = MovePositionSphereZReady();
+            nRet = MovePositionSafetyZ();
             if (nRet != 0)
             {
                 return -1;
@@ -1292,6 +1293,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
+                CompleteProbe = true;
             }
             else
             {
@@ -1300,6 +1302,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
+                CompleteProbe = true;
             }
 
             LogSequence("End");
@@ -1333,12 +1336,12 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                nRet = MovePositionTopContact_Index_Ready(nIndex, bFineSpeed);
-                if (nRet != 0)
-                {
-                    Log.Write(UnitName, "[TopContactOnce] MovePositionTopContact_Index_Ready failed");
-                    return -1;
-                }
+                //nRet = MovePositionTopContact_Index_Ready(nIndex, bFineSpeed);
+                //if (nRet != 0)
+                //{
+                //    Log.Write(UnitName, "[TopContactOnce] MovePositionTopContact_Index_Ready failed");
+                //    return -1;
+                //}
 
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
@@ -1350,11 +1353,16 @@ namespace QMC.LCP_280.Process.Unit
                 // 6) 검사 요구 신호
                 SetChipProberRequest(true);
 
+                nRet = IndexChipProber.MeasureChip();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
+                    return - 1;
+                }
                 // 7) 검사 완료 신호 대기
                 nRet = ContactInspectionWait();
                 if (nRet != 0)
                 {
-
                     return -1;
                 }
 

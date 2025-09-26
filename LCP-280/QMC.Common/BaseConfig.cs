@@ -227,8 +227,6 @@ namespace QMC.Common
             return 0;
         }
 
-
-
         /// <summary>
         /// 모든 살아있는 BaseConfig 인스턴스의 IsDryRun 값을 전역 설정.
         /// </summary>

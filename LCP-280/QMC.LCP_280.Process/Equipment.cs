@@ -6,6 +6,7 @@ using QMC.Common.DIO;
 using QMC.Common.IO;
 using QMC.Common.IOUtil;
 using QMC.Common.Keithley;
+using QMC.Common.LightController;
 using QMC.Common.Motion;
 using QMC.Common.Motion.Ajin.HW;
 using QMC.Common.Motion.Ajin.IO;
@@ -20,13 +21,13 @@ using QMC.LCP_280.Process.Unit;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Collections.ObjectModel;
 using static QMC.Common.Unit.BaseUnit;
 
 namespace QMC.LCP_280.Process
@@ -172,6 +173,21 @@ namespace QMC.LCP_280.Process
         //        Console.WriteLine($"Grabbed {img.Width}x{img.Height}");
         //}
 
+        // === 조명 컨트롤러 (단일 + 확장 가능) ===
+        public Dictionary<string, LeesOsLightController> LightControllers { get; } = new Dictionary<string, LeesOsLightController>(StringComparer.OrdinalIgnoreCase);
+
+        // === 편의 프로퍼티 (메인 조명) ===
+        public LeesOsLightController LeesOsLightController => GetLightController("Main_Light");
+
+        private LeesOsLightController GetLightController(string key)
+        {
+            return LightControllers.TryGetValue(key, out var light) ? light : null;
+        }
+
+        //조명 사용 예
+        // Equipment.Instance.MainLightController?.Channels[0].Config.On = true;  // 채널 1 켜기
+        // Equipment.Instance.MainLightController?.Channels[0].Config.Volume = 128; // 밝기 설정
+
         // Sourcemeter
         public Dictionary<string, KeithleySourcemeter> Sourcemeters { get; } = new Dictionary<string, KeithleySourcemeter>(StringComparer.OrdinalIgnoreCase);
         // == 편의 프로퍼티 추가 ==
@@ -207,6 +223,8 @@ namespace QMC.LCP_280.Process
         {
             return StrainGages.TryGetValue(key, out var sg) ? sg : null;
         }
+
+        public StrainGageMonitor StrainGageMonitor { get; } = new StrainGageMonitor("Index_Prober_StrainGage_Monitor");
 
         // [ADD] 생성여부 노출 (ProcessExit 등에서 강제 생성 방지)
         public static bool IsCreated => _instance != null;
@@ -253,6 +271,9 @@ namespace QMC.LCP_280.Process
 
                 // === 카메라 초기화 ===
                 InitializeCameras();
+
+                // === 조명 초기화 === , 기존 구성되어 있느 부분하고 동일하게 작업
+                InitializeLightControllers();
 
                 // === Sourcemeter 초기화 ===
                 InitializeSourcemeters();
@@ -1109,6 +1130,26 @@ namespace QMC.LCP_280.Process
                 catch { }
                 Cameras.Clear();
 
+                // LightControllers 추가
+                try
+                {
+                    foreach (var light in LightControllers.Values)
+                    {
+                        try
+                        {
+                            // 모든 채널 끄기
+                            foreach (var channel in light.Channels)
+                            {
+                                channel.Config.On = false;
+                            }
+                            light.Close();
+                        }
+                        catch { }
+                    }
+                }
+                catch { }
+                LightControllers.Clear();
+
                 // Sourcemeters
                 try
                 {
@@ -1432,7 +1473,10 @@ namespace QMC.LCP_280.Process
                     var name = kv.Key;
                     var selector = kv.Value;
                     CameraConfig cfg;
-                    try { cfg = CameraConfig.LoadOrCreate(name); }
+                    try 
+                    { 
+                        cfg = CameraConfig.LoadOrCreate(name); 
+                    }
                     catch (Exception exCfg) { Log.Write("Equipment", $"[Camera] config load fail '{name}': {exCfg.Message}"); continue; }
                     if (!connect) continue;
 
@@ -1448,6 +1492,83 @@ namespace QMC.LCP_280.Process
                 }
             }
             catch (Exception ex) { Log.Write(ex); }
+        }
+
+        private void InitializeLightControllers()
+        {
+            try
+            {
+                var lightConfigs = new[]
+                {
+                    new { Name = "Main_Light", Model = LeesOsLightControllerModel.LPD_6524_4CH, PortName = "COM3" }
+                };
+
+                foreach (var config in lightConfigs)
+                {
+                    try
+                    {
+                        var lightController = new LeesOsLightController(config.Name, config.Model);
+
+                        // 1) 메인 컨트롤러 Config 로드
+                        int ret = lightController.Config.Load();
+                        if (ret != 0)
+                        {
+                            Log.Write("Equipment", $"[LightController] '{config.Name}' config load failed rc=0x{ret:X8}");
+                            lightController.Config.Reset();
+                            lightController.Config.PortName = config.PortName;
+                            lightController.Config.Save();
+                        }
+
+                        // 2) 각 채널별 Config도 로드/생성 추가
+                        foreach (var channel in lightController.Channels)
+                        {
+                            try
+                            {
+                                int channelRet = channel.Config.Load();
+                                if (channelRet != 0)
+                                {
+                                    Log.Write("Equipment", $"[LightController] Channel '{channel.Config.Name}' config load failed, creating default");
+                                    channel.Config.Reset();
+                                    channel.Config.Save(); // 채널별 JSON 파일 생성
+                                }
+                            }
+                            catch (Exception chEx)
+                            {
+                                Log.Write("Equipment", $"[LightController] Channel config error: {chEx.Message}");
+                                // 실패 시 기본값으로 저장
+                                try
+                                {
+                                    channel.Config.Reset();
+                                    channel.Config.Save();
+                                }
+                                catch { }
+                            }
+                        }
+
+                        // 3) 컨트롤러 초기화
+                        ret = lightController.Initialize();
+                        if (ret != 0)
+                        {
+                            MessageBox.Show($"LightController [{lightController.Name}] initialize NG.");
+                        }
+                        else
+                        {
+                            ret = lightController.Create();
+                        }
+
+                        LightControllers[config.Name] = lightController;
+                        Console.WriteLine($"[LightController] {config.Name} ready with {lightController.Channels.Count} channels");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write("Equipment", $"[LightController] '{config.Name}' init failed: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Equipment", $"InitializeLightControllers error: {ex.Message}");
+            }
         }
 
         private void InitializeSourcemeters()
@@ -1525,8 +1646,26 @@ namespace QMC.LCP_280.Process
                         gage.Config.Reset();
                         gage.Config.Save();
                     }
+                    ret = gage.Initialize();
+                    if (ret != 0)
+                    {
+                        MessageBox.Show($"StrainGage [{gage.Name}] initialize NG.");
+                    }
                     StrainGages[name] = gage;
                     Console.WriteLine($"[StrainGage] {name} ready");
+                }
+                catch (Exception ex) { Log.Write(ex); }
+            }
+
+            foreach (var gage in StrainGages.Values)
+            {
+                try
+                {
+                    if (!StrainGageMonitor.Add(gage))
+                        throw new Exception("StrainGageMonitor Add fail");
+
+                    //StrainGageMonitor.Start();
+                    Console.WriteLine($"[StrainGage] {gage.Name} ready");
                 }
                 catch (Exception ex) { Log.Write(ex); }
             }

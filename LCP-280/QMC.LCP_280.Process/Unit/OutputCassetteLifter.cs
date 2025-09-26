@@ -36,7 +36,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
             alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //AlarmRegister((int)AlarmKeys.eBinProtrusionDetected,
             //                "Bin Protrusion Detected",
@@ -383,7 +383,7 @@ namespace QMC.LCP_280.Process.Unit
                             }
                             else
                             {
-                                if (OutputStage.IsStatus_RequestBin)
+                                if (OutputStage.RequestBin)
                                 {
                                     MoveToNextSlot();
                                 }
@@ -410,7 +410,6 @@ namespace QMC.LCP_280.Process.Unit
                                     else if (StageBin.ProcessSatate == Material.MaterialProcessSatate.Completed)
                                     {
                                         MoveToSlot(StageBin.SlotIndex);
-
                                     }
                                     else
                                     {
@@ -435,17 +434,29 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
+
+            //InputCassetteLifter
             this.SequencePlayers.Add(ScanBin);
             this.SequencePlayers.Add(MoveToNextSlot);
+
+            //InputStage
             this.SequencePlayers.Add(BinLoadingBeforeStage);
+
+            //InputFeeder
             this.SequencePlayers.Add(BinLoadingFeeder);
+
+            //InputStage
             this.SequencePlayers.Add(BinLoadingAfterStage);
+
+            //InputStage
             this.SequencePlayers.Add(BinUnloadingBeforeStage);
+
+            //InputFeeder
             this.SequencePlayers.Add(BinUnloadingFeeder);
+
+            //InputStage
             this.SequencePlayers.Add(BinUnloadingAfterStage);
-
         }
-
 
         #region Seq 단위 동작 함수
         public int ScanBin(bool bFineSpeed = false)

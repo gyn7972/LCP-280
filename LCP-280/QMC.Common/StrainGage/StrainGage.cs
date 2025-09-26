@@ -10,17 +10,47 @@ namespace QMC.Common.StrainGage
 {
     public class StrainGage : BaseComponent
     {
+        #region Defines
+        public class StrainGageAutoZeroTracker
+        {
+            private readonly double step; // 보정 속도 (작을수록 느리게 따라감)
+            private readonly double deadband; // 노이즈 허용 범위
+
+            public StrainGageAutoZeroTracker(double step, double deadband)
+            {
+                this.step = step;
+                this.deadband = deadband;
+            }
+
+            public double TrackZeroValue(double currentValue, ref double zeroValue)
+            {
+                double adjusted = currentValue - zeroValue;
+
+                // 입력이 deadband 범위 안에 있으면 "제로 드리프트"로 간주
+                if (Math.Abs(adjusted) < deadband)
+                {
+                    // 기준점을 조금씩 이동 (느리게 따라감)
+                    zeroValue += step * adjusted;
+                }
+
+                // 보정된 출력 반환
+                return currentValue - zeroValue;
+            }
+        }
+        #endregion
+
         #region Fields
         private double voltage = 0;
+        private double zeroVoltage = 0;
         private QmcLowPassFilter lowPassFilter = new QmcLowPassFilter();
-        private bool lowPassFilterHasPrev = false;
+        private StrainGageAutoZeroTracker autoZeroTracker = new StrainGageAutoZeroTracker(0.01, 0.005);
         #endregion
 
         #region Properties
-        public double Voltage => voltage;
+        public double Voltage => (voltage - zeroVoltage);
+        public double ZeroVoltage => zeroVoltage;
         public double Force => GetForce();
         public new StrainGageConfig Config { get; private set; }
-        public double ZeroVoltage { get; private set; } = 0;
         #endregion
 
         #region Constructor
@@ -43,7 +73,7 @@ namespace QMC.Common.StrainGage
             }
             catch (Exception ex)
             {
-                Log.Write(ex);
+                Log.Write(this, ex.Message);
                 return -1;
             }
             return 0;
@@ -56,50 +86,38 @@ namespace QMC.Common.StrainGage
             double newvalue = value;
             if (Config.UseLowPassFilter)
             {
-                if (!lowPassFilterHasPrev)
-                {
-                    lowPassFilter.ResetValue(value);
-                    lowPassFilterHasPrev = true;
-                }
                 lowPassFilter.AddValue(value);
-                this.voltage = lowPassFilter.CurrentValue;
-
-                //if (this.Config.UseAutoZeroSet)
-                //{
-                //    AutoZeroTracking(value, this.voltage);
-                //}
+                voltage = lowPassFilter.CurrentValue;
             }
             else
             {
-                this.voltage = value;
+                voltage = value;
             }
-        }
-        public void SetZero()
-        {
-            this.ZeroVoltage = this.voltage;
-        }
-        private void AutoZeroTracking(double value, double voltage)
-        {
 
-           if((voltage - this.ZeroVoltage) <  0.001 )
-            {
-                this.ZeroVoltage = voltage;
-            }
-            
+            // auto zero tracking
+            //if (Config.UseAutoZeroTracking)
+            //{
+            //    autoZeroTracker.TrackZeroValue(voltage, ref zeroVoltage);
+            //}
         }
-
+        public void ResetZeroVoltage()
+        {
+            zeroVoltage = 0;
+        }
+        public void SetZeroVoltage()
+        {
+            zeroVoltage = voltage;
+        }
         private double GetForce()
         {
             if (!Config.Validate())
                 return 0;
 
-            //if (voltage < Config.MinVoltage)
-            //    return Config.MinForce;
-            //if (voltage > Config.MaxVoltage)
-            //    return Config.MaxForce;
-
             double scale = (Config.MaxForce - Config.MinForce) / (Config.MaxVoltage - Config.MinVoltage);
-            double force = (voltage -this.ZeroVoltage) * scale;
+            double force = (voltage - zeroVoltage) * scale;
+            if (force < 0)
+                force = 0;
+
             return force;
         }
         #endregion

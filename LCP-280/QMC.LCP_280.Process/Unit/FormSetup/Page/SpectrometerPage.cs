@@ -288,11 +288,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                 MessageBox.Show("No spectrometer selected or invalid instance.");
                 return;
             }
-            if (!selectSpectrometer.IsInitialized())
-            {
-                MessageBox.Show("The spectrometer is not initialized.");
-                return;
-            }
 
             try
             {

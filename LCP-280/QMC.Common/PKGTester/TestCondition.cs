@@ -77,13 +77,6 @@ namespace QMC.Common.PKGTester
                             return false;
                     }
                     break;
-                case TestItemCategory.ElectricalSource:
-                    {
-                        // Electrical Source Item
-                        if (SourceValue < 0)
-                            return false;
-                    }
-                    break;
                 default:
                     return false;
             }
@@ -169,12 +162,6 @@ namespace QMC.Common.PKGTester
                         }
                     }
                     break;
-                case TestItemCategory.ElectricalSource:
-                    {
-                        // Electrical Source Item
-                        pc.Add(nameof(SourceValue), SourceValue);
-                    }
-                    break;
             }
             return pc;
         }
@@ -219,12 +206,6 @@ namespace QMC.Common.PKGTester
                                 Gain[i] = pc.GetValue<double>($"Gain #{i + 1}");
                                 Offset[i] = pc.GetValue<double>($"Offset #{i + 1}");
                             }
-                        }
-                        break;
-                    case TestItemCategory.ElectricalSource:
-                        {
-                            // Electrical Source Item
-                            SourceValue = pc.GetValue<double>(nameof(SourceValue));
                         }
                         break;
                 }

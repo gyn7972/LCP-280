@@ -36,7 +36,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rotary Not Safe";
             alarm.Cause = "Rotary axis is not in safe position.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -44,7 +44,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Vision Search Fail";
             alarm.Cause = "Vision pattern search failed.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
@@ -247,9 +247,12 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
-                PostAlarm((int)AlarmKeys.eVisionSearch);
-                Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
-                return -1;
+                if(!Config.IsSimulation)
+                {
+                    PostAlarm((int)AlarmKeys.eVisionSearch);
+                    Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
+                    return -1;
+                }
             }
 
             IsStatus_LastFoundDx = res.x;
@@ -280,6 +283,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // OutStage T축 , XY축 보정 적용 필.
+            CompleteUnloadAligner = true;
 
             return nRet;
         }

@@ -38,7 +38,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Rorary Not Sfarety Pos.";
             alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
         }
@@ -791,13 +791,13 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
             this.SequencePlayers.Add(AlignSocketOnceReady);
             this.SequencePlayers.Add(AlignSocketOnce);
         }
+
         #region Seq 단위 동작 함수
 
         /// <summary>
@@ -915,6 +915,9 @@ namespace QMC.LCP_280.Process.Unit
                 bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
                 if (bRtn != 0)
                     return -1;
+
+                CompleteLoadAligner = true;
+                
 
             }
             catch (Exception ex)

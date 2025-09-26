@@ -67,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Die Tr Z-Axis Not Sfarety Pos.";
             alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -75,7 +75,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Feeder Z-Cylinder Not Sfarety Pos.";
             alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //,
@@ -84,7 +84,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "EjectorPin Z-Axis Not Sfarety Pos.";
             alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //,
             alarm = new AlarmInfo();
@@ -92,7 +92,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Ejector Z-Axis Not Sfarety Pos.";
             alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             //
@@ -101,7 +101,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Feeder Y-Axis Not Sfarety Pos.";
             alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -109,7 +109,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Vision T Search.";
             alarm.Cause = "Vision T Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
             //
             alarm = new AlarmInfo();
@@ -117,7 +117,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "Vision XY Search.";
             alarm.Cause = "Vision XY Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
             alarm = new AlarmInfo();
@@ -125,7 +125,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Title = "스테이지 이동에 실패 하였습니다.";
             alarm.Cause = "모터상태를 확인 하여주십시요.";
             alarm.Source = this.UnitName;
-            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
         }
@@ -969,11 +969,11 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq Signal
         // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
-        public bool IsStatus_StageLoadingReady { get; private set; }
-        public bool IsStatus_StageLoadingDone { get; private set; }
-        public bool IsStatus_StageUnloadingReady { get; private set; }
-        public bool IsStatus_StageUnloadingDone { get; private set; }
-        public bool IsStatus_CompleteWorking
+        public bool StageLoadingReady { get; private set; }
+        public bool StageLoadingDone { get; private set; }
+        public bool StageUnloadingReady { get; private set; }
+        public bool StageUnloadingDone { get; private set; }
+        public bool CompleteWorking
         {
             get
             {
@@ -1086,7 +1086,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (rc != 0 && rc != 0)
                     return rc; // rc !=0 이면 오류. (준비단계는 OK=0 외 다른 코드 없음)
 
-                IsStatus_StageLoadingDone = true;
+                StageLoadingDone = true;
 
                 State = ProcessState.Work;
                 Log.Write(this, "Wafer already present -> Skip prepare");
@@ -1271,8 +1271,8 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
 
             Log.Write(this, "Start LoadingWaferPrepare");
-            IsStatus_StageLoadingReady = true;
-            IsStatus_StageLoadingDone = false;
+            StageLoadingReady = true;
+            StageLoadingDone = false;
 
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
             if(!Config.IsSimulation && !Config.IsDryRun)    
@@ -1284,7 +1284,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             
-
             // 로딩 Teaching 이동
             nRtn = MoveToStageLoadPosition();
             if (nRtn != 0)
@@ -1316,7 +1315,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            IsStatus_StageLoadingReady = true;
+            StageLoadingReady = true;
             Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
 
             Log.Write(this, "End LoadingWaferPrepare");
@@ -1403,11 +1402,11 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
 
             // 이미 완료
-            if (IsStatus_StageLoadingDone)
+            if (StageLoadingDone)
                 return 0;
 
             // 준비 안 되었으면 호출 순서 오류
-            if (!IsStatus_StageLoadingReady && !IsRingPresent())
+            if (!StageLoadingReady && !IsRingPresent())
             {
                 Log.Write(UnitName, "LoadingComp", "Not prepared (call LoadingWaferPrepare first)");
                 return -1;
@@ -1456,8 +1455,8 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
-                IsStatus_StageLoadingDone = true;
-                IsStatus_StageLoadingReady = false;
+                StageLoadingDone = true;
+                StageLoadingReady = false;
                 Log.Write(UnitName, "LoadingComp", "Done");
 
                 return 0;
@@ -2144,13 +2143,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
             Log.Write(UnitName, "UnloadingPrep", "Start");
-            IsStatus_StageUnloadingDone = false;
-            IsStatus_StageUnloadingReady = false;
+            StageUnloadingDone = false;
+            StageUnloadingReady = false;
 
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingPrep", "No wafer -> Skip");
-                IsStatus_StageUnloadingDone = true;
+                StageUnloadingDone = true;
                 return 0;
             }
 
@@ -2179,7 +2178,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            IsStatus_StageUnloadingReady = true;
+            StageUnloadingReady = true;
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
@@ -2257,14 +2256,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            if (!IsStatus_StageUnloadingReady && IsRingPresent())
+            if (!StageUnloadingReady && IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingComp", "Not prepared");
                 return -1;
             }
 
-            IsStatus_StageUnloadingDone = true;
-            IsStatus_StageUnloadingReady = false;
+            StageUnloadingDone = true;
+            StageUnloadingReady = false;
             Log.Write(UnitName, "UnloadingComp", "Done");
             return nRtn;
         }
@@ -2580,6 +2579,9 @@ namespace QMC.LCP_280.Process.Unit
                     Score = m.Score
                 });
             }
+
+            double dscaleX = StageCamera.CameraConfig.Scale.X;
+            double dscaleY = StageCamera.CameraConfig.Scale.Y;
 
             snap?.Dispose();
             return true;

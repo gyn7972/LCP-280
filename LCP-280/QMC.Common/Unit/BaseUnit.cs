@@ -184,6 +184,7 @@ namespace QMC.Common.Unit
             m_dicAlarms.Add(alarm.Code, alarm);
         }
 
+        
         private Material m_currentMaterial;
 
         public virtual void AddComponents() { }
@@ -356,7 +357,7 @@ namespace QMC.Common.Unit
                     Title = "Unknown",
                     Cause = "Unknown",
                     Source = UnitName,
-                    Grade = "Warning"
+                    Grade = "Error"
                 };
             }
             return m_dicAlarms[999];
@@ -453,7 +454,9 @@ namespace QMC.Common.Unit
                         }
                     }
                 }
-                if (axis == null) continue;
+                if (axis == null) 
+                    continue;
+
                 axis.MoveAbs(target, isFine);
             }
 

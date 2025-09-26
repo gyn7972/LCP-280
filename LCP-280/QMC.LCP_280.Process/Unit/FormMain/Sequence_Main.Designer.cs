@@ -134,7 +134,7 @@ namespace QMC.LCP_280.Process
             this.btnStartAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStartAll.Location = new System.Drawing.Point(3, 3);
             this.btnStartAll.Name = "btnStartAll";
-            this.btnStartAll.Size = new System.Drawing.Size(200, 34);
+            this.btnStartAll.Size = new System.Drawing.Size(200, 30);
             this.btnStartAll.TabIndex = 0;
             this.btnStartAll.Text = "Start All";
             this.btnStartAll.UseVisualStyleBackColor = false;
@@ -267,7 +267,7 @@ namespace QMC.LCP_280.Process
             this.btnStartUnit.BackColor = System.Drawing.Color.PaleGreen;
             this.btnStartUnit.Location = new System.Drawing.Point(745, 3);
             this.btnStartUnit.Name = "btnStartUnit";
-            this.btnStartUnit.Size = new System.Drawing.Size(241, 29);
+            this.btnStartUnit.Size = new System.Drawing.Size(241, 25);
             this.btnStartUnit.TabIndex = 2;
             this.btnStartUnit.Text = "Start Unit";
             this.btnStartUnit.UseVisualStyleBackColor = false;
