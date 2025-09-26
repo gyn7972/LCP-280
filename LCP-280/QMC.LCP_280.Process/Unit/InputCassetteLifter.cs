@@ -502,7 +502,6 @@ namespace QMC.LCP_280.Process.Unit
                                     else if (Stagewafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
                                     {
                                         MoveToSlot(Stagewafer.SlotIndex);
-
                                     }
                                     else
                                     {
@@ -542,8 +541,6 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(WaferAlignT);
             this.SequencePlayers.Add(WaferAlignXY);
             this.SequencePlayers.Add(WaferDieMapping);
-
-
 
             this.SequencePlayers.Add(WaferUnloadingBeforeStage);
             this.SequencePlayers.Add(WaferUnloadingFeeder);
