@@ -12,6 +12,31 @@ using System.Windows.Forms;
 
 namespace QMC.Common.Keithley
 {
+    public class KeithleySourceTestConditionItem : TestConditionItem
+    {
+        #region Field & Property
+        public bool IsOpticalSource { get; set; }
+        #endregion
+
+        #region Constructor
+        public KeithleySourceTestConditionItem() : base("")
+        {
+            IsOpticalSource = false;
+        }
+        public KeithleySourceTestConditionItem(TestConditionItem item, bool isOpticalSource) : base("")
+        {
+            this.Name = item.Name;
+            this.Type = item.Type;
+            this.SourceValue = item.SourceValue;
+            this.SourceTime = item.SourceTime;
+            this.SourceLimit = item.SourceLimit;
+            this.MeasureTime = item.MeasureTime;
+
+            IsOpticalSource = isOpticalSource;
+        }
+        #endregion
+    }
+
     public class KeithleySourcemeter : BaseComponent, IDisposable
     {
         #region Defines
@@ -25,7 +50,7 @@ namespace QMC.Common.Keithley
 
         #region Field
         private List<string> script = new List<string>();
-        private List<TestConditionItem> testItems = new List<TestConditionItem>();
+        private List<KeithleySourceTestConditionItem> testItems = new List<KeithleySourceTestConditionItem>();
         private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
         #endregion
 
@@ -274,18 +299,27 @@ namespace QMC.Common.Keithley
             testItems.Clear();
             results.Clear();
         }   
-        public bool AddTestItem(TestConditionItem item)
+        public bool AddTestItem(TestConditionItem item, bool isOpticalSource = false)
         {
             if (item == null)
                 return false;
 
-            TestItemCategory category = item.GetTestItemCategory();
-            if (!(category == TestItemCategory.Electrical || category == TestItemCategory.ElectricalSource))
+            KeithleySourceTestConditionItem testItem = new KeithleySourceTestConditionItem(item, isOpticalSource);
+
+            // 1) Electrical 항목만 추가 가능
+            TestItemCategory category = testItem.GetTestItemCategory();
+            if (category != TestItemCategory.Electrical)
                 return false;
 
-            testItems.Add(item);
-            if (category == TestItemCategory.Electrical)
-                results.Add(item.Name, new TestItemResult());
+            // 2) isOpticalSource는 오직 하나만 가능
+            if (isOpticalSource)
+            {
+                if (testItems.Any(x => x.IsOpticalSource))
+                    return false;
+            }
+
+            testItems.Add(testItem);
+            results.Add(testItem.Name, new TestItemResult());
             return true;
         }
         public bool BuildTestCommands()
@@ -302,7 +336,7 @@ namespace QMC.Common.Keithley
                         case TestItemType.VF:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureV;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
                                 command.SourceValue = item.SourceValue;
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
@@ -315,7 +349,7 @@ namespace QMC.Common.Keithley
                         case TestItemType.VR:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureV;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
                                 command.SourceValue = item.SourceValue * -1.0;
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
@@ -328,7 +362,7 @@ namespace QMC.Common.Keithley
                         case TestItemType.IF:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureI;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
                                 command.SourceValue = item.SourceValue;
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
@@ -341,29 +375,13 @@ namespace QMC.Common.Keithley
                         case TestItemType.IR:
                             {
                                 command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.MeasureI;
+                                command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
                                 command.SourceValue = item.SourceValue * -1;
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);
                                 command.MeasureTime = item.MeasureTime;
                                 command.MeasureRange = GetIMeasureRange(command.SourceLimit);
-                                channel.AddCommand(command);
-                            }
-                            break;
-                        case TestItemType.VSourceAndTrigger:
-                            {
-                                command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.SweepVAndTrigger;
-                                command.SourceValue = item.SourceValue;
-                                channel.AddCommand(command);
-                            }
-                            break;
-                        case TestItemType.ISourceAndTrigger:
-                            {
-                                command.Name = item.Name;
-                                command.Action = KeithleySourcemeterChannel.CommandAction.SweepIAndTrigger;
-                                command.SourceValue = item.SourceValue;
                                 channel.AddCommand(command);
                             }
                             break;

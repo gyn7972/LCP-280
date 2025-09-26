@@ -162,13 +162,13 @@ namespace QMC.Common.PKGTester
 
         public int LoadTestConditionSet(TestConditionSet conditionSet)
         {
-            if (conditionSet == null)
-                return -1;
-            if (!conditionSet.Validate())
+            if (conditionSet == null || !conditionSet.Validate())
                 return -1;
 
             this.conditionSet.CopyConditionFrom(conditionSet);
-            RebuildTestMechanism();
+            if (RebuildTestMechanism() != 0)
+                return -1;
+
             OnConditionSetChanged?.Invoke(this);
             return 0;
         }
@@ -207,17 +207,28 @@ namespace QMC.Common.PKGTester
                 sourcemeter.ClearTestItems();
                 spectrometer.ClearTestItems();
 
-                foreach (var item in conditionSet.Items)
+                for (int i = 0; i < conditionSet.Items.Count; i++)
                 {
+                    var item = conditionSet.Items[i];
                     if (item == null)
                         throw new Exception("Invalid TestItem.");
 
                     switch (item.GetTestItemCategory())
                     {
                         case TestItemCategory.Electrical:
-                        case TestItemCategory.ElectricalSource:
                             {
-                                if (!sourcemeter.AddTestItem(item))
+                                bool isOpticalSource = false;
+                                if (i + 1 < conditionSet.Items.Count)
+                                {
+                                    var nextItem = conditionSet.Items[i + 1];
+                                    if (nextItem != null)
+                                    {
+                                        if (nextItem.GetTestItemCategory() == TestItemCategory.Optical)
+                                            isOpticalSource = true;
+                                    }
+                                }
+
+                                if (!sourcemeter.AddTestItem(item, isOpticalSource))
                                     throw new Exception("Failed to add test item to sourcemeter.");
                             }
                             break;
@@ -357,7 +368,7 @@ namespace QMC.Common.PKGTester
             if (sourcemeter == null)
                 return -1;
 
-            int smuCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Electrical || item.GetTestItemCategory() == TestItemCategory.ElectricalSource);
+            int smuCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Electrical);
             if (smuCmdCount == 0)
                 return 0;
 
