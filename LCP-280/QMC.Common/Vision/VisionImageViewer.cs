@@ -1574,7 +1574,7 @@ namespace QMC.Common.Vision
 
                                     if (bmpCutImage == null)
                                     {
-                                        Log.Write("VisionViewer", $"CutImage() 실패 - Point: {point}, Size: {size}");
+                                        //Log.Write("VisionViewer", $"CutImage() 실패 - Point: {point}, Size: {size}");
                                         return;
                                     }
                                     bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);

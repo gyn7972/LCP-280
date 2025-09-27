@@ -546,9 +546,12 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool SetClamp(bool bUpDn)
         {
-            if (_cylClamp == null) return false;
-            if (bUpDn) return _cylClamp.Extend();
-            else return _cylClamp.Retract();
+            if (_cylClamp == null) 
+                return false;
+            if (bUpDn) 
+                return _cylClamp.Extend();
+            else 
+                return _cylClamp.Retract();
         }
         #region Status Helpers
         public bool IsFeederUp()
@@ -560,8 +563,34 @@ namespace QMC.LCP_280.Process.Unit
             return ReadInput(InputFeederConfig.IO.FEEDER_UP);
         }
         
-        public bool IsFeederDown() => ReadInput(InputFeederConfig.IO.FEEDER_DOWN);
-        public bool IsUnclamped() => ReadInput(InputFeederConfig.IO.FEEDER_UNCLAMP);
+        public bool IsFeederDown()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return ReadInput(InputFeederConfig.IO.FEEDER_DOWN);
+        }
+        public bool IsClamped()
+        {
+            bool bRtn = false;
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                bRtn = true;
+                return bRtn;
+            }
+
+            bRtn = !ReadInput(InputFeederConfig.IO.FEEDER_UNCLAMP);
+            return bRtn;
+        }
+        public bool IsUnClamped()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return ReadInput(InputFeederConfig.IO.FEEDER_UNCLAMP);
+        }
         public bool IsRingPresent() => ReadInput(InputFeederConfig.IO.FEEDER_RING_CHECK);
         public bool IsOverload() => ReadInput(InputFeederConfig.IO.FEEDER_OVERLOAD);
         #endregion
@@ -571,6 +600,28 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsFeederDownValveOn() => IsOutputOn(InputFeederConfig.IO.FEEDER_DOWN_VALVE);
         public bool IsFeederClampValveOn() => IsOutputOn(InputFeederConfig.IO.FEEDER_CLAMP_VALVE);
         public bool IsFeederUnclampValveOn() => IsOutputOn(InputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
+        #endregion
+
+
+        #region
+        private static bool WaitIf(System.Func<IfState> get, IfState target, int timeoutMs = 15000, System.Threading.CancellationToken? ct = null, int pollMs = 5)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (true)
+            {
+                if (ct.HasValue && ct.Value.IsCancellationRequested) 
+                    return false;
+                if (get() == target) 
+                    return true;
+                if (timeoutMs >= 0 && sw.ElapsedMilliseconds > timeoutMs) 
+                    return false;
+
+                System.Threading.Thread.Sleep(pollMs);
+            }
+        }
+
+        public int IfTimeoutMs = 3000000;
+
         #endregion
 
 
@@ -608,7 +659,11 @@ namespace QMC.LCP_280.Process.Unit
         protected override  int OnRunReady()
         {
             int ret = 0;
-            if (this.InputStage.IsStatus_RequestWafer && this.InputCassetteLifter.IsWaferReadyForUnloding)
+            // Stage가 로딩 요청(고전형 enum or 기존 bool) && Cassette 준비되면 Work 진입
+            bool stageReq = (this.InputStage != null && this.InputStage.RequestLoadWafer == IfState.Request)
+                            || this.InputStage.IsStatus_RequestWafer;
+
+            if (stageReq)   //&& this.InputCassetteLifter.IsWaferReadyForUnloding)
             {
                 this.State = ProcessState.Work;
             }
@@ -620,43 +675,254 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnRunWork()
         {
-            int ret = 0;
-            //1. Wafer Loading
-            ret = WaferLoading();
-            if (ret != 0) 
+            int nRtn = 0;
+            var ct = this.CalcelToken != null ? (System.Threading.CancellationToken?)this.CalcelToken.Token : null;
+
+            // Stage 요청 인지 시 Busy로 표시(선택)
+            if (this.InputStage != null && this.InputStage.RequestLoadWafer == IfState.Request)
+                this.InputStage.RequestLoadWafer = IfState.Busy;
+
+            // 0) Stage에 제품이 있으면 "언로딩 먼저"
+            bool needUnloadFirst = false;
+            try
+            {
+                needUnloadFirst = InputStage.HasWaferOnStage();
+                // 권장: InputStage.HasWaferOnStage() 사용
+                // HasWaferOnStage()가 없다면 GetWaferMaterial().Presence == Material.MaterialPresence.Exist 로 판단
+                //if (this.InputStage != null)
+                //{
+                //    // 예: 안전하게 dynamic으로 Presence만 확인 (HasWaferOnStage 미구현 시 대체)
+                //    var wafer = this.InputStage.GetWaferMaterial();
+                //    if (wafer != null)
+                //    {
+                //        var presenceProp = wafer.GetType().GetProperty("Presence");
+                //        if (presenceProp != null)
+                //        {
+                //            var presenceVal = presenceProp.GetValue(wafer, null)?.ToString();
+                //            needUnloadFirst = string.Equals(presenceVal, "Exist", StringComparison.OrdinalIgnoreCase);
+                //        }
+                //    }
+                //}
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                needUnloadFirst = false; 
+            }
+
+            if (needUnloadFirst)
+            {
+                // 8) Feeder -> Stage: WaferUnloadingBeforeStage
+                this.InputStage.WaferUnloadingBeforeStage = IfState.Request;
+                if (!WaitIf(() => this.InputStage.WaferUnloadingBeforeStage, IfState.Complete, IfTimeoutMs, ct))
+                {
+                    FeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                    this.State = ProcessState.Error;
+                    return -1;
+                }
+                this.InputStage.WaferUnloadingBeforeStage = IfState.None;
+
+                // 9) Feeder 내부 언로딩
+                nRtn = StageUnloading(true);
+                if (nRtn != 0)
+                {
+                    FeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                    this.State = ProcessState.Error;
+                    return nRtn;
+                }
+
+                // 10) Feeder -> InputCassetteLifter에 언로딩 해야하는 Slot으로 이동 요청.
+                this.InputCassetteLifter.IfMoveToUnloadSlot = IfState.Request;
+                if (!WaitIf(() => this.InputCassetteLifter.IfMoveToUnloadSlot, IfState.Complete, IfTimeoutMs, ct))
+                {
+                    FeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_WaferUnloadingFailed);
+                    this.State = ProcessState.Error;
+                    return -1;
+                }
+
+                nRtn = WaferUnloading(true);
+                if (nRtn != 0)
+                {
+                    FeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_WaferUnloadingFailed);
+                    this.State = ProcessState.Error;
+                    return nRtn;
+                }
+
+                // 10) Feeder -> Stage: WaferUnloadingAfterStage
+                this.InputStage.WaferUnloadingAfterStage = IfState.Request;
+                if (!WaitIf(() => this.InputStage.WaferUnloadingAfterStage, IfState.Complete, IfTimeoutMs, ct))
+                {
+                    FeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
+                    this.State = ProcessState.Error;
+                    return -1;
+                }
+                this.InputStage.WaferUnloadingAfterStage = IfState.None;
+            }
+
+            // 1) Feeder -> Cassette: Scan
+            nRtn = this.InputCassetteLifter.ScanWafer();
+            if (nRtn != 0)
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
-                this.State = ProcessState.Error; return ret; 
+                this.State = ProcessState.Error;
+                return nRtn;
             }
-            
-            //3. Stage Loading
-            ret = StageLoading();
-            
-            if (ret != 0) 
+            //this.InputCassetteLifter.IfScan = IfState.Request;
+            //if (!WaitIf(() => this.InputCassetteLifter.IfScan, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    FeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputCassetteLifter.IfScan = IfState.None;
+
+            // 2) Feeder -> Cassette: MoveToNextSlot
+            nRtn = this.InputCassetteLifter.MoveToNextSlot();
+            if (nRtn != 0)
+            {
+                FeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                this.State = ProcessState.Error;
+                return nRtn;
+            }
+            //this.InputCassetteLifter.IfMoveToNextSlot = IfState.Request;
+            //if (!WaitIf(() => this.InputCassetteLifter.IfMoveToNextSlot, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    FeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputCassetteLifter.IfMoveToNextSlot = IfState.None;
+
+            // 3) Feeder -> Stage: WaferLoadingBeforeStage
+            nRtn = InputStage.LoadingWaferPrepare();
+            if (nRtn != 0)
+            {
+                FeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                this.State = ProcessState.Error;
+                return nRtn;
+            }
+            //this.InputStage.WaferLoadingBeforeStage = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferLoadingBeforeStage, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    FeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferLoadingBeforeStage = IfState.None;
+
+            // 4) Feeder 내부 로딩 Cascette에서 Wafer Pick
+            nRtn = WaferLoading(); // 여기서 Barcode Reading 포함
+            if (nRtn != 0)
+            {
+                FeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                this.State = ProcessState.Error;
+                return nRtn;
+            }
+
+            // 4) Feeder 내부 로딩 Stage에 Wafer Load
+            nRtn = StageLoading();
+            if (nRtn != 0)
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
-                this.State = ProcessState.Error; return ret;
+                this.State = ProcessState.Error;
+                return nRtn;
             }
-            //4. Stage Unloading
-            ret = StageUnloading();
-            if (ret != 0) 
+
+            // 5) Feeder -> Stage: WaferLoadingAfterStage
+            nRtn = InputStage.LoadingWaferComplete();
+            if (nRtn != 0)
             {
                 FeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_StageUnloadingFailed);
-                this.State = ProcessState.Error; return ret;
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                this.State = ProcessState.Error;
+                return nRtn;
             }
-            //5. Wafer Unloading
-            ret = WaferUnloading();
-            
-            if (ret != 0) 
+            //this.InputStage.WaferLoadingAfterStage = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferLoadingAfterStage, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    FeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferLoadingAfterStage = IfState.None;
+
+            // 6) 정렬/매핑
+            nRtn = InputStage.AlignT();
+            if(nRtn != 0)
             {
                 FeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_WaferUnloadingFailed);
-                this.State = ProcessState.Error; return ret;
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                this.State = ProcessState.Error;
+                return nRtn;
             }
+            //this.InputStage.WaferAlignT = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferAlignT, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferAlignT = IfState.None;
+
+            nRtn = InputStage.AlignXY();
+            if (nRtn != 0)
+            {
+                FeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                this.State = ProcessState.Error;
+                return nRtn;
+            }
+            //this.InputStage.WaferAlignXY = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferAlignXY, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferAlignXY = IfState.None;
+
+            this.InputStage.WaferDieMapping = IfState.Request;
+            if (!WaitIf(() => this.InputStage.WaferDieMapping, IfState.Complete, IfTimeoutMs, ct))
+            {
+                this.State = ProcessState.Error;
+                return -1;
+            }
+            this.InputStage.WaferDieMapping = IfState.None;
+
+            // 7) Feeder -> Stage: IsWaferLoadOK (완료 확인)
+            this.InputStage.IsWaferLoadOK = IfState.Request;
+            if (!WaitIf(() => this.InputStage.IsWaferLoadOK, IfState.Complete, IfTimeoutMs, ct))
+            {
+                FeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                this.State = ProcessState.Error;
+                return -1;
+            }
+            this.InputStage.IsWaferLoadOK = IfState.None;
+
+            // Stage의 최초 요청 플래그 클리어(선택)
+            this.InputStage.RequestLoadWafer = IfState.None;
+
             this.State = ProcessState.Complete;
+            return nRtn;
+        }
+
+        protected override int OnRunComplete()
+        {
+            int ret = 0;
+            this.State = ProcessState.Ready;
             return ret;
         }
         public override int OnStop() 
@@ -668,11 +934,11 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
-        //protected override void OnMakeSequence()
-        //{
-        //    base.OnMakeSequence();
-        //    this.SequencePlayers.Add(WaferLoading);
-        //}
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            //this.SequencePlayers.Add();
+        }
 
         #region Seq 단위 동작
         public int WaferLoading(bool isFine = false)
@@ -787,13 +1053,10 @@ namespace QMC.LCP_280.Process.Unit
         public int ClampGripper()
         {
             int nRet = 0;
-            if (!this.SetClamp(true))
+            this.SetClamp(true);
+            if (!IsClamped())
             {
-                Log.Write("InputFeeder", "WaferLoading", "Clamp Success");
-            }
-            else
-            {
-                Log.Write("InputFeeder", "WaferLoading", "Clamp Failed");
+                Log.Write(this, "Clamp Failed");
                 PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
                 nRet = -1;
                 return nRet;
@@ -803,31 +1066,24 @@ namespace QMC.LCP_280.Process.Unit
         public int UnClampGripper()
         {
             int nRet = 0;
-            if (!this.SetClamp(false))
+            this.SetClamp(false);
+            if (!IsUnClamped())
             {
-                Log.Write("InputFeeder", "WaferLoading", "Unclamp Success");
-            }
-            else
-            {
-                Log.Write("InputFeeder", "WaferLoading", "Unclamp Failed");
+                Log.Write(this, "Unclamp Failed");
                 PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
                 nRet = -1;
                 return nRet;
             }
-
             return nRet;
         }
         public int UpFeeder()
         {
             int nRet = 0;
-            if (this.SetLift(true))
+            this.SetLift(true);
+            if (!IsFeederUp())
             {
-                Log.Write("InputFeeder", "WaferLoading", "Feeder Up Success");
-            }
-            else
-            {
-                Log.Write("InputFeeder", "WaferLoading", "Feeder Up Failed");
-                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                Log.Write(this, "Feeder Up Failed");
+                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
                 nRet = -1;
                 return nRet;
             }
@@ -836,11 +1092,8 @@ namespace QMC.LCP_280.Process.Unit
         public int DownFeeder()
         {
             int nRet = 0;
-            if (!this.SetLift(false))
-            {
-                Log.Write("InputFeeder", "WaferLoading", "Feeder Down Success");
-            }
-            else
+            this.SetLift(false);
+            if (!IsFeederDown())
             {
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Failed");
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);

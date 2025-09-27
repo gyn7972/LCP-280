@@ -943,9 +943,9 @@ namespace QMC.LCP_280.Process.Unit
         public int PollIntervalMs { get; set; } = 30;
         public double AngleIgnoreThresholdDeg { get; set; } = 0.001;
         public double AngleMaxApplyDeg { get; set; } = 2.0;
-        public double AngleApplyGain { get; set; } = 1.0; // 방향 반전 필요 시 -1 사용
+        public double AngleApplyGain { get; set; } =- 1.0; // 방향 반전 필요 시 -1 사용
         public bool UseOffsetForTAxisCorrection { get; set; } = true; // false면 직접 축 이동 방식으로 전환 가능 (추후 확장)
-
+        
         private int WaitUntil(Func<bool> cond, int timeoutMs)
         {
             int nRtn = 0;
@@ -974,29 +974,56 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq Signal
         // === Stage Load/Unload 상태 플래그 (RingTransfer 와 핸드쉐이크 용 가정) ===
-        public bool StageLoadingReady { get; private set; }
-        public bool StageLoadingDone { get; private set; }
-        public bool StageUnloadingReady { get; private set; }
-        public bool StageUnloadingDone { get; private set; }
-        public bool CompleteWorking
+        // === 인터페이스 신호(고전형) ===
+        public IfState RequestLoadWafer;            // Stage -> Feeder (요청만 올림, Complete는 Feeder가 IsWaferLoadOK로 알려줌)
+        public IfState IsWaferLoadOK;               // Feeder -> Stage 완료 통지용
+
+        public IfState WaferLoadingBeforeStage;     // Feeder -> Stage
+        public IfState WaferLoadingAfterStage;      // Feeder -> Stage
+
+        public IfState WaferAlignT;                 // Feeder -> Stage
+        public IfState WaferAlignXY;                // Feeder -> Stage
+        public IfState WaferDieMapping;             // Feeder -> Stage
+
+        public IfState WaferUnloadingBeforeStage;   // Feeder -> Stage
+        public IfState WaferUnloadingAfterStage;    // Feeder -> Stage
+
+        public bool CompleteWorking { get; set; }   // Stage -> Feeder (Cycle 완료 통지용)
+
+        // 간단 대기 유틸(필요시)
+        private static bool WaitIf(System.Func<IfState> get, IfState target, int timeoutMs = 10000, System.Threading.CancellationToken? ct = null, int pollMs = 5)
         {
-            get
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (true)
             {
-                MaterialWafer mat = GetMaterialWafer();
-                if (mat == null)
-                {
-                    return false;
-                }
-                if (mat.Presence == Material.MaterialPresence.Exist)
-                {
-                    return mat.ProcessSatate == Material.MaterialProcessSatate.Completed;
-                }
-                return false;
-            }
-            internal set
-            {
+                if (ct.HasValue && ct.Value.IsCancellationRequested) return false;
+                if (get() == target) return true;
+                if (timeoutMs >= 0 && sw.ElapsedMilliseconds > timeoutMs) return false;
+                System.Threading.Thread.Sleep(pollMs);
             }
         }
+
+        public bool HasWaferOnStage()
+        {
+            try
+            {
+                var wafer = GetMaterialWafer();
+                if (wafer == null) 
+                    return false;
+                var presenceProp = wafer.GetType().GetProperty("Presence");
+                if (presenceProp == null) 
+                    return false;
+
+                var presenceVal = presenceProp.GetValue(wafer, null);
+
+                return presenceVal != null && presenceVal.ToString().Equals("Exist", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
 
         // ====== Align Refactor: 상태/결과 보관 필드 ======
         public bool IsStatus_TAlignPrepared { get; private set; }
@@ -1091,8 +1118,6 @@ namespace QMC.LCP_280.Process.Unit
                 if (rc != 0 && rc != 0)
                     return rc; // rc !=0 이면 오류. (준비단계는 OK=0 외 다른 코드 없음)
 
-                StageLoadingDone = true;
-
                 State = ProcessState.Work;
                 Log.Write(this, "Wafer already present -> Skip prepare");
                 return 0;
@@ -1126,43 +1151,93 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            return -1;
+            // 기존 로직 위/아래 어느 위치에 두어도 되나, 인터페이스는 빠르게 응답하도록 상단에서 처리 권장
+            var ct = this.CalcelToken != null ? (System.Threading.CancellationToken?)this.CalcelToken.Token : null;
 
-            nRtn = AlignT();
-            if (nRtn != 0)
+
+            // 0) 작업 완료 유/무 -> 웨이퍼가 있는데 작업을 다 했다면? 
+            if(InputDieTransfer.CompleteWork)
             {
-                State = ProcessState.Error;
-                Log.Write(this, "AlignT Failed");
-                return -1;
+                RequestLoadWafer = IfState.Request;
+                return nRtn;
             }
 
-            nRtn = AlignXY();
-            if (nRtn != 0)
+
+            // 1) 로딩 전 준비
+            if (WaferLoadingBeforeStage == IfState.Request)
             {
-                State = ProcessState.Error;
-                Log.Write(this, "AlignXY Failed");
-                return -1;
+                WaferLoadingBeforeStage = IfState.Busy;
+                // Stage가 로딩을 받아줄 준비(안전/포지션)
+                nRtn = LoadingWaferPrepare();
+                if (nRtn != 0)
+                {
+                    Log.Write(this, "LoadingWaferPrepare Failed");
+                    return -1;
+                }
+                WaferLoadingBeforeStage = IfState.Complete;
+
             }
 
-            nRtn = PerformChipMapping();
-            if (nRtn != 0)
+            // 2) 로딩 후 처리
+            if (WaferLoadingAfterStage == IfState.Request)
             {
-                State = ProcessState.Error;
-                Log.Write(this, "Chip Mapping Failed");
-                return -1;
+                WaferLoadingAfterStage = IfState.Busy;
+                nRtn = LoadingWaferComplete();
+                if (nRtn != 0)
+                {
+                    Log.Write(this, "LoadingWaferComplete Failed");
+                }
+                WaferLoadingAfterStage = IfState.Complete;
             }
 
-            State = ProcessState.Complete;
-            return nRtn;
-
-        }
-        protected override int OnRunComplete()
-        {
-            int nRtn = 0;
-
-            // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 Work 단계 가능)
-            if (IsRingPresent())
+            // 3) 정렬 T
+            if (WaferAlignT == IfState.Request)
             {
+                WaferAlignT = IfState.Busy;
+                nRtn = AlignT(true);
+                if (nRtn != 0)
+                {
+                    Log.Write(this, "AlignT Failed");
+                }
+                WaferAlignT = IfState.Complete;
+            }
+
+            // 4) 정렬 XY
+            if (WaferAlignXY == IfState.Request)
+            {
+                WaferAlignXY = IfState.Busy;
+                nRtn = AlignXY(true);
+                if (nRtn != 0)
+                {
+                    Log.Write(this, "AlignXY Failed");
+                }
+                WaferAlignXY = IfState.Complete;
+            }
+
+            // 5) 다이 매핑
+            if (WaferDieMapping == IfState.Request)
+            {
+                WaferDieMapping = IfState.Busy;
+                nRtn = PerformChipMapping(true);
+                if (nRtn != 0)
+                {
+                    Log.Write(this, "PerformChipMapping Failed");
+                }
+                WaferDieMapping = IfState.Complete;
+            }
+
+            // 6) 로드 OK 확인/응답(필요 시 추가 체크 후 Complete)
+            if (IsWaferLoadOK == IfState.Request)
+            {
+                // 예: 센서/비전 체크 후 OK 판단
+                IsWaferLoadOK = IfState.Complete;
+            }
+
+            // 7) 언로딩 전 준비
+            if (WaferUnloadingBeforeStage == IfState.Request)
+            {
+                WaferUnloadingBeforeStage = IfState.Busy;
+
                 nRtn = UnloadingWaferPrepare();
                 if (nRtn != 0)
                 {
@@ -1171,20 +1246,29 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (InputFeeder.IsWaferUnloadDone)
-                {
-                    nRtn = UnloadingWaferComplete();
-                    if (nRtn != 0)
-                    {
-                        State = ProcessState.Error;
-                        Log.Write(this, "UnloadingWaferComplete Failed");
-                        return -1;
-                    }
-                }
-
+                WaferUnloadingBeforeStage = IfState.Complete;
             }
 
+            // 8) 언로딩 후 처리
+            if (WaferUnloadingAfterStage == IfState.Request)
+            {
+                WaferUnloadingAfterStage = IfState.Busy;
+                nRtn = UnloadingWaferComplete();
+                if (nRtn != 0)
+                {
+                    State = ProcessState.Error;
+                    Log.Write(this, "UnloadingWaferComplete Failed");
+                    return -1;
+                }
+                WaferUnloadingAfterStage = IfState.Complete;
+            }
 
+            return nRtn;
+        }
+
+        protected override int OnRunComplete()
+        {
+            int nRtn = 0;
 
             State = ProcessState.None;
             return 0;
@@ -1198,7 +1282,6 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(AlignXY);
             this.SequencePlayers.Add(PerformChipMapping);
         }
-
 
         // 주석   
         /* TODO */
@@ -1229,9 +1312,6 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq 단위 동작 함수
         
-
-
-
         public bool IsRingPresent()
         {
             bool bRtn = true;
@@ -1276,9 +1356,7 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
 
             Log.Write(this, "Start LoadingWaferPrepare");
-            StageLoadingReady = true;
-            StageLoadingDone = false;
-
+            
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
             if(!Config.IsSimulation && !Config.IsDryRun)    
             {
@@ -1320,7 +1398,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            StageLoadingReady = true;
             Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
 
             Log.Write(this, "End LoadingWaferPrepare");
@@ -1406,12 +1483,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            // 이미 완료
-            if (StageLoadingDone)
-                return 0;
-
             // 준비 안 되었으면 호출 순서 오류
-            if (!StageLoadingReady && !IsRingPresent())
+            if (!IsRingPresent())
             {
                 Log.Write(UnitName, "LoadingComp", "Not prepared (call LoadingWaferPrepare first)");
                 return -1;
@@ -1460,8 +1533,6 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
-                StageLoadingDone = true;
-                StageLoadingReady = false;
                 Log.Write(UnitName, "LoadingComp", "Done");
 
                 return 0;
@@ -1471,8 +1542,6 @@ namespace QMC.LCP_280.Process.Unit
                 // 우선 대기? // 신호 이상?
                 return -1;
             }
-
-            return ret;
         }
         public int MoveToStageCenterPosition(bool isFine = false)
         {
@@ -1813,7 +1882,7 @@ namespace QMC.LCP_280.Process.Unit
             double mmPerPixelY = (dY - StageCamera.CameraConfig.Resolution.Height /2 ) * StageCamera.CameraConfig.Scale.Y;
             return new PointD(mmPerPixelX, mmPerPixelY);
         }
-        public int SearchChips(VisionImage visionImage, ref List<PointD> points, double x, double y)
+        public int SearchDies(VisionImage visionImage, ref List<PointD> points, double x, double y)
         {
             int ret = 0;
             var result = this.PmRunner.Search(visionImage);
@@ -1880,13 +1949,17 @@ namespace QMC.LCP_280.Process.Unit
                     else
                     {
                         StageCamera.GrabSync(out VisionImage grabImage);
+                        //SearchDies(grabImage, ref chips, pt.X, pt.Y);
                         if (tImageProcess != null)
                         {
                             tImageProcess.Wait();
                         }
-                        tImageProcess = Task.Factory.StartNew(() => {
+                        double dx = pt.X;
+                        double dy = pt.Y;
+                        tImageProcess = Task.Factory.StartNew(() =>
+                        {
 
-                            return SearchChips(grabImage, ref chips, pt.X, pt.Y);
+                            return SearchDies(grabImage, ref chips, dx, dy);
                         });
                     }
                     if (nRet != 0)
@@ -1964,8 +2037,6 @@ namespace QMC.LCP_280.Process.Unit
 
                     Log.Write(ex);
                 }
-                StageCamera.CameraConfig.Scale.X = 0.00345;
-                StageCamera.CameraConfig.Scale.Y = 0.00345;
                 double dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
                 double dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
 
@@ -2029,13 +2100,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
             Log.Write(UnitName, "UnloadingPrep", "Start");
-            StageUnloadingDone = false;
-            StageUnloadingReady = false;
-
+            
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingPrep", "No wafer -> Skip");
-                StageUnloadingDone = true;
                 return 0;
             }
 
@@ -2063,8 +2131,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
             }
-
-            StageUnloadingReady = true;
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
@@ -2142,14 +2208,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            if (!StageUnloadingReady && IsRingPresent())
+            if (IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingComp", "Not prepared");
                 return -1;
             }
-
-            StageUnloadingDone = true;
-            StageUnloadingReady = false;
             Log.Write(UnitName, "UnloadingComp", "Done");
             return nRtn;
         }

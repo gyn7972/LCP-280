@@ -218,10 +218,10 @@ namespace QMC.LCP_280.Process.Component
                                 var until = DateTime.UtcNow.AddMilliseconds(1500);
                                 while (DateTime.UtcNow < until)
                                 {
-                                    if (inFeeder.IsUnclamped()) break;
+                                    if (inFeeder.IsUnClamped()) break;
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
-                                if (!inFeeder.IsUnclamped())
+                                if (!inFeeder.IsUnClamped())
                                     return (false, "Wafer Feeder Unclamp Sensor Not Detected");
 
                                 // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
