@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using static QMC.LCP_280.Process.Equipment;
@@ -870,6 +871,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int bRtn = 0;
             this.CurrentFunc = AlignSocketOnce;
+            int nIndex = GetAlignIndexNo();
             try
             {
                 bRtn = IsRotaryIdle();
@@ -882,7 +884,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 LogSequence("Start");
                 this.CurrentFunc = AlignSocketOnce;
-                int nIndex = GetAlignIndexNo();
+                
 
 
                 // 2) T Ready
@@ -906,18 +908,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (bRtn != 0)
                     return -1;
 
-                // 6) T Ready
-                bRtn = MovePositionAlignTReady(bFineSpeed);
-                if (bRtn != 0)
-                    return -1;
-
-                // 7) Z Ready
-                bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
-                if (bRtn != 0)
-                    return -1;
-
-                CompleteLoadAligner = true;
-                
+               
 
             }
             catch (Exception ex)
@@ -927,6 +918,14 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
+                // 6) T Ready
+                bRtn = MovePositionAlignTReady(bFineSpeed);
+                
+                // 7) Z Ready
+                bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
+                
+                CompleteLoadAligner = true;
+
                 LogSequence("End");
             }
 
