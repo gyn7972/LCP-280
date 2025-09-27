@@ -52,6 +52,8 @@ namespace QMC.Common.Keithley
         private List<string> script = new List<string>();
         private List<KeithleySourceTestConditionItem> testItems = new List<KeithleySourceTestConditionItem>();
         private Dictionary<string, TestItemResult> results = new Dictionary<string, TestItemResult>();
+
+        private System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch(); // Timeout check
         #endregion
 
         #region Property
@@ -260,7 +262,7 @@ namespace QMC.Common.Keithley
             try
             {
                 KeithleySourcemeterChannel channel = Channels["smua"];
-                if (Config.IsSimulated)
+                if (Config.IsSimulation)
                 {
                     channel.SimulateBufferData();
                     return 0;
@@ -269,14 +271,12 @@ namespace QMC.Common.Keithley
                 if (!channel.RunCommands())
                     throw new Exception("Failed to run measure commands.");
 
-                StopWatch sw = new StopWatch();
-                sw.Start();
+                stopwatch.Restart();
 
-                int tryCount = 0;
                 while (!channel.WaitComplete())
                 {
-                    if (tryCount++ > (Config.MeasureTimeout/1000))
-                        throw new Exception("Measurement timeout occurred.");
+                    if (stopwatch.ElapsedMilliseconds > Config.MeasureTimeout)
+                        throw new TimeoutException("Measure timeout.");
 
                     Thread.Sleep(10);
                 }
@@ -289,6 +289,10 @@ namespace QMC.Common.Keithley
                 Log.Write(ex);
                 OnMeasureFailed?.Invoke(this, ex.Message);
                 return -1;
+            }
+            finally
+            {
+                stopwatch.Stop();
             }
             return 0;
         }
@@ -337,7 +341,7 @@ namespace QMC.Common.Keithley
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
-                                command.SourceValue = item.SourceValue;
+                                command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
                                 command.SourceRange = GetISourceRange(command.SourceValue);
@@ -350,7 +354,7 @@ namespace QMC.Common.Keithley
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureVAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureV;
-                                command.SourceValue = item.SourceValue * -1.0;
+                                command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
                                 command.SourceRange = GetISourceRange(command.SourceValue);
@@ -363,7 +367,7 @@ namespace QMC.Common.Keithley
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
-                                command.SourceValue = item.SourceValue;
+                                command.SourceValue = item.SourceValue * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);
@@ -376,7 +380,7 @@ namespace QMC.Common.Keithley
                             {
                                 command.Name = item.Name;
                                 command.Action = item.IsOpticalSource ? KeithleySourcemeterChannel.CommandAction.MeasureIAndTrig : KeithleySourcemeterChannel.CommandAction.MeasureI;
-                                command.SourceValue = item.SourceValue * -1;
+                                command.SourceValue = item.SourceValue * -1.0 * (Config.SourceInvert ? -1.0 : 1.0);
                                 command.SourceTime = item.SourceTime;
                                 command.SourceLimit = item.SourceLimit;
                                 command.SourceRange = GetVSourceRange(command.SourceValue);

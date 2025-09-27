@@ -68,15 +68,19 @@ namespace QMC.Common.PKGTester
         public override PropertyCollection GetPropertyCollection()
         {
             var pc = new PropertyCollection();
+
+            // Title
             pc.Add("Color Region");
-            pc.Add("Top Left - X", topLeft.X);
-            pc.Add("Top Left - Y", topLeft.Y);
-            pc.Add("Top Right - X", topRight.X);
-            pc.Add("Top Right - Y", topRight.Y);
-            pc.Add("Bottom Right - X", bottomRight.X);
-            pc.Add("Bottom Right - Y", bottomRight.Y);
-            pc.Add("Bottom Left - X", bottomLeft.X);
-            pc.Add("Bottom Left - Y", bottomLeft.Y);
+
+            // Value
+            pc.Add("Top Left - X", "", topLeft.X);
+            pc.Add("Top Left - Y", "", topLeft.Y);
+            pc.Add("Top Right - X", "", topRight.X);
+            pc.Add("Top Right - Y", "", topRight.Y);
+            pc.Add("Bottom Right - X", "", bottomRight.X);
+            pc.Add("Bottom Right - Y", "", bottomRight.Y);
+            pc.Add("Bottom Left - X", "", bottomLeft.X);
+            pc.Add("Bottom Left - Y", "", bottomLeft.Y);
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)

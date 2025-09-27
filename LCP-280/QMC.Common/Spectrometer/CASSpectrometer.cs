@@ -426,7 +426,7 @@ namespace QMC.Common.Spectrometer
         }
         public int Measure()
         {
-            if (Config.IsSimulated)
+            if (Config.IsSimulation)
             {
                 return MeasureSimulation();
             }

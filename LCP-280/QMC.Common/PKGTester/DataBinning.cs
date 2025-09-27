@@ -15,7 +15,7 @@ namespace QMC.Common.PKGTester
         #region Properties
         public double Min { get; set; }
         public double Max { get; set; }
-        public bool IgnoreOutOfRange { get; set; }
+        public bool Ignore { get; set; }
         #endregion
 
         #region Constructors
@@ -30,11 +30,11 @@ namespace QMC.Common.PKGTester
         {
             Min = 0;
             Max = 0;
-            IgnoreOutOfRange = true;
+            Ignore = false;
         }
         public override bool Validate()
         {
-            if (!IgnoreOutOfRange)
+            if (!Ignore)
             {
                 if (Min >= Max)
                     return false;
@@ -43,7 +43,7 @@ namespace QMC.Common.PKGTester
         }
         public bool IsInRange(double value)
         {
-            if (IgnoreOutOfRange)
+            if (Ignore)
                 return true;
 
             return (value >= Min && value <= Max);
@@ -51,10 +51,14 @@ namespace QMC.Common.PKGTester
         public override PropertyCollection GetPropertyCollection()
         {
             var pc = new PropertyCollection();
+            
+            // Title
             pc.Add("Binning Range");
-            pc.Add("Min", Min);
-            pc.Add("Max", Max);
-            pc.Add("IgnoreOutOfRange", IgnoreOutOfRange);
+
+            // Value
+            pc.Add("Min", "", Min);
+            pc.Add("Max", "", Max);
+            pc.Add("Ignore", "", Ignore);
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -65,7 +69,7 @@ namespace QMC.Common.PKGTester
             {
                 Min = pc.GetValue<double>("Min");
                 Max = pc.GetValue<double>("Max");
-                IgnoreOutOfRange = pc.GetValue<bool>("IgnoreOutOfRange");
+                Ignore = pc.GetValue<bool>("Ignore");
             }
             catch (Exception ex)
             {
@@ -77,7 +81,7 @@ namespace QMC.Common.PKGTester
         }
         public override string ToString()
         {
-            if (IgnoreOutOfRange)
+            if (Ignore)
                 return "";
             else
                 return $"{Min} ~ {Max}";
@@ -90,7 +94,7 @@ namespace QMC.Common.PKGTester
                 return false;
             if (Max != range.Max)
                 return false;
-            if (IgnoreOutOfRange != range.IgnoreOutOfRange)
+            if (Ignore != range.Ignore)
                 return false;
             return true;
         }
@@ -100,7 +104,7 @@ namespace QMC.Common.PKGTester
             {
                 Min = range.Min;
                 Max = range.Max;
-                IgnoreOutOfRange = range.IgnoreOutOfRange;
+                Ignore = range.Ignore;
             }
         }
         #endregion
@@ -288,7 +292,7 @@ namespace QMC.Common.PKGTester
                 bool allIgnore = true;
                 foreach (var range in spec.Items.Values)
                 {
-                    if (!range.IgnoreOutOfRange)
+                    if (!range.Ignore)
                     {
                         allIgnore = false;
                         break;
@@ -345,7 +349,7 @@ namespace QMC.Common.PKGTester
                             var dstRange = newSpec.Items[header];
                             dstRange.Min = srcRange.Min;
                             dstRange.Max = srcRange.Max;
-                            dstRange.IgnoreOutOfRange = srcRange.IgnoreOutOfRange;
+                            dstRange.Ignore = srcRange.Ignore;
                         }
                     }
                 }
@@ -395,7 +399,7 @@ namespace QMC.Common.PKGTester
                             var rangeStr = parts[i].Trim();
                             if (rangeStr == "(Ignore)")
                             {
-                                spec.Items[header].IgnoreOutOfRange = true;
+                                spec.Items[header].Ignore = true;
                             }
                             else if (rangeStr.Contains("~"))
                             {
@@ -407,7 +411,7 @@ namespace QMC.Common.PKGTester
                                 {
                                     spec.Items[header].Min = min;
                                     spec.Items[header].Max = max;
-                                    spec.Items[header].IgnoreOutOfRange = false;
+                                    spec.Items[header].Ignore = false;
                                 }
                                 else
                                 {
@@ -461,7 +465,7 @@ namespace QMC.Common.PKGTester
                         {
                             if (spec.Items.TryGetValue(header, out var range))
                             {
-                                if (range.IgnoreOutOfRange)
+                                if (range.Ignore)
                                     writer.Write(",(Ignore)");
                                 else
                                     writer.Write($",{range.Min}~{range.Max}");

@@ -22,47 +22,56 @@ namespace QMC.Common
         }
 
         // Property Collection 제너릭 처리 추가
-        public void Add(string title, object obj = null)
+        /// <summary>
+        /// Title Only Property를 PropertyCollection에 추가합니다.
+        /// </summary>
+        public void Add(string title)
         {
-            if (obj == null)
+            TitleOnlyProperty titleProp = new TitleOnlyProperty(title);
+            _properties.Add(titleProp);
+        }
+
+        /// <summary>
+        /// Data type에 따라 적절한 Property를 PropertyCollection에 추가합니다.
+        /// </summary>
+        public void Add(string title, string valueUnit, object obj)
+        {
+            string fullTitle = string.IsNullOrWhiteSpace(valueUnit) ? title : $"{title} ({valueUnit})";
+
+            if (obj is bool value)
             {
-                TitleOnlyProperty titleProp = new TitleOnlyProperty(title);
-                _properties.Add(titleProp);
-            }
-            else if (obj is bool value)
-            {
-                BoolProperty boolProp = new BoolProperty(title, value);
+                BoolProperty boolProp = new BoolProperty(fullTitle, value);
                 _properties.Add(boolProp);
             }
             else if (obj is int intValue)
             {
-                IntProperty intProp = new IntProperty(title, intValue);
+                IntProperty intProp = new IntProperty(fullTitle, intValue);
                 _properties.Add(intProp);
             }
             else if (obj is long longValue)
             {
-                LongProperty longProp = new LongProperty(title, longValue);
+                LongProperty longProp = new LongProperty(fullTitle, longValue);
                 _properties.Add(longProp);
             }
             else if (obj is float floatValue)
             {
-                FloatProperty floatProp = new FloatProperty(title, floatValue);
+                FloatProperty floatProp = new FloatProperty(fullTitle, floatValue);
                 _properties.Add(floatProp);
             }
             else if (obj is double doubleValue)
             {
                 // TeachingPosition.AxisPositions (Dictionary<string,double>) 지원
-                DoubleProperty doubleProp = new DoubleProperty(title, doubleValue);
+                DoubleProperty doubleProp = new DoubleProperty(fullTitle, doubleValue);
                 _properties.Add(doubleProp);
             }
             else if (obj is string strValue)
             {
-                StringProperty stringProp = new StringProperty(title, strValue);
+                StringProperty stringProp = new StringProperty(fullTitle, strValue);
                 _properties.Add(stringProp);
             }
             else if (obj.GetType().IsEnum)
             {
-                ComboBoxProperty comboBoxProp = new ComboBoxProperty(title, obj.ToString(), System.Enum.GetNames(obj.GetType()).ToList());
+                ComboBoxProperty comboBoxProp = new ComboBoxProperty(fullTitle, obj.ToString(), System.Enum.GetNames(obj.GetType()).ToList());
                 _properties.Add(comboBoxProp);
             }
             else
@@ -71,9 +80,28 @@ namespace QMC.Common
             }
         }
 
+        /// <summary>
+        /// PropertyCollection에서 Title에 해당하는 Property의 값을 반환합니다.
+        /// </summary>
         public T GetValue<T>(string title)
         {
-            var prop = _properties.FirstOrDefault(p => p.Title == title);
+            //var prop = _properties.FirstOrDefault(p => p.Title == title);
+            PropertyBase prop = null;
+            foreach (var p in _properties)
+            {
+                if (p != null)
+                {
+                    string propTitle = p.Title;
+                    int idx = propTitle.IndexOf(" (");
+                    string compareTitle = idx > 0 ? propTitle.Substring(0, idx) : propTitle;
+
+                    if (title.Equals(compareTitle, StringComparison.OrdinalIgnoreCase))
+                    {
+                        prop = p;
+                        break;
+                    }
+                }
+            }
             if (prop == null)
                 throw new KeyNotFoundException($"Property with title '{title}' not found.");
 

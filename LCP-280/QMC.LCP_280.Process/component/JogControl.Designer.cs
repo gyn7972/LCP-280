@@ -118,7 +118,7 @@ namespace QMC.LCP_280.Process.Unit
             this.layoutRoot.Location = new System.Drawing.Point(0, 0);
             this.layoutRoot.Margin = new System.Windows.Forms.Padding(0);
             this.layoutRoot.Name = "layoutRoot";
-            this.layoutRoot.Padding = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.layoutRoot.Padding = new System.Windows.Forms.Padding(4);
             this.layoutRoot.RowCount = 2;
             this.layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 28.46821F));
             this.layoutRoot.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 71.53179F));
@@ -148,7 +148,7 @@ namespace QMC.LCP_280.Process.Unit
             this.grpSelectAxis.Location = new System.Drawing.Point(4, 34);
             this.grpSelectAxis.Margin = new System.Windows.Forms.Padding(0);
             this.grpSelectAxis.Name = "grpSelectAxis";
-            this.grpSelectAxis.Padding = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.grpSelectAxis.Padding = new System.Windows.Forms.Padding(6);
             this.grpSelectAxis.Size = new System.Drawing.Size(1209, 177);
             this.grpSelectAxis.TabIndex = 1;
             this.grpSelectAxis.TabStop = false;
@@ -248,7 +248,7 @@ namespace QMC.LCP_280.Process.Unit
             this.grpMove.Location = new System.Drawing.Point(4, 4);
             this.grpMove.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
             this.grpMove.Name = "grpMove";
-            this.grpMove.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
+            this.grpMove.Padding = new System.Windows.Forms.Padding(8);
             this.grpMove.Size = new System.Drawing.Size(1209, 55);
             this.grpMove.TabIndex = 0;
             this.grpMove.TabStop = false;
@@ -282,7 +282,7 @@ namespace QMC.LCP_280.Process.Unit
             this.grpMoveMode.Location = new System.Drawing.Point(4, 126);
             this.grpMoveMode.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
             this.grpMoveMode.Name = "grpMoveMode";
-            this.grpMoveMode.Padding = new System.Windows.Forms.Padding(8, 8, 8, 8);
+            this.grpMoveMode.Padding = new System.Windows.Forms.Padding(8);
             this.grpMoveMode.Size = new System.Drawing.Size(1209, 117);
             this.grpMoveMode.TabIndex = 1;
             this.grpMoveMode.TabStop = false;
@@ -496,7 +496,7 @@ namespace QMC.LCP_280.Process.Unit
             this.tblJog.Location = new System.Drawing.Point(4, 258);
             this.tblJog.Margin = new System.Windows.Forms.Padding(0);
             this.tblJog.Name = "tblJog";
-            this.tblJog.Padding = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.tblJog.Padding = new System.Windows.Forms.Padding(3);
             this.tblJog.RowCount = 4;
             this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
             this.tblJog.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
