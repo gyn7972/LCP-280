@@ -203,7 +203,7 @@ namespace QMC.Common.LightController
             return "";
         }
 
-        public void SetChannelsOn(int channelNo)
+        public bool SetChannelsOn(int channelNo)
         {
             if (communicator != null && communicator.IsOpen)
             {
@@ -222,24 +222,32 @@ namespace QMC.Common.LightController
                         command = $"LH{channelNo.ToString("X1")}ON\r\n";
                         break;
                 }
+
                 if (!string.IsNullOrEmpty(command))
                 {
-                    communicator.Send(command);
-
-                    // 응답 대기 (Config에 설정된 타임아웃 사용)
-                    string response = WaitForResponse(Config.ReplyTimeout);
-
-                    if(response == "RERR")
+                    // Query 메서드로 Send + Recv 한번에 처리
+                    if (communicator.Query(command, out string response))
                     {
-                        communicator.Send(command);
+                        // 응답 파싱
+                        if (response.Contains("OK"))
+                        {
+                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON success");
+                            return true;
+                        }
+                        else if (response.Contains("ER"))
+                        {
+                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON failed: {response}");
+                            return false;
+                        }
                     }
-
-                    if (!string.IsNullOrEmpty(response))
+                    else
                     {
-                        communicator.Send(command);
+                        Log.Write($"LightController [{Name}]", $"No response for channel {channelNo} ON command");
+                        return false;
                     }
                 }
             }
+            return false;
         }
 
         public void SetChannelsOff(int channelNo)
