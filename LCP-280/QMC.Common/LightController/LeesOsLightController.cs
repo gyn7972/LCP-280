@@ -1,4 +1,5 @@
-﻿using QMC.Common.Common;
+﻿using NationalInstruments.DAQmx;
+using QMC.Common.Common;
 using QMC.Common.Component;
 using System;
 using System.Collections.Generic;
@@ -95,151 +96,6 @@ namespace QMC.Common.LightController
         }
         #endregion
 
-        #region Event Handler
-        private void Config_ChannelOnStateChanged(int channelNo, bool state)
-        {
-            try
-            {
-                if (EnsureConnection())
-                {
-                    string command = GetTurnOnOffCommandString(channelNo, state);
-                    if (!string.IsNullOrEmpty(command))
-                    {
-                        bool success = SendCommandWithResponse(command, channelNo);
-                        Log.Write($"LightController [{Name}]",
-                            $"Channel {channelNo} {(state ? "ON" : "OFF")} command: {(success ? "SUCCESS" : "FAILED")}");
-                    }
-                }
-                else
-                {
-                    Log.Write($"LightController [{Name}]",
-                        $"Failed to send Channel {channelNo} {(state ? "ON" : "OFF")} command - Connection failed");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]",
-                    $"Error sending Channel {channelNo} {(state ? "ON" : "OFF")} command: {ex.Message}");
-            }
-        }
-
-        private void Config_ChannelVolumeChanged(int channelNo, int volume)
-        {
-            try
-            {
-                if (EnsureConnection())
-                {
-                    string command = GetVolumeCommandString(channelNo, volume);
-                    if (!string.IsNullOrEmpty(command))
-                    {
-                        bool success = SendCommandWithResponse(command, channelNo);
-                        Log.Write($"LightController [{Name}]",
-                            $"Channel {channelNo} Volume {volume} command: {(success ? "SUCCESS" : "FAILED")}");
-                    }
-                }
-                else
-                {
-                    Log.Write($"LightController [{Name}]",
-                        $"Failed to send Channel {channelNo} Volume {volume} command - Connection failed");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]",
-                    $"Error sending Channel {channelNo} Volume {volume} command: {ex.Message}");
-            }
-        }
-        #endregion
-
-        #region Override Method
-        public override int Initialize()
-        {
-            return 0;
-        }
-        public override int Create()
-        {
-            return 0;
-        }
-        public override void Close()
-        {
-
-        }
-        #endregion
-
-        #region Method
-        private string GetTurnOnOffCommandString(int channelNo, bool state)
-        {
-            switch (Model)
-            {
-                // 8Bit Controller
-                case LeesOsLightControllerModel.LPD_3024_1CH:
-                case LeesOsLightControllerModel.LPD_3024_2CH:
-                case LeesOsLightControllerModel.LPD_4024_3CH:
-                case LeesOsLightControllerModel.LPD_4024_4CH:
-                    return $"H{channelNo.ToString("X1")}{(state ? "ON" : "OF")}";
-
-                // 12Bit Controller
-                case LeesOsLightControllerModel.LPD_6524_2CH:
-                case LeesOsLightControllerModel.LPD_6524_4CH:
-                case LeesOsLightControllerModel.LPD_12024_8CH:
-                    return $"LH{channelNo.ToString("X1")}{(state ? "ON" : "OF")}";
-            }
-            return "";
-        }
-
-        private string GetVolumeCommandString(int channelNo, int volume)
-        {
-            switch (Model)
-            {
-                // 8Bit Controller
-                case LeesOsLightControllerModel.LPD_3024_1CH:
-                case LeesOsLightControllerModel.LPD_3024_2CH:
-                case LeesOsLightControllerModel.LPD_4024_3CH:
-                case LeesOsLightControllerModel.LPD_4024_4CH:
-                    return $"C{channelNo.ToString("X1")}{volume.ToString("X2")}";
-
-                // 12Bit Controller
-                case LeesOsLightControllerModel.LPD_6524_2CH:
-                case LeesOsLightControllerModel.LPD_6524_4CH:
-                case LeesOsLightControllerModel.LPD_12024_8CH:
-                    return $"LC{channelNo.ToString("X1")}{volume.ToString("X3")}";
-            }
-            return "";
-        }
-
-        // 응답 처리가 포함된 명령어 전송 메서드
-        private bool SendCommandWithResponse(string command, int channelNo)
-        {
-            try
-            {
-                if (communicator == null || !communicator.IsOpen)
-                    return false;
-
-                // 명령어 전송
-                communicator.Send(command);
-                Log.Write($"LightController [{Name}]", $"Sent: {command.Trim()}");
-
-                // 응답 대기 (Config에 설정된 타임아웃 사용)
-                string response = WaitForResponse(Config.ReplyTimeout);
-
-                if (!string.IsNullOrEmpty(response))
-                {
-                    Log.Write($"LightController [{Name}]", $"Received: {response.Trim()}");
-                    return ParseResponse(response, channelNo);
-                }
-                else
-                {
-                    Log.Write($"LightController [{Name}]", "No response received (timeout)");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]", $"SendCommandWithResponse error: {ex.Message}");
-                return false;
-            }
-        }
-
         // 응답 대기 메서드 (SerialComm 클래스 활용)
         private string WaitForResponse(int timeoutMs)
         {
@@ -265,195 +121,236 @@ namespace QMC.Common.LightController
             }
         }
 
-        // 응답 파싱 메서드
-        private bool ParseResponse(string response, int channelNo)
+        #region Event Handler
+        private void Config_ChannelOnStateChanged(int channelNo, bool state)
         {
-            try
+            if (communicator != null)
             {
-                if (string.IsNullOrEmpty(response))
-                    return false;
-
-                // 응답 포맷: R + 채널번호 + 상태
-                // 예: R1OK, R1ER, R1FFF 등
-                response = response.Replace("\r", "").Replace("\n", "").Trim();
-
-                if (response.Length < 3 || !response.StartsWith("R"))
-                    return false;
-
-                // 채널번호 확인 (선택사항)
-                char responseChannel = response[1];
-
-                // 상태 확인
-                string status = response.Substring(2);
-
-                switch (status.ToUpper())
+                if (communicator.IsOpen)
                 {
-                    case "OK":
-                        Log.Write($"LightController [{Name}]", $"Channel {channelNo} command executed successfully");
-                        return true;
+                    string command = SetTurnOnOffCommandString(channelNo, state);
+                    communicator.Send(command);
+                }
+            }
+        }
 
-                    case "ER":
-                        Log.Write($"LightController [{Name}]", $"Channel {channelNo} command failed");
-                        return false;
+        private void Config_ChannelVolumeChanged(int channelNo, int volume)
+        {
+            if (communicator != null)
+            {
+                if (communicator.IsOpen)
+                {
+                    string command = SetVolumeCommandString(channelNo, volume);
+                    communicator.Send( command);
+                }
+            }
+        }
+        #endregion
 
-                    default:
-                        // 볼륨값이나 기타 응답의 경우
-                        if (status.Length >= 3)
-                        {
-                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} status: {status}");
-                            return true;
-                        }
+        #region Override Method
+        public override int Initialize()
+        {
+            return 0;
+        }
+        public override int Create()
+        {
+            return 0;
+        }
+        public override void Close()
+        {
+
+        }
+        #endregion
+
+        #region Method
+        private string SetTurnOnOffCommandString(int channelNo, bool state)
+        {
+            switch (Model)
+            {
+                // 8Bit Controller
+                case LeesOsLightControllerModel.LPD_3024_1CH:
+                case LeesOsLightControllerModel.LPD_3024_2CH:
+                case LeesOsLightControllerModel.LPD_4024_3CH:
+                case LeesOsLightControllerModel.LPD_4024_4CH:
+                    return $"H{channelNo.ToString("X1")}{(state ? "ON" : "OF")}\r\n";
+
+                // 12Bit Controller
+                case LeesOsLightControllerModel.LPD_6524_2CH:
+                case LeesOsLightControllerModel.LPD_6524_4CH:
+                case LeesOsLightControllerModel.LPD_12024_8CH:  // 추가됨
+                    return $"LH{channelNo.ToString("X1")}{(state ? "ON" : "OF")}\r\n";
+            }
+            return "";
+        }
+
+        private string SetVolumeCommandString(int channelNo, int volume)
+        {
+            switch (Model)
+            {
+                // 8Bit Controller
+                case LeesOsLightControllerModel.LPD_3024_1CH:
+                case LeesOsLightControllerModel.LPD_3024_2CH:
+                case LeesOsLightControllerModel.LPD_4024_3CH:
+                case LeesOsLightControllerModel.LPD_4024_4CH:
+                    return $"C{channelNo.ToString("X1")}{volume.ToString("X2")}\r\n";
+
+                // 12Bit Controller
+                case LeesOsLightControllerModel.LPD_6524_2CH:
+                case LeesOsLightControllerModel.LPD_6524_4CH:
+                case LeesOsLightControllerModel.LPD_12024_8CH:  // 추가됨
+                    return $"LC{channelNo.ToString("X1")}{volume.ToString("X3")}\r\n";  // L 접두사 추가
+            }
+            return "";
+        }
+
+        public void SetChannelsOn(int channelNo)
+        {
+            if (communicator != null && communicator.IsOpen)
+            {
+                string command = "";
+                switch (Model)
+                {
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = $"H{channelNo.ToString("X1")}ON\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = $"LH{channelNo.ToString("X1")}ON\r\n";
                         break;
                 }
+                if (!string.IsNullOrEmpty(command))
+                {
+                    communicator.Send(command);
 
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]", $"ParseResponse error: {ex.Message}");
-                return false;
+                    // 응답 대기 (Config에 설정된 타임아웃 사용)
+                    string response = WaitForResponse(Config.ReplyTimeout);
+
+                    if(response == "RERR")
+                    {
+                        communicator.Send(command);
+                    }
+
+                    if (!string.IsNullOrEmpty(response))
+                    {
+                        communicator.Send(command);
+                    }
+                }
             }
         }
 
-        // 전체 채널 제어 메서드 (응답 처리 포함)
-        public bool SetAllChannelsOn()
+        public void SetChannelsOff(int channelNo)
         {
-            try
+            if (communicator != null && communicator.IsOpen)
             {
-                if (EnsureConnection())
+                string command = "";
+                switch (Model)
                 {
-                    string command = "";
-                    switch (Model)
-                    {
-                        case LeesOsLightControllerModel.LPD_3024_1CH:
-                        case LeesOsLightControllerModel.LPD_3024_2CH:
-                        case LeesOsLightControllerModel.LPD_4024_3CH:
-                        case LeesOsLightControllerModel.LPD_4024_4CH:
-                            command = "HTON";
-                            break;
-                        case LeesOsLightControllerModel.LPD_6524_2CH:
-                        case LeesOsLightControllerModel.LPD_6524_4CH:
-                        case LeesOsLightControllerModel.LPD_12024_8CH:
-                            command = "LHTON";
-                            break;
-                    }
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = $"H{channelNo.ToString("X1")}OF\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = $"LH{channelNo.ToString("X1")}OF\r\n";
+                        break;
+                }
+                if (!string.IsNullOrEmpty(command))
+                {
+                    communicator.Send(command);
 
-                    if (!string.IsNullOrEmpty(command))
+                    string response = WaitForResponse(Config.ReplyTimeout);
+
+                    if (response == "RERR")
                     {
-                        return SendCommandWithResponse(command, 0); // 전체 채널은 0으로 표시
+                        communicator.Send(command);
                     }
                 }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]", $"SetAllChannelsOn error: {ex.Message}");
-                return false;
             }
         }
 
-        public bool SetAllChannelsOff()
+        // 전체 채널 제어 메서드 추가
+        public void SetAllChannelsOn()
         {
-            try
+            if (communicator != null && communicator.IsOpen)
             {
-                if (EnsureConnection())
+                string command = "";
+                switch (Model)
                 {
-                    string command = "";
-                    switch (Model)
-                    {
-                        case LeesOsLightControllerModel.LPD_3024_1CH:
-                        case LeesOsLightControllerModel.LPD_3024_2CH:
-                        case LeesOsLightControllerModel.LPD_4024_3CH:
-                        case LeesOsLightControllerModel.LPD_4024_4CH:
-                            command = "HTOF";
-                            break;
-                        case LeesOsLightControllerModel.LPD_6524_2CH:
-                        case LeesOsLightControllerModel.LPD_6524_4CH:
-                        case LeesOsLightControllerModel.LPD_12024_8CH:
-                            command = "LHTOF";
-                            break;
-                    }
-
-                    if (!string.IsNullOrEmpty(command))
-                    {
-                        return SendCommandWithResponse(command, 0);
-                    }
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = "HTON\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = "LHTON\r\n";
+                        break;
                 }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]", $"SetAllChannelsOff error: {ex.Message}");
-                return false;
+                if (!string.IsNullOrEmpty(command))
+                {
+                    communicator.Send(command);
+                }
             }
         }
 
-        public bool SetAllChannelsVolume(int volume)
+        public void SetAllChannelsOff()
         {
-            try
+            if (communicator != null && communicator.IsOpen)
             {
-                if (EnsureConnection())
+                string command = "";
+                switch (Model)
                 {
-                    string command = "";
-                    switch (Model)
-                    {
-                        case LeesOsLightControllerModel.LPD_3024_1CH:
-                        case LeesOsLightControllerModel.LPD_3024_2CH:
-                        case LeesOsLightControllerModel.LPD_4024_3CH:
-                        case LeesOsLightControllerModel.LPD_4024_4CH:
-                            command = $"CT{volume.ToString("X2")}";
-                            break;
-                        case LeesOsLightControllerModel.LPD_6524_2CH:
-                        case LeesOsLightControllerModel.LPD_6524_4CH:
-                        case LeesOsLightControllerModel.LPD_12024_8CH:
-                            command = $"LCT{volume.ToString("X3")}";
-                            break;
-                    }
-
-                    if (!string.IsNullOrEmpty(command))
-                    {
-                        return SendCommandWithResponse(command, 0);
-                    }
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = "HTOF\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = "LHTOF\r\n";
+                        break;
                 }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]", $"SetAllChannelsVolume error: {ex.Message}");
-                return false;
+                if (!string.IsNullOrEmpty(command))
+                {
+                    communicator.Send(command);
+                }
             }
         }
 
-        // 연결 확인 및 자동 연결 메서드
-        private bool EnsureConnection()
+        public void SetAllChannelsVolume(int volume)
         {
-            try
+            if (communicator != null && communicator.IsOpen)
             {
-                if (communicator != null && communicator.IsOpen)
-                    return true;
-
-                if (!Config.Validate())
+                string command = "";
+                switch (Model)
                 {
-                    Log.Write($"LightController [{Name}]", "Invalid configuration - cannot connect");
-                    return false;
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = $"CT{volume.ToString("X2")}\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = $"LCT{volume.ToString("X3")}\r\n";
+                        break;
                 }
-
-                int result = Connect();
-                if (result == 0)
+                if (!string.IsNullOrEmpty(command))
                 {
-                    Log.Write($"LightController [{Name}]", $"Auto-connected to {Config.PortName}");
-                    return true;
+                    communicator.Send(command);
                 }
-                else
-                {
-                    Log.Write($"LightController [{Name}]", $"Failed to auto-connect to {Config.PortName}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]", $"EnsureConnection error: {ex.Message}");
-                return false;
             }
         }
 
@@ -478,7 +375,7 @@ namespace QMC.Common.LightController
                 communicator.StopBits = Config.StopBits;
                 communicator.Handshake = Config.Handshake;
 
-                return communicator.Open() ? 0 : -1; //0이면 OK
+                return communicator.Open() ? 0 : -1;
             }
             catch (Exception ex)
             {
@@ -505,45 +402,6 @@ namespace QMC.Common.LightController
         public bool IsConnected
         {
             get { return communicator?.IsOpen ?? false; }
-        }
-
-        // 상태 확인 메서드 (매뉴얼의 LS 명령어 사용)
-        public string GetChannelStatus(int channelNo, int statusType)
-        {
-            try
-            {
-                if (!IsConnected)
-                    return null;
-
-                string command = "";
-                switch (Model)
-                {
-                    case LeesOsLightControllerModel.LPD_3024_1CH:
-                    case LeesOsLightControllerModel.LPD_3024_2CH:
-                    case LeesOsLightControllerModel.LPD_4024_3CH:
-                    case LeesOsLightControllerModel.LPD_4024_4CH:
-                        command = $"S{channelNo.ToString("X1")}{statusType.ToString("D2")}";
-                        break;
-                    case LeesOsLightControllerModel.LPD_6524_2CH:
-                    case LeesOsLightControllerModel.LPD_6524_4CH:
-                    case LeesOsLightControllerModel.LPD_12024_8CH:
-                        command = $"LS{channelNo.ToString("X1")}{statusType.ToString("D2")}";
-                        break;
-                }
-
-                if (!string.IsNullOrEmpty(command))
-                {
-                    SendCommandWithResponse(command, channelNo);
-                    return WaitForResponse(Config.ReplyTimeout);
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Log.Write($"LightController [{Name}]", $"GetChannelStatus error: {ex.Message}");
-                return null;
-            }
         }
         #endregion
     }

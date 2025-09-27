@@ -255,6 +255,8 @@ namespace QMC.LCP_280.Process.Unit
                 var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                 channel.Config.On = true;
 
+                _selectedIlluminator.SetChannelsOn(_selectedChannelIndex + 1);
+
                 // UI 업데이트
                 OnIlluminatorChannelSelected(null, _selectedChannelIndex);
                 UpdateIlluminatorButtonColors();
@@ -288,6 +290,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                 channel.Config.On = false;
+
+                _selectedIlluminator.SetChannelsOff(_selectedChannelIndex + 1);
 
                 // UI 업데이트
                 OnIlluminatorChannelSelected(null, _selectedChannelIndex);
@@ -554,7 +558,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // 전체 채널 제어를 위한 추가 버튼 이벤트 (필요시 Designer에서 버튼 추가)
-        private void btn_All_On_Illuminator_Click(object sender, EventArgs e)
+        private void  btn_All_On_Illuminator_Click(object sender, EventArgs e)
         {
             try
             {
