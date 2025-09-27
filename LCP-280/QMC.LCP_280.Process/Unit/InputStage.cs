@@ -1007,7 +1007,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
-                var wafer = GetWaferMaterial();
+                var wafer = GetMaterialWafer();
                 if (wafer == null) 
                     return false;
                 var presenceProp = wafer.GetType().GetProperty("Presence");
