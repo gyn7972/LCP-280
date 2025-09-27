@@ -37,7 +37,7 @@ namespace QMC.Common.HIKVISION
         #endregion
 
         #region Properties
-        [DefaultValue("")]
+        [DefaultValue("123")]
         public string SerialNumber { get; set; }
 
         [DefaultValue(5000.0f)]
@@ -120,7 +120,7 @@ namespace QMC.Common.HIKVISION
         {
             // 파생 구성 파일은 분리된 폴더에 저장
             var dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Configs", "Camera", "HIKGigE");
-            var file = string.IsNullOrWhiteSpace(Name) ? "default.json" : (Name + ".json");
+             var file = string.IsNullOrWhiteSpace(Name) ? "default.json" : (Name + ".json");
             return System.IO.Path.Combine(dir, file);
         }
 

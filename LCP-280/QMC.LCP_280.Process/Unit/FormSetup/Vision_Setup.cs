@@ -19,20 +19,23 @@ namespace QMC.LCP_280.Process.Unit
     {
         private readonly Equipment equipment = Equipment.Instance;
 
-        // Vision 관련 필드
+        #region Camera
+        private ConfigReflectionMapper _cameraConfigMapper;
+
+        private HIKGigECamera _selectedCamera;
         private CameraSwitch _camSwitch;
         private List<string> _cameraNames;
+        #endregion
 
-        // 추가할 필드들
-        private ConfigReflectionMapper _cameraConfigMapper;
+        #region Light
         private ConfigReflectionMapper _illuminatorConfigMapper;
-
-        // 조명 관련 추가 필드들
         private ConfigReflectionMapper _illuminatorChannelConfigMapper;
+
+        private LeesOsLightController _selectedIlluminator;
         private List<string> _illuminatorNames;
         private List<string> _channelNames;
-        private LeesOsLightController _selectedIlluminator;
         private int _selectedChannelIndex = -1;
+        #endregion
 
         // Jog Popup
         private Form_AxisJogPopup _jogPopup = null;
@@ -91,87 +94,23 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        #region Event Handlers
         // ===== Event Wiring =====
         private void WireAxisSelectionEvent()
         {
-            if(cameraListBoxItemsView != null)
+            if (cameraListBoxItemsView != null)
             {
                 cameraListBoxItemsView.ItemSelected -= OnVisionItemSelected;
                 cameraListBoxItemsView.ItemSelected += OnVisionItemSelected;
             }
         }
 
-        // ===== 새 메서드 추가 =====
         private void WireSaveButtonEvents()
         {
             if (btn_Save_Camera_Setup != null)
             {
                 btn_Save_Camera_Setup.Click -= btn_Save_Camera_Setup_Click;
                 btn_Save_Camera_Setup.Click += btn_Save_Camera_Setup_Click;
-            }
-        }
-
-        // ===== Camera List Binding =====
-        private void BinVisionList()
-        {
-            try
-            {
-                _cameraNames = Equipment.Instance.Cameras.Keys.ToList();
-                cameraListBoxItemsView.SetItems(_cameraNames.ToArray());
-
-                _camSwitch = new CameraSwitch();
-                foreach (var cam in Equipment.Instance.Cameras.Values)
-                    _camSwitch.Cameras.Add(cam);
-
-                visionImageViewer.CameraSwitch = _camSwitch;
-                visionImageViewer.FrameRate = 30;
-
-                if (_camSwitch.Cameras.Count > 0)
-                {
-                    _camSwitch.Change(0);
-                    cameraListBoxItemsView.SelectedIndex = 0;
-                    //ResetViewerForCameraChange(0);
-                    visionImageViewer.ResumeDisplay();
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("LCP-280", $"BindVisionList error: {ex}");
-                cameraListBoxItemsView?.SetItems();
-            }
-        }
-
-        private void BinIlluminatorList()
-        {
-            try
-            {
-                _illuminatorNames = new List<string>();
-
-                // Equipment에서 조명 컨트롤러들을 가져옴
-                foreach (var lightKey in Equipment.Instance.LightControllers.Keys)
-                {
-                    _illuminatorNames.Add(lightKey);
-                }
-
-                if (_illuminatorNames.Count == 0)
-                {
-                    // 조명이 없으면 빈 상태로
-                    iluminatorListBoxItemsView?.SetItems();
-                    iluminatorChannelListBoxItemsView?.SetItems();
-                    return;
-                }
-
-                iluminatorListBoxItemsView?.SetItems(_illuminatorNames.ToArray());
-
-                // 첫 번째 조명 자동 선택
-                if (_illuminatorNames.Count > 0)
-                {
-                    iluminatorListBoxItemsView.SelectedIndex = 0;
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Vision_Setup", $"BinIlluminatorList error: {ex}");
             }
         }
 
@@ -216,77 +155,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 btn_Off_Illuminator.Click -= btn_Off_Illuminator_Click;
                 btn_Off_Illuminator.Click += btn_Off_Illuminator_Click;
-            }
-        }
-
-        private void OnIlluminatorSelected(object sender, int selectedIndex)
-        {
-            try
-            {
-                if (selectedIndex < 0 || selectedIndex >= _illuminatorNames.Count)
-                {
-                    _selectedIlluminator = null;
-                    _channelNames = null;
-                    iluminatorChannelListBoxItemsView?.SetItems();
-                    illuminatorPropertyCollectionView?.SetProperties(null);
-                    return;
-                }
-
-                var illuminatorName = _illuminatorNames[selectedIndex];
-                _selectedIlluminator = Equipment.Instance.LightControllers[illuminatorName];
-
-                if (_selectedIlluminator != null)
-                {
-                    // 1) 조명 컨트롤러 자체 설정 표시 (포트, 보레이트 등)
-                    _illuminatorConfigMapper = new ConfigReflectionMapper(_selectedIlluminator.Config);
-                    illuminatorPropertyCollectionView?.SetProperties(_illuminatorConfigMapper.PropertyCollection);
-
-                    // 2) 채널 리스트 생성
-                    _channelNames = new List<string>();
-                    for (int i = 0; i < _selectedIlluminator.Channels.Count; i++)
-                    {
-                        _channelNames.Add($"Channel {i + 1}");
-                    }
-
-                    iluminatorChannelListBoxItemsView?.SetItems(_channelNames.ToArray());
-
-                    // 첫 번째 채널 자동 선택
-                    if (_channelNames.Count > 0)
-                    {
-                        iluminatorChannelListBoxItemsView.SelectedIndex = 0;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Vision_Setup", $"OnIlluminatorSelected error: {ex}");
-            }
-        }
-
-        private void OnIlluminatorChannelSelected(object sender, int selectedIndex)
-        {
-            try
-            {
-                _selectedChannelIndex = selectedIndex;
-
-                if (_selectedIlluminator == null || selectedIndex < 0 || selectedIndex >= _selectedIlluminator.Channels.Count)
-                {
-                    // Property를 조명 컨트롤러 설정으로 되돌림
-                    if (_illuminatorConfigMapper != null)
-                    {
-                        illuminatorPropertyCollectionView?.SetProperties(_illuminatorConfigMapper.PropertyCollection);
-                    }
-                    return;
-                }
-
-                // 선택된 채널의 Config를 Property로 표시
-                var selectedChannel = _selectedIlluminator.Channels[selectedIndex];
-                _illuminatorChannelConfigMapper = new ConfigReflectionMapper(selectedChannel.Config);
-                illuminatorPropertyCollectionView?.SetProperties(_illuminatorChannelConfigMapper.PropertyCollection);
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Vision_Setup", $"OnIlluminatorChannelSelected error: {ex}");
             }
         }
 
@@ -344,26 +212,42 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                if (_selectedChannelIndex >= 0 && _illuminatorChannelConfigMapper != null)
+                // === 기존 코드에 포커스 해제만 추가 ===
+                this.ActiveControl = null;
+                Application.DoEvents();
+
+                if (_selectedChannelIndex >= 0 && _selectedChannelIndex < _selectedIlluminator.Channels.Count)
                 {
-                    // 채널별 설정 저장
-                    var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
-                    if (pc != null) _illuminatorChannelConfigMapper.ApplyToObject(pc);
+                    // 채널 설정 저장
+                    if (_illuminatorChannelConfigMapper != null)
+                    {
+                        var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
+                        if (pc != null)
+                        {
+                            _illuminatorChannelConfigMapper.ApplyToObject(pc);
+                        }
 
-                    var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
-                    channel.Config.Save();
+                        var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
+                        var saveResult = channel.Config.Save();
 
-                    MessageBox.Show($"'{_selectedIlluminator.Name}' Channel {_selectedChannelIndex + 1} 설정 저장 완료.");
+                        MessageBox.Show($"Channel {_selectedChannelIndex + 1} 설정 저장 완료.");
+                    }
                 }
-                else if (_illuminatorConfigMapper != null)
+                else
                 {
-                    // 조명 컨트롤러 설정 저장
-                    var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
-                    if (pc != null) _illuminatorConfigMapper.ApplyToObject(pc);
+                    // 메인 컨트롤러 설정 저장
+                    if (_illuminatorConfigMapper != null)
+                    {
+                        var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
+                        if (pc != null)
+                        {
+                            _illuminatorConfigMapper.ApplyToObject(pc);
+                        }
 
-                    _selectedIlluminator.Config.Save();
+                        var saveResult = _selectedIlluminator.Config.Save();
 
-                    MessageBox.Show($"'{_selectedIlluminator.Name}' 컨트롤러 설정 저장 완료.");
+                        MessageBox.Show($"'{_selectedIlluminator.Name}' 컨트롤러 설정 저장 완료.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -372,53 +256,95 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write("Vision_Setup", $"Save illuminator config error: {ex}");
             }
         }
+        #endregion
+
+        #region Camera
+        // ===== Camera List Binding =====
+        private void BinVisionList()
+        {
+            try
+            {
+                _cameraNames = Equipment.Instance.Cameras.Keys.ToList();
+                cameraListBoxItemsView.SetItems(_cameraNames.ToArray());
+
+                _camSwitch = new CameraSwitch();
+                foreach (var cam in Equipment.Instance.Cameras.Values)
+                    _camSwitch.Cameras.Add(cam);
+
+                visionImageViewer.CameraSwitch = _camSwitch;
+                visionImageViewer.FrameRate = 30;
+
+                if (_camSwitch.Cameras.Count > 0)
+                {
+                    _camSwitch.Change(0);
+                    cameraListBoxItemsView.SelectedIndex = 0;
+                    //ResetViewerForCameraChange(0);
+                    visionImageViewer.ResumeDisplay();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("LCP-280", $"BindVisionList error: {ex}");
+                cameraListBoxItemsView?.SetItems();
+            }
+        }
+
+
 
         // 새 저장 메서드
         private void btn_Save_Camera_Setup_Click(object sender, EventArgs e)
         {
             try
             {
-                var selectedIndex = cameraListBoxItemsView?.SelectedIndex ?? -1;
-                if (selectedIndex < 0 || selectedIndex >= _cameraNames.Count)
+                // ... 기존 검증 코드 ...
+
+                // === 저장 전후 값 비교 ===
+                var configBefore = LogConfigProperties("저장 전", _selectedCamera.CameraConfig);
+
+                var pc = cameraPropertyCollectionView?.GetCurrentProperties();
+                var uiBefore = LogPropertyCollection("UI에서 가져온 값", pc);
+
+                if (pc != null)
                 {
-                    MessageBox.Show("카메라를 선택하세요.");
-                    return;
+                    _cameraConfigMapper.ApplyToObject(pc);
                 }
 
-                if (_cameraConfigMapper == null)
-                {
-                    MessageBox.Show("카메라 설정이 로드되지 않았습니다.");
-                    return;
-                }
+                var configAfter = LogConfigProperties("ApplyToObject 후", _selectedCamera.CameraConfig);
 
-                var cameraName = _cameraNames[selectedIndex];
-                var camera = Equipment.Instance.Cameras[cameraName];
+                var saveResult = _selectedCamera.CameraConfig.Save();
 
-                if (camera is HIKGigECamera hikCamera && hikCamera.CameraConfig != null)
-                {
-                    // Motion_Setup과 동일한 저장 패턴
-                    var pc = cameraPropertyCollectionView?.GetCurrentProperties();
-                    if (pc != null) _cameraConfigMapper.ApplyToObject(pc);
-
-                    hikCamera.CameraConfig.Save();
-
-                    // 설정 다시 로드
-                    LoadCameraProperties(selectedIndex);
-
-                    MessageBox.Show($"'{cameraName}' 카메라 설정 저장 완료.");
-                }
+                MessageBox.Show($"저장 결과: {saveResult}\n저장 전후 로그를 확인하세요.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"저장 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Log.Write("Vision_Setup", $"Save camera config error: {ex}");
+                Log.Write("Vision_Setup", $"Save error: {ex}");
             }
+        }
+
+        private string LogConfigProperties(string phase, object config)
+        {
+            var props = config.GetType().GetProperties().Take(5);
+            var values = string.Join(", ", props.Select(p => $"{p.Name}={p.GetValue(config)}"));
+            Log.Write("Vision_Setup", $"=== {phase} === {values}");
+            return values;
+        }
+
+        private string LogPropertyCollection(string phase, object pc)
+        {
+            if (pc == null) return "null";
+
+            var pcType = pc.GetType();
+            var countProp = pcType.GetProperty("Count");
+            var count = countProp?.GetValue(pc) ?? 0;
+
+            Log.Write("Vision_Setup", $"=== {phase} === Count: {count}");
+            return count.ToString();
         }
 
         private void OnVisionItemSelected(object sender, int selectedIndex)
         {
             // 동기화 중이면 카메라 전환 없이 탭만 동기화
-            if (_syncingSelection) 
+            if (_syncingSelection)
             {
                 SyncPopupTab(selectedIndex);
                 return;
@@ -426,29 +352,30 @@ namespace QMC.LCP_280.Process.Unit
 
             if (_camSwitch == null) return;
             if (selectedIndex < 0 || selectedIndex >= _camSwitch.Cameras.Count) return;
-            
-            var cam = _camSwitch.Cameras[selectedIndex];
 
-            try { cam.StopLive(); } catch { }
-            
+            var cameraName = _cameraNames[selectedIndex];
+            _selectedCamera = Equipment.Instance.Cameras[cameraName];
+
+            try { _selectedCamera.StopLive(); } catch { }
+
             visionImageViewer.SuspendDisplay();
             _camSwitch.Change(selectedIndex);
-            
-            try 
-            { 
-                if (cam != null)
+
+            try
+            {
+                if (_selectedCamera != null)
                 {
                     visionImageViewer.Simulated = false;
-                    cam.SuspendedImageDisplay = false;
-                    
-                    var rcLive = cam.StartLive();
+                    _selectedCamera.SuspendedImageDisplay = false;
+
+                    var rcLive = _selectedCamera.StartLive();
                 }
             }
-            catch (Exception ex) 
-            { 
-                Log.Write("Vision_Setup", $"OnVisionItemSelected StartLive error: {ex}"); 
+            catch (Exception ex)
+            {
+                Log.Write("Vision_Setup", $"OnVisionItemSelected StartLive error: {ex}");
             }
-            
+
             ResetViewerForCameraChange(selectedIndex);
             visionImageViewer.ResumeDisplay();
             visionImageViewer.StartUpdateTask();
@@ -472,14 +399,25 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                var cameraName = _cameraNames[selectedIndex];
-                var camera = Equipment.Instance.Cameras[cameraName];
-
-                if (camera is HIKGigECamera hikCamera && hikCamera.CameraConfig != null)
+                if (_selectedCamera?.CameraConfig != null)
                 {
-                    // Motion_Setup과 동일한 패턴
-                    _cameraConfigMapper = new ConfigReflectionMapper(hikCamera.CameraConfig);
+                    // === PropertyCollectionView 완전 재설정 ===
+
+                    // 1) 기존 매핑 해제
+                    cameraPropertyCollectionView?.SetProperties(null);
+                    _cameraConfigMapper = null;
+
+                    // 2) UI 업데이트 대기
+                    Application.DoEvents();
+
+                    // 3) 새 매퍼 생성 및 설정
+                    _cameraConfigMapper = new ConfigReflectionMapper(_selectedCamera.CameraConfig);
                     cameraPropertyCollectionView?.SetProperties(_cameraConfigMapper.PropertyCollection);
+
+                    // 4) UI 완전 새로고침
+                    cameraPropertyCollectionView?.Refresh();
+
+                    Log.Write("Vision_Setup", $"Camera '{_selectedCamera.Name}' properties loaded successfully");
                 }
                 else
                 {
@@ -494,6 +432,117 @@ namespace QMC.LCP_280.Process.Unit
                 _cameraConfigMapper = null;
             }
         }
+        #endregion
+
+        #region Light
+        private void BinIlluminatorList()
+        {
+            try
+            {
+                _illuminatorNames = new List<string>();
+
+                // Equipment에서 조명 컨트롤러들을 가져옴
+                foreach (var lightKey in Equipment.Instance.LightControllers.Keys)
+                {
+                    _illuminatorNames.Add(lightKey);
+                }
+
+                if (_illuminatorNames.Count == 0)
+                {
+                    // 조명이 없으면 빈 상태로
+                    iluminatorListBoxItemsView?.SetItems();
+                    iluminatorChannelListBoxItemsView?.SetItems();
+                    return;
+                }
+
+                iluminatorListBoxItemsView?.SetItems(_illuminatorNames.ToArray());
+
+                // 첫 번째 조명 자동 선택
+                if (_illuminatorNames.Count > 0)
+                {
+                    iluminatorListBoxItemsView.SelectedIndex = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Vision_Setup", $"BinIlluminatorList error: {ex}");
+            }
+        }
+
+        private void OnIlluminatorSelected(object sender, int selectedIndex)
+        {
+            if (selectedIndex < 0 || selectedIndex >= _illuminatorNames.Count)
+            {
+                _selectedIlluminator = null;
+                _channelNames = null;
+                iluminatorChannelListBoxItemsView?.SetItems();
+                illuminatorPropertyCollectionView?.SetProperties(null);
+                _illuminatorConfigMapper = null;
+                return;
+            }
+
+            var illuminatorName = _illuminatorNames[selectedIndex];
+            _selectedIlluminator = Equipment.Instance.LightControllers[illuminatorName];
+
+            if (_selectedIlluminator != null)
+            {
+                _channelNames = new List<string>();
+                for (int i = 0; i < _selectedIlluminator.Channels.Count; i++)
+                {
+                    _channelNames.Add($"Channel {i + 1}");
+                }
+
+                iluminatorChannelListBoxItemsView?.SetItems(_channelNames.ToArray());
+
+                // 기본적으로 채널 선택 해제하고 메인 컨트롤러 설정 표시
+                iluminatorChannelListBoxItemsView.SelectedIndex = -1;
+                _selectedChannelIndex = -1;
+
+                // === 기존 매핑 해제 추가 ===
+                illuminatorPropertyCollectionView?.SetProperties(null);
+                _illuminatorChannelConfigMapper = null;
+
+                if (_selectedIlluminator.Config != null)
+                {
+                    _illuminatorConfigMapper = new ConfigReflectionMapper(_selectedIlluminator.Config);
+                    illuminatorPropertyCollectionView?.SetProperties(_illuminatorConfigMapper.PropertyCollection);
+                }
+            }
+        }
+
+        private void OnIlluminatorChannelSelected(object sender, int selectedIndex)
+        {
+            _selectedChannelIndex = selectedIndex;
+
+            if (_selectedIlluminator == null)
+                return;
+
+            if (selectedIndex < 0 || selectedIndex >= _selectedIlluminator.Channels.Count)
+            {
+                // 메인 컨트롤러 설정 표시
+                if (_selectedIlluminator.Config != null)
+                {
+                    // === 기존 매핑 해제 추가 ===
+                    illuminatorPropertyCollectionView?.SetProperties(null);
+                    _illuminatorChannelConfigMapper = null;
+
+                    _illuminatorConfigMapper = new ConfigReflectionMapper(_selectedIlluminator.Config);
+                    illuminatorPropertyCollectionView?.SetProperties(_illuminatorConfigMapper.PropertyCollection);
+                }
+                return;
+            }
+
+            // 채널 설정 표시
+            var selectedChannel = _selectedIlluminator.Channels[selectedIndex];
+
+            // === 기존 매핑 해제 추가 ===
+            illuminatorPropertyCollectionView?.SetProperties(null);
+            _illuminatorConfigMapper = null;
+
+            _illuminatorChannelConfigMapper = new ConfigReflectionMapper(selectedChannel.Config);
+            illuminatorPropertyCollectionView?.SetProperties(_illuminatorChannelConfigMapper.PropertyCollection);
+        }
+        #endregion
 
         private void SyncPopupTab(int selectedIndex)
         {
@@ -629,11 +678,18 @@ namespace QMC.LCP_280.Process.Unit
             _viewerPopupForm = new Form
             {
                 Text = "Camera View",
-                FormBorderStyle = FormBorderStyle.SizableToolWindow,
+                FormBorderStyle = FormBorderStyle.Sizable,          //FormBorderStyle.SizableToolWindow,
                 StartPosition = FormStartPosition.CenterParent,
                 ClientSize = new Size(1000, 700),
-                ShowInTaskbar = false
+                ShowInTaskbar = true,
+                Owner = null
             };
+            _viewerPopupForm.Load += (s, e) =>
+            {
+                TaskbarHelper.SetAppId(_viewerPopupForm.Handle, "MyApp.Vision");
+            };
+
+
             _viewerPopupForm.FormClosed += (s, e) => { if (!_restoringViewer) RestoreViewer(); };
 
             // 탭 컨트롤 생성 및 카메라 이름으로 탭 구성

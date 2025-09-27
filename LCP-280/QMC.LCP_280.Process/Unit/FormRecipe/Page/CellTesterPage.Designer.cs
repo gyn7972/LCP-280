@@ -51,6 +51,7 @@
             this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btnTestStop = new QMC.Common.IndividualMenuButton();
             this.btnTestStart = new QMC.Common.IndividualMenuButton();
+            this.lbMeasureTime = new System.Windows.Forms.Label();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridResult)).BeginInit();
@@ -106,6 +107,7 @@
             this.dataGridResult.MultiSelect = false;
             this.dataGridResult.Name = "dataGridResult";
             this.dataGridResult.ReadOnly = true;
+            this.dataGridResult.RowHeadersWidth = 80;
             this.dataGridResult.RowTemplate.Height = 23;
             this.dataGridResult.Size = new System.Drawing.Size(1099, 441);
             this.dataGridResult.TabIndex = 0;
@@ -309,19 +311,21 @@
             // 
             // tableLayoutPanel6
             // 
-            this.tableLayoutPanel6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.tableLayoutPanel6.ColumnCount = 1;
+            this.tableLayoutPanel6.ColumnCount = 2;
             this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel6.Controls.Add(this.btnResultSave, 0, 2);
-            this.tableLayoutPanel6.Controls.Add(this.btnResultClear, 0, 1);
-            this.tableLayoutPanel6.Controls.Add(this.btnLastClear, 0, 0);
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(185, 3);
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 120F));
+            this.tableLayoutPanel6.Controls.Add(this.btnResultSave, 1, 2);
+            this.tableLayoutPanel6.Controls.Add(this.btnResultClear, 1, 1);
+            this.tableLayoutPanel6.Controls.Add(this.btnLastClear, 1, 0);
+            this.tableLayoutPanel6.Controls.Add(this.lbMeasureTime, 0, 0);
+            this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
             this.tableLayoutPanel6.RowCount = 3;
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(144, 136);
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(332, 136);
             this.tableLayoutPanel6.TabIndex = 3;
             // 
             // btnResultSave
@@ -335,9 +339,9 @@
             this.btnResultSave.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnResultSave.ForeColor = System.Drawing.Color.Black;
             this.btnResultSave.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnResultSave.Location = new System.Drawing.Point(3, 93);
+            this.btnResultSave.Location = new System.Drawing.Point(215, 93);
             this.btnResultSave.Name = "btnResultSave";
-            this.btnResultSave.Size = new System.Drawing.Size(138, 40);
+            this.btnResultSave.Size = new System.Drawing.Size(114, 40);
             this.btnResultSave.TabIndex = 2;
             this.btnResultSave.TabStop = false;
             this.btnResultSave.Text = "Result Save";
@@ -355,9 +359,9 @@
             this.btnResultClear.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnResultClear.ForeColor = System.Drawing.Color.Black;
             this.btnResultClear.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnResultClear.Location = new System.Drawing.Point(3, 48);
+            this.btnResultClear.Location = new System.Drawing.Point(215, 48);
             this.btnResultClear.Name = "btnResultClear";
-            this.btnResultClear.Size = new System.Drawing.Size(138, 39);
+            this.btnResultClear.Size = new System.Drawing.Size(114, 39);
             this.btnResultClear.TabIndex = 1;
             this.btnResultClear.TabStop = false;
             this.btnResultClear.Text = "Result Clear";
@@ -375,9 +379,9 @@
             this.btnLastClear.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnLastClear.ForeColor = System.Drawing.Color.Black;
             this.btnLastClear.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnLastClear.Location = new System.Drawing.Point(3, 3);
+            this.btnLastClear.Location = new System.Drawing.Point(215, 3);
             this.btnLastClear.Name = "btnLastClear";
-            this.btnLastClear.Size = new System.Drawing.Size(138, 39);
+            this.btnLastClear.Size = new System.Drawing.Size(114, 39);
             this.btnLastClear.TabIndex = 0;
             this.btnLastClear.TabStop = false;
             this.btnLastClear.Text = "Last Clear";
@@ -441,6 +445,17 @@
             this.btnTestStart.UseVisualStyleBackColor = false;
             this.btnTestStart.Click += new System.EventHandler(this.btnTestStart_Click);
             // 
+            // lbMeasureTime
+            // 
+            this.lbMeasureTime.AutoSize = true;
+            this.lbMeasureTime.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lbMeasureTime.Location = new System.Drawing.Point(3, 0);
+            this.lbMeasureTime.Name = "lbMeasureTime";
+            this.lbMeasureTime.Padding = new System.Windows.Forms.Padding(0, 7, 0, 0);
+            this.lbMeasureTime.Size = new System.Drawing.Size(206, 19);
+            this.lbMeasureTime.TabIndex = 3;
+            this.lbMeasureTime.Text = "Measure Time: -";
+            // 
             // CellTesterPage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -461,6 +476,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.nudRepeatCount)).EndInit();
             this.panel1.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
+            this.tableLayoutPanel6.PerformLayout();
             this.tableLayoutPanel7.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -491,5 +507,6 @@
         private System.Windows.Forms.NumericUpDown nudRepeatCount;
         private System.Windows.Forms.NumericUpDown nudIntervalDelay;
         private Common.CustomControl.CustomBorderLabel customBorderLabel1;
+        private System.Windows.Forms.Label lbMeasureTime;
     }
 }

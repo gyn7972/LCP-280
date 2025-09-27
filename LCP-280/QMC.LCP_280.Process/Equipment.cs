@@ -3,6 +3,7 @@ using QMC.Common.Cameras;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
 using QMC.Common.DIO;
+using QMC.Common.HIKVISION;
 using QMC.Common.IO;
 using QMC.Common.IOUtil;
 using QMC.Common.Keithley;
@@ -145,7 +146,7 @@ namespace QMC.LCP_280.Process
         private CKDMotorDriver _ckdDriver;
         
         // 기존: public HIKGigECamera Camera { get; set; } = null;
-        public Dictionary<string, Camera> Cameras { get; } = new Dictionary<string, Camera>(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, HIKGigECamera> Cameras { get; } = new Dictionary<string, HIKGigECamera>(StringComparer.OrdinalIgnoreCase);
         // === 편의 프로퍼티 추가 ===
         public HIKGigECamera IndexLoaderCam => GetCamera("Index_Loader");
         public HIKGigECamera InStageCam => GetCamera("In_Stage");
@@ -1472,10 +1473,10 @@ namespace QMC.LCP_280.Process
                 {
                     var name = kv.Key;
                     var selector = kv.Value;
-                    CameraConfig cfg;
+                    HIKGigECameraConfig cfg;
                     try 
                     { 
-                        cfg = CameraConfig.LoadOrCreate(name); 
+                        cfg = HIKGigECameraConfig.LoadOrCreate(name); 
                     }
                     catch (Exception exCfg) { Log.Write("Equipment", $"[Camera] config load fail '{name}': {exCfg.Message}"); continue; }
                     if (!connect) continue;

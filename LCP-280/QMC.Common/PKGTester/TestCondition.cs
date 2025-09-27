@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using Newtonsoft.Json.Converters;
+using System.Text.RegularExpressions;
+using System.Data;
 
 namespace QMC.Common.PKGTester
 {
@@ -21,6 +23,9 @@ namespace QMC.Common.PKGTester
 
         // Measure
         public double MeasureTime { get; set; }
+
+        // User Define
+        public string Expression { get; set; }
 
         // Data Calibration
         public bool[] UseGain { get; private set; } = new bool[8];
@@ -43,6 +48,8 @@ namespace QMC.Common.PKGTester
             SourceTime = 1;
             SourceLimit = 0;
             MeasureTime = 1;
+
+            Expression = "";
 
             for (int i = 0; i < 8; i++)
             {
@@ -74,6 +81,13 @@ namespace QMC.Common.PKGTester
                         if (SourceLimit < 0)
                             return false;
                         if (MeasureTime <= 0)
+                            return false;
+                    }
+                    break;
+                case TestItemCategory.UserDefined:
+                    {
+                        // User Define Item
+                        if (string.IsNullOrWhiteSpace(Expression))
                             return false;
                     }
                     break;
@@ -162,6 +176,12 @@ namespace QMC.Common.PKGTester
                         }
                     }
                     break;
+                case TestItemCategory.UserDefined:
+                    {
+                        // User Define Item
+                        pc.Add(nameof(Expression), Expression);
+                    }
+                    break;
             }
             return pc;
         }
@@ -208,6 +228,12 @@ namespace QMC.Common.PKGTester
                             }
                         }
                         break;
+                    case TestItemCategory.UserDefined:
+                        {
+                            // User Define Item
+                            Expression = pc.GetValue<string>(nameof(Expression));
+                        }
+                        break;
                 }
             }
             catch (Exception ex)
@@ -231,6 +257,15 @@ namespace QMC.Common.PKGTester
             }
             return false;
         }
+        public bool IsComputeItem()
+        {
+            switch (GetTestItemCategory())
+            {
+                case TestItemCategory.UserDefined:
+                    return true;
+            }
+            return false;
+        }
         #endregion
     }
 
@@ -238,6 +273,7 @@ namespace QMC.Common.PKGTester
     {
         #region Fields
         private List<TestConditionItem> items = new List<TestConditionItem>();
+        private static DataTable evaluator = new DataTable();
         #endregion
 
         #region Proerties
@@ -436,12 +472,73 @@ namespace QMC.Common.PKGTester
                     if (!item.Validate())
                         return false;
                 }
+
+                // User Define 아이템의 정규식이 유효한지 검사
+                var userDefineItems = items.Where(x => x.GetTestItemCategory() == TestItemCategory.UserDefined);
+                foreach (var item in userDefineItems)
+                {
+                    if (!IsValidExpression(item.Expression))
+                        return false;
+                }
             }
             catch /*(Exception ex)*/
             {
                 // 예외가 발생하면 유효하지 않은 것으로 간주
                 return false;
             }
+            return true;
+        }
+
+        private bool IsValidExpression(string expression)
+        {
+            if (string.IsNullOrWhiteSpace(expression))
+                return false;
+
+            // 허용된 문자 집합 정의
+            var allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-*/(). ";
+
+            // 각 문자가 허용된 문자 집합에 속하는지 확인
+            foreach (var ch in expression)
+            {
+                if (!allowedChars.Contains(ch))
+                    return false;
+            }
+
+            // 추가적인 구문 검사 (예: 괄호 짝 맞추기)
+            int balance = 0;
+            foreach (var ch in expression)
+            {
+                if (ch == '(') balance++;
+                else if (ch == ')') balance--;
+                if (balance < 0) 
+                    return false; // 닫는 괄호가 더 많음
+            }
+            if (balance != 0) 
+                return false; // 괄호 짝이 맞지 않음
+
+            // 정규식 시뮬레이션하여 오류 발생하는 지 확인
+            try
+            {
+                List<string> assignItems = new List<string>();
+                foreach (var item in Items)
+                {
+                    var key = item.Name;
+                    var pattern = $@"\b{Regex.Escape(key)}\b";
+                    if (Regex.IsMatch(expression, pattern))
+                    {
+                        assignItems.Add(key);
+                        expression = Regex.Replace(expression, pattern, "0");
+                    }
+                }
+
+                var computeObj = evaluator.Compute(expression, "");
+                double computedValue = Convert.ToDouble(computeObj);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
             return true;
         }
         #endregion
