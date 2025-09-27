@@ -191,7 +191,7 @@
       <DependentUpon>ProcessDataManual.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\ProcessData\MaterialCassette.cs" />
-    <Compile Include="Component\ProcessData\MaterialChip.cs" />
+    <Compile Include="Component\ProcessData\MaterialDie.cs" />
     <Compile Include="Component\ProcessData\WaferDataConfig.cs" />
     <Compile Include="Component\ProcessData\WaferManager.cs" />
     <Compile Include="Component\ProcessData\WaferSummary.cs" />
@@ -560,6 +560,7 @@
     <Compile Include="Unit\FormMain\Page\DieIndexSelectControl.Designer.cs">
       <DependentUpon>DieIndexSelectControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\UiUpdateWaferArgs.cs" />
     <Compile Include="WaferData.cs" />
     <Compile Include="WaferDataConfig.cs" />
     <Compile Include="WaferMapItem.cs" />

@@ -1044,7 +1044,15 @@ namespace QMC.Common.Vision
             try
             {
                 this.m_Context = BufferedGraphicsManager.Current;
-                this.m_Context.MaximumBuffer = this.Size;
+                if(this.Size.Width ==0 || this.Size.Height ==0)
+                {
+                    
+                }
+                else
+                {
+
+                    this.m_Context.MaximumBuffer = this.Size;
+                }
                 //lock (ViewerSyncRoot)
                 {
                     BufferedGraphics old = null;
@@ -1072,7 +1080,7 @@ namespace QMC.Common.Vision
                 part = cameraSwitch.Cameras[cameraSwitch.SelectCameraIndex];
 
                 if (part == null) return;
-
+                
                 //this.SetNormalOverlay(part, part.Executor.JobManager);
             }
             finally
@@ -1566,7 +1574,7 @@ namespace QMC.Common.Vision
 
                                     if (bmpCutImage == null)
                                     {
-                                        Log.Write("VisionViewer", $"CutImage() 실패 - Point: {point}, Size: {size}");
+                                        //Log.Write("VisionViewer", $"CutImage() 실패 - Point: {point}, Size: {size}");
                                         return;
                                     }
                                     bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);

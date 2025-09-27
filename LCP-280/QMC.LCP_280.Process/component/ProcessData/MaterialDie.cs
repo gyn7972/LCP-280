@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace QMC.LCP_280.Process.Component
 {
-    public enum ChipProcessState
+    public enum DieProcessState
     {
         None,       // 초기
         Mapped,     // Vision Mapping 완료
@@ -19,7 +19,7 @@ namespace QMC.LCP_280.Process.Component
     }
 
     [Serializable]
-    public class MaterialChip : Material
+    public class MaterialDie : Material
     {
         // ===== 식별 =====
         [DefaultValue(-1)] public int Index { get; set; } = -1;
@@ -33,7 +33,7 @@ namespace QMC.LCP_280.Process.Component
 
         // ===== 상태 =====
         [DefaultValue(false)] public bool Exists { get; set; } = false;
-        [DefaultValue(ChipProcessState.None)] public ChipProcessState State { get; set; } = ChipProcessState.None;
+        [DefaultValue(DieProcessState.None)] public DieProcessState State { get; set; } = DieProcessState.None;
         [DefaultValue(true)] public bool IsPass { get; set; } = true;
         [DefaultValue("")] public string RejectReason { get; set; } = "";
 
@@ -65,7 +65,7 @@ namespace QMC.LCP_280.Process.Component
         {
             IsPass = false;
             RejectReason = reason;
-            State = ChipProcessState.Rejected;
+            State = DieProcessState.Rejected;
         }
     }
 }

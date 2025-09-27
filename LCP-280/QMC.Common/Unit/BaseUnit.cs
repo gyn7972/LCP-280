@@ -61,6 +61,15 @@ namespace QMC.Common.Unit
             Manual = 6
         }
 
+        //유닛간 인터페이스 상태
+        public enum IfState
+        {
+            None = 0,
+            Request,
+            Busy,
+            Complete
+        }
+
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
         private bool m_bExit;
 
@@ -285,6 +294,8 @@ namespace QMC.Common.Unit
         {
             m_bExit = true;
             SetRunMode(UnitRunMode.Manual);
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
             return 0;
         }
 

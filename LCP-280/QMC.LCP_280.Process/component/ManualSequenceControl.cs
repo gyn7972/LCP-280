@@ -182,7 +182,6 @@ namespace QMC.LCP_280.Process.Component
                     return;
                 }
 
-
                 var btn = sender as Button;
                 bool restore = false;
                 if (btn != null && btn.Enabled)
@@ -206,8 +205,8 @@ namespace QMC.LCP_280.Process.Component
                 }
 
                 Cursor.Current = prev;
-                if (restore) btn.Enabled = true;
-
+                if (restore) 
+                    btn.Enabled = true;
             }
             catch (Exception ex)
             {

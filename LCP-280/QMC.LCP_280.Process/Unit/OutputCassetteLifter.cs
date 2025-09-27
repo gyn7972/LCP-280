@@ -508,7 +508,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (Config.IsSimulation || Config.IsDryRun)
                 {
-                    Log.Write(this, "Wafer Protrusion Detected - Simulation");
+                    //Log.Write(this, "Wafer Protrusion Detected - Simulation");
                 }
                 else if (IsBinProtrusionDetectionSensor())
                 {

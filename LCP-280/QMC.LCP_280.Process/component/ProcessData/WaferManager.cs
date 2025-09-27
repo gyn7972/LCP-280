@@ -152,7 +152,7 @@ namespace QMC.LCP_280.Process.Component
             if (wafer.Summary.InProcess && !force) return;
 
             wafer.RecipeKeys = keys;
-            wafer.Chips.ForEach(c =>
+            wafer.Dies.ForEach(c =>
             {
                 c.MeasureValues.Clear();
                 foreach (var key in keys)
