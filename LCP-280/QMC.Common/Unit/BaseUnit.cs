@@ -279,6 +279,17 @@ namespace QMC.Common.Unit
             m_bExit = false;
             m_workThread = new Thread(OnMainProcedure) { IsBackground = true };
             m_workThread.Start();
+
+            if (this.CalcelToken != null)
+            {
+                if (!this.CalcelToken.IsCancellationRequested)
+                {
+                    this.CalcelToken.Cancel();
+                }
+                this.CalcelToken.Dispose();
+                this.CalcelToken = null;
+            }
+            this.CalcelToken = new CancellationTokenSource();
             return OnStart();
         }
 
@@ -292,6 +303,21 @@ namespace QMC.Common.Unit
 
         public virtual int OnStop()
         {
+            if (this.CalcelToken == null)
+            {
+                this.CalcelToken = new CancellationTokenSource();
+            }
+            else
+            {
+                if (!this.CalcelToken.IsCancellationRequested)
+                {
+                    this.CalcelToken.Cancel();
+                }
+                this.CalcelToken.Dispose();
+                this.CalcelToken = new CancellationTokenSource();
+            }
+            this.CalcelToken.Cancel();
+
             m_bExit = true;
             SetRunMode(UnitRunMode.Manual);
             this.RunUnitStatus = UnitStatus.Stopped;
@@ -355,6 +381,13 @@ namespace QMC.Common.Unit
         public Material GetMaterial() => m_currentMaterial;
         protected void SetMaterial(Material m) => m_currentMaterial = m;
 
+        public void MoveMaterial(Material  material , BaseUnit destinyUnit)
+        {
+            Material temp = GetMaterial();
+            
+            destinyUnit?.SetMaterial(temp);
+            SetMaterial(material);
+        }
         protected AlarmInfo GetAlarm(int code)
         {
             if (m_dicAlarms.ContainsKey(code))

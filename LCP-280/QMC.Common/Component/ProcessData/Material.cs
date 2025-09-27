@@ -16,6 +16,7 @@ namespace QMC.Common
             Ready = 0,
             Processing = 1,
             Completed = 2,
+            Skipped = 3,
         }
         public Material()
         {
