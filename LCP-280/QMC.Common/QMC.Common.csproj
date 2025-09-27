@@ -182,6 +182,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Account\Account.cs" />
+    <Compile Include="Account\AccountManager.cs" />
+    <Compile Include="Account\UserGrade.cs" />
     <Compile Include="Ajin\AXA.cs" />
     <Compile Include="Ajin\AXD.cs" />
     <Compile Include="Ajin\AXDEV.cs" />
