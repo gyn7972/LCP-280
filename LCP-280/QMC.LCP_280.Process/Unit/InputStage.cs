@@ -39,6 +39,11 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputStage : BaseUnit<InputStageConfig>
     {
+
+        public delegate void UpdateUIWafer(MaterialWafer wafer);
+
+        public event UpdateUIWafer EventUpdateUIWafer;
+
         public enum AlarmKeys
         {
             eDieTransferPickZNotSafe = 3001,
@@ -1673,7 +1678,7 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_TAlignPrepared = true;
             return 0;
         }
-        public int AlignTApply(bool bFineSpeed = false)
+        public int AlignTheta(bool bFineSpeed = false)
         {
             int nRet = 0;
 
@@ -1729,7 +1734,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            nRet = AlignTApply(bFineSpeed);
+            nRet = AlignTheta(bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "T_Align", "Fail: AlignTApply");
@@ -2012,8 +2017,6 @@ namespace QMC.LCP_280.Process.Unit
                             return SearchChips(grabImage, ref chips, pt.X, pt.Y);
                         });
                     }
-                        
-                    
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
@@ -2049,9 +2052,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
 
             }
-
-
-
+            EventUpdateUIWafer?.BeginInvoke(materialWafer,null,null);
         }
 
         private void MakeScanPath(out List<PointD> path)

@@ -554,6 +554,7 @@
     <Compile Include="Unit\FormMain\Page\DieIndexSelectControl.Designer.cs">
       <DependentUpon>DieIndexSelectControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\UiUpdateWaferArgs.cs" />
     <Compile Include="WaferData.cs" />
     <Compile Include="WaferDataConfig.cs" />
     <Compile Include="WaferMapItem.cs" />
