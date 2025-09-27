@@ -150,8 +150,7 @@ namespace QMC.LCP_280.Process.Component
             {
                 int mapX = (int)Math.Round((p.X - baseX) / estPitchX, MidpointRounding.AwayFromZero);
                 int mapY = (int)Math.Round((p.Y - baseY) / estPitchY, MidpointRounding.AwayFromZero);
-                if (mapX < 0) mapX = 0;
-                if (mapY < 0) mapY = 0;
+                
                 var chip = new MaterialDie
                 {
                     MapX = mapX,
