@@ -191,7 +191,7 @@
       <DependentUpon>ProcessDataManual.cs</DependentUpon>
     </Compile>
     <Compile Include="Component\ProcessData\MaterialCassette.cs" />
-    <Compile Include="Component\ProcessData\ChipData.cs" />
+    <Compile Include="Component\ProcessData\MaterialChip.cs" />
     <Compile Include="Component\ProcessData\WaferDataConfig.cs" />
     <Compile Include="Component\ProcessData\WaferManager.cs" />
     <Compile Include="Component\ProcessData\WaferSummary.cs" />
@@ -604,6 +604,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\DisplayView.resx">
       <DependentUpon>DisplayView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_InputWaferCarrierControl.resx">
+      <DependentUpon>DisplayView_InputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\InputWaferCarrierControl.resx">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>

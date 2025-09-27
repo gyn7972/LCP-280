@@ -106,6 +106,7 @@
             this.dataGridResult.MultiSelect = false;
             this.dataGridResult.Name = "dataGridResult";
             this.dataGridResult.ReadOnly = true;
+            this.dataGridResult.RowHeadersWidth = 80;
             this.dataGridResult.RowTemplate.Height = 23;
             this.dataGridResult.Size = new System.Drawing.Size(1099, 441);
             this.dataGridResult.TabIndex = 0;

@@ -85,7 +85,7 @@ namespace QMC.Common.Spectrometer
 
             var spectrumData = spectrometer.Spectrum;
 
-            lbMaxIntensity.Text = $"Max Intensity = {spectrumData.MaximumIntensity:F3}";     
+            lbMaxIntensity.Text = $"Max Intensity = {spectrumData.MaximumIntensity:E3}";     
 
             var area = chart.ChartAreas[0];
             area.AxisX.Minimum = _chartMinX;

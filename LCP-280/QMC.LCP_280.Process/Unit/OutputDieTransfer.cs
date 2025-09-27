@@ -1017,9 +1017,64 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
-        protected override int OnRunReady() { return 0; }
-        protected override int OnRunWork() { return 0; }
-        protected override int OnRunComplete() { return 0; }
+        protected override int OnRunReady()
+        {
+            int nRtn = 0;
+
+            //신호 들어오면 Stage Center 기준에서 n번째 칩 위치로 이동
+            //ChipData와 Mapping 연동 필요.
+
+            //Stage 이동 완료 후에.
+
+            //OnRunWork로 상태 변경
+            State = ProcessState.Work;
+            return nRtn;
+        }
+        protected override int OnRunWork()
+        {
+            int nRtn = 0;
+
+            nRtn = MoveOutStage();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = ChipPickDown();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = ChipPickUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            State = ProcessState.Complete;
+            return 0;
+        }
+        protected override int OnRunComplete()
+        {
+            int nRtn = 0;
+
+            nRtn = RotateToolTForPlace();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            nRtn = ReleaseVacuumAndPlaceUp();
+            if (nRtn != 0)
+            {
+                return -1;
+            }
+
+            State = ProcessState.None;
+            return 0;
+        }
+
         #endregion
 
         #region Sequence 등록

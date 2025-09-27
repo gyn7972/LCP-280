@@ -289,7 +289,7 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-        private string FormatMeasures(ChipData chip)
+        private string FormatMeasures(MaterialChip chip)
         {
             if (chip == null || chip.MeasureValues == null || chip.MeasureValues.Count == 0)
                 return string.Empty;

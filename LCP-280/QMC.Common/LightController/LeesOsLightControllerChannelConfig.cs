@@ -26,10 +26,12 @@ namespace QMC.Common.LightController
                 if (on != value)
                 {
                     on = value;
-                    OnChannelOnStateChanged(ownerChannel.ChannelNo, value);
+
+                    if(ownerChannel != null)
+                        OnChannelOnStateChanged(ownerChannel.ChannelNo, value);
                 }
             }
-        }
+        } 
         public int Volume 
         {
             get

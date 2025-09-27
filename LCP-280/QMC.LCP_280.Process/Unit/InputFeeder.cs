@@ -612,7 +612,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.State = ProcessState.Work;
             }
-            else if (this.InputStage.IsStatus_CompleteWorking)
+            else if (this.InputStage.CompleteWorking)
             {
                 this.State = ProcessState.Complete;
             }

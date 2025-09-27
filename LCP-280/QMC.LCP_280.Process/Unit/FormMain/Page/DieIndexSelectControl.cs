@@ -211,32 +211,27 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void DisplayPanel_Paint(object sender, PaintEventArgs e)
         {
-            Graphics g = e.Graphics;
+            //비트맵에 그리고
+            //더블버퍼처리해
+
+            Bitmap bmp = new Bitmap(displayPanel.Width, displayPanel.Height);
+            Graphics g = Graphics.FromImage(bmp);
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            g.Clear(displayPanel.BackColor);
-
-            // 폼 크기 변경 시 자동 중심 조정을 위한 오프셋 계산
-            float centerOffsetX = (displayPanel.Width - _baseSize.Width) / 2f;
-            float centerOffsetY = (displayPanel.Height - _baseSize.Height) / 2f;
-
-            // 변환 적용 (중심 조정 포함)
-            g.TranslateTransform(_offset.X + centerOffsetX, _offset.Y + centerOffsetY);
+            g.Clear(Color.White);
+            g.TranslateTransform(_offset.X + (displayPanel.Width - _baseSize.Width) / 2f, _offset.Y + (displayPanel.Height - _baseSize.Height) / 2f);
             g.ScaleTransform(_scale, _scale);
-
-            // 다이 그리기
             float dieSize = BASE_DIE_SIZE;
             foreach (var die in _dies)
             {
-                DrawDie(g, die, dieSize);
+                DrawSocket(g, die, dieSize);
             }
-
-            // 고정 라벨 그리기
             DrawFixedLabels(g, dieSize);
-
-            g.ResetTransform();
+            e.Graphics.DrawImage(bmp, 0, 0);
+            g.Dispose();
+            bmp.Dispose();
         }
 
-        private void DrawDie(Graphics g, Die die, float size)
+        private void DrawSocket(Graphics g, Die die, float size)
         {
             // 다이 색상 결정
             Color dieColor = Color.Black;
