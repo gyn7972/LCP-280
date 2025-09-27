@@ -189,6 +189,10 @@ namespace QMC.Common.PKGTester
             if (conditionSet == null || !conditionSet.Validate())
                 return false;
 
+            // Binning Spec Sheet
+            if (binningSpecSheet == null || !binningSpecSheet.Validate())
+                return false;
+
             // Check instruments bound
             if (sourcemeter == null || spectrometer == null)
                 return false;

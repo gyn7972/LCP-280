@@ -360,7 +360,7 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
-        public bool LoadFromFile(string filePath)
+        public int LoadFromFile(string filePath)
         {
             try
             {
@@ -370,11 +370,11 @@ namespace QMC.Common.PKGTester
                     // 헤더 읽기
                     var headerLine = reader.ReadLine();
                     if (string.IsNullOrWhiteSpace(headerLine))
-                        return false;
+                        return -1;
 
                     var headerParts = headerLine.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                     if (headerParts.Length < 2 || headerParts[0] != "BinLabel")
-                        return false;
+                        return -1;
                     
                     for (int i = 1; i < headerParts.Length; i++)
                     {
@@ -387,10 +387,11 @@ namespace QMC.Common.PKGTester
                     {
                         var parts = line.Split(new char[] { ',' }, StringSplitOptions.None);
                         if (parts.Length != headers.Count + 1)
-                            return false;
+                            return -1;
+
                         var binLabel = parts[0].Trim();
                         if (!AddNewBin(binLabel))
-                            return false;
+                            return -1;
 
                         var spec = specs.Find(s => s.BinLabel == binLabel);
                         for (int i = 1; i < parts.Length; i++)
@@ -405,7 +406,7 @@ namespace QMC.Common.PKGTester
                             {
                                 var rangeParts = rangeStr.Split('~');
                                 if (rangeParts.Length != 2)
-                                    return false;
+                                    return -1;
 
                                 if (double.TryParse(rangeParts[0], out double min) && double.TryParse(rangeParts[1], out double max))
                                 {
@@ -415,7 +416,7 @@ namespace QMC.Common.PKGTester
                                 }
                                 else
                                 {
-                                    return false;
+                                    return -1;
                                 }
                             }
                             else if (string.IsNullOrWhiteSpace(rangeStr))
@@ -425,7 +426,7 @@ namespace QMC.Common.PKGTester
                             }
                             else
                             {
-                                return false;
+                                return -1;
                             }
                         }
                     }
@@ -433,11 +434,11 @@ namespace QMC.Common.PKGTester
             }
             catch
             {
-                return false;
+                return -1;
             }
-            return true;
+            return 0;
         }
-        public bool SaveToFile(string filePath)
+        public int SaveToFile(string filePath)
         {
             try
             {
@@ -481,9 +482,9 @@ namespace QMC.Common.PKGTester
             }
             catch
             {
-                return false;
+                return -1;
             }
-            return true;
+            return 0;
         }
         #endregion
     }
