@@ -90,20 +90,20 @@ namespace QMC.Common.BarcodeReader
             // Title
             pc.Add($"BarcodeReader [{Name}] - Config");
 
-            // 기존 Value들
-            pc.Add(nameof(PortName), PortName);
-            pc.Add(nameof(BaudRate), BaudRate);
-            pc.Add(nameof(DataBits), DataBits);
-            pc.Add(nameof(Parity), Parity);
-            pc.Add(nameof(StopBits), StopBits);
-            pc.Add(nameof(Handshake), Handshake);
-            pc.Add(nameof(ConversationTimeout), ConversationTimeout);
-            pc.Add(nameof(RetryCount), RetryCount);
+            // Value
+            pc.Add("Port Name", "", PortName);
+            pc.Add("Baud Rate", "", BaudRate);
+            pc.Add("Data Bits", "", DataBits);
+            pc.Add("Parity", "", Parity);
+            pc.Add("Stop Bits", "", StopBits);
+            pc.Add("Handshake", "", Handshake);
+            pc.Add("Conversation Timeout", "ms", ConversationTimeout);
+            pc.Add("Retry Count", "", RetryCount);
 
             // NLV-5201 추가 설정들
-            pc.Add(nameof(UseAutoTrigger), UseAutoTrigger);
-            pc.Add(nameof(EnableBuzzer), EnableBuzzer);
-            pc.Add(nameof(ScanTimeout), ScanTimeout);
+            pc.Add(nameof(UseAutoTrigger), "", UseAutoTrigger);
+            pc.Add(nameof(EnableBuzzer), "", EnableBuzzer);
+            pc.Add(nameof(ScanTimeout), "", ScanTimeout);
 
             return pc;
         }
@@ -114,20 +114,14 @@ namespace QMC.Common.BarcodeReader
 
             try
             {
-                // 기존 설정들
-                PortName = pc.GetValue<string>(nameof(PortName));
-                BaudRate = pc.GetValue<int>(nameof(BaudRate));
-                DataBits = pc.GetValue<int>(nameof(DataBits));
-                Parity = pc.GetValue<Parity>(nameof(Parity));
-                StopBits = pc.GetValue<StopBits>(nameof(StopBits));
-                Handshake = pc.GetValue<Handshake>(nameof(Handshake));
-                ConversationTimeout = pc.GetValue<int>(nameof(ConversationTimeout));
-                RetryCount = pc.GetValue<int>(nameof(RetryCount));
-
-                // NLV-5201 추가 설정들
-                UseAutoTrigger = pc.GetValue<bool>(nameof(UseAutoTrigger));
-                EnableBuzzer = pc.GetValue<bool>(nameof(EnableBuzzer));
-                ScanTimeout = pc.GetValue<int>(nameof(ScanTimeout));
+                PortName = pc.GetValue<string>("Port Name");
+                BaudRate = pc.GetValue<int>("Baud Rate");
+                DataBits = pc.GetValue<int>("Data Bits");
+                Parity = pc.GetValue<Parity>("Parity");
+                StopBits = pc.GetValue<StopBits>("Stop Bits");
+                Handshake = pc.GetValue<Handshake>("Handshake");
+                ConversationTimeout = pc.GetValue<int>("Conversation Timeout");
+                RetryCount = pc.GetValue<int>("Retry Count");
             }
             catch (Exception ex)
             {
@@ -140,7 +134,7 @@ namespace QMC.Common.BarcodeReader
         #endregion
 
 
-        #region NLV-5201 유틸리티 메서드
+         #region NLV-5201 유틸리티 메서드
 
         /// <summary>
         /// 사용 가능한 COM 포트 목록

@@ -139,6 +139,30 @@ namespace QMC.LCP_280.Process.Unit
                 btn_Save_Illuninator_Setup.Click += btn_Save_Illuninator_Setup_Click;
             }
 
+            if (btn_Connect_Illuminator != null)
+            {
+                btn_Connect_Illuminator.Click -= btn_Connect_Illuminator_Click;
+                btn_Connect_Illuminator.Click += btn_Connect_Illuminator_Click;
+            }
+
+            if (btn_Disconnect_Illuminator != null)
+            {
+                btn_Disconnect_Illuminator.Click -= btn_Disconnect_Illuminator_Click;
+                btn_Disconnect_Illuminator.Click += btn_Disconnect_Illuminator_Click;
+            }
+
+            if (btn_All_On_Illuminator != null)
+            {
+                btn_All_On_Illuminator.Click -= btn_All_On_Illuminator_Click;
+                btn_All_On_Illuminator.Click += btn_All_On_Illuminator_Click;
+            }
+
+            if (btn_All_Off_Illuminator != null)
+            {
+                btn_All_Off_Illuminator.Click -= btn_All_Off_Illuminator_Click;
+                btn_All_Off_Illuminator.Click += btn_All_Off_Illuminator_Click;
+            }
+
             // 기존 ON/OFF 버튼만 연결
             if (btn_On_Illuminator != null)
             {
@@ -180,6 +204,8 @@ namespace QMC.LCP_280.Process.Unit
 
                         var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                         var saveResult = channel.Config.Save();
+
+                        _selectedIlluminator.SetVolumeCommandString(channel.ChannelNo, channel.Config.Volume);
 
                         MessageBox.Show($"Channel {_selectedChannelIndex + 1} 설정 저장 완료.");
                     }
@@ -231,6 +257,8 @@ namespace QMC.LCP_280.Process.Unit
                 var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                 channel.Config.On = true;
 
+                bool success = _selectedIlluminator.SetChannelsOn(_selectedChannelIndex + 1); // 최대 5회 재시도
+
                 // UI 업데이트
                 OnIlluminatorChannelSelected(null, _selectedChannelIndex);
                 UpdateIlluminatorButtonColors();
@@ -264,6 +292,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                 channel.Config.On = false;
+
+                _selectedIlluminator.SetChannelsOff(_selectedChannelIndex + 1);
 
                 // UI 업데이트
                 OnIlluminatorChannelSelected(null, _selectedChannelIndex);
@@ -530,7 +560,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // 전체 채널 제어를 위한 추가 버튼 이벤트 (필요시 Designer에서 버튼 추가)
-        private void btn_All_On_Illuminator_Click(object sender, EventArgs e)
+        private void  btn_All_On_Illuminator_Click(object sender, EventArgs e)
         {
             try
             {

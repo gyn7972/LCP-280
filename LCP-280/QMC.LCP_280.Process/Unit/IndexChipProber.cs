@@ -9,6 +9,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -21,20 +22,20 @@ namespace QMC.LCP_280.Process.Unit
     {
         public enum AlarmKeys
         { 
-            eIndexChipProber = 9999,
+            eNotReadyToMeasure = 99990, // 임시 알람 번호
         }
 
         #region InitAlarm
         protected override void InitAlarm()
         {
             base.InitAlarm();
-            //AlarmInfo alarm = new AlarmInfo();
-            //alarm.Code = (int)AlarmKeys.eIndexChipProber;
-            //alarm.Title = "Alarm Title";
-            //alarm.Cause = "Alarm Cause";
-            //alarm.Source = this.UnitName;
-            //alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
-            //m_dicAlarms.Add(alarm.Code, alarm);
+            AlarmInfo alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
+            alarm.Title = "측정 준비가 되지 않았습니다.";
+            alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오.\n2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
 
@@ -171,6 +172,13 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 1) Check Can Measure
                 InspectDone = false;
+
+                if (!tester.CanMeasure())
+                {
+                    PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
+                    Log.Write(this, "PKG Tester: Not ready to measure.");
+                    return -1;
+                }
 
                 // 2) Measure Chip
                 bRet &= Measure();

@@ -372,7 +372,6 @@ namespace QMC.LCP_280.Process
 
         #endregion
 
-
         #region Unit Registration
 
         /// <summary>
@@ -504,7 +503,6 @@ namespace QMC.LCP_280.Process
                     return new CassetteElevatorRecipe();
             }
         }
-
         #endregion
 
         #region Equipment Control
@@ -1721,7 +1719,12 @@ namespace QMC.LCP_280.Process
 
         private void InitializePKGTester()
         {
-            try { Tester = new PKGTester("PKGTester", Sourcemeter, Spectrometer); }
+            try 
+            {   
+                Tester = new PKGTester("PKGTester");
+                Tester.BindSourcemeter(Sourcemeter);
+                Tester.BindSpectrometer(Spectrometer);
+            }
             catch (Exception ex) { Log.Write(ex); }
         }
 
@@ -1771,7 +1774,6 @@ namespace QMC.LCP_280.Process
             return unit as BaseUnit;
         }
         #endregion // Motion/IO Bootstrap
-
 
         // ===== 메인 설비 Config / Recipe 로드 추가 =====
         public  EquipmentConfig EquipmentConfig { get;  set; }
@@ -1863,10 +1865,6 @@ namespace QMC.LCP_280.Process
         //        return false;
         //    }
         //}
-
-
-
-
     }
 
     #region Supporting Classes and Enums
@@ -1951,9 +1949,4 @@ namespace QMC.LCP_280.Process
         }
     }
     #endregion
-
-
-
-
-
 }

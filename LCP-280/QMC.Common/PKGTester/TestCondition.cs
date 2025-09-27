@@ -99,87 +99,79 @@ namespace QMC.Common.PKGTester
         public override PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
+            
+            // Title
             string title = $"Item Config";
             pc.Add(title);
 
-            pc.Add(nameof(Name), Name);
-            pc.Add(nameof(Type), Type);
+            // Value
+            pc.Add("Name", "", Name);
+            pc.Add("Type", "", Type);
 
+            // Source
             switch (GetTestItemCategory())
             {
-                case TestItemCategory.Optical:
-                    {
-                        // Optical Item
-                        title = "Calibration - Use Gain";
-                        pc.Add(title);
-                        for (int i = 0; i < UseGain.Length; i++)
-                        {
-                            pc.Add($"UseGain #{i + 1}", UseGain[i]);
-                        }
-
-                        title = "Calibration - Use Offset";
-                        pc.Add(title);
-                        for (int i = 0; i < UseOffset.Length; i++)
-                        {
-                            pc.Add($"UseOffset #{i + 1}", UseOffset[i]);
-                        }
-
-                        title = "Calibration - Gain";
-                        pc.Add(title);
-                        for (int i = 0; i < Gain.Length; i++)
-                        {
-                            pc.Add($"Gain #{i + 1}", Gain[i]);
-                        }
-
-                        title = "Calibration - Offset";
-                        pc.Add(title);
-                        for (int i = 0; i < Offset.Length; i++)
-                        {
-                            pc.Add($"Offset #{i + 1}", Offset[i]);
-                        }
-                    }
-                    break;
                 case TestItemCategory.Electrical:
                     {
-                        // Electrical Item
-                        pc.Add(nameof(SourceValue), SourceValue);
-                        pc.Add(nameof(SourceTime), SourceTime);
-                        pc.Add(nameof(SourceLimit), SourceLimit);
-                        pc.Add(nameof(MeasureTime), MeasureTime);
-
-                        title = "Calibration - Use Gain";
-                        pc.Add(title);
-                        for (int i = 0; i < UseGain.Length; i++)
-                        {
-                            pc.Add($"UseGain #{i + 1}", UseGain[i]);
-                        }
-
-                        title = "Calibration - Use Offset";
-                        pc.Add(title);
-                        for (int i = 0; i < UseOffset.Length; i++)
-                        {
-                            pc.Add($"UseOffset #{i + 1}", UseOffset[i]);
-                        }
-
-                        title = "Calibration - Gain";
-                        pc.Add(title);
-                        for (int i = 0; i < Gain.Length; i++)
-                        {
-                            pc.Add($"Gain #{i + 1}", Gain[i]);
-                        }
-
-                        title = "Calibration - Offset";
-                        pc.Add(title);
-                        for (int i = 0; i < Offset.Length; i++)
-                        {
-                            pc.Add($"Offset #{i + 1}", Offset[i]);
-                        }
+                        pc.Add("Source");
+                        pc.Add("Source Value", GetSourceUnitFromType(), SourceValue);
+                        pc.Add("Source Time", "ms", SourceTime);
+                        pc.Add("Source Limit", GetSourceLimitUnitFromType(), SourceLimit);
                     }
                     break;
+            }
+
+            // Measure
+            switch (GetTestItemCategory())
+            {
+                case TestItemCategory.Electrical:
+                    {
+                        pc.Add("Measure");
+                        pc.Add("Measure Time", "ms", MeasureTime);
+                    }
+                    break;
+            }
+
+            // Expression
+            switch (GetTestItemCategory())
+            {
                 case TestItemCategory.UserDefined:
                     {
-                        // User Define Item
-                        pc.Add(nameof(Expression), Expression);
+                        pc.Add("Expression");
+                        pc.Add("Expression", "", Expression);
+                    }
+                    break;
+            }
+
+            // Calibration
+            switch (GetTestItemCategory())
+            {
+                case TestItemCategory.Electrical:
+                case TestItemCategory.Optical:
+                    {
+                        pc.Add("Calibration - Use Gain");
+                        for (int i = 0; i < UseGain.Length; i++)
+                        {
+                            pc.Add($"UseGain #{i + 1}", "", UseGain[i]);
+                        }
+
+                        pc.Add("Calibration - Use Offset");
+                        for (int i = 0; i < UseOffset.Length; i++)
+                        {
+                            pc.Add($"UseOffset #{i + 1}", "", UseOffset[i]);
+                        }
+
+                        pc.Add("Calibration - Gain");
+                        for (int i = 0; i < Gain.Length; i++)
+                        {
+                            pc.Add($"Gain #{i + 1}", "", Gain[i]);
+                        }
+
+                        pc.Add("Calibration - Offset");
+                        for (int i = 0; i < Offset.Length; i++)
+                        {
+                            pc.Add($"Offset #{i + 1}", "", Offset[i]);
+                        }
                     }
                     break;
             }
@@ -194,11 +186,46 @@ namespace QMC.Common.PKGTester
                 Name = "";
                 Reset();
 
-                Name = pc.GetValue<string>(nameof(Name));
-                Type = pc.GetValue<TestItemType>(nameof(Type));
+                Name = pc.GetValue<string>("Name");
+                Type = pc.GetValue<TestItemType>("Type");
 
+                // Source
                 switch (GetTestItemCategory())
                 {
+                    case TestItemCategory.Electrical:
+                        {
+                            SourceValue = pc.GetValue<double>("Source Value");
+                            SourceTime = pc.GetValue<double>("Source Time");
+                            SourceLimit = pc.GetValue<double>("Source Limit");
+                            MeasureTime = pc.GetValue<double>("Measure Time");
+                        }
+                        break;
+                }
+
+                // Measure
+                switch (GetTestItemCategory())
+                {
+                    case TestItemCategory.Electrical:
+                        {
+                            MeasureTime = pc.GetValue<double>("Measure Time");
+                        }
+                        break;
+                }
+
+                // Expression
+                switch (GetTestItemCategory())
+                {
+                    case TestItemCategory.UserDefined:
+                        {
+                            Expression = pc.GetValue<string>("Expression");
+                        }
+                        break;
+                }
+
+                // Calibration
+                switch (GetTestItemCategory())
+                {
+                    case TestItemCategory.Electrical:
                     case TestItemCategory.Optical:
                         {
                             // Optical Item
@@ -209,29 +236,6 @@ namespace QMC.Common.PKGTester
                                 Gain[i] = pc.GetValue<double>($"Gain #{i + 1}");
                                 Offset[i] = pc.GetValue<double>($"Offset #{i + 1}");
                             }
-                        }
-                        break;
-                    case TestItemCategory.Electrical:
-                        {
-                            // Electrical Item
-                            SourceValue = pc.GetValue<double>(nameof(SourceValue));
-                            SourceTime = pc.GetValue<double>(nameof(SourceTime));
-                            SourceLimit = pc.GetValue<double>(nameof(SourceLimit));
-                            MeasureTime = pc.GetValue<double>(nameof(MeasureTime));
-
-                            for (int i = 0; i < 8; i++)
-                            {
-                                UseGain[i] = pc.GetValue<bool>($"UseGain #{i + 1}");
-                                UseOffset[i] = pc.GetValue<bool>($"UseOffset #{i + 1}");
-                                Gain[i] = pc.GetValue<double>($"Gain #{i + 1}");
-                                Offset[i] = pc.GetValue<double>($"Offset #{i + 1}");
-                            }
-                        }
-                        break;
-                    case TestItemCategory.UserDefined:
-                        {
-                            // User Define Item
-                            Expression = pc.GetValue<string>(nameof(Expression));
                         }
                         break;
                 }
@@ -265,6 +269,34 @@ namespace QMC.Common.PKGTester
                     return true;
             }
             return false;
+        }
+        private string GetSourceUnitFromType()
+        {
+            switch (Type)
+            {
+                case TestItemType.VF:
+                case TestItemType.VR:
+                    return "A";
+                case TestItemType.IF:
+                case TestItemType.IR:
+                    return "V";
+                default:
+                    return "";
+            }
+        }
+        private string GetSourceLimitUnitFromType()
+        {
+            switch (Type)
+            {
+                case TestItemType.VF:
+                case TestItemType.VR:
+                    return "V";
+                case TestItemType.IF:
+                case TestItemType.IR:
+                    return "A";
+                default:
+                    return "";
+            }
         }
         #endregion
     }

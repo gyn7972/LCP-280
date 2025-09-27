@@ -183,7 +183,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                     }
 
                     var val = p.GetValue(r, null);
-                    _pc.Add(title, val);
+                    _pc.Add(title, "", val);
                     if (!_propMap.ContainsKey(title)) _propMap.Add(title, p);
                 }
             }

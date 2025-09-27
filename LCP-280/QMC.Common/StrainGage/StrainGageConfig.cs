@@ -67,15 +67,15 @@ namespace QMC.Common.StrainGage
             pc.Add($"Strain Gage [{Name}] - Config");
 
             // Value
-            pc.Add(nameof(MinVoltage), MinVoltage);
-            pc.Add(nameof(MaxVoltage), MaxVoltage);
-            pc.Add(nameof(MinForce), MinForce);
-            pc.Add(nameof(MaxForce), MaxForce);
-            pc.Add(nameof(ReadChannelName), ReadChannelName);
-            pc.Add(nameof(UseLowPassFilter), UseLowPassFilter);
-            pc.Add(nameof(LowPassFilterCutoffFrequency), LowPassFilterCutoffFrequency);
-            //pc.Add(nameof(UseAutoZeroTracking), UseAutoZeroTracking);
-            pc.Add(nameof(IsSimulation), IsSimulation);
+            pc.Add("Min Voltage", "V", MinVoltage);
+            pc.Add("Max Voltage", "V", MaxVoltage);
+            pc.Add("Min Force", "g", MinForce);
+            pc.Add("Max Force", "g", MaxForce);
+            pc.Add("Read Channel Name", "", ReadChannelName);
+            pc.Add("Use Low Pass Filter", "", UseLowPassFilter);
+            pc.Add("LowPassFilterCutoffFrequency", "", LowPassFilterCutoffFrequency);
+            //pc.Add("UseAutoZeroTracking", "", UseAutoZeroTracking);
+            pc.Add("IsSimulation", "", IsSimulation);
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -85,15 +85,15 @@ namespace QMC.Common.StrainGage
 
             try
             {
-                MinVoltage = pc.GetValue<double>(nameof(MinVoltage));
-                MaxVoltage = pc.GetValue<double>(nameof(MaxVoltage));
-                MinForce = pc.GetValue<double>(nameof(MinForce));
-                MaxForce = pc.GetValue<double>(nameof(MaxForce));
-                ReadChannelName = pc.GetValue<string>(nameof(ReadChannelName));
-                UseLowPassFilter = pc.GetValue<bool>(nameof(UseLowPassFilter));
-                LowPassFilterCutoffFrequency = pc.GetValue<double>(nameof(LowPassFilterCutoffFrequency));
-                //UseAutoZeroTracking = pc.GetValue<bool>(nameof(UseAutoZeroTracking));
-                IsSimulation = pc.GetValue<bool>(nameof(IsSimulation));
+                MinVoltage = pc.GetValue<double>("Min Voltage");
+                MaxVoltage = pc.GetValue<double>("Max Voltage");
+                MinForce = pc.GetValue<double>("Min Force");
+                MaxForce = pc.GetValue<double>("Max Force");
+                ReadChannelName = pc.GetValue<string>("Read Channel Name");
+                UseLowPassFilter = pc.GetValue<bool>("Use Low Pass Filter");
+                LowPassFilterCutoffFrequency = pc.GetValue<double>("Low Pass Filter Cutoff Frequency");
+                //UseAutoZeroTracking = pc.GetValue<bool>("Use Auto Zero Tracking");
+                IsSimulation = pc.GetValue<bool>("Is Simulation");
             }
             catch (Exception)
             {

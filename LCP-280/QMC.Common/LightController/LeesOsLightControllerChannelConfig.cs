@@ -43,7 +43,9 @@ namespace QMC.Common.LightController
                 if (volume != value)
                 {
                     volume = value;
-                    OnChannelVolumeChanged(ownerChannel.ChannelNo, value);
+
+                    if (ownerChannel != null)
+                        OnChannelVolumeChanged(ownerChannel.ChannelNo, value);
                 }
             }
         }
@@ -97,10 +99,14 @@ namespace QMC.Common.LightController
             string title = "Channel Config";
             if (ownerChannel.Owner != null)
                 title = $"{ownerChannel.Owner.Name} - Channel {ownerChannel.ChannelNo} Config";
+
+            // Title
             pc.Add(title);
-            pc.Add(nameof(On), On);
-            pc.Add(nameof(Volume), Volume);
-            pc.Add(nameof(Descript), Descript);
+
+            // Value
+            pc.Add("On", "", On);
+            pc.Add("Volume", "", Volume);
+            pc.Add("Descript", "", Descript);
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -109,9 +115,9 @@ namespace QMC.Common.LightController
                 return -1;
             try
             {
-                On = pc.GetValue<bool>(nameof(On));
-                Volume = pc.GetValue<int>(nameof(Volume));
-                Descript = pc.GetValue<string>(nameof(Descript));
+                On = pc.GetValue<bool>("On");
+                Volume = pc.GetValue<int>("Volume");
+                Descript = pc.GetValue<string>("Descript");
             }
             catch (Exception ex)
             {

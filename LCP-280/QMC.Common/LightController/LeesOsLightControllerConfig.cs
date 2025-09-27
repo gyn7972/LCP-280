@@ -63,13 +63,13 @@ namespace QMC.Common.LightController
             pc.Add(title);
 
             // Value
-            pc.Add(nameof(PortName), PortName);
-            pc.Add(nameof(BaudRate), BaudRate);
-            pc.Add(nameof(DataBits), DataBits);
-            pc.Add(nameof(Parity), Parity);
-            pc.Add(nameof(StopBits), StopBits);
-            pc.Add(nameof(Handshake), Handshake);
-            pc.Add(nameof(ReplyTimeout), ReplyTimeout);
+            pc.Add("Port Name", "", PortName);
+            pc.Add("Baud Rate", "", BaudRate);
+            pc.Add("Data Bits", "", DataBits);
+            pc.Add("Parity", "", Parity);
+            pc.Add("StopBits", "", StopBits);
+            pc.Add("Handshake", "", Handshake);
+            pc.Add("Reply Timeout", "ms", ReplyTimeout);
 
             return pc;
         }
@@ -80,13 +80,13 @@ namespace QMC.Common.LightController
 
             try
             {
-                PortName = pc.GetValue<string>(nameof(PortName));
-                BaudRate = pc.GetValue<int>(nameof(BaudRate));
-                DataBits = pc.GetValue<int>(nameof(DataBits));
-                Parity = pc.GetValue<Parity>(nameof(Parity));
-                StopBits = pc.GetValue<StopBits>(nameof(StopBits));
-                Handshake = pc.GetValue<Handshake>(nameof(Handshake));
-                ReplyTimeout = pc.GetValue<int>(nameof(ReplyTimeout));
+                PortName = pc.GetValue<string>("Port Name");
+                BaudRate = pc.GetValue<int>("Baud Rate");
+                DataBits = pc.GetValue<int>("Data Bits");
+                Parity = pc.GetValue<Parity>("Parity");
+                StopBits = pc.GetValue<StopBits>("Stop Bits");
+                Handshake = pc.GetValue<Handshake>("Handshake");
+                ReplyTimeout = pc.GetValue<int>("Reply Timeout");
             }
             catch (Exception ex)
             {

@@ -35,7 +35,6 @@ namespace QMC.Common.Spectrometer
         public int ColormetricStop { get; set; }
         public int TriggerTimeout { get; set; }
         public bool UseHardwareTrigger { get; set; }
-        public bool IsSimulated { get; set; }
         #endregion
 
         #region Constructor
@@ -59,7 +58,7 @@ namespace QMC.Common.Spectrometer
             ColormetricStop = 780;
             TriggerTimeout = 5000;
             UseHardwareTrigger = false;
-            IsSimulated = false;
+            IsSimulation = false;
         }
         public override bool Validate()
         {
@@ -89,18 +88,18 @@ namespace QMC.Common.Spectrometer
             pc.Add($"Spectrometer [{Name}] - Config");
 
             // Value
-            pc.Add(nameof(DeviceInterfaceType), DeviceInterfaceType);
-            pc.Add(nameof(DeviceInterfaceOption), DeviceInterfaceOption);
-            pc.Add(nameof(ConfigFileName), ConfigFileName);
-            pc.Add(nameof(CalibFileName), CalibFileName);
-            pc.Add(nameof(IntegrationTime), IntegrationTime);
-            pc.Add(nameof(Averages), Averages);
-            pc.Add(nameof(DensityFilter), DensityFilter);
-            pc.Add(nameof(ColormetricStart), ColormetricStart);
-            pc.Add(nameof(ColormetricStop), ColormetricStop);
-            pc.Add(nameof(TriggerTimeout), TriggerTimeout);
-            pc.Add(nameof(UseHardwareTrigger), UseHardwareTrigger);
-            pc.Add(nameof(IsSimulated), IsSimulated);
+            pc.Add("Device Interface Type", "", DeviceInterfaceType);
+            pc.Add("Device Interface Option", "", DeviceInterfaceOption);
+            pc.Add("Config File Name", "", ConfigFileName);
+            pc.Add("Calib File Name", "", CalibFileName);
+            pc.Add("Integration Time", "ms", IntegrationTime);
+            pc.Add("Averages", "", Averages);
+            pc.Add("Density Filter", "", DensityFilter);
+            pc.Add("Colormetric Start", "", ColormetricStart);
+            pc.Add("Colormetric Stop", "", ColormetricStop);
+            pc.Add("Trigger Timeout", "ms", TriggerTimeout);
+            pc.Add("Use Hardware Trigger", "", UseHardwareTrigger);
+            pc.Add("Is Simulation", "", IsSimulation);
             return pc;
         }
 
@@ -111,18 +110,18 @@ namespace QMC.Common.Spectrometer
 
             try
             {
-                DeviceInterfaceType = pc.GetValue<DeviceInterface>(nameof(DeviceInterfaceType));
-                DeviceInterfaceOption = pc.GetValue<int>(nameof(DeviceInterfaceOption));
-                ConfigFileName = pc.GetValue<string>(nameof(ConfigFileName));
-                CalibFileName = pc.GetValue<string>(nameof(CalibFileName));
-                IntegrationTime = pc.GetValue<int>(nameof(IntegrationTime));
-                Averages = pc.GetValue<int>(nameof(Averages));
-                DensityFilter = pc.GetValue<int>(nameof(DensityFilter));
-                ColormetricStart = pc.GetValue<int>(nameof(ColormetricStart));
-                ColormetricStop = pc.GetValue<int>(nameof(ColormetricStop));
-                TriggerTimeout = pc.GetValue<int>(nameof(TriggerTimeout));
-                UseHardwareTrigger = pc.GetValue<bool>(nameof(UseHardwareTrigger));
-                IsSimulated = pc.GetValue<bool>(nameof(IsSimulated));
+                DeviceInterfaceType = pc.GetValue<DeviceInterface>("Device Interface Type");
+                DeviceInterfaceOption = pc.GetValue<int>("Device Interface Option");
+                ConfigFileName = pc.GetValue<string>("Config File Name");
+                CalibFileName = pc.GetValue<string>("Calib File Name");
+                IntegrationTime = pc.GetValue<int>("Integration Time");
+                Averages = pc.GetValue<int>("Averages");
+                DensityFilter = pc.GetValue<int>("Density Filter");
+                ColormetricStart = pc.GetValue<int>("Colormetric Start");
+                ColormetricStop = pc.GetValue<int>("Colormetric Stop");
+                TriggerTimeout = pc.GetValue<int>("Trigger Timeout");
+                UseHardwareTrigger = pc.GetValue<bool>("Use Hardware Trigger");
+                IsSimulation = pc.GetValue<bool>("Is Simulation");
             }
             catch (Exception)
             {

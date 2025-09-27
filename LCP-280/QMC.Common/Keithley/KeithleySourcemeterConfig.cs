@@ -53,9 +53,9 @@ namespace QMC.Common.Keithley
         public SMUSourceSink SourceSink { get; set; } // channel
         public SMUSourceSettling SourceSettling { get; set; } // channel
         public SMUSourceOffmode SourceOffmode { get; set; } // channel
+        public bool SourceInvert { get; set; } // software invert
         public SMUMeasureAutoZero MeasureAutoZero { get; set; } // channel
         public int MeasureTimeout { get; set; }
-        public bool IsSimulated { get; set; }
         #endregion
 
         #region Constructor
@@ -75,9 +75,10 @@ namespace QMC.Common.Keithley
             SourceSink = SMUSourceSink.DISABLE;
             SourceSettling = SMUSourceSettling.SMOOTH;
             SourceOffmode = SMUSourceOffmode.NORMAL;
+            SourceInvert = false;
             MeasureAutoZero = SMUMeasureAutoZero.AUTO;
             MeasureTimeout = 1000; // ms
-            IsSimulated = false;
+            IsSimulation = false;
         }
 
         public override bool Validate()
@@ -101,16 +102,17 @@ namespace QMC.Common.Keithley
             pc.Add($"Sourcemeter [{Name}] - Config");
 
             // Value
-            pc.Add(nameof(Model), Model);
-            pc.Add(nameof(ResourceName), ResourceName);
-            pc.Add(nameof(ScriptFileName), ScriptFileName);
-            pc.Add(nameof(SenseMode), SenseMode);
-            pc.Add(nameof(SourceSink), SourceSink);
-            pc.Add(nameof(SourceSettling), SourceSettling);
-            pc.Add(nameof(SourceOffmode), SourceOffmode);
-            pc.Add(nameof(MeasureAutoZero), MeasureAutoZero);
-            pc.Add(nameof(MeasureTimeout), MeasureTimeout);
-            pc.Add(nameof(IsSimulated), IsSimulated);
+            pc.Add("Model", "", Model);
+            pc.Add("Resource Name", "", ResourceName);
+            pc.Add("Script File Name", "", ScriptFileName);
+            pc.Add("Sense Mode", "", SenseMode);
+            pc.Add("Source Sink", "", SourceSink);
+            pc.Add("Source Settling", "", SourceSettling);
+            pc.Add("Source Offmode", "", SourceOffmode);
+            pc.Add("Source Invert", "", SourceInvert);
+            pc.Add("Measure Auto Zero", "", MeasureAutoZero);
+            pc.Add("Measure Timeout", "ms", MeasureTimeout);
+            pc.Add("Is Simulation", "", IsSimulation);
 
             return pc;
         }
@@ -121,16 +123,17 @@ namespace QMC.Common.Keithley
 
             try
             {
-                Model = pc.GetValue<KeithleySourcemeter.SMUInstrumentCategory>(nameof(Model));
-                ResourceName = pc.GetValue<string>(nameof(ResourceName));
-                ScriptFileName = pc.GetValue<string>(nameof(ScriptFileName));
-                SenseMode = pc.GetValue<SMUSenseMode>(nameof(SenseMode));
-                SourceSink = pc.GetValue<SMUSourceSink>(nameof(SourceSink));
-                SourceSettling = pc.GetValue<SMUSourceSettling>(nameof(SourceSettling));
-                SourceOffmode = pc.GetValue<SMUSourceOffmode>(nameof(SourceOffmode));
-                MeasureAutoZero = pc.GetValue<SMUMeasureAutoZero>(nameof(MeasureAutoZero));
-                MeasureTimeout = pc.GetValue<int>(nameof(MeasureTimeout));
-                IsSimulated = pc.GetValue<bool>(nameof(IsSimulated));
+                Model = pc.GetValue<KeithleySourcemeter.SMUInstrumentCategory>("Model");
+                ResourceName = pc.GetValue<string>("Resource Name");
+                ScriptFileName = pc.GetValue<string>("Script File Name");
+                SenseMode = pc.GetValue<SMUSenseMode>("Sense Mode");
+                SourceSink = pc.GetValue<SMUSourceSink>("Source Sink");
+                SourceSettling = pc.GetValue<SMUSourceSettling>("Source Settling");
+                SourceOffmode = pc.GetValue<SMUSourceOffmode>("Source Offmode");
+                SourceInvert = pc.GetValue<bool>("Source Invert");
+                MeasureAutoZero = pc.GetValue<SMUMeasureAutoZero>("Measure Auto Zero");
+                MeasureTimeout = pc.GetValue<int>("Measure Timeout");
+                IsSimulation = pc.GetValue<bool>("Is Simulation");
             }
             catch (Exception ex)
             {
