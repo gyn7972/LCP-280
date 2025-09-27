@@ -203,50 +203,79 @@ namespace QMC.Common.LightController
             return "";
         }
 
-        public bool SetChannelsOn(int channelNo)
+        public bool SetChannelsOn(int channelNo, int maxRetries = 3)
         {
-            if (communicator != null && communicator.IsOpen)
-            {
-                string command = "";
-                switch (Model)
-                {
-                    case LeesOsLightControllerModel.LPD_3024_1CH:
-                    case LeesOsLightControllerModel.LPD_3024_2CH:
-                    case LeesOsLightControllerModel.LPD_4024_3CH:
-                    case LeesOsLightControllerModel.LPD_4024_4CH:
-                        command = $"H{channelNo.ToString("X1")}ON\r\n";
-                        break;
-                    case LeesOsLightControllerModel.LPD_6524_2CH:
-                    case LeesOsLightControllerModel.LPD_6524_4CH:
-                    case LeesOsLightControllerModel.LPD_12024_8CH:
-                        command = $"LH{channelNo.ToString("X1")}ON\r\n";
-                        break;
-                }
+            if (communicator == null || !communicator.IsOpen)
+                return false;
 
-                if (!string.IsNullOrEmpty(command))
+            string command = "";
+            switch (Model)
+            {
+                case LeesOsLightControllerModel.LPD_3024_1CH:
+                case LeesOsLightControllerModel.LPD_3024_2CH:
+                case LeesOsLightControllerModel.LPD_4024_3CH:
+                case LeesOsLightControllerModel.LPD_4024_4CH:
+                    command = $"H{channelNo.ToString("X1")}ON\r\n";
+                    break;
+                case LeesOsLightControllerModel.LPD_6524_2CH:
+                case LeesOsLightControllerModel.LPD_6524_4CH:
+                case LeesOsLightControllerModel.LPD_12024_8CH:
+                    command = $"LH{channelNo.ToString("X1")}ON\r\n";
+                    break;
+            }
+
+            if (string.IsNullOrEmpty(command))
+                return false;
+
+            // 재시도 로직
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
                 {
-                    // Query 메서드로 Send + Recv 한번에 처리
-                    if (communicator.Query(command, out string response))
+                    Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON attempt {attempt}/{maxRetries}");
+
+                    communicator.Send(command);
+
+                    // 응답 대기
+                    string response = WaitForResponse(Config.ReplyTimeout);
+
+                    if (!string.IsNullOrEmpty(response))
                     {
-                        // 응답 파싱
+                        response = response.Trim().ToUpper();
+
                         if (response.Contains("OK"))
                         {
-                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON success");
+                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON success on attempt {attempt}");
                             return true;
                         }
                         else if (response.Contains("ER"))
                         {
-                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON failed: {response}");
-                            return false;
+                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON error response: {response}");
+                            // 에러 응답이라도 재시도
+                        }
+                        else
+                        {
+                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} unexpected response: {response}");
                         }
                     }
                     else
                     {
-                        Log.Write($"LightController [{Name}]", $"No response for channel {channelNo} ON command");
-                        return false;
+                        Log.Write($"LightController [{Name}]", $"Channel {channelNo} no response on attempt {attempt}");
+                    }
+
+                    // 마지막 시도가 아니면 잠시 대기
+                    if (attempt < maxRetries)
+                    {
+                        Thread.Sleep(100);
                     }
                 }
+                catch (Exception ex)
+                {
+                    Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON attempt {attempt} error: {ex.Message}");
+                }
             }
+
+            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON failed after {maxRetries} attempts");
             return false;
         }
 

@@ -255,7 +255,7 @@ namespace QMC.LCP_280.Process.Unit
                 var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                 channel.Config.On = true;
 
-                _selectedIlluminator.SetChannelsOn(_selectedChannelIndex + 1);
+                bool success = _selectedIlluminator.SetChannelsOn(_selectedChannelIndex + 1, 5); // 최대 5회 재시도
 
                 // UI 업데이트
                 OnIlluminatorChannelSelected(null, _selectedChannelIndex);
