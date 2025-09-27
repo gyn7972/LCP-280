@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.DIO;
 using QMC.Common.Motions;
 using QMC.Common.Motions.CKD;
 using System;
@@ -8,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -277,6 +279,12 @@ namespace QMC.LCP_280.Process.Unit
 
                 JogCommand jc = ParseJogButton(sender);
 
+                if (!CheckSafeToDrive(axis, jc))
+                {
+                    MessageBox.Show(this, "현재 상태에서 해당 축을 구동할 수 없습니다.", "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 if (rdoContinuous.Checked)
                 {
                     double vel = rdoFine.Checked ? axis.Config.JogFineVelocity : axis.Config.JogCoarseVelocity; // :contentReference[oaicite:5]{index=5}
@@ -394,6 +402,46 @@ namespace QMC.LCP_280.Process.Unit
             { 
                 Log.Write(ex);
             }
+        }
+
+        // [ADD] Axis Move Interlock
+        private bool CheckSafeToDrive(MotionAxis axis, JogCommand jc)
+        {
+            // Interlock
+            if (axis == null)
+                return false;
+
+            bool result = true;
+            switch (axis.Name)
+            {
+                case AxisNames.ProbeZ:
+                    {
+                        IndexChipProbeController probeControl = null;
+                        if (EquipmentInst?.Units != null && EquipmentInst.Units.TryGetValue("IndexChipProbeController", out var u))
+                            probeControl = u as IndexChipProbeController;
+
+                        // Probe Z는 상부 컨택에서만 사용하므로, 하부 컨택 모드일 경우 구동을 금지한다.
+                        if (probeControl != null && !probeControl.IsTopRequired())
+                        {
+                            result = false;
+                        }
+                        break;
+                    }
+                case AxisNames.ProbeCardZ:
+                    {
+                        IndexChipProbeController probeControl = null;
+                        if (EquipmentInst?.Units != null && EquipmentInst.Units.TryGetValue("IndexChipProbeController", out var u))
+                            probeControl = u as IndexChipProbeController;
+
+                        // Probe Card Z는 하부 컨택에서만 사용하므로, 상부 컨택 모드일 경우 구동을 금지한다.
+                        if (probeControl != null && probeControl.IsTopRequired())
+                        {
+                            result = false;
+                        }
+                        break;
+                    }
+            }
+            return result;
         }
 
         // ★ 연속조그 시작
