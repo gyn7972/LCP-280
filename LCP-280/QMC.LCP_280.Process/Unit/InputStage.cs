@@ -1593,37 +1593,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            int grabRc;
-            try
-            {
-                // 4) Ä«¸Þ¶ó ±×·¦
-                if (StageCamera == null)
-                {
-                    Log.Write(UnitName, "Align", "Fail: Camera null");
-                    return -1;
-                }
-                grabRc = StageCamera.GrabSync(out img);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, "Align", "Exception: " + ex.Message);
-                return -1;
-            }
-
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-
-            }
-            else if (grabRc != 0 || img == null || img.RawData == null)
-            {
-                Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
-                img?.Dispose();
-                img = null;
-                return -1;
-            }
-
-            StageCamera.LatestImage = img;
-            Log.Write(UnitName, "Align", "Grab OK");
+           
             return 0;
         }
         public int AlignTPrepare(bool bFineSpeed = false)
@@ -1646,35 +1616,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
-            {
-                if(!Config.IsDryRun)
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eVisionTsearch);
-                    Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
-                    return -1;
-                }
-                
-            }
-
-            var stats = ComputeAngleStats(angleList, excludeExtremes: true);
-            if (stats.RawCount == 0)
-            {
-                if (!Config.IsDryRun)
-                {
-                    Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
-                    return -1;
-                }
-            }
-
-            double rawAngle = stats.Representative;
-            IsStatus_LastFoundTRawAngle = rawAngle;
-            _lastCenterAlignTp = centerTp;
-
-            Log.Write(UnitName, "T_Align",
-                $"Angle Representative={rawAngle:F6} avg={stats.Average:F6} std={stats.StdDev:F6} rawCount={stats.RawCount}");
-
             IsStatus_TAlignPrepared = true;
             return 0;
         }
@@ -1689,35 +1630,24 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
 
             }
-            if (!IsStatus_TAlignPrepared || _lastCenterAlignTp == null)
+            try {
+
+                StageCamera.GrabSync(out VisionImage img);
+                PmRunner.SearchTheta(img, out double angle);
+                double currentAngle = this.AxisT.GetPosition();
+                double dTarget = currentAngle + angle * AngleApplyGain;
+                Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} currentT={currentAngle:F4}");
+
+                IsStatus_LastFoundTRawAngle = angle;
+                this.AxisT.MoveAbs(dTarget, bFineSpeed);
+                nRet = WaitUntil(() => InPos(this.AxisT , dTarget), MoveTimeoutMs);
+            }
+            catch(Exception ex)
             {
-                Log.Write(UnitName, "T_Align", "Not prepared");
+                Log.Write(UnitName, "T_Align", $"Exception: {ex.Message}");
                 return -1;
             }
-
-            double rawAngle = IsStatus_LastFoundTRawAngle;
-            if (Math.Abs(rawAngle) < AngleIgnoreThresholdDeg)
-            {
-                Log.Write(UnitName, "T_Align", $"Skip: |{rawAngle:F6}| < Ignore({AngleIgnoreThresholdDeg})");
-                IsStatus_TAlignDone = true;
-                return 0;
-            }
-            if (Math.Abs(rawAngle) > AngleMaxApplyDeg)
-            {
-                Log.Write(UnitName, "T_Align",
-                    $"Fail: Angle {rawAngle:F4} > Limit {AngleMaxApplyDeg}");
-                return -1;
-            }
-
-            double applyAngle = rawAngle * AngleApplyGain;
-            IsStatus_LastAppliedTAngle = applyAngle;
-
-            int rc = MoveApplyOffset(_lastCenterAlignTp.Name, 0.0, 0.0, applyAngle);
-            if (rc != 0)
-            {
-                Log.Write(UnitName, "T_Align", $"Fail: ApplyOffset rc={rc}");
-                return -1;
-            }
+            
 
             IsStatus_TAlignDone = true;
             return nRet;
