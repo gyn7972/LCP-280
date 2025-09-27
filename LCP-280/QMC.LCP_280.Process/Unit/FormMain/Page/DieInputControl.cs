@@ -32,6 +32,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void UpdateDieCount()
         {
+            if(this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => UpdateDieCount()));
+                return;
+            }
             // Present 개수 = Mapped 상태 칩 수 (필요 시 Exists 로 변경 가능)
             int count = _chips.Count(c => c.State == DieProcessState.Mapped || c.State == DieProcessState.Picked);
             lblDieCountValue.Text = count.ToString();
@@ -40,6 +45,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // 이름 호환성을 위해 SetDieList 유지 (MaterialChip 사용)
         public void SetDieList(List<MaterialDie> chips)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => SetDieList(chips)));
+                return;
+            }
+
             _chips = chips ?? new List<MaterialDie>();
             UpdateDieCount();
 

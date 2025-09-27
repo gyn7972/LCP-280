@@ -2003,9 +2003,10 @@ namespace QMC.LCP_280.Process.Unit
 
                         double dx = x - centerTpX;
                         double dy = y - centerTpY;
-
+                       
                         double dist = Math.Sqrt(dx * dx + dy * dy);
-                        if (dist <= dRadius)
+                        double offsetDist = GetDistance(dRoiWidth / 2, dRoiHeight / 2);
+                        if (dist <= dRadius + offsetDist)
                         {
                             path.Add(new PointD(x, y));
                         }
