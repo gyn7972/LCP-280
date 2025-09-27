@@ -1507,6 +1507,19 @@ namespace QMC.LCP_280.Process
             try { _crossPen?.Dispose(); } catch { }
             try { _indexFont?.Dispose(); } catch { }
         }
+
+        public void SearchTheta(VisionImage img, out double Angle)
+        {
+            var result = Search(img);
+            if(result.Success)
+            {
+                Angle = result.Matches.Average(t=>t.R);
+            }
+            else
+            {
+                Angle = 0;
+            }
+        }
         #endregion
 
         #region Internal Temp VisionPart

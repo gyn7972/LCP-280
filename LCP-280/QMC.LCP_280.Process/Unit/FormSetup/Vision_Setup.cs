@@ -212,26 +212,42 @@ namespace QMC.LCP_280.Process.Unit
                     return;
                 }
 
-                if (_selectedChannelIndex >= 0 && _illuminatorChannelConfigMapper != null)
+                // === 기존 코드에 포커스 해제만 추가 ===
+                this.ActiveControl = null;
+                Application.DoEvents();
+
+                if (_selectedChannelIndex >= 0 && _selectedChannelIndex < _selectedIlluminator.Channels.Count)
                 {
-                    // 채널별 설정 저장
-                    var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
-                    if (pc != null) _illuminatorChannelConfigMapper.ApplyToObject(pc);
+                    // 채널 설정 저장
+                    if (_illuminatorChannelConfigMapper != null)
+                    {
+                        var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
+                        if (pc != null)
+                        {
+                            _illuminatorChannelConfigMapper.ApplyToObject(pc);
+                        }
 
-                    var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
-                    channel.Config.Save();
+                        var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
+                        var saveResult = channel.Config.Save();
 
-                    MessageBox.Show($"'{_selectedIlluminator.Name}' Channel {_selectedChannelIndex + 1} 설정 저장 완료.");
+                        MessageBox.Show($"Channel {_selectedChannelIndex + 1} 설정 저장 완료.");
+                    }
                 }
-                else if (_illuminatorConfigMapper != null)
+                else
                 {
-                    // 조명 컨트롤러 설정 저장
-                    var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
-                    if (pc != null) _illuminatorConfigMapper.ApplyToObject(pc);
+                    // 메인 컨트롤러 설정 저장
+                    if (_illuminatorConfigMapper != null)
+                    {
+                        var pc = illuminatorPropertyCollectionView?.GetCurrentProperties();
+                        if (pc != null)
+                        {
+                            _illuminatorConfigMapper.ApplyToObject(pc);
+                        }
 
-                    _selectedIlluminator.Config.Save();
+                        var saveResult = _selectedIlluminator.Config.Save();
 
-                    MessageBox.Show($"'{_selectedIlluminator.Name}' 컨트롤러 설정 저장 완료.");
+                        MessageBox.Show($"'{_selectedIlluminator.Name}' 컨트롤러 설정 저장 완료.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -455,73 +471,76 @@ namespace QMC.LCP_280.Process.Unit
 
         private void OnIlluminatorSelected(object sender, int selectedIndex)
         {
-            try
+            if (selectedIndex < 0 || selectedIndex >= _illuminatorNames.Count)
             {
-                if (selectedIndex < 0 || selectedIndex >= _illuminatorNames.Count)
+                _selectedIlluminator = null;
+                _channelNames = null;
+                iluminatorChannelListBoxItemsView?.SetItems();
+                illuminatorPropertyCollectionView?.SetProperties(null);
+                _illuminatorConfigMapper = null;
+                return;
+            }
+
+            var illuminatorName = _illuminatorNames[selectedIndex];
+            _selectedIlluminator = Equipment.Instance.LightControllers[illuminatorName];
+
+            if (_selectedIlluminator != null)
+            {
+                _channelNames = new List<string>();
+                for (int i = 0; i < _selectedIlluminator.Channels.Count; i++)
                 {
-                    _selectedIlluminator = null;
-                    _channelNames = null;
-                    iluminatorChannelListBoxItemsView?.SetItems();
-                    illuminatorPropertyCollectionView?.SetProperties(null);
-                    return;
+                    _channelNames.Add($"Channel {i + 1}");
                 }
 
-                var illuminatorName = _illuminatorNames[selectedIndex];
-                _selectedIlluminator = Equipment.Instance.LightControllers[illuminatorName];
+                iluminatorChannelListBoxItemsView?.SetItems(_channelNames.ToArray());
 
-                if (_selectedIlluminator != null)
+                // 기본적으로 채널 선택 해제하고 메인 컨트롤러 설정 표시
+                iluminatorChannelListBoxItemsView.SelectedIndex = -1;
+                _selectedChannelIndex = -1;
+
+                // === 기존 매핑 해제 추가 ===
+                illuminatorPropertyCollectionView?.SetProperties(null);
+                _illuminatorChannelConfigMapper = null;
+
+                if (_selectedIlluminator.Config != null)
                 {
-                    // 1) 조명 컨트롤러 자체 설정 표시 (포트, 보레이트 등)
                     _illuminatorConfigMapper = new ConfigReflectionMapper(_selectedIlluminator.Config);
                     illuminatorPropertyCollectionView?.SetProperties(_illuminatorConfigMapper.PropertyCollection);
-
-                    // 2) 채널 리스트 생성
-                    _channelNames = new List<string>();
-                    for (int i = 0; i < _selectedIlluminator.Channels.Count; i++)
-                    {
-                        _channelNames.Add($"Channel {i + 1}");
-                    }
-
-                    iluminatorChannelListBoxItemsView?.SetItems(_channelNames.ToArray());
-
-                    // 첫 번째 채널 자동 선택
-                    if (_channelNames.Count > 0)
-                    {
-                        iluminatorChannelListBoxItemsView.SelectedIndex = 0;
-                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Vision_Setup", $"OnIlluminatorSelected error: {ex}");
             }
         }
 
         private void OnIlluminatorChannelSelected(object sender, int selectedIndex)
         {
-            try
-            {
-                _selectedChannelIndex = selectedIndex;
+            _selectedChannelIndex = selectedIndex;
 
-                if (_selectedIlluminator == null || selectedIndex < 0 || selectedIndex >= _selectedIlluminator.Channels.Count)
+            if (_selectedIlluminator == null)
+                return;
+
+            if (selectedIndex < 0 || selectedIndex >= _selectedIlluminator.Channels.Count)
+            {
+                // 메인 컨트롤러 설정 표시
+                if (_selectedIlluminator.Config != null)
                 {
-                    // Property를 조명 컨트롤러 설정으로 되돌림
-                    if (_illuminatorConfigMapper != null)
-                    {
-                        illuminatorPropertyCollectionView?.SetProperties(_illuminatorConfigMapper.PropertyCollection);
-                    }
-                    return;
-                }
+                    // === 기존 매핑 해제 추가 ===
+                    illuminatorPropertyCollectionView?.SetProperties(null);
+                    _illuminatorChannelConfigMapper = null;
 
-                // 선택된 채널의 Config를 Property로 표시
-                var selectedChannel = _selectedIlluminator.Channels[selectedIndex];
-                _illuminatorChannelConfigMapper = new ConfigReflectionMapper(selectedChannel.Config);
-                illuminatorPropertyCollectionView?.SetProperties(_illuminatorChannelConfigMapper.PropertyCollection);
+                    _illuminatorConfigMapper = new ConfigReflectionMapper(_selectedIlluminator.Config);
+                    illuminatorPropertyCollectionView?.SetProperties(_illuminatorConfigMapper.PropertyCollection);
+                }
+                return;
             }
-            catch (Exception ex)
-            {
-                Log.Write("Vision_Setup", $"OnIlluminatorChannelSelected error: {ex}");
-            }
+
+            // 채널 설정 표시
+            var selectedChannel = _selectedIlluminator.Channels[selectedIndex];
+
+            // === 기존 매핑 해제 추가 ===
+            illuminatorPropertyCollectionView?.SetProperties(null);
+            _illuminatorConfigMapper = null;
+
+            _illuminatorChannelConfigMapper = new ConfigReflectionMapper(selectedChannel.Config);
+            illuminatorPropertyCollectionView?.SetProperties(_illuminatorChannelConfigMapper.PropertyCollection);
         }
         #endregion
 

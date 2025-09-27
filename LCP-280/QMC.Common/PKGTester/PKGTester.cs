@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 using QMC.Common.Component;
 using QMC.Common.Keithley;
 using QMC.Common.Spectrometer;
+using System.Text.RegularExpressions;
 
 namespace QMC.Common.PKGTester
 {
@@ -15,7 +17,7 @@ namespace QMC.Common.PKGTester
     {
         #region Fields
         private BinningResult binningResult = new BinningResult();
-        private Dictionary<string, TestItemResult> items = new Dictionary<string, TestItemResult>();
+        private Dictionary<string, TestItemResult> items = new Dictionary<string, TestItemResult>();     
         #endregion
 
         #region Properties
@@ -72,6 +74,11 @@ namespace QMC.Common.PKGTester
         private bool isMeasuring = false;
 
         private BinningClassifier binningClassifier = new BinningClassifier();
+
+        private DataTable evaluator = new DataTable();
+
+        private System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
+        private TimeSpan measureTime = TimeSpan.Zero;
         #endregion
 
         #region Properties
@@ -81,6 +88,7 @@ namespace QMC.Common.PKGTester
         public CASSpectrometer Spectrometer { get => spectrometer; }
         public PKGTesterResult Result { get => result; }
         public bool IsMeasuring { get => isMeasuring; }
+        public TimeSpan MeasureTime { get => measureTime; }
         #endregion
 
         #region Constructor
@@ -131,6 +139,7 @@ namespace QMC.Common.PKGTester
                 isMeasuring = false;
             }
         }
+
         public async Task<int> ManualMeasureAsync(int rotaryIndex = 0)
         {
             try
@@ -197,6 +206,7 @@ namespace QMC.Common.PKGTester
                 return ret;
             return ret;
         }
+
         private int BuildCommandItem()
         {
             try
@@ -238,6 +248,10 @@ namespace QMC.Common.PKGTester
                                     throw new Exception("Failed to add test item to spectrometer.");
                             }
                             break;
+                        case TestItemCategory.UserDefined:
+                            {
+                            }
+                            break;
                         default:
                             throw new Exception("Undefined TestItemCategory.");
                     }
@@ -255,6 +269,7 @@ namespace QMC.Common.PKGTester
             }
             return 0;
         }
+
         private int BuildResultItem()
         {
             try
@@ -265,10 +280,7 @@ namespace QMC.Common.PKGTester
                     if (item == null)
                         throw new InvalidOperationException("Invalid TestItem");
 
-                    if (item.IsMeasureItem())
-                    {
-                        result.AddItem(item.Name);
-                    }
+                    result.AddItem(item.Name);
                 }
             }
             catch (Exception ex)
@@ -278,6 +290,7 @@ namespace QMC.Common.PKGTester
             }
             return 0;
         }
+
         private void ResetResultItem()
         {
             result.ResetItems();
@@ -287,6 +300,8 @@ namespace QMC.Common.PKGTester
         #region Internal Process
         private async Task<int> DoMeasure(int rotaryIndex)
         {
+            stopWatch.Restart();
+
             TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
             CASSpectrometer.DeviceEventHandler handler = (s) => { tcs.TrySetResult(true); };
             spectrometer.OnMeasureCommandSended += handler;
@@ -304,12 +319,15 @@ namespace QMC.Common.PKGTester
                 spcTask = Task.Run(() => DoSpectrometerMeasure());
 
                 // Wait spectrometer command sent
-                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-                if (completedTask == timeoutTask)
+                if (HasTaskSpectrometer())
                 {
-                    throw new TimeoutException("Spectrometer send measurement command timed out.");
+                    var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+                    if (completedTask == timeoutTask)
+                    {
+                        throw new TimeoutException("Spectrometer send measurement command timed out.");
+                    }
+                    Thread.Sleep(10);
                 }
-                Thread.Sleep(10);
 
                 // Sourcemeter task start
                 smuTask = Task.Run(() => DoSourcemeterMeasure());
@@ -331,6 +349,12 @@ namespace QMC.Common.PKGTester
                 if (!CalibrateDataProcess(rotaryIndex))
                 {
                     throw new Exception("Failed to calibrate data.");
+                }
+
+                // Calculate User Define Item
+                if (!CalulateUserDefineItem())
+                {
+                    throw new Exception("Failed to calculate user define item.");
                 }
 
                 // Binning Data
@@ -360,7 +384,22 @@ namespace QMC.Common.PKGTester
                 {
                     smuTask.Dispose();
                 }
+
+                stopWatch.Stop();
+                measureTime = stopWatch.Elapsed;
             }
+        }
+
+        private bool HasTaskSourcemeter()
+        {
+            int smuCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Electrical);
+            return (smuCmdCount > 0);
+        }
+
+        private bool HasTaskSpectrometer()
+        {
+            int spcCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Optical);
+            return (spcCmdCount > 0);
         }
 
         private async Task<int> DoSourcemeterMeasure()
@@ -368,19 +407,18 @@ namespace QMC.Common.PKGTester
             if (sourcemeter == null)
                 return -1;
 
-            int smuCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Electrical);
-            if (smuCmdCount == 0)
+            if (!HasTaskSourcemeter())
                 return 0;
 
             return await Task.Run(() => sourcemeter.Measure());
         }
+
         private async Task<int> DoSpectrometerMeasure()
         {
             if (spectrometer == null)
                 return -1;
 
-            int spcCmdCount = conditionSet.Items.Count(item => item.GetTestItemCategory() == TestItemCategory.Optical);
-            if (spcCmdCount == 0)
+            if (!HasTaskSpectrometer())
                 return 0;
 
             return await Task.Run(() => spectrometer.Measure());
@@ -446,6 +484,59 @@ namespace QMC.Common.PKGTester
                 return false;
             }
         }
+
+        private bool CalulateUserDefineItem()
+        {
+            try
+            { 
+                foreach (var item in conditionSet.Items)
+                {
+                    if (item.IsComputeItem())
+                    {
+                        string expression = item.Expression;
+
+                        List<string> assignItems = new List<string>();
+                        foreach (var key in result.Items.Keys)
+                        {
+                            var pattern = $@"\b{Regex.Escape(key)}\b";
+                            if (Regex.IsMatch(expression, pattern))
+                            {
+                                assignItems.Add(key);
+                                var value = result.Items[key].Value;
+                                expression = Regex.Replace(expression, pattern, value.ToString());
+                            }
+                        }
+
+                        if (assignItems.Count > 1)
+                        {
+                            var firstUnit = result.Items[assignItems[0]].Unit;
+                            foreach (var key in assignItems)
+                            {
+                                if (result.Items[key].Unit != firstUnit)
+                                {
+                                    // 단위가 다르면 예외
+                                    throw new InvalidOperationException("Different units in expression.");
+                                }
+                            }
+                        }
+
+                        var computeObj = evaluator.Compute(expression, "");
+                        double computedValue = Convert.ToDouble(computeObj);
+
+                        TestItemResult itemResult = result.Items[item.Name];
+                        itemResult.RawData = computedValue;
+                        itemResult.Value = computedValue;
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(this, ex.Message);
+                return false;
+            }
+        }
+
         private bool BinningDataProcess()
         {
             try

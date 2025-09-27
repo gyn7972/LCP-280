@@ -81,6 +81,8 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
 
             UpdateNewResultGrid();
+            lbResultValue.Text = "";
+            lbMeasureTime.Text = "Measure Time: - ";
         }
 
         private void ClearResultGrid()
@@ -94,9 +96,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             ClearResultGrid();
             foreach (var item in tester.ConditionSet.Items)
             {
-                if (!item.IsMeasureItem())
-                    continue;
-
                 DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn();
                 col.Name = item.Name;
                 col.HeaderText = item.Name;
@@ -123,7 +122,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             // 각 항목별 결과 표시
             foreach (var key in result.Items.Keys)
             {
-                row.Cells[key].Value = result.Items[key].ToStringWithPrefix();
+                row.Cells[key].Value = result.Items[key].ToString();
             }
 
             // 마지막 행으로 스크롤 및 선택
@@ -159,6 +158,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     lbResultValue.ForeColor = Color.Gray;
                     break;
             }
+
+            // 측정 시간 표시
+            lbMeasureTime.Text = $"Measure Time: {tester.MeasureTime.TotalMilliseconds:F1} ms";
         }
 
         private void btnLastClear_Click(object sender, EventArgs e)

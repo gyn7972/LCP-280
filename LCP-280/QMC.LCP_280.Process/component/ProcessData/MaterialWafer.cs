@@ -24,7 +24,7 @@ namespace QMC.LCP_280.Process.Component
         public WaferSummary Summary { get; set; } = new WaferSummary();
 
         // ===== Chip Data =====
-        public List<MaterialChip> Chips { get; set; } = new List<MaterialChip>();
+        public List<MaterialDie> Dies { get; set; } = new List<MaterialDie>();
 
         // ===== Reset =====
         public void Reset()
@@ -35,34 +35,34 @@ namespace QMC.LCP_280.Process.Component
             SlotIndex = -1;
             Summary = new WaferSummary();
             RecipeKeys.Clear();
-            Chips.Clear();
+            Dies.Clear();
         }
 
         // ===== Chip 관리 함수 =====
-        public MaterialChip AddChip(int index, int mapX, int mapY)
+        public MaterialDie AddChip(int index, int mapX, int mapY)
         {
-            var chip = new MaterialChip
+            var chip = new MaterialDie
             {
                 Index = index,
                 MapX = mapX,
                 MapY = mapY,
                 Exists = true,
-                State = ChipProcessState.Mapped,
+                State = DieProcessState.Mapped,
                 SourceWaferId = LotId
             };
 
             foreach (var key in RecipeKeys)
                 chip.AddMeasure(key, double.NaN);
 
-            Chips.Add(chip);
+            Dies.Add(chip);
             return chip;
         }
 
-        public MaterialChip GetChipByIndex(int index) =>
-            Chips.FirstOrDefault(c => c.Index == index);
+        public MaterialDie GetChipByIndex(int index) =>
+            Dies.FirstOrDefault(c => c.Index == index);
 
-        public MaterialChip GetChipByMap(int x, int y) =>
-            Chips.FirstOrDefault(c => c.MapX == x && c.MapY == y);
+        public MaterialDie GetChipByMap(int x, int y) =>
+            Dies.FirstOrDefault(c => c.MapX == x && c.MapY == y);
 
         // ===== Chip 정보 업데이트 (동적 Pitch 추정 / 중복 좌표 합치기) =====
         /// <summary>
@@ -76,7 +76,7 @@ namespace QMC.LCP_280.Process.Component
         {
             if (centers == null) return;
             var rawList = centers; // already a list
-            Chips.Clear();
+            Dies.Clear();
             if (rawList.Count == 0) return;
             if (chipPitchXmm <= 0 || chipPitchYmm <= 0) throw new ArgumentOutOfRangeException("Chip pitch must be > 0");
 
@@ -145,14 +145,14 @@ namespace QMC.LCP_280.Process.Component
             if (estPitchY <= 0) estPitchY = chipPitchYmm;
 
             // 5) Chip 객체 생성 및 Grid 계산
-            var temp = new List<MaterialChip>();
+            var temp = new List<MaterialDie>();
             foreach (var p in merged)
             {
                 int mapX = (int)Math.Round((p.X - baseX) / estPitchX, MidpointRounding.AwayFromZero);
                 int mapY = (int)Math.Round((p.Y - baseY) / estPitchY, MidpointRounding.AwayFromZero);
                 if (mapX < 0) mapX = 0;
                 if (mapY < 0) mapY = 0;
-                var chip = new MaterialChip
+                var chip = new MaterialDie
                 {
                     MapX = mapX,
                     MapY = mapY,
@@ -160,7 +160,7 @@ namespace QMC.LCP_280.Process.Component
                     CenterY = p.Y,
                     Angle = 0.0,
                     Exists = true,
-                    State = ChipProcessState.Mapped,
+                    State = DieProcessState.Mapped,
                     SourceWaferId = LotId
                 };
                 temp.Add(chip);
@@ -171,10 +171,10 @@ namespace QMC.LCP_280.Process.Component
             foreach (var chip in temp.OrderBy(c => c.MapY).ThenBy(c => c.MapX))
                 chip.Index = idx++;
 
-            Chips.AddRange(temp.OrderBy(c => c.Index));
+            Dies.AddRange(temp.OrderBy(c => c.Index));
 
             // 측정값 초기화
-            foreach (var chip in Chips)
+            foreach (var chip in Dies)
             {
                 foreach (var key in RecipeKeys)
                     if (!chip.MeasureValues.ContainsKey(key))

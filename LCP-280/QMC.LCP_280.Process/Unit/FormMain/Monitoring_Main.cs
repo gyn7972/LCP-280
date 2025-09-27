@@ -20,10 +20,11 @@ namespace QMC.LCP_280.Process
     {
         private InputCassetteLifter CassetteLifter { get; set; }
         private InputFeeder Feeder { get; set; }
-        private InputStage Stage { get; set; }
+        private InputStage inputStage { get; set; }
 
         private Rotary Rotary;
 
+        
         public Monitoring_Main() : this(
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
             TryGetUnit<InputFeeder>("InputFeeder"),
@@ -40,7 +41,7 @@ namespace QMC.LCP_280.Process
             #region Chart
             CassetteLifter = cassetteLifter;
             Feeder = ringTransfer;
-            Stage = inputStage;
+            this.inputStage = inputStage;
             Rotary = rotary;
 
             var materialCassette = CassetteLifter?.GetMaterialCassette();
@@ -85,6 +86,12 @@ namespace QMC.LCP_280.Process
             // 이벤트 - Select Control
             dieIndexSelectControl1.DieClicked += OnDieClick_Requested;
             dieIndexSelectControl1.RotationRequested += OnDieRotation_Requested;
+            inputStage.EventUpdateUIWafer += InputStage_EventUpdateUIWafer;
+        }
+
+        private void InputStage_EventUpdateUIWafer(MaterialWafer wafer)
+        {
+            this.dieInputControl1.SetDieList(wafer.Dies);
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -266,7 +273,7 @@ namespace QMC.LCP_280.Process
                 {
                     this.Invoke(new Action(() =>
                     {
-                        dieInputControl1.UpdateChip(new Point(x, y), ChipProcessState.Picked);
+                        dieInputControl1.UpdateChip(new Point(x, y), DieProcessState.Picked);
                         ShowMotorMovingStatus("Pick 모터 이동 완료");
                     }));
                 });
@@ -306,7 +313,7 @@ namespace QMC.LCP_280.Process
             #region Input Control
             dieInputControl1.SetWaferId("WAFER 098123");
 
-            var chips = new List<MaterialChip>();
+            var chips = new List<MaterialDie>();
             int idx = 0;
             int radius = 50;
             int targetCount = 10000;
@@ -319,12 +326,12 @@ namespace QMC.LCP_280.Process
                 {
                     if (x * x + y * y <= radius * radius)
                     {
-                        chips.Add(new MaterialChip
+                        chips.Add(new MaterialDie
                         {
                             Index = idx++,
                             MapX = (int)Math.Round(x),
                             MapY = (int)Math.Round(y),
-                            State = ChipProcessState.Mapped,
+                            State = DieProcessState.Mapped,
                             Exists = true
                         });
                     }
@@ -332,7 +339,7 @@ namespace QMC.LCP_280.Process
             }
             Console.WriteLine($"총 칩 개수 = {chips.Count}");
             dieInputControl1.SetDieList(chips);
-            dieInputControl1.UpdateChip(new Point(0, 0), ChipProcessState.Picked);
+            dieInputControl1.UpdateChip(new Point(0, 0), DieProcessState.Picked);
             #endregion
 
             #region Output Control - Square Shape

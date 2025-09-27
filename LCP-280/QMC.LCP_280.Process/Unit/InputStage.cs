@@ -39,6 +39,11 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputStage : BaseUnit<InputStageConfig>
     {
+
+        public delegate void UpdateUIWafer(MaterialWafer wafer);
+
+        public event UpdateUIWafer EventUpdateUIWafer;
+
         public enum AlarmKeys
         {
             eDieTransferPickZNotSafe = 3001,
@@ -1038,7 +1043,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq
 
-        public MaterialWafer GetWaferMaterial()
+        public MaterialWafer GetMaterialWafer()
         {
             var mat = GetMaterial();
             return mat as MaterialWafer;
@@ -1636,6 +1641,12 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            MaterialWafer wafer = GetMaterialWafer();
+            if(wafer is null)
+            {
+                wafer = new MaterialWafer();
+                SetMaterial(wafer);
+            }
             nRtn = MoveToStageCenterPosition();
             if (nRtn != 0)
             {
@@ -1657,37 +1668,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            int grabRc;
-            try
-            {
-                // 4) Ä«¸Þ¶ó ±×·¦
-                if (StageCamera == null)
-                {
-                    Log.Write(UnitName, "Align", "Fail: Camera null");
-                    return -1;
-                }
-                grabRc = StageCamera.GrabSync(out img);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, "Align", "Exception: " + ex.Message);
-                return -1;
-            }
-
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-
-            }
-            else if (grabRc != 0 || img == null || img.RawData == null)
-            {
-                Log.Write(UnitName, "Align", $"Fail: Grab fail rc={grabRc}");
-                img?.Dispose();
-                img = null;
-                return -1;
-            }
-
-            StageCamera.LatestImage = img;
-            Log.Write(UnitName, "Align", "Grab OK");
+           
             return 0;
         }
         public int AlignTPrepare(bool bFineSpeed = false)
@@ -1710,39 +1691,10 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (!TryGetMultiAngles(out var angleList) || angleList == null || angleList.Count == 0)
-            {
-                if(!Config.IsDryRun)
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eVisionTsearch);
-                    Log.Write(UnitName, "T_Align", "Fail: Vision angle search empty");
-                    return -1;
-                }
-                
-            }
-
-            var stats = ComputeAngleStats(angleList, excludeExtremes: true);
-            if (stats.RawCount == 0)
-            {
-                if (!Config.IsDryRun)
-                {
-                    Log.Write(UnitName, "T_Align", "Fail: No angle list after filtering");
-                    return -1;
-                }
-            }
-
-            double rawAngle = stats.Representative;
-            IsStatus_LastFoundTRawAngle = rawAngle;
-            _lastCenterAlignTp = centerTp;
-
-            Log.Write(UnitName, "T_Align",
-                $"Angle Representative={rawAngle:F6} avg={stats.Average:F6} std={stats.StdDev:F6} rawCount={stats.RawCount}");
-
             IsStatus_TAlignPrepared = true;
             return 0;
         }
-        public int AlignTApply(bool bFineSpeed = false)
+        public int AlignTheta(bool bFineSpeed = false)
         {
             int nRet = 0;
 
@@ -1753,35 +1705,24 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
 
             }
-            if (!IsStatus_TAlignPrepared || _lastCenterAlignTp == null)
+            try {
+
+                StageCamera.GrabSync(out VisionImage img);
+                PmRunner.SearchTheta(img, out double angle);
+                double currentAngle = this.AxisT.GetPosition();
+                double dTarget = currentAngle + angle * AngleApplyGain;
+                Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} currentT={currentAngle:F4}");
+
+                IsStatus_LastFoundTRawAngle = angle;
+                this.AxisT.MoveAbs(dTarget, bFineSpeed);
+                nRet = WaitUntil(() => InPos(this.AxisT , dTarget), MoveTimeoutMs);
+            }
+            catch(Exception ex)
             {
-                Log.Write(UnitName, "T_Align", "Not prepared");
+                Log.Write(UnitName, "T_Align", $"Exception: {ex.Message}");
                 return -1;
             }
-
-            double rawAngle = IsStatus_LastFoundTRawAngle;
-            if (Math.Abs(rawAngle) < AngleIgnoreThresholdDeg)
-            {
-                Log.Write(UnitName, "T_Align", $"Skip: |{rawAngle:F6}| < Ignore({AngleIgnoreThresholdDeg})");
-                IsStatus_TAlignDone = true;
-                return 0;
-            }
-            if (Math.Abs(rawAngle) > AngleMaxApplyDeg)
-            {
-                Log.Write(UnitName, "T_Align",
-                    $"Fail: Angle {rawAngle:F4} > Limit {AngleMaxApplyDeg}");
-                return -1;
-            }
-
-            double applyAngle = rawAngle * AngleApplyGain;
-            IsStatus_LastAppliedTAngle = applyAngle;
-
-            int rc = MoveApplyOffset(_lastCenterAlignTp.Name, 0.0, 0.0, applyAngle);
-            if (rc != 0)
-            {
-                Log.Write(UnitName, "T_Align", $"Fail: ApplyOffset rc={rc}");
-                return -1;
-            }
+            
 
             IsStatus_TAlignDone = true;
             return nRet;
@@ -1798,7 +1739,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            nRet = AlignTApply(bFineSpeed);
+            nRet = AlignTheta(bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "T_Align", "Fail: AlignTApply");
@@ -1817,38 +1758,7 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(UnitName, "XY_Align", "Prepare Start");
 
-            if(this.Config.IsSimulation)
-            {
-
-                IsStatus_XYAlignPrepared = true;
-                return 0;
-            }
-
-            if (PrepareForAlign(out var centerTp, out var _img) != 0)
-            {
-                return -1;
-            }
-                
-
-            var res = CenterSearchViaRunner();
-            if (!res.ok)
-            {
-                if(!Config.IsDryRun)
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eVisionXYsearch);
-                    Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
-                    return -1;
-                }
-            }
-
-            IsStatus_LastFoundDx = res.x;
-            IsStatus_LastFoundDy = res.y;
-            _lastCenterAlignTp = centerTp;
-
-            Log.Write(UnitName, "XY_Align",
-                $"Offset dx={IsStatus_LastFoundDx:F6} dy={IsStatus_LastFoundDy:F6}");
-
+            
             IsStatus_XYAlignPrepared = true;
             return 0;
         }
@@ -1861,40 +1771,7 @@ namespace QMC.LCP_280.Process.Unit
                 IsStatus_XYAlignDone = true;
                 return 0;
             }
-            if (!IsStatus_XYAlignPrepared || _lastCenterAlignTp == null)
-            {
-                Log.Write(UnitName, "XY_Align", "Not prepared");
-                return -1;
-            }
-
-            double dx = IsStatus_LastFoundDx;
-            double dy = IsStatus_LastFoundDy;
-
-            if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
-            {
-                Log.Write(UnitName, "XY_Align", "Skip: offset under threshold");
-                IsStatus_XYAlignDone = true;
-                return 0;
-            }
-            if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
-            {
-                Log.Write(UnitName, "XY_Align",
-                    $"Fail: Over limit dx={dx:F4} dy={dy:F4} limit={MaxXYOffsetMm}");
-                return -1;
-            }
-
-            int rc = MoveApplyOffset(_lastCenterAlignTp.Name, dx, dy, 0.0);
-            Log.Write(UnitName, "XY_Align",
-                $"ApplyOffset dx={dx:F6} dy={dy:F6} rc={(rc == 0 ? "OK" : "FAIL")}");
-
-            if (rc != 0)
-                return -1;
-
-            //if (MoveToTeachingPosition(_lastCenterAlignTp) != 0)
-            //    return -1;
-            //if (WaitUntil(() => InPosTeaching(_lastCenterAlignTp), MoveTimeoutMs) != 0)
-            //    return -1;
-
+            
             IsStatus_XYAlignDone = true;
             return 0;
         }
@@ -2081,8 +1958,6 @@ namespace QMC.LCP_280.Process.Unit
                             return SearchChips(grabImage, ref chips, pt.X, pt.Y);
                         });
                     }
-                        
-                    
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
@@ -2109,18 +1984,28 @@ namespace QMC.LCP_280.Process.Unit
 
         private void UpdateChipInfo(List<PointD> chips)
         {
-            MaterialWafer materialWafer =  GetWaferMaterial();
-            materialWafer.Chips.Clear();
-            materialWafer.UpdateChipInfo(chips,this.ChipPitchXmm,this.ChipPitchYmm);
-            var list= materialWafer.Chips.OrderBy(t=>t.MapX).ThenBy(t=>t.MapY);
-            foreach(var c in list)
+
+            try
             {
-                Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
+                MaterialWafer materialWafer = GetMaterialWafer();
 
+                materialWafer.Dies.Clear();
+                materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
+                var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
+                foreach (var c in list)
+                {
+                    Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
+
+                }
             }
-
-
-
+            catch (Exception ex )
+            {
+                Log.Write(ex);
+            }finally
+            {
+                MaterialWafer materialWafer = GetMaterialWafer();
+                EventUpdateUIWafer?.BeginInvoke(materialWafer,null,null);
+            }
         }
 
         private void MakeScanPath(out List<PointD> path)
@@ -2187,9 +2072,10 @@ namespace QMC.LCP_280.Process.Unit
 
                         double dx = x - centerTpX;
                         double dy = y - centerTpY;
-
+                       
                         double dist = Math.Sqrt(dx * dx + dy * dy);
-                        if (dist <= dRadius)
+                        double offsetDist = GetDistance(dRoiWidth / 2, dRoiHeight / 2);
+                        if (dist <= dRadius + offsetDist)
                         {
                             path.Add(new PointD(x, y));
                         }
