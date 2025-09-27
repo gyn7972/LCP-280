@@ -135,6 +135,7 @@ namespace QMC.Common.PKGTester
                 isMeasuring = false;
             }
         }
+
         public async Task<int> ManualMeasureAsync(int rotaryIndex = 0)
         {
             try
@@ -201,6 +202,7 @@ namespace QMC.Common.PKGTester
                 return ret;
             return ret;
         }
+
         private int BuildCommandItem()
         {
             try
@@ -263,6 +265,7 @@ namespace QMC.Common.PKGTester
             }
             return 0;
         }
+
         private int BuildResultItem()
         {
             try
@@ -283,6 +286,7 @@ namespace QMC.Common.PKGTester
             }
             return 0;
         }
+
         private void ResetResultItem()
         {
             result.ResetItems();
@@ -341,7 +345,7 @@ namespace QMC.Common.PKGTester
                     throw new Exception("Failed to calibrate data.");
                 }
 
-                // Compute User Define Item
+                // Calculate User Define Item
                 if (!CalulateUserDefineItem())
                 {
                     throw new Exception("Failed to calculate user define item.");
@@ -475,8 +479,7 @@ namespace QMC.Common.PKGTester
         private bool CalulateUserDefineItem()
         {
             try
-            {
-                // To be implemented
+            { 
                 foreach (var item in conditionSet.Items)
                 {
                     if (item.IsComputeItem())
@@ -502,7 +505,7 @@ namespace QMC.Common.PKGTester
                             {
                                 if (result.Items[key].Unit != firstUnit)
                                 {
-                                    // 단위가 다르면 함수 즉시 종료
+                                    // 단위가 다르면 예외
                                     throw new InvalidOperationException("Different units in expression.");
                                 }
                             }

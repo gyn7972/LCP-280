@@ -642,31 +642,10 @@ namespace QMC.Common.Spectrometer
                 return false;
             }
         }
-        //private void PrepareMeasureAndTrigger()
-        //{
-        //    if (!IsCreated())
-        //        return;
-        //    try
-        //    {
-        //        SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, 1000);
-        //        CheckCASErrorAndThrow(CAS4DLL.casMeasure(deviceId));
-        //    }
-        //    catch {}
-        //    finally
-        //    {
-        //        try
-        //        {
-        //            SetMeasurementParameter(CAS4DLL.mpidTriggerTimeout, Config.TriggerTimeout);
-        //        }
-        //        catch {}
-        //    }
-        //}
-
         public bool IsCreated()
         {
             return (deviceId >= 0);
         }
-        
         #endregion
 
         // Measurement Methods

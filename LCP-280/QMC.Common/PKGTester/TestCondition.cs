@@ -488,6 +488,7 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
+
         private bool IsValidExpression(string expression)
         {
             if (string.IsNullOrWhiteSpace(expression))

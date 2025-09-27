@@ -26,7 +26,7 @@ namespace QMC.Common.PKGTester
         #region Method
         public void Reset()
         {
-            //RawData = 0;
+            RawData = 0;
             Value = 0;
             Unit = "";
         }
