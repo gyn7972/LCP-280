@@ -15,7 +15,7 @@ using System.Windows.Forms.DataVisualization.Charting;
 
 namespace QMC.LCP_280.Process.Unit
 {
-    [FormOrder(3)]
+    [FormOrder(4)]
     public partial class Instrument_Setup : Form
     {
         public Instrument_Setup()

@@ -30,7 +30,7 @@ namespace QMC.Common.LightController
         #region Method
         public override void Reset()
         {
-            PortName = "";
+            PortName = "COM1";
             BaudRate = 9600;
             DataBits = 8;
             Parity = Parity.None;
