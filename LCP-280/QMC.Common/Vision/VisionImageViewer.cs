@@ -1080,7 +1080,7 @@ namespace QMC.Common.Vision
                 part = cameraSwitch.Cameras[cameraSwitch.SelectCameraIndex];
 
                 if (part == null) return;
-
+                
                 //this.SetNormalOverlay(part, part.Executor.JobManager);
             }
             finally
