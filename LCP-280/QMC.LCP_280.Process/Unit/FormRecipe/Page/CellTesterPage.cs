@@ -81,6 +81,8 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
 
             UpdateNewResultGrid();
+            lbResultValue.Text = "";
+            lbMeasureTime.Text = "Measure Time: - ";
         }
 
         private void ClearResultGrid()
@@ -156,6 +158,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     lbResultValue.ForeColor = Color.Gray;
                     break;
             }
+
+            // 측정 시간 표시
+            lbMeasureTime.Text = $"Measure Time: {tester.MeasureTime.TotalMilliseconds:F1} ms";
         }
 
         private void btnLastClear_Click(object sender, EventArgs e)

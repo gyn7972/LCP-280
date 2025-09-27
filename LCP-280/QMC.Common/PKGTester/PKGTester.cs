@@ -17,7 +17,7 @@ namespace QMC.Common.PKGTester
     {
         #region Fields
         private BinningResult binningResult = new BinningResult();
-        private Dictionary<string, TestItemResult> items = new Dictionary<string, TestItemResult>();
+        private Dictionary<string, TestItemResult> items = new Dictionary<string, TestItemResult>();     
         #endregion
 
         #region Properties
@@ -76,6 +76,9 @@ namespace QMC.Common.PKGTester
         private BinningClassifier binningClassifier = new BinningClassifier();
 
         private DataTable evaluator = new DataTable();
+
+        private System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
+        private TimeSpan measureTime = TimeSpan.Zero;
         #endregion
 
         #region Properties
@@ -85,6 +88,7 @@ namespace QMC.Common.PKGTester
         public CASSpectrometer Spectrometer { get => spectrometer; }
         public PKGTesterResult Result { get => result; }
         public bool IsMeasuring { get => isMeasuring; }
+        public TimeSpan MeasureTime { get => measureTime; }
         #endregion
 
         #region Constructor
@@ -296,6 +300,8 @@ namespace QMC.Common.PKGTester
         #region Internal Process
         private async Task<int> DoMeasure(int rotaryIndex)
         {
+            stopWatch.Restart();
+
             TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
             CASSpectrometer.DeviceEventHandler handler = (s) => { tcs.TrySetResult(true); };
             spectrometer.OnMeasureCommandSended += handler;
@@ -378,6 +384,9 @@ namespace QMC.Common.PKGTester
                 {
                     smuTask.Dispose();
                 }
+
+                stopWatch.Stop();
+                measureTime = stopWatch.Elapsed;
             }
         }
 
