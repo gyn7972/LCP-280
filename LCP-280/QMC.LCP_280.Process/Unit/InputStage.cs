@@ -945,7 +945,7 @@ namespace QMC.LCP_280.Process.Unit
         public double AngleMaxApplyDeg { get; set; } = 2.0;
         public double AngleApplyGain { get; set; } =- 1.0; // 방향 반전 필요 시 -1 사용
         public bool UseOffsetForTAxisCorrection { get; set; } = true; // false면 직접 축 이동 방식으로 전환 가능 (추후 확장)
-
+        
         private int WaitUntil(Func<bool> cond, int timeoutMs)
         {
             int nRtn = 0;
