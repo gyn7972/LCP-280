@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.BarcodeReader;
 using QMC.Common.Cameras;
 using QMC.Common.Cameras.HIKVISION;
 using QMC.Common.Component;
@@ -144,7 +145,9 @@ namespace QMC.LCP_280.Process
 
         // [+] CKD Motor Driver (PDO Mapping) 추가
         private CKDMotorDriver _ckdDriver;
-        
+
+        #region Camera 관련 
+
         // 기존: public HIKGigECamera Camera { get; set; } = null;
         public Dictionary<string, HIKGigECamera> Cameras { get; } = new Dictionary<string, HIKGigECamera>(StringComparer.OrdinalIgnoreCase);
         // === 편의 프로퍼티 추가 ===
@@ -173,12 +176,15 @@ namespace QMC.LCP_280.Process
         //    var img = Equipment.Instance.InStageCam?.LatestImage;
         //        Console.WriteLine($"Grabbed {img.Width}x{img.Height}");
         //}
+        #endregion
+
+        #region Light 관련
 
         // === 조명 컨트롤러 (단일 + 확장 가능) ===
         public Dictionary<string, LeesOsLightController> LightControllers { get; } = new Dictionary<string, LeesOsLightController>(StringComparer.OrdinalIgnoreCase);
 
         // === 편의 프로퍼티 (메인 조명) ===
-        public LeesOsLightController LeesOsLightController => GetLightController("Main_Light");
+        public LeesOsLightController LeesOsLightController => GetLightController("Light");
 
         private LeesOsLightController GetLightController(string key)
         {
@@ -188,6 +194,25 @@ namespace QMC.LCP_280.Process
         //조명 사용 예
         // Equipment.Instance.MainLightController?.Channels[0].Config.On = true;  // 채널 1 켜기
         // Equipment.Instance.MainLightController?.Channels[0].Config.Volume = 128; // 밝기 설정
+
+        #endregion
+
+
+        #region Barcoder
+        // === Barcoder 컨트롤러 (단일 + 확장 가능) ===
+        public Dictionary<string, OpticonBarcodeReader> Barcoders { get; } = new Dictionary<string, OpticonBarcodeReader>(StringComparer.OrdinalIgnoreCase);
+
+        // === 편의 프로퍼티 (Barcoder) ===
+        public OpticonBarcodeReader BarcoderReader1 => GetBarcoderController("BarcoderReader1");
+        public OpticonBarcodeReader BarcoderReader2 => GetBarcoderController("BarcoderReader2");
+
+        private OpticonBarcodeReader GetBarcoderController(string key)
+        {
+            return Barcoders.TryGetValue(key, out var reader) ? reader : null;
+        }
+        #endregion
+
+        #region Sourcemeters
 
         // Sourcemeter
         public Dictionary<string, KeithleySourcemeter> Sourcemeters { get; } = new Dictionary<string, KeithleySourcemeter>(StringComparer.OrdinalIgnoreCase);
@@ -208,6 +233,7 @@ namespace QMC.LCP_280.Process
         {
             return Spectrometers.TryGetValue(key, out var sm) ? sm : null;
         }
+        #endregion
 
         // PKG Tester
         public PKGTester Tester { get; private set; }
@@ -275,6 +301,9 @@ namespace QMC.LCP_280.Process
 
                 // === 조명 초기화 === , 기존 구성되어 있느 부분하고 동일하게 작업
                 InitializeLightControllers();
+
+                // === 바코드 초기화 ===
+                InitializeBarcoderControllers();
 
                 // === Sourcemeter 초기화 ===
                 InitializeSourcemeters();
@@ -1149,6 +1178,17 @@ namespace QMC.LCP_280.Process
                 catch { }
                 LightControllers.Clear();
 
+                // Barcoder 추가
+                try
+                {
+                    foreach (var barcode in Barcoders.Values)
+                    {
+                        barcode.Close();
+                    }
+                }
+                catch { }
+                Barcoders.Clear();
+
                 // Sourcemeters
                 try
                 {
@@ -1499,7 +1539,7 @@ namespace QMC.LCP_280.Process
             {
                 var lightConfigs = new[]
                 {
-                    new { Name = "Main_Light", Model = LeesOsLightControllerModel.LPD_6524_4CH, PortName = "COM3" }
+                    new { Name = "Light", Model = LeesOsLightControllerModel.LPD_12024_8CH, PortName = "COM3" }
                 };
 
                 foreach (var config in lightConfigs)
@@ -1567,6 +1607,59 @@ namespace QMC.LCP_280.Process
             catch (Exception ex)
             {
                 Log.Write("Equipment", $"InitializeLightControllers error: {ex.Message}");
+            }
+        }
+
+
+        private void InitializeBarcoderControllers()
+        {
+            try
+            {
+                var barcoderConfigs = new[]
+                {
+                    new { Name = "BarcoderReader1", PortName = "COM3" },
+                    new { Name = "BarcoderReader2", PortName = "COM3" }
+                };
+
+                foreach (var config in barcoderConfigs)
+                {
+                    try
+                    {
+                        var barcoderReader = new OpticonBarcodeReader(config.Name);
+
+                        // 1) 메인 컨트롤러 Config 로드
+                        int ret = barcoderReader.Config.Load();
+                        if (ret != 0)
+                        {
+                            Log.Write("Equipment", $"[BarcoderReader] '{config.Name}' config load failed rc=0x{ret:X8}");
+                            barcoderReader.Config.Reset();
+                            barcoderReader.Config.PortName = config.PortName;
+                            barcoderReader.Config.Save();
+                        }
+
+                        // 3) 컨트롤러 초기화
+                        ret = barcoderReader.Initialize();
+                        if (ret != 0)
+                        {
+                            MessageBox.Show($"BarcoderReader [{barcoderReader.Name}] initialize NG.");
+                        }
+                        else
+                        {
+                            ret = barcoderReader.Create();
+                        }
+
+                        Barcoders[config.Name] = barcoderReader;
+                        Console.WriteLine($"[BarcoderReader] {config.Name}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write("Equipment", $"[BarcoderReader] '{config.Name}' init failed: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Equipment", $"InitializeBarcoderReaders error: {ex.Message}");
             }
         }
 

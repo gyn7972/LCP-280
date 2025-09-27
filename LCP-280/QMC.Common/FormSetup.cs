@@ -76,7 +76,7 @@ namespace QMC.Common
                 if (perRow <= 0) perRow = 1;
                 int clientW = Math.Max(100, setupTabControl.ClientSize.Width - 8);
                 int newWidth = Math.Max(90, (clientW / perRow) - 2);
-                if (newWidth > 220) newWidth = 220;
+                if (newWidth > 150) newWidth = 150;
                 if (newWidth == _lastTabWidth) return; // 폭 변화 없으면 중단
                 _lastTabWidth = newWidth;
                 var newSize = new Size(newWidth, _tabHeight);

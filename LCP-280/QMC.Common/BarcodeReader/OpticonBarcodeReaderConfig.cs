@@ -21,6 +21,25 @@ namespace QMC.Common.BarcodeReader
         public int RetryCount { get; set; }
         #endregion
 
+        #region NLV-5201 추가 설정
+
+        /// <summary>
+        /// 자동 트리거 모드 사용 여부 (기본값: false)
+        /// </summary>
+        public bool UseAutoTrigger { get; set; }
+
+        /// <summary>
+        /// 부저 사용 여부 (기본값: true)
+        /// </summary>
+        public bool EnableBuzzer { get; set; }
+
+        /// <summary>
+        /// 스캔 타임아웃 (초, 0이면 무제한, 기본값: 5초)
+        /// </summary>
+        public int ScanTimeout { get; set; }
+
+        #endregion
+
         #region Constructor
         public OpticonBarcodeReaderConfig(string name) : base(name)
         {
@@ -31,14 +50,19 @@ namespace QMC.Common.BarcodeReader
         #region Method
         public override void Reset()
         {
-            PortName = "";
+            PortName = "COM1";
             BaudRate = 9600;
             DataBits = 8;
             Parity = Parity.None;
             StopBits = StopBits.One;
             Handshake = Handshake.None;
             ConversationTimeout = 1000;
-            RetryCount = 0;
+            RetryCount = 1;
+
+            // NLV-5201 추가 설정
+            UseAutoTrigger = false;
+            EnableBuzzer = true;
+            ScanTimeout = 5;
         }
         public override bool Validate()
         {
@@ -51,6 +75,10 @@ namespace QMC.Common.BarcodeReader
             if (ConversationTimeout <= 0)
                 return false;
             if (RetryCount <= 0)
+                return false;
+
+            // NLV-5201 추가 검증
+            if (ScanTimeout < 0)
                 return false;
 
             return true;
@@ -98,6 +126,39 @@ namespace QMC.Common.BarcodeReader
 
             return 0;
         }
+        #endregion
+
+
+        #region NLV-5201 유틸리티 메서드
+
+        /// <summary>
+        /// 사용 가능한 COM 포트 목록
+        /// </summary>
+        public static string[] GetAvailablePorts()
+        {
+            try
+            {
+                return SerialPort.GetPortNames();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return new string[0];
+            }
+        }
+
+        /// <summary>
+        /// NLV-5201 지원 통신 속도 목록
+        /// </summary>
+        public static int[] GetSupportedBaudRates()
+        {
+            return new int[]
+            {
+                300, 600, 1200, 2400, 4800, 9600,
+                19200, 38400, 57600, 115200
+            };
+        }
+
         #endregion
     }
 }
