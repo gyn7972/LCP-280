@@ -91,12 +91,26 @@ namespace QMC.Common.PKGTester
         public TimeSpan MeasureTime { get => measureTime; }
         #endregion
 
-        #region Constructor
-        public PKGTester(string name, KeithleySourcemeter sourcemeter, CASSpectrometer spectrometer) : base(name)
+        #region Constructor / Initialize
+        public PKGTester(string name) : base(name)
         {
             conditionSet = new TestConditionSet($"{name}_conditionSet");
+        }
+
+        public bool BindSourcemeter(KeithleySourcemeter sourcemeter)
+        {
+            if (sourcemeter == null)
+                return false;
+
             this.sourcemeter = sourcemeter;
+            return true;
+        }
+        public bool BindSpectrometer(CASSpectrometer spectrometer)
+        {
+            if (spectrometer == null)
+                return false;
             this.spectrometer = spectrometer;
+            return true;
         }
         #endregion
 
@@ -169,6 +183,23 @@ namespace QMC.Common.PKGTester
             }
         }
 
+        public bool CanMeasure()
+        {
+            // Condition Set
+            if (conditionSet == null || !conditionSet.Validate())
+                return false;
+
+            // Check instruments bound
+            if (sourcemeter == null || spectrometer == null)
+                return false;
+
+            // Check instruments ready
+            if (!sourcemeter.IsReady() || !spectrometer.IsReady())
+                return false;
+
+            return true;
+        }
+
         public int LoadTestConditionSet(TestConditionSet conditionSet)
         {
             if (conditionSet == null || !conditionSet.Validate())
@@ -213,6 +244,8 @@ namespace QMC.Common.PKGTester
             {
                 if (conditionSet == null)
                     throw new Exception("ConditionSet is not set.");
+                if (sourcemeter == null || spectrometer == null)
+                    throw new Exception("Instruments are not set.");
 
                 sourcemeter.ClearTestItems();
                 spectrometer.ClearTestItems();
@@ -302,11 +335,8 @@ namespace QMC.Common.PKGTester
         {
             stopWatch.Restart();
 
-            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
-            CASSpectrometer.DeviceEventHandler handler = (s) => { tcs.TrySetResult(true); };
-            spectrometer.OnMeasureCommandSended += handler;
-
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));
+            TaskCompletionSource<bool> tcs = null;
+            CASSpectrometer.DeviceEventHandler handler = null;
 
             Task<int> spcTask = null;
             Task<int> smuTask = null;
@@ -314,6 +344,17 @@ namespace QMC.Common.PKGTester
             try
             {
                 ResetResultItem();
+
+                // Check can measure
+                if (!CanMeasure())
+                    throw new InvalidOperationException("Cannot perform measurement. Check the condition set and instrument status.");
+
+                // Spectrometer event for command sent
+                tcs = new TaskCompletionSource<bool>();
+                handler = (s) => { tcs.TrySetResult(true); };
+                spectrometer.OnMeasureCommandSended += handler;
+
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));
 
                 // Spectrometer task start
                 spcTask = Task.Run(() => DoSpectrometerMeasure());
@@ -404,9 +445,6 @@ namespace QMC.Common.PKGTester
 
         private async Task<int> DoSourcemeterMeasure()
         {
-            if (sourcemeter == null)
-                return -1;
-
             if (!HasTaskSourcemeter())
                 return 0;
 
@@ -415,9 +453,6 @@ namespace QMC.Common.PKGTester
 
         private async Task<int> DoSpectrometerMeasure()
         {
-            if (spectrometer == null)
-                return -1;
-
             if (!HasTaskSpectrometer())
                 return 0;
 

@@ -405,6 +405,14 @@ namespace QMC.Common.Spectrometer
         #endregion
 
         #region Methods
+        public bool IsReady()
+        {
+            if (!Config.IsSimulation)
+            {
+                return IsCreated();
+            }
+            return true;
+        }
         public int ApplyParameter()
         {
             int ret = 0;

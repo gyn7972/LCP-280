@@ -444,27 +444,29 @@ namespace QMC.LCP_280.Process.Unit
             {
                 case AxisNames.ProbeZ:
                     {
-                        IndexChipProbeController probeControl = null;
-                        if (EquipmentInst?.Units != null && EquipmentInst.Units.TryGetValue("IndexChipProbeController", out var u))
-                            probeControl = u as IndexChipProbeController;
-
-                        // Probe Z는 상부 컨택에서만 사용하므로, 하부 컨택 모드일 경우 구동을 금지한다.
-                        if (probeControl != null && !probeControl.IsTopRequired())
+                        if (jc.Sign == 1)
                         {
-                            result = false;
+                            IndexChipProbeController probeControl = EquipmentInst.GetUnit("IndexChipProbeController") as IndexChipProbeController;
+
+                            // Probe Z는 상부 컨택에서만 사용하므로, 하부 컨택 모드일 경우 상승 구동을 금지한다.
+                            if (probeControl != null && !probeControl.IsTopRequired())
+                            {
+                                result = false;
+                            }
                         }
                         break;
                     }
                 case AxisNames.ProbeCardZ:
                     {
-                        IndexChipProbeController probeControl = null;
-                        if (EquipmentInst?.Units != null && EquipmentInst.Units.TryGetValue("IndexChipProbeController", out var u))
-                            probeControl = u as IndexChipProbeController;
-
-                        // Probe Card Z는 하부 컨택에서만 사용하므로, 상부 컨택 모드일 경우 구동을 금지한다.
-                        if (probeControl != null && probeControl.IsTopRequired())
+                        if (jc.Sign == 1)
                         {
-                            result = false;
+                            IndexChipProbeController probeControl = EquipmentInst.GetUnit("IndexChipProbeController") as IndexChipProbeController;
+
+                            // Probe Card Z는 하부 컨택에서만 사용하므로, 상부 컨택 모드일 경우 상승 구동을 금지한다.
+                            if (probeControl != null && probeControl.IsTopRequired())
+                            {
+                                result = false;
+                            }
                         }
                         break;
                     }

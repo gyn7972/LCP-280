@@ -227,6 +227,16 @@ namespace QMC.Common.Keithley
         }
         #endregion
 
+        public bool IsReady()
+        {
+            if (!Config.IsSimulation)
+            {
+                if (Communicator != null && Communicator.IsConnected)
+                    return false;
+            }
+            return true;
+        }
+
         public int ApplyConfig()
         {
             try
@@ -295,7 +305,7 @@ namespace QMC.Common.Keithley
                 stopwatch.Stop();
             }
             return 0;
-        }
+        }  
 
         #region Test Item Methods
         public void ClearTestItems()
