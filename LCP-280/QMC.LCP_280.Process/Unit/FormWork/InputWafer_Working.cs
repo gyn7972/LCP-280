@@ -1,10 +1,11 @@
-﻿using QMC.LCP_280.Process.Component;
-using System;
-using System.Windows.Forms;
-using System.Threading.Tasks;
-using LCP_280;
+﻿using LCP_280;
 using QMC.Common;
 using QMC.Common.UI;
+using QMC.LCP_280.Process.Component;
+using System;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using static QMC.Common.Unit.BaseUnit;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -188,7 +189,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Sensors
                 dioControl.BindDIOInput(() => InputFeeder.IsFeederUp(), "Feeder UP Sns", "IRT_FeederUp");
                 dioControl.BindDIOInput(() => InputFeeder.IsFeederDown(), "Feeder DOWN Sns", "IRT_FeederDown");
-                dioControl.BindDIOInput(() => InputFeeder.IsUnclamped(), "Feeder UNCLAMP Sns", "IRT_Unclamp");
+                dioControl.BindDIOInput(() => InputFeeder.IsUnClamped(), "Feeder UNCLAMP Sns", "IRT_Unclamp");
                 dioControl.BindDIOInput(() => InputFeeder.IsRingPresent(), "Feeder RING Sns", "IRT_Ring");
                 dioControl.BindDIOInput(() => InputFeeder.IsOverload(), "Feeder OVERLOAD Sns", "IRT_Overload");
 
@@ -253,17 +254,29 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 
                 if (InputCassetteLifter != null)
                 {
-                    manualSequenceControlCassette.ParentUnit = InputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
                     // InputFeeder, InputStage 시컨스 등록시 InputCassetteLifter를통하여 등록.
                     // 순차적으로 시컨스 진행 형태로.
                     // 완전 Manual Mode는 따로 등록해서 Test 하자.
 
                     // 완전 Manual Mode.
                     // InputStage Align, Mapping은 따로 등록해서 Test 하자.
+                    manualSequenceControlCassette.ParentUnit = InputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
+                    
+
+                    manualSequenceControlInputCassette.ParentUnit = InputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
+
                 }
+
+                if (InputFeeder != null)
+                {
+                    //manualSequenceControlInputStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlInputFeeder.ParentUnit = InputFeeder; // 시퀀스 등록 대상 유닛 지정
+                }
+
                 if (InputStage != null)
                 {
-                    manualSequenceControlInputStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
+                    //manualSequenceControlInputStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlInputWaferStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
                 }
             }
             catch (Exception ex)
@@ -359,6 +372,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 //Equipment?.ConfigManager?.ApplyGlobalSimulationAndSave(false, save: false);
             }
+        }
+
+        private void buttonRequstInput_Click(object sender, EventArgs e)
+        {
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("확인", "RequestLoadWafe.\n진행하시겠습니까?") != DialogResult.Yes)
+                return;
+
+            InputStage.RequestLoadWafer = IfState.Request;
         }
     }
 }
