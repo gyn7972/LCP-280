@@ -100,6 +100,11 @@ namespace QMC.Common.BarcodeReader
             pc.Add("Conversation Timeout", "ms", ConversationTimeout);
             pc.Add("Retry Count", "", RetryCount);
 
+            // NLV-5201 추가 설정들
+            pc.Add(nameof(UseAutoTrigger), "", UseAutoTrigger);
+            pc.Add(nameof(EnableBuzzer), "", EnableBuzzer);
+            pc.Add(nameof(ScanTimeout), "", ScanTimeout);
+
             return pc;
         }
         public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
@@ -129,7 +134,7 @@ namespace QMC.Common.BarcodeReader
         #endregion
 
 
-        #region NLV-5201 유틸리티 메서드
+         #region NLV-5201 유틸리티 메서드
 
         /// <summary>
         /// 사용 가능한 COM 포트 목록
