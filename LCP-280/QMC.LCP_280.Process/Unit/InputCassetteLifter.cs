@@ -393,11 +393,7 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #region Seq Signals
-        // === 인터페이스 신호(고전형) ===
-        public IfState IfScan;               // Feeder -> CassetteLifter
-        public IfState IfMoveToNextSlot;     // Feeder -> CassetteLifter
-        public IfState IfMoveToUnloadSlot; // Feeder -> CassetteLifter
-
+       
         private static bool WaitIf(System.Func<IfState> get, IfState target, int timeoutMs = 10000, System.Threading.CancellationToken? ct = null, int pollMs = 5)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -419,7 +415,8 @@ namespace QMC.LCP_280.Process.Unit
 
             if (this.RunUnitStatus == UnitStatus.Stopped || 
                 this.RunUnitStatus == UnitStatus.Stopping || 
-                this.RunUnitStatus == UnitStatus.CycleStop)
+                this.RunUnitStatus == UnitStatus.CycleStop ||
+                this.RunUnitStatus == UnitStatus.Running)
             {
                 this.State = ProcessState.Stop;
                 return 1;
@@ -428,13 +425,13 @@ namespace QMC.LCP_280.Process.Unit
             switch (State)
             {
                 case ProcessState.Ready:
-                    ret = OnRunReady();
+                    
                     break;
                 case ProcessState.Work:
-                    ret = OnRunWork();
+                    
                     break;
                 case ProcessState.Complete:
-                    ret = OnRunComplete();
+                    
                     break;
                 default:
                     this.IsWaferReadyForUnloding = false;
