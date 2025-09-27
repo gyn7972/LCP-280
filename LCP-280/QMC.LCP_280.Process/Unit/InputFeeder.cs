@@ -803,18 +803,26 @@ namespace QMC.LCP_280.Process.Unit
             //this.InputCassetteLifter.IfMoveToNextSlot = IfState.None;
 
             // 3) Feeder -> Stage: WaferLoadingBeforeStage
-            this.InputStage.WaferLoadingBeforeStage = IfState.Request;
-            if (!WaitIf(() => this.InputStage.WaferLoadingBeforeStage, IfState.Complete, IfTimeoutMs, ct))
+            nRtn = InputStage.LoadingWaferPrepare();
+            if (nRtn != 0)
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                 this.State = ProcessState.Error;
-                return -1;
+                return nRtn;
             }
-            this.InputStage.WaferLoadingBeforeStage = IfState.None;
+            //this.InputStage.WaferLoadingBeforeStage = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferLoadingBeforeStage, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    FeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferLoadingBeforeStage = IfState.None;
 
-            // 4) Feeder 내부 로딩(기존 단위동작 재사용)
-            nRtn = WaferLoading();
+            // 4) Feeder 내부 로딩 Cascette에서 Wafer Pick
+            nRtn = WaferLoading(); // 여기서 Barcode Reading 포함
             if (nRtn != 0)
             {
                 FeederY.EmgStop();
@@ -822,6 +830,8 @@ namespace QMC.LCP_280.Process.Unit
                 this.State = ProcessState.Error;
                 return nRtn;
             }
+
+            // 4) Feeder 내부 로딩 Stage에 Wafer Load
             nRtn = StageLoading();
             if (nRtn != 0)
             {
@@ -832,32 +842,56 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 5) Feeder -> Stage: WaferLoadingAfterStage
-            this.InputStage.WaferLoadingAfterStage = IfState.Request;
-            if (!WaitIf(() => this.InputStage.WaferLoadingAfterStage, IfState.Complete, IfTimeoutMs, ct))
+            nRtn = InputStage.LoadingWaferComplete();
+            if (nRtn != 0)
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                 this.State = ProcessState.Error;
-                return -1;
+                return nRtn;
             }
-            this.InputStage.WaferLoadingAfterStage = IfState.None;
+            //this.InputStage.WaferLoadingAfterStage = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferLoadingAfterStage, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    FeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferLoadingAfterStage = IfState.None;
 
             // 6) 정렬/매핑
-            this.InputStage.WaferAlignT = IfState.Request;
-            if (!WaitIf(() => this.InputStage.WaferAlignT, IfState.Complete, IfTimeoutMs, ct))
+            nRtn = InputStage.AlignT();
+            if(nRtn != 0)
             {
+                FeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                 this.State = ProcessState.Error;
-                return -1;
+                return nRtn;
             }
-            this.InputStage.WaferAlignT = IfState.None;
+            //this.InputStage.WaferAlignT = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferAlignT, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferAlignT = IfState.None;
 
-            this.InputStage.WaferAlignXY = IfState.Request;
-            if (!WaitIf(() => this.InputStage.WaferAlignXY, IfState.Complete, IfTimeoutMs, ct))
+            nRtn = InputStage.AlignXY();
+            if (nRtn != 0)
             {
+                FeederY.EmgStop();
+                PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
                 this.State = ProcessState.Error;
-                return -1;
+                return nRtn;
             }
-            this.InputStage.WaferAlignXY = IfState.None;
+            //this.InputStage.WaferAlignXY = IfState.Request;
+            //if (!WaitIf(() => this.InputStage.WaferAlignXY, IfState.Complete, IfTimeoutMs, ct))
+            //{
+            //    this.State = ProcessState.Error;
+            //    return -1;
+            //}
+            //this.InputStage.WaferAlignXY = IfState.None;
 
             this.InputStage.WaferDieMapping = IfState.Request;
             if (!WaitIf(() => this.InputStage.WaferDieMapping, IfState.Complete, IfTimeoutMs, ct))
