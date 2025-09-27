@@ -238,14 +238,14 @@ namespace QMC.LCP_280.Process.Component
                 }
 
                 // 이미 정지 상태이면 반환
-                if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopping ||
-                    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopped ||
-                    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.CycleStop)
-                {
-                    MessageBox.Show($"Unit '{unitName}' 는 이미 정지 상태입니다.", "정보",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
+                //if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopping ||
+                //    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopped ||
+                //    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.CycleStop)
+                //{
+                //    MessageBox.Show($"Unit '{unitName}' 는 이미 정지 상태입니다.", "정보",
+                //        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                //    return;
+                //}
 
                 var btn = sender as Button;
                 bool restore = false;

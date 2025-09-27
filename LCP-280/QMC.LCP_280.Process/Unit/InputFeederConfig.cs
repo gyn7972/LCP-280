@@ -89,6 +89,10 @@ namespace QMC.LCP_280.Process.Unit
 
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs;
+
+        public double WaferRingframeSize { get; internal set; } = 250;
+        public double FeederToCassetteOverapLength { get; internal set; } = 30;
+
         private static readonly HardOutputDef[] _hardOutputs = new[]
         {
             new HardOutputDef { No = 1, Name = IO.FEEDER_UP_VALVE,      Disp = "Y016" },

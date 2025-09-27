@@ -380,7 +380,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             if (ask.ShowDialog("확인", "RequestLoadWafe.\n진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
-            InputStage.RequestLoadWafer = IfState.Request;
         }
     }
 }

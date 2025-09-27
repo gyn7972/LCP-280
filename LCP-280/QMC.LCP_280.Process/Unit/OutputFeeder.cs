@@ -698,6 +698,13 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
         protected override int OnRunComplete() { return 0; }
+        
+        protected override int OnStart()
+        {
+            int ret = 0;
+            
+            return ret;
+        }
         public override int OnStop()
         {
             int ret = 0;
