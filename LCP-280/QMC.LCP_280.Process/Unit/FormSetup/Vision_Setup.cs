@@ -205,6 +205,8 @@ namespace QMC.LCP_280.Process.Unit
                         var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                         var saveResult = channel.Config.Save();
 
+                        _selectedIlluminator.SetVolumeCommandString(channel.ChannelNo, channel.Config.Volume);
+
                         MessageBox.Show($"Channel {_selectedChannelIndex + 1} 설정 저장 완료.");
                     }
                 }
@@ -255,7 +257,7 @@ namespace QMC.LCP_280.Process.Unit
                 var channel = _selectedIlluminator.Channels[_selectedChannelIndex];
                 channel.Config.On = true;
 
-                bool success = _selectedIlluminator.SetChannelsOn(_selectedChannelIndex + 1, 5); // 최대 5회 재시도
+                bool success = _selectedIlluminator.SetChannelsOn(_selectedChannelIndex + 1); // 최대 5회 재시도
 
                 // UI 업데이트
                 OnIlluminatorChannelSelected(null, _selectedChannelIndex);
