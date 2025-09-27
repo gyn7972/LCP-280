@@ -139,6 +139,30 @@ namespace QMC.LCP_280.Process.Unit
                 btn_Save_Illuninator_Setup.Click += btn_Save_Illuninator_Setup_Click;
             }
 
+            if (btn_Connect_Illuminator != null)
+            {
+                btn_Connect_Illuminator.Click -= btn_Connect_Illuminator_Click;
+                btn_Connect_Illuminator.Click += btn_Connect_Illuminator_Click;
+            }
+
+            if (btn_Disconnect_Illuminator != null)
+            {
+                btn_Disconnect_Illuminator.Click -= btn_Disconnect_Illuminator_Click;
+                btn_Disconnect_Illuminator.Click += btn_Disconnect_Illuminator_Click;
+            }
+
+            if (btn_All_On_Illuminator != null)
+            {
+                btn_All_On_Illuminator.Click -= btn_All_On_Illuminator_Click;
+                btn_All_On_Illuminator.Click += btn_All_On_Illuminator_Click;
+            }
+
+            if (btn_All_Off_Illuminator != null)
+            {
+                btn_All_Off_Illuminator.Click -= btn_All_Off_Illuminator_Click;
+                btn_All_Off_Illuminator.Click += btn_All_Off_Illuminator_Click;
+            }
+
             // 기존 ON/OFF 버튼만 연결
             if (btn_On_Illuminator != null)
             {
