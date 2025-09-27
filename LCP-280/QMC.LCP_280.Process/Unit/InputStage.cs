@@ -982,7 +982,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             get
             {
-                MaterialWafer mat = GetWaferMaterial();
+                MaterialWafer mat = GetMaterialWafer();
                 if (mat == null)
                 {
                     return false;
@@ -1016,7 +1016,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq
 
-        public MaterialWafer GetWaferMaterial()
+        public MaterialWafer GetMaterialWafer()
         {
             var mat = GetMaterial();
             return mat as MaterialWafer;
@@ -1572,6 +1572,12 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            MaterialWafer wafer = GetMaterialWafer();
+            if(wafer is null)
+            {
+                wafer = new MaterialWafer();
+                SetMaterial(wafer);
+            }
             nRtn = MoveToStageCenterPosition();
             if (nRtn != 0)
             {
@@ -1683,38 +1689,7 @@ namespace QMC.LCP_280.Process.Unit
 
             Log.Write(UnitName, "XY_Align", "Prepare Start");
 
-            if(this.Config.IsSimulation)
-            {
-
-                IsStatus_XYAlignPrepared = true;
-                return 0;
-            }
-
-            if (PrepareForAlign(out var centerTp, out var _img) != 0)
-            {
-                return -1;
-            }
-                
-
-            var res = CenterSearchViaRunner();
-            if (!res.ok)
-            {
-                if(!Config.IsDryRun)
-                {
-                    AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eVisionXYsearch);
-                    Log.Write(UnitName, "XY_Align", "Fail: Vision XY offset search");
-                    return -1;
-                }
-            }
-
-            IsStatus_LastFoundDx = res.x;
-            IsStatus_LastFoundDy = res.y;
-            _lastCenterAlignTp = centerTp;
-
-            Log.Write(UnitName, "XY_Align",
-                $"Offset dx={IsStatus_LastFoundDx:F6} dy={IsStatus_LastFoundDy:F6}");
-
+            
             IsStatus_XYAlignPrepared = true;
             return 0;
         }
@@ -1727,40 +1702,7 @@ namespace QMC.LCP_280.Process.Unit
                 IsStatus_XYAlignDone = true;
                 return 0;
             }
-            if (!IsStatus_XYAlignPrepared || _lastCenterAlignTp == null)
-            {
-                Log.Write(UnitName, "XY_Align", "Not prepared");
-                return -1;
-            }
-
-            double dx = IsStatus_LastFoundDx;
-            double dy = IsStatus_LastFoundDy;
-
-            if (Math.Abs(dx) < 0.0001 && Math.Abs(dy) < 0.0001)
-            {
-                Log.Write(UnitName, "XY_Align", "Skip: offset under threshold");
-                IsStatus_XYAlignDone = true;
-                return 0;
-            }
-            if (Math.Abs(dx) > MaxXYOffsetMm || Math.Abs(dy) > MaxXYOffsetMm)
-            {
-                Log.Write(UnitName, "XY_Align",
-                    $"Fail: Over limit dx={dx:F4} dy={dy:F4} limit={MaxXYOffsetMm}");
-                return -1;
-            }
-
-            int rc = MoveApplyOffset(_lastCenterAlignTp.Name, dx, dy, 0.0);
-            Log.Write(UnitName, "XY_Align",
-                $"ApplyOffset dx={dx:F6} dy={dy:F6} rc={(rc == 0 ? "OK" : "FAIL")}");
-
-            if (rc != 0)
-                return -1;
-
-            //if (MoveToTeachingPosition(_lastCenterAlignTp) != 0)
-            //    return -1;
-            //if (WaitUntil(() => InPosTeaching(_lastCenterAlignTp), MoveTimeoutMs) != 0)
-            //    return -1;
-
+            
             IsStatus_XYAlignDone = true;
             return 0;
         }
@@ -1973,16 +1915,28 @@ namespace QMC.LCP_280.Process.Unit
 
         private void UpdateChipInfo(List<PointD> chips)
         {
-            MaterialWafer materialWafer =  GetWaferMaterial();
-            materialWafer.Chips.Clear();
-            materialWafer.UpdateChipInfo(chips,this.ChipPitchXmm,this.ChipPitchYmm);
-            var list= materialWafer.Chips.OrderBy(t=>t.MapX).ThenBy(t=>t.MapY);
-            foreach(var c in list)
-            {
-                Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
 
+            try
+            {
+                MaterialWafer materialWafer = GetMaterialWafer();
+
+                materialWafer.Dies.Clear();
+                materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
+                var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
+                foreach (var c in list)
+                {
+                    Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
+
+                }
             }
-            EventUpdateUIWafer?.BeginInvoke(materialWafer,null,null);
+            catch (Exception ex )
+            {
+                Log.Write(ex);
+            }finally
+            {
+                MaterialWafer materialWafer = GetMaterialWafer();
+                EventUpdateUIWafer?.BeginInvoke(materialWafer,null,null);
+            }
         }
 
         private void MakeScanPath(out List<PointD> path)

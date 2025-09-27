@@ -481,7 +481,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 else
                                 {
-                                    MaterialWafer Stagewafer = InputStage.GetWaferMaterial();
+                                    MaterialWafer Stagewafer = InputStage.GetMaterialWafer();
                                     if (Stagewafer == null || Stagewafer.Presence == Material.MaterialPresence.NotExist)
                                     {
                                         // Stage wafer is not exist

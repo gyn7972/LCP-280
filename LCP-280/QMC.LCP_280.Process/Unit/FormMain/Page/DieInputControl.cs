@@ -12,7 +12,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
     {
         public event EventHandler<DisplayView.DisplayItemEventArgs> MotorMoveRequested;
 
-        private List<MaterialChip> _chips = new List<MaterialChip>();
+        private List<MaterialDie> _chips = new List<MaterialDie>();
 
         public DieInputControl()
         {
@@ -33,14 +33,14 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private void UpdateDieCount()
         {
             // Present 개수 = Mapped 상태 칩 수 (필요 시 Exists 로 변경 가능)
-            int count = _chips.Count(c => c.State == ChipProcessState.Mapped || c.State == ChipProcessState.Picked);
+            int count = _chips.Count(c => c.State == DieProcessState.Mapped || c.State == DieProcessState.Picked);
             lblDieCountValue.Text = count.ToString();
         }
 
         // 이름 호환성을 위해 SetDieList 유지 (MaterialChip 사용)
-        public void SetDieList(List<MaterialChip> chips)
+        public void SetDieList(List<MaterialDie> chips)
         {
-            _chips = chips ?? new List<MaterialChip>();
+            _chips = chips ?? new List<MaterialDie>();
             UpdateDieCount();
 
             var items = _chips.Select(c => new DisplayView.DisplayItem
@@ -52,24 +52,24 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             displayView1.SetItems(items);
         }
 
-        private DisplayView.ItemState ConvertState(ChipProcessState state)
+        private DisplayView.ItemState ConvertState(DieProcessState state)
         {
             // DisplayView.ItemState 는 Empty/Present/Picked 라고 가정
             switch (state)
             {
-                case ChipProcessState.Picked: return DisplayView.ItemState.Picked;
-                case ChipProcessState.Mapped:
-                case ChipProcessState.Inspecting:
-                case ChipProcessState.Inspected:
-                case ChipProcessState.Placed:
-                case ChipProcessState.Rejected:
+                case DieProcessState.Picked: return DisplayView.ItemState.Picked;
+                case DieProcessState.Mapped:
+                case DieProcessState.Inspecting:
+                case DieProcessState.Inspected:
+                case DieProcessState.Placed:
+                case DieProcessState.Rejected:
                     return DisplayView.ItemState.Present;
                 default:
                     return DisplayView.ItemState.Empty;
             }
         }
 
-        public void UpdateChip(Point mapCoord, ChipProcessState state)
+        public void UpdateChip(Point mapCoord, DieProcessState state)
         {
             var chip = _chips.FirstOrDefault(c => c.MapX == mapCoord.X && c.MapY == mapCoord.Y);
             if (chip != null)

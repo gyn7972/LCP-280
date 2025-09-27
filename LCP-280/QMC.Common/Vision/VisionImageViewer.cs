@@ -1044,7 +1044,15 @@ namespace QMC.Common.Vision
             try
             {
                 this.m_Context = BufferedGraphicsManager.Current;
-                this.m_Context.MaximumBuffer = this.Size;
+                if(this.Size.Width ==0 || this.Size.Height ==0)
+                {
+                    
+                }
+                else
+                {
+
+                    this.m_Context.MaximumBuffer = this.Size;
+                }
                 //lock (ViewerSyncRoot)
                 {
                     BufferedGraphics old = null;

@@ -122,7 +122,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             // 각 항목별 결과 표시
             foreach (var key in result.Items.Keys)
             {
-                row.Cells[key].Value = result.Items[key].ToStringWithPrefix();
+                row.Cells[key].Value = result.Items[key].ToString();
             }
 
             // 마지막 행으로 스크롤 및 선택

@@ -126,7 +126,7 @@ namespace QMC.LCP_280.Process.Component
                 // Center-based coordinates: (0,0) is wafer center.
                 // Create 5 chips around center: (0,0), (-1,0), (1,0), (0,-1), (0,1)
                 var coords = new (int x, int y)[] { (0,0), (-1,0), (1,0), (0,-1), (0,1) };
-                int startIdx = wafer.Chips.Count > 0 ? wafer.Chips.Max(c => c.Index) + 1 : 0;
+                int startIdx = wafer.Dies.Count > 0 ? wafer.Dies.Max(c => c.Index) + 1 : 0;
                 int added = 0;
                 foreach (var (x, y) in coords)
                 {
@@ -134,7 +134,7 @@ namespace QMC.LCP_280.Process.Component
                     wafer.AddChip(idx, x, y);
                     added++;
                 }
-                SetStatus($"Added {added} center-based chips. Total={wafer.Chips.Count}");
+                SetStatus($"Added {added} center-based chips. Total={wafer.Dies.Count}");
                 RefreshChipList();
             }
             catch (Exception ex)
@@ -154,7 +154,7 @@ namespace QMC.LCP_280.Process.Component
                     SetStatus("No wafer. Load lot first.");
                     return;
                 }
-                if (lvChips.SelectedItems.Count == 0 && wafer.Chips.Count == 0)
+                if (lvChips.SelectedItems.Count == 0 && wafer.Dies.Count == 0)
                 {
                     SetStatus("No chips to inspect.");
                     return;
@@ -164,7 +164,7 @@ namespace QMC.LCP_280.Process.Component
                 {
                     int.TryParse(lvChips.SelectedItems[0].SubItems[0].Text, out index);
                 }
-                var chip = wafer.GetChipByIndex(index) ?? wafer.Chips.FirstOrDefault();
+                var chip = wafer.GetChipByIndex(index) ?? wafer.Dies.FirstOrDefault();
                 if (chip == null)
                 {
                     SetStatus("Chip not found.");
@@ -172,7 +172,7 @@ namespace QMC.LCP_280.Process.Component
                 }
 
                 // Simulate inspect
-                chip.State = ChipProcessState.Inspecting;
+                chip.State = DieProcessState.Inspecting;
 
                 var keys = wafer.RecipeKeys ?? new List<string>();
                 if (keys.Count == 0)
@@ -199,7 +199,7 @@ namespace QMC.LCP_280.Process.Component
                 var r = chip.GetMeasure("Resistance");
                 bool pass = !r.HasValue || r.Value <= 0.05;
                 chip.IsPass = pass;
-                chip.State = pass ? ChipProcessState.Inspected : ChipProcessState.Rejected;
+                chip.State = pass ? DieProcessState.Inspected : DieProcessState.Rejected;
 
                 // Assume placed to unloader (simulation)
                 chip.TargetWaferId = "UNLOAD01";
@@ -267,7 +267,7 @@ namespace QMC.LCP_280.Process.Component
                     lvChips.EndUpdate();
                     return;
                 }
-                foreach (var chip in wafer.Chips.OrderBy(c => c.Index))
+                foreach (var chip in wafer.Dies.OrderBy(c => c.Index))
                 {
                     var measures = FormatMeasures(chip);
                     var item = new ListViewItem(new[]
@@ -289,7 +289,7 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-        private string FormatMeasures(MaterialChip chip)
+        private string FormatMeasures(MaterialDie chip)
         {
             if (chip == null || chip.MeasureValues == null || chip.MeasureValues.Count == 0)
                 return string.Empty;
