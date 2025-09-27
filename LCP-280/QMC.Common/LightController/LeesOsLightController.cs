@@ -161,7 +161,7 @@ namespace QMC.Common.LightController
         #endregion
 
         #region Method
-        private bool CommandMaxRetries(string command = "", int channelNo = 1, int maxRetries = 5)
+        private bool CommandMaxRetries(string command = "", int maxRetries = 5, int channelNo = 1)
         {
             // 재시도 로직
             for (int attempt = 1; attempt <= maxRetries; attempt++)
@@ -179,15 +179,16 @@ namespace QMC.Common.LightController
                     {
                         response = response.Trim().ToUpper();
 
-                        if (response.Contains("OK"))
-                        {
-                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON success on attempt {attempt}");
-                            return true;
-                        }
-                        else if (response.Contains("ER"))
+
+                        if (response.Contains("ER"))
                         {
                             Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON error response: {response}");
                             // 에러 응답이라도 재시도
+                        }
+                        else if (response.Contains("OK") || response.Contains("R"))
+                        {
+                            Log.Write($"LightController [{Name}]", $"Channel {channelNo} ON success on attempt {attempt}");
+                            return true;
                         }
                         else
                         {
@@ -237,7 +238,7 @@ namespace QMC.Common.LightController
                     break;
             }
 
-            return CommandMaxRetries(command);
+            return CommandMaxRetries(command, 100);
         }
 
         public bool SetVolumeCommandString(int channelNo, int volume)
@@ -261,7 +262,7 @@ namespace QMC.Common.LightController
                     break;
             }
 
-            return CommandMaxRetries(command);
+            return CommandMaxRetries(command, 100);
         }
 
         public bool SetChannelsOn(int channelNo)
@@ -288,7 +289,7 @@ namespace QMC.Common.LightController
             if (string.IsNullOrEmpty(command))
                 return false;
 
-            return CommandMaxRetries(command, channelNo, 10);
+            return CommandMaxRetries(command, 100, channelNo);
         }
 
         public bool SetChannelsOff(int channelNo)
@@ -315,7 +316,7 @@ namespace QMC.Common.LightController
             if (string.IsNullOrEmpty(command))
                 return false;
 
-            return CommandMaxRetries(command, channelNo, 10);
+            return CommandMaxRetries(command, 100, channelNo);
         }
 
         // 전체 채널 제어 메서드 추가
