@@ -943,7 +943,7 @@ namespace QMC.LCP_280.Process.Unit
         public int PollIntervalMs { get; set; } = 30;
         public double AngleIgnoreThresholdDeg { get; set; } = 0.001;
         public double AngleMaxApplyDeg { get; set; } = 2.0;
-        public double AngleApplyGain { get; set; } = 1.0; // 방향 반전 필요 시 -1 사용
+        public double AngleApplyGain { get; set; } =- 1.0; // 방향 반전 필요 시 -1 사용
         public bool UseOffsetForTAxisCorrection { get; set; } = true; // false면 직접 축 이동 방식으로 전환 가능 (추후 확장)
 
         private int WaitUntil(Func<bool> cond, int timeoutMs)
@@ -1813,7 +1813,7 @@ namespace QMC.LCP_280.Process.Unit
             double mmPerPixelY = (dY - StageCamera.CameraConfig.Resolution.Height /2 ) * StageCamera.CameraConfig.Scale.Y;
             return new PointD(mmPerPixelX, mmPerPixelY);
         }
-        public int SearchChips(VisionImage visionImage, ref List<PointD> points, double x, double y)
+        public int SearchDies(VisionImage visionImage, ref List<PointD> points, double x, double y)
         {
             int ret = 0;
             var result = this.PmRunner.Search(visionImage);
@@ -1880,13 +1880,17 @@ namespace QMC.LCP_280.Process.Unit
                     else
                     {
                         StageCamera.GrabSync(out VisionImage grabImage);
+                        //SearchDies(grabImage, ref chips, pt.X, pt.Y);
                         if (tImageProcess != null)
                         {
                             tImageProcess.Wait();
                         }
-                        tImageProcess = Task.Factory.StartNew(() => {
+                        double dx = pt.X;
+                        double dy = pt.Y;
+                        tImageProcess = Task.Factory.StartNew(() =>
+                        {
 
-                            return SearchChips(grabImage, ref chips, pt.X, pt.Y);
+                            return SearchDies(grabImage, ref chips, dx, dy);
                         });
                     }
                     if (nRet != 0)
@@ -1964,8 +1968,6 @@ namespace QMC.LCP_280.Process.Unit
 
                     Log.Write(ex);
                 }
-                StageCamera.CameraConfig.Scale.X = 0.00345;
-                StageCamera.CameraConfig.Scale.Y = 0.00345;
                 double dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
                 double dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
 
