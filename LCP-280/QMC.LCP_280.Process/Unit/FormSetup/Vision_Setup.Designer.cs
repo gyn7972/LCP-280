@@ -20,11 +20,8 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton individualMenuButton1;
         private IndividualMenuButton btn_Camera_Setup;
         private IndividualMenuButton btn_Illuninator_Setup;
-        private IndividualMenuButton btn_Off_Illuminator;
-        private IndividualMenuButton btn_On_Illuminator;
         private IndividualMenuButton btn_Save_Camera_Setup;
         private IndividualMenuButton btn_Save_Illuninator_Setup;
-        private GroupBox gbIlluminatorControl;
         private IndividualMenuButton btn_JogPopup;
 
         private IContainer components = null;
@@ -52,28 +49,32 @@ namespace QMC.LCP_280.Process.Unit
             this.iluminatorChannelListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.btn_Camera_Setup = new QMC.Common.IndividualMenuButton();
             this.btn_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
-            this.btn_Off_Illuminator = new QMC.Common.IndividualMenuButton();
-            this.btn_On_Illuminator = new QMC.Common.IndividualMenuButton();
-            this.gbIlluminatorControl = new System.Windows.Forms.GroupBox();
-            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btn_Save_Camera_Setup = new QMC.Common.IndividualMenuButton();
             this.btn_Save_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
             this.btn_JogPopup = new QMC.Common.IndividualMenuButton();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.gbIlluminatorControl = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
+            this.btn_On_Illuminator = new QMC.Common.IndividualMenuButton();
+            this.btn_Off_Illuminator = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.btn_Connect_Illuminator = new QMC.Common.IndividualMenuButton();
+            this.btn_Disconnect_Illuminator = new QMC.Common.IndividualMenuButton();
+            this.btn_All_On_Illuminator = new QMC.Common.IndividualMenuButton();
+            this.btn_All_Off_Illuminator = new QMC.Common.IndividualMenuButton();
             this.cameraPropertyCollectionView.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).BeginInit();
             this.illuminatorPropertyCollectionView.SuspendLayout();
-            this.gbIlluminatorControl.SuspendLayout();
-            this.tableLayoutPanel7.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
+            this.gbIlluminatorControl.SuspendLayout();
+            this.tableLayoutPanel7.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
@@ -179,7 +180,7 @@ namespace QMC.LCP_280.Process.Unit
             this.illuminatorPropertyCollectionView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.illuminatorPropertyCollectionView.FastBuild = true;
             this.illuminatorPropertyCollectionView.GroupName = "Property";
-            this.illuminatorPropertyCollectionView.Location = new System.Drawing.Point(3, 375);
+            this.illuminatorPropertyCollectionView.Location = new System.Drawing.Point(3, 263);
             this.illuminatorPropertyCollectionView.Name = "illuminatorPropertyCollectionView";
             this.illuminatorPropertyCollectionView.Size = new System.Drawing.Size(432, 292);
             this.illuminatorPropertyCollectionView.SuppressResizeInvalidation = true;
@@ -221,7 +222,7 @@ namespace QMC.LCP_280.Process.Unit
             this.iluminatorChannelListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.iluminatorChannelListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.iluminatorChannelListBoxItemsView.SelectedIndex = -1;
-            this.iluminatorChannelListBoxItemsView.Size = new System.Drawing.Size(432, 308);
+            this.iluminatorChannelListBoxItemsView.Size = new System.Drawing.Size(432, 248);
             this.iluminatorChannelListBoxItemsView.TabIndex = 19;
             // 
             // btn_Camera_Setup
@@ -231,17 +232,18 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Camera_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btn_Camera_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Camera_Setup.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Camera_Setup.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btn_Camera_Setup.Enabled = false;
             this.btn_Camera_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Camera_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Camera_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Camera_Setup.Location = new System.Drawing.Point(91, 3);
+            this.btn_Camera_Setup.Location = new System.Drawing.Point(3, 576);
             this.btn_Camera_Setup.Name = "btn_Camera_Setup";
             this.btn_Camera_Setup.Size = new System.Drawing.Size(83, 40);
             this.btn_Camera_Setup.TabIndex = 20;
             this.btn_Camera_Setup.TabStop = false;
             this.btn_Camera_Setup.Text = "Set up";
             this.btn_Camera_Setup.UseVisualStyleBackColor = false;
+            this.btn_Camera_Setup.Visible = false;
             // 
             // btn_Illuninator_Setup
             // 
@@ -251,6 +253,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Illuninator_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Illuninator_Setup.CustomForeColor = System.Drawing.Color.Black;
             this.btn_Illuninator_Setup.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btn_Illuninator_Setup.Enabled = false;
             this.btn_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
@@ -261,71 +264,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Illuninator_Setup.TabStop = false;
             this.btn_Illuninator_Setup.Text = "Set up";
             this.btn_Illuninator_Setup.UseVisualStyleBackColor = false;
-            // 
-            // btn_Off_Illuminator
-            // 
-            this.btn_Off_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Off_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Off_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Off_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Off_Illuminator.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Off_Illuminator.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btn_Off_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Off_Illuminator.ForeColor = System.Drawing.Color.Black;
-            this.btn_Off_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Off_Illuminator.Location = new System.Drawing.Point(216, 3);
-            this.btn_Off_Illuminator.Name = "btn_Off_Illuminator";
-            this.btn_Off_Illuminator.Size = new System.Drawing.Size(207, 43);
-            this.btn_Off_Illuminator.TabIndex = 1;
-            this.btn_Off_Illuminator.TabStop = false;
-            this.btn_Off_Illuminator.Text = "Off";
-            this.btn_Off_Illuminator.UseVisualStyleBackColor = false;
-            // 
-            // btn_On_Illuminator
-            // 
-            this.btn_On_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_On_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_On_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_On_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_On_Illuminator.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_On_Illuminator.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btn_On_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_On_Illuminator.ForeColor = System.Drawing.Color.Black;
-            this.btn_On_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_On_Illuminator.Location = new System.Drawing.Point(3, 3);
-            this.btn_On_Illuminator.Name = "btn_On_Illuminator";
-            this.btn_On_Illuminator.Size = new System.Drawing.Size(207, 43);
-            this.btn_On_Illuminator.TabIndex = 0;
-            this.btn_On_Illuminator.TabStop = false;
-            this.btn_On_Illuminator.Text = "On";
-            this.btn_On_Illuminator.UseVisualStyleBackColor = false;
-            // 
-            // gbIlluminatorControl
-            // 
-            this.gbIlluminatorControl.BackColor = System.Drawing.Color.White;
-            this.gbIlluminatorControl.Controls.Add(this.tableLayoutPanel7);
-            this.gbIlluminatorControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gbIlluminatorControl.Location = new System.Drawing.Point(3, 673);
-            this.gbIlluminatorControl.Name = "gbIlluminatorControl";
-            this.gbIlluminatorControl.Size = new System.Drawing.Size(432, 69);
-            this.gbIlluminatorControl.TabIndex = 22;
-            this.gbIlluminatorControl.TabStop = false;
-            this.gbIlluminatorControl.Text = "Control";
-            // 
-            // tableLayoutPanel7
-            // 
-            this.tableLayoutPanel7.ColumnCount = 2;
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Controls.Add(this.btn_Off_Illuminator, 1, 0);
-            this.tableLayoutPanel7.Controls.Add(this.btn_On_Illuminator, 0, 0);
-            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 17);
-            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
-            this.tableLayoutPanel7.RowCount = 1;
-            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(426, 49);
-            this.tableLayoutPanel7.TabIndex = 2;
+            this.btn_Illuninator_Setup.Visible = false;
             // 
             // btn_Save_Camera_Setup
             // 
@@ -356,9 +295,9 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Save_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btn_Save_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
             this.btn_Save_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Illuninator_Setup.Location = new System.Drawing.Point(3, 323);
+            this.btn_Save_Illuninator_Setup.Location = new System.Drawing.Point(3, 561);
             this.btn_Save_Illuninator_Setup.Name = "btn_Save_Illuninator_Setup";
-            this.btn_Save_Illuninator_Setup.Size = new System.Drawing.Size(432, 46);
+            this.btn_Save_Illuninator_Setup.Size = new System.Drawing.Size(432, 31);
             this.btn_Save_Illuninator_Setup.TabIndex = 24;
             this.btn_Save_Illuninator_Setup.TabStop = false;
             this.btn_Save_Illuninator_Setup.Text = "Save";
@@ -377,7 +316,7 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_JogPopup.ImageSize = new System.Drawing.Size(45, 45);
             this.btn_JogPopup.Location = new System.Drawing.Point(3, 3);
             this.btn_JogPopup.Name = "btn_JogPopup";
-            this.btn_JogPopup.Size = new System.Drawing.Size(82, 40);
+            this.btn_JogPopup.Size = new System.Drawing.Size(171, 40);
             this.btn_JogPopup.TabIndex = 25;
             this.btn_JogPopup.TabStop = false;
             this.btn_JogPopup.Text = "Axis Jog";
@@ -419,19 +358,88 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.ColumnCount = 1;
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel5.Controls.Add(this.iluminatorChannelListBoxItemsView, 0, 0);
+            this.tableLayoutPanel5.Controls.Add(this.illuminatorPropertyCollectionView, 0, 1);
             this.tableLayoutPanel5.Controls.Add(this.gbIlluminatorControl, 0, 3);
-            this.tableLayoutPanel5.Controls.Add(this.illuminatorPropertyCollectionView, 0, 2);
-            this.tableLayoutPanel5.Controls.Add(this.btn_Save_Illuninator_Setup, 0, 1);
+            this.tableLayoutPanel5.Controls.Add(this.btn_Save_Illuninator_Setup, 0, 2);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel5.Location = new System.Drawing.Point(823, 3);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 4;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 43F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 7F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 35F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel5.Size = new System.Drawing.Size(438, 745);
             this.tableLayoutPanel5.TabIndex = 4;
+            // 
+            // gbIlluminatorControl
+            // 
+            this.gbIlluminatorControl.BackColor = System.Drawing.Color.White;
+            this.gbIlluminatorControl.Controls.Add(this.tableLayoutPanel7);
+            this.gbIlluminatorControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gbIlluminatorControl.Location = new System.Drawing.Point(3, 598);
+            this.gbIlluminatorControl.Name = "gbIlluminatorControl";
+            this.gbIlluminatorControl.Size = new System.Drawing.Size(432, 144);
+            this.gbIlluminatorControl.TabIndex = 22;
+            this.gbIlluminatorControl.TabStop = false;
+            this.gbIlluminatorControl.Text = "Control";
+            // 
+            // tableLayoutPanel7
+            // 
+            this.tableLayoutPanel7.ColumnCount = 2;
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50.00001F));
+            this.tableLayoutPanel7.Controls.Add(this.btn_All_On_Illuminator, 0, 1);
+            this.tableLayoutPanel7.Controls.Add(this.btn_All_Off_Illuminator, 1, 1);
+            this.tableLayoutPanel7.Controls.Add(this.btn_Connect_Illuminator, 0, 0);
+            this.tableLayoutPanel7.Controls.Add(this.btn_Disconnect_Illuminator, 1, 0);
+            this.tableLayoutPanel7.Controls.Add(this.btn_On_Illuminator, 0, 2);
+            this.tableLayoutPanel7.Controls.Add(this.btn_Off_Illuminator, 1, 2);
+            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
+            this.tableLayoutPanel7.RowCount = 3;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(426, 124);
+            this.tableLayoutPanel7.TabIndex = 2;
+            // 
+            // btn_On_Illuminator
+            // 
+            this.btn_On_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_On_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_On_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_On_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_On_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_On_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_On_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_On_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_On_Illuminator.Location = new System.Drawing.Point(3, 85);
+            this.btn_On_Illuminator.Name = "btn_On_Illuminator";
+            this.btn_On_Illuminator.Size = new System.Drawing.Size(206, 33);
+            this.btn_On_Illuminator.TabIndex = 6;
+            this.btn_On_Illuminator.TabStop = false;
+            this.btn_On_Illuminator.Text = "On";
+            this.btn_On_Illuminator.UseVisualStyleBackColor = false;
+            // 
+            // btn_Off_Illuminator
+            // 
+            this.btn_Off_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Off_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Off_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Off_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Off_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Off_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Off_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_Off_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Off_Illuminator.Location = new System.Drawing.Point(215, 85);
+            this.btn_Off_Illuminator.Name = "btn_Off_Illuminator";
+            this.btn_Off_Illuminator.Size = new System.Drawing.Size(207, 34);
+            this.btn_Off_Illuminator.TabIndex = 1;
+            this.btn_Off_Illuminator.TabStop = false;
+            this.btn_Off_Illuminator.Text = "Off";
+            this.btn_Off_Illuminator.UseVisualStyleBackColor = false;
             // 
             // tableLayoutPanel2
             // 
@@ -454,6 +462,7 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel4.ColumnCount = 1;
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel4.Controls.Add(this.cameraListBoxItemsView, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.btn_Camera_Setup, 0, 2);
             this.tableLayoutPanel4.Controls.Add(this.tableLayoutPanel6, 0, 1);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 3);
@@ -467,15 +476,14 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // tableLayoutPanel6
             // 
-            this.tableLayoutPanel6.ColumnCount = 2;
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel6.ColumnCount = 1;
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel6.Controls.Add(this.btn_JogPopup, 0, 0);
-            this.tableLayoutPanel6.Controls.Add(this.btn_Camera_Setup, 1, 0);
             this.tableLayoutPanel6.Location = new System.Drawing.Point(3, 524);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
             this.tableLayoutPanel6.RowCount = 1;
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel6.Size = new System.Drawing.Size(177, 46);
             this.tableLayoutPanel6.TabIndex = 3;
             // 
@@ -496,6 +504,78 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel3.Size = new System.Drawing.Size(436, 745);
             this.tableLayoutPanel3.TabIndex = 1;
             // 
+            // btn_Connect_Illuminator
+            // 
+            this.btn_Connect_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Connect_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Connect_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Connect_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Connect_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Connect_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Connect_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_Connect_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Connect_Illuminator.Location = new System.Drawing.Point(3, 3);
+            this.btn_Connect_Illuminator.Name = "btn_Connect_Illuminator";
+            this.btn_Connect_Illuminator.Size = new System.Drawing.Size(206, 33);
+            this.btn_Connect_Illuminator.TabIndex = 10;
+            this.btn_Connect_Illuminator.TabStop = false;
+            this.btn_Connect_Illuminator.Text = "Connect";
+            this.btn_Connect_Illuminator.UseVisualStyleBackColor = false;
+            // 
+            // btn_Disconnect_Illuminator
+            // 
+            this.btn_Disconnect_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Disconnect_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Disconnect_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Disconnect_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Disconnect_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Disconnect_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Disconnect_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_Disconnect_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Disconnect_Illuminator.Location = new System.Drawing.Point(215, 3);
+            this.btn_Disconnect_Illuminator.Name = "btn_Disconnect_Illuminator";
+            this.btn_Disconnect_Illuminator.Size = new System.Drawing.Size(207, 34);
+            this.btn_Disconnect_Illuminator.TabIndex = 9;
+            this.btn_Disconnect_Illuminator.TabStop = false;
+            this.btn_Disconnect_Illuminator.Text = "Disconnect";
+            this.btn_Disconnect_Illuminator.UseVisualStyleBackColor = false;
+            // 
+            // btn_All_On_Illuminator
+            // 
+            this.btn_All_On_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_All_On_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_All_On_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_All_On_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_All_On_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_All_On_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_All_On_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_All_On_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_All_On_Illuminator.Location = new System.Drawing.Point(3, 44);
+            this.btn_All_On_Illuminator.Name = "btn_All_On_Illuminator";
+            this.btn_All_On_Illuminator.Size = new System.Drawing.Size(206, 33);
+            this.btn_All_On_Illuminator.TabIndex = 12;
+            this.btn_All_On_Illuminator.TabStop = false;
+            this.btn_All_On_Illuminator.Text = "All On";
+            this.btn_All_On_Illuminator.UseVisualStyleBackColor = false;
+            // 
+            // btn_All_Off_Illuminator
+            // 
+            this.btn_All_Off_Illuminator.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_All_Off_Illuminator.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_All_Off_Illuminator.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_All_Off_Illuminator.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_All_Off_Illuminator.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_All_Off_Illuminator.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_All_Off_Illuminator.ForeColor = System.Drawing.Color.Black;
+            this.btn_All_Off_Illuminator.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_All_Off_Illuminator.Location = new System.Drawing.Point(215, 44);
+            this.btn_All_Off_Illuminator.Name = "btn_All_Off_Illuminator";
+            this.btn_All_Off_Illuminator.Size = new System.Drawing.Size(207, 34);
+            this.btn_All_Off_Illuminator.TabIndex = 11;
+            this.btn_All_Off_Illuminator.TabStop = false;
+            this.btn_All_Off_Illuminator.Text = "All Off";
+            this.btn_All_Off_Illuminator.UseVisualStyleBackColor = false;
+            // 
             // Vision_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -507,11 +587,11 @@ namespace QMC.LCP_280.Process.Unit
             this.cameraPropertyCollectionView.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.visionImageViewer)).EndInit();
             this.illuminatorPropertyCollectionView.ResumeLayout(false);
-            this.gbIlluminatorControl.ResumeLayout(false);
-            this.tableLayoutPanel7.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
+            this.gbIlluminatorControl.ResumeLayout(false);
+            this.tableLayoutPanel7.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel4.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
@@ -528,6 +608,13 @@ namespace QMC.LCP_280.Process.Unit
         private TableLayoutPanel tableLayoutPanel4;
         private TableLayoutPanel tableLayoutPanel3;
         private TableLayoutPanel tableLayoutPanel6;
+        private GroupBox gbIlluminatorControl;
         private TableLayoutPanel tableLayoutPanel7;
+        private IndividualMenuButton btn_On_Illuminator;
+        private IndividualMenuButton btn_Off_Illuminator;
+        private IndividualMenuButton btn_All_On_Illuminator;
+        private IndividualMenuButton btn_All_Off_Illuminator;
+        private IndividualMenuButton btn_Connect_Illuminator;
+        private IndividualMenuButton btn_Disconnect_Illuminator;
     }
 }

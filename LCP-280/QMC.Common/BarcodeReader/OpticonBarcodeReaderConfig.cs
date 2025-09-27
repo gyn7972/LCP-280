@@ -21,6 +21,25 @@ namespace QMC.Common.BarcodeReader
         public int RetryCount { get; set; }
         #endregion
 
+        #region NLV-5201 추가 설정
+
+        /// <summary>
+        /// 자동 트리거 모드 사용 여부 (기본값: false)
+        /// </summary>
+        public bool UseAutoTrigger { get; set; }
+
+        /// <summary>
+        /// 부저 사용 여부 (기본값: true)
+        /// </summary>
+        public bool EnableBuzzer { get; set; }
+
+        /// <summary>
+        /// 스캔 타임아웃 (초, 0이면 무제한, 기본값: 5초)
+        /// </summary>
+        public int ScanTimeout { get; set; }
+
+        #endregion
+
         #region Constructor
         public OpticonBarcodeReaderConfig(string name) : base(name)
         {
@@ -31,14 +50,19 @@ namespace QMC.Common.BarcodeReader
         #region Method
         public override void Reset()
         {
-            PortName = "";
+            PortName = "COM1";
             BaudRate = 9600;
             DataBits = 8;
             Parity = Parity.None;
             StopBits = StopBits.One;
             Handshake = Handshake.None;
             ConversationTimeout = 1000;
-            RetryCount = 0;
+            RetryCount = 1;
+
+            // NLV-5201 추가 설정
+            UseAutoTrigger = false;
+            EnableBuzzer = true;
+            ScanTimeout = 5;
         }
         public override bool Validate()
         {
@@ -53,6 +77,10 @@ namespace QMC.Common.BarcodeReader
             if (RetryCount <= 0)
                 return false;
 
+            // NLV-5201 추가 검증
+            if (ScanTimeout < 0)
+                return false;
+
             return true;
         }
         public override PropertyCollection GetPropertyCollection()
@@ -62,7 +90,7 @@ namespace QMC.Common.BarcodeReader
             // Title
             pc.Add($"BarcodeReader [{Name}] - Config");
 
-            // Value
+            // 기존 Value들
             pc.Add(nameof(PortName), PortName);
             pc.Add(nameof(BaudRate), BaudRate);
             pc.Add(nameof(DataBits), DataBits);
@@ -71,6 +99,11 @@ namespace QMC.Common.BarcodeReader
             pc.Add(nameof(Handshake), Handshake);
             pc.Add(nameof(ConversationTimeout), ConversationTimeout);
             pc.Add(nameof(RetryCount), RetryCount);
+
+            // NLV-5201 추가 설정들
+            pc.Add(nameof(UseAutoTrigger), UseAutoTrigger);
+            pc.Add(nameof(EnableBuzzer), EnableBuzzer);
+            pc.Add(nameof(ScanTimeout), ScanTimeout);
 
             return pc;
         }
@@ -81,6 +114,7 @@ namespace QMC.Common.BarcodeReader
 
             try
             {
+                // 기존 설정들
                 PortName = pc.GetValue<string>(nameof(PortName));
                 BaudRate = pc.GetValue<int>(nameof(BaudRate));
                 DataBits = pc.GetValue<int>(nameof(DataBits));
@@ -89,6 +123,11 @@ namespace QMC.Common.BarcodeReader
                 Handshake = pc.GetValue<Handshake>(nameof(Handshake));
                 ConversationTimeout = pc.GetValue<int>(nameof(ConversationTimeout));
                 RetryCount = pc.GetValue<int>(nameof(RetryCount));
+
+                // NLV-5201 추가 설정들
+                UseAutoTrigger = pc.GetValue<bool>(nameof(UseAutoTrigger));
+                EnableBuzzer = pc.GetValue<bool>(nameof(EnableBuzzer));
+                ScanTimeout = pc.GetValue<int>(nameof(ScanTimeout));
             }
             catch (Exception ex)
             {
@@ -98,6 +137,39 @@ namespace QMC.Common.BarcodeReader
 
             return 0;
         }
+        #endregion
+
+
+        #region NLV-5201 유틸리티 메서드
+
+        /// <summary>
+        /// 사용 가능한 COM 포트 목록
+        /// </summary>
+        public static string[] GetAvailablePorts()
+        {
+            try
+            {
+                return SerialPort.GetPortNames();
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return new string[0];
+            }
+        }
+
+        /// <summary>
+        /// NLV-5201 지원 통신 속도 목록
+        /// </summary>
+        public static int[] GetSupportedBaudRates()
+        {
+            return new int[]
+            {
+                300, 600, 1200, 2400, 4800, 9600,
+                19200, 38400, 57600, 115200
+            };
+        }
+
         #endregion
     }
 }

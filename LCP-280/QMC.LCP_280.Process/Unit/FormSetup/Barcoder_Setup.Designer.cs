@@ -1,0 +1,275 @@
+﻿namespace QMC.LCP_280.Process.Unit.FormSetup
+{
+    partial class Barcoder_Setup
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.listBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.tableLayoutPanel8 = new System.Windows.Forms.TableLayoutPanel();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel9 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel10 = new System.Windows.Forms.TableLayoutPanel();
+            this.btnBarcoderScan = new QMC.Common.IndividualMenuButton();
+            this.labelBarcoderData = new System.Windows.Forms.Label();
+            this.btn_Save_Barcoder_Setup = new QMC.Common.IndividualMenuButton();
+            this.propertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.individualMenuButton3 = new QMC.Common.IndividualMenuButton();
+            this.tableLayoutPanel2.SuspendLayout();
+            this.tableLayoutPanel4.SuspendLayout();
+            this.tableLayoutPanel8.SuspendLayout();
+            this.groupBox1.SuspendLayout();
+            this.tableLayoutPanel9.SuspendLayout();
+            this.tableLayoutPanel10.SuspendLayout();
+            this.propertyCollectionView.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // tableLayoutPanel2
+            // 
+            this.tableLayoutPanel2.ColumnCount = 4;
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 15F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 27.13608F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 22.78481F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 35F));
+            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel4, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel8, 1, 0);
+            this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
+            this.tableLayoutPanel2.RowCount = 1;
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(1264, 751);
+            this.tableLayoutPanel2.TabIndex = 28;
+            // 
+            // tableLayoutPanel4
+            // 
+            this.tableLayoutPanel4.ColumnCount = 1;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel4.Controls.Add(this.listBoxItemsView, 0, 0);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 1;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 70F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(183, 745);
+            this.tableLayoutPanel4.TabIndex = 2;
+            // 
+            // listBoxItemsView
+            // 
+            this.listBoxItemsView.BorderColor = System.Drawing.Color.White;
+            this.listBoxItemsView.BorderWidth = 2;
+            this.listBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listBoxItemsView.GroupBackColor = System.Drawing.Color.White;
+            this.listBoxItemsView.GroupForeColor = System.Drawing.Color.Black;
+            this.listBoxItemsView.GroupName = "Barcoder List";
+            this.listBoxItemsView.ItemBackColor = System.Drawing.Color.Black;
+            this.listBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
+            this.listBoxItemsView.ListBackColor = System.Drawing.Color.Black;
+            this.listBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
+            this.listBoxItemsView.Location = new System.Drawing.Point(3, 6);
+            this.listBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
+            this.listBoxItemsView.Name = "listBoxItemsView";
+            this.listBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.listBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
+            this.listBoxItemsView.SelectedIndex = -1;
+            this.listBoxItemsView.Size = new System.Drawing.Size(177, 733);
+            this.listBoxItemsView.TabIndex = 18;
+            // 
+            // tableLayoutPanel8
+            // 
+            this.tableLayoutPanel8.ColumnCount = 1;
+            this.tableLayoutPanel8.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel8.Controls.Add(this.propertyCollectionView, 0, 0);
+            this.tableLayoutPanel8.Controls.Add(this.groupBox1, 0, 2);
+            this.tableLayoutPanel8.Controls.Add(this.btn_Save_Barcoder_Setup, 0, 1);
+            this.tableLayoutPanel8.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel8.Location = new System.Drawing.Point(192, 3);
+            this.tableLayoutPanel8.Name = "tableLayoutPanel8";
+            this.tableLayoutPanel8.RowCount = 3;
+            this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 68F));
+            this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 7F));
+            this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel8.Size = new System.Drawing.Size(337, 745);
+            this.tableLayoutPanel8.TabIndex = 1;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.BackColor = System.Drawing.Color.White;
+            this.groupBox1.Controls.Add(this.tableLayoutPanel9);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBox1.Location = new System.Drawing.Point(3, 561);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(331, 181);
+            this.groupBox1.TabIndex = 23;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Control";
+            // 
+            // tableLayoutPanel9
+            // 
+            this.tableLayoutPanel9.ColumnCount = 1;
+            this.tableLayoutPanel9.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel9.Controls.Add(this.tableLayoutPanel10, 0, 1);
+            this.tableLayoutPanel9.Controls.Add(this.labelBarcoderData, 0, 0);
+            this.tableLayoutPanel9.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel9.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel9.Name = "tableLayoutPanel9";
+            this.tableLayoutPanel9.RowCount = 2;
+            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 70F));
+            this.tableLayoutPanel9.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 30F));
+            this.tableLayoutPanel9.Size = new System.Drawing.Size(325, 161);
+            this.tableLayoutPanel9.TabIndex = 2;
+            // 
+            // tableLayoutPanel10
+            // 
+            this.tableLayoutPanel10.ColumnCount = 1;
+            this.tableLayoutPanel10.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel10.Controls.Add(this.btnBarcoderScan, 0, 0);
+            this.tableLayoutPanel10.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel10.Location = new System.Drawing.Point(3, 115);
+            this.tableLayoutPanel10.Name = "tableLayoutPanel10";
+            this.tableLayoutPanel10.RowCount = 1;
+            this.tableLayoutPanel10.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel10.Size = new System.Drawing.Size(319, 43);
+            this.tableLayoutPanel10.TabIndex = 1;
+            // 
+            // btnBarcoderScan
+            // 
+            this.btnBarcoderScan.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnBarcoderScan.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnBarcoderScan.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnBarcoderScan.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnBarcoderScan.CustomForeColor = System.Drawing.Color.Black;
+            this.btnBarcoderScan.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnBarcoderScan.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnBarcoderScan.ForeColor = System.Drawing.Color.Black;
+            this.btnBarcoderScan.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnBarcoderScan.Location = new System.Drawing.Point(3, 3);
+            this.btnBarcoderScan.Name = "btnBarcoderScan";
+            this.btnBarcoderScan.Size = new System.Drawing.Size(313, 37);
+            this.btnBarcoderScan.TabIndex = 0;
+            this.btnBarcoderScan.TabStop = false;
+            this.btnBarcoderScan.Text = "Scan";
+            this.btnBarcoderScan.UseVisualStyleBackColor = false;
+            // 
+            // labelBarcoderData
+            // 
+            this.labelBarcoderData.AutoSize = true;
+            this.labelBarcoderData.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelBarcoderData.Font = new System.Drawing.Font("돋움체", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.labelBarcoderData.Location = new System.Drawing.Point(3, 3);
+            this.labelBarcoderData.Margin = new System.Windows.Forms.Padding(3);
+            this.labelBarcoderData.Name = "labelBarcoderData";
+            this.labelBarcoderData.Size = new System.Drawing.Size(319, 106);
+            this.labelBarcoderData.TabIndex = 2;
+            this.labelBarcoderData.Text = "label1";
+            this.labelBarcoderData.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // btn_Save_Barcoder_Setup
+            // 
+            this.btn_Save_Barcoder_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Barcoder_Setup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Barcoder_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Barcoder_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Barcoder_Setup.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Barcoder_Setup.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btn_Save_Barcoder_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Barcoder_Setup.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Barcoder_Setup.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Barcoder_Setup.Location = new System.Drawing.Point(3, 509);
+            this.btn_Save_Barcoder_Setup.Name = "btn_Save_Barcoder_Setup";
+            this.btn_Save_Barcoder_Setup.Size = new System.Drawing.Size(331, 46);
+            this.btn_Save_Barcoder_Setup.TabIndex = 25;
+            this.btn_Save_Barcoder_Setup.TabStop = false;
+            this.btn_Save_Barcoder_Setup.Text = "Save";
+            this.btn_Save_Barcoder_Setup.UseVisualStyleBackColor = false;
+            // 
+            // propertyCollectionView
+            // 
+            this.propertyCollectionView.Controls.Add(this.individualMenuButton3);
+            this.propertyCollectionView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.propertyCollectionView.FastBuild = true;
+            this.propertyCollectionView.GroupName = "Property";
+            this.propertyCollectionView.Location = new System.Drawing.Point(3, 3);
+            this.propertyCollectionView.Name = "propertyCollectionView";
+            this.propertyCollectionView.Size = new System.Drawing.Size(331, 500);
+            this.propertyCollectionView.SuppressResizeInvalidation = true;
+            this.propertyCollectionView.TabIndex = 19;
+            // 
+            // individualMenuButton3
+            // 
+            this.individualMenuButton3.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton3.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton3.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton3.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton3.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton3.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton3.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton3.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton3.Location = new System.Drawing.Point(330, 312);
+            this.individualMenuButton3.Name = "individualMenuButton3";
+            this.individualMenuButton3.Size = new System.Drawing.Size(100, 40);
+            this.individualMenuButton3.TabIndex = 5;
+            this.individualMenuButton3.TabStop = false;
+            this.individualMenuButton3.Text = "Save";
+            this.individualMenuButton3.UseVisualStyleBackColor = false;
+            // 
+            // Barcoder_Setup
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.Controls.Add(this.tableLayoutPanel2);
+            this.Name = "Barcoder_Setup";
+            this.Text = "Barcoder_Setup";
+            this.tableLayoutPanel2.ResumeLayout(false);
+            this.tableLayoutPanel4.ResumeLayout(false);
+            this.tableLayoutPanel8.ResumeLayout(false);
+            this.groupBox1.ResumeLayout(false);
+            this.tableLayoutPanel9.ResumeLayout(false);
+            this.tableLayoutPanel9.PerformLayout();
+            this.tableLayoutPanel10.ResumeLayout(false);
+            this.propertyCollectionView.ResumeLayout(false);
+            this.ResumeLayout(false);
+
+        }
+
+        #endregion
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel8;
+        private Common.ListBoxItemsView listBoxItemsView;
+        private Common.IndividualMenuButton btn_Save_Barcoder_Setup;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel9;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel10;
+        private Common.IndividualMenuButton btnBarcoderScan;
+        private Common.PropertyCollectionView propertyCollectionView;
+        private Common.IndividualMenuButton individualMenuButton3;
+        private System.Windows.Forms.Label labelBarcoderData;
+    }
+}

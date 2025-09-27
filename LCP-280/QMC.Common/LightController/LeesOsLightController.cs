@@ -20,7 +20,8 @@ namespace QMC.Common.LightController
         LPD_4024_3CH,
         LPD_4024_4CH,
         LPD_6524_2CH,
-        LPD_6524_4CH
+        LPD_6524_4CH,
+        LPD_12024_8CH,
     }
 
     public class LeesOsLightController : BaseComponent
@@ -70,10 +71,14 @@ namespace QMC.Common.LightController
                     maximumVolume = 4095;
                     channelCount = 4;
                     break;
+                case LeesOsLightControllerModel.LPD_12024_8CH:
+                    maximumVolume = 4095;
+                    channelCount = 8;
+                    break;
                 default:
                     throw new NotSupportedException($"{model.ToString()} is not supported.");
             }
-            
+
             MaximumVolume = maximumVolume;
             for (int i = 0; i < channelCount; i++)
             {
@@ -118,7 +123,7 @@ namespace QMC.Common.LightController
 
         #region Override Method
         public override int Initialize()
-        {   
+        {
             return 0;
         }
         public override int Create()
@@ -127,32 +132,34 @@ namespace QMC.Common.LightController
         }
         public override void Close()
         {
-            
+
         }
         #endregion
 
         #region Method
         private string GetTurnOnOffCommandString(int channelNo, bool state)
         {
-            switch(Model)
+            switch (Model)
             {
                 // 8Bit Controller
                 case LeesOsLightControllerModel.LPD_3024_1CH:
                 case LeesOsLightControllerModel.LPD_3024_2CH:
                 case LeesOsLightControllerModel.LPD_4024_3CH:
                 case LeesOsLightControllerModel.LPD_4024_4CH:
-                    return $"H{channelNo.ToString("X1")}{(state ? "ON":"OF")}\r\n";
+                    return $"H{channelNo.ToString("X1")}{(state ? "ON" : "OF")}\r\n";
 
                 // 12Bit Controller
                 case LeesOsLightControllerModel.LPD_6524_2CH:
                 case LeesOsLightControllerModel.LPD_6524_4CH:
-                    return $"LH{channelNo.ToString("X1")}{(state ? "ON":"OF")}\r\n";
+                case LeesOsLightControllerModel.LPD_12024_8CH:  // 추가됨
+                    return $"LH{channelNo.ToString("X1")}{(state ? "ON" : "OF")}\r\n";
             }
             return "";
         }
+
         private string GetVolumeCommandString(int channelNo, int volume)
         {
-            switch(Model)
+            switch (Model)
             {
                 // 8Bit Controller
                 case LeesOsLightControllerModel.LPD_3024_1CH:
@@ -164,9 +171,139 @@ namespace QMC.Common.LightController
                 // 12Bit Controller
                 case LeesOsLightControllerModel.LPD_6524_2CH:
                 case LeesOsLightControllerModel.LPD_6524_4CH:
-                    return $"C{channelNo.ToString("X1")}{volume.ToString("X3")}\r\n";
+                case LeesOsLightControllerModel.LPD_12024_8CH:  // 추가됨
+                    return $"LC{channelNo.ToString("X1")}{volume.ToString("X3")}\r\n";  // L 접두사 추가
             }
             return "";
+        }
+
+        // 전체 채널 제어 메서드 추가
+        public void SetAllChannelsOn()
+        {
+            if (communicator != null && communicator.IsOpen)
+            {
+                string command = "";
+                switch (Model)
+                {
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = "HTON\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = "LHTON\r\n";
+                        break;
+                }
+                if (!string.IsNullOrEmpty(command))
+                {
+                    communicator.Send(command);
+                }
+            }
+        }
+
+        public void SetAllChannelsOff()
+        {
+            if (communicator != null && communicator.IsOpen)
+            {
+                string command = "";
+                switch (Model)
+                {
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = "HTOF\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = "LHTOF\r\n";
+                        break;
+                }
+                if (!string.IsNullOrEmpty(command))
+                {
+                    communicator.Send(command);
+                }
+            }
+        }
+
+        public void SetAllChannelsVolume(int volume)
+        {
+            if (communicator != null && communicator.IsOpen)
+            {
+                string command = "";
+                switch (Model)
+                {
+                    case LeesOsLightControllerModel.LPD_3024_1CH:
+                    case LeesOsLightControllerModel.LPD_3024_2CH:
+                    case LeesOsLightControllerModel.LPD_4024_3CH:
+                    case LeesOsLightControllerModel.LPD_4024_4CH:
+                        command = $"CT{volume.ToString("X2")}\r\n";
+                        break;
+                    case LeesOsLightControllerModel.LPD_6524_2CH:
+                    case LeesOsLightControllerModel.LPD_6524_4CH:
+                    case LeesOsLightControllerModel.LPD_12024_8CH:
+                        command = $"LCT{volume.ToString("X3")}\r\n";
+                        break;
+                }
+                if (!string.IsNullOrEmpty(command))
+                {
+                    communicator.Send(command);
+                }
+            }
+        }
+
+        // 통신 연결 메서드
+        public int Connect()
+        {
+            try
+            {
+                if (communicator == null)
+                {
+                    communicator = new SerialComm();
+                    communicator.ETXString = "\r\n";
+                }
+
+                if (communicator.IsOpen)
+                    communicator.Close();
+
+                communicator.PortName = Config.PortName;
+                communicator.BaudRate = Config.BaudRate;
+                communicator.DataBits = Config.DataBits;
+                communicator.Parity = Config.Parity;
+                communicator.StopBits = Config.StopBits;
+                communicator.Handshake = Config.Handshake;
+
+                return communicator.Open() ? 0 : -1;
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"LightController [{Name}]", $"Connect error: {ex.Message}");
+                return -1;
+            }
+        }
+
+        public void Disconnect()
+        {
+            try
+            {
+                if (communicator != null && communicator.IsOpen)
+                {
+                    communicator.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"LightController [{Name}]", $"Disconnect error: {ex.Message}");
+            }
+        }
+
+        public bool IsConnected
+        {
+            get { return communicator?.IsOpen ?? false; }
         }
         #endregion
     }

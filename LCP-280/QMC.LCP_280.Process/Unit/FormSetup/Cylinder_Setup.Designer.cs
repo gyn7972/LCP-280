@@ -26,11 +26,14 @@ namespace QMC.LCP_280.Process.Unit
         private void InitializeComponent()
         {
             this.gbCylinderControl = new System.Windows.Forms.GroupBox();
-            this.btn_Backward_Move = new QMC.Common.IndividualMenuButton();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.btn_Forward_Move = new QMC.Common.IndividualMenuButton();
+            this.btn_Backward_Move = new QMC.Common.IndividualMenuButton();
             this.gbCylinderState = new System.Windows.Forms.GroupBox();
-            this.lbStatusCaption = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.lbStatusValue = new QMC.Common.CustomControl.CustomBorderLabel();
+            this.lbStatusCaption = new QMC.Common.CustomControl.CustomBorderLabel();
             this.inputStatepropertyCollectionView = new QMC.Common.PropertyCollectionView();
             this.selectItemListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.btn_Save_Setup_Cylinder = new QMC.Common.IndividualMenuButton();
@@ -38,17 +41,14 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.gbCylinderControl.SuspendLayout();
+            this.tableLayoutPanel4.SuspendLayout();
             this.gbCylinderState.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
+            this.tableLayoutPanel6.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel3.SuspendLayout();
-            this.tableLayoutPanel4.SuspendLayout();
-            this.tableLayoutPanel5.SuspendLayout();
-            this.tableLayoutPanel6.SuspendLayout();
             this.SuspendLayout();
             // 
             // gbCylinderControl
@@ -63,25 +63,21 @@ namespace QMC.LCP_280.Process.Unit
             this.gbCylinderControl.TabStop = false;
             this.gbCylinderControl.Text = "Control";
             // 
-            // btn_Backward_Move
+            // tableLayoutPanel4
             // 
-            this.btn_Backward_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Backward_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Backward_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Backward_Move.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Backward_Move.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Backward_Move.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btn_Backward_Move.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Backward_Move.ForeColor = System.Drawing.Color.Black;
-            this.btn_Backward_Move.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Backward_Move.Location = new System.Drawing.Point(436, 3);
-            this.btn_Backward_Move.Name = "btn_Backward_Move";
-            this.btn_Backward_Move.Size = new System.Drawing.Size(428, 43);
-            this.btn_Backward_Move.TabIndex = 1;
-            this.btn_Backward_Move.TabStop = false;
-            this.btn_Backward_Move.Text = "Backward Move";
-            this.btn_Backward_Move.UseVisualStyleBackColor = false;
-            this.btn_Backward_Move.Click += new System.EventHandler(this.btn_Backward_Move_Click);
+            this.tableLayoutPanel4.ColumnCount = 2;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.Controls.Add(this.btn_Forward_Move, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.btn_Backward_Move, 1, 0);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 1;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(867, 49);
+            this.tableLayoutPanel4.TabIndex = 2;
             // 
             // btn_Forward_Move
             // 
@@ -103,6 +99,26 @@ namespace QMC.LCP_280.Process.Unit
             this.btn_Forward_Move.UseVisualStyleBackColor = false;
             this.btn_Forward_Move.Click += new System.EventHandler(this.btn_Forward_Move_Click);
             // 
+            // btn_Backward_Move
+            // 
+            this.btn_Backward_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Backward_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Backward_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Backward_Move.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Backward_Move.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Backward_Move.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btn_Backward_Move.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Backward_Move.ForeColor = System.Drawing.Color.Black;
+            this.btn_Backward_Move.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Backward_Move.Location = new System.Drawing.Point(436, 3);
+            this.btn_Backward_Move.Name = "btn_Backward_Move";
+            this.btn_Backward_Move.Size = new System.Drawing.Size(428, 43);
+            this.btn_Backward_Move.TabIndex = 1;
+            this.btn_Backward_Move.TabStop = false;
+            this.btn_Backward_Move.Text = "Backward Move";
+            this.btn_Backward_Move.UseVisualStyleBackColor = false;
+            this.btn_Backward_Move.Click += new System.EventHandler(this.btn_Backward_Move_Click);
+            // 
             // gbCylinderState
             // 
             this.gbCylinderState.BackColor = System.Drawing.Color.White;
@@ -115,18 +131,36 @@ namespace QMC.LCP_280.Process.Unit
             this.gbCylinderState.TabStop = false;
             this.gbCylinderState.Text = "State";
             // 
-            // lbStatusCaption
+            // tableLayoutPanel5
             // 
-            this.lbStatusCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
-            this.lbStatusCaption.BorderWidth = 1;
-            this.lbStatusCaption.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lbStatusCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
-            this.lbStatusCaption.Location = new System.Drawing.Point(3, 0);
-            this.lbStatusCaption.Name = "lbStatusCaption";
-            this.lbStatusCaption.Size = new System.Drawing.Size(252, 48);
-            this.lbStatusCaption.TabIndex = 15;
-            this.lbStatusCaption.Text = "Status";
-            this.lbStatusCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel6, 0, 0);
+            this.tableLayoutPanel5.Controls.Add(this.inputStatepropertyCollectionView, 0, 1);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(867, 272);
+            this.tableLayoutPanel5.TabIndex = 17;
+            this.tableLayoutPanel5.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel5_Paint);
+            // 
+            // tableLayoutPanel6
+            // 
+            this.tableLayoutPanel6.ColumnCount = 2;
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 30F));
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 70F));
+            this.tableLayoutPanel6.Controls.Add(this.lbStatusValue, 1, 0);
+            this.tableLayoutPanel6.Controls.Add(this.lbStatusCaption, 0, 0);
+            this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
+            this.tableLayoutPanel6.RowCount = 1;
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(861, 48);
+            this.tableLayoutPanel6.TabIndex = 0;
             // 
             // lbStatusValue
             // 
@@ -142,6 +176,19 @@ namespace QMC.LCP_280.Process.Unit
             this.lbStatusValue.TabIndex = 16;
             this.lbStatusValue.Text = "Forward";
             this.lbStatusValue.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lbStatusCaption
+            // 
+            this.lbStatusCaption.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(208)))), ((int)(((byte)(206)))), ((int)(((byte)(206)))));
+            this.lbStatusCaption.BorderWidth = 1;
+            this.lbStatusCaption.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lbStatusCaption.Font = new System.Drawing.Font("Arial", 8F, System.Drawing.FontStyle.Bold);
+            this.lbStatusCaption.Location = new System.Drawing.Point(3, 0);
+            this.lbStatusCaption.Name = "lbStatusCaption";
+            this.lbStatusCaption.Size = new System.Drawing.Size(252, 48);
+            this.lbStatusCaption.TabIndex = 15;
+            this.lbStatusCaption.Text = "Status";
+            this.lbStatusCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // inputStatepropertyCollectionView
             // 
@@ -256,53 +303,6 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel3.Size = new System.Drawing.Size(873, 46);
             this.tableLayoutPanel3.TabIndex = 17;
             // 
-            // tableLayoutPanel4
-            // 
-            this.tableLayoutPanel4.ColumnCount = 2;
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.Controls.Add(this.btn_Forward_Move, 0, 0);
-            this.tableLayoutPanel4.Controls.Add(this.btn_Backward_Move, 1, 0);
-            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 17);
-            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
-            this.tableLayoutPanel4.RowCount = 1;
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(867, 49);
-            this.tableLayoutPanel4.TabIndex = 2;
-            // 
-            // tableLayoutPanel5
-            // 
-            this.tableLayoutPanel5.ColumnCount = 1;
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Controls.Add(this.tableLayoutPanel6, 0, 0);
-            this.tableLayoutPanel5.Controls.Add(this.inputStatepropertyCollectionView, 0, 1);
-            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 17);
-            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
-            this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(867, 272);
-            this.tableLayoutPanel5.TabIndex = 17;
-            this.tableLayoutPanel5.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel5_Paint);
-            // 
-            // tableLayoutPanel6
-            // 
-            this.tableLayoutPanel6.ColumnCount = 2;
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 30F));
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 70F));
-            this.tableLayoutPanel6.Controls.Add(this.lbStatusValue, 1, 0);
-            this.tableLayoutPanel6.Controls.Add(this.lbStatusCaption, 0, 0);
-            this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(3, 3);
-            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
-            this.tableLayoutPanel6.RowCount = 1;
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(861, 48);
-            this.tableLayoutPanel6.TabIndex = 0;
-            // 
             // Cylinder_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -310,15 +310,14 @@ namespace QMC.LCP_280.Process.Unit
             this.ClientSize = new System.Drawing.Size(1264, 751);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "Cylinder_Setup";
-            this.Text = "Motion Setup";
             this.gbCylinderControl.ResumeLayout(false);
+            this.tableLayoutPanel4.ResumeLayout(false);
             this.gbCylinderState.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
+            this.tableLayoutPanel6.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
-            this.tableLayoutPanel4.ResumeLayout(false);
-            this.tableLayoutPanel5.ResumeLayout(false);
-            this.tableLayoutPanel6.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
