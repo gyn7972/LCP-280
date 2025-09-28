@@ -273,6 +273,18 @@
     <Compile Include="Unit\FormMain\Page\OutputWaferCarrierControl.Designer.cs">
       <DependentUpon>OutputWaferCarrierControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\FormMain\Page\SequenceAutoControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\FormMain\Page\SequenceAutoControl.Designer.cs">
+      <DependentUpon>SequenceAutoControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Unit\FormMain\Page\SequenceManualControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\FormMain\Page\SequenceManualControl.Designer.cs">
+      <DependentUpon>SequenceManualControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\FormMain\Sequence_Main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -633,6 +645,12 @@
     </Compile>
     <EmbeddedResource Include="Unit\FormMain\Page\OutputWaferCarrierControl.resx">
       <DependentUpon>OutputWaferCarrierControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Page\SequenceAutoControl.resx">
+      <DependentUpon>SequenceAutoControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Page\SequenceManualControl.resx">
+      <DependentUpon>SequenceManualControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Sequence_Main.resx">
       <DependentUpon>Sequence_Main.cs</DependentUpon>

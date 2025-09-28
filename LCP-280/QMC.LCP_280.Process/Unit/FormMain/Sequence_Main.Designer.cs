@@ -117,11 +117,11 @@ namespace QMC.LCP_280.Process
             this.tlpEquip.Controls.Add(this.btnSaveAllRecipes, 4, 0);
             this.tlpEquip.Controls.Add(this.btnLoadAllRecipes, 5, 0);
             this.tlpEquip.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpEquip.Location = new System.Drawing.Point(10, 28);
+            this.tlpEquip.Location = new System.Drawing.Point(10, 24);
             this.tlpEquip.Name = "tlpEquip";
             this.tlpEquip.RowCount = 1;
             this.tlpEquip.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tlpEquip.Size = new System.Drawing.Size(1238, 36);
+            this.tlpEquip.Size = new System.Drawing.Size(1238, 40);
             this.tlpEquip.TabIndex = 0;
             // 
             // btnStartAll
@@ -134,7 +134,7 @@ namespace QMC.LCP_280.Process
             this.btnStartAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStartAll.Location = new System.Drawing.Point(3, 3);
             this.btnStartAll.Name = "btnStartAll";
-            this.btnStartAll.Size = new System.Drawing.Size(200, 30);
+            this.btnStartAll.Size = new System.Drawing.Size(200, 34);
             this.btnStartAll.TabIndex = 0;
             this.btnStartAll.Text = "Start All";
             this.btnStartAll.UseVisualStyleBackColor = false;
@@ -149,7 +149,7 @@ namespace QMC.LCP_280.Process
             this.btnStopAll.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F, System.Drawing.FontStyle.Bold);
             this.btnStopAll.Location = new System.Drawing.Point(209, 3);
             this.btnStopAll.Name = "btnStopAll";
-            this.btnStopAll.Size = new System.Drawing.Size(200, 30);
+            this.btnStopAll.Size = new System.Drawing.Size(200, 34);
             this.btnStopAll.TabIndex = 1;
             this.btnStopAll.Text = "Stop All";
             this.btnStopAll.UseVisualStyleBackColor = false;
@@ -162,7 +162,7 @@ namespace QMC.LCP_280.Process
             this.btnSaveAllConfigs.BackColor = System.Drawing.Color.LightBlue;
             this.btnSaveAllConfigs.Location = new System.Drawing.Point(415, 3);
             this.btnSaveAllConfigs.Name = "btnSaveAllConfigs";
-            this.btnSaveAllConfigs.Size = new System.Drawing.Size(200, 30);
+            this.btnSaveAllConfigs.Size = new System.Drawing.Size(200, 34);
             this.btnSaveAllConfigs.TabIndex = 2;
             this.btnSaveAllConfigs.Text = "Save Configs";
             this.btnSaveAllConfigs.UseVisualStyleBackColor = false;
@@ -175,7 +175,7 @@ namespace QMC.LCP_280.Process
             this.btnLoadAllConfigs.BackColor = System.Drawing.Color.LightYellow;
             this.btnLoadAllConfigs.Location = new System.Drawing.Point(621, 3);
             this.btnLoadAllConfigs.Name = "btnLoadAllConfigs";
-            this.btnLoadAllConfigs.Size = new System.Drawing.Size(200, 30);
+            this.btnLoadAllConfigs.Size = new System.Drawing.Size(200, 34);
             this.btnLoadAllConfigs.TabIndex = 3;
             this.btnLoadAllConfigs.Text = "Load Configs";
             this.btnLoadAllConfigs.UseVisualStyleBackColor = false;
@@ -188,7 +188,7 @@ namespace QMC.LCP_280.Process
             this.btnSaveAllRecipes.BackColor = System.Drawing.Color.LightCyan;
             this.btnSaveAllRecipes.Location = new System.Drawing.Point(827, 3);
             this.btnSaveAllRecipes.Name = "btnSaveAllRecipes";
-            this.btnSaveAllRecipes.Size = new System.Drawing.Size(200, 30);
+            this.btnSaveAllRecipes.Size = new System.Drawing.Size(200, 34);
             this.btnSaveAllRecipes.TabIndex = 4;
             this.btnSaveAllRecipes.Text = "Save Recipes";
             this.btnSaveAllRecipes.UseVisualStyleBackColor = false;
@@ -201,7 +201,7 @@ namespace QMC.LCP_280.Process
             this.btnLoadAllRecipes.BackColor = System.Drawing.Color.LightPink;
             this.btnLoadAllRecipes.Location = new System.Drawing.Point(1033, 3);
             this.btnLoadAllRecipes.Name = "btnLoadAllRecipes";
-            this.btnLoadAllRecipes.Size = new System.Drawing.Size(202, 30);
+            this.btnLoadAllRecipes.Size = new System.Drawing.Size(202, 34);
             this.btnLoadAllRecipes.TabIndex = 5;
             this.btnLoadAllRecipes.Text = "Load Recipes";
             this.btnLoadAllRecipes.UseVisualStyleBackColor = false;
@@ -231,11 +231,11 @@ namespace QMC.LCP_280.Process
             this.tlpUnitCtrl.Controls.Add(this.btnStartUnit, 2, 0);
             this.tlpUnitCtrl.Controls.Add(this.btnStopUnit, 3, 0);
             this.tlpUnitCtrl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tlpUnitCtrl.Location = new System.Drawing.Point(10, 28);
+            this.tlpUnitCtrl.Location = new System.Drawing.Point(10, 24);
             this.tlpUnitCtrl.Name = "tlpUnitCtrl";
             this.tlpUnitCtrl.RowCount = 1;
             this.tlpUnitCtrl.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tlpUnitCtrl.Size = new System.Drawing.Size(1238, 31);
+            this.tlpUnitCtrl.Size = new System.Drawing.Size(1238, 35);
             this.tlpUnitCtrl.TabIndex = 0;
             // 
             // lblUnit
@@ -245,7 +245,7 @@ namespace QMC.LCP_280.Process
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblUnit.Location = new System.Drawing.Point(3, 0);
             this.lblUnit.Name = "lblUnit";
-            this.lblUnit.Size = new System.Drawing.Size(303, 31);
+            this.lblUnit.Size = new System.Drawing.Size(303, 35);
             this.lblUnit.TabIndex = 0;
             this.lblUnit.Text = "Select Unit:";
             this.lblUnit.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -256,7 +256,7 @@ namespace QMC.LCP_280.Process
             this.cmbUnits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbUnits.Location = new System.Drawing.Point(312, 3);
             this.cmbUnits.Name = "cmbUnits";
-            this.cmbUnits.Size = new System.Drawing.Size(427, 23);
+            this.cmbUnits.Size = new System.Drawing.Size(427, 20);
             this.cmbUnits.TabIndex = 1;
             // 
             // btnStartUnit
@@ -267,7 +267,7 @@ namespace QMC.LCP_280.Process
             this.btnStartUnit.BackColor = System.Drawing.Color.PaleGreen;
             this.btnStartUnit.Location = new System.Drawing.Point(745, 3);
             this.btnStartUnit.Name = "btnStartUnit";
-            this.btnStartUnit.Size = new System.Drawing.Size(241, 25);
+            this.btnStartUnit.Size = new System.Drawing.Size(241, 29);
             this.btnStartUnit.TabIndex = 2;
             this.btnStartUnit.Text = "Start Unit";
             this.btnStartUnit.UseVisualStyleBackColor = false;
@@ -281,7 +281,7 @@ namespace QMC.LCP_280.Process
             this.btnStopUnit.BackColor = System.Drawing.Color.PaleVioletRed;
             this.btnStopUnit.Location = new System.Drawing.Point(992, 3);
             this.btnStopUnit.Name = "btnStopUnit";
-            this.btnStopUnit.Size = new System.Drawing.Size(243, 25);
+            this.btnStopUnit.Size = new System.Drawing.Size(243, 29);
             this.btnStopUnit.TabIndex = 3;
             this.btnStopUnit.Text = "Stop Unit";
             this.btnStopUnit.UseVisualStyleBackColor = false;
@@ -389,6 +389,7 @@ namespace QMC.LCP_280.Process
             this.Name = "Sequence_Main";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Equipment Control Panel - LCP-280";
+            this.Load += new System.EventHandler(this.Sequence_Main_Load);
             this.mainPanel.ResumeLayout(false);
             this.grpEquipment.ResumeLayout(false);
             this.tlpEquip.ResumeLayout(false);

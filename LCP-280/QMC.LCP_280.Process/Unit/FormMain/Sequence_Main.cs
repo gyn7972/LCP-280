@@ -382,9 +382,13 @@ namespace QMC.LCP_280.Process
             catch (Exception ex) { LogMessage($"폼 종료 중 오류: {ex.Message}"); }
             base.OnFormClosing(e);
         }
+
+
         #endregion
 
-        
+        private void Sequence_Main_Load(object sender, EventArgs e)
+        {
 
+        }
     }
 }

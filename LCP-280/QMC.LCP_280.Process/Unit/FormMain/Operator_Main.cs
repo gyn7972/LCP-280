@@ -1,4 +1,5 @@
 ﻿using QMC.Common;
+using QMC.Common.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -40,6 +41,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             OutputStage = outputStage;
 
             Load += Vision_Manual_Load;
+
+            // 이벤트 등록
+            sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
+
+            sequenceManualControl.SequenceButtonRequested += OnManualSequenceButtonRequested;
         }
         private static T TryGetUnit<T>(string unitName) where T : class
         {
@@ -52,6 +58,94 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             catch { }
             return null;
         }
+
+        #region Input Die 이벤트 처리
+        private void OnAutoSequenceButtonRequested(object sender, SequenceAutoControl.ItemEventArgs e)
+        {
+            Console.WriteLine($"");
+
+            switch (e.sequenceName)
+            {
+                case "Ready":
+                    break;
+
+                case "Start":
+                    break;
+
+                case "Stop":
+                    break;
+
+                case "CycleStop":
+                    break;
+
+                case "Reset":
+                    break;
+            }
+
+        }
+
+        private void OnManualSequenceButtonRequested(object sender, SequenceManualControl.ItemEventArgs e)
+        {
+            Console.WriteLine($"");
+
+            switch (e.sequenceName)
+            {
+                case "InputWafer":
+                    if(e.status == "Ready")
+                    {
+
+                    } else if(e.status == "Start")
+                    {
+
+                    }
+                    break;
+
+                case "ChipLoading":
+                    if (e.status == "Ready")
+                    {
+
+                    }
+                    else if (e.status == "Start")
+                    {
+
+                    }
+                    break;
+                case "Process":
+                    if (e.status == "Ready")
+                    {
+
+                    }
+                    else if (e.status == "Start")
+                    {
+
+                    }
+                    break;
+
+                case "ChipUnloading":
+                    if (e.status == "Ready")
+                    {
+
+                    }
+                    else if (e.status == "Start")
+                    {
+
+                    }
+                    break;
+
+                case "OutputWafer":
+                    if (e.status == "Ready")
+                    {
+
+                    }
+                    else if (e.status == "Start")
+                    {
+
+                    }
+                    break;
+            }
+        }
+
+        #endregion
 
         public void PreloadUI()
         {
