@@ -154,7 +154,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             return isWork;
         }
-        private int GetUnloadIndexNo()
+        public int GetUnloaderIndexNo()
         {
             int nIndex = 0;
             if (Rotary == null) return nIndex;
@@ -376,7 +376,7 @@ namespace QMC.LCP_280.Process.Unit
         public int MovePositionPickUp_Index(bool isFine = false)
         {
             int nIndex = 0;
-            nIndex = GetUnloadIndexNo();
+            nIndex = GetUnloaderIndexNo();
 
             Task<int> task = MovePositionAsyncPickUp_Index(isFine, nIndex);
             while (IsEndTask(task) == false)
@@ -1110,7 +1110,7 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = ChipPickDown;
 
             int nIndex = 0;
-            nIndex = GetUnloadIndexNo();
+            nIndex = GetUnloaderIndexNo();
             int nArmindex = 0;
             nArmindex = GetPlaceArmIndex();
 
@@ -1155,7 +1155,7 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = ChipPickUp;
 
             int nIndex = 0;
-            nIndex = GetUnloadIndexNo();
+            nIndex = GetUnloaderIndexNo();
 
             if (Rotary.SetVacuum(nIndex, false))
             {

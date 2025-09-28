@@ -18,7 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Equipment;
-using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // IO ???/?迭 ???? ???
+using static QMC.LCP_280.Process.Unit.RotaryConfig.IO; // 
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -122,13 +122,16 @@ namespace QMC.LCP_280.Process.Unit
             public DateTime LastUpdated;
             public object Tag;                                 // 필요 시 임시 데이터(Chip ID 등)
             public bool UseSocket;
-
+            private MaterialDie _material;
+            public void SetMaterialDie(MaterialDie die) => _material = die;
+            public MaterialDie GetMaterialDie() => _material;
             public SocketInfo(int no, double angleDeg)
             {
                 No = no;
                 CenterAngleDeg = angleDeg;
                 State = RotarySocketState.Empty;
                 LastUpdated = DateTime.Now;
+                
             }
 
             public void SetState(RotarySocketState st)
@@ -147,6 +150,74 @@ namespace QMC.LCP_280.Process.Unit
         // 허용 오차(현재 각도가 어느 소켓인지 판단할 때 사용)
         private const double SOCKET_MATCH_TOLERANCE_DEG = 0.1; // 기구 정밀/인덱스 정확도에 맞게 조정
 
+
+        // (클래스 상단 SocketInfo 정의 아래 혹은 같은 Region 내부 적절한 위치에 추가)
+        private void RefreshSocketUsage()
+        {
+            if (_sockets == null) 
+                return;
+            // Config 값 ↔ 소켓 인덱스 매핑
+            for (int i = 0; i < _sockets.Length; i++)
+            {
+                bool use = false;
+                switch (i)
+                {
+                    case 0: use = Config.UseSocket1; break;
+                    case 1: use = Config.UseSocket2; break;
+                    case 2: use = Config.UseSocket3; break;
+                    case 3: use = Config.UseSocket4; break;
+                    case 4: use = Config.UseSocket5; break;
+                    case 5: use = Config.UseSocket6; break;
+                    case 6: use = Config.UseSocket7; break;
+                    case 7: use = Config.UseSocket8; break;
+                }
+                _sockets[i].UseSocket = use;
+                // 비활성 소켓이면 상태를 Empty 로 유지 (또는 Completed 로 표시해 파이프라인 진행 가속 가능)
+                if (!use)
+                {
+                    // 파이프라인 로직이 Empty 를 회전 필요 조건으로 오해하지 않도록 Completed 로 두고 싶다면 아래 한 줄 교체:
+                    //_sockets[i].SetState(RotarySocketState.Completed);
+                    _sockets[i].SetState(RotarySocketState.Empty);
+                    _sockets[i].SetMaterialDie(null);
+                }
+            }
+        }
+
+        // 소켓 사용여부 조회 (1-based)
+        public bool IsSocketEnabled(int socketNo1Based)
+        {
+            int idx = socketNo1Based - 1;
+            if (_sockets == null || idx < 0 || idx >= _sockets.Length) return false;
+            lock (_socketLock)
+            {
+                return _sockets[idx].UseSocket;
+            }
+        }
+
+        // 현재 Load 위치 소켓 사용 가능 여부
+        public bool IsCurrentLoadSocketEnabled()
+        {
+            int idx = GetLoadIndexNo();
+            lock (_socketLock)
+            {
+                return _sockets[idx].UseSocket;
+            }
+        }
+
+        // 현재 Load 위치가 '사용 대상' 이고 아직 제품이 없어서 투입이 필요한지 판단
+        public bool ShouldRequestInputDie()
+        {
+            int idx = GetLoadIndexNo();
+            lock (_socketLock)
+            {
+                if (idx < 0 || idx >= _sockets.Length) return false;
+                var s = _sockets[idx];
+                if (!s.UseSocket) return false;                    // 비사용 소켓
+                if (s.State != RotarySocketState.Empty) return false; // 이미 뭔가 상태 존재
+                return true;
+            }
+        }
+
         private void InitSockets()
         {
             int cnt = GetIndexCount();
@@ -156,7 +227,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 _sockets[i] = new SocketInfo(i, i * step);
             }
+            RefreshSocketUsage(); // ← 추가: Config 기반 소켓 사용여부 반영
         }
+
 
         // 외부에서(디버그/보정) 기준 회전 오프셋 적용
         public void SetAngleOffsetDeg(double offsetDeg)
@@ -362,6 +435,7 @@ namespace QMC.LCP_280.Process.Unit
             return index;
         }
 
+        
         public int GetIndexCount()
         {
             return 8;
@@ -429,6 +503,79 @@ namespace QMC.LCP_280.Process.Unit
             return joined;
         }
         #endregion
+
+        public override void SetMaterial(Material m)
+        {
+            var socket = GetLoadSocketInfo();
+            socket.SetMaterialDie  (m as MaterialDie);
+            //base.SetMaterial(m);
+        }
+        public MaterialDie GetLoadSocketMaterial()
+        {
+            var socket = GetLoadSocketInfo();
+            return socket.GetMaterialDie();
+        }
+        public SocketInfo GetLoadSocketInfo()
+        {
+            int idx = GetLoadIndexNo();
+            lock (_socketLock)
+            {
+                return _sockets[idx];
+            }
+        }
+        public MaterialDie GetMAlignSocketMaterial()
+        {
+            SocketInfo socket = GetMAlignSocketInfo();
+            return socket.GetMaterialDie();
+        }
+        private SocketInfo GetMAlignSocketInfo()
+        {
+            int idx = IndexLoadAligner.GetAlignIndexNo();
+            lock (_socketLock)
+            {
+                return _sockets[idx];
+            }
+        }
+        public MaterialDie GetProbeSocketMaterial()
+        {
+            SocketInfo socket = GetProbeSocketInfo();
+            return socket.GetMaterialDie();
+        }
+        private SocketInfo GetProbeSocketInfo()
+        {
+            int idx = IndexChipProbeController.GetProbeIndexNo();
+            lock (_socketLock)
+            {
+                return _sockets[idx];
+            }   
+        }
+        public MaterialDie GetUnloaderAlignSocketMaterial()
+        {
+            SocketInfo socket = GetUnloaderAlignSocketInfo();
+            return socket.GetMaterialDie();
+        }
+        private SocketInfo GetUnloaderAlignSocketInfo()
+        {
+            int idx = IndexUnloadAligner.GetUnloaderAlignIndexNo();
+            lock (_socketLock)
+            {
+                return _sockets[idx];
+            }
+        }
+        public MaterialDie GetUnloadSocketMaterial()
+        {
+            SocketInfo socket = GetUnloadSocketInfo();
+            return socket.GetMaterialDie();
+        }
+        private SocketInfo GetUnloadSocketInfo()
+        {
+            int idx = OutputDieTransfer.GetUnloaderIndexNo();
+            lock (_socketLock)
+            {
+                return _sockets[idx];
+            }
+        }
+
 
 
 
@@ -1618,7 +1765,7 @@ namespace QMC.LCP_280.Process.Unit
             int unloadIdx = -1;
             if (IndexUnloadAligner != null)
             {
-                try { unloadIdx = IndexUnloadAligner.GetUnloadIndexNo(); } catch { unloadIdx = -1; }
+                try { unloadIdx = IndexUnloadAligner.GetUnloaderAlignIndexNo(); } catch { unloadIdx = -1; }
             }
             if (unloadIdx < 0)
                 unloadIdx = (loadIdx + 4) % GetIndexCount();
@@ -1793,7 +1940,7 @@ namespace QMC.LCP_280.Process.Unit
                 InitStationRules();
             }
 
-            int idx = IndexUnloadAligner.GetUnloadIndexNo();  //(loadIdx + UNLOAD_OUTPUT_OFFSET) % GetIndexCount();
+            int idx = IndexUnloadAligner.GetUnloaderAlignIndexNo();  //(loadIdx + UNLOAD_OUTPUT_OFFSET) % GetIndexCount();
 
             RotarySocketState state;
             lock (_socketLock)

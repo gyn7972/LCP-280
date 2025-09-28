@@ -3,7 +3,11 @@ using QMC.Common.BarcodeReader;
 using QMC.Common.Vision;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormSetup
@@ -15,9 +19,13 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
 
         #region Barcder
         private ConfigReflectionMapper ConfigMapper_Barcder;
-
         private OpticonBarcodeReader SelectedItem_Barcder;
         private List<string> DeviceNames_Barcder;
+        #endregion
+
+        #region Image Viewer - 새로 추가
+        private bool isCapturingImage = false;
+        private Image currentCapturedImage = null;
         #endregion
 
         private bool isAutoTriggerMode = false;
@@ -26,7 +34,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
         {
             InitializeComponent();
             SuspendLayout();
-
             InitializeUI();
         }
 
@@ -35,14 +42,367 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
         {
             try
             {
-                BindingList_Barcder(); // 추가
-                WriteEvents_Barcder(); // 추가
+                BindingList_Barcder();
+                WriteEvents_Barcder();
+                InitializeImageViewer(); // 이미지 뷰어 초기화 추가
             }
             catch (Exception ex)
             {
                 Log.Write("LCP-280", $"InitializeUI error: {ex}");
             }
         }
+
+        #region Image Viewer Implementation
+
+        /// <summary>
+        /// 이미지 뷰어 초기화
+        /// </summary>
+        private void InitializeImageViewer()
+        {
+            try
+            {
+                // 이미지 뷰어 컨트롤들이 존재하는지 확인
+                if (btnCaptureImage != null)
+                {
+                    btnCaptureImage.Click += BtnCaptureImage_Click;
+                }
+
+                if (btnSaveImage != null)
+                {
+                    btnSaveImage.Click += BtnSaveImage_Click;
+                    btnSaveImage.Enabled = false;
+                }
+
+                if (lblImageStatus != null)
+                {
+                    lblImageStatus.Text = "Ready";
+                    lblImageStatus.ForeColor = Color.Black;
+                }
+
+                if (progressBarImage != null)
+                {
+                    progressBarImage.Visible = false;
+                }
+
+                // 기본 플레이스홀더 이미지 표시
+                DisplayPlaceholderImage();
+
+                Log.Write("ImageViewer", "이미지 뷰어 초기화 완료");
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ImageViewer", $"이미지 뷰어 초기화 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 플레이스홀더 이미지 표시
+        /// </summary>
+        private void DisplayPlaceholderImage()
+        {
+            try
+            {
+                // pictureBoxScanner가 존재하지 않으면 종료
+                if (pictureBoxScanner == null) return;
+
+                using (Bitmap placeholder = new Bitmap(640, 480))
+                using (Graphics g = Graphics.FromImage(placeholder))
+                {
+                    g.Clear(Color.DarkGray);
+
+                    string message = "No Image\n\nClick 'Capture' to get\nscanner image\n\n⚠️ Takes ~40 seconds";
+                    using (Font font = new Font("Arial", 12, FontStyle.Bold))
+                    using (Brush brush = new SolidBrush(Color.White))
+                    {
+                        StringFormat format = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+
+                        g.DrawString(message, font, brush,
+                                   new RectangleF(0, 0, 640, 480), format);
+                    }
+
+                    if (pictureBoxScanner.Image != null)
+                    {
+                        pictureBoxScanner.Image.Dispose();
+                    }
+                    pictureBoxScanner.Image = new Bitmap(placeholder);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ImageViewer", $"플레이스홀더 이미지 생성 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 이미지 캡처 버튼 클릭 이벤트
+        /// </summary>
+        private async void BtnCaptureImage_Click(object sender, EventArgs e)
+        {
+            if (SelectedItem_Barcder == null || !SelectedItem_Barcder.IsConnected)
+            {
+                MessageBox.Show("바코드 리더를 먼저 연결하세요.", "알림",
+                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (isCapturingImage)
+            {
+                MessageBox.Show("이미지 캡처가 진행 중입니다.", "알림",
+                              MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            DialogResult result = MessageBox.Show(
+                "이미지 캡처는 약 40초가 소요됩니다.\n계속하시겠습니까?",
+                "이미지 캡처 확인",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result != DialogResult.Yes)
+                return;
+
+            await CaptureImageAsync();
+        }
+
+        /// <summary>
+        /// 비동기 이미지 캡처
+        /// </summary>
+        private async Task CaptureImageAsync()
+        {
+            isCapturingImage = true;
+
+            try
+            {
+                // UI 상태 변경
+                if (btnCaptureImage != null) btnCaptureImage.Enabled = false;
+                if (btnSaveImage != null) btnSaveImage.Enabled = false;
+                if (lblImageStatus != null)
+                {
+                    lblImageStatus.Text = "Capturing... (40초 소요)";
+                    lblImageStatus.ForeColor = Color.Orange;
+                }
+                if (progressBarImage != null)
+                {
+                    progressBarImage.Visible = true;
+                    progressBarImage.Style = ProgressBarStyle.Marquee;
+                }
+
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        // 테스트용 대기 (실제로는 스캐너 이미지 캡처)
+                        System.Threading.Thread.Sleep(2000);
+
+                        // 실제 구현 시:
+                        // byte[] imageData;
+                        // int result = SelectedItem_Barcder.CaptureImage(out imageData);
+
+                        Invoke(new Action(() =>
+                        {
+                            CreateTestImage();
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        Invoke(new Action(() =>
+                        {
+                            Log.Write("ImageViewer", $"이미지 캡처 오류: {ex}");
+                            if (lblImageStatus != null)
+                            {
+                                lblImageStatus.Text = $"캡처 실패: {ex.Message}";
+                                lblImageStatus.ForeColor = Color.Red;
+                            }
+                        }));
+                    }
+                });
+
+                if (lblImageStatus != null)
+                {
+                    lblImageStatus.Text = "캡처 완료";
+                    lblImageStatus.ForeColor = Color.Green;
+                }
+                if (btnSaveImage != null) btnSaveImage.Enabled = true;
+
+                Log.Write("ImageViewer", "이미지 캡처 완료");
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ImageViewer", $"이미지 캡처 프로세스 오류: {ex}");
+                if (lblImageStatus != null)
+                {
+                    lblImageStatus.Text = $"오류: {ex.Message}";
+                    lblImageStatus.ForeColor = Color.Red;
+                }
+            }
+            finally
+            {
+                isCapturingImage = false;
+                if (btnCaptureImage != null) btnCaptureImage.Enabled = true;
+                if (progressBarImage != null) progressBarImage.Visible = false;
+            }
+        }
+
+        /// <summary>
+        /// 테스트용 더미 이미지 생성
+        /// </summary>
+        private void CreateTestImage()
+        {
+            try
+            {
+                if (pictureBoxScanner == null) return;
+
+                using (Bitmap testImage = new Bitmap(640, 480))
+                using (Graphics g = Graphics.FromImage(testImage))
+                {
+                    // 그라데이션 배경
+                    //using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    //    new Rectangle(0, 0, 640, 480),
+                    //    Color.LightBlue, Color.DarkBlue,
+                    //    System.Drawing.Drawing2D.LinearGradientMode.Diagonal))
+                    //{
+                    //    g.FillRectangle(brush, 0, 0, 640, 480);
+                    //}
+
+                    string info = $"Test Scanner Image\n{DateTime.Now:yyyy-MM-dd HH:mm:ss}\n640 x 480\nNLV-5201 Scanner";
+                    using (Font font = new Font("Arial", 14, FontStyle.Bold))
+                    using (Brush textBrush = new SolidBrush(Color.White))
+                    {
+                        StringFormat format = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+
+                        g.DrawString(info, font, textBrush,
+                                   new RectangleF(0, 0, 640, 480), format);
+                    }
+
+                    // 십자선 그리기
+                    using (Pen crossPen = new Pen(Color.Red, 2))
+                    {
+                        g.DrawLine(crossPen, 320, 0, 320, 480);
+                        g.DrawLine(crossPen, 0, 240, 640, 240);
+                    }
+
+                    if (currentCapturedImage != null)
+                    {
+                        currentCapturedImage.Dispose();
+                    }
+
+                    currentCapturedImage = new Bitmap(testImage);
+
+                    if (pictureBoxScanner.Image != null)
+                    {
+                        pictureBoxScanner.Image.Dispose();
+                    }
+                    pictureBoxScanner.Image = new Bitmap(testImage);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ImageViewer", $"테스트 이미지 생성 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 이미지 저장 버튼 클릭 이벤트
+        /// </summary>
+        private void BtnSaveImage_Click(object sender, EventArgs e)
+        {
+            if (currentCapturedImage == null)
+            {
+                MessageBox.Show("저장할 이미지가 없습니다.", "알림",
+                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                using (SaveFileDialog saveDialog = new SaveFileDialog())
+                {
+                    saveDialog.Filter = "PNG Files|*.png|JPEG Files|*.jpg|Bitmap Files|*.bmp";
+                    saveDialog.DefaultExt = "png";
+                    saveDialog.FileName = $"Scanner_Image_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+                    if (saveDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        ImageFormat format = ImageFormat.Png;
+                        string extension = Path.GetExtension(saveDialog.FileName).ToLower();
+
+                        switch (extension)
+                        {
+                            case ".jpg":
+                            case ".jpeg":
+                                format = ImageFormat.Jpeg;
+                                break;
+                            case ".bmp":
+                                format = ImageFormat.Bmp;
+                                break;
+                            default:
+                                format = ImageFormat.Png;
+                                break;
+                        }
+
+                        currentCapturedImage.Save(saveDialog.FileName, format);
+
+                        if (lblImageStatus != null)
+                        {
+                            lblImageStatus.Text = "저장 완료";
+                            lblImageStatus.ForeColor = Color.Green;
+                        }
+
+                        MessageBox.Show($"이미지가 저장되었습니다.\n{saveDialog.FileName}", "저장 완료",
+                                      MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        Log.Write("ImageViewer", $"이미지 저장 완료: {saveDialog.FileName}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ImageViewer", $"이미지 저장 오류: {ex}");
+                MessageBox.Show($"이미지 저장 중 오류가 발생했습니다:\n{ex.Message}", "저장 오류",
+                              MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                if (lblImageStatus != null)
+                {
+                    lblImageStatus.Text = "저장 실패";
+                    lblImageStatus.ForeColor = Color.Red;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 이미지 뷰어 정리
+        /// </summary>
+        private void CleanupImageViewer()
+        {
+            try
+            {
+                if (currentCapturedImage != null)
+                {
+                    currentCapturedImage.Dispose();
+                    currentCapturedImage = null;
+                }
+
+                if (pictureBoxScanner?.Image != null)
+                {
+                    pictureBoxScanner.Image.Dispose();
+                    pictureBoxScanner.Image = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ImageViewer", $"이미지 뷰어 정리 오류: {ex}");
+            }
+        }
+
+        #endregion
 
         #region Barcoder
         private void BindingList_Barcder()

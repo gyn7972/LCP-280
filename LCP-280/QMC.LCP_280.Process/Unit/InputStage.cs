@@ -1947,7 +1947,7 @@ namespace QMC.LCP_280.Process.Unit
             }catch(OperationCanceledException)
             {
                 Log.Write(UnitName, "ChipMap", "Cancelled");
-                return -1;
+                return nRet;
             }
             catch(Exception ex)
             {
@@ -1955,6 +1955,8 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             UpdateChipInfo(chips);
+            MaterialWafer wafer = GetMaterialWafer();
+            wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
             return nRet;
         }
 
@@ -2538,6 +2540,44 @@ namespace QMC.LCP_280.Process.Unit
                 bRet = false;
             }
             return bRet;
+        }
+
+        public int MoveStageToNextDie(out MaterialDie die)
+        {
+            int nRet = 0;
+             die = GetNextDie();
+            if(die == null)
+            {
+                return -1;
+            }
+            nRet = MoveStage(die.CenterX, die.CenterY, false);
+            return nRet;
+        }
+
+        public MaterialDie GetNextDie()
+        {
+            MaterialDie die = null;
+            try
+            {
+                var wafer = GetMaterialWafer();
+                if (wafer == null)
+                    return null;
+                if (wafer.Presence == Material.MaterialPresence.Exist)
+                {
+                    if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                    {
+                        die = wafer.Dies.Where(t => t.Presence == Material.MaterialPresence.Exist 
+                        && t.State == DieProcessState.Mapped).OrderBy(t => t.Index).FirstOrDefault();
+                    }
+                }
+            }
+            catch
+            {
+                die = null;
+            }
+            return die;
+
+
         }
 
 
