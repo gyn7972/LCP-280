@@ -1,28 +1,30 @@
-﻿using System;
+﻿using QMC.Common.Keithley;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using static QMC.Common.Keithley.KeithelySourcemeterConfig;
 
 namespace QMC.Common.Account
 {
     public class Account
     {
         #region Properties
-        public string Name { get; set; }
         public UserGrade Grade { get; set; }
         public string UserID { get; set; }
         public string Password { get; set; }
         #endregion
 
         #region Constructor
-        public Account(string name)
+        public Account()
         {
             Reset();
         }
-        public Account(string name, UserGrade grade, string id, string pw)
+        public Account(UserGrade grade, string id, string pw)
         {
-            Name = name;
             Grade = grade;
             UserID = id;
             Password = pw;
@@ -32,48 +34,52 @@ namespace QMC.Common.Account
         #region Method
         public void Reset()
         {
-            Name = "Unknown";
             Grade = UserGrade.None;
             UserID = "";
             Password = "";
         }
         public bool Validate()
         {
-            if (string.IsNullOrWhiteSpace(Name) || Name == "Unknown" || Name == "QMC" || Name.Contains(","))
+            if (string.IsNullOrWhiteSpace(UserID))
+                return false;
+            if (UserID == AccountManager.GuestAccount.UserID || UserID == AccountManager.SupervisorAccount.UserID || UserID.Contains(","))
                 return false;
 
             if (Grade != UserGrade.None)
-            {
-                if (string.IsNullOrWhiteSpace(UserID) || UserID.Contains(",")) 
-                    return false;
+            {       
                 if (string.IsNullOrWhiteSpace(Password) || Password.Contains(","))
                     return false;
             }
             return true;
         }
-        public new string ToString()
+        public string ToEncrytString()
         {
-            return $"{Name},{Grade.ToString()},{UserID},{Password}";
+            string plainText = $"{Grade.ToString()},{UserID},{Password}";
+            string encryptedText = Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
+
+            return encryptedText;
         }
-        public bool Parse(string str)
+        public bool DecryptAndParse(string str)
         {
+            // Check argument
             if (string.IsNullOrWhiteSpace(str))
                 return false;
 
-            var tokens = str.Split(',');
-            if (tokens.Length != 4)
+            // Decrypt
+            string decryptedText = Encoding.UTF8.GetString(Convert.FromBase64String(str));
+
+            // Parse
+            var tokens = decryptedText.Split(',');
+            if (tokens.Length != 3)
                 return false;
 
-            Name = tokens[0];
-            if (!Enum.TryParse(tokens[1], out UserGrade grade))
+            if (!Enum.TryParse(tokens[0], out UserGrade grade))
                 return false;
             Grade = grade;
-            UserID = tokens[2];
-            Password = tokens[3];
+            UserID = tokens[1];
+            Password = tokens[2];
             return Validate();
         }
         #endregion
     }
-
-    
 }

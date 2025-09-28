@@ -1,4 +1,5 @@
-﻿using System;
+﻿using QMC.Common.Account;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -7,11 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace QMC.Common
 {
-    #region Define
     public enum MenuButtonType
     {
         Main,
@@ -19,20 +18,21 @@ namespace QMC.Common
         Recipe,
         Config,
         Setup,
-        Log
+        Log,
+        Login,
+        Exit
     }
     public delegate void MenuButtonClickEventHandler(MenuButtonType type);
-    #endregion
 
     public partial class BottomMenuButtonControl : UserControl
     {
-        #region Field
         private List<IndividualMenuButton> _listMenuButtons;
         public event MenuButtonClickEventHandler ClickBottomMenuButton;
-        #endregion
-        #region Property
         public int ControlGap { set; get; }
-        #endregion
+
+        // 추가: 좌/우 패널
+        private FlowLayoutPanel leftPanel;
+        private FlowLayoutPanel rightPanel;
 
         public BottomMenuButtonControl()
         {
@@ -41,71 +41,80 @@ namespace QMC.Common
             this.BackColor = Color.White;
             ControlGap = 10;
             tableLayoutMenuButtonPanel.BackColor = Color.White;
-
-            // 모든 테두리 제거
-            this.tableLayoutMenuButtonPanel.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
-            tableLayoutMenuButtonPanel.Location = new Point(0, 0);
-            tableLayoutMenuButtonPanel.Dock = DockStyle.None;
-            tableLayoutMenuButtonPanel.Anchor = AnchorStyles.None;
+            tableLayoutMenuButtonPanel.Dock = DockStyle.Fill;
             tableLayoutMenuButtonPanel.AutoSize = false;
+            tableLayoutMenuButtonPanel.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
 
-            // MenuButtonType enum의 모든 값으로 버튼 생성
-            CreateButton(GetDefaultMenuButtons());
+            // 좌/우 패널 생성 및 추가
+            leftPanel = new FlowLayoutPanel();
+            leftPanel.Dock = DockStyle.Left;
+            leftPanel.FlowDirection = FlowDirection.LeftToRight;
+            leftPanel.WrapContents = false;
+            leftPanel.AutoSize = true;
+            leftPanel.Margin = new Padding(0);
+            leftPanel.Padding = new Padding(0);
+
+            rightPanel = new FlowLayoutPanel();
+            rightPanel.Dock = DockStyle.Right;
+            rightPanel.FlowDirection = FlowDirection.LeftToRight;
+            rightPanel.WrapContents = false;
+            rightPanel.AutoSize = true;
+            rightPanel.Margin = new Padding(0);
+            rightPanel.Padding = new Padding(0);
+
+            this.Controls.Add(leftPanel);
+            this.Controls.Add(rightPanel);
+
+            CreateButton();
         }
-        #region Method
-        protected List<MenuButtonType> GetDefaultMenuButtons()
+
+        private void CreateButton()
         {
-            List<MenuButtonType> menus = new List<MenuButtonType>();
+            if (leftPanel == null || rightPanel == null)
+                return;
 
-            foreach (MenuButtonType menuButtonType in Enum.GetValues(typeof(MenuButtonType)))
-            {
-                menus.Add(menuButtonType);
-            }
-
-            return menus;
-        }
-        public void CreateButton(List<MenuButtonType> menus)
-        {
-            if (menus.Count == 0)
-            {
-                menus = GetDefaultMenuButtons();
-            }
-
-            // 기존 컬럼 스타일 및 컨트롤 초기화
-            tableLayoutMenuButtonPanel.Controls.Clear();
-            tableLayoutMenuButtonPanel.ColumnStyles.Clear();
+            leftPanel.Controls.Clear();
+            rightPanel.Controls.Clear();
             _listMenuButtons.Clear();
 
-            int buttonCount = menus.Count;
+            var leftButtons = new[] { MenuButtonType.Main, MenuButtonType.Working, MenuButtonType.Recipe, MenuButtonType.Config, MenuButtonType.Setup };
+            var rightButtons = new[] { MenuButtonType.Login, MenuButtonType.Exit };
 
-            // 열 개수 및 각 열의 비율 설정
-            tableLayoutMenuButtonPanel.ColumnCount = buttonCount;
-            for (int i = 0; i < buttonCount; i++)
+            int btnWidth = 130;
+            int btnHeight = 48;
+            int panelHeight = this.Height > 0 ? this.Height : 60;
+            int marginY = Math.Max(0, (panelHeight - btnHeight) / 2);
+            Padding btnMargin = new Padding(6, marginY, 6, marginY);
+            Size btnSize = new Size(btnWidth, btnHeight);
+
+            foreach (var menuButtonType in leftButtons)
             {
-                tableLayoutMenuButtonPanel.ColumnStyles.Add(
-                    new ColumnStyle(SizeType.Percent, 100f / buttonCount));
+                var btn = CreateMenuButton(menuButtonType, btnSize, btnMargin);
+                leftPanel.Controls.Add(btn);
             }
-
-            // 버튼 너비 계산
-            int buttonWidth = tableLayoutMenuButtonPanel.Size.Width / buttonCount;
-            int buttonHeight = tableLayoutMenuButtonPanel.Size.Height;
-
-            foreach (MenuButtonType menuButtonType in menus)
+            foreach (var menuButtonType in rightButtons)
             {
-                IndividualMenuButton menuButton = new IndividualMenuButton();
-                menuButton.Parent = this;
-                menuButton.Size = new Size(buttonWidth, buttonHeight);
-                menuButton.Dock = DockStyle.Fill;
-                menuButton.Name = menuButtonType.ToString();
-                menuButton.Text = menuButtonType.ToString();
-                menuButton.Click += Button_Click;
+                var btn = CreateMenuButton(menuButtonType, btnSize, btnMargin);
+                rightPanel.Controls.Add(btn);
+            }
+        }
+
+        private IndividualMenuButton CreateMenuButton(MenuButtonType menuButtonType, Size btnSize, Padding btnMargin)
+        {
+            IndividualMenuButton menuButton = new IndividualMenuButton();
+            menuButton.Parent = this;
+            menuButton.Size = btnSize;
+            menuButton.Margin = btnMargin;
+            menuButton.Name = menuButtonType.ToString();
+            menuButton.Text = menuButtonType.ToString();
+            menuButton.Click += Button_Click;
+            if (!(menuButtonType == MenuButtonType.Login || menuButtonType == MenuButtonType.Exit))
                 menuButton.MouseUp += ButtonUpImageChange;
-                menuButton.TabStop = false;
-                menuButton.Tag = menuButtonType;
-                menuButton.SetButtonState(false);
-                _listMenuButtons.Add(menuButton);
-                tableLayoutMenuButtonPanel.Controls.Add(menuButton);
-            }
+            menuButton.TabStop = false;
+            menuButton.Tag = menuButtonType;
+            menuButton.SetButtonState(false);
+            _listMenuButtons.Add(menuButton);
+            return menuButton;
         }
 
         public void Init()
@@ -126,38 +135,30 @@ namespace QMC.Common
 
         public void SetPanelSize(int width, int height)
         {
-            // UserControl 전체 크기 조정
             this.Width = width;
             this.Height = height;
             this.Size = new Size(width, height);
-
-            // 비율 적용
-            int panelWidth = (int)(width * 0.6);
-            int panelHeight = (int)(height * 0.9);
-
-            // tableLayoutMenuButtonPanel 크기 조정
-            this.Size = new Size(panelWidth, panelHeight);
-            tableLayoutMenuButtonPanel.Size = new Size(panelWidth, panelHeight);
-
-            // 중앙 정렬 (좌우 중앙, 상단 기준)
-            tableLayoutMenuButtonPanel.Location = new Point(
-                (this.Width - panelWidth) / 2,
-                0
-            );
-
-            // 필요시 레이아웃 갱신
-            tableLayoutMenuButtonPanel.Invalidate();
-            this.Invalidate();
         }
-        #endregion
 
-        #region EventHandler
         public void Button_Click(object sender, EventArgs e)
         {
             IndividualMenuButton button = sender as IndividualMenuButton;
             if (button != null)
             {
                 MenuButtonType menuButtons = (MenuButtonType)button.Tag;
+
+                if (menuButtons == MenuButtonType.Exit)
+                {
+                    Application.Exit();
+                    return;
+                }
+                else if(menuButtons == MenuButtonType.Login)
+                {
+                    FormLogin loginDialog = new FormLogin();
+                    loginDialog.ShowDialog();
+                    return;
+                }
+                
                 ClickBottomMenuButton?.Invoke(menuButtons);
             }
         }
@@ -171,6 +172,17 @@ namespace QMC.Common
                 button.SetButtonState(true);
             }
         }
-        #endregion
+
+        public override Size MinimumSize
+        {
+            get { return new Size(400, 60); }
+            set { base.MinimumSize = value; }
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            CreateButton(); // 크기 변경 시 버튼 재생성(여백 재계산)
+        }
     }
 }

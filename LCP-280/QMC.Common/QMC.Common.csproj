@@ -184,6 +184,12 @@
   <ItemGroup>
     <Compile Include="Account\Account.cs" />
     <Compile Include="Account\AccountManager.cs" />
+    <Compile Include="Account\FormLogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Account\FormLogin.Designer.cs">
+      <DependentUpon>FormLogin.cs</DependentUpon>
+    </Compile>
     <Compile Include="Account\UserGrade.cs" />
     <Compile Include="Ajin\AXA.cs" />
     <Compile Include="Ajin\AXD.cs" />
@@ -616,6 +622,9 @@
     </Compile>
     <Compile Include="Vision\VisionScale.cs" />
     <Compile Include="Vision\VisionUnit.cs" />
+    <EmbeddedResource Include="Account\FormLogin.resx">
+      <DependentUpon>FormLogin.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="StrainGage\FormStrainGageDialog.resx">
       <DependentUpon>FormStrainGageDialog.cs</DependentUpon>
     </EmbeddedResource>
