@@ -145,6 +145,40 @@ namespace QMC.Common.BarcodeReader
             }
         }
 
+        public int CaptureImage(out byte[] imageData)
+        {
+            imageData = null;
+            if (!IsConnected) return -1;
+
+            try
+            {
+                // 이미지 캡처 명령 (매뉴얼 확인 필요)
+                string command = "\x1B[이미지명령어]\r";
+
+                // 장시간 타임아웃 설정 (40초+)
+                int originalTimeout = communicator.ConversationTimeout;
+                communicator.ConversationTimeout = 45000; // 45초
+
+                string response;
+                bool result = communicator.Query(command, out response);
+
+                communicator.ConversationTimeout = originalTimeout;
+
+                if (result && !string.IsNullOrEmpty(response))
+                {
+                    // 바이너리 데이터 처리
+                    imageData = Convert.FromBase64String(response); // 또는 적절한 변환
+                    return 0;
+                }
+                return -2;
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"이미지 캡처 오류: {ex.Message}");
+                return -3;
+            }
+        }
+
         /// <summary>
         /// 자동 트리거 모드 중지
         /// </summary>

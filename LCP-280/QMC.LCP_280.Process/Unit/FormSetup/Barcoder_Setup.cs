@@ -195,16 +195,10 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                 {
                     try
                     {
-                        // 테스트용 대기 (실제로는 스캐너 이미지 캡처)
-                        System.Threading.Thread.Sleep(2000);
-
-                        // 실제 구현 시:
-                        // byte[] imageData;
-                        // int result = SelectedItem_Barcder.CaptureImage(out imageData);
-
+                        // 실제 스캐너 이미지 캡처 시도
                         Invoke(new Action(() =>
                         {
-                            CreateTestImage();
+                            CaptureRealImage(); // CreateTestImage() 대신 실제 캡처 호출
                         }));
                     }
                     catch (Exception ex)
@@ -217,6 +211,8 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                                 lblImageStatus.Text = $"캡처 실패: {ex.Message}";
                                 lblImageStatus.ForeColor = Color.Red;
                             }
+                            // 실패 시 테스트 이미지로 폴백
+                            CreateTestImage();
                         }));
                     }
                 });
@@ -306,6 +302,65 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             catch (Exception ex)
             {
                 Log.Write("ImageViewer", $"테스트 이미지 생성 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 실제 스캐너에서 이미지 캡처
+        /// </summary>
+        private void CaptureRealImage()
+        {
+            try
+            {
+                if (pictureBoxScanner == null) return;
+
+                byte[] imageData;
+                int result = SelectedItem_Barcder.CaptureImage(out imageData);
+
+                if (result == 0 && imageData != null && imageData.Length > 0)
+                {
+                    // 바이트 배열을 이미지로 변환
+                    using (var ms = new MemoryStream(imageData))
+                    {
+                        try
+                        {
+                            // 현재 이미지 해제
+                            if (currentCapturedImage != null)
+                            {
+                                currentCapturedImage.Dispose();
+                            }
+
+                            if (pictureBoxScanner.Image != null)
+                            {
+                                pictureBoxScanner.Image.Dispose();
+                            }
+
+                            // 새 이미지 설정
+                            currentCapturedImage = new Bitmap(Image.FromStream(ms));
+                            pictureBoxScanner.Image = new Bitmap(currentCapturedImage);
+
+                            Log.Write("ImageViewer", $"실제 이미지 캡처 성공: {imageData.Length} bytes");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Write("ImageViewer", $"이미지 변환 오류: {ex.Message}");
+                            // 실패 시 테스트 이미지 생성
+                            CreateTestImage();
+                        }
+                    }
+                }
+                else
+                {
+                    Log.Write("ImageViewer", $"이미지 캡처 실패: result={result}");
+                    // 실패 시 테스트 이미지 생성
+                    CreateTestImage();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("ImageViewer", $"실제 이미지 캡처 오류: {ex}");
+                // 실패 시 테스트 이미지 생성
+                CreateTestImage();
             }
         }
 
