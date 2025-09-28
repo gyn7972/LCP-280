@@ -3,7 +3,11 @@ using QMC.Common.BarcodeReader;
 using QMC.Common.Vision;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormSetup
@@ -15,9 +19,13 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
 
         #region Barcder
         private ConfigReflectionMapper ConfigMapper_Barcder;
-
         private OpticonBarcodeReader SelectedItem_Barcder;
         private List<string> DeviceNames_Barcder;
+        #endregion
+
+        #region Image Viewer - 새로 추가
+        private bool isCapturingImage = false;
+        private Image currentCapturedImage = null;
         #endregion
 
         private bool isAutoTriggerMode = false;
@@ -26,7 +34,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
         {
             InitializeComponent();
             SuspendLayout();
-
             InitializeUI();
         }
 
@@ -35,8 +42,8 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
         {
             try
             {
-                BindingList_Barcder(); // 추가
-                WriteEvents_Barcder(); // 추가
+                BindingList_Barcder();
+                WriteEvents_Barcder();
             }
             catch (Exception ex)
             {

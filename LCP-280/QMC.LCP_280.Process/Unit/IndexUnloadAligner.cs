@@ -288,7 +288,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int GetUnloadIndexNo()
+        public int GetUnloaderAlignIndexNo()
         {
             if (Rotary == null)
                 return 0;

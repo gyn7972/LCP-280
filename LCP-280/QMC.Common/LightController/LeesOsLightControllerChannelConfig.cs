@@ -43,7 +43,9 @@ namespace QMC.Common.LightController
                 if (volume != value)
                 {
                     volume = value;
-                    OnChannelVolumeChanged(ownerChannel.ChannelNo, value);
+
+                    if (ownerChannel != null)
+                        OnChannelVolumeChanged(ownerChannel.ChannelNo, value);
                 }
             }
         }

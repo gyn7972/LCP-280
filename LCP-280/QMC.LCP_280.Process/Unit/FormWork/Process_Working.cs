@@ -218,7 +218,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     }
                     if (labelsocketNumberUnload != null)
                     {
-                        nIndexNo = IndexUnloadAligner.GetUnloadIndexNo() + 1;
+                        nIndexNo = IndexUnloadAligner.GetUnloaderAlignIndexNo() + 1;
                         socketNoText = nIndexNo.ToString() ?? "---";
                         labelsocketNumberUnload.Text = socketNoText;
                     }

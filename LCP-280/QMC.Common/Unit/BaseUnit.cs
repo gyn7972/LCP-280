@@ -374,14 +374,14 @@ namespace QMC.Common.Unit
                 
                 Thread.Sleep(1);
             }
-            OnStop();
+            //OnStop();
         }
 
         public string GetUnitName() => UnitName;
         public Material GetMaterial() => m_currentMaterial;
-        protected void SetMaterial(Material m) => m_currentMaterial = m;
+        public virtual void SetMaterial(Material m) => m_currentMaterial = m;
 
-        public void MoveMaterial(Material  material , BaseUnit destinyUnit)
+        public virtual void MoveMaterial(Material  material , BaseUnit destinyUnit)
         {
             Material temp = GetMaterial();
             

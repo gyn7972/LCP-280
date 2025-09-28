@@ -1225,28 +1225,13 @@ namespace QMC.LCP_280.Process.Unit
                     switch (State)
                     {
                         case ProcessState.Ready:
-                            //여기서 앞의 공정 InputWafer_working 신호 대기
-                            if (InputStage.RequestOutputDie)
-                            {
-                                CompleteInputDie = false;
-                                ret = OnRunReady();
-                            }
+                            ret = OnRunReady();
                             break;
                         case ProcessState.Work:
                             ret = OnRunWork();
                             break;
                         case ProcessState.Complete:
-                            InputStage.RequestOutputDie = false;
-                            // 여기서 인덱스 투입 신호 받고 수행.
-                            if (Rotary.RequestInputDieTrDie)
-                            {
-                                ret = OnRunComplete();
-                                if(ret == 0)
-                                {
-                                    CompleteInputDie = true;
-                                    Rotary.RequestInputDieTrDie = false;
-                                }
-                            }
+                            ret = OnRunComplete();
                             break;
                         default:
                             this.State = ProcessState.Ready;
@@ -1255,6 +1240,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 catch (Exception ex)
                 {
+                    Log.Write(ex);
                     ret = -1;
                 }
             }
@@ -1281,72 +1267,124 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            //신호 들어오면 Stage Center 기준에서 n번째 칩 위치로 이동
-            //ChipData와 Mapping 연동 필요.
-
             //Stage 이동 완료 후에.
-
-            //OnRunWork로 상태 변경
-            State = ProcessState.Work;
+            MaterialWafer wafer = this.InputStage.GetMaterialWafer();
+            if(wafer != null)
+            {
+                if(wafer.Presence == Material.MaterialPresence.Exist)
+                {
+                    if(wafer.ProcessSatate == Material.MaterialProcessSatate.Ready
+                    || wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
+                    {
+                        State = ProcessState.Work;
+                    }
+                }
+            }
             return nRtn;
         }
         protected override int OnRunWork()
         {
-            int nRtn = 0;
+            int nRet = 0;
 
-            nRtn = RaiseEjectorForPick();
-            if (nRtn != 0)
+            // Stage Center 기준에서 n번째 칩 위치로 이동
+            MaterialWafer wafer = this.InputStage.GetMaterialWafer();
+            if (wafer == null)
             {
+                Log.Write(UnitName, "[OnRunWork] wafer is null");
                 return -1;
             }
+            MaterialDie die;
+            nRet = MoveStageToNextDie(out die);
 
-            nRtn = ChipPickDown();
-            if (nRtn != 0)
-            {
-                return -1;
-            }
-
-            nRtn = EjectorVacuumOn();
-            if (nRtn != 0)
+            nRet = RaiseEjectorForPick();
+            if (nRet != 0)
             {
                 return -1;
             }
 
-            nRtn = SyncPickPinUp();
-            if (nRtn != 0)
-            {
-                return -1;
-            }
-            nRtn = SyncPickPinRetreat();
-            if (nRtn != 0)
-            {
-                return -1;
-            }
-            nRtn = RotateToolTForPlace();
-            if (nRtn != 0)
+            nRet = ChipPickDown();
+            if (nRet != 0)
             {
                 return -1;
             }
 
+            nRet = EjectorVacuumOn();
+            if (nRet != 0)
+            {
+                return -1;
+            }
+
+            nRet = SyncPickPinUp();
+            if (nRet != 0)
+            {
+                return -1;
+            }
+            nRet = SyncPickPinRetreat();
+            if (nRet != 0)
+            {
+                return -1;
+            }
+            die.State = DieProcessState.Picked;
+            die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+            SetMaterial(die);
+
+            nRet = RotateToolTForPlace();
+            if (nRet != 0)
+            {
+                return -1;
+            }
             State = ProcessState.Complete;
-            return 0;
+            return nRet;
         }
+
         protected override int OnRunComplete()
         {
-            int nRtn = 0;
+            int nRet = 0;
 
-            nRtn = PlaceChipDown();
-            if (nRtn != 0)
+            if(!Rotary.RequestInputDieTrDie)
             {
-                return -1;
+                return nRet;
             }
-            nRtn = ReleaseVacuumAndPlaceUp();
-            if (nRtn != 0)
+            
+            // Rotary에서 Place 위치 도착 신호 오면 수행.
+            MaterialDie Die = this.Rotary.GetLoadSocketMaterial();
+            if(Die != null)
             {
-                return -1;
+                if (Die.Presence == Material.MaterialPresence.NotExist)
+                {
+                    if (Die.ProcessSatate == Material.MaterialProcessSatate.Unknown)
+                    {
+                        nRet = PlaceChipDown();
+                        if (nRet != 0)
+                        {
+                            return -1;
+                        }
+                        nRet = ReleaseVacuumAndPlaceUp();
+                        if (nRet != 0)
+                        {
+                            return -1;
+                        }
+
+                        //this.MoveMaterial(new MaterialDie(), this.Rotary);
+                        // Rotary에 Die 정보 전달.
+                        Material material = this.GetMaterial();
+                        MaterialDie die = material as MaterialDie;
+                        if (die == null)
+                        {
+                            Log.Write(UnitName, "[OnRunComplete] die is null");
+                            return -1;
+                        }
+
+                        die.State = DieProcessState.Inspecting;
+                        die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                        Rotary.SetMaterial(die);
+                        SetMaterial(new Material());
+
+                        State = ProcessState.None;
+                    }
+                }
             }
 
-            State = ProcessState.None;
             return 0;
         }
 
@@ -1387,29 +1425,16 @@ namespace QMC.LCP_280.Process.Unit
         /// <summary>
         /// 1. 스테이지 센터 기준 첫번째 칩 위치로 이동 (Center Teaching + Offset)
         /// </summary>
-        public int MoveStageToFirstChip()
+        public int MoveStageToNextDie(out MaterialDie die )
         {
-            if (InputStage == null) return -1;
+            if (InputStage == null)
+            {
+                die = null;
+                return -1;
+            }
 
             int nRet = 0;
-
-            // (1) 첫 칩 Offset 적용 (TODO: 실제 오프셋)
-            if (TryGetFirstChipOffset(out var dx, out var dy) != 0)
-            {
-                Log.Write(UnitName, "[MoveStageToFirstChip] 첫 칩 오프셋 취득 실패");
-                return -1;
-            }
-
-            // X/Y 절대 목표 (현재 Center 기준 + dx/dy)
-            // 안전판정은 MoveAxisWithSafety 사용
-            //1. InputStage Chip->Pick 위치 이동
-            nRet &= InputStage.MoveAxisWithSafety(AxisNames.WaferStageX, dx);
-            nRet &= InputStage.MoveAxisWithSafety(AxisNames.WaferStageY, dy);
-            if (nRet != 0)
-            {
-                return -1;
-            }
-
+            nRet = this.InputStage.MoveStageToNextDie(out die);
             return nRet;
         }
 

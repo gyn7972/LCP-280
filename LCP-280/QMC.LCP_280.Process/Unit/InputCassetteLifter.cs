@@ -73,6 +73,7 @@ namespace QMC.LCP_280.Process.Unit
         private int _simLastMappingSlot = -1;
         private HashSet<int> _simPresentSlots;          // 존재한다고 가정할 슬롯 인덱스 집합
         private bool _simSimMappingInitialized = false; // 초기화 여부
+        private int _currentSlotID;
         private readonly object _simMapLock = new object();
 
         private void InitSimMappingIfNeeded()
@@ -785,6 +786,7 @@ namespace QMC.LCP_280.Process.Unit
                 }  
             }
             this.IsWaferReadyForUnloding = true;
+            this._currentSlotID = slotIndex;
             return nRtn;
         }
         public Task<int> MoveToSlotAsync(int slotIndex)
@@ -985,7 +987,12 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        
+        public int GetCurrectSlotID()
+        {
+            return _currentSlotID;
+        }
+
+
         #endregion
     }
 }
