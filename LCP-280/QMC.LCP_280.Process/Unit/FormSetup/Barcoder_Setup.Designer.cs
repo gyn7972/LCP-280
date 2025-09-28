@@ -29,15 +29,6 @@
             this.btnBarcoderScan = new QMC.Common.IndividualMenuButton();
             this.labelBarcoderData = new System.Windows.Forms.Label();
             this.btn_Save_Barcoder_Setup = new QMC.Common.IndividualMenuButton();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanelImageButtons = new System.Windows.Forms.TableLayoutPanel();
-            this.lblImageStatus = new System.Windows.Forms.Label();
-            this.btnCaptureImage = new System.Windows.Forms.Button();
-            this.btnSaveImage = new System.Windows.Forms.Button();
-            this.tableLayoutPanelImageArea = new System.Windows.Forms.TableLayoutPanel();
-            this.groupBoxImageView = new System.Windows.Forms.GroupBox();
-            this.pictureBoxScanner = new System.Windows.Forms.PictureBox();
-            this.progressBarImage = new System.Windows.Forms.ProgressBar();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             this.tableLayoutPanel8.SuspendLayout();
@@ -45,11 +36,6 @@
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel9.SuspendLayout();
             this.tableLayoutPanel10.SuspendLayout();
-            this.tableLayoutPanel1.SuspendLayout();
-            this.tableLayoutPanelImageButtons.SuspendLayout();
-            this.tableLayoutPanelImageArea.SuspendLayout();
-            this.groupBoxImageView.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxScanner)).BeginInit();
             this.SuspendLayout();
             // 
             // tableLayoutPanel2
@@ -61,7 +47,6 @@
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 35F));
             this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel4, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel8, 1, 0);
-            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel1, 2, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
@@ -242,122 +227,6 @@
             this.btn_Save_Barcoder_Setup.Text = "Save";
             this.btn_Save_Barcoder_Setup.UseVisualStyleBackColor = false;
             // 
-            // tableLayoutPanel1
-            // 
-            this.tableLayoutPanel1.ColumnCount = 1;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanelImageButtons, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanelImageArea, 0, 0);
-            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(444, 3);
-            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 4;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 35F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(373, 745);
-            this.tableLayoutPanel1.TabIndex = 3;
-            // 
-            // tableLayoutPanelImageButtons
-            // 
-            this.tableLayoutPanelImageButtons.ColumnCount = 3;
-            this.tableLayoutPanelImageButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanelImageButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanelImageButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanelImageButtons.Controls.Add(this.lblImageStatus, 0, 0);
-            this.tableLayoutPanelImageButtons.Controls.Add(this.btnCaptureImage, 1, 0);
-            this.tableLayoutPanelImageButtons.Controls.Add(this.btnSaveImage, 2, 0);
-            this.tableLayoutPanelImageButtons.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanelImageButtons.Location = new System.Drawing.Point(3, 301);
-            this.tableLayoutPanelImageButtons.Name = "tableLayoutPanelImageButtons";
-            this.tableLayoutPanelImageButtons.RowCount = 1;
-            this.tableLayoutPanelImageButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanelImageButtons.Size = new System.Drawing.Size(367, 31);
-            this.tableLayoutPanelImageButtons.TabIndex = 0;
-            // 
-            // lblImageStatus
-            // 
-            this.lblImageStatus.AutoSize = true;
-            this.lblImageStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblImageStatus.Font = new System.Drawing.Font("Arial", 8F);
-            this.lblImageStatus.Location = new System.Drawing.Point(3, 0);
-            this.lblImageStatus.Name = "lblImageStatus";
-            this.lblImageStatus.Size = new System.Drawing.Size(177, 31);
-            this.lblImageStatus.TabIndex = 0;
-            this.lblImageStatus.Text = "Ready";
-            this.lblImageStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // btnCaptureImage
-            // 
-            this.btnCaptureImage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnCaptureImage.Font = new System.Drawing.Font("Arial", 8F);
-            this.btnCaptureImage.Location = new System.Drawing.Point(186, 3);
-            this.btnCaptureImage.Name = "btnCaptureImage";
-            this.btnCaptureImage.Size = new System.Drawing.Size(85, 25);
-            this.btnCaptureImage.TabIndex = 1;
-            this.btnCaptureImage.Text = "Capture";
-            this.btnCaptureImage.UseVisualStyleBackColor = true;
-            // 
-            // btnSaveImage
-            // 
-            this.btnSaveImage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnSaveImage.Enabled = false;
-            this.btnSaveImage.Font = new System.Drawing.Font("Arial", 8F);
-            this.btnSaveImage.Location = new System.Drawing.Point(277, 3);
-            this.btnSaveImage.Name = "btnSaveImage";
-            this.btnSaveImage.Size = new System.Drawing.Size(87, 25);
-            this.btnSaveImage.TabIndex = 2;
-            this.btnSaveImage.Text = "Save";
-            this.btnSaveImage.UseVisualStyleBackColor = true;
-            // 
-            // tableLayoutPanelImageArea
-            // 
-            this.tableLayoutPanelImageArea.ColumnCount = 1;
-            this.tableLayoutPanelImageArea.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanelImageArea.Controls.Add(this.groupBoxImageView, 0, 0);
-            this.tableLayoutPanelImageArea.Controls.Add(this.progressBarImage, 0, 1);
-            this.tableLayoutPanelImageArea.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanelImageArea.Location = new System.Drawing.Point(3, 3);
-            this.tableLayoutPanelImageArea.Name = "tableLayoutPanelImageArea";
-            this.tableLayoutPanelImageArea.RowCount = 2;
-            this.tableLayoutPanelImageArea.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 95F));
-            this.tableLayoutPanelImageArea.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
-            this.tableLayoutPanelImageArea.Size = new System.Drawing.Size(367, 292);
-            this.tableLayoutPanelImageArea.TabIndex = 0;
-            // 
-            // groupBoxImageView
-            // 
-            this.groupBoxImageView.Controls.Add(this.pictureBoxScanner);
-            this.groupBoxImageView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBoxImageView.Location = new System.Drawing.Point(3, 3);
-            this.groupBoxImageView.Name = "groupBoxImageView";
-            this.groupBoxImageView.Size = new System.Drawing.Size(361, 271);
-            this.groupBoxImageView.TabIndex = 0;
-            this.groupBoxImageView.TabStop = false;
-            this.groupBoxImageView.Text = "Scanner Image";
-            // 
-            // pictureBoxScanner
-            // 
-            this.pictureBoxScanner.BackColor = System.Drawing.Color.Black;
-            this.pictureBoxScanner.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pictureBoxScanner.Location = new System.Drawing.Point(3, 17);
-            this.pictureBoxScanner.Name = "pictureBoxScanner";
-            this.pictureBoxScanner.Size = new System.Drawing.Size(355, 251);
-            this.pictureBoxScanner.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pictureBoxScanner.TabIndex = 0;
-            this.pictureBoxScanner.TabStop = false;
-            // 
-            // progressBarImage
-            // 
-            this.progressBarImage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.progressBarImage.Location = new System.Drawing.Point(3, 280);
-            this.progressBarImage.Name = "progressBarImage";
-            this.progressBarImage.Size = new System.Drawing.Size(361, 9);
-            this.progressBarImage.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
-            this.progressBarImage.TabIndex = 1;
-            this.progressBarImage.Visible = false;
-            // 
             // Barcoder_Setup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -374,12 +243,6 @@
             this.tableLayoutPanel9.ResumeLayout(false);
             this.tableLayoutPanel9.PerformLayout();
             this.tableLayoutPanel10.ResumeLayout(false);
-            this.tableLayoutPanel1.ResumeLayout(false);
-            this.tableLayoutPanelImageButtons.ResumeLayout(false);
-            this.tableLayoutPanelImageButtons.PerformLayout();
-            this.tableLayoutPanelImageArea.ResumeLayout(false);
-            this.groupBoxImageView.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxScanner)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -397,16 +260,5 @@
         private QMC.Common.PropertyCollectionView propertyCollectionView;
         private QMC.Common.IndividualMenuButton individualMenuButton3;
         private System.Windows.Forms.Label labelBarcoderData;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanelImageArea;
-
-        // 새로 추가된 이미지 뷰어 컨트롤들
-        private System.Windows.Forms.GroupBox groupBoxImageView;
-        private System.Windows.Forms.PictureBox pictureBoxScanner;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanelImageButtons;
-        private System.Windows.Forms.Label lblImageStatus;
-        private System.Windows.Forms.Button btnCaptureImage;
-        private System.Windows.Forms.Button btnSaveImage;
-        private System.Windows.Forms.ProgressBar progressBarImage;
     }
 }
