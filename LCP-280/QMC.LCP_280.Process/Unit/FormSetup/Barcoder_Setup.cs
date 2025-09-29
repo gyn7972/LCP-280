@@ -9,37 +9,38 @@ using static QMC.LCP_280.Process.Unit.FormSetup.BarcoderControl;
 namespace QMC.LCP_280.Process.Unit.FormSetup
 {
     [FormOrder(6)]
-    #region Barcoder State Events (Form → Control)
-
-    /// <summary>
-    /// 스캔 상태 변경 이벤트 (Form → Control)
-    /// </summary>
-    public class BarcoderScanStateChangedEventArgs : EventArgs
-    {
-        public string Message { get; set; }
-        public System.Drawing.Color Color { get; set; }
-    }
-
-    /// <summary>
-    /// 스캔 버튼 텍스트 변경 이벤트 (Form → Control)
-    /// </summary>
-    public class BarcoderButtonTextChangedEventArgs : EventArgs
-    {
-        public string ButtonText { get; set; }
-    }
-
-    /// <summary>
-    /// 바코드 데이터 리스트 추가 이벤트 (Form → Control)
-    /// </summary>
-    public class BarcoderDataAddedEventArgs : EventArgs
-    {
-        public string Data { get; set; }
-        public DateTime Timestamp { get; set; }
-    }
-
-    #endregion
     public partial class Barcoder_Setup : Form
     {
+        #region Barcoder State Events (Form → Control)
+
+        /// <summary>
+        /// 스캔 상태 변경 이벤트 (Form → Control)
+        /// </summary>
+        public class BarcoderScanStateChangedEventArgs : EventArgs
+        {
+            public string Message { get; set; }
+            public System.Drawing.Color Color { get; set; }
+        }
+
+        /// <summary>
+        /// 스캔 버튼 텍스트 변경 이벤트 (Form → Control)
+        /// </summary>
+        public class BarcoderButtonTextChangedEventArgs : EventArgs
+        {
+            public string ButtonText { get; set; }
+        }
+
+        /// <summary>
+        /// 바코드 데이터 리스트 추가 이벤트 (Form → Control)
+        /// </summary>
+        public class BarcoderDataAddedEventArgs : EventArgs
+        {
+            public string Data { get; set; }
+            public DateTime Timestamp { get; set; }
+        }
+
+        #endregion
+
         private readonly Equipment Equipment = Equipment.Instance;
 
         // 바코드 데이터 저장

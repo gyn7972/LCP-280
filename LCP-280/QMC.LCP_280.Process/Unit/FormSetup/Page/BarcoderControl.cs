@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using static QMC.LCP_280.Process.Unit.FormSetup.Barcoder_Setup;
 
 namespace QMC.LCP_280.Process.Unit.FormSetup
 {
@@ -144,10 +145,10 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                 btnBarcoderScan.Click += btnBarcoderScan_Click;
             }
 
-            if (btnClearList != null)
+            if (btn_ClearList != null)
             {
-                btnClearList.Click -= btnClearList_Click;
-                btnClearList.Click += btnClearList_Click;
+                btn_ClearList.Click -= btnClearList_Click;
+                btn_ClearList.Click += btnClearList_Click;
             }
         }
 
@@ -383,12 +384,12 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                 return;
             }
 
-            listBoxBarcodeData.Items.Add($"[{e.Timestamp:HH:mm:ss}] {e.Data}");
+            listBox_BarcodeData.Items.Add($"[{e.Timestamp:HH:mm:ss}] {e.Data}");
 
             // 자동 스크롤 (최신 항목으로)
-            if (listBoxBarcodeData.Items.Count > 0)
+            if (listBox_BarcodeData.Items.Count > 0)
             {
-                listBoxBarcodeData.TopIndex = listBoxBarcodeData.Items.Count - 1;
+                listBox_BarcodeData.TopIndex = listBox_BarcodeData.Items.Count - 1;
             }
         }
 
@@ -403,7 +404,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                 return;
             }
 
-            listBoxBarcodeData.Items.Clear();
+            listBox_BarcodeData.Items.Clear();
         }
 
         #endregion
