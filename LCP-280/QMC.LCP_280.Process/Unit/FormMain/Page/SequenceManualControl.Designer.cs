@@ -13,12 +13,22 @@
         /// <param name="disposing">관리되는 리소스를 삭제해야 하면 true이고, 그렇지 않으면 false입니다.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                // 이벤트 해제
+                foreach (var button in _buttonActions.Keys)
+                {
+                    button.Click -= OnSequenceButtonClick;
+                }
+
+                if (components != null)
+                {
+                    components.Dispose();
+                }
             }
             base.Dispose(disposing);
         }
+
 
         #region 구성 요소 디자이너에서 생성한 코드
 
@@ -100,7 +110,6 @@
             this.btn_Start_OutputWafer.TabStop = false;
             this.btn_Start_OutputWafer.Text = "Start";
             this.btn_Start_OutputWafer.UseVisualStyleBackColor = false;
-            this.btn_Start_OutputWafer.Click += new System.EventHandler(this.btn_Start_OutputWafer_Click);
             // 
             // btn_Start_ChipUnloading
             // 
@@ -120,7 +129,6 @@
             this.btn_Start_ChipUnloading.TabStop = false;
             this.btn_Start_ChipUnloading.Text = "Start";
             this.btn_Start_ChipUnloading.UseVisualStyleBackColor = false;
-            this.btn_Start_ChipUnloading.Click += new System.EventHandler(this.btn_Start_ChipUnloading_Click);
             // 
             // btn_Start_Process
             // 
@@ -140,7 +148,6 @@
             this.btn_Start_Process.TabStop = false;
             this.btn_Start_Process.Text = "Start";
             this.btn_Start_Process.UseVisualStyleBackColor = false;
-            this.btn_Start_Process.Click += new System.EventHandler(this.btn_Start_Process_Click);
             // 
             // btn_Start_ChipLoading
             // 
@@ -160,7 +167,6 @@
             this.btn_Start_ChipLoading.TabStop = false;
             this.btn_Start_ChipLoading.Text = "Start";
             this.btn_Start_ChipLoading.UseVisualStyleBackColor = false;
-            this.btn_Start_ChipLoading.Click += new System.EventHandler(this.btn_Start_ChipLoading_Click);
             // 
             // btn_Ready_OutputWafer
             // 
@@ -180,7 +186,6 @@
             this.btn_Ready_OutputWafer.TabStop = false;
             this.btn_Ready_OutputWafer.Text = "Ready";
             this.btn_Ready_OutputWafer.UseVisualStyleBackColor = false;
-            this.btn_Ready_OutputWafer.Click += new System.EventHandler(this.btn_Ready_OutputWafer_Click);
             // 
             // btn_Ready_ChipUnloading
             // 
@@ -200,7 +205,6 @@
             this.btn_Ready_ChipUnloading.TabStop = false;
             this.btn_Ready_ChipUnloading.Text = "Ready";
             this.btn_Ready_ChipUnloading.UseVisualStyleBackColor = false;
-            this.btn_Ready_ChipUnloading.Click += new System.EventHandler(this.btn_Ready_ChipUnloading_Click);
             // 
             // btn_Ready_Process
             // 
@@ -220,7 +224,6 @@
             this.btn_Ready_Process.TabStop = false;
             this.btn_Ready_Process.Text = "Ready";
             this.btn_Ready_Process.UseVisualStyleBackColor = false;
-            this.btn_Ready_Process.Click += new System.EventHandler(this.btn_Ready_Process_Click);
             // 
             // btn_Ready_ChipLoading
             // 
@@ -240,7 +243,6 @@
             this.btn_Ready_ChipLoading.TabStop = false;
             this.btn_Ready_ChipLoading.Text = "Ready";
             this.btn_Ready_ChipLoading.UseVisualStyleBackColor = false;
-            this.btn_Ready_ChipLoading.Click += new System.EventHandler(this.btn_Ready_ChipLoading_Click);
             // 
             // label5
             // 
@@ -312,7 +314,6 @@
             this.btn_Start_InputWafer.TabStop = false;
             this.btn_Start_InputWafer.Text = "Start";
             this.btn_Start_InputWafer.UseVisualStyleBackColor = false;
-            this.btn_Start_InputWafer.Click += new System.EventHandler(this.btn_Start_InputWafer_Click);
             // 
             // btn_Ready_InputWafer
             // 
@@ -332,7 +333,6 @@
             this.btn_Ready_InputWafer.TabStop = false;
             this.btn_Ready_InputWafer.Text = "Ready";
             this.btn_Ready_InputWafer.UseVisualStyleBackColor = false;
-            this.btn_Ready_InputWafer.Click += new System.EventHandler(this.btn_Ready_InputWafer_Click);
             // 
             // label1
             // 
