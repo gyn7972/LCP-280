@@ -25,6 +25,14 @@ namespace QMC.Common.PKGTester
         public IReadOnlyDictionary<string, TestItemResult> Items => items;
         #endregion
 
+        public PKGTesterResult Clone()
+        {
+            PKGTesterResult pKGTesterResult = new PKGTesterResult();
+            
+
+
+            return pKGTesterResult;
+        }
         #region Constructor
         public PKGTesterResult()
         {

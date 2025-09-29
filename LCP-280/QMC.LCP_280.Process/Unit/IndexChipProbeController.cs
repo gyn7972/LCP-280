@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using static QMC.LCP_280.Process.Equipment;
@@ -1312,12 +1313,13 @@ namespace QMC.LCP_280.Process.Unit
         public int TopContactOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
+
+            int nIndex = GetProbeIndexNo();
             try
             {
                 LogSequence("Start");
                 this.CurrentFunc = TopContactOnce;
 
-                int nIndex = GetProbeIndexNo();
 
                 nRet = IsRotaryIdle();
                 if (nRet != 0)
@@ -1336,12 +1338,6 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                //nRet = MovePositionTopContact_Index_Ready(nIndex, bFineSpeed);
-                //if (nRet != 0)
-                //{
-                //    Log.Write(UnitName, "[TopContactOnce] MovePositionTopContact_Index_Ready failed");
-                //    return -1;
-                //}
 
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
@@ -1350,8 +1346,8 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                // 6) 검사 요구 신호
-                SetChipProberRequest(true);
+                // 6) 검사 요구 동기 처리
+                
 
                 nRet = IndexChipProber.MeasureChip();
                 if (nRet != 0)
@@ -1359,23 +1355,8 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[TopContactOnce] MeasureChip failed");
                     return - 1;
                 }
-                // 7) 검사 완료 신호 대기
-                nRet = ContactInspectionWait();
-                if (nRet != 0)
-                {
-                    return -1;
-                }
-
-                // 8) 검사 완료 처리
-                SetChipProberRequest(false);
-
-                // 9) Ready Z축 하강
-                nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
-                if (nRet != 0)
-                {
-
-                    return -1;
-                }
+               
+                
             }
             catch (Exception ex)
             {
@@ -1384,6 +1365,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
+                // 9) Ready Z축 하강
+                nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
+                if (nRet != 0)
+                {
+                    nRet = -1;
+                }
                 LogSequence("End");
                 
             }
@@ -1411,6 +1398,7 @@ namespace QMC.LCP_280.Process.Unit
 
             try
             {
+                
                 LogSequence("Start");
                 this.CurrentFunc = BottomContactOnce;
 

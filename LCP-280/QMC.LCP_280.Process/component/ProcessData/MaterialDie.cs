@@ -1,5 +1,6 @@
 ﻿
 using QMC.Common;
+using QMC.Common.PKGTester;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -42,6 +43,9 @@ namespace QMC.LCP_280.Process.Component
 
         // ===== 검사 데이터 =====
         public Dictionary<string, double> MeasureValues { get; set; } = new Dictionary<string, double>();
+
+        public PKGTesterResult TesterResult = new PKGTesterResult();
+
 
         // ===== 트래킹 =====
         [DefaultValue("")] public string SourceWaferId { get; set; } = "";
