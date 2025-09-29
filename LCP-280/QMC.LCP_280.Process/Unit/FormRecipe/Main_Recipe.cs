@@ -127,6 +127,21 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 BuildPropertyFromRecipe(_current);
                 //_current = RecipeManager.LoadOrCreate(typeof(MeasurementRecipe), name);
                 //BuildPropertyFromRecipe(_current);
+
+                // 레시피 Open 이후 반영 처리 ------
+                var currentRecipe = eq.EquipmentRecipe.CurrentRecipe;
+
+                var tester = Equipment.Instance.Tester;
+                if (tester.ConditionSet.LoadFromFile(currentRecipe.TestConditionSetPath) != 0)
+                {
+                    throw new Exception($"Failed to load test condition set\nPath: {currentRecipe.TestConditionSetPath}");
+                }
+                if (tester.BinningSpecSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath) != 0)
+                {
+                    throw new Exception($"Failed to load binning spec sheet\nPath: {currentRecipe.BinningSpecSheetPath}");
+                }
+                // -------------------------------
+
             }
             catch (Exception ex)
             {

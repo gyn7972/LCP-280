@@ -1610,7 +1610,6 @@ namespace QMC.LCP_280.Process
             }
         }
 
-
         private void InitializeBarcoderControllers()
         {
             try

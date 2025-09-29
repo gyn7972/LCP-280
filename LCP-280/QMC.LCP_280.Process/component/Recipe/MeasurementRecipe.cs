@@ -13,17 +13,21 @@ namespace QMC.LCP_280.Process.Component
         public MeasurementRecipe(string name = null) : base(name) { }
 
         // 1. MeasurementParameters (검사 파라미터) 참조
-        [Category("Measurement"), DisplayName("Use Measurement Recipe")]
-        [DefaultValue(true)]
-        public bool UseMeasurementRecipe { get; set; } = true;
+        //[Category("Measurement"), DisplayName("Use Measurement Recipe")]
+        //[DefaultValue(true)]
+        //public bool UseMeasurementRecipe { get; set; } = true;
 
-        [Category("Measurement"), DisplayName("Measurement Recipe Name")]
-        [DefaultValue("DefaultMeasurement")]
-        public string MeasurementRecipeName { get; set; } = "DefaultMeasurement";
+        //[Category("Measurement"), DisplayName("Measurement Recipe Name")]
+        //[DefaultValue("DefaultMeasurement")]
+        //public string MeasurementRecipeName { get; set; } = "DefaultMeasurement";
 
-        [Category("Measurement"), DisplayName("Measurement Recipe Path")]
+        [Category("Measurement"), DisplayName("Test Condition Set Path")]
         [DefaultValue("")]
-        public string MeasurementRecipePath { get; set; } = string.Empty;
+        public string TestConditionSetPath { get; set; } = string.Empty;
+
+        [Category("Measurement"), DisplayName("Binning Spec Sheet Path")]
+        [DefaultValue("")]
+        public string BinningSpecSheetPath { get; set; } = string.Empty;
 
         // 2. VisionParameters (비전 파라미터) 참조
         [Category("Vision"), DisplayName("Use Vision Recipe")]

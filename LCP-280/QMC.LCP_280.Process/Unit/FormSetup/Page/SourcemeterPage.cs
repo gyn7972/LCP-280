@@ -1,10 +1,7 @@
 ﻿using QMC.Common;
 using QMC.Common.Keithley;
-using QMC.Common.PKGTester;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-//using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -275,34 +272,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             {
                 MessageBox.Show("뿅");
             }
-
-            //TestConditionItem item = new TestConditionItem("VF_Test");
-            //item.Type = TestItemType.VF;
-            //item.SourceValue = 0.001;//A
-            //item.SourceTime = 10;//ms
-            //item.SourceLimit = 3;//V
-            //item.MeasureTime = 10;//ms
-
-            //StopWatch sw = new StopWatch();
-            //sw.Start();
-            //selectSourcemeter.ClearTestItems();
-            //selectSourcemeter.AddTestItem(item);
-            //selectSourcemeter.BuildTestCommands();
-            //if (selectSourcemeter.Measure() == 0)
-            //{
-            //    selectSourcemeter.GetResultProcess();
-            //    MessageBox.Show($"Test Result: {selectSourcemeter.Results["VF_Test"].ToString()} / Elapsed Time: {sw.Elapsed.Milliseconds}");
-            //}
-            //else
-            //{
-            //    MessageBox.Show("Failed to test...");
-            //}
-
-            //string response = "";
-            //if(selectSourcemeter.Communicator.Query("*OPC?", ref response))
-            //{
-            //    string a = response;
-            //}
         }
     }
 }

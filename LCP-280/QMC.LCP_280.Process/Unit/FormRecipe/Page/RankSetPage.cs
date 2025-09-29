@@ -202,8 +202,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 dlg.Title = "비닝 사양 파일 열기";
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    bool loaded = tempSheet.LoadFromFile(dlg.FileName);
-                    if (loaded)
+                    if (tempSheet.LoadFromFile(dlg.FileName) != 0)
                     {
                         UpdateRankSetGrid();
                         MessageBox.Show("파일을 성공적으로 불러왔습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -224,8 +223,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 dlg.Title = "비닝 사양 파일 저장";
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    bool saved = tempSheet.SaveToFile(dlg.FileName);
-                    if (saved)
+                    if (tempSheet.SaveToFile(dlg.FileName) != 0)
                     {
                         MessageBox.Show("파일을 성공적으로 저장했습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }

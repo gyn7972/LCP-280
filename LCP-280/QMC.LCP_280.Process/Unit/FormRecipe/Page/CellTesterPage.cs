@@ -83,6 +83,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             UpdateNewResultGrid();
             lbResultValue.Text = "";
             lbMeasureTime.Text = "Measure Time: - ";
+            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo()}";
         }
 
         private void ClearResultGrid()
@@ -161,6 +162,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
             // 측정 시간 표시
             lbMeasureTime.Text = $"Measure Time: {tester.MeasureTime.TotalMilliseconds:F1} ms";
+            lbCurrentIndexNo.Text = $"Rotary Index No: {GetCurrentProbeIndexNo()}";
         }
 
         private void btnLastClear_Click(object sender, EventArgs e)
@@ -241,6 +243,15 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             }
         }
 
+        private int GetCurrentProbeIndexNo()
+        {
+            IndexChipProber proberUnit = Equipment.Instance.GetUnit(Equipment.UnitKeys.IndexChipProber) as IndexChipProber;
+            int rotaryIndex = 0;
+            if (proberUnit != null)
+                rotaryIndex = proberUnit.GetProbeIndexNo();
+            return rotaryIndex;
+        }
+
         private async void RunManualMeasureAsync(int repeatCount, int intervalMs)
         {
             _ctsRepeat = new CancellationTokenSource();
@@ -252,7 +263,8 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 {
                     token.ThrowIfCancellationRequested();
 
-                    int result = await tester.ManualMeasureAsync();
+                    int rotaryIndex = GetCurrentProbeIndexNo();
+                    int result = await tester.ManualMeasureAsync(rotaryIndex);
 
                     // 측정 실패 시 반복 중단
                     if (result < 0)

@@ -125,7 +125,7 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Methods
-        public async Task<int> MeasureAsync(int rotaryIndex = 0)
+        public async Task<int> MeasureAsync(int rotaryIndex)
         {
             try
             {
@@ -154,7 +154,7 @@ namespace QMC.Common.PKGTester
             }
         }
 
-        public async Task<int> ManualMeasureAsync(int rotaryIndex = 0)
+        public async Task<int> ManualMeasureAsync(int rotaryIndex)
         {
             try
             {
@@ -187,6 +187,10 @@ namespace QMC.Common.PKGTester
         {
             // Condition Set
             if (conditionSet == null || !conditionSet.Validate())
+                return false;
+
+            // Binning Spec Sheet
+            if (binningSpecSheet == null || !binningSpecSheet.Validate())
                 return false;
 
             // Check instruments bound

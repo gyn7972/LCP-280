@@ -1,4 +1,5 @@
-﻿using QMC.Common.CustomControl;
+﻿using QMC.Common.Account;
+using QMC.Common.CustomControl;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -23,6 +24,7 @@ namespace QMC.Common
 
         private int _labelSize;
         #endregion
+
         #region Property
         #endregion
 
@@ -35,6 +37,8 @@ namespace QMC.Common
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
             InitTableLayoutPanel();
             SetControlValue();
+
+            AccountManager.OnLoginStateChanged += (s, e) => { setTopContentsLoginMode(AccountManager.CurrentAccount.UserID); };
         }
 
         #region Method
@@ -70,7 +74,7 @@ namespace QMC.Common
             {
                 _loginModeLabel = new CustomBorderLabel
                 {
-                    Text = "Login Mode",
+                    Text = AccountManager.GuestAccount.UserID,
                     TextAlign = ContentAlignment.MiddleCenter,
                     Dock = DockStyle.Fill,
                     Font = new Font("Arial", _labelSize, FontStyle.Bold),
