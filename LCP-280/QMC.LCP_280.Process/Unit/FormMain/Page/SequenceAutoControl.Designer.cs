@@ -1,4 +1,6 @@
-﻿namespace QMC.LCP_280.Process.Unit.FormMain
+﻿using System.Drawing;
+
+namespace QMC.LCP_280.Process.Unit.FormMain
 {
     partial class SequenceAutoControl
     {
@@ -70,6 +72,8 @@
             this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel8.Size = new System.Drawing.Size(100, 322);
             this.tableLayoutPanel8.TabIndex = 2;
+            this.tableLayoutPanel8.BackColor = Color.White;
+
             // 
             // btn_Auto_Reset
             // 

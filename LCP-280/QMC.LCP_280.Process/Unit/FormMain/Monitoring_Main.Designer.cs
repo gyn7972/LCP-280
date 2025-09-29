@@ -129,9 +129,7 @@ namespace QMC.LCP_280.Process
             // 
             // dieOutputControl1
             // 
-            this.dieOutputControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.dieOutputControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dieOutputControl1.Location = new System.Drawing.Point(2, 16);
             this.dieOutputControl1.Margin = new System.Windows.Forms.Padding(2);
             this.dieOutputControl1.Name = "dieOutputControl1";
