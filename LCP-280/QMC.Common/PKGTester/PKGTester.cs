@@ -59,6 +59,13 @@ namespace QMC.Common.PKGTester
             items[itemName].Assign(result);
             return true;
         }
+        public PKGTesterResult Clone()
+        {
+            PKGTesterResult clone = new PKGTesterResult();
+            clone.binningResult.CopyFrom(this.binningResult);
+            clone.items = this.items.ToDictionary(entry => entry.Key, entry => entry.Value.Clone());
+            return clone;
+        }
         #endregion
     }
 

@@ -66,6 +66,14 @@ namespace QMC.Common.PKGTester
             else
                 return Value.ToString("0.#####E+0");
         }
+        public TestItemResult Clone()
+        {
+            TestItemResult clone = new TestItemResult();
+            clone.RawData = RawData;
+            clone.Value = Value;
+            clone.Unit = Unit;
+            return clone;
+        }
         #endregion
     }
 }
