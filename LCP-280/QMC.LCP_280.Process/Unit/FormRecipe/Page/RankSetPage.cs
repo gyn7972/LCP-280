@@ -249,7 +249,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             {
                 try
                 {
-                    if (Equipment.Instance.Tester.LoadBinningSpecSheet(tempSheet) == 0)
+                    if (Equipment.Instance.Tester.LoadBinningSpecSheet("") == 0)
                     {
                         // 레시피 처리 수정 필요...
                     }

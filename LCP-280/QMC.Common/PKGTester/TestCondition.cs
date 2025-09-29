@@ -309,14 +309,12 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Proerties
-        public string Name { get; set; }
         public IReadOnlyList<TestConditionItem> Items => items.AsReadOnly();
         #endregion
 
         #region Constructor
-        public TestConditionSet(string name) : base()
+        public TestConditionSet() : base()
         {
-            Name = name;
             items = new List<TestConditionItem>();
         }
         #endregion
@@ -410,8 +408,6 @@ namespace QMC.Common.PKGTester
             if (testConditionSet == null)
                 return -1;
 
-            Name = testConditionSet.Name;
-
             items.Clear();
             items.AddRange(testConditionSet.Items);
             ItemsChanged?.Invoke(this);
@@ -423,7 +419,6 @@ namespace QMC.Common.PKGTester
         // 래퍼 클래스 정의
         class TestConditionSetData
         {
-            public string Name { get; set; }
             public List<TestConditionItem> Items { get; set; }
         }
 
@@ -441,7 +436,6 @@ namespace QMC.Common.PKGTester
                 if (data == null || data.Items == null)
                     return -1;
 
-                Name = data.Name;
                 items.Clear();
                 items.AddRange(data.Items);
                 ItemsChanged?.Invoke(this);
@@ -455,14 +449,10 @@ namespace QMC.Common.PKGTester
         }
         public int SaveToFile(string filePath)
         {
-            string name = Name;
-
             try
             {
-                Name = System.IO.Path.GetFileNameWithoutExtension(filePath);
                 var data = new TestConditionSetData
                 {
-                    Name = this.Name,
                     Items = this.items.ToList()
                 };
 
@@ -474,7 +464,6 @@ namespace QMC.Common.PKGTester
             }
             catch (Exception ex)
             {
-                Name = name;
                 Log.Write(ex);
                 return -1;
             }

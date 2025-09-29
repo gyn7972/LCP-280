@@ -17,7 +17,7 @@ namespace QMC.LCP_280.Process.Unit
     {
         private Equipment equipment => Equipment.Instance;
 
-        private TestConditionSet tempSet = new TestConditionSet(""); // 임시 변수
+        private TestConditionSet tempSet = new TestConditionSet(); // 임시 변수
         private TestConditionItem clipboardItem;
         private PropertyCollection pcItem;
 
@@ -87,8 +87,6 @@ namespace QMC.LCP_280.Process.Unit
 
         private void UpdateConditionSetGrid()
         {
-            lbSetNameValue.Text = tempSet.Name;
-
             ClearConditionSet();
             foreach (var item in tempSet.Items)
             {
@@ -378,7 +376,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 saveFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
                 saveFileDialog.Title = "Save Test Condition Set";
-                saveFileDialog.FileName = tempSet.Name + ".json";
+                saveFileDialog.FileName = "*.json";
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     var filePath = saveFileDialog.FileName;
@@ -386,7 +384,7 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         MessageBox.Show("Failed to save the test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-                    lbSetNameValue.Text = tempSet.Name;
+                    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
                 }
             }
         }
@@ -405,7 +403,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 try
                 {
-                    if (Equipment.Instance.Tester.LoadTestConditionSet(tempSet) == 0)
+                    if (Equipment.Instance.Tester.LoadTestConditionSet("") == 0)
                     {
                         // 레시피 처리 수정 필요...
                     }
