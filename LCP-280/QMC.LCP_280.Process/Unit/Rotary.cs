@@ -1395,20 +1395,13 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             RequestInputDieTrDie = true;
-            //RequestLoadAligner = true;
-            //RequestProbe = true;
-            //RequestUnloaderAligner = true;
-            // 회전 수행 후 다음 단계 요청 신호 셋업
+
             nRtn = ExecuteUnitAction();
             if (nRtn != 0)
             {
                 Log.Write(UnitName, "[ExecuteUnitAction] Failed");
                 return -1;
             }
-            //IndexLoadAligner.CompleteLoadAligner = true;
-            //IndexChipProbeController.CompleteProbe = true;
-            //IndexUnloadAligner.CompleteUnloadAligner = true;
-
             
             State = ProcessState.Complete;
 
