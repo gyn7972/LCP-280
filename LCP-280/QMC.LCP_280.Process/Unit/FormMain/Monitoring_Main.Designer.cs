@@ -221,9 +221,9 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel1.Controls.Add(this.groupBoxOutputWaferCarrierControl, 2, 1);
             this.tableLayoutPanel1.Controls.Add(this.groupBoxMeasurementControl, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.groupBoxInputWaferCarrierControl, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.groupBoxdieInputControl, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.groupBoxdieIndexSelectControl, 1, 0);
             this.tableLayoutPanel1.Controls.Add(this.groupBoxdieOutputControl, 2, 0);
+            this.tableLayoutPanel1.Controls.Add(this.groupBoxdieInputControl, 0, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
