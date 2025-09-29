@@ -75,6 +75,7 @@ namespace QMC.Common.Account
 
             if (!Enum.TryParse(tokens[0], out UserGrade grade))
                 return false;
+
             Grade = grade;
             UserID = tokens[1];
             Password = tokens[2];

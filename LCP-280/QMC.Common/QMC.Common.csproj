@@ -302,6 +302,15 @@
     <Compile Include="FormMessageBox\MessageBoxYesNoRetry.Designer.cs">
       <DependentUpon>MessageBoxYesNoRetry.cs</DependentUpon>
     </Compile>
+    <Compile Include="History\AlarmHistory.cs" />
+    <Compile Include="History\AlarmHistoryGridViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="History\AlarmHistoryGridViewer.Designer.cs">
+      <DependentUpon>AlarmHistoryGridViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="History\BaseHistory.cs" />
+    <Compile Include="History\HistoryManager.cs" />
     <Compile Include="IEquipment.cs" />
     <Compile Include="IO\AjinDioDriver.cs" />
     <Compile Include="IO\DIOChannel.cs" />
@@ -624,6 +633,9 @@
     <Compile Include="Vision\VisionUnit.cs" />
     <EmbeddedResource Include="Account\FormLogin.resx">
       <DependentUpon>FormLogin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="History\AlarmHistoryGridViewer.resx">
+      <DependentUpon>AlarmHistoryGridViewer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="StrainGage\FormStrainGageDialog.resx">
       <DependentUpon>FormStrainGageDialog.cs</DependentUpon>
