@@ -1,169 +1,195 @@
 ﻿using QMC.Common;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
     public partial class SequenceManualControl : UserControl
     {
-        public class ItemEventArgs : EventArgs
+        #region Manual Sequence Events
+
+        /// <summary>
+        /// Manual Sequence 버튼 클릭 이벤트 인자
+        /// </summary>
+        public class SequenceEventArgs : EventArgs
         {
-            public string status { get; set; } //임시 작업, 변경 필요
-            public string sequenceName { get; set; } //임시 작업, 변경 필요
+            public string SequenceName { get; set; }
+            public string Action { get; set; }  // "Ready" 또는 "Start"
         }
 
-        public event EventHandler<ItemEventArgs> SequenceButtonRequested;
+        /// <summary>
+        /// Manual Sequence 상태 변경 이벤트 인자 (Form → Control)
+        /// </summary>
+        public class SequenceStateChangedEventArgs : EventArgs
+        {
+            public string SequenceName { get; set; }
+            public string Action { get; set; }  // "Ready" 또는 "Start"
+            public bool IsActive { get; set; }
+            public bool UpdateText { get; set; } // Start 버튼 텍스트 변경 여부
+        }
 
+        #endregion
+
+        #region Events
+
+        /// <summary>
+        /// 버튼 클릭 시 부모 Form으로 전달 (Control → Form)
+        /// </summary>
+        public event EventHandler<SequenceEventArgs> SequenceButtonRequested;
+
+        #endregion
+
+        private Dictionary<IndividualMenuButton, (string sequenceName, string action)> _buttonActions;
+        private readonly Color _defaultColor = Color.FromArgb(217, 217, 217);
+        private readonly Color _activeColor = Color.LightGreen;
 
         public SequenceManualControl()
         {
             InitializeComponent();
+            InitializeButtonActions();
+            RegisterButtonEvents();
         }
 
-        private void btn_Ready_InputWafer_Click(object sender, EventArgs e)
+        private void InitializeButtonActions()
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual InputWafer Ready", "Manual InputWafer Ready 진행하시겠습니까?") == DialogResult.Yes)
+            _buttonActions = new Dictionary<IndividualMenuButton, (string, string)>
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
+                { btn_Ready_InputWafer, ("InputWafer", "Ready") },
+                { btn_Start_InputWafer, ("InputWafer", "Start") },
+                { btn_Ready_ChipLoading, ("ChipLoading", "Ready") },
+                { btn_Start_ChipLoading, ("ChipLoading", "Start") },
+                { btn_Ready_Process, ("Process", "Ready") },
+                { btn_Start_Process, ("Process", "Start") },
+                { btn_Ready_ChipUnloading, ("ChipUnloading", "Ready") },
+                { btn_Start_ChipUnloading, ("ChipUnloading", "Start") },
+                { btn_Ready_OutputWafer, ("OutputWafer", "Ready") },
+                { btn_Start_OutputWafer, ("OutputWafer", "Start") }
+            };
+        }
+
+        private void RegisterButtonEvents()
+        {
+            foreach (var button in _buttonActions.Keys)
+            {
+                button.Click -= OnSequenceButtonClick;
+                button.Click += OnSequenceButtonClick;
+            }
+        }
+
+        private void OnSequenceButtonClick(object sender, EventArgs e)
+        {
+            var button = sender as IndividualMenuButton;
+            if (button == null || !_buttonActions.ContainsKey(button)) return;
+
+            var (sequenceName, action) = _buttonActions[button];
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog($"Manual {sequenceName} {action}",
+                $"Manual {sequenceName} {action} 진행하시겠습니까?") == DialogResult.Yes)
+            {
+                // 부모 Form으로 이벤트 전달 (UI는 부모가 상태 변경 이벤트로 알려줌)
+                SequenceButtonRequested?.Invoke(this, new SequenceEventArgs
                 {
-                    status = "Ready",
-                    sequenceName = "InputWafer"
+                    SequenceName = sequenceName,
+                    Action = action
                 });
             }
         }
 
-        private void btn_Ready_ChipLoading_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 부모 Form에서 상태 변경 이벤트를 받아서 UI 업데이트 (Form → Control)
+        /// </summary>
+        public void OnSequenceStateChanged(SequenceStateChangedEventArgs e)
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual ChipLoading Ready", "Manual ChipLoading Ready 진행하시겠습니까?") == DialogResult.Yes)
+            if (InvokeRequired)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
+                Invoke(new Action(() => OnSequenceStateChanged(e)));
+                return;
+            }
+
+            var button = _buttonActions.FirstOrDefault(x =>
+                x.Value.sequenceName == e.SequenceName && x.Value.action == e.Action).Key;
+
+            if (button != null)
+            {
+                button.BackColor = e.IsActive ? _activeColor : _defaultColor;
+
+                // Start 버튼만 텍스트 변경
+                if (e.Action == "Start" && e.UpdateText)
                 {
-                    status = "Ready",
-                    sequenceName = "ChipLoading"
-                });
+                    button.Text = e.IsActive ? "Stop" : "Start";
+                }
             }
         }
 
-        private void btn_Ready_Process_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 모든 버튼 초기화
+        /// </summary>
+        public void ResetAllButtons()
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual Process Ready", "Manual Process Ready 진행하시겠습니까?") == DialogResult.Yes)
+            if (InvokeRequired)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
+                Invoke(new Action(ResetAllButtons));
+                return;
+            }
+
+            foreach (var kvp in _buttonActions)
+            {
+                kvp.Key.BackColor = _defaultColor;
+
+                // Start 버튼 텍스트 초기화
+                if (kvp.Value.action == "Start")
                 {
-                    status = "Ready",
-                    sequenceName = "Process"
-                });
+                    kvp.Key.Text = "Start";
+                }
             }
         }
 
-        private void btn_Ready_ChipUnloading_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 특정 Sequence의 모든 버튼 초기화
+        /// </summary>
+        public void ResetSequenceButtons(string sequenceName)
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual ChipUnloading Ready", "Manual ChipUnloading Ready 진행하시겠습니까?") == DialogResult.Yes)
+            if (InvokeRequired)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
+                Invoke(new Action(() => ResetSequenceButtons(sequenceName)));
+                return;
+            }
+
+            var buttons = _buttonActions.Where(x => x.Value.sequenceName == sequenceName);
+
+            foreach (var kvp in buttons)
+            {
+                kvp.Key.BackColor = _defaultColor;
+
+                // Start 버튼 텍스트 초기화
+                if (kvp.Value.action == "Start")
                 {
-                    status = "Ready",
-                    sequenceName = "ChipUnloading"
-                });
+                    kvp.Key.Text = "Start";
+                }
             }
         }
 
-        private void btn_Ready_OutputWafer_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 버튼 활성화/비활성화
+        /// </summary>
+        public void SetButtonEnabled(string sequenceName, string action, bool enabled)
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual OutputWafer Ready", "Manual OutputWafer Ready 진행하시겠습니까?") == DialogResult.Yes)
+            if (InvokeRequired)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Ready",
-                    sequenceName = "OutputWafer"
-                });
+                Invoke(new Action(() => SetButtonEnabled(sequenceName, action, enabled)));
+                return;
             }
-        }
 
-        private void btn_Start_InputWafer_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual InputWafer Start", "Manual InputWafer Start 진행하시겠습니까?") == DialogResult.Yes)
-            {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Start",
-                    sequenceName = "InputWafer"
-                });
-            }
-        }
+            var button = _buttonActions.FirstOrDefault(x =>
+                x.Value.sequenceName == sequenceName && x.Value.action == action).Key;
 
-        private void btn_Start_ChipLoading_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual ChipLoading Start", "Manual ChipLoading Start 진행하시겠습니까?") == DialogResult.Yes)
+            if (button != null)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Start",
-                    sequenceName = "ChipLoading"
-                });
-            }
-        }
-
-        private void btn_Start_Process_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual Process Start", "Manual Process Start 진행하시겠습니까?") == DialogResult.Yes)
-            {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Start",
-                    sequenceName = "Process"
-                });
-            }
-        }
-
-        private void btn_Start_ChipUnloading_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual ChipUnloading Start", "Manual ChipUnloading Start 진행하시겠습니까?") == DialogResult.Yes)
-            {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Start",
-                    sequenceName = "ChipUnloading"
-                });
-            }
-        }
-
-        private void btn_Start_OutputWafer_Click(object sender, EventArgs e)
-        {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Manual OutputWafer Start", "Manual OutputWafer Start 진행하시겠습니까?") == DialogResult.Yes)
-            {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Start",
-                    sequenceName = "OutputWafer"
-                });
+                button.Enabled = enabled;
             }
         }
     }

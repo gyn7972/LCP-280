@@ -77,10 +77,10 @@ namespace QMC.Common
             rightPanel.Controls.Clear();
             _listMenuButtons.Clear();
 
-            var leftButtons = new[] { MenuButtonType.Main, MenuButtonType.Working, MenuButtonType.Recipe, MenuButtonType.Config, MenuButtonType.Setup };
+            var leftButtons = new[] { MenuButtonType.Main, MenuButtonType.Working, MenuButtonType.Recipe, MenuButtonType.Config, MenuButtonType.Setup, MenuButtonType.Log };
             var rightButtons = new[] { MenuButtonType.Login, MenuButtonType.Exit };
 
-            int btnWidth = 130;
+            int btnWidth = 120;
             int btnHeight = 48;
             int panelHeight = this.Height > 0 ? this.Height : 60;
             int marginY = Math.Max(0, (panelHeight - btnHeight) / 2);

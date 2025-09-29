@@ -1,100 +1,156 @@
 ﻿using QMC.Common;
-using QMC.Common.Controls;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
     public partial class SequenceAutoControl : UserControl
     {
-        public class ItemEventArgs : EventArgs
+        #region Auto Sequence Events
+
+        /// <summary>
+        /// Auto Sequence 버튼 클릭 이벤트 인자
+        /// </summary>
+        public class AutoSequenceEventArgs : EventArgs
         {
-            public string status { get; set; } //임시 작업, 변경 필요
-            public string sequenceName { get; set; } //임시 작업, 변경 필요
+            public string Command { get; set; }  // "Ready", "Start", "Stop", "CycleStop", "Reset"
         }
 
-        public event EventHandler<ItemEventArgs> SequenceButtonRequested;
+        /// <summary>
+        /// Auto Sequence 상태 변경 이벤트 인자 (Form → Control)
+        /// </summary>
+        public class AutoSequenceStateChangedEventArgs : EventArgs
+        {
+            public string Command { get; set; }
+            public bool IsActive { get; set; }
+        }
+
+        #endregion
+
+        #region Events
+
+        /// <summary>
+        /// 버튼 클릭 시 부모 Form으로 전달 (Control → Form)
+        /// </summary>
+        public event EventHandler<AutoSequenceEventArgs> SequenceButtonRequested;
+
+        #endregion
+
+        private Dictionary<IndividualMenuButton, string> _buttonCommands;
+        private readonly Color _defaultColor = Color.FromArgb(217, 217, 217);
+        private readonly Color _activeColor = Color.LightGreen;
 
         public SequenceAutoControl()
         {
             InitializeComponent();
+            InitializeButtonCommands();
+            RegisterButtonEvents();
         }
 
-        private void btn_Auto_Ready_Click(object sender, EventArgs e)
-
+        private void InitializeButtonCommands()
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Aotu Sequence Ready", "Auto Sequence Ready 진행하시겠습니까?") == DialogResult.Yes)
+            _buttonCommands = new Dictionary<IndividualMenuButton, string>
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
+                { btn_Auto_Ready, "Ready" },
+                { btn_Auto_Start, "Start" },
+                { btn_Auto_Stop, "Stop" },
+                { btn_Auto_CycleStop, "CycleStop" },
+                { btn_Auto_Reset, "Reset" }
+            };
+        }
+
+        private void RegisterButtonEvents()
+        {
+            foreach (var button in _buttonCommands.Keys)
+            {
+                button.Click -= OnAutoButtonClick;
+                button.Click += OnAutoButtonClick;
+            }
+        }
+
+        private void OnAutoButtonClick(object sender, EventArgs e)
+        {
+            var button = sender as IndividualMenuButton;
+            if (button == null || !_buttonCommands.ContainsKey(button)) return;
+
+            var command = _buttonCommands[button];
+
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog($"Auto Sequence {command}",
+                $"Auto Sequence {command} 진행하시겠습니까?") == DialogResult.Yes)
+            {
+                // 부모 Form으로 이벤트 전달 (UI는 부모가 상태 변경 이벤트로 알려줌)
+                SequenceButtonRequested?.Invoke(this, new AutoSequenceEventArgs
                 {
-                    status = "Ready",
-                    sequenceName = "Ready"
+                    Command = command
                 });
             }
         }
 
-        private void btn_Auto_Start_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 부모 Form에서 상태 변경 이벤트를 받아서 UI 업데이트 (Form → Control)
+        /// </summary>
+        public void OnAutoSequenceStateChanged(AutoSequenceStateChangedEventArgs e)
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Aotu Sequence Start", "Auto Sequence Start 진행하시겠습니까?") == DialogResult.Yes)
+            if (InvokeRequired)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Start",
-                    sequenceName = "Start"
-                });
+                Invoke(new Action(() => OnAutoSequenceStateChanged(e)));
+                return;
+            }
+
+            var button = _buttonCommands.FirstOrDefault(x => x.Value == e.Command).Key;
+            if (button != null)
+            {
+                button.BackColor = e.IsActive ? _activeColor : _defaultColor;
             }
         }
 
-        private void btn_Auto_Stop_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 모든 버튼 초기화
+        /// </summary>
+        public void ResetAllButtons()
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Aotu Sequence Stop", "Auto Sequence Stop 진행하시겠습니까?") == DialogResult.Yes)
+            if (InvokeRequired)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Stop",
-                    sequenceName = "Stop"
-                });
+                Invoke(new Action(ResetAllButtons));
+                return;
+            }
+
+            foreach (var button in _buttonCommands.Keys)
+            {
+                button.BackColor = _defaultColor;
             }
         }
 
-        private void btn_Auto_CycleStop_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 버튼 활성화/비활성화
+        /// </summary>
+        public void SetButtonEnabled(string command, bool enabled)
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Aotu Sequence Ready", "Auto Sequence CycleStop 진행하시겠습니까?") == DialogResult.Yes)
+            if (InvokeRequired)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "CycleStop",
-                    sequenceName = "CycleStop"
-                });
+                Invoke(new Action(() => SetButtonEnabled(command, enabled)));
+                return;
+            }
+
+            var button = _buttonCommands.FirstOrDefault(x => x.Value == command).Key;
+            if (button != null)
+            {
+                button.Enabled = enabled;
             }
         }
 
-        private void btn_Auto_Reset_Click(object sender, EventArgs e)
+        /// <summary>
+        /// 여러 버튼 활성화/비활성화
+        /// </summary>
+        public void SetButtonsEnabled(bool enabled, params string[] commands)
         {
-            var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("Aotu Sequence Reset", "Auto Sequence Reset 진행하시겠습니까?") == DialogResult.Yes)
+            foreach (var command in commands)
             {
-                // 모터 이동 이벤트 발생
-                SequenceButtonRequested?.Invoke(this, new ItemEventArgs
-                {
-                    status = "Reset",
-                    sequenceName = "Reset"
-                });
+                SetButtonEnabled(command, enabled);
             }
         }
     }

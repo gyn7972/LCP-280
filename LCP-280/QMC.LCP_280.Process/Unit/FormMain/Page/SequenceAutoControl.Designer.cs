@@ -13,9 +13,18 @@
         /// <param name="disposing">관리되는 리소스를 삭제해야 하면 true이고, 그렇지 않으면 false입니다.</param>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                // 이벤트 해제
+                foreach (var button in _buttonCommands.Keys)
+                {
+                    button.Click -= OnAutoButtonClick;
+                }
+
+                if (components != null)
+                {
+                    components.Dispose();
+                }
             }
             base.Dispose(disposing);
         }
@@ -80,7 +89,6 @@
             this.btn_Auto_Reset.TabStop = false;
             this.btn_Auto_Reset.Text = "Reset";
             this.btn_Auto_Reset.UseVisualStyleBackColor = false;
-            this.btn_Auto_Reset.Click += new System.EventHandler(this.btn_Auto_Reset_Click);
             // 
             // btn_Auto_CycleStop
             // 
@@ -100,7 +108,6 @@
             this.btn_Auto_CycleStop.TabStop = false;
             this.btn_Auto_CycleStop.Text = "Cycle Stop";
             this.btn_Auto_CycleStop.UseVisualStyleBackColor = false;
-            this.btn_Auto_CycleStop.Click += new System.EventHandler(this.btn_Auto_CycleStop_Click);
             // 
             // btn_Auto_Stop
             // 
@@ -120,7 +127,6 @@
             this.btn_Auto_Stop.TabStop = false;
             this.btn_Auto_Stop.Text = "Stop";
             this.btn_Auto_Stop.UseVisualStyleBackColor = false;
-            this.btn_Auto_Stop.Click += new System.EventHandler(this.btn_Auto_Stop_Click);
             // 
             // btn_Auto_Start
             // 
@@ -140,7 +146,6 @@
             this.btn_Auto_Start.TabStop = false;
             this.btn_Auto_Start.Text = "Start";
             this.btn_Auto_Start.UseVisualStyleBackColor = false;
-            this.btn_Auto_Start.Click += new System.EventHandler(this.btn_Auto_Start_Click);
             // 
             // btn_Auto_Ready
             // 
@@ -160,7 +165,6 @@
             this.btn_Auto_Ready.TabStop = false;
             this.btn_Auto_Ready.Text = "Ready";
             this.btn_Auto_Ready.UseVisualStyleBackColor = false;
-            this.btn_Auto_Ready.Click += new System.EventHandler(this.btn_Auto_Ready_Click);
             // 
             // SequenceAutoControl
             // 
