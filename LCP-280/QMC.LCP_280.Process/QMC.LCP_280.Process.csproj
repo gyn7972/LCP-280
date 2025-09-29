@@ -344,6 +344,12 @@
     <Compile Include="Unit\FormSetup\Barcoder_Setup.Designer.cs">
       <DependentUpon>Barcoder_Setup.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\FormSetup\Page\BarcoderControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\FormSetup\Page\BarcoderControl.Designer.cs">
+      <DependentUpon>BarcoderControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\FormSetup\Page\SourcemeterPage.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -705,6 +711,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Component\Form_AxisJogPopup.resx">
       <DependentUpon>Form_AxisJogPopup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormSetup\Page\BarcoderControl.resx">
+      <DependentUpon>BarcoderControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormSetup\Page\SourcemeterPage.resx">
       <DependentUpon>SourcemeterPage.cs</DependentUpon>

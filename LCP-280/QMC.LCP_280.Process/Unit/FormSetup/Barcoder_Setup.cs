@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.LCP_280.Process.Unit.FormSetup.BarcoderControl;
 
 namespace QMC.LCP_280.Process.Unit.FormSetup
 {
@@ -17,438 +18,289 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
     {
         private readonly Equipment Equipment = Equipment.Instance;
 
-        #region Barcder
-        private ConfigReflectionMapper ConfigMapper_Barcder;
-        private OpticonBarcodeReader SelectedItem_Barcder;
-        private List<string> DeviceNames_Barcder;
-        #endregion
-
-        #region Image Viewer - 새로 추가
-        private bool isCapturingImage = false;
-        private Image currentCapturedImage = null;
-        #endregion
-
-        private bool isAutoTriggerMode = false;
-
         public Barcoder_Setup()
         {
             InitializeComponent();
-            SuspendLayout();
-            InitializeUI();
+
+            // BarcoderControl 이벤트 구독
+            RegisterBarcoderControlEvents();
         }
 
-        // ===== Initialize =====
-        private void InitializeUI()
+        /// <summary>
+        /// BarcoderControl 이벤트 등록
+        /// </summary>
+        private void RegisterBarcoderControlEvents()
+        {
+            if (barcoderControl != null)
+            {
+                barcoderControl.BarcoderSelected += BarcoderControl_BarcoderSelected;
+                barcoderControl.SaveRequested += BarcoderControl_SaveRequested;
+                barcoderControl.ScanRequested += BarcoderControl_ScanRequested;
+                barcoderControl.BarcodeDataReceived += BarcoderControl_BarcodeDataReceived;
+                barcoderControl.ErrorOccurred += BarcoderControl_ErrorOccurred;
+            }
+        }
+
+        #region 이벤트 핸들러
+
+        /// <summary>
+        /// 바코드 리더 선택 시 호출
+        /// </summary>
+        private void BarcoderControl_BarcoderSelected(object sender, BarcoderSelectedEventArgs e)
         {
             try
             {
-                BindingList_Barcder();
-                WriteEvents_Barcder();
+                Log.Write("Barcoder_Setup", $"바코드 리더 선택됨: {e.DeviceName}");
+
+                // 여기서 선택된 바코드 리더에 대한 데이터 처리
+                // 예: 로그 기록, 상태 업데이트 등
+
+                if (e.SelectedBarcoder != null)
+                {
+                    // 추가 데이터 처리 로직
+                }
             }
             catch (Exception ex)
             {
-                Log.Write("LCP-280", $"InitializeUI error: {ex}");
+                Log.Write("Barcoder_Setup", $"BarcoderSelected 처리 오류: {ex}");
             }
         }
 
-        #region Barcoder
-        private void BindingList_Barcder()
+        /// <summary>
+        /// 저장 요청 시 호출
+        /// </summary>
+        private void BarcoderControl_SaveRequested(object sender, BarcoderSaveEventArgs e)
         {
             try
             {
-                DeviceNames_Barcder = new List<string>();
-
-                // Equipment에서 정보들을 가져옴
-                foreach (var Key in Equipment.Instance.Barcoders.Keys)
+                if (e.Barcoder == null || e.Properties == null)
                 {
-                    DeviceNames_Barcder.Add(Key);
-                }
-
-                if (DeviceNames_Barcder.Count == 0)
-                {
-                    // 없으면 빈 상태로
-                    listBoxItemsView?.SetItems();
+                    MessageBox.Show("저장할 데이터가 없습니다.");
                     return;
                 }
 
-                listBoxItemsView?.SetItems(DeviceNames_Barcder.ToArray());
+                Log.Write("Barcoder_Setup", "설정 저장 시작");
 
-                // 첫 번째 자동 선택
-                if (DeviceNames_Barcder.Count > 0)
-                {
-                    listBoxItemsView.SelectedIndex = 0;
+                // ConfigMapper를 사용하여 속성 적용
+                var configMapper = new ConfigReflectionMapper(e.Barcoder.Config);
+                configMapper.ApplyToObject(e.Properties);
 
-                    OnSelected_Barcder(this, 0);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Barcoder", $"Binding Barcoder List error: {ex}");
-            }
-        }
-
-        #endregion
-
-        #region Barcoder Event
-        private void WriteEvents_Barcder()
-        {
-            // 바코드 리스트 선택 이벤트
-            if (listBoxItemsView != null)
-            {
-                listBoxItemsView.ItemSelected -= OnSelected_Barcder;
-                listBoxItemsView.ItemSelected += OnSelected_Barcder;
-            }
-
-            if (btn_Save_Barcoder_Setup != null)
-            {
-                btn_Save_Barcoder_Setup.Click -= btn_Save_Barcoder_Setup_Click;
-                btn_Save_Barcoder_Setup.Click += btn_Save_Barcoder_Setup_Click;
-            }
-
-            // 스캔 버튼 이벤트 추가
-            if (btnBarcoderScan != null)
-            {
-                btnBarcoderScan.Click -= btnBarcoderScan_Click;
-                btnBarcoderScan.Click += btnBarcoderScan_Click;
-            }
-        }
-
-        private void OnSelected_Barcder(object sender, int selectedIndex)
-        {
-            // 기존 바코드 리더 이벤트 해제
-            if (SelectedItem_Barcder != null)
-            {
-                UnsubscribeBarcoderEvents(SelectedItem_Barcder);
-            }
-
-            if (selectedIndex < 0 || selectedIndex >= DeviceNames_Barcder.Count) return;
-
-            var name = DeviceNames_Barcder[selectedIndex];
-            SelectedItem_Barcder = Equipment.Instance.Barcoders[name];
-
-            // 새로운 바코드 리더 이벤트 연결
-            if (SelectedItem_Barcder != null)
-            {
-                SubscribeBarcoderEvents(SelectedItem_Barcder);
-            }
-
-            // Config 객체를 직접 전달
-            LoadProperties_Barcoder(SelectedItem_Barcder?.Config, SelectedItem_Barcder?.Name);
-
-            // 스캔 버튼 상태 업데이트
-            UpdateScanButtonState();
-        }
-
-        // ===== Properties Loading =====
-        private void LoadProperties_Barcoder(object config, string deviceName)
-        {
-            try
-            {
-                // 기존 매핑 해제
-                propertyCollectionView?.SetProperties(null);
-                ConfigMapper_Barcder = null;
-
-                if (config != null)
-                {
-                    Application.DoEvents();
-
-                    ConfigMapper_Barcder = new ConfigReflectionMapper(config);
-                    propertyCollectionView?.SetProperties(ConfigMapper_Barcder.PropertyCollection);
-                    propertyCollectionView?.Refresh();
-
-                    Log.Write("Barcoder", $"Device '{deviceName}' properties loaded successfully");
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Barcoder", $"LoadDeviceProperties error: {ex}");
-                propertyCollectionView?.SetProperties(null);
-                ConfigMapper_Barcder = null;
-            }
-        }
-
-        private void btn_Save_Barcoder_Setup_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                // 기존 저장 로직...
-                var pc = propertyCollectionView?.GetCurrentProperties();
-                if (pc != null)
-                {
-                    ConfigMapper_Barcder.ApplyToObject(pc);
-                }
-
-                var saveResult = SelectedItem_Barcder.Config.Save();
+                // 설정 저장
+                var saveResult = e.Barcoder.Config.Save();
                 string result = saveResult == 0 ? "완료" : "에러";
                 MessageBox.Show($"저장 결과: {result}");
 
-                // 설정 변경 후 재연결 추가
-                if (saveResult == 0 && SelectedItem_Barcder.IsConnected)
+                Log.Write("Barcoder_Setup", $"설정 저장 완료: {result}");
+
+                // 설정 변경 후 재연결
+                if (saveResult == 0 && e.Barcoder.IsConnected)
                 {
-                    SelectedItem_Barcder.Close();
+                    e.Barcoder.Close();
                     System.Threading.Thread.Sleep(100);
-                    SelectedItem_Barcder.Initialize();
+                    e.Barcoder.Initialize();
+                    Log.Write("Barcoder_Setup", "바코드 리더 재연결 완료");
                 }
             }
             catch (Exception ex)
             {
-                Log.Write("Setup", $"Save error: {ex}");
-            }
-        }
-
-        private string LogConfigProperties(string phase, object config)
-        {
-            var props = config.GetType().GetProperties().Take(5);
-            var values = string.Join(", ", props.Select(p => $"{p.Name}={p.GetValue(config)}"));
-            Log.Write("Setup", $"=== {phase} === {values}");
-            return values;
-        }
-
-        private string LogPropertyCollection(string phase, object pc)
-        {
-            if (pc == null) return "null";
-
-            var pcType = pc.GetType();
-            var countProp = pcType.GetProperty("Count");
-            var count = countProp?.GetValue(pc) ?? 0;
-
-            Log.Write("Setup", $"=== {phase} === Count: {count}");
-            return count.ToString();
-        }
-        #endregion
-
-        #region NLV-5201 지원 메서드들
-
-        /// <summary>
-        /// 바코드 리더 이벤트 구독
-        /// </summary>
-        private void SubscribeBarcoderEvents(OpticonBarcodeReader barcoder)
-        {
-            if (barcoder != null)
-            {
-                barcoder.BarcodeDataReceived += Barcoder_BarcodeDataReceived;
-                barcoder.ErrorOccurred += Barcoder_ErrorOccurred;
-                barcoder.StatusChanged += Barcoder_StatusChanged;
+                Log.Write("Barcoder_Setup", $"Save 처리 오류: {ex}");
+                MessageBox.Show($"저장 오류: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 바코드 리더 이벤트 해제
+        /// 스캔 요청 시 호출
         /// </summary>
-        private void UnsubscribeBarcoderEvents(OpticonBarcodeReader barcoder)
-        {
-            if (barcoder != null)
-            {
-                barcoder.BarcodeDataReceived -= Barcoder_BarcodeDataReceived;
-                barcoder.ErrorOccurred -= Barcoder_ErrorOccurred;
-                barcoder.StatusChanged -= Barcoder_StatusChanged;
-            }
-        }
-
-        /// <summary>
-        /// 바코드 데이터 수신 이벤트
-        /// </summary>
-        private void Barcoder_BarcodeDataReceived(object sender, BarcodeDataEventArgs e)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => Barcoder_BarcodeDataReceived(sender, e)));
-                return;
-            }
-
-            try
-            {
-                labelBarcoderData.Text = $"[{e.Timestamp:HH:mm:ss}] {e.Data}";
-                labelBarcoderData.ForeColor = System.Drawing.Color.Blue;
-                Log.Write("Barcoder", $"바코드 수신: {e.Data}");
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Barcoder", $"BarcodeDataReceived 처리 오류: {ex}");
-            }
-        }
-
-        /// <summary>
-        /// 오류 발생 이벤트
-        /// </summary>
-        private void Barcoder_ErrorOccurred(object sender, string error)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => Barcoder_ErrorOccurred(sender, error)));
-                return;
-            }
-
-            labelBarcoderData.Text = $"오류: {error}";
-            labelBarcoderData.ForeColor = System.Drawing.Color.Red;
-            Log.Write("Barcoder", $"오류: {error}");
-        }
-
-        /// <summary>
-        /// 상태 변경 이벤트
-        /// </summary>
-        private void Barcoder_StatusChanged(object sender, string status)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => Barcoder_StatusChanged(sender, status)));
-                return;
-            }
-
-            Log.Write("Barcoder", $"상태: {status}");
-        }
-
-        /// <summary>
-        /// 스캔 버튼 클릭 이벤트
-        /// </summary>
-        private void btnBarcoderScan_Click(object sender, EventArgs e)
+        private void BarcoderControl_ScanRequested(object sender, BarcoderScanEventArgs e)
         {
             try
             {
-                if (SelectedItem_Barcder == null)
+                if (e.Barcoder == null)
                 {
                     MessageBox.Show("바코드 리더를 선택하세요.");
                     return;
                 }
 
-                if (!SelectedItem_Barcder.IsConnected)
+                // 연결 확인
+                if (!e.Barcoder.IsConnected)
                 {
-                    if (SelectedItem_Barcder.Initialize() != 0)
+                    if (e.Barcoder.Initialize() != 0)
                     {
                         MessageBox.Show("바코드 리더 연결에 실패했습니다.");
                         return;
                     }
                 }
 
-                if (!isAutoTriggerMode)
+                // 자동/수동 모드에 따라 처리
+                if (!e.IsAutoTriggerMode)
                 {
-                    PerformManualScan();
+                    PerformManualScan(e.Barcoder);
                 }
                 else
                 {
-                    ToggleAutoTrigger();
+                    ToggleAutoTrigger(e.Barcoder);
                 }
             }
             catch (Exception ex)
             {
-                Log.Write("Barcoder", $"btnBarcoderScan_Click error: {ex}");
+                Log.Write("Barcoder_Setup", $"Scan 처리 오류: {ex}");
                 MessageBox.Show($"스캔 오류: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// 수동 스캔 수행
+        /// 바코드 데이터 수신 시 호출
         /// </summary>
-        private void PerformManualScan()
+        private void BarcoderControl_BarcodeDataReceived(object sender, BarcodeDataEventArgs e)
         {
             try
             {
-                labelBarcoderData.Text = "스캔 중...";
-                labelBarcoderData.ForeColor = System.Drawing.Color.Orange;
+                Log.Write("Barcoder_Setup", $"바코드 데이터 수신: {e.Data} at {e.Timestamp}");
+
+                // 여기서 바코드 데이터 처리
+                // 예: 데이터베이스 저장, 검증, 다른 시스템으로 전송 등
+                ProcessBarcodeData(e.Data, e.Timestamp);
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Barcoder_Setup", $"BarcodeData 처리 오류: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// 에러 발생 시 호출
+        /// </summary>
+        private void BarcoderControl_ErrorOccurred(object sender, string error)
+        {
+            try
+            {
+                Log.Write("Barcoder_Setup", $"바코드 리더 오류: {error}");
+
+                // 여기서 에러 처리
+                // 예: 알림, 로그, 재연결 시도 등
+                HandleBarcoderError(error);
+            }
+            catch (Exception ex)
+            {
+                Log.Write("Barcoder_Setup", $"Error 처리 오류: {ex}");
+            }
+        }
+
+        #endregion
+
+        #region 데이터 처리 메서드
+
+        /// <summary>
+        /// 수동 스캔 수행
+        /// </summary>
+        private void PerformManualScan(OpticonBarcodeReader barcoder)
+        {
+            try
+            {
+                barcoderControl.UpdateScanStatus("스캔 중...", Color.Orange);
 
                 string data;
-                int result = SelectedItem_Barcder.Read(out data);
+                int result = barcoder.Read(out data);
 
                 if (result == 0 && !string.IsNullOrWhiteSpace(data))
                 {
-                    labelBarcoderData.Text = $"[{DateTime.Now:HH:mm:ss}] {data}";
-                    labelBarcoderData.ForeColor = System.Drawing.Color.Blue;
+                    barcoderControl.UpdateScanStatus($"[{DateTime.Now:HH:mm:ss}] {data}", Color.Blue);
+                    Log.Write("Barcoder_Setup", $"수동 스캔 성공: {data}");
                 }
                 else
                 {
-                    labelBarcoderData.Text = "바코드를 읽지 못했습니다.";
-                    labelBarcoderData.ForeColor = System.Drawing.Color.Red;
+                    barcoderControl.UpdateScanStatus("바코드를 읽지 못했습니다.", Color.Red);
+                    Log.Write("Barcoder_Setup", "수동 스캔 실패");
                 }
             }
             catch (Exception ex)
             {
-                labelBarcoderData.Text = $"스캔 오류: {ex.Message}";
-                labelBarcoderData.ForeColor = System.Drawing.Color.Red;
+                barcoderControl.UpdateScanStatus($"스캔 오류: {ex.Message}", Color.Red);
+                Log.Write("Barcoder_Setup", $"PerformManualScan 오류: {ex}");
             }
         }
 
         /// <summary>
         /// 자동 트리거 모드 토글
         /// </summary>
-        private void ToggleAutoTrigger()
+        private void ToggleAutoTrigger(OpticonBarcodeReader barcoder)
         {
             try
             {
-                if (SelectedItem_Barcder.IsAutoTriggerEnabled)
+                if (barcoder.IsAutoTriggerEnabled)
                 {
-                    SelectedItem_Barcder.StopAutoTrigger();
-                    btnBarcoderScan.Text = "Start Auto";
-                    labelBarcoderData.Text = "자동 트리거 모드 중지됨";
-                    labelBarcoderData.ForeColor = System.Drawing.Color.Gray;
+                    barcoder.StopAutoTrigger();
+                    barcoderControl.UpdateScanButtonText("Start Auto");
+                    barcoderControl.UpdateScanStatus("자동 트리거 모드 중지됨", Color.Gray);
+                    Log.Write("Barcoder_Setup", "자동 트리거 모드 중지");
                 }
                 else
                 {
-                    if (SelectedItem_Barcder.StartAutoTrigger() == 0)
+                    if (barcoder.StartAutoTrigger() == 0)
                     {
-                        btnBarcoderScan.Text = "Stop Auto";
-                        labelBarcoderData.Text = "자동 트리거 모드 시작됨 - 바코드를 스캐너에 가져다 대세요";
-                        labelBarcoderData.ForeColor = System.Drawing.Color.Green;
+                        barcoderControl.UpdateScanButtonText("Stop Auto");
+                        barcoderControl.UpdateScanStatus("자동 트리거 모드 시작됨 - 바코드를 스캐너에 가져다 대세요", Color.Green);
+                        Log.Write("Barcoder_Setup", "자동 트리거 모드 시작");
                     }
                     else
                     {
-                        labelBarcoderData.Text = "자동 트리거 모드 시작 실패";
-                        labelBarcoderData.ForeColor = System.Drawing.Color.Red;
+                        barcoderControl.UpdateScanStatus("자동 트리거 모드 시작 실패", Color.Red);
+                        Log.Write("Barcoder_Setup", "자동 트리거 모드 시작 실패");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Write("Barcoder", $"ToggleAutoTrigger error: {ex}");
+                Log.Write("Barcoder_Setup", $"ToggleAutoTrigger 오류: {ex}");
             }
         }
 
         /// <summary>
-        /// 스캔 버튼 상태 업데이트
+        /// 바코드 데이터 처리
         /// </summary>
-        private void UpdateScanButtonState()
+        private void ProcessBarcodeData(string data, DateTime timestamp)
         {
-            if (SelectedItem_Barcder == null)
-            {
-                btnBarcoderScan.Text = "Manual Scan";
-                btnBarcoderScan.Enabled = false;
-                labelBarcoderData.Text = "바코드 리더를 선택하세요.";
-                labelBarcoderData.ForeColor = System.Drawing.Color.Gray;
-                return;
-            }
+            // 여기에 실제 데이터 처리 로직 구현
+            // 예:
+            // - 데이터 검증
+            // - 데이터베이스 저장
+            // - 다른 시스템으로 전송
+            // - 화면 업데이트
 
-            btnBarcoderScan.Enabled = true;
+            Log.Write("Barcoder_Setup", $"데이터 처리: {data}");
+        }
 
-            if (isAutoTriggerMode)
-            {
-                btnBarcoderScan.Text = SelectedItem_Barcder.IsAutoTriggerEnabled ? "Stop Auto" : "Start Auto";
-            }
-            else
-            {
-                btnBarcoderScan.Text = "Manual Scan";
-            }
+        /// <summary>
+        /// 바코드 리더 에러 처리
+        /// </summary>
+        private void HandleBarcoderError(string error)
+        {
+            // 여기에 실제 에러 처리 로직 구현
+            // 예:
+            // - 재연결 시도
+            // - 사용자 알림
+            // - 에러 로그 저장
 
-            labelBarcoderData.Text = "바코드 데이터가 여기에 표시됩니다.";
-            labelBarcoderData.ForeColor = System.Drawing.Color.Gray;
+            Log.Write("Barcoder_Setup", $"에러 처리: {error}");
         }
 
         #endregion
 
-        protected override void OnFormClosed(FormClosedEventArgs e)
+        /// <summary>
+        /// 폼 종료 시 이벤트 해제
+        /// </summary>
+        protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            try
+            if (barcoderControl != null)
             {
-                if (SelectedItem_Barcder != null)
-                {
-                    SelectedItem_Barcder.StopAutoTrigger();
-                    UnsubscribeBarcoderEvents(SelectedItem_Barcder);
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Barcoder", $"Form close error: {ex}");
+                barcoderControl.BarcoderSelected -= BarcoderControl_BarcoderSelected;
+                barcoderControl.SaveRequested -= BarcoderControl_SaveRequested;
+                barcoderControl.ScanRequested -= BarcoderControl_ScanRequested;
+                barcoderControl.BarcodeDataReceived -= BarcoderControl_BarcodeDataReceived;
+                barcoderControl.ErrorOccurred -= BarcoderControl_ErrorOccurred;
             }
 
-            base.OnFormClosed(e);
+            base.OnFormClosing(e);
         }
     }
 }
