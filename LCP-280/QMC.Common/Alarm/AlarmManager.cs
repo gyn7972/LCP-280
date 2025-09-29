@@ -164,7 +164,5 @@ namespace QMC.Common.Alarm
                 m_Alarms.Clear();
             }
         }
-
-
     }
 }
