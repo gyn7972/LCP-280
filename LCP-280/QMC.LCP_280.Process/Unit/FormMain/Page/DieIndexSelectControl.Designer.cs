@@ -30,10 +30,10 @@
             this.displayPanel = new System.Windows.Forms.Panel();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.btnRotateCounterClockwise = new QMC.Common.IndividualMenuButton();
             this.btnAutoSequence = new QMC.Common.IndividualMenuButton();
             this.btnReset = new QMC.Common.IndividualMenuButton();
-            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -91,6 +91,14 @@
             this.tableLayoutPanel1.Controls.Add(this.lblDieNumber, 0, 1);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             // 
+            // tableLayoutPanel2
+            // 
+            resources.ApplyResources(this.tableLayoutPanel2, "tableLayoutPanel2");
+            this.tableLayoutPanel2.Controls.Add(this.btnRotateCounterClockwise, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.btnAutoSequence, 1, 0);
+            this.tableLayoutPanel2.Controls.Add(this.btnReset, 2, 0);
+            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
+            // 
             // btnRotateCounterClockwise
             // 
             this.btnRotateCounterClockwise.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -103,6 +111,7 @@
             this.btnRotateCounterClockwise.Name = "btnRotateCounterClockwise";
             this.btnRotateCounterClockwise.TabStop = false;
             this.btnRotateCounterClockwise.UseVisualStyleBackColor = false;
+            this.btnRotateCounterClockwise.Click += new System.EventHandler(this.btnRotateCounterClockwise_Click);
             // 
             // btnAutoSequence
             // 
@@ -116,6 +125,7 @@
             this.btnAutoSequence.Name = "btnAutoSequence";
             this.btnAutoSequence.TabStop = false;
             this.btnAutoSequence.UseVisualStyleBackColor = false;
+            this.btnAutoSequence.Click += new System.EventHandler(this.btnAutoSequence_Click);
             // 
             // btnReset
             // 
@@ -129,14 +139,7 @@
             this.btnReset.Name = "btnReset";
             this.btnReset.TabStop = false;
             this.btnReset.UseVisualStyleBackColor = false;
-            // 
-            // tableLayoutPanel2
-            // 
-            resources.ApplyResources(this.tableLayoutPanel2, "tableLayoutPanel2");
-            this.tableLayoutPanel2.Controls.Add(this.btnRotateCounterClockwise, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.btnAutoSequence, 1, 0);
-            this.tableLayoutPanel2.Controls.Add(this.btnReset, 2, 0);
-            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
+            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
             // DieIndexSelectControl
             // 

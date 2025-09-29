@@ -330,6 +330,27 @@
   <data name="tableLayoutPanel2.ColumnCount" type="System.Int32, mscorlib">
     <value>3</value>
   </data>
+  <data name="btnRotateCounterClockwise.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
+    <value>Center</value>
+  </data>
+  <data name="btnRotateCounterClockwise.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="btnRotateCounterClockwise.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Arial, 10pt, style=Bold</value>
+  </data>
+  <data name="btnRotateCounterClockwise.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="btnRotateCounterClockwise.Size" type="System.Drawing.Size, System.Drawing">
+    <value>132, 26</value>
+  </data>
+  <data name="btnRotateCounterClockwise.TabIndex" type="System.Int32, mscorlib">
+    <value>27</value>
+  </data>
+  <data name="btnRotateCounterClockwise.Text" xml:space="preserve">
+    <value>Next Index</value>
+  </data>
   <data name="&gt;&gt;btnRotateCounterClockwise.Name" xml:space="preserve">
     <value>btnRotateCounterClockwise</value>
   </data>
@@ -342,6 +363,30 @@
   <data name="&gt;&gt;btnRotateCounterClockwise.ZOrder" xml:space="preserve">
     <value>0</value>
   </data>
+  <data name="btnAutoSequence.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
+    <value>Center</value>
+  </data>
+  <data name="btnAutoSequence.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="btnAutoSequence.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Arial, 10pt, style=Bold</value>
+  </data>
+  <data name="btnAutoSequence.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="btnAutoSequence.Location" type="System.Drawing.Point, System.Drawing">
+    <value>141, 3</value>
+  </data>
+  <data name="btnAutoSequence.Size" type="System.Drawing.Size, System.Drawing">
+    <value>132, 26</value>
+  </data>
+  <data name="btnAutoSequence.TabIndex" type="System.Int32, mscorlib">
+    <value>28</value>
+  </data>
+  <data name="btnAutoSequence.Text" xml:space="preserve">
+    <value>Auto Sequence</value>
+  </data>
   <data name="&gt;&gt;btnAutoSequence.Name" xml:space="preserve">
     <value>btnAutoSequence</value>
   </data>
@@ -353,6 +398,30 @@
   </data>
   <data name="&gt;&gt;btnAutoSequence.ZOrder" xml:space="preserve">
     <value>1</value>
+  </data>
+  <data name="btnReset.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
+    <value>Center</value>
+  </data>
+  <data name="btnReset.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="btnReset.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Arial, 10pt, style=Bold</value>
+  </data>
+  <data name="btnReset.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
+    <value>NoControl</value>
+  </data>
+  <data name="btnReset.Location" type="System.Drawing.Point, System.Drawing">
+    <value>279, 3</value>
+  </data>
+  <data name="btnReset.Size" type="System.Drawing.Size, System.Drawing">
+    <value>133, 26</value>
+  </data>
+  <data name="btnReset.TabIndex" type="System.Int32, mscorlib">
+    <value>29</value>
+  </data>
+  <data name="btnReset.Text" xml:space="preserve">
+    <value>Reset All</value>
   </data>
   <data name="&gt;&gt;btnReset.Name" xml:space="preserve">
     <value>btnReset</value>
@@ -425,111 +494,6 @@
   </data>
   <data name="tlpMain.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
     <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="displayPanel" Row="1" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="tableLayoutPanel1" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="tableLayoutPanel2" Row="2" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100" /&gt;&lt;Rows Styles="Percent,18.77897,Percent,71.2209,Percent,10.00013" /&gt;&lt;/TableLayoutSettings&gt;</value>
-  </data>
-  <data name="btnRotateCounterClockwise.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
-    <value>Center</value>
-  </data>
-  <data name="btnRotateCounterClockwise.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>Fill</value>
-  </data>
-  <data name="btnRotateCounterClockwise.Font" type="System.Drawing.Font, System.Drawing">
-    <value>Arial, 8pt, style=Bold</value>
-  </data>
-  <data name="btnRotateCounterClockwise.Location" type="System.Drawing.Point, System.Drawing">
-    <value>3, 3</value>
-  </data>
-  <data name="btnRotateCounterClockwise.Size" type="System.Drawing.Size, System.Drawing">
-    <value>132, 26</value>
-  </data>
-  <data name="btnRotateCounterClockwise.TabIndex" type="System.Int32, mscorlib">
-    <value>27</value>
-  </data>
-  <data name="btnRotateCounterClockwise.Text" xml:space="preserve">
-    <value>Next Index</value>
-  </data>
-  <data name="&gt;&gt;btnRotateCounterClockwise.Name" xml:space="preserve">
-    <value>btnRotateCounterClockwise</value>
-  </data>
-  <data name="&gt;&gt;btnRotateCounterClockwise.Type" xml:space="preserve">
-    <value>QMC.Common.IndividualMenuButton, QMC.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;btnRotateCounterClockwise.Parent" xml:space="preserve">
-    <value>tableLayoutPanel2</value>
-  </data>
-  <data name="&gt;&gt;btnRotateCounterClockwise.ZOrder" xml:space="preserve">
-    <value>0</value>
-  </data>
-  <data name="btnAutoSequence.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
-    <value>Center</value>
-  </data>
-  <data name="btnAutoSequence.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>Fill</value>
-  </data>
-  <data name="btnAutoSequence.Font" type="System.Drawing.Font, System.Drawing">
-    <value>Arial, 8pt, style=Bold</value>
-  </data>
-  <data name="btnAutoSequence.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="btnAutoSequence.Location" type="System.Drawing.Point, System.Drawing">
-    <value>141, 3</value>
-  </data>
-  <data name="btnAutoSequence.Size" type="System.Drawing.Size, System.Drawing">
-    <value>132, 26</value>
-  </data>
-  <data name="btnAutoSequence.TabIndex" type="System.Int32, mscorlib">
-    <value>28</value>
-  </data>
-  <data name="btnAutoSequence.Text" xml:space="preserve">
-    <value>Auto Sequence</value>
-  </data>
-  <data name="&gt;&gt;btnAutoSequence.Name" xml:space="preserve">
-    <value>btnAutoSequence</value>
-  </data>
-  <data name="&gt;&gt;btnAutoSequence.Type" xml:space="preserve">
-    <value>QMC.Common.IndividualMenuButton, QMC.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;btnAutoSequence.Parent" xml:space="preserve">
-    <value>tableLayoutPanel2</value>
-  </data>
-  <data name="&gt;&gt;btnAutoSequence.ZOrder" xml:space="preserve">
-    <value>1</value>
-  </data>
-  <data name="btnReset.BackgroundImageLayout" type="System.Windows.Forms.ImageLayout, System.Windows.Forms">
-    <value>Center</value>
-  </data>
-  <data name="btnReset.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
-    <value>Fill</value>
-  </data>
-  <data name="btnReset.Font" type="System.Drawing.Font, System.Drawing">
-    <value>Arial, 8pt, style=Bold</value>
-  </data>
-  <data name="btnReset.ImeMode" type="System.Windows.Forms.ImeMode, System.Windows.Forms">
-    <value>NoControl</value>
-  </data>
-  <data name="btnReset.Location" type="System.Drawing.Point, System.Drawing">
-    <value>279, 3</value>
-  </data>
-  <data name="btnReset.Size" type="System.Drawing.Size, System.Drawing">
-    <value>133, 26</value>
-  </data>
-  <data name="btnReset.TabIndex" type="System.Int32, mscorlib">
-    <value>29</value>
-  </data>
-  <data name="btnReset.Text" xml:space="preserve">
-    <value>Reset All</value>
-  </data>
-  <data name="&gt;&gt;btnReset.Name" xml:space="preserve">
-    <value>btnReset</value>
-  </data>
-  <data name="&gt;&gt;btnReset.Type" xml:space="preserve">
-    <value>QMC.Common.IndividualMenuButton, QMC.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null</value>
-  </data>
-  <data name="&gt;&gt;btnReset.Parent" xml:space="preserve">
-    <value>tableLayoutPanel2</value>
-  </data>
-  <data name="&gt;&gt;btnReset.ZOrder" xml:space="preserve">
-    <value>2</value>
   </data>
   <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
