@@ -65,8 +65,8 @@
             // 
             // displayPanel
             // 
+            this.displayPanel.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.displayPanel, "displayPanel");
-            this.displayPanel.BackColor = System.Drawing.Color.LightGray;
             this.displayPanel.Name = "displayPanel";
             this.displayPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.DisplayPanel_Paint);
             this.displayPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.DisplayPanel_MouseClick);

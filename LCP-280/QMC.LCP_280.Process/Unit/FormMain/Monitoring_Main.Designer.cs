@@ -80,6 +80,7 @@ namespace QMC.LCP_280.Process
             // 
             // dieInputControl1
             // 
+            this.dieInputControl1.BackColor = System.Drawing.Color.White;
             this.dieInputControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dieInputControl1.Location = new System.Drawing.Point(2, 16);
             this.dieInputControl1.Margin = new System.Windows.Forms.Padding(2);
@@ -129,6 +130,7 @@ namespace QMC.LCP_280.Process
             // 
             // dieOutputControl1
             // 
+            this.dieOutputControl1.BackColor = System.Drawing.Color.White;
             this.dieOutputControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dieOutputControl1.Location = new System.Drawing.Point(2, 16);
             this.dieOutputControl1.Margin = new System.Windows.Forms.Padding(2);
@@ -153,9 +155,8 @@ namespace QMC.LCP_280.Process
             // 
             // inputWaferCarrierControl1
             // 
-            this.inputWaferCarrierControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.inputWaferCarrierControl1.BackColor = System.Drawing.Color.White;
+            this.inputWaferCarrierControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.inputWaferCarrierControl1.Location = new System.Drawing.Point(2, 16);
             this.inputWaferCarrierControl1.Margin = new System.Windows.Forms.Padding(2);
             this.inputWaferCarrierControl1.Name = "inputWaferCarrierControl1";
@@ -179,6 +180,7 @@ namespace QMC.LCP_280.Process
             // 
             // measurementControl1
             // 
+            this.measurementControl1.BackColor = System.Drawing.Color.White;
             this.measurementControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.measurementControl1.Location = new System.Drawing.Point(2, 16);
             this.measurementControl1.Margin = new System.Windows.Forms.Padding(2);
@@ -203,6 +205,7 @@ namespace QMC.LCP_280.Process
             // 
             // outputWaferCarrierControl1
             // 
+            this.outputWaferCarrierControl1.BackColor = System.Drawing.Color.White;
             this.outputWaferCarrierControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.outputWaferCarrierControl1.Location = new System.Drawing.Point(2, 16);
             this.outputWaferCarrierControl1.Margin = new System.Windows.Forms.Padding(2);
