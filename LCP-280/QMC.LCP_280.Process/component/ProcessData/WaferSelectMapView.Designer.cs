@@ -72,8 +72,8 @@
             // 
             // WaferSelectMapView
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.Controls.Add(this.groupBox);
             this.Name = "WaferSelectMapView";
             this.Size = new System.Drawing.Size(300, 300);
