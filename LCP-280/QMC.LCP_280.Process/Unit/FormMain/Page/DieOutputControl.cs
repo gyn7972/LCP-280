@@ -24,11 +24,19 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             public DieState State { get; set; }
         }
 
+        public event EventHandler<DisplayView_DieOutputControl.DisplayItemEventArgs> MotorMoveRequested;
+
         private List<Die> _dies = new List<Die>();
 
         public DieOutputControl()
         {
             InitializeComponent();
+            displayView1.MotorMoveRequested += OnDisplayView_MotorMoveRequested;
+        }
+
+        private void OnDisplayView_MotorMoveRequested(object sender, DisplayView_DieOutputControl.DisplayItemEventArgs e)
+        {
+            MotorMoveRequested?.Invoke(this, e);
         }
 
         public void SetWaferId(string waferId)
@@ -38,12 +46,25 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void UpdateDieCount()
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => UpdateDieCount()));
+                return;
+            }
+
+            // Present 개수 = Mapped 상태 칩 수 (필요 시 Exists 로 변경 가능)
             int count = _dies.Count(d => d.State == DieState.Present);
             lblDieCountValue.Text = count.ToString();
         }
 
         public void SetDieList(List<Die> dies)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => SetDieList(dies)));
+                return;
+            }
+
             _dies = dies ?? new List<Die>();
             UpdateDieCount();
 

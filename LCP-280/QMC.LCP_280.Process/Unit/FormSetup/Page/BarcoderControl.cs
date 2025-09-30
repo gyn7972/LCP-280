@@ -2,61 +2,72 @@
 using QMC.Common.BarcodeReader;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.LCP_280.Process.Unit.FormSetup.Barcoder_Setup;
 
 namespace QMC.LCP_280.Process.Unit.FormSetup
 {
     public partial class BarcoderControl : UserControl
     {
-        // 이벤트 인자 클래스들
+        #region Barcoder Events (Control → Form)
+
+        /// <summary>
+        /// 바코드 리더 선택 이벤트
+        /// </summary>
         public class BarcoderSelectedEventArgs : EventArgs
         {
             public OpticonBarcodeReader SelectedBarcoder { get; set; }
             public string DeviceName { get; set; }
         }
 
+        /// <summary>
+        /// 저장 요청 이벤트
+        /// </summary>
         public class BarcoderSaveEventArgs : EventArgs
         {
             public OpticonBarcodeReader Barcoder { get; set; }
-            public QMC.Common.PropertyCollection Properties { get; set; }
+            public PropertyCollection Properties { get; set; }
         }
 
+        /// <summary>
+        /// 스캔 요청 이벤트
+        /// </summary>
         public class BarcoderScanEventArgs : EventArgs
         {
             public OpticonBarcodeReader Barcoder { get; set; }
             public bool IsAutoTriggerMode { get; set; }
         }
 
-        #region Events
-        // 바코드 리더 선택 이벤트
-        public event EventHandler<BarcoderSelectedEventArgs> BarcoderSelected;
+        /// <summary>
+        /// 리스트 초기화 요청 이벤트
+        /// </summary>
+        public class BarcoderListClearEventArgs : EventArgs
+        {
+            // 필요시 추가 정보
+        }
 
-        // 저장 버튼 클릭 이벤트
-        public event EventHandler<BarcoderSaveEventArgs> SaveRequested;
-
-        // 스캔 버튼 클릭 이벤트
-        public event EventHandler<BarcoderScanEventArgs> ScanRequested;
-
-        // 바코드 데이터 수신 이벤트 (UI에서 부모로 전달)
-        public event EventHandler<BarcodeDataEventArgs> BarcodeDataReceived;
-
-        // 에러 발생 이벤트
-        public event EventHandler<string> ErrorOccurred;
         #endregion
 
-        #region Barcder
+        #region Events (Control → Form)
+
+        public event EventHandler<BarcoderSelectedEventArgs> BarcoderSelected;
+        public event EventHandler<BarcoderSaveEventArgs> SaveRequested;
+        public event EventHandler<BarcoderScanEventArgs> ScanRequested;
+        public event EventHandler<BarcoderListClearEventArgs> ListClearRequested;
+        public event EventHandler<BarcodeDataEventArgs> BarcodeDataReceived;
+        public event EventHandler<string> ErrorOccurred;
+
+        #endregion
+
+        #region Fields
+
         private ConfigReflectionMapper ConfigMapper_Barcder;
         private OpticonBarcodeReader SelectedItem_Barcder;
         private List<string> DeviceNames_Barcder;
-        #endregion
-
         private bool isAutoTriggerMode = false;
+
+        #endregion
 
         public BarcoderControl()
         {
@@ -64,7 +75,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             InitializeUI();
         }
 
-        // ===== Initialize =====
         private void InitializeUI()
         {
             try
@@ -74,18 +84,18 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             }
             catch (Exception ex)
             {
-                Log.Write("LCP-280", $"InitializeUI error: {ex}");
+                Log.Write("BarcoderControl", $"InitializeUI error: {ex}");
             }
         }
 
-        #region Barcoder
+        #region Barcoder Binding
+
         private void BindingList_Barcder()
         {
             try
             {
                 DeviceNames_Barcder = new List<string>();
 
-                // Equipment에서 정보들을 가져옴
                 foreach (var Key in Equipment.Instance.Barcoders.Keys)
                 {
                     DeviceNames_Barcder.Add(Key);
@@ -93,14 +103,12 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
 
                 if (DeviceNames_Barcder.Count == 0)
                 {
-                    // 없으면 빈 상태로
                     listBoxItemsView?.SetItems();
                     return;
                 }
 
                 listBoxItemsView?.SetItems(DeviceNames_Barcder.ToArray());
 
-                // 첫 번째 자동 선택
                 if (DeviceNames_Barcder.Count > 0)
                 {
                     listBoxItemsView.SelectedIndex = 0;
@@ -109,16 +117,16 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             }
             catch (Exception ex)
             {
-                Log.Write("Barcoder", $"Binding Barcoder List error: {ex}");
+                Log.Write("BarcoderControl", $"Binding Barcoder List error: {ex}");
             }
         }
 
         #endregion
 
-        #region Barcoder Event
+        #region Event Registration
+
         private void WriteEvents_Barcder()
         {
-            // 바코드 리스트 선택 이벤트
             if (listBoxItemsView != null)
             {
                 listBoxItemsView.ItemSelected -= OnSelected_Barcder;
@@ -131,17 +139,25 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                 btn_Save_Barcoder_Setup.Click += btn_Save_Barcoder_Setup_Click;
             }
 
-            // 스캔 버튼 이벤트 추가
             if (btnBarcoderScan != null)
             {
                 btnBarcoderScan.Click -= btnBarcoderScan_Click;
                 btnBarcoderScan.Click += btnBarcoderScan_Click;
             }
+
+            if (btn_ClearList != null)
+            {
+                btn_ClearList.Click -= btnClearList_Click;
+                btn_ClearList.Click += btnClearList_Click;
+            }
         }
+
+        #endregion
+
+        #region Button Click Handlers
 
         private void OnSelected_Barcder(object sender, int selectedIndex)
         {
-            // 기존 바코드 리더 이벤트 해제
             if (SelectedItem_Barcder != null)
             {
                 UnsubscribeBarcoderEvents(SelectedItem_Barcder);
@@ -152,19 +168,15 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             var name = DeviceNames_Barcder[selectedIndex];
             SelectedItem_Barcder = Equipment.Instance.Barcoders[name];
 
-            // 새로운 바코드 리더 이벤트 연결
             if (SelectedItem_Barcder != null)
             {
                 SubscribeBarcoderEvents(SelectedItem_Barcder);
             }
 
-            // Config 객체를 직접 전달
             LoadProperties_Barcoder(SelectedItem_Barcder?.Config, SelectedItem_Barcder?.Name);
-
-            // 스캔 버튼 상태 업데이트
             UpdateScanButtonState();
 
-            // 부모 폼으로 이벤트 발생
+            // 부모 Form으로 이벤트 전달
             BarcoderSelected?.Invoke(this, new BarcoderSelectedEventArgs
             {
                 SelectedBarcoder = SelectedItem_Barcder,
@@ -172,12 +184,66 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             });
         }
 
-        // ===== Properties Loading =====
+        private void btn_Save_Barcoder_Setup_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var pc = propertyCollectionView?.GetCurrentProperties();
+                if (pc != null && SelectedItem_Barcder != null)
+                {
+                    // 부모 Form으로 이벤트 전달
+                    SaveRequested?.Invoke(this, new BarcoderSaveEventArgs
+                    {
+                        Barcoder = SelectedItem_Barcder,
+                        Properties = pc
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("BarcoderControl", $"Save button click error: {ex}");
+                ErrorOccurred?.Invoke(this, $"저장 버튼 오류: {ex.Message}");
+            }
+        }
+
+        private void btnBarcoderScan_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (SelectedItem_Barcder == null)
+                {
+                    MessageBox.Show("바코드 리더를 선택하세요.");
+                    return;
+                }
+
+                // 부모 Form으로 이벤트 전달
+                ScanRequested?.Invoke(this, new BarcoderScanEventArgs
+                {
+                    Barcoder = SelectedItem_Barcder,
+                    IsAutoTriggerMode = isAutoTriggerMode
+                });
+            }
+            catch (Exception ex)
+            {
+                Log.Write("BarcoderControl", $"btnBarcoderScan_Click error: {ex}");
+                MessageBox.Show($"스캔 오류: {ex.Message}");
+            }
+        }
+
+        private void btnClearList_Click(object sender, EventArgs e)
+        {
+            // 부모 Form으로 이벤트 전달
+            ListClearRequested?.Invoke(this, new BarcoderListClearEventArgs());
+        }
+
+        #endregion
+
+        #region Properties Loading
+
         private void LoadProperties_Barcoder(object config, string deviceName)
         {
             try
             {
-                // 기존 매핑 해제
                 propertyCollectionView?.SetProperties(null);
                 ConfigMapper_Barcder = null;
 
@@ -189,45 +255,21 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                     propertyCollectionView?.SetProperties(ConfigMapper_Barcder.PropertyCollection);
                     propertyCollectionView?.Refresh();
 
-                    Log.Write("Barcoder", $"Device '{deviceName}' properties loaded successfully");
+                    Log.Write("BarcoderControl", $"Device '{deviceName}' properties loaded successfully");
                 }
             }
             catch (Exception ex)
             {
-                Log.Write("Barcoder", $"LoadDeviceProperties error: {ex}");
+                Log.Write("BarcoderControl", $"LoadDeviceProperties error: {ex}");
                 propertyCollectionView?.SetProperties(null);
                 ConfigMapper_Barcder = null;
             }
         }
 
-        private void btn_Save_Barcoder_Setup_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var pc = propertyCollectionView?.GetCurrentProperties();
-                if (pc != null && SelectedItem_Barcder != null)
-                {
-                    // 부모 폼으로 이벤트 발생
-                    SaveRequested?.Invoke(this, new BarcoderSaveEventArgs
-                    {
-                        Barcoder = SelectedItem_Barcder,
-                        Properties = pc
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                Log.Write("Setup", $"Save button click error: {ex}");
-                ErrorOccurred?.Invoke(this, $"저장 버튼 오류: {ex.Message}");
-            }
-        }
         #endregion
 
-        #region NLV-5201 지원 메서드들
+        #region Barcoder Events (Device → Control → Form)
 
-        /// <summary>
-        /// 바코드 리더 이벤트 구독
-        /// </summary>
         private void SubscribeBarcoderEvents(OpticonBarcodeReader barcoder)
         {
             if (barcoder != null)
@@ -238,9 +280,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             }
         }
 
-        /// <summary>
-        /// 바코드 리더 이벤트 해제
-        /// </summary>
         private void UnsubscribeBarcoderEvents(OpticonBarcodeReader barcoder)
         {
             if (barcoder != null)
@@ -251,9 +290,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             }
         }
 
-        /// <summary>
-        /// 바코드 데이터 수신 이벤트
-        /// </summary>
         private void Barcoder_BarcodeDataReceived(object sender, BarcodeDataEventArgs e)
         {
             if (InvokeRequired)
@@ -265,21 +301,18 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             try
             {
                 labelBarcoderData.Text = $"[{e.Timestamp:HH:mm:ss}] {e.Data}";
-                labelBarcoderData.ForeColor = System.Drawing.Color.Blue;
-                Log.Write("Barcoder", $"바코드 수신: {e.Data}");
+                labelBarcoderData.ForeColor = Color.Blue;
+                Log.Write("Barcoder_Data", $"바코드 수신: {e.Data}");
 
-                // 부모 폼으로 이벤트 전달
+                // 부모 Form으로 이벤트 전달
                 BarcodeDataReceived?.Invoke(this, e);
             }
             catch (Exception ex)
             {
-                Log.Write("Barcoder", $"BarcodeDataReceived 처리 오류: {ex}");
+                Log.Write("Barcoder_Data", $"BarcodeDataReceived 처리 오류: {ex}");
             }
         }
 
-        /// <summary>
-        /// 오류 발생 이벤트
-        /// </summary>
         private void Barcoder_ErrorOccurred(object sender, string error)
         {
             if (InvokeRequired)
@@ -289,16 +322,13 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             }
 
             labelBarcoderData.Text = $"오류: {error}";
-            labelBarcoderData.ForeColor = System.Drawing.Color.Red;
-            Log.Write("Barcoder", $"오류: {error}");
+            labelBarcoderData.ForeColor = Color.Red;
+            Log.Write("Barcoder_Data", $"오류: {error}");
 
-            // 부모 폼으로 이벤트 전달
+            // 부모 Form으로 이벤트 전달
             ErrorOccurred?.Invoke(this, error);
         }
 
-        /// <summary>
-        /// 상태 변경 이벤트
-        /// </summary>
         private void Barcoder_StatusChanged(object sender, string status)
         {
             if (InvokeRequired)
@@ -310,36 +340,77 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             Log.Write("Barcoder", $"상태: {status}");
         }
 
-        /// <summary>
-        /// 스캔 버튼 클릭 이벤트
-        /// </summary>
-        private void btnBarcoderScan_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                if (SelectedItem_Barcder == null)
-                {
-                    MessageBox.Show("바코드 리더를 선택하세요.");
-                    return;
-                }
+        #endregion
 
-                // 부모 폼으로 이벤트 발생
-                ScanRequested?.Invoke(this, new BarcoderScanEventArgs
-                {
-                    Barcoder = SelectedItem_Barcder,
-                    IsAutoTriggerMode = isAutoTriggerMode
-                });
-            }
-            catch (Exception ex)
+        #region UI Update Methods (Form → Control)
+
+        /// <summary>
+        /// 스캔 상태 업데이트 (Form → Control)
+        /// </summary>
+        public void OnScanStateChanged(BarcoderScanStateChangedEventArgs e)
+        {
+            if (InvokeRequired)
             {
-                Log.Write("Barcoder", $"btnBarcoderScan_Click error: {ex}");
-                MessageBox.Show($"스캔 오류: {ex.Message}");
+                Invoke(new Action(() => OnScanStateChanged(e)));
+                return;
+            }
+
+            labelBarcoderData.Text = e.Message;
+            labelBarcoderData.ForeColor = e.Color;
+        }
+
+        /// <summary>
+        /// 스캔 버튼 텍스트 업데이트 (Form → Control)
+        /// </summary>
+        public void OnButtonTextChanged(BarcoderButtonTextChangedEventArgs e)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => OnButtonTextChanged(e)));
+                return;
+            }
+
+            btnBarcoderScan.Text = e.ButtonText;
+        }
+
+        /// <summary>
+        /// 바코드 데이터 리스트에 추가 (Form → Control)
+        /// </summary>
+        public void OnBarcoderDataAdded(BarcoderDataAddedEventArgs e)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => OnBarcoderDataAdded(e)));
+                return;
+            }
+
+            listBox_BarcodeData.Items.Add($"[{e.Timestamp:HH:mm:ss}] {e.Data}");
+
+            // 자동 스크롤 (최신 항목으로)
+            if (listBox_BarcodeData.Items.Count > 0)
+            {
+                listBox_BarcodeData.TopIndex = listBox_BarcodeData.Items.Count - 1;
             }
         }
 
         /// <summary>
-        /// 스캔 버튼 상태 업데이트
+        /// 바코드 데이터 리스트 초기화 (Form → Control)
         /// </summary>
+        public void ClearBarcodeDataList()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(ClearBarcodeDataList));
+                return;
+            }
+
+            listBox_BarcodeData.Items.Clear();
+        }
+
+        #endregion
+
+        #region Helper Methods
+
         private void UpdateScanButtonState()
         {
             if (SelectedItem_Barcder == null)
@@ -347,7 +418,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
                 btnBarcoderScan.Text = "Manual Scan";
                 btnBarcoderScan.Enabled = false;
                 labelBarcoderData.Text = "바코드 리더를 선택하세요.";
-                labelBarcoderData.ForeColor = System.Drawing.Color.Gray;
+                labelBarcoderData.ForeColor = Color.Gray;
                 return;
             }
 
@@ -363,31 +434,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup
             }
 
             labelBarcoderData.Text = "바코드 데이터가 여기에 표시됩니다.";
-            labelBarcoderData.ForeColor = System.Drawing.Color.Gray;
-        }
-
-        // UI 업데이트 메서드 (부모 폼에서 호출 가능)
-        public void UpdateScanStatus(string message, Color color)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => UpdateScanStatus(message, color)));
-                return;
-            }
-
-            labelBarcoderData.Text = message;
-            labelBarcoderData.ForeColor = color;
-        }
-
-        public void UpdateScanButtonText(string text)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => UpdateScanButtonText(text)));
-                return;
-            }
-
-            btnBarcoderScan.Text = text;
+            labelBarcoderData.ForeColor = Color.Gray;
         }
 
         #endregion

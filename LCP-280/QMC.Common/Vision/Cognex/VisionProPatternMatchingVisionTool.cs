@@ -521,7 +521,7 @@ namespace QMC.Common.Vision.Cognex
             this.ResultOverlayVisible = true;
             this.MaxInstance = -1;
             this.MinScore = -1;
-        }
+        } 
         #endregion
 
         #region Property

@@ -48,14 +48,15 @@ namespace QMC.LCP_280.Process
 
         private void WireEvents()
         {
+            if (btnStartAll != null) btnStartAll.Click += BtnStartAll_Click;
             if (btnStopAll != null) btnStopAll.Click += BtnStopAll_Click;
             if (btnSaveAllConfigs != null) btnSaveAllConfigs.Click += BtnSaveAllConfigs_Click;
             if (btnLoadAllConfigs != null) btnLoadAllConfigs.Click += BtnLoadAllConfigs_Click;
             if (btnSaveAllRecipes != null) btnSaveAllRecipes.Click += BtnSaveAllRecipes_Click;
             if (btnLoadAllRecipes != null) btnLoadAllRecipes.Click += BtnLoadAllRecipes_Click;
-            //if (btnStopUnit != null) btnStopUnit.Click += BtnStopUnit_Click;
-            if (btnStartAll != null) btnStartAll.Click += BtnStartAll_Click;
+
             if (btnStartUnit != null) btnStartUnit.Click += BtnStartUnit_Click;
+            if (btnStopUnit != null) btnStopUnit.Click += BtnStopUnit_Click;
         }
 
         private void InitializeTimer()

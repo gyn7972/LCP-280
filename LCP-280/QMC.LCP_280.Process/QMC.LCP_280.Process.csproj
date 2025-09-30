@@ -639,6 +639,12 @@
     <EmbeddedResource Include="Unit\FormMain\Page\DisplayView.resx">
       <DependentUpon>DisplayView.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_DieIndexSelectControl.resx">
+      <DependentUpon>DisplayView_DieIndexSelectControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_DieOutputControl.resx">
+      <DependentUpon>DisplayView_DieOutputControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\DisplayView_InputWaferCarrierControl.resx">
       <DependentUpon>DisplayView_InputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>

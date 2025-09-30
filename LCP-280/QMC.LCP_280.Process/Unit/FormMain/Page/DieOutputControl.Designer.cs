@@ -24,9 +24,9 @@
             this.lblWaferIdValue = new System.Windows.Forms.Label();
             this.lblDieCountTitle = new System.Windows.Forms.Label();
             this.lblDieCountValue = new System.Windows.Forms.Label();
-            this.displayView1 = new QMC.Common.Controls.DisplayView_DieOutputControl();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.displayView1 = new QMC.Common.Controls.DisplayView_DieOutputControl();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
@@ -89,17 +89,6 @@
             this.lblDieCountValue.Text = "0";
             this.lblDieCountValue.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // displayView1
-            // 
-            this.displayView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.displayView1.BackColor = System.Drawing.Color.LightGray;
-            this.displayView1.Location = new System.Drawing.Point(3, 72);
-            this.displayView1.Name = "displayView1";
-            this.displayView1.Size = new System.Drawing.Size(415, 295);
-            this.displayView1.TabIndex = 4;
-            // 
             // tlpMain
             // 
             this.tlpMain.ColumnCount = 1;
@@ -132,6 +121,15 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(415, 63);
             this.tableLayoutPanel1.TabIndex = 5;
+            // 
+            // displayView1
+            // 
+            this.displayView1.BackColor = System.Drawing.Color.White;
+            this.displayView1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.displayView1.Location = new System.Drawing.Point(3, 72);
+            this.displayView1.Name = "displayView1";
+            this.displayView1.Size = new System.Drawing.Size(415, 295);
+            this.displayView1.TabIndex = 4;
             // 
             // DieOutputControl
             // 

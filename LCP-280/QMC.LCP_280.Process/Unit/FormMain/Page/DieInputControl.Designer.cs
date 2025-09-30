@@ -1,4 +1,6 @@
-﻿namespace QMC.LCP_280.Process.Unit.FormMain
+﻿using System.Drawing;
+
+namespace QMC.LCP_280.Process.Unit.FormMain
 {
     partial class DieInputControl
     {
@@ -42,6 +44,7 @@
             // 
             // tableLayoutPanel1
             // 
+            this.tableLayoutPanel1.BackColor = System.Drawing.Color.White;
             this.tableLayoutPanel1.ColumnCount = 2;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
@@ -118,10 +121,8 @@
             // 
             // displayView1
             // 
-            this.displayView1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.displayView1.BackColor = System.Drawing.Color.LightGray;
+            this.displayView1.BackColor = System.Drawing.Color.White;
+            this.displayView1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.displayView1.Location = new System.Drawing.Point(3, 72);
             this.displayView1.Name = "displayView1";
             this.displayView1.Size = new System.Drawing.Size(415, 295);

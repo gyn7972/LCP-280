@@ -9,8 +9,6 @@
         private System.Windows.Forms.Label lblDieNumberValue;
 
         private System.Windows.Forms.Panel displayPanel; // 추후에 분리 해도 될듯..?
-        private System.Windows.Forms.Button btnAutoSequence;
-        private System.Windows.Forms.Button btnReset;
 
         protected override void Dispose(bool disposing)
         {
@@ -30,14 +28,15 @@
             this.lblDieNumber = new System.Windows.Forms.Label();
             this.lblDieNumberValue = new System.Windows.Forms.Label();
             this.displayPanel = new System.Windows.Forms.Panel();
-            this.btnRotateCounterClockwise = new System.Windows.Forms.Button();
-            this.btnReset = new System.Windows.Forms.Button();
-            this.btnAutoSequence = new System.Windows.Forms.Button();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.displayPanel.SuspendLayout();
+            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.btnRotateCounterClockwise = new QMC.Common.IndividualMenuButton();
+            this.btnAutoSequence = new QMC.Common.IndividualMenuButton();
+            this.btnReset = new QMC.Common.IndividualMenuButton();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
+            this.tableLayoutPanel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // lblDieId
@@ -66,49 +65,13 @@
             // 
             // displayPanel
             // 
+            this.displayPanel.BackColor = System.Drawing.Color.White;
             resources.ApplyResources(this.displayPanel, "displayPanel");
-            this.displayPanel.BackColor = System.Drawing.Color.LightGray;
-            this.displayPanel.Controls.Add(this.btnRotateCounterClockwise);
-            this.displayPanel.Controls.Add(this.btnReset);
-            this.displayPanel.Controls.Add(this.btnAutoSequence);
             this.displayPanel.Name = "displayPanel";
             this.displayPanel.Paint += new System.Windows.Forms.PaintEventHandler(this.DisplayPanel_Paint);
             this.displayPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.DisplayPanel_MouseClick);
             this.displayPanel.MouseMove += new System.Windows.Forms.MouseEventHandler(this.DisplayPanel_MouseMove);
             this.displayPanel.Resize += new System.EventHandler(this.DisplayPanel_Resize);
-            // 
-            // btnRotateCounterClockwise
-            // 
-            resources.ApplyResources(this.btnRotateCounterClockwise, "btnRotateCounterClockwise");
-            this.btnRotateCounterClockwise.BackColor = System.Drawing.Color.Green;
-            this.btnRotateCounterClockwise.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnRotateCounterClockwise.FlatAppearance.BorderSize = 0;
-            this.btnRotateCounterClockwise.ForeColor = System.Drawing.Color.White;
-            this.btnRotateCounterClockwise.Name = "btnRotateCounterClockwise";
-            this.btnRotateCounterClockwise.UseVisualStyleBackColor = false;
-            this.btnRotateCounterClockwise.Click += new System.EventHandler(this.btnRotateCounterClockwise_Click);
-            // 
-            // btnReset
-            // 
-            resources.ApplyResources(this.btnReset, "btnReset");
-            this.btnReset.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            this.btnReset.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnReset.FlatAppearance.BorderSize = 0;
-            this.btnReset.ForeColor = System.Drawing.Color.White;
-            this.btnReset.Name = "btnReset";
-            this.btnReset.UseVisualStyleBackColor = false;
-            this.btnReset.Click += new System.EventHandler(this.BtnReset_Click);
-            // 
-            // btnAutoSequence
-            // 
-            resources.ApplyResources(this.btnAutoSequence, "btnAutoSequence");
-            this.btnAutoSequence.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(152)))), ((int)(((byte)(219)))));
-            this.btnAutoSequence.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnAutoSequence.FlatAppearance.BorderSize = 0;
-            this.btnAutoSequence.ForeColor = System.Drawing.Color.White;
-            this.btnAutoSequence.Name = "btnAutoSequence";
-            this.btnAutoSequence.UseVisualStyleBackColor = false;
-            this.btnAutoSequence.Click += new System.EventHandler(this.BtnAutoSequence_Click);
             // 
             // tlpMain
             // 
@@ -116,6 +79,7 @@
             resources.ApplyResources(this.tlpMain, "tlpMain");
             this.tlpMain.Controls.Add(this.displayPanel, 0, 1);
             this.tlpMain.Controls.Add(this.tableLayoutPanel1, 0, 0);
+            this.tlpMain.Controls.Add(this.tableLayoutPanel2, 0, 2);
             this.tlpMain.Name = "tlpMain";
             // 
             // tableLayoutPanel1
@@ -127,15 +91,65 @@
             this.tableLayoutPanel1.Controls.Add(this.lblDieNumber, 0, 1);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             // 
+            // tableLayoutPanel2
+            // 
+            resources.ApplyResources(this.tableLayoutPanel2, "tableLayoutPanel2");
+            this.tableLayoutPanel2.Controls.Add(this.btnRotateCounterClockwise, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.btnAutoSequence, 1, 0);
+            this.tableLayoutPanel2.Controls.Add(this.btnReset, 2, 0);
+            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
+            // 
+            // btnRotateCounterClockwise
+            // 
+            this.btnRotateCounterClockwise.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            resources.ApplyResources(this.btnRotateCounterClockwise, "btnRotateCounterClockwise");
+            this.btnRotateCounterClockwise.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnRotateCounterClockwise.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnRotateCounterClockwise.CustomForeColor = System.Drawing.Color.Black;
+            this.btnRotateCounterClockwise.ForeColor = System.Drawing.Color.Black;
+            this.btnRotateCounterClockwise.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnRotateCounterClockwise.Name = "btnRotateCounterClockwise";
+            this.btnRotateCounterClockwise.TabStop = false;
+            this.btnRotateCounterClockwise.UseVisualStyleBackColor = false;
+            this.btnRotateCounterClockwise.Click += new System.EventHandler(this.btnRotateCounterClockwise_Click);
+            // 
+            // btnAutoSequence
+            // 
+            this.btnAutoSequence.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            resources.ApplyResources(this.btnAutoSequence, "btnAutoSequence");
+            this.btnAutoSequence.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnAutoSequence.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnAutoSequence.CustomForeColor = System.Drawing.Color.Black;
+            this.btnAutoSequence.ForeColor = System.Drawing.Color.Black;
+            this.btnAutoSequence.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnAutoSequence.Name = "btnAutoSequence";
+            this.btnAutoSequence.TabStop = false;
+            this.btnAutoSequence.UseVisualStyleBackColor = false;
+            this.btnAutoSequence.Click += new System.EventHandler(this.btnAutoSequence_Click);
+            // 
+            // btnReset
+            // 
+            this.btnReset.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            resources.ApplyResources(this.btnReset, "btnReset");
+            this.btnReset.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnReset.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnReset.CustomForeColor = System.Drawing.Color.Black;
+            this.btnReset.ForeColor = System.Drawing.Color.Black;
+            this.btnReset.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnReset.Name = "btnReset";
+            this.btnReset.TabStop = false;
+            this.btnReset.UseVisualStyleBackColor = false;
+            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
+            // 
             // DieIndexSelectControl
             // 
             this.Controls.Add(this.tlpMain);
             resources.ApplyResources(this, "$this");
             this.Name = "DieIndexSelectControl";
-            this.displayPanel.ResumeLayout(false);
             this.tlpMain.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
+            this.tableLayoutPanel2.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -151,7 +165,10 @@
 
         private System.Windows.Forms.TableLayoutPanel tlpMain;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.Button btnRotateCounterClockwise;
+        private Common.IndividualMenuButton btnReset;
+        private Common.IndividualMenuButton btnAutoSequence;
+        private Common.IndividualMenuButton btnRotateCounterClockwise;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
     }
 
 }
