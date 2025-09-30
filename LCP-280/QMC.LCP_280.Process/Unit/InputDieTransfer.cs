@@ -1302,8 +1302,14 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
             MaterialDie die;
+            // Todo : 웨이퍼 완료 되었을때 처리 필요.
+
             nRet = MoveStageToNextDie(out die);
 
+            if(die == null || die.Presence != Material.MaterialPresence.Exist)
+            {
+                return 0;
+            }
             nRet = RaiseEjectorForPick();
             if (nRet != 0)
             {

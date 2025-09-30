@@ -34,6 +34,7 @@ namespace QMC.LCP_280.Process.Unit
             OutputDieTransferPlaceZError,
             InputDieTransferTimeout,
             RotaryIndexMoveError,
+            eOutputDieTransferTimeout,
         }
 
         #region InitAlarm
@@ -96,7 +97,13 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
-
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eOutputDieTransferTimeout;  
+            alarm.Title = "OutputDieTransfer Timeout";
+            alarm.Cause = "OutputDieTransfer Place 동작이 Timeout 되었습니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
 
         }
         #endregion
@@ -1271,27 +1278,6 @@ namespace QMC.LCP_280.Process.Unit
         public bool RequestOutputDieTrDie { get; set; } = false;
         #endregion
 
-        // 추가: 필요한 Unit 실행 보조
-        private void TryStartUnitIfNeeded(BaseUnit unit)
-        {
-            if (unit == null) return;
-            if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running ||
-                unit.RunUnitStatus == BaseUnit.UnitStatus.Starting)
-                return;
-
-            Equipment.Instance.StartUnitSync(unit.UnitName);
-        }
-        private void TryStopUnitIfNeeded(BaseUnit unit)
-        {
-            if (unit == null) return;
-            if (unit.RunUnitStatus == BaseUnit.UnitStatus.Stopped ||
-                unit.RunUnitStatus == BaseUnit.UnitStatus.Stopping ||
-                unit.RunUnitStatus == BaseUnit.UnitStatus.CycleStop)
-                return;
-
-            Equipment.Instance.StopUnitSync(unit.UnitName);
-        }
-
         public override int OnRun()
         {
             int nRtn = 0;
@@ -1329,19 +1315,11 @@ namespace QMC.LCP_280.Process.Unit
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return nRtn;
         }
         public override int OnStop()
         {
             int ret = 0;
-
-            TryStopUnitIfNeeded(IndexLoadAligner);
-            TryStopUnitIfNeeded(IndexChipProbeController);
-            TryStopUnitIfNeeded(IndexUnloadAligner);
-
-            //TryStopUnitIfNeeded(InputDieTransfer);
-            //TryStopUnitIfNeeded(OutputDieTransfer);
 
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
@@ -1350,59 +1328,22 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnRunReady() 
         {
-            int nRtn = 0;
+            int nRet = 0;
             if (IsAxisMoving(AxisNames.IndexT))
             {
                 return 0;
             }
 
-            //TryStartUnitIfNeeded(IndexLoadAligner);
-            //TryStartUnitIfNeeded(IndexChipProbeController);
-            //TryStartUnitIfNeeded(IndexUnloadAligner);
-            //TryStartUnitIfNeeded(InputDieTransfer);
-            //TryStartUnitIfNeeded(OutputDieTransfer);
-
-            nRtn = ExecuteUnitActionReady();
-            if (nRtn != 0)
+            nRet = ExecuteUnitActionReady();
+            if (nRet != 0)
             {
                 Log.Write(UnitName, "[ExecuteUnitActionReady] Failed");
                 return -1;
             }
 
-            // (추가) 공정 상태 갱신
-            UpdateProcessStates();
+            State = ProcessState.Work;
+            return nRet;
 
-            // 1. 회전 가능 여부 판단
-            string rotateReason = string.Empty;
-            int chk = CanRotate();
-            switch (chk)
-            {
-                case ROT_CHK_OK:
-                    State = ProcessState.Work;
-                    return nRtn;
-
-                case ROT_CHK_SKIP_NO_DEMAND:
-                    RequestInputDieTrDie = true;
-                    RequestLoadAligner = true;
-                    RequestProbe = true;
-                    RequestUnloaderAligner = true;
-                    State = ProcessState.Complete;
-                    return nRtn;
-
-                case ROT_CHK_WAIT_STATION_BUSY:
-                    // 아직 공정 진행 중 → 대기 (로그 과다 방지 위해 필요 시 주석 해제)
-                    // Log.Write(UnitName, "[RotateWait] Station busy");
-                    State = ProcessState.Ready;
-                    return nRtn;
-
-                case ROT_CHK_ERR_AXIS_NULL:
-                case ROT_CHK_ERR_AXIS_BUSY:
-                case ROT_CHK_ERR_NOT_SAFE:
-                case ROT_CHK_ERR_SOCKET_ARRAY:
-                default:
-                    Log.Write(UnitName, $"[RotateError] {GetRotateCheckMessage(chk)}");
-                    return -1;
-            }
         }
         protected override int OnRunWork() 
         {
@@ -1414,9 +1355,15 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if(this.InputDieTransfer.State == ProcessState.Complete)
+
+            int nIndex = GetLoadIndexNo();
+            bool useSocket = this.Config.GetUseSocket(nIndex);
+            if (this.InputDieTransfer.State == ProcessState.Complete)
             {
-                RequestInputDieTrDie = true;
+                if(useSocket)
+                {
+                    RequestInputDieTrDie = true;
+                }
             }
 
             nRet = ExecuteUnitAction();
@@ -1425,7 +1372,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[ExecuteUnitAction] Failed");
                 return -1;
             }
-            if(RequestInputDieTrDie == true)
+
+            if (RequestInputDieTrDie == true && useSocket == true)
             {
                 if(InputDieTransfer != null)
                 {
@@ -1442,9 +1390,9 @@ namespace QMC.LCP_280.Process.Unit
                             return -1;
                         }
                     }
-
                 }
             }
+
             nRet = Rotate();
             if(nRet != 0)
             {
@@ -1465,56 +1413,6 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
-            //if (!Config.IsSimulation)
-            //{
-            //    if (IndexUnloadAligner.CompleteUnloadAligner)
-            //    {
-            //        RequestOutputDieTrDie = true;
-            //    }
-            //}
-            //else
-            //{
-            //    RequestOutputDieTrDie = true;
-            //}
-            //if (!Config.IsSimulation)
-            //{
-            //    if (InputDieTransfer.CompleteInputDie &&
-            //    IndexLoadAligner.CompleteLoadAligner &&
-            //    IndexChipProbeController.CompleteProbe &&
-            //    IndexUnloadAligner.CompleteUnloadAligner &&
-            //    OutputDieTransfer.CompleteOutputDie)
-            //    {
-            //        // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
-            //        PostRotateStateTransition();
-            //        // (추가) 공정 상태 갱신
-            //        UpdateProcessStates();
-            //        Thread.Sleep(2000); // 시뮬레이션용 대기
-            //        State = ProcessState.None;
-            //    }
-            //}
-            //else
-            //{
-            //    InputDieTransfer.CompleteInputDie = true;
-            //    IndexLoadAligner.CompleteLoadAligner = true;
-            //    IndexChipProbeController.CompleteProbe = true;
-            //    IndexUnloadAligner.CompleteUnloadAligner = true;
-            //    OutputDieTransfer.CompleteOutputDie = true;
-
-            //    if (InputDieTransfer.CompleteInputDie &&
-            //    IndexLoadAligner.CompleteLoadAligner &&
-            //    IndexChipProbeController.CompleteProbe &&
-            //    IndexUnloadAligner.CompleteUnloadAligner &&
-            //    OutputDieTransfer.CompleteOutputDie)
-            //    {
-            //        // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
-            //        PostRotateStateTransition();
-            //        // (추가) 공정 상태 갱신
-            //        UpdateProcessStates();
-            //        //Thread.Sleep(2000); // 시뮬레이션용 대기
-            //        State = ProcessState.None;
-            //    }
-            //}
-
             return nRtn; 
         }
 
@@ -1523,11 +1421,10 @@ namespace QMC.LCP_280.Process.Unit
             base.OnMakeSequence();
 
             this.SequencePlayers.Add(CanRotate);
+            this.SequencePlayers.Add(ExecuteUnitActionReady);
             this.SequencePlayers.Add(Rotate);
             this.SequencePlayers.Add(ExecuteUnitLoadDie);
-            this.SequencePlayers.Add(ExecuteUnitLoadMAlign);
-            this.SequencePlayers.Add(ExecuteUnitProbe);
-            this.SequencePlayers.Add(ExecuteUnitUnloadAlign);
+            this.SequencePlayers.Add(ExecuteUnitAction);
             this.SequencePlayers.Add(ExecuteUnitUnLoadDie);
         }
 
@@ -1584,7 +1481,7 @@ namespace QMC.LCP_280.Process.Unit
 
                         if (curState == RotarySocketState.Unloading)
                         {
-                            return IndexUnloadAligner == null || IndexUnloadAligner.CompleteUnloadAligner;
+                            return IndexUnloadAligner == null;
                         }
                         if (curState == RotarySocketState.Outputting)
                         {
@@ -1601,7 +1498,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             return st != RotarySocketState.Empty;
         }
-
         // - Unit Complete 신호를 무조건 보지 않고:
         // "소켓에 제품이 있고 그 소켓이 해당 스테이션에서 아직 처리 상태
         // (BlockingStates)에 속하며 Unit Complete == false" 인 경우에만 BLOCK
@@ -1627,8 +1523,6 @@ namespace QMC.LCP_280.Process.Unit
                 default: return $"Unknown({code})";
             }
         }
-
-
         // ====== 추가: 스테이션 오프셋 상수 (기존 InitStationRules 와 동일하게 유지) ======
         // (신규) 공정 상태 자동 갱신
         private void UpdateProcessStates()
@@ -1873,93 +1767,6 @@ namespace QMC.LCP_280.Process.Unit
             reason = "No rotation demand";
             return false;
         }
-        //private bool NeedRotate(out string reason)
-        //{
-        //    reason = null;
-
-        //    if (_sockets == null)
-        //    {
-        //        reason = "Sockets NULL";
-        //        return false;
-        //    }
-        //    if (_stationRules == null)
-        //    {
-        //        InitStationRules();
-        //    }
-
-        //    int loadIdx = GetLoadIndexNo();
-        //    int alignIdx = IndexLoadAligner.GetAlignIndexNo();              //  (loadIdx + 1) % GetIndexCount(); // STATION_OFFSET_ALIGN
-        //    int probeIdx = IndexChipProbeController.GetProbeIndexNo();      //(loadIdx + 2) % GetIndexCount(); // STATION_OFFSET_PROBE
-        //    int unloadOutputIdx = IndexUnloadAligner.GetUnloadIndexNo();    //(loadIdx + 4) % GetIndexCount(); // STATION_OFFSET_UNLOAD_OUTPUT
-
-        //    var loadState = _sockets[loadIdx].State;
-        //    var alignState = _sockets[alignIdx].State;
-        //    var probeState = _sockets[probeIdx].State;
-        //    var unloadOutState = _sockets[unloadOutputIdx].State;
-
-        //    var loadRule = _stationRules.First(r => r.Name == "Load");
-        //    var alignRule = _stationRules.First(r => r.Name == "Align");
-        //    var probeRule = _stationRules.First(r => r.Name == "Probe");
-        //    var unloadOutputRule = _stationRules.First(r => r.Name == "UnloadOutput");
-
-        //    // 0) 잘못된 기존 로직 정리:
-        //    //  - (기존) Load 위치 Empty → 바로 회전 (X)
-        //    //    => Empty 이면 그냥 그 자리에서 투입 진행해야 함. 회전하면 투입 기회를 잃음.
-        //    //    => 따라서 'Empty' 자체는 회전 트리거가 아님.
-
-        //    // 1) Load 단계 완료 → Align 위치로 이송 필요
-        //    //    조건:
-        //    //      - Load 소켓 상태가 Loaded (Loading 은 아직 진행중이므로 불가)
-        //    //      - Load Unit 완료 신호 (LoadRule.IsUnitComplete())
-        //    //      - Align 위치가 비어 있거나(Empty) / 이전 제품 처리가 끝난 상태(Completed)
-        //    //      - Align 위치가 아직 Aligning/Aligned/Probing 등으로 점유 중이면 대기
-        //    if (loadState == RotarySocketState.Loaded &&
-        //        loadRule.IsUnitComplete() &&
-        //        (alignState == RotarySocketState.Empty || alignState == RotarySocketState.Completed))
-        //    {
-        //        reason = "Load -> Align 이송";
-        //        return true;
-        //    }
-
-        //    // 2) Align 단계 완료 → Probe 위치로 이송 필요
-        //    //    조건:
-        //    //      - Align 소켓이 Aligned 상태
-        //    //      - Align Unit 완료 (alignRule.IsUnitComplete())
-        //    //      - Probe 위치가 비어있거나(Empty) / 이전 결과가 정리된 상태(Completed)
-        //    //      - Probe 위치가 Probing/Probed(대기 중 UnloadOutput이 안비었음) 이면 대기
-        //    if (alignState == RotarySocketState.Aligned &&
-        //        alignRule.IsUnitComplete() &&
-        //        (probeState == RotarySocketState.Empty || probeState == RotarySocketState.Completed))
-        //    {
-        //        reason = "Align -> Probe 이송";
-        //        return true;
-        //    }
-
-        //    // 3) Probe 단계 완료 → Unload/Output 통합 위치로 이송 필요
-        //    //    조건:
-        //    //      - Probe 소켓이 Probed
-        //    //      - 통합 스테이션(4) 이 Empty 또는 Completed (Completed 는 다음 제품 받아도 됨)
-        //    if (probeState == RotarySocketState.Probed &&
-        //        (unloadOutState == RotarySocketState.Empty || unloadOutState == RotarySocketState.Completed))
-        //    {
-        //        reason = "Probe -> Unload/Output 이송";
-        //        return true;
-        //    }
-
-        //    // 4) Unload/Output 통합 스테이션 완료 → 제품 배출 반영 후 다음 공정 사이클 진행
-        //    //    조건:
-        //    //      - 통합 스테이션 소켓 상태 Completed
-        //    //      - (선택) Completed 후 일정 시간 경과 or 배출 보고 여부 등을 추가 가능
-        //    if (unloadOutState == RotarySocketState.Completed)
-        //    {
-        //        reason = "Unload/Output 완료 → 다음 사이클";
-        //        return true;
-        //    }
-
-        //    // 5) 예외: 초기 모든 소켓 Empty 이고 첫 제품을 투입해야 하는데 Load 위치가 이미 Empty → 회전 불필요
-        //    reason = "No rotation demand";
-        //    return false;
-        //}
 
         // 통합 스테이션 상태 전이 처리 (주기적으로 호출)
         // - 위치: Load 기준 +4 (InitStationRules 의 UNLOAD_OUTPUT_OFFSET 과 동일해야 함)
@@ -2001,13 +1808,11 @@ namespace QMC.LCP_280.Process.Unit
 
             if (state == RotarySocketState.Unloading)
             {
-                if (IndexUnloadAligner != null)// || IndexUnloadAligner.CompleteUnloadAligner)
+                if (IndexUnloadAligner != null)
                 {
                     lock (_socketLock)
                     {
                         _sockets[idx].SetState(RotarySocketState.Outputting);
-                        //RequestUnloaderAligner = false;
-                        //RequestOutputDieTrDie = true;
                     }
                 }
                 return;
@@ -2120,7 +1925,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-                Task<int> task = MovePositionAsyncRotate(isFine);
+
+            Task<int> task = MovePositionAsyncRotate(isFine);
             while (IsEndTask(task) == false)
             {
                 if(IsInterlockOKWidthAllUnit() == false)
@@ -2169,7 +1975,6 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        //ExecuteUnitActionReady
         public int ExecuteUnitActionReady(bool isFine = false)
         {
             int nRtn = 0;
@@ -2184,10 +1989,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
-
                 ExecuteUnitActionInterlockLoadMAlign();
                 ExecuteUnitActionInterlockProbe();
-                ExecuteUnitInterlockUnloadAlign();
                 //interlock
                 Thread.Sleep(1);
             }
@@ -2206,13 +2009,13 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 var t1 = (IndexLoadAligner != null)
-                    ? Task.Run(() => IndexLoadAligner.AlignSocketOnceReady())
+                    ? Task.Run(() => IndexLoadAligner.RunAlignSocketOnceReady())
                     : Task.FromResult(0);
                 var t2 = (IndexChipProbeController != null)
-                    ? Task.Run(() => IndexChipProbeController.ContactReady())
+                    ? Task.Run(() => IndexChipProbeController.RunInspectionReady())
                     : Task.FromResult(0);
                 var t3 = (IndexUnloadAligner != null)
-                    ? Task.Run(() => IndexUnloadAligner.AlignSocketOnceReady())
+                    ? Task.Run(() => IndexUnloadAligner.RunAlignSocketOnceReady())
                     : Task.FromResult(0);
 
                 Task.WaitAll(t1, t2, t3);
@@ -2234,35 +2037,9 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
                 return -1;
             }
-            //int nRet = 0;
-
-            //nRet &= IndexLoadAligner.AlignSocketOnceReady();
-            //nRet &= IndexChipProbeController.ContactReady();
-            //nRet &= IndexUnloadAligner.AlignSocketOnceReady();
-
-            //if (nRet != 0)
-            //{
-
-            //    Log.Write(UnitName, "OnExecuteUnitActionReady Fail");
-            //    return -1;
-            //}
-
-            //return nRet;
         }
 
         // Seq에서 사용. 
-        public int IsExecuteUnitLoadDie()
-        {
-            int nRet = 0;
-
-            //InputDieTr는 작업여부 상태신호 보자. //밖에서 확인하고 들어오게 하자.
-            if (InputDieTransfer.IsWork())
-            {
-                return -1; // 대기 인디.
-            }
-
-            return nRet;
-        }
         public int ExecuteUnitLoadDie(bool isFine = false)
         {
             int nRtn = 0;
@@ -2272,18 +2049,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRtn;
         }
-        public int IsExecuteUnitUnloadDie()
-        {
-            int nRet = 0;
 
-            //InputDieTr는 작업여부 상태신호 보자. //밖에서 확인하고 들어오게 하자.
-            if (OutputDieTransfer.IsWork())
-            {
-                return -1; // 대기 인디.
-            }
-
-            return nRet;
-        }
         public int ExecuteUnitUnLoadDie(bool isFine = false)
         {
             int nRtn = 0;
@@ -2313,7 +2079,6 @@ namespace QMC.LCP_280.Process.Unit
 
                 ExecuteUnitActionInterlockLoadMAlign();
                 ExecuteUnitActionInterlockProbe();
-                ExecuteUnitInterlockUnloadAlign();
                 Thread.Sleep(1);
             }
             return task.Result;
@@ -2330,15 +2095,30 @@ namespace QMC.LCP_280.Process.Unit
         {
             try
             {
+                bool bRet = false;
+
                 var t1 = (IndexLoadAligner != null)
-                    ? Task.Run(() => IndexLoadAligner.AlignSocketOnce())
+                    ? Task.Run(() => IndexLoadAligner.RunAlignSocketOnce())
                     : Task.FromResult(0);
                 var t2 = (IndexChipProbeController != null)
                     ? Task.Run(() => IndexChipProbeController.RunInspection())
                     : Task.FromResult(0);
                 var t3 = (IndexUnloadAligner != null)
-                    ? Task.Run(() => IndexUnloadAligner.AlignSocketOnce())
+                    ? Task.Run(() => IndexUnloadAligner.RunAlignSocketOnce())
                     : Task.FromResult(0);
+
+
+
+                t3.Wait();
+                this.OutputDieTransfer.RisePickupStartEvent();
+
+                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000*5); // 60초
+                if (bRet == false)
+                {
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
+                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
+                    return -1;
+                }
 
                 Task.WaitAll(t1, t2, t3);
 
@@ -2359,65 +2139,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
                 return -1;
             }
-            //int nRet = 0;
-
-            //nRet &= IndexLoadAligner.AlignSocketOnce();
-            //nRet &= IndexChipProbeController.ContactBottomOrTop();
-            //nRet &= IndexUnloadAligner.AlignSocketOnce();
-
-            //if (nRet != 0)
-            //{
-            //    Log.Write(UnitName, "OnExecuteUnitActionReady Fail");
-            //    return -1;
-            //}
-
-            //return nRet;
         }
-        //////////////////////////////////////////////////////////////////
 
-
-
-
-        public int ExecuteUnitLoadMAlign(bool isFine = false)
-        {
-            this.CurrentFunc = ExecuteUnitLoadMAlign;
-
-            Task<int> task = ExecuteUnitAsyncLoadMAlign(isFine);
-            while (IsEndTask(task) == false)
-            {
-                ExecuteUnitActionInterlockLoadMAlign(isFine);
-                Thread.Sleep(1);
-            }
-            return task.Result;
-        }
-        public Task<int> ExecuteUnitAsyncLoadMAlign(bool isFine = false)
-        {
-            return Task.Run(() =>
-            {
-                OnExecuteUnitLoadMAlign(isFine);
-                return 0;
-            });
-        }
-        public int OnExecuteUnitLoadMAlign(bool isFine = false)
-        {
-            int nRet = 0;
-
-            nRet &= IndexLoadAligner.AlignSocketOnceReady();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
-                return -1;
-            }
-
-            nRet &= IndexLoadAligner.AlignSocketOnce();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Fail");
-                return -1;
-            }
-
-            return nRet;
-        }
         public int ExecuteUnitActionInterlockLoadMAlign(bool isFine = false)
         {
             int nRet = 0;
@@ -2426,99 +2149,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        public int ExecuteUnitProbe(bool isFine = false)
-        {
-            this.CurrentFunc = ExecuteUnitProbe;
-
-            Task<int> task = ExecuteUnitAsyncProbe(isFine);
-            while (IsEndTask(task) == false)
-            {
-                ExecuteUnitActionInterlockProbe(isFine);
-                Thread.Sleep(1);
-            }
-            return task.Result;
-        }
-        public Task<int> ExecuteUnitAsyncProbe(bool isFine = false)
-        {
-            return Task.Run(() =>
-            {
-                OnExecuteUnitProbe(isFine);
-                return 0;
-            });
-        }
-        public int OnExecuteUnitProbe(bool isFine = false)
-        {
-            int nRet = 0;
-
-            nRet &= IndexChipProbeController.ContactReady();
-            //nRet &= IndexUnloadAligner.AlignSocketOnceReady();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
-                return -1;
-            }
-
-            nRet &= IndexChipProbeController.RunInspection();
-            //nRet &= IndexUnloadAligner.AlignSocketOnce();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Fail");
-                return -1;
-            }
-
-            return nRet;
-        }
         public int ExecuteUnitActionInterlockProbe(bool isFine = false)
-        {
-            int nRet = 0;
-
-
-            return nRet;
-        }
-
-        public int ExecuteUnitUnloadAlign(bool isFine = false)
-        {
-            this.CurrentFunc = ExecuteUnitUnloadAlign;
-
-            Task<int> task = ExecuteUnitAsyncUnloadAlign(isFine);
-            while (IsEndTask(task) == false)
-            {
-                ExecuteUnitInterlockUnloadAlign(isFine);
-                Thread.Sleep(1);
-            }
-            return task.Result;
-        }
-        public Task<int> ExecuteUnitAsyncUnloadAlign(bool isFine = false)
-        {
-            return Task.Run(() =>
-            {
-                OnExecuteUnitUnloadAlign(isFine);
-                return 0;
-            });
-        }
-        public int OnExecuteUnitUnloadAlign(bool isFine = false)
-        {
-            int nRet = 0;
-
-            RequestInputDieTrDie = true; // InputDieTransfer에 Chip 요청 상태로 변경.
-
-            nRet &= IndexUnloadAligner.AlignSocketOnceReady();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
-                return -1;
-            }
-
-            nRet &= IndexUnloadAligner.AlignSocketOnce();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "ExecuteUnitAction Fail");
-                return -1;
-            }
-
-            return nRet;
-        }
-        public int ExecuteUnitInterlockUnloadAlign(bool isFine = false)
         {
             int nRet = 0;
 

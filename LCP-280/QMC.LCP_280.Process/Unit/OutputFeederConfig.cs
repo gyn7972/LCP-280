@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -91,6 +92,15 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 4, Name = IO.FEEDER_UNCLAMP_VALVE, Disp = "Y037" }
         };
         #endregion
+
+
+        [Category("Info"), DisplayName("WaferRingframeSize")]
+        [DefaultValue(false)]
+        public double WaferRingframeSize { get; internal set; } = 250;
+        [Category("Info"), DisplayName("OverapLength")]
+        [DefaultValue(false)]
+        public double FeederToCassetteOverapLength { get; internal set; } = 30;
+
 
         public OutputFeederConfig() : base("OutputFeederConfig") { }
 

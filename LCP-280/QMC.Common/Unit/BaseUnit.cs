@@ -78,7 +78,8 @@ namespace QMC.Common.Unit
 
         public List<Func<bool, int>> SequencePlayers
         {
-            get             {
+            get             
+            {
                 return _sequencePlayers;
             }
         }

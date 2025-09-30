@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component; // added for TeachingPosition / HardInputDef / HardOutputDef
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -90,7 +91,11 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         public HardOutputDef[] HardOutputs => _hardOutputs;
 
+        [Category("Info"), DisplayName("WaferRingframeSize")]
+        [DefaultValue(false)]
         public double WaferRingframeSize { get; internal set; } = 250;
+        [Category("Info"), DisplayName("OverapLength")]
+        [DefaultValue(false)]
         public double FeederToCassetteOverapLength { get; internal set; } = 30;
 
         private static readonly HardOutputDef[] _hardOutputs = new[]

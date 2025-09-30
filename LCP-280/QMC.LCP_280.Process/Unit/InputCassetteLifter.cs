@@ -1,6 +1,7 @@
 using LCP_280;
 using QMC.Common;
 using QMC.Common.Alarm;
+using QMC.Common.BarcodeReader;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
@@ -68,6 +69,10 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsWaferReadyForloading { get; private set; } = false;
         #endregion
 
+        #region Barcder
+        private OpticonBarcodeReader BarcoderReader;
+        #endregion
+
         #region Simulation Mapping Support
         // Simulation 모드에서 MappingSensor()를 슬롯 단위로 안정적으로 에뮬레이션하기 위한 상태
         private int _simLastMappingSlot = -1;
@@ -113,7 +118,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
 
-
         #region ctor / Initialization
         public InputCassetteLifter(InputCassetteLifterConfig config = null)
             : base(config ?? new InputCassetteLifterConfig())
@@ -133,7 +137,42 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             base.Config.InitializeDefaultTeachingPositions();
+
             BindAxes();
+            BindBarcodeReader();
+        }
+        #endregion
+
+        #region Barcoder Test
+        private void BindBarcodeReader()
+        {
+            BarcoderReader = Equipment.Instance?.BarcoderReader2;
+
+            if (BarcoderReader == null)
+                Log.Write("InputCassetteLifter", "[BindBarcodeReader] BarcoderReader null");
+        }
+
+        public string ReadBarcoder()
+        {
+            if (BarcoderReader == null)
+            {
+                Log.Write(this, "BarcoderReader is not initialized");
+                return string.Empty;
+            }
+
+            try
+            {
+                string barcode;
+                int result = BarcoderReader.Read(out barcode);
+
+                Log.Write(this, $"BarcoderReader Read: {barcode}");
+                return barcode;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(this, $"BarcoderReader Read Error: {ex.Message}");
+                return string.Empty;
+            }
         }
         #endregion
 
@@ -733,7 +772,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
-            int nRtn = 0;
+            int nRet = 0;
             if (!Config.IsSimulation && !Config.IsDryRun)
             {
                 if (IsWaferProtrusionDetectionSensor())
@@ -787,7 +826,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             this.IsWaferReadyForUnloding = true;
             this._currentSlotID = slotIndex;
-            return nRtn;
+            return nRet;
         }
         public Task<int> MoveToSlotAsync(int slotIndex)
         {
@@ -963,33 +1002,20 @@ namespace QMC.LCP_280.Process.Unit
         //UnClampGripper_Feeder
         //MoveToReady_Feeder
         //Complete
-
-
-        /// ///////////////////////////////////////////////////////////
-        public int CassetteLoading(bool bFineSpeed = false)
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int WaferMapping(bool bFineSpeed = false)
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int CassetteUnloading(bool bFineSpeed = false)
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
         public int GetCurrectSlotID()
         {
             return _currentSlotID;
+        }
+
+        public bool IsWaferReadyForLoading()
+        {
+            //var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
+            //if (tp == null)
+            //    return false;
+
+            //return InPosTeaching(tp);
+
+            return true;
         }
 
 
