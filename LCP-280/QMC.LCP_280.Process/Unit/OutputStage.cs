@@ -668,13 +668,38 @@ namespace QMC.LCP_280.Process.Unit
         public bool BinCompleteWorking { get; internal set; }
         public bool RequestInputDie { get; internal set; }
 
-        public MaterialWafer GetWaferMaterial()
+        public MaterialWafer GetMaterialWafer()
         {
-            throw new NotImplementedException();
+            var mat = GetMaterial();
+            return mat as MaterialWafer;
+        }
+
+        public bool IsWorking()
+        {
+            bool bRet = false;
+            try
+            {
+                var wafer = GetMaterialWafer();
+                if (wafer == null)
+                    return false;
+
+                if (wafer.Presence == Material.MaterialPresence.Exist)
+                {
+                    if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                    {
+                        bRet = true;
+                    }
+                }
+            }
+            catch
+            {
+                bRet = false;
+            }
+            return bRet;
         }
         #endregion
 
-        #region Lifecycle
+            #region Lifecycle
         public override int OnRun()
         {
             int ret = 0;
@@ -890,17 +915,14 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
 
-        public int UnloadingBinPrepare()
+        public int PrepareOutputStageUnloadingBin()
         {
             int nRtn = 0;
             Log.Write(UnitName, "UnloadingPrep", "Start");
-            BinUnloadingDone = false;
-            BinUnloadingReady = false;
-
+            
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingPrep", "No Bin -> Skip");
-                BinUnloadingDone = true;
                 return 0;
             }
 
@@ -932,7 +954,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            BinUnloadingReady = true;
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
@@ -968,6 +989,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
+
         public bool IsBinLoadingPosition()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.Loading];
@@ -988,28 +1010,37 @@ namespace QMC.LCP_280.Process.Unit
             return InPosTeaching(tp);
         }
 
-        public int BinLoading()
+
+        public bool IsCompletedWork()
         {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
+            bool bRet = false;
+
+            try
+            {
+                var wafer = GetMaterialWafer();
+                if (wafer == null)
+                    return false;
+
+                if (wafer.Presence == Material.MaterialPresence.Exist)
+                {
+                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+                    {
+                        bRet = true;
+                    }
+                }
+            }
+            catch
+            {
+                bRet = false;
+            }
+            return bRet;
+
+
+
+            return bRet;
         }
 
-        public int ChipPlaceDown()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
 
-        public int BinUnloading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        
         #endregion
     }
 }

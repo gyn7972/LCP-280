@@ -102,7 +102,7 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-        public static (bool ok, double dxMm, double dyMm, string error)
+        public static (bool ok, double dxMm, double dyMm, double dAngle, string error)
             SearchCenterOffset(string cameraKey,
                                 double pixelSizeXmm,
                                 double pixelSizeYmm,
@@ -111,20 +111,20 @@ namespace QMC.LCP_280.Process.Component
                                 bool useImageCenterIfNoOrigin = true)
         {
             var runner = GetOrCreate(cameraKey);
-            if (runner == null) return (false, 0, 0, "Runner null");
+            if (runner == null) return (false, 0, 0, 0, "Runner null");
             try
             {
                 runner.SetSearchMode(PatternMatchingRunner.SearchMode.First);
                 var res = runner.Search(false);
                 if (!res.Success || res.Matches == null || res.Matches.Count == 0)
-                    return (false, 0, 0, res.FailReason ?? "No match");
+                    return (false, 0, 0, 0, res.FailReason ?? "No match");
 
                 var match = res.Matches[(res.ReferenceIndex >= 0 && res.ReferenceIndex < res.Matches.Count) ? res.ReferenceIndex : 0];
                 var img = runner.GetLastPoint(); // center point not raw image, so recalc using last search image header 필요 → 간단화
 
                 var cam = ResolveCamera(cameraKey);
                 var latest = cam?.LatestImage;
-                if (latest?.Header == null) return (false, 0, 0, "No image header");
+                if (latest?.Header == null) return (false, 0, 0, 0, "No image header");
 
                 double ox, oy;
                 if (useImageCenterIfNoOrigin || !originX.HasValue || !originY.HasValue ||
@@ -141,11 +141,12 @@ namespace QMC.LCP_280.Process.Component
 
                 double dxPix = match.X - ox;
                 double dyPix = match.Y - oy;
-                return (true, dxPix * pixelSizeXmm, dyPix * pixelSizeYmm, null);
+                double dangle = match.R;
+                return (true, dxPix * pixelSizeXmm, dyPix * pixelSizeYmm, dangle, null);
             }
             catch (Exception ex)
             {
-                return (false, 0, 0, ex.Message);
+                return (false, 0, 0, 0, ex.Message);
             }
         }
 

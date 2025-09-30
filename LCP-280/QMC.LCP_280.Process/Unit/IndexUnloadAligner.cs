@@ -10,6 +10,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
@@ -90,7 +91,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region seq signals
-        public bool CompleteUnloadAligner { get; set; } = false;
+
         #endregion
 
         #region Lifecycle
@@ -110,21 +111,13 @@ namespace QMC.LCP_280.Process.Unit
                 switch (State)
                 {
                     case ProcessState.Ready:
-                        if (Rotary.RequestUnloaderAligner)
-                        {
-                            CompleteUnloadAligner = false;
-                            ret = OnRunReady();
-                        }
+                        ret = OnRunReady();
                         break;
                     case ProcessState.Work:
                         ret = OnRunWork();
                         break;
                     case ProcessState.Complete:
                         ret = OnRunComplete();
-                        if (ret == 0)
-                        {
-                            CompleteUnloadAligner = true;
-                        }
                         break;
                     default:
                         this.State = ProcessState.Ready;
@@ -156,8 +149,8 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
-            this.SequencePlayers.Add(AlignSocketOnceReady);
-            this.SequencePlayers.Add(AlignSocketOnce);
+            this.SequencePlayers.Add(RunAlignSocketOnceReady);
+            this.SequencePlayers.Add(RunAlignSocketOnce);
 
         }
 
@@ -173,7 +166,7 @@ namespace QMC.LCP_280.Process.Unit
         public double IsStatus_LastFoundDx { get; set; }
         public double IsStatus_LastFoundDy { get; set; }
         
-        private (bool ok, double x, double y) CenterSearchViaRunner()
+        private (bool ok, double x, double y, double angle) CenterSearchViaRunner()
         {
             var res = VisionRunnerHub.SearchCenterOffset(
                 CameraKey,
@@ -186,9 +179,9 @@ namespace QMC.LCP_280.Process.Unit
             if (!res.ok)
             {
                 Log.Write(UnitName, "CenterSearchViaRunner", "Fail: " + res.error);
-                return (false, 0, 0);
+                return (false, 0, 0, 0);
             }
-            return (true, res.dxMm, res.dyMm);
+            return (true, res.dxMm, res.dyMm, res.dAngle);
         }
 
         #region Seq
@@ -231,12 +224,52 @@ namespace QMC.LCP_280.Process.Unit
             return nRtn;
         }
 
-        public int AlignSocketOnceReady(bool bFineSpeed = false)
+        public int RunAlignSocketOnceReady(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = AlignSocketOnceReady;
+            //this.CurrentFunc = AlignSocketOnceReady;
+            //Log.Write(UnitName, "Align Start");
+            //if (PrepareForAlign(out var _img) != 0)
+            //{
+            //    Log.Write(UnitName, "Fail: Prepare for align");
+            //    return -1;
+            //}
+            //var res = CenterSearchViaRunner();
+            //if (!res.ok)
+            //{
+            //    if(!Config.IsSimulation)
+            //    {
+            //        PostAlarm((int)AlarmKeys.eVisionSearch);
+            //        Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
+            //        return -1;
+            //    }
+            //}
+            //IsStatus_LastFoundDx = res.x;
+            //IsStatus_LastFoundDy = res.y;
 
+            return nRet;
+        }
+
+        public int RunAlignSocketOnce(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            this.CurrentFunc = RunAlignSocketOnce;
             Log.Write(UnitName, "Align Start");
+
+
+            int nIndex = this.GetUnloaderAlignIndexNo();
+            bool bUseSocket  = this.Rotary.Config.GetUseSocket(nIndex);
+            if(bUseSocket == false)
+            {
+                Log.Write(UnitName, "Align", "Skip: No socket at unload align position");
+                return 0;
+            }
+            MaterialDie die = this.Rotary.GetUnloadSocketMaterial();
+            if (die == null || die.Presence != Material.MaterialPresence.Exist)
+            {
+                Log.Write(UnitName, "Align", "Skip: No die on unload socket");
+                return 0;
+            }
 
             if (PrepareForAlign(out var _img) != 0)
             {
@@ -247,7 +280,7 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
-                if(!Config.IsSimulation)
+                if (!Config.IsSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eVisionSearch);
                     Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
@@ -257,15 +290,6 @@ namespace QMC.LCP_280.Process.Unit
 
             IsStatus_LastFoundDx = res.x;
             IsStatus_LastFoundDy = res.y;
-
-            return nRet;
-        }
-
-        public int AlignSocketOnce(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            this.CurrentFunc = AlignSocketOnce;
-
             double dx = IsStatus_LastFoundDx;
             double dy = IsStatus_LastFoundDy;
 
@@ -282,9 +306,12 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            // OutStage T축 , XY축 보정 적용 필.
-            CompleteUnloadAligner = true;
-
+            die.UnloadAlignOffsetX = dx;
+            die.UnloadAlignOffsetY = dy;
+            die.UnloadAlignOffsetT = res.angle;
+            Log.Write(UnitName, "Align", $"OK: dx={dx:F4} dy={dy:F4} dAngle={res.angle:F3}");
+            
+            die.State = DieProcessState.Inspected;
             return nRet;
         }
 

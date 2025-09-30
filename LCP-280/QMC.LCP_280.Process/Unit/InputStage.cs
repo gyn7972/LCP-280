@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.PatternMatchingRunner;
 using static QMC.LCP_280.Process.Unit.InputCassetteLifter;
@@ -1206,6 +1207,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
+
         public bool IsWaferLoadingPosition()
         {
             var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
@@ -2550,7 +2552,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-            if(die.Exists == false)
+            if(die.Presence != MaterialPresence.Exist)
             {
                 return -1;
             }

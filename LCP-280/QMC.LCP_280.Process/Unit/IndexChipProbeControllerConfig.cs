@@ -148,9 +148,9 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int IndexOfProbe { get; set; } = 0;
 
-        [Category("SetupConfig"), DisplayName("ContectMode")]
+        [Category("SetupConfig"), DisplayName("ContectTopMode")]
         [DefaultValue(false)]
-        public bool ContectMode { get; set; } = false;
+        public bool ContectTopMode { get; set; } = false;
 
         [Category("SetupConfig"), DisplayName("InspectTimeOut (ms)")]
         [DefaultValue(0)]

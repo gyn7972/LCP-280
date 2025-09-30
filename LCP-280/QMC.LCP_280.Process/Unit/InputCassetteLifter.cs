@@ -799,7 +799,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
-            int nRtn = 0;
+            int nRet = 0;
             if (!Config.IsSimulation && !Config.IsDryRun)
             {
                 if (IsWaferProtrusionDetectionSensor())
@@ -853,7 +853,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             this.IsWaferReadyForUnloding = true;
             this._currentSlotID = slotIndex;
-            return nRtn;
+            return nRet;
         }
         public Task<int> MoveToSlotAsync(int slotIndex)
         {
@@ -1029,33 +1029,20 @@ namespace QMC.LCP_280.Process.Unit
         //UnClampGripper_Feeder
         //MoveToReady_Feeder
         //Complete
-
-
-        /// ///////////////////////////////////////////////////////////
-        public int CassetteLoading(bool bFineSpeed = false)
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int WaferMapping(bool bFineSpeed = false)
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int CassetteUnloading(bool bFineSpeed = false)
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
         public int GetCurrectSlotID()
         {
             return _currentSlotID;
+        }
+
+        public bool IsWaferReadyForLoading()
+        {
+            //var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
+            //if (tp == null)
+            //    return false;
+
+            //return InPosTeaching(tp);
+
+            return true;
         }
 
 
