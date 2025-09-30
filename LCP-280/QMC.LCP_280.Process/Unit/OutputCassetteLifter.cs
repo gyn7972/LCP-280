@@ -1,5 +1,6 @@
 using QMC.Common;
 using QMC.Common.Alarm;
+using QMC.Common.BarcodeReader;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
@@ -65,6 +66,12 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis BinLifterZ => _BinLiftZ;
         #endregion
 
+
+        #region Barcder
+        private OpticonBarcodeReader BarcoderReader;
+        #endregion
+
+
         #region ctor / Initialization
         public OutputCassetteLifter(OutputCassetteLifterConfig config = null) 
             : base(new OutputCassetteLifterConfig())
@@ -79,6 +86,40 @@ namespace QMC.LCP_280.Process.Unit
             Config.InitializeDefaultTeachingPositions();
             
             BindAxes();
+            BindBarcodeReader();
+        }
+        #endregion
+
+        #region Barcoder Test
+        private void BindBarcodeReader()
+        {
+            BarcoderReader = Equipment.Instance?.BarcoderReader1;
+
+            if (BarcoderReader == null)
+                Log.Write("OutputCassetteLifter", "[BindBarcodeReader] BarcoderReader null");
+        }
+
+        public string ReadBarcoder()
+        {
+            if (BarcoderReader == null)
+            {
+                Log.Write(this, "BarcoderReader is not initialized");
+                return string.Empty;
+            }
+
+            try
+            {
+                string barcode;
+                int result = BarcoderReader.Read(out barcode);
+
+                Log.Write(this, $"BarcoderReader Read: {barcode}");
+                return barcode;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(this, $"BarcoderReader Read Error: {ex.Message}");
+                return string.Empty;
+            }
         }
         #endregion
 

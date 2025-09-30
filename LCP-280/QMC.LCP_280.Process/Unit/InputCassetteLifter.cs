@@ -70,8 +70,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Barcder
-        private OpticonBarcodeReader BarcoderReader1;
-        private OpticonBarcodeReader BarcoderReader2;
+        private OpticonBarcodeReader BarcoderReader;
         #endregion
 
         #region Simulation Mapping Support
@@ -138,66 +137,40 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             base.Config.InitializeDefaultTeachingPositions();
+
             BindAxes();
-            BindBarcodeReaders();
+            BindBarcodeReader();
         }
         #endregion
 
         #region Barcoder Test
-        private void BindBarcodeReaders()
+        private void BindBarcodeReader()
         {
-            BarcoderReader1 = Equipment.Instance?.BarcoderReader1;
-            BarcoderReader2 = Equipment.Instance?.BarcoderReader2;
+            BarcoderReader = Equipment.Instance?.BarcoderReader2;
 
-            if (BarcoderReader1 == null)
-                Log.Write("InputCassetteLifter", "[BindBarcodeReaders] BarcoderReader1 null");
-
-            if (BarcoderReader2 == null)
-                Log.Write("InputCassetteLifter", "[BindBarcodeReaders] BarcoderReader2 null");
+            if (BarcoderReader == null)
+                Log.Write("InputCassetteLifter", "[BindBarcodeReader] BarcoderReader null");
         }
 
-        public string ReadBarcoder1()
+        public string ReadBarcoder()
         {
-            if (BarcoderReader1 == null)
+            if (BarcoderReader == null)
             {
-                Log.Write(this, "BarcoderReader1 is not initialized");
+                Log.Write(this, "BarcoderReader is not initialized");
                 return string.Empty;
             }
 
             try
             {
                 string barcode;
-                int result = BarcoderReader1.Read(out barcode);
+                int result = BarcoderReader.Read(out barcode);
 
-                Log.Write(this, $"Barcode1 Read: {barcode}");
+                Log.Write(this, $"BarcoderReader Read: {barcode}");
                 return barcode;
             }
             catch (Exception ex)
             {
-                Log.Write(this, $"BarcoderReader1 Read Error: {ex.Message}");
-                return string.Empty;
-            }
-        }
-
-        public string ReadBarcoder2()
-        {
-            if (BarcoderReader2 == null)
-            {
-                Log.Write(this, "BarcoderReader2 is not initialized");
-                return string.Empty;
-            }
-
-            try
-            {
-                string barcode;
-                int result = BarcoderReader1.Read(out barcode);
-
-                Log.Write(this, $"Barcode1 Read: {barcode}");
-                return barcode;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(this, $"BarcoderReader2 Read Error: {ex.Message}");
+                Log.Write(this, $"BarcoderReader Read Error: {ex.Message}");
                 return string.Empty;
             }
         }

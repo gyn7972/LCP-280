@@ -203,8 +203,8 @@ namespace QMC.LCP_280.Process
         public Dictionary<string, OpticonBarcodeReader> Barcoders { get; } = new Dictionary<string, OpticonBarcodeReader>(StringComparer.OrdinalIgnoreCase);
 
         // === 편의 프로퍼티 (Barcoder) ===
-        public OpticonBarcodeReader BarcoderReader1 => GetBarcoderController("BarcoderReader1");
-        public OpticonBarcodeReader BarcoderReader2 => GetBarcoderController("BarcoderReader2");
+        public OpticonBarcodeReader BarcoderReader1 => GetBarcoderController("BarcoderReader1"); //Output
+        public OpticonBarcodeReader BarcoderReader2 => GetBarcoderController("BarcoderReader2"); //Input
 
         private OpticonBarcodeReader GetBarcoderController(string key)
         {
