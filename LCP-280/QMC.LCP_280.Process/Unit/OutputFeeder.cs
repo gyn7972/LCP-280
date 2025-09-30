@@ -8,6 +8,8 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -350,7 +352,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         private bool IsMoveInterLockCassette()
         {
-            bool bRet = false;
+            bool bRet = true;
             // Check Interlock.!!! 구문 넣을것.!!!
             if (IsFeederUp() == false)
             {
@@ -660,6 +662,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return ret;
         }
+        
         protected override int OnRunReady()
         {
             int ret = 0;
@@ -769,7 +772,10 @@ namespace QMC.LCP_280.Process.Unit
                     return nRet;
                 }
 
+                MakePath();
                 this.MoveMaterial(new MaterialWafer(), OutputStage);
+                this.OutputStage.UpdateUI();
+
 
                 nRet = MoveToReay();
                 if (nRet != 0)
@@ -832,6 +838,44 @@ namespace QMC.LCP_280.Process.Unit
             return ret;
         }
         #endregion
+
+        protected int MakePath()
+        {
+            int nRet = 0;
+            MaterialWafer wafer = this.GetMaterial() as MaterialWafer;
+            if (wafer != null)
+            {
+                if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                {
+                    string measName = null;
+                    wafer.Dies.Clear();
+
+                    try
+                    {
+                        var eq = Equipment.Instance;
+                        var recipe = eq.EquipmentRecipe.CurrentRecipe;
+                        for (int y = 0; y < recipe.BinCountY; y++)
+                        {
+                            for (int x = 0; x < recipe.BinCountX; x++)
+                            {
+                                MaterialDie die = new MaterialDie();
+                                die.Presence = Material.MaterialPresence.NotExist;
+                                die.ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                                die.BinX = x;
+                                die.BinY = y;
+                                wafer.Dies.Add(die);
+
+                            }
+                        }
+
+                    }
+                    catch { measName = null; }
+                }
+            }
+
+
+            return nRet;
+        }
 
         protected override void OnMakeSequence()
         {

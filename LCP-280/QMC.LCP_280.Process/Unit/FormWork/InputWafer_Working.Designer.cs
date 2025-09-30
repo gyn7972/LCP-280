@@ -31,67 +31,75 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.groupBoxCassetteLifterSeq = new System.Windows.Forms.GroupBox();
+            this.groupBoxInputWaferSeq = new System.Windows.Forms.GroupBox();
+            this.manualSequenceControlInputWafer = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
             this.btnMapping = new QMC.Common.IndividualMenuButton();
-            this.groupBoxInputStageSeq = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.checkBoxTest = new System.Windows.Forms.CheckBox();
             this.checkBoxSimulation = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.buttonRequstInput = new QMC.Common.IndividualMenuButton();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this._InputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.tabControlManualSeqInputWafer = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
+            this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.tableLayoutPanel8 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel9 = new System.Windows.Forms.TableLayoutPanel();
-            this.buttonRequstInput = new QMC.Common.IndividualMenuButton();
-            this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
-            this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
-            this.manualSequenceControlInputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.manualSequenceControlCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.tabControlManualSeqInputWafer = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
             this.manualSequenceControlInputCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
             this.manualSequenceControlInputFeeder = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
             this.manualSequenceControlInputWaferStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
-            this.groupBoxCassetteLifterSeq.SuspendLayout();
+            this.groupBoxInputWaferSeq.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
-            this.groupBoxInputStageSeq.SuspendLayout();
             this.tableLayoutPanel3.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._InputWaferCameraviewer)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
+            this.tableLayoutPanel8.SuspendLayout();
+            this.tableLayoutPanel9.SuspendLayout();
             this.tabControlManualSeqInputWafer.SuspendLayout();
             this.tabPage1.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.tabPage3.SuspendLayout();
-            this.tableLayoutPanel8.SuspendLayout();
-            this.tableLayoutPanel9.SuspendLayout();
             this.SuspendLayout();
             // 
-            // groupBoxCassetteLifterSeq
+            // groupBoxInputWaferSeq
             // 
-            this.groupBoxCassetteLifterSeq.Controls.Add(this.manualSequenceControlCassette);
-            this.groupBoxCassetteLifterSeq.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBoxCassetteLifterSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxCassetteLifterSeq.Location = new System.Drawing.Point(2, 2);
-            this.groupBoxCassetteLifterSeq.Margin = new System.Windows.Forms.Padding(2);
-            this.groupBoxCassetteLifterSeq.Name = "groupBoxCassetteLifterSeq";
-            this.groupBoxCassetteLifterSeq.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxCassetteLifterSeq.Size = new System.Drawing.Size(370, 180);
-            this.groupBoxCassetteLifterSeq.TabIndex = 18;
-            this.groupBoxCassetteLifterSeq.TabStop = false;
-            this.groupBoxCassetteLifterSeq.Text = "Input Wafer Seq";
+            this.groupBoxInputWaferSeq.Controls.Add(this.manualSequenceControlInputWafer);
+            this.groupBoxInputWaferSeq.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBoxInputWaferSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.groupBoxInputWaferSeq.Location = new System.Drawing.Point(2, 2);
+            this.groupBoxInputWaferSeq.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxInputWaferSeq.Name = "groupBoxInputWaferSeq";
+            this.groupBoxInputWaferSeq.Padding = new System.Windows.Forms.Padding(2);
+            this.groupBoxInputWaferSeq.Size = new System.Drawing.Size(370, 180);
+            this.groupBoxInputWaferSeq.TabIndex = 18;
+            this.groupBoxInputWaferSeq.TabStop = false;
+            this.groupBoxInputWaferSeq.Text = "Input Wafer Seq";
+            // 
+            // manualSequenceControlInputWafer
+            // 
+            this.manualSequenceControlInputWafer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualSequenceControlInputWafer.Location = new System.Drawing.Point(2, 20);
+            this.manualSequenceControlInputWafer.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.manualSequenceControlInputWafer.MinimumSize = new System.Drawing.Size(238, 100);
+            this.manualSequenceControlInputWafer.Name = "manualSequenceControlInputWafer";
+            this.manualSequenceControlInputWafer.ParentUnit = null;
+            this.manualSequenceControlInputWafer.Size = new System.Drawing.Size(366, 158);
+            this.manualSequenceControlInputWafer.TabIndex = 13;
             // 
             // groupBoxManual
             // 
@@ -140,6 +148,15 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel4.Size = new System.Drawing.Size(179, 274);
             this.tableLayoutPanel4.TabIndex = 18;
             // 
+            // waferMapView
+            // 
+            this.waferMapView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.waferMapView.Location = new System.Drawing.Point(2, 3);
+            this.waferMapView.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.waferMapView.Name = "waferMapView";
+            this.waferMapView.Size = new System.Drawing.Size(175, 232);
+            this.waferMapView.TabIndex = 16;
+            // 
             // btnMapping
             // 
             this.btnMapping.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -160,20 +177,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.btnMapping.Text = "Mapping";
             this.btnMapping.UseVisualStyleBackColor = false;
             this.btnMapping.Click += new System.EventHandler(this.btnMapping_Click);
-            // 
-            // groupBoxInputStageSeq
-            // 
-            this.groupBoxInputStageSeq.Controls.Add(this.manualSequenceControlInputStage);
-            this.groupBoxInputStageSeq.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBoxInputStageSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxInputStageSeq.Location = new System.Drawing.Point(2, 186);
-            this.groupBoxInputStageSeq.Margin = new System.Windows.Forms.Padding(2);
-            this.groupBoxInputStageSeq.Name = "groupBoxInputStageSeq";
-            this.groupBoxInputStageSeq.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxInputStageSeq.Size = new System.Drawing.Size(370, 181);
-            this.groupBoxInputStageSeq.TabIndex = 19;
-            this.groupBoxInputStageSeq.TabStop = false;
-            this.groupBoxInputStageSeq.Text = "InputStage Manual Seq";
             // 
             // tableLayoutPanel3
             // 
@@ -223,7 +226,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel6.Controls.Add(this.buttonRequstInput, 0, 0);
             this.tableLayoutPanel6.Location = new System.Drawing.Point(187, 2);
-            this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.tableLayoutPanel6.Margin = new System.Windows.Forms.Padding(2);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
             this.tableLayoutPanel6.RowCount = 7;
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
@@ -235,6 +238,26 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 10F));
             this.tableLayoutPanel6.Size = new System.Drawing.Size(182, 276);
             this.tableLayoutPanel6.TabIndex = 21;
+            // 
+            // buttonRequstInput
+            // 
+            this.buttonRequstInput.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonRequstInput.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonRequstInput.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonRequstInput.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonRequstInput.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonRequstInput.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.buttonRequstInput.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.buttonRequstInput.ForeColor = System.Drawing.Color.Black;
+            this.buttonRequstInput.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonRequstInput.Location = new System.Drawing.Point(2, 3);
+            this.buttonRequstInput.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.buttonRequstInput.Name = "buttonRequstInput";
+            this.buttonRequstInput.Size = new System.Drawing.Size(178, 33);
+            this.buttonRequstInput.TabIndex = 18;
+            this.buttonRequstInput.TabStop = false;
+            this.buttonRequstInput.Text = "InputRequst";
+            this.buttonRequstInput.UseVisualStyleBackColor = false;
             // 
             // groupBoxImageView
             // 
@@ -307,60 +330,35 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
             this.tableLayoutPanel1.TabIndex = 21;
             // 
-            // tabControlManualSeqInputWafer
+            // teachingPositionControl
             // 
-            this.tabControlManualSeqInputWafer.Controls.Add(this.tabPage1);
-            this.tabControlManualSeqInputWafer.Controls.Add(this.tabPage2);
-            this.tabControlManualSeqInputWafer.Controls.Add(this.tabPage3);
-            this.tabControlManualSeqInputWafer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControlManualSeqInputWafer.Location = new System.Drawing.Point(2, 2);
-            this.tabControlManualSeqInputWafer.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabControlManualSeqInputWafer.Name = "tabControlManualSeqInputWafer";
-            this.tabControlManualSeqInputWafer.SelectedIndex = 0;
-            this.tabControlManualSeqInputWafer.Size = new System.Drawing.Size(370, 181);
-            this.tabControlManualSeqInputWafer.TabIndex = 21;
+            this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
+            this.teachingPositionControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.teachingPositionControl.Location = new System.Drawing.Point(2, 4);
+            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.teachingPositionControl.Name = "teachingPositionControl";
+            this.teachingPositionControl.ShowCancelButton = true;
+            this.teachingPositionControl.ShowSaveButton = true;
+            this.teachingPositionControl.Size = new System.Drawing.Size(501, 367);
+            this.teachingPositionControl.TabIndex = 14;
+            this.teachingPositionControl.UnitName = null;
             // 
-            // tabPage1
+            // dioControl
             // 
-            this.tabPage1.Controls.Add(this.manualSequenceControlInputCassette);
-            this.tabPage1.Location = new System.Drawing.Point(4, 22);
-            this.tabPage1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabPage1.Size = new System.Drawing.Size(362, 155);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "Cassette";
-            this.tabPage1.UseVisualStyleBackColor = true;
-            // 
-            // tabPage2
-            // 
-            this.tabPage2.Controls.Add(this.manualSequenceControlInputFeeder);
-            this.tabPage2.Location = new System.Drawing.Point(4, 22);
-            this.tabPage2.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabPage2.Size = new System.Drawing.Size(362, 155);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Feeder";
-            this.tabPage2.UseVisualStyleBackColor = true;
-            // 
-            // tabPage3
-            // 
-            this.tabPage3.Controls.Add(this.manualSequenceControlInputWaferStage);
-            this.tabPage3.Location = new System.Drawing.Point(4, 22);
-            this.tabPage3.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(362, 155);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "Stage";
-            this.tabPage3.UseVisualStyleBackColor = true;
+            this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
+            this.dioControl.Location = new System.Drawing.Point(2, 379);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.dioControl.Name = "dioControl";
+            this.dioControl.RefreshIntervalMs = 400;
+            this.dioControl.Size = new System.Drawing.Size(501, 368);
+            this.dioControl.TabIndex = 15;
             // 
             // tableLayoutPanel8
             // 
             this.tableLayoutPanel8.ColumnCount = 1;
             this.tableLayoutPanel8.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel8.Controls.Add(this.groupBoxInputStageSeq, 0, 1);
-            this.tableLayoutPanel8.Controls.Add(this.groupBoxCassetteLifterSeq, 0, 0);
+            this.tableLayoutPanel8.Controls.Add(this.groupBoxInputWaferSeq, 0, 0);
             this.tableLayoutPanel8.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel8.Location = new System.Drawing.Point(887, 3);
             this.tableLayoutPanel8.Name = "tableLayoutPanel8";
@@ -384,80 +382,30 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel9.Size = new System.Drawing.Size(374, 370);
             this.tableLayoutPanel9.TabIndex = 23;
             // 
-            // buttonRequstInput
+            // tabControlManualSeqInputWafer
             // 
-            this.buttonRequstInput.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.buttonRequstInput.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.buttonRequstInput.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.buttonRequstInput.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.buttonRequstInput.CustomForeColor = System.Drawing.Color.Black;
-            this.buttonRequstInput.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.buttonRequstInput.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.buttonRequstInput.ForeColor = System.Drawing.Color.Black;
-            this.buttonRequstInput.ImageSize = new System.Drawing.Size(45, 45);
-            this.buttonRequstInput.Location = new System.Drawing.Point(2, 3);
-            this.buttonRequstInput.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.buttonRequstInput.Name = "buttonRequstInput";
-            this.buttonRequstInput.Size = new System.Drawing.Size(178, 33);
-            this.buttonRequstInput.TabIndex = 18;
-            this.buttonRequstInput.TabStop = false;
-            this.buttonRequstInput.Text = "InputRequst";
-            this.buttonRequstInput.UseVisualStyleBackColor = false;
+            this.tabControlManualSeqInputWafer.Controls.Add(this.tabPage1);
+            this.tabControlManualSeqInputWafer.Controls.Add(this.tabPage2);
+            this.tabControlManualSeqInputWafer.Controls.Add(this.tabPage3);
+            this.tabControlManualSeqInputWafer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControlManualSeqInputWafer.Location = new System.Drawing.Point(2, 2);
+            this.tabControlManualSeqInputWafer.Margin = new System.Windows.Forms.Padding(2);
+            this.tabControlManualSeqInputWafer.Name = "tabControlManualSeqInputWafer";
+            this.tabControlManualSeqInputWafer.SelectedIndex = 0;
+            this.tabControlManualSeqInputWafer.Size = new System.Drawing.Size(370, 181);
+            this.tabControlManualSeqInputWafer.TabIndex = 21;
             // 
-            // teachingPositionControl
+            // tabPage1
             // 
-            this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
-            this.teachingPositionControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.teachingPositionControl.Location = new System.Drawing.Point(2, 4);
-            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
-            this.teachingPositionControl.Name = "teachingPositionControl";
-            this.teachingPositionControl.ShowCancelButton = true;
-            this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(501, 367);
-            this.teachingPositionControl.TabIndex = 14;
-            this.teachingPositionControl.UnitName = null;
-            // 
-            // waferMapView
-            // 
-            this.waferMapView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.waferMapView.Location = new System.Drawing.Point(2, 3);
-            this.waferMapView.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.waferMapView.Name = "waferMapView";
-            this.waferMapView.Size = new System.Drawing.Size(175, 232);
-            this.waferMapView.TabIndex = 16;
-            // 
-            // dioControl
-            // 
-            this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(2, 379);
-            this.dioControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
-            this.dioControl.Name = "dioControl";
-            this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(501, 368);
-            this.dioControl.TabIndex = 15;
-            // 
-            // manualSequenceControlInputStage
-            // 
-            this.manualSequenceControlInputStage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlInputStage.Location = new System.Drawing.Point(2, 20);
-            this.manualSequenceControlInputStage.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControlInputStage.MinimumSize = new System.Drawing.Size(238, 100);
-            this.manualSequenceControlInputStage.Name = "manualSequenceControlInputStage";
-            this.manualSequenceControlInputStage.ParentUnit = null;
-            this.manualSequenceControlInputStage.Size = new System.Drawing.Size(366, 159);
-            this.manualSequenceControlInputStage.TabIndex = 13;
-            // 
-            // manualSequenceControlCassette
-            // 
-            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlCassette.Location = new System.Drawing.Point(2, 20);
-            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(238, 100);
-            this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
-            this.manualSequenceControlCassette.ParentUnit = null;
-            this.manualSequenceControlCassette.Size = new System.Drawing.Size(366, 158);
-            this.manualSequenceControlCassette.TabIndex = 13;
+            this.tabPage1.Controls.Add(this.manualSequenceControlInputCassette);
+            this.tabPage1.Location = new System.Drawing.Point(4, 22);
+            this.tabPage1.Margin = new System.Windows.Forms.Padding(2);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(2);
+            this.tabPage1.Size = new System.Drawing.Size(362, 155);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "Cassette";
+            this.tabPage1.UseVisualStyleBackColor = true;
             // 
             // manualSequenceControlInputCassette
             // 
@@ -470,6 +418,18 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.manualSequenceControlInputCassette.Size = new System.Drawing.Size(358, 151);
             this.manualSequenceControlInputCassette.TabIndex = 14;
             // 
+            // tabPage2
+            // 
+            this.tabPage2.Controls.Add(this.manualSequenceControlInputFeeder);
+            this.tabPage2.Location = new System.Drawing.Point(4, 22);
+            this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(2);
+            this.tabPage2.Size = new System.Drawing.Size(362, 155);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Feeder";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
             // manualSequenceControlInputFeeder
             // 
             this.manualSequenceControlInputFeeder.Location = new System.Drawing.Point(4, 6);
@@ -479,6 +439,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.manualSequenceControlInputFeeder.ParentUnit = null;
             this.manualSequenceControlInputFeeder.Size = new System.Drawing.Size(362, 253);
             this.manualSequenceControlInputFeeder.TabIndex = 15;
+            // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.manualSequenceControlInputWaferStage);
+            this.tabPage3.Location = new System.Drawing.Point(4, 22);
+            this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(362, 155);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "Stage";
+            this.tabPage3.UseVisualStyleBackColor = true;
             // 
             // manualSequenceControlInputWaferStage
             // 
@@ -499,11 +470,10 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.Name = "InputWafer_Working";
             this.Text = "InputWafer_Working";
-            this.groupBoxCassetteLifterSeq.ResumeLayout(false);
+            this.groupBoxInputWaferSeq.ResumeLayout(false);
             this.groupBoxManual.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel4.ResumeLayout(false);
-            this.groupBoxInputStageSeq.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel3.PerformLayout();
             this.tableLayoutPanel6.ResumeLayout(false);
@@ -511,12 +481,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel5.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._InputWaferCameraviewer)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel8.ResumeLayout(false);
+            this.tableLayoutPanel9.ResumeLayout(false);
             this.tabControlManualSeqInputWafer.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
-            this.tableLayoutPanel8.ResumeLayout(false);
-            this.tableLayoutPanel9.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -524,13 +494,11 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         #endregion
         private Component.DIOControl dioControl;
         private Component.TeachingPositionControl teachingPositionControl;
-        private Component.ManualSequenceControl manualSequenceControlCassette;
+        private Component.ManualSequenceControl manualSequenceControlInputWafer;
         private WaferMapView waferMapView;
         private Common.IndividualMenuButton btnMapping;
-        private System.Windows.Forms.GroupBox groupBoxCassetteLifterSeq;
+        private System.Windows.Forms.GroupBox groupBoxInputWaferSeq;
         private System.Windows.Forms.GroupBox groupBoxManual;
-        private System.Windows.Forms.GroupBox groupBoxInputStageSeq;
-        private ManualSequenceControl manualSequenceControlInputStage;
         private System.Windows.Forms.GroupBox groupBoxImageView;
         private Common.Vision.VisionImageViewer _InputWaferCameraviewer;
         private System.Windows.Forms.CheckBox checkBoxTest;

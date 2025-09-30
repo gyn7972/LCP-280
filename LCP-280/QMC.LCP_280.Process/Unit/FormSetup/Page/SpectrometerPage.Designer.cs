@@ -53,7 +53,7 @@
             this.tableLayoutPanel16 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel17 = new System.Windows.Forms.TableLayoutPanel();
             this.btnSpectrometerConfigSave = new QMC.Common.IndividualMenuButton();
-            this.pcvSpectrometerConfig = new QMC.Common.PropertyCollectionView();
+            this.pcvConfig = new QMC.Common.PropertyCollectionView();
             this.casSpectrumViewer = new QMC.Common.Spectrometer.CASSpectrumViewer();
             this.tableLayoutPanel8.SuspendLayout();
             this.tableLayoutPanel9.SuspendLayout();
@@ -441,7 +441,7 @@
             this.tableLayoutPanel17.ColumnCount = 1;
             this.tableLayoutPanel17.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel17.Controls.Add(this.btnSpectrometerConfigSave, 0, 1);
-            this.tableLayoutPanel17.Controls.Add(this.pcvSpectrometerConfig, 0, 0);
+            this.tableLayoutPanel17.Controls.Add(this.pcvConfig, 0, 0);
             this.tableLayoutPanel17.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel17.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel17.Name = "tableLayoutPanel17";
@@ -471,17 +471,17 @@
             this.btnSpectrometerConfigSave.UseVisualStyleBackColor = false;
             this.btnSpectrometerConfigSave.Click += new System.EventHandler(this.btnSpectrometerConfigSave_Click);
             // 
-            // pcvSpectrometerConfig
+            // pcvConfig
             // 
-            this.pcvSpectrometerConfig.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pcvSpectrometerConfig.FastBuild = true;
-            this.pcvSpectrometerConfig.GroupName = "Property";
-            this.pcvSpectrometerConfig.Location = new System.Drawing.Point(0, 0);
-            this.pcvSpectrometerConfig.Margin = new System.Windows.Forms.Padding(0);
-            this.pcvSpectrometerConfig.Name = "pcvSpectrometerConfig";
-            this.pcvSpectrometerConfig.Size = new System.Drawing.Size(439, 373);
-            this.pcvSpectrometerConfig.SuppressResizeInvalidation = true;
-            this.pcvSpectrometerConfig.TabIndex = 7;
+            this.pcvConfig.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pcvConfig.FastBuild = true;
+            this.pcvConfig.GroupName = "Property";
+            this.pcvConfig.Location = new System.Drawing.Point(0, 0);
+            this.pcvConfig.Margin = new System.Windows.Forms.Padding(0);
+            this.pcvConfig.Name = "pcvConfig";
+            this.pcvConfig.Size = new System.Drawing.Size(439, 373);
+            this.pcvConfig.SuppressResizeInvalidation = true;
+            this.pcvConfig.TabIndex = 7;
             // 
             // casSpectrumViewer
             // 
@@ -539,7 +539,7 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel16;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel17;
         private Common.IndividualMenuButton btnSpectrometerConfigSave;
-        private Common.PropertyCollectionView pcvSpectrometerConfig;
+        private Common.PropertyCollectionView pcvConfig;
         private Common.Spectrometer.CASSpectrumViewer casSpectrumViewer;
     }
 }

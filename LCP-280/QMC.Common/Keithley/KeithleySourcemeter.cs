@@ -189,27 +189,11 @@ namespace QMC.Common.Keithley
                 {
                     throw new Exception("Failed to initialize sourcemeter.");
                 }
-                foreach (var item in Channels)
-                {
-                    var channel = item.Value;
-                    if (!channel.Init())
-                    {
-                        throw new Exception($"Failed to initialize channel [{channel.Name}].");
-                    }
-                }
 
                 // Apply SMU Config 
                 if (ApplyConfig() != 0)
                 {
                     throw new Exception("Failed to apply parameter.");
-                }
-                foreach (var item in Channels)
-                {
-                    var channel = item.Value;
-                    if (!channel.ApplyConfig())
-                    {
-                        throw new Exception($"Failed to apply config channel [{channel.Name}].");
-                    }
                 }
 
                 OnInitialized?.Invoke(this, EventArgs.Empty);
@@ -231,9 +215,14 @@ namespace QMC.Common.Keithley
         {
             if (!Config.IsSimulation)
             {
-                if (Communicator != null && Communicator.IsConnected)
-                    return false;
+                if (Communicator != null)
+                {
+                    if (Communicator.IsConnected)
+                        return true;
+                }
+                return false;
             }
+
             return true;
         }
 
@@ -243,6 +232,15 @@ namespace QMC.Common.Keithley
             {
                 // Sourcemeter Parameter 적용
                 // -
+
+                foreach (var item in Channels)
+                {
+                    var channel = item.Value;
+                    if (!channel.ApplyConfig())
+                    {
+                        throw new Exception($"Failed to apply config channel [{channel.Name}].");
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -258,6 +256,15 @@ namespace QMC.Common.Keithley
             {
                 if (!Communicator.Write("init()"))
                     throw new Exception("Failed to send init command.");
+
+                foreach (var item in Channels)
+                {
+                    var channel = item.Value;
+                    if (!channel.Init())
+                    {
+                        throw new Exception($"Failed to initialize channel [{channel.Name}].");
+                    }
+                }
             }
             catch (Exception ex)
             {

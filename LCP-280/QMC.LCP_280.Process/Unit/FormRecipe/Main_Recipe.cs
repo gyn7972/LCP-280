@@ -86,6 +86,17 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             EquipmentRecipe.CurrentRecipeChanged -= Equipment_CurrentRecipeChanged;
         }
 
+        private void Main_Recipe_VisibleChanged(object sender, EventArgs e)
+        {
+            if (Visible)
+            {
+                // 폼이 보여질 때마다 현재 레시피 동기화 (다른 폼에서 변경될 때 UI에 반영되지 않는 부분 수정)
+                var eq = Equipment.Instance;
+                _current = eq.EquipmentRecipe.GetRecipe();
+                BuildPropertyFromRecipe(_current);
+            }
+        }
+
         private void Equipment_CurrentRecipeChanged(object sender, EquipmentRecipe.MeasurementRecipeChangedEventArgs e)
         {
             try
@@ -132,13 +143,18 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
                 var currentRecipe = eq.EquipmentRecipe.CurrentRecipe;
 
                 var tester = Equipment.Instance.Tester;
-                if (tester.ConditionSet.LoadFromFile(currentRecipe.TestConditionSetPath) != 0)
+                int retLoadTestCondSet = tester.ConditionSet.LoadFromFile(currentRecipe.TestConditionSetPath);
+                int retLoadBinningSpec = tester.BinningSpecSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath);
+
+                if (retLoadBinningSpec != 0 || retLoadTestCondSet != 0)
                 {
-                    throw new Exception($"Failed to load test condition set\nPath: {currentRecipe.TestConditionSetPath}");
-                }
-                if (tester.BinningSpecSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath) != 0)
-                {
-                    throw new Exception($"Failed to load binning spec sheet\nPath: {currentRecipe.BinningSpecSheetPath}");
+                    string confirmMessage = "The recipe was opened, but the file below failed to load. Please check.";
+                    if (retLoadTestCondSet != 0)
+                        confirmMessage += Environment.NewLine + $"- Test Condition Set: {currentRecipe.TestConditionSetPath}";
+                    if (retLoadBinningSpec != 0)
+                        confirmMessage += Environment.NewLine + $"- Binning Spec Sheet: {currentRecipe.BinningSpecSheetPath}";
+
+                    MessageBox.Show(confirmMessage, "Confirm");
                 }
                 // -------------------------------
 

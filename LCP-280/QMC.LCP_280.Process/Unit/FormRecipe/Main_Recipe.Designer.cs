@@ -166,7 +166,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 11.11111F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 11.11111F));
             this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 11.11111F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 23F));
             this.tableLayoutPanel3.Controls.Add(this.btnSave, 9, 0);
             this.tableLayoutPanel3.Location = new System.Drawing.Point(320, 629);
             this.tableLayoutPanel3.Name = "tableLayoutPanel3";
@@ -223,6 +223,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe
             this.Name = "Main_Recipe";
             this.Text = "Main_Recipe";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Main_Recipe_FormClosed);
+            this.VisibleChanged += new System.EventHandler(this.Main_Recipe_VisibleChanged);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);

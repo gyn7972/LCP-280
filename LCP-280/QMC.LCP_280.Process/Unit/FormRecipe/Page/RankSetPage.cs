@@ -8,16 +8,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
 
 namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 {
     public partial class RankSetPage : UserControl
     {
         private Equipment equipment => Equipment.Instance;
-        private PKGTester tester => equipment.Tester;
+        private Component.MeasurementRecipe currentRecipe => equipment.EquipmentRecipe.CurrentRecipe;
 
         private BinningSpecSheet tempSheet = new BinningSpecSheet();
         private PropertyCollection pc;
+
+        private string filePath = "";
+        private bool isModified = false;
 
         private int defaultColumnCount = 0;
 
@@ -25,6 +29,51 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         {
             InitializeComponent();
             InitRankSetGrid();
+        }
+
+        private void RankSetPage_Load(object sender, EventArgs e)
+        {
+            if (currentRecipe != null)
+            {
+                if (tempSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath) == 0)
+                {
+                    filePath = currentRecipe.BinningSpecSheetPath;
+                    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                }
+                else
+                {
+                    filePath = "";
+                    lbSetNameValue.Text = "No file";
+                }
+            }
+
+            UpdateRankSetGrid();
+        }
+
+        private void RankSetPage_VisibleChanged(object sender, EventArgs e)
+        {
+            // 수정 후 저장하지 않고 다른 Page로 이동 시, 적용되지 않은 상태로 유지하기 위함
+            if (Visible)
+            {
+                if (currentRecipe != null)
+                {
+                    if (filePath != currentRecipe.BinningSpecSheetPath || isModified)
+                    {
+                        if (tempSheet.LoadFromFile(currentRecipe.BinningSpecSheetPath) == 0)
+                        {
+                            filePath = currentRecipe.BinningSpecSheetPath;
+                            lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                            UpdateRankSetGrid();
+                        }
+                        else
+                        {
+                            filePath = "";
+                            lbSetNameValue.Text = "";
+                            ClearRankSetGrid();
+                        }
+                    }                
+                }
+            }
         }
 
         private void InitRankSetGrid()
@@ -150,7 +199,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     // Invalid index or empty label, revert to old value
                     dataGridRank.Rows[rowIndex].Cells[colIndex].Value = tempSheet.Specs[binIndex].BinLabel;
                 }
+                
             }
+            isModified = true;
         }
 
         private void btnMaxRankUpdate_Click(object sender, EventArgs e)
@@ -171,6 +222,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                     tempSheet.AddNewBin("NewBinLabel");
                 }
             }
+            isModified = true;
 
             UpdateRankSetGrid();
         }
@@ -179,7 +231,9 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         {
             // 현재 tester에 있는 측정 아이템들을 기반으로 Header Columns을 생성한다.
             tempSheet.Clear();
-            foreach (var header in tester.Result.Items.Keys)
+
+            var testerHeaders = equipment.Tester.Result.Items.Keys;
+            foreach (var header in testerHeaders)
             {
                 tempSheet.AddHeader(header);
             }
@@ -190,26 +244,41 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             {
                 tempSheet.AddNewBin("NewBinLabel");
             }
+            isModified = true;
 
             UpdateRankSetGrid();
         }
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            using (OpenFileDialog dlg = new OpenFileDialog())
+            using (OpenFileDialog dialog = new OpenFileDialog())
             {
-                dlg.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
-                dlg.Title = "비닝 사양 파일 열기";
-                if (dlg.ShowDialog() == DialogResult.OK)
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "BinningSpecSheet");
+                dialog.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
+                dialog.Title = "Open Binning Spec Sheet";
+
+                if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    if (tempSheet.LoadFromFile(dlg.FileName) != 0)
+                    var filePath = dialog.FileName;
+                    if (tempSheet.LoadFromFile(dialog.FileName) == 0)
                     {
+                        // Apply
+                        equipment.Tester.LoadBinningSpecSheet(filePath);
+                        if (currentRecipe != null)
+                        {
+                            currentRecipe.BinningSpecSheetPath = filePath;
+                            currentRecipe.Save();
+                        }
+
+                        this.filePath = filePath;
+                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                        isModified = false;
+
                         UpdateRankSetGrid();
-                        MessageBox.Show("파일을 성공적으로 불러왔습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show("파일을 불러오지 못했습니다.\n파일 형식을 확인하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Failed to load file.", "Error");
                     }
                 }
             }
@@ -217,51 +286,33 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            using (SaveFileDialog dlg = new SaveFileDialog())
+            using (SaveFileDialog dialog = new SaveFileDialog())
             {
-                dlg.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
-                dlg.Title = "비닝 사양 파일 저장";
-                if (dlg.ShowDialog() == DialogResult.OK)
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "BinningSpecSheet");
+                dialog.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
+                dialog.Title = "Save Binning Spec Sheet";
+
+                if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    if (tempSheet.SaveToFile(dlg.FileName) != 0)
+                    var filePath = dialog.FileName;
+                    if (tempSheet.SaveToFile(dialog.FileName) == 0)
                     {
-                        MessageBox.Show("파일을 성공적으로 저장했습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        // Apply
+                        equipment.Tester.LoadBinningSpecSheet(filePath);
+                        if (currentRecipe != null)
+                        {
+                            currentRecipe.BinningSpecSheetPath = filePath;
+                            currentRecipe.Save();
+                        }
+
+                        this.filePath = filePath;
+                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                        isModified = false;
                     }
                     else
                     {
-                        MessageBox.Show("파일 저장에 실패했습니다.\n파일 경로 및 권한을 확인하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Failed to save file.", "Error");
                     }
-                }
-            }
-        }
-
-        private void btnApply_Click(object sender, EventArgs e)
-        {
-            // Interlock
-            if (!tempSheet.Validate())
-            {
-                MessageBox.Show("Invalid test sheet.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            var result = MessageBox.Show("Do you want to save it in the Apply and Recipe data?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.Yes)
-            {
-                try
-                {
-                    if (Equipment.Instance.Tester.LoadBinningSpecSheet(tempSheet) == 0)
-                    {
-                        // 레시피 처리 수정 필요...
-                    }
-                    else
-                    {
-                        MessageBox.Show("Failed to apply the test sheet.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
                 }
             }
         }
@@ -291,10 +342,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
 
                 BinningRange item = tempSheet.Specs[binIndex].Items[header];
                 item.CopyFrom(tempItem);
+                isModified = true;
+
                 UpdateRankSetGrid();
             }
         }
-
-        
     }
 }

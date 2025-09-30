@@ -347,6 +347,20 @@ namespace QMC.LCP_280.Process
                 // 홈 후처리 글로벌 구독(1회)
                 HomeHooks.EnsureSubscribed();
 
+                // PKG Tester Load Recipe
+                var currentRecipe = EquipmentRecipe?.CurrentRecipe;
+                if (currentRecipe != null && Tester != null)
+                {
+                    if (Tester.LoadTestConditionSet(currentRecipe.TestConditionSetPath) != 0)
+                    {
+                        MessageBox.Show("Failed to load test condition set.");
+                    }
+                    if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetPath) != 0)
+                    {
+                        MessageBox.Show("Failed to load binning spec sheet.");
+                    }
+                }
+
                 OnStateChanged(EquipmentState.Ready);
             }
             catch (Exception ex)
@@ -1731,6 +1745,13 @@ namespace QMC.LCP_280.Process
                 Tester = new PKGTester("PKGTester");
                 Tester.BindSourcemeter(Sourcemeter);
                 Tester.BindSpectrometer(Spectrometer);
+
+                var currentRecipe = EquipmentRecipe?.CurrentRecipe;
+                if (currentRecipe != null)
+                {
+                    Tester.LoadTestConditionSet(currentRecipe.TestConditionSetPath);
+                    Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetPath);
+                }
             }
             catch (Exception ex) { Log.Write(ex); }
         }

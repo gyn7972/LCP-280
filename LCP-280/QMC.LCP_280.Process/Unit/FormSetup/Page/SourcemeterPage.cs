@@ -18,7 +18,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
         private KeithleySourcemeter selectSourcemeter;
         private KeithleySourcemeterChannel selectSourcemeterChannel;
 
-        private PropertyCollection pcSmuConfig;
+        private PropertyCollection pcConfig;
         private FormSetupKeithleyInstrument setupDialog = new FormSetupKeithleyInstrument();
 
         public SourcemeterPage()
@@ -33,8 +33,8 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
         {
             try
             {
-                pcSmuConfig["ResourceName"].Value = e;
-                pcvConfig.SetProperties(pcSmuConfig);
+                pcConfig["ResourceName"].Value = e;
+                pcvConfig.SetProperties(pcConfig);
             }
             catch (Exception ex)
             {
@@ -80,52 +80,59 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
 
         private void Sourcemeter_OnSessionOpened(object sender, EventArgs e)
         {
-            if (selectSourcemeter != null)
+            if (InvokeRequired)
             {
-                if (lbStatusValue.InvokeRequired)
-                {
-                    lbStatusValue.Invoke(new Action(() => lbStatusValue.Text = "Connected"));
-                }
-                else
-                {
-                    lbStatusValue.Text = "Connected";
-                }
+                Invoke(new Action(() => Sourcemeter_OnSessionOpened(sender, e)));
+                return;
+            }
+
+            KeithleySourcemeter sourcemeter = sender as KeithleySourcemeter;
+            if (selectSourcemeter == sourcemeter && sourcemeter != null)
+            {
+                lbStatusValue.Text = "Connected";
             }
         }
 
         private void Sourcemeter_OnSessionClosed(object sender, EventArgs e)
         {
-            if (selectSourcemeter != null)
+            if (InvokeRequired)
             {
-                if (lbStatusValue.InvokeRequired)
-                {
-                    lbStatusValue.Invoke(new Action(() => lbStatusValue.Text = "Disconnected"));
-                }
-                else
-                {
-                    lbStatusValue.Text = "Disconnected";
-                }
+                Invoke(new Action(() => Sourcemeter_OnSessionClosed(sender, e)));
+                return;
+            }
+
+            KeithleySourcemeter sourcemeter = sender as KeithleySourcemeter;
+            if (selectSourcemeter == sourcemeter && sourcemeter != null)
+            {
+                lbStatusValue.Text = "Disconnected";
             }
         }
 
         private void Sourcemeter_OnReceived(object sender, EventArgs e)
         {
-            if (selectSourcemeter != null)
+            if (InvokeRequired)
             {
-                if (tbLog.InvokeRequired)
-                {
-                    tbLog.Invoke(new Action(() => tbLog.AppendText($"[{selectSourcemeter.Name}] Message Received.\n")));
-                }
-                else
-                {
-                    tbLog.AppendText($"[{selectSourcemeter.Name}] Message Received.\n");
-                }
+                Invoke(new Action(() => Sourcemeter_OnReceived(sender, e)));
+                return;
+            }
+
+            KeithleySourcemeter sourcemeter = sender as KeithleySourcemeter;
+            if (selectSourcemeter == sourcemeter && sourcemeter != null)
+            {
+                tbLog.AppendText($"[{selectSourcemeter.Name}] Message Received.\n");
             }
         }
 
         private void Sourcemeter_OnInitialized(object sender, EventArgs e)
         {
-            if (selectSourcemeter != null)
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => Sourcemeter_OnInitialized(sender, e)));
+                return;
+            }
+
+            KeithleySourcemeter sourcemeter = sender as KeithleySourcemeter;
+            if (selectSourcemeter == sourcemeter && sourcemeter != null)
             {
                 lbModelValue.Text = selectSourcemeter.ModelName;
                 lbSerialNumberValue.Text = selectSourcemeter.SerialNo;
@@ -156,8 +163,8 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                 tbLog.Clear();
                 tbSendText.Clear();
 
-                pcSmuConfig = sourcemeter.Config.GetPropertyCollection();
-                pcvConfig.SetProperties(pcSmuConfig);
+                pcConfig = sourcemeter.Config.GetPropertyCollection();
+                pcvConfig.SetProperties(pcConfig);
             }
             else
             {
@@ -205,15 +212,19 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                 {
                     pcvConfig.Apply();
 
-                    selectSourcemeter.Config.ApplyValueFromPropertyCollection(pcSmuConfig);
-                    if (selectSourcemeter.Config.Save() == 0)
-                    {
-                        MessageBox.Show($"The settings for [{selectSourcemeter.Name}] have been successfully saved.");
-                    }
-                    else
+                    selectSourcemeter.Config.ApplyValueFromPropertyCollection(pcConfig);
+                    if (selectSourcemeter.Config.Save() != 0)
                     {
                         MessageBox.Show($"Failed to save the settings of [{selectSourcemeter.Name}].");
+                        return;
                     }
+                    if (selectSourcemeter.ApplyConfig() != 0)
+                    {
+                        MessageBox.Show($"Failed to apply the settings of [{selectSourcemeter.Name}].");
+                        return;
+                    }
+
+                    MessageBox.Show($"The settings for [{selectSourcemeter.Name}] have been successfully save and apply.");
                 }
             }
             catch (Exception ex)

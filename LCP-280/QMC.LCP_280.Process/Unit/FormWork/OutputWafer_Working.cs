@@ -269,15 +269,20 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 OutputFeeder = TryGetUnit<OutputFeeder>("OutputFeeder");
                 OutputStage = TryGetUnit<OutputStage>("OutputStage");
 
-                if(OutputCassetteLifter != null)
+                if (OutputFeeder != null)
                 {
-                    manualSequenceControlCassette.ParentUnit = OutputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlCassette.ParentUnit = OutputFeeder; // 시퀀스 등록 대상 유닛 지정
                 }
 
-                if(OutputStage != null)
-                {
-                    manualSequenceControlOutputStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
-                }
+                //if (OutputCassetteLifter != null)
+                //{
+                //    manualSequenceControlCassette.ParentUnit = OutputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
+                //}
+
+                //if(OutputStage != null)
+                //{
+                //    manualSequenceControlOutputStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
+                //}
 
             }
             catch (Exception ex)

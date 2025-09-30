@@ -19,33 +19,39 @@ namespace QMC.LCP_280.Process
     [FormOrder(1)]
     public partial class Monitoring_Main : Form
     {
-        private InputCassetteLifter CassetteLifter { get; set; }
+        private InputCassetteLifter InputCassetteLifter { get; set; }
         private InputFeeder Feeder { get; set; }
         private InputStage inputStage { get; set; }
 
         private Rotary Rotary;
 
-        
+        private OutputStage OutputStage { get; set; }
+        private OutputCassetteLifter OutputCassetteLifter { get; set; }
+
+
         public Monitoring_Main() : this(
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
             TryGetUnit<InputFeeder>("InputFeeder"),
             TryGetUnit<InputStage>("InputStage"),
-            TryGetUnit<Rotary>("Rotary"))
+            TryGetUnit<Rotary>("Rotary"),
+            TryGetUnit<OutputStage>("OutputStage"),
+            TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"))
         {
 
         }
 
-        public Monitoring_Main(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, InputStage inputStage, Rotary rotary)
+        public Monitoring_Main(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, 
+            InputStage inputStage, Rotary rotary, OutputStage outputStage, OutputCassetteLifter outputCassetteLifter)
         {
             InitializeComponent();
 
             #region Chart
-            CassetteLifter = cassetteLifter;
+            InputCassetteLifter = cassetteLifter;
             Feeder = ringTransfer;
             this.inputStage = inputStage;
             Rotary = rotary;
 
-            var materialCassette = CassetteLifter?.GetMaterialCassette();
+            var materialCassette = InputCassetteLifter?.GetMaterialCassette();
 
             // WaferSelectMapView 이벤트 구독
             if (inputWaferCarrierControl1?.GetWaferSelectMapView() != null)
@@ -88,6 +94,14 @@ namespace QMC.LCP_280.Process
             dieIndexSelectControl1.DieClicked += OnDieClick_Requested;
             dieIndexSelectControl1.RotationRequested += OnDieRotation_Requested;
             inputStage.EventUpdateUIWafer += InputStage_EventUpdateUIWafer;
+            outputStage.EventUpdateUIWafer += OutputStage_EventUpdateUIWafer;
+
+
+        }
+
+        private void OutputStage_EventUpdateUIWafer(MaterialWafer wafer)
+        {
+            this.dieOutputControl1.SetDieList(wafer.Dies);
         }
 
         private void InputStage_EventUpdateUIWafer(MaterialWafer wafer)
@@ -302,7 +316,7 @@ namespace QMC.LCP_280.Process
                 {
                     this.Invoke(new Action(() =>
                     {
-                        dieOutputControl1.UpdateDie(new Point(x, y), DieOutputControl.DieState.Present);
+                        dieOutputControl1.UpdateDie(new Point(x, y), DieProcessState.Picked);
                         ShowMotorMovingStatus("Place 모터 이동 완료");
                     }));
                 });

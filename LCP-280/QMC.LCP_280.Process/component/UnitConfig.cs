@@ -32,11 +32,11 @@ namespace QMC.LCP_280.Process.Component
 
         private void UnitConfig_VisibleChanged(object sender, EventArgs e)
         {
-            if (!AutoReloadOnActivate)
+            if (!AutoReloadOnActivate) 
                 return;
-            if (!Visible)
+            if (!Visible) 
                 return;
-            if (_config == null)
+            if (_config == null) 
                 return;
 
             // 다시 보일 때 자동 재로드
@@ -100,14 +100,14 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnApplyConfig_Click(object sender, EventArgs e)
         {
-            if (_mapper == null || _config == null)
+             if (_mapper == null || _config == null) 
                 return;
 
             try
             {
                 configurationPropertyView.Apply();
                 var pc = configurationPropertyView.GetCurrentProperties();
-                if (pc != null)
+                if (pc != null) 
                     _mapper.ApplyToObject(pc);
 
                 InvokeSave(_config);
@@ -121,7 +121,7 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnReloadConfig_Click(object sender, EventArgs e)
         {
-            if (_config == null)
+            if (_config == null) 
                 return;
 
             if (IsDirty())
@@ -145,7 +145,7 @@ namespace QMC.LCP_280.Process.Component
                 if (mi != null && mi.GetParameters().Length == 0)
                     mi.Invoke(cfg, null);
             }
-            catch (Exception ex)
+            catch (Exception ex) 
             {
                 Log.Write(ex);
             }
@@ -211,138 +211,138 @@ namespace QMC.LCP_280.Process.Component
             // 0) Provider (선택)
             var provider = _config as IPropertyOrderProvider;
             var providerOrder = provider?.GetPropertyOrder()
-                                 ?.Select((n, i) => new { NameOrDisplay = n?.Trim(), Ord = i })
+                                 ?.Select((n,i)=> new { NameOrDisplay = n?.Trim(), Ord = i })
                                  ?.Where(x => !string.IsNullOrWhiteSpace(x.NameOrDisplay))
                                  ?.ToDictionary(x => x.NameOrDisplay, x => x.Ord,
                                      StringComparer.OrdinalIgnoreCase)
-                                 ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                                 ?? new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
 
-            var categoryPriorityMap = provider?.GetCategoryOrder()
-                                     ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+    var categoryPriorityMap = provider?.GetCategoryOrder()
+                             ?? new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
 
-            // 1) 속성 메타 (DisplayName / DisplayOrder / CategoryOrder)
-            var propMeta = type
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.CanRead && p.CanWrite)
-                .Select(p =>
-                {
-                    var dn = p.GetCustomAttributes(true)
-                              .OfType<DisplayNameAttribute>()
-                              .FirstOrDefault()?.DisplayName;
-                    var display = string.IsNullOrWhiteSpace(dn) ? p.Name : dn;
+    // 1) 속성 메타 (DisplayName / DisplayOrder / CategoryOrder)
+    var propMeta = type
+        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        .Where(p => p.CanRead && p.CanWrite)
+        .Select(p =>
+        {
+            var dn = p.GetCustomAttributes(true)
+                      .OfType<DisplayNameAttribute>()
+                      .FirstOrDefault()?.DisplayName;
+            var display = string.IsNullOrWhiteSpace(dn) ? p.Name : dn;
 
-                    var attrOrder = p.GetCustomAttributes(true)
-                                     .OfType<DisplayOrderAttribute>()
-                                     .FirstOrDefault()?.Order;
+            var attrOrder = p.GetCustomAttributes(true)
+                             .OfType<DisplayOrderAttribute>()
+                             .FirstOrDefault()?.Order;
 
-                    var catOrderAttr = p.GetCustomAttributes(true)
-                                        .OfType<CategoryOrderAttribute>()
-                                        .FirstOrDefault()?.Order;
+            var catOrderAttr = p.GetCustomAttributes(true)
+                                .OfType<CategoryOrderAttribute>()
+                                .FirstOrDefault()?.Order;
 
-                    // Provider 순서 (없으면 null)
-                    providerOrder.TryGetValue(display, out var provOrd1);
-                    if (!providerOrder.TryGetValue(p.Name, out var provOrd2)) provOrd2 = provOrd1;
+            // Provider 순서 (없으면 null)
+            providerOrder.TryGetValue(display, out var provOrd1);
+            if (!providerOrder.TryGetValue(p.Name, out var provOrd2)) provOrd2 = provOrd1;
 
-                    int provOrd = provOrd1 != 0 || providerOrder.ContainsKey(display) ? provOrd1 :
-                                  (providerOrder.ContainsKey(p.Name) ? provOrd2 : int.MaxValue);
+            int provOrd = provOrd1 != 0 || providerOrder.ContainsKey(display) ? provOrd1 :
+                          (providerOrder.ContainsKey(p.Name) ? provOrd2 : int.MaxValue);
 
-                    return new
-                    {
-                        Prop = p,
-                        PropName = p.Name,
-                        Display = display,
-                        AttrOrder = attrOrder,      // Attribute 우선
-                        ProviderOrder = provOrd,    // 그 다음 Provider
-                        CategoryOrderAttr = catOrderAttr
-                    };
-                })
-                .ToList();
-
-            // 2) 내부 리스트
-            var listField = typeof(PropertyCollection)
-                            .GetField("_properties", BindingFlags.NonPublic | BindingFlags.Instance);
-            var list = listField?.GetValue(pc) as IList;
-            if (list != null)
+            return new
             {
-                var items = list.Cast<object>().ToList();
-                list.Clear();
+                Prop = p,
+                PropName = p.Name,
+                Display = display,
+                AttrOrder = attrOrder,      // Attribute 우선
+                ProviderOrder = provOrd,    // 그 다음 Provider
+                CategoryOrderAttr = catOrderAttr
+            };
+        })
+        .ToList();
 
-                int seq = 0;
-                var sortable = items
-                    .Select(o =>
-                    {
-                        var tItem = o.GetType();
-                        var titleProp = tItem.GetProperty("Title") ?? tItem.GetProperty("Name");
-                        string title = titleProp?.GetValue(o)?.ToString() ?? "";
+    // 2) 내부 리스트
+    var listField = typeof(PropertyCollection)
+                    .GetField("_properties", BindingFlags.NonPublic | BindingFlags.Instance);
+    var list = listField?.GetValue(pc) as IList;
+    if (list != null)
+    {
+        var items = list.Cast<object>().ToList();
+        list.Clear();
 
-                        bool isHeader = tItem.Name.Contains("TitleOnlyProperty");
+        int seq = 0;
+        var sortable = items
+            .Select(o =>
+            {
+                var tItem = o.GetType();
+                var titleProp = tItem.GetProperty("Title") ?? tItem.GetProperty("Name");
+                string title = titleProp?.GetValue(o)?.ToString() ?? "";
 
-                        // Category 추출
-                        string category = "";
-                        var catProp = tItem.GetProperty("Category");
-                        if (catProp != null)
-                            category = catProp.GetValue(o)?.ToString() ?? "";
+                bool isHeader = tItem.Name.Contains("TitleOnlyProperty");
 
-                        // 헤더면 Title 을 Category 로 사용 (Provider 매핑 가능)
-                        if (isHeader && string.IsNullOrEmpty(category))
-                            category = title;
+                // Category 추출
+                string category = "";
+                var catProp = tItem.GetProperty("Category");
+                if (catProp != null)
+                    category = catProp.GetValue(o)?.ToString() ?? "";
 
-                        // 매칭
-                        var meta = propMeta.FirstOrDefault(m =>
-                            string.Equals(m.Display, title, StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(m.PropName, title, StringComparison.OrdinalIgnoreCase));
+                // 헤더면 Title 을 Category 로 사용 (Provider 매핑 가능)
+                if (isHeader && string.IsNullOrEmpty(category))
+                    category = title;
 
-                        // 속성 row 이고 Category 비어있으면 Reflection 으로 CategoryAttribute 추출 또는 General 기본
-                        if (!isHeader && string.IsNullOrEmpty(category))
-                        {
-                            var catAttr = meta?.Prop?.GetCustomAttributes(true)
-                                               .OfType<CategoryAttribute>()
-                                               .FirstOrDefault();
-                            if (catAttr != null)
-                                category = catAttr.Category;
-                            if (string.IsNullOrEmpty(category))
-                                category = "General"; // fallback
-                        }
+                // 매칭
+                var meta = propMeta.FirstOrDefault(m =>
+                    string.Equals(m.Display, title, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(m.PropName, title, StringComparison.OrdinalIgnoreCase));
 
-                        // Property 순서 계산 (Attribute 우선 → Provider)
-                        int orderByAttr = meta?.AttrOrder ?? int.MaxValue;
-                        int orderByProvider = meta?.ProviderOrder ?? int.MaxValue;
-                        int effectiveOrder = (orderByAttr != int.MaxValue) ? orderByAttr : orderByProvider;
+                // 속성 row 이고 Category 비어있으면 Reflection 으로 CategoryAttribute 추출 또는 General 기본
+                if (!isHeader && string.IsNullOrEmpty(category))
+                {
+                    var catAttr = meta?.Prop?.GetCustomAttributes(true)
+                                       .OfType<CategoryAttribute>()
+                                       .FirstOrDefault();
+                    if (catAttr != null)
+                        category = catAttr.Category;
+                    if (string.IsNullOrEmpty(category))
+                        category = "General"; // fallback
+                }
 
-                        // Category 우선순위
-                        int catOrdAttr = meta?.CategoryOrderAttr ?? 1000;
-                        int catOrdProv = categoryPriorityMap.TryGetValue(category, out var co) ? co : 1000;
-                        int catEffective = (meta?.CategoryOrderAttr != null) ? catOrdAttr : catOrdProv;
+                // Property 순서 계산 (Attribute 우선 → Provider)
+                int orderByAttr = meta?.AttrOrder ?? int.MaxValue;
+                int orderByProvider = meta?.ProviderOrder ?? int.MaxValue;
+                int effectiveOrder = (orderByAttr != int.MaxValue) ? orderByAttr : orderByProvider;
 
-                        // 최종 정렬 키
-                        long baseKey = (long)catEffective * 1_000_000L;
-                        long withinKey;
-                        if (isHeader)
-                            withinKey = 0;
-                        else
-                        {
-                            int propOrderInside = (effectiveOrder == int.MaxValue) ? 500_000 : (effectiveOrder + 1);
-                            withinKey = propOrderInside;
-                        }
-                        long sortKey = baseKey + withinKey;
+                // Category 우선순위
+                int catOrdAttr = meta?.CategoryOrderAttr ?? 1000;
+                int catOrdProv = categoryPriorityMap.TryGetValue(category, out var co) ? co : 1000;
+                int catEffective = (meta?.CategoryOrderAttr != null) ? catOrdAttr : catOrdProv;
 
-                        return new
-                        {
-                            Obj = o,
-                            SortKey = sortKey,
-                            Seq = seq++
-                        };
-                    })
-                    .OrderBy(x => x.SortKey)
-                    .ThenBy(x => x.Seq)
-                    .ToList();
+                // 최종 정렬 키
+                long baseKey = (long)catEffective * 1_000_000L;
+                long withinKey;
+                if (isHeader)
+                    withinKey = 0;
+                else
+                {
+                    int propOrderInside = (effectiveOrder == int.MaxValue) ? 500_000 : (effectiveOrder + 1);
+                    withinKey = propOrderInside;
+                }
+                long sortKey = baseKey + withinKey;
 
-                foreach (var x in sortable)
-                    list.Add(x.Obj);
-            }
+                return new
+                {
+                    Obj = o,
+                    SortKey = sortKey,
+                    Seq = seq++
+                };
+            })
+            .OrderBy(x => x.SortKey)
+            .ThenBy(x => x.Seq)
+            .ToList();
 
-            configurationPropertyView.GroupName = type.Name;
-            configurationPropertyView.SetProperties(pc);
-        }
+        foreach (var x in sortable)
+            list.Add(x.Obj);
+    }
+
+    configurationPropertyView.GroupName = type.Name;
+    configurationPropertyView.SetProperties(pc);
+}
     }
 }
