@@ -215,9 +215,14 @@ namespace QMC.Common.Keithley
         {
             if (!Config.IsSimulation)
             {
-                if (Communicator != null && Communicator.IsConnected)
-                    return false;
+                if (Communicator != null)
+                {
+                    if (Communicator.IsConnected)
+                        return true;
+                }
+                return false;
             }
+
             return true;
         }
 

@@ -379,7 +379,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             using (OpenFileDialog dialog = new OpenFileDialog())
             {
-                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestConditionSet");
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "TestConditionSet");
                 dialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
                 dialog.Title = "Open Test Condition Set";
 
@@ -420,7 +420,7 @@ namespace QMC.LCP_280.Process.Unit
 
             using (SaveFileDialog dialog = new SaveFileDialog())
             {
-                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestConditionSet");
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "TestConditionSet");
                 dialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
                 dialog.Title = "Save Test Condition Set";
                 dialog.FileName = "*.json";
