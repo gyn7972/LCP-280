@@ -103,37 +103,33 @@ namespace QMC.LCP_280.Process.Unit
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                return 1;
+                ret = 1;
             }
-
-            if (this.RunUnitStatus == UnitStatus.Running)
+            else
             {
-                return 0;
-            }
-
-            
-            switch (State)
-            {
-                case ProcessState.Ready:
-                    //if (Rotary.RequestUnloaderAligner)
-                    //{
-                    //    CompleteUnloadAligner = false;
-                    //    ret = OnRunReady();
-                    //}
-                    break;
-                case ProcessState.Work:
-                    //ret = OnRunWork();
-                    break;
-                case ProcessState.Complete:
-                    //ret = OnRunComplete();
-                    //if (ret == 0)
-                    //{
-                    //    CompleteUnloadAligner = true;
-                    //}
-                    break;
-                default:
-                    this.State = ProcessState.Ready;
-                    break;
+                switch (State)
+                {
+                    case ProcessState.Ready:
+                        if (Rotary.RequestUnloaderAligner)
+                        {
+                            CompleteUnloadAligner = false;
+                            ret = OnRunReady();
+                        }
+                        break;
+                    case ProcessState.Work:
+                        ret = OnRunWork();
+                        break;
+                    case ProcessState.Complete:
+                        ret = OnRunComplete();
+                        if (ret == 0)
+                        {
+                            CompleteUnloadAligner = true;
+                        }
+                        break;
+                    default:
+                        this.State = ProcessState.Ready;
+                        break;
+                }
             }
 
             if (ret != 0)
