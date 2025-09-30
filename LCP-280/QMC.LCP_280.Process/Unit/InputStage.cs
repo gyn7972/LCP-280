@@ -1051,7 +1051,6 @@ namespace QMC.LCP_280.Process.Unit
                 return 1;
             }
 
-
             if (this.RunUnitStatus == UnitStatus.Running)
             {
                 return 0;

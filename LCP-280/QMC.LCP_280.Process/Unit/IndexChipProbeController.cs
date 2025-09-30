@@ -1148,35 +1148,39 @@ namespace QMC.LCP_280.Process.Unit
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                ret = 1;
-            }
-            else
-            {
-                switch (State)
-                {
-                    case ProcessState.Ready:
-                        if (Rotary.RequestProbe)
-                        {
-                            CompleteProbe = false;
-                            ret = OnRunReady();
-                        }
-                        break;
-                    case ProcessState.Work:
-                        ret = OnRunWork();
-                        break;
-                    case ProcessState.Complete:
-                        ret = OnRunComplete();
-                        if (ret == 0)
-                        {
-                            CompleteProbe = true;
-                        }
-                        break;
-                    default:
-                        this.State = ProcessState.Ready;
-                        break;
-                }
+                return 1;
             }
 
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+
+            
+            switch (State)
+            {
+                case ProcessState.Ready:
+                    //if (Rotary.RequestProbe)
+                    //{
+                    //    CompleteProbe = false;
+                    //    ret = OnRunReady();
+                    //}
+                    break;
+                case ProcessState.Work:
+                    //ret = OnRunWork();
+                    break;
+                case ProcessState.Complete:
+                    //ret = OnRunComplete();
+                    //if (ret == 0)
+                    //{
+                    //    CompleteProbe = true;
+                    //}
+                    break;
+                default:
+                    //this.State = ProcessState.Ready;
+                    break;
+            }
+       
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;

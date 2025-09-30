@@ -1345,7 +1345,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return nRet;
             }
-            
+            this.CompleteInputDie = false;
+
             // Rotary에서 Place 위치 도착 신호 오면 수행.
             MaterialDie Die = this.Rotary.GetLoadSocketMaterial();
             if(Die != null)
@@ -1380,6 +1381,7 @@ namespace QMC.LCP_280.Process.Unit
                         Rotary.SetMaterial(die);
                         SetMaterial(new Material());
 
+                        this.CompleteInputDie = true;
                         State = ProcessState.None;
                     }
                 }

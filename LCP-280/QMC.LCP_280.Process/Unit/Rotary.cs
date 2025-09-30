@@ -1223,53 +1223,8 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq Signal
         public bool RequestInputDieTrDie { get; set; } = false;
-        // Thread-safe 플래그 (기존 이름 유지해 외부 영향 최소화)
-        private int _reqLoadAligner;
-        public bool RequestLoadAligner
-        {
-            get; set;
-            //get { return System.Threading.Thread.VolatileRead(ref _reqLoadAligner) != 0; }
-            //set { System.Threading.Interlocked.Exchange(ref _reqLoadAligner, value ? 1 : 0); }
-        }
-
-        private int _reqProbe;
-        public bool RequestProbe
-        {
-            get; set;
-            //get { return System.Threading.Thread.VolatileRead(ref _reqProbe) != 0; }
-            //set { System.Threading.Interlocked.Exchange(ref _reqProbe, value ? 1 : 0); }
-        }
-
-        private int _reqUnloadAligner;
-        public bool RequestUnloaderAligner
-        {
-            get; set;
-            //get { return System.Threading.Thread.VolatileRead(ref _reqUnloadAligner) != 0; }
-            //set { System.Threading.Interlocked.Exchange(ref _reqUnloadAligner, value ? 1 : 0); }
-        }
         public bool RequestOutputDieTrDie { get; set; } = false;
         #endregion
-
-        // 추가: 필요한 Unit 실행 보조
-        private void TryStartUnitIfNeeded(BaseUnit unit)
-        {
-            if (unit == null) return;
-            if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running ||
-                unit.RunUnitStatus == BaseUnit.UnitStatus.Starting)
-                return;
-
-            Equipment.Instance.StartUnitSync(unit.UnitName);
-        }
-        private void TryStopUnitIfNeeded(BaseUnit unit)
-        {
-            if (unit == null) return;
-            if (unit.RunUnitStatus == BaseUnit.UnitStatus.Stopped ||
-                unit.RunUnitStatus == BaseUnit.UnitStatus.Stopping ||
-                unit.RunUnitStatus == BaseUnit.UnitStatus.CycleStop)
-                return;
-
-            Equipment.Instance.StopUnitSync(unit.UnitName);
-        }
 
         public override int OnRun()
         {
@@ -1296,9 +1251,6 @@ namespace QMC.LCP_280.Process.Unit
                     break;
                 default:
                     RequestInputDieTrDie = false;
-                    RequestLoadAligner = false;
-                    RequestProbe = false;
-                    RequestUnloaderAligner = false;
                     RequestOutputDieTrDie = false;
                     this.State = ProcessState.Ready;
                     break;
@@ -1315,13 +1267,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            TryStopUnitIfNeeded(IndexLoadAligner);
-            TryStopUnitIfNeeded(IndexChipProbeController);
-            TryStopUnitIfNeeded(IndexUnloadAligner);
-
-            //TryStopUnitIfNeeded(InputDieTransfer);
-            //TryStopUnitIfNeeded(OutputDieTransfer);
-
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
             base.OnStop();
@@ -1335,57 +1280,353 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
-            //TryStartUnitIfNeeded(IndexLoadAligner);
-            //TryStartUnitIfNeeded(IndexChipProbeController);
-            //TryStartUnitIfNeeded(IndexUnloadAligner);
-            //TryStartUnitIfNeeded(InputDieTransfer);
-            //TryStartUnitIfNeeded(OutputDieTransfer);
+            // 요청 플래그 초기화
+            RequestInputDieTrDie = false;
+            RequestOutputDieTrDie = false;
 
-            nRtn = ExecuteUnitActionReady();
-            if (nRtn != 0)
+            // 안전 확인
+            string safeReason;
+            bool isSafe = VerifyAllUnitsSafe(out safeReason);
+            if (!isSafe)
             {
-                Log.Write(UnitName, "[ExecuteUnitActionReady] Failed");
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                Log.Write(UnitName, $"[OnRunReady] Not Safe: {safeReason}");
                 return -1;
             }
 
-            // (추가) 공정 상태 갱신
-            UpdateProcessStates();
+            // 소켓 참조 가져오기 (스테이션 기준)
+            SocketInfo loadSock = GetLoadSocketInfo();
+            SocketInfo alignSock = GetMAlignSocketInfo();
+            SocketInfo probeSock = GetProbeSocketInfo();
+            SocketInfo unloadAlignSock = GetUnloaderAlignSocketInfo();
+            SocketInfo unloadSock = GetUnloadSocketInfo();
 
-            // 1. 회전 가능 여부 판단
-            string rotateReason = string.Empty;
-            int chk = CanRotate();
-            switch (chk)
+            // 1) 각 유닛 완료 신호 기반으로 소켓 상태 갱신 (명시적/단순화)
+            // Load 완료 → Loaded
+            if (InputDieTransfer != null 
+             && InputDieTransfer.CompleteInputDie)
             {
-                case ROT_CHK_OK:
-                    State = ProcessState.Work;
-                    return nRtn;
-
-                case ROT_CHK_SKIP_NO_DEMAND:
-                    RequestInputDieTrDie = true;
-                    RequestLoadAligner = true;
-                    RequestProbe = true;
-                    RequestUnloaderAligner = true;
-                    State = ProcessState.Complete;
-                    return nRtn;
-
-                case ROT_CHK_WAIT_STATION_BUSY:
-                    // 아직 공정 진행 중 → 대기 (로그 과다 방지 위해 필요 시 주석 해제)
-                    // Log.Write(UnitName, "[RotateWait] Station busy");
-                    State = ProcessState.Ready;
-                    return nRtn;
-
-                case ROT_CHK_ERR_AXIS_NULL:
-                case ROT_CHK_ERR_AXIS_BUSY:
-                case ROT_CHK_ERR_NOT_SAFE:
-                case ROT_CHK_ERR_SOCKET_ARRAY:
-                default:
-                    Log.Write(UnitName, $"[RotateError] {GetRotateCheckMessage(chk)}");
-                    return -1;
+                lock (_socketLock)
+                {
+                    if (loadSock.State == RotarySocketState.Empty 
+                     || loadSock.State == RotarySocketState.Loading)
+                    {
+                        loadSock.SetState(RotarySocketState.Loaded);
+                    }
+                }
             }
+
+            // Align 완료 → Aligned
+            if (IndexLoadAligner != null 
+             && IndexLoadAligner.CompleteLoadAligner)
+            {
+                lock (_socketLock)
+                {
+                    if (alignSock.State == RotarySocketState.Loaded 
+                     || alignSock.State == RotarySocketState.Aligning)
+                    {
+                        alignSock.SetState(RotarySocketState.Aligned);
+                    }
+                }
+            }
+
+            // Probe 완료 → Probed
+            if (IndexChipProbeController != null 
+             && IndexChipProbeController.CompleteProbe)
+            {
+                lock (_socketLock)
+                {
+                    if (probeSock.State == RotarySocketState.Aligned 
+                     || probeSock.State == RotarySocketState.Probing)
+                    {
+                        probeSock.SetState(RotarySocketState.Probed);
+                    }
+                }
+            }
+
+            // UnloadAlign 완료 → Outputting
+            if (IndexUnloadAligner != null 
+             && IndexUnloadAligner.CompleteUnloadAligner)
+            {
+                lock (_socketLock)
+                {
+                    if (unloadAlignSock.State == RotarySocketState.Probed 
+                     || unloadAlignSock.State == RotarySocketState.Unloading)
+                    {
+                        unloadAlignSock.SetState(RotarySocketState.Outputting);
+                    }
+                }
+            }
+
+            // Output 완료 → Completed
+            if (OutputDieTransfer != null 
+             && OutputDieTransfer.CompleteOutputDie)
+            {
+                lock (_socketLock)
+                {
+                    if (unloadSock.State == RotarySocketState.Outputting)
+                    {
+                        unloadSock.SetState(RotarySocketState.Completed);
+                        // 배출 완료 시 소재 제거
+                        unloadSock.SetMaterialDie(null);
+                    }
+                }
+            }
+
+            // 2) 전후공정 요청 플래그만 사용
+            // Load: Empty 이고 소켓 사용 가능 시 투입 요청
+            if (IsCurrentLoadSocketEnabled() && 
+                loadSock.State == RotarySocketState.Empty)
+            {
+                RequestInputDieTrDie = true;
+            }
+            // Output: Outputting 이면 배출 요청
+            if (unloadSock.State == RotarySocketState.Outputting)
+            {
+                RequestOutputDieTrDie = true;
+            }
+
+            // 3) Rotary가 직접 Align/Probe/UnloadAligner 실행 (상태 기반)
+            // - 명시적으로 한 번씩 호출하여 각 유닛이 자신의 상태/인터락에 맞게 처리
+            nRtn = ExecuteUnitAction();
+            if (nRtn != 0)
+            {
+                Log.Write(UnitName, "[ExecuteUnitAction] Failed");
+                return -1;
+            }
+            // 4) 스테이션 바쁨 여부(회전 차단)
+            bool stationBusy = false;
+            if (alignSock.State == RotarySocketState.Aligning &&
+                (IndexLoadAligner == null || !IndexLoadAligner.CompleteLoadAligner))
+            {
+                stationBusy = true;
+            }
+            if (!stationBusy && probeSock.State == RotarySocketState.Probing &&
+                (IndexChipProbeController == null || !IndexChipProbeController.CompleteProbe))
+            {
+                stationBusy = true;
+            }
+            if (!stationBusy && unloadAlignSock.State == RotarySocketState.Unloading &&
+                (IndexUnloadAligner == null || !IndexUnloadAligner.CompleteUnloadAligner))
+            {
+                stationBusy = true;
+            }
+            if (!stationBusy && unloadSock.State == RotarySocketState.Outputting &&
+                (OutputDieTransfer == null || !OutputDieTransfer.CompleteOutputDie))
+            {
+                stationBusy = true;
+            }
+            if (stationBusy)
+            {
+                State = ProcessState.Ready;
+                return nRtn;
+            }
+
+            // 5) 회전 수요 판단 (Unload/Output → Probe → Align → Load)
+            bool needRotate = false;
+            if (!needRotate && unloadSock.State == RotarySocketState.Completed) needRotate = true;
+            if (!needRotate &&
+                probeSock.State == RotarySocketState.Probed &&
+                (unloadSock.State == RotarySocketState.Empty || unloadSock.State == RotarySocketState.Completed))
+                needRotate = true;
+            if (!needRotate &&
+                alignSock.State == RotarySocketState.Aligned &&
+                (probeSock.State == RotarySocketState.Empty || probeSock.State == RotarySocketState.Completed))
+                needRotate = true;
+            if (!needRotate &&
+                loadSock.State == RotarySocketState.Loaded &&
+                (alignSock.State == RotarySocketState.Empty || alignSock.State == RotarySocketState.Completed))
+                needRotate = true;
+
+            if (_axisT == null)
+            {
+                PostAlarm((int)AlarmKeys.eIndexRotary);
+                Log.Write(UnitName, "[OnRunReady] AxisT NULL");
+                return -1;
+            }
+
+            State = needRotate ? ProcessState.Work : ProcessState.Complete;
+            return nRtn;
+
+
+            //// Align: Align 소켓이 Loaded면 얼라인 요청
+            //if (alignSock.State == RotarySocketState.Loaded)
+            //{
+            //    lock (_socketLock)
+            //    {
+            //        if (alignSock.State == RotarySocketState.Loaded)
+            //        {
+            //            alignSock.SetState(RotarySocketState.Aligning);
+            //        }
+            //    }
+            //}
+            //// Probe: Probe 소켓이 Aligned면 프로빙 요청
+            //if (probeSock.State == RotarySocketState.Aligned)
+            //{
+            //    lock (_socketLock)
+            //    {
+            //        if (probeSock.State == RotarySocketState.Aligned)
+            //        {
+            //            probeSock.SetState(RotarySocketState.Probing);
+            //        }
+            //    }
+            //}
+            //// UnloadAlign: UnloadAlign 소켓이 Probed면 언로더 얼라인 요청
+            //if (unloadAlignSock.State == RotarySocketState.Probed)
+            //{
+            //    lock (_socketLock)
+            //    {
+            //        if (unloadAlignSock.State == RotarySocketState.Probed)
+            //        {
+            //            unloadAlignSock.SetState(RotarySocketState.Unloading);
+            //        }
+            //    }
+            //}
+            //// 3) 회전 가능/필요 판단
+            //// 3-1) 스테이션 바쁨 여부(회전 차단)
+            //bool stationBusy = false;
+            //if (alignSock.State == RotarySocketState.Aligning &&
+            //   (IndexLoadAligner == null || !IndexLoadAligner.CompleteLoadAligner))
+            //{
+            //    stationBusy = true;
+            //}
+            //if (!stationBusy && probeSock.State == RotarySocketState.Probing &&
+            //   (IndexChipProbeController == null || !IndexChipProbeController.CompleteProbe))
+            //{
+            //    stationBusy = true;
+            //}
+            ////동일 소켓 위치.
+            //if (!stationBusy && unloadAlignSock.State == RotarySocketState.Unloading &&
+            //   (IndexUnloadAligner == null || !IndexUnloadAligner.CompleteUnloadAligner))
+            //{
+            //    if (!stationBusy && unloadSock.State == RotarySocketState.Outputting &&
+            //       (OutputDieTransfer == null || !OutputDieTransfer.CompleteOutputDie))
+            //    {
+            //        stationBusy = true;
+            //    }
+            //}
+            //if (stationBusy)
+            //{
+            //    // 스테이션 작업 중이면 Ready 유지
+            //    State = ProcessState.Ready;
+            //    return nRtn;
+            //}
+            //// 3-2) 회전 수요 판단 (우선순위: Unload/Output → Probe → Align → Load)
+            //bool needRotate = false;
+            //// Unload/Output 완료 후 다음 사이클
+            //if (!needRotate && unloadSock.State == RotarySocketState.Completed)
+            //{
+            //    needRotate = true;
+            //}
+            //// Probe → Unload/Output
+            //if (!needRotate &&
+            //    probeSock.State == RotarySocketState.Probed &&
+            //    (unloadSock.State == RotarySocketState.Empty || unloadSock.State == RotarySocketState.Completed))
+            //{
+            //    needRotate = true;
+            //}
+            //// Align → Probe
+            //if (!needRotate &&
+            //    alignSock.State == RotarySocketState.Aligned &&
+            //    (probeSock.State == RotarySocketState.Empty || probeSock.State == RotarySocketState.Completed))
+            //{
+            //    needRotate = true;
+            //}
+            //// Load → Align
+            //if (!needRotate &&
+            //    loadSock.State == RotarySocketState.Loaded &&
+            //    (alignSock.State == RotarySocketState.Empty || alignSock.State == RotarySocketState.Completed))
+            //{
+            //    needRotate = true;
+            //}
+            //// 4) 회전 실행 여부 결정
+            //if (_axisT == null)
+            //{
+            //    PostAlarm((int)AlarmKeys.eIndexRotary);
+            //    Log.Write(UnitName, "[OnRunReady] AxisT NULL");
+            //    return -1;
+            //}
+            //if (IsAxisMoving(AxisNames.IndexT))
+            //{
+            //    State = ProcessState.Ready;
+            //    return 0;
+            //}
+            //if (needRotate)
+            //{
+            //    State = ProcessState.Work;
+            //}
+            //else
+            //{
+            //    // 회전 수요가 없으면 Complete 단계로 넘겨 다른 유닛 동작/완료를 기다림
+            //    State = ProcessState.Complete;
+            //}
+            //return nRtn;
+
+
+
+
+            //nRtn = ExecuteUnitActionReady();
+            //if (nRtn != 0)
+            //{
+            //    Log.Write(UnitName, "[ExecuteUnitActionReady] Failed");
+            //    return -1;
+            //}
+            //// (추가) 공정 상태 갱신
+            //UpdateProcessStates();
+            //// 1. 회전 가능 여부 판단
+            //string rotateReason = string.Empty;
+            //int chk = CanRotate();
+            //switch (chk)
+            //{
+            //    case ROT_CHK_OK:
+            //        State = ProcessState.Work;
+            //        return nRtn;
+            //    case ROT_CHK_SKIP_NO_DEMAND:
+            //        RequestInputDieTrDie = true;
+            //        RequestLoadAligner = true;
+            //        RequestProbe = true;
+            //        RequestUnloaderAligner = true;
+            //        State = ProcessState.Complete;
+            //        return nRtn;
+            //    case ROT_CHK_WAIT_STATION_BUSY:
+            //        // 아직 공정 진행 중 → 대기 (로그 과다 방지 위해 필요 시 주석 해제)
+            //        // Log.Write(UnitName, "[RotateWait] Station busy");
+            //        State = ProcessState.Ready;
+            //        return nRtn;
+            //    case ROT_CHK_ERR_AXIS_NULL:
+            //    case ROT_CHK_ERR_AXIS_BUSY:
+            //    case ROT_CHK_ERR_NOT_SAFE:
+            //    case ROT_CHK_ERR_SOCKET_ARRAY:
+            //    default:
+            //        Log.Write(UnitName, $"[RotateError] {GetRotateCheckMessage(chk)}");
+            //        return -1;
+            //}
         }
         protected override int OnRunWork() 
         {
             int nRtn = 0;
+
+            if (_axisT == null)
+            {
+                PostAlarm((int)AlarmKeys.eIndexRotary);
+                Log.Write(UnitName, "[OnRunWork] AxisT NULL");
+                return -1;
+            }
+
+            if (IsAxisMoving(AxisNames.IndexT))
+            {
+                return 0;
+            }
+
+            // 안전 확인
+            string safeReason;
+            bool isSafe = VerifyAllUnitsSafe(out safeReason);
+            if (!isSafe)
+            {
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                Log.Write(UnitName, $"[OnRunWork] Not Safe: {safeReason}");
+                return -1;
+            }
 
             nRtn = Rotate();
             if (nRtn != 0)
@@ -1394,16 +1635,36 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            RequestInputDieTrDie = true;
-
-            nRtn = ExecuteUnitAction();
-            if (nRtn != 0)
+            // 회전 이후: 배출 완료된 소켓을 재사용 가능하도록 정리
+            lock (_socketLock)
             {
-                Log.Write(UnitName, "[ExecuteUnitAction] Failed");
-                return -1;
+                if (_sockets != null)
+                {
+                    for (int i = 0; i < _sockets.Length; i++)
+                    {
+                        if (_sockets[i].State == RotarySocketState.Completed)
+                        {
+                            _sockets[i].SetState(RotarySocketState.Empty);
+                            _sockets[i].SetMaterialDie(null);
+                        }
+                    }
+                }
             }
-            
+
+            // 다음 단계로
             State = ProcessState.Complete;
+            return nRtn;
+
+            
+            // 회전 후 다른 유닛 동작 요청인데... Begin에서 하는걸로 변경?
+            //RequestInputDieTrDie = true;
+            //nRtn = ExecuteUnitAction();
+            //if (nRtn != 0)
+            //{
+            //    Log.Write(UnitName, "[ExecuteUnitAction] Failed");
+            //    return -1;
+            //}
+            //State = ProcessState.Complete;
 
             return nRtn;
         }
@@ -1416,58 +1677,180 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return 0;
             }
-            
-            if (!Config.IsSimulation)
+
+            // 스테이션별 상태와 완료 신호 동기화 (명시적)
+            SocketInfo loadSock = GetLoadSocketInfo();
+            SocketInfo alignSock = GetMAlignSocketInfo();
+            SocketInfo probeSock = GetProbeSocketInfo();
+            SocketInfo unloadAlignSock = GetUnloaderAlignSocketInfo();
+            SocketInfo unloadSock = GetUnloadSocketInfo();
+
+            // 완료 신호 반영
+            if (InputDieTransfer != null && InputDieTransfer.CompleteInputDie)
             {
-                if (IndexUnloadAligner.CompleteUnloadAligner)
+                lock (_socketLock)
+                {
+                    if (loadSock.State == RotarySocketState.Empty || loadSock.State == RotarySocketState.Loading)
+                    {
+                        loadSock.SetState(RotarySocketState.Loaded);
+                    }
+                }
+                // 다음 사이클 투입 요청 유지
+                RequestInputDieTrDie = true;
+            }
+
+            if (IndexLoadAligner != null && IndexLoadAligner.CompleteLoadAligner)
+            {
+                lock (_socketLock)
+                {
+                    if (alignSock.State == RotarySocketState.Loaded || alignSock.State == RotarySocketState.Aligning)
+                    {
+                        alignSock.SetState(RotarySocketState.Aligned);
+                    }
+                }
+                RequestLoadAligner = false;
+            }
+            else
+            {
+                if (alignSock.State == RotarySocketState.Loaded)
+                {
+                    RequestLoadAligner = true;
+                    lock (_socketLock)
+                    {
+                        if (alignSock.State == RotarySocketState.Loaded)
+                        {
+                            alignSock.SetState(RotarySocketState.Aligning);
+                        }
+                    }
+                }
+            }
+
+            if (IndexChipProbeController != null && IndexChipProbeController.CompleteProbe)
+            {
+                lock (_socketLock)
+                {
+                    if (probeSock.State == RotarySocketState.Aligned || probeSock.State == RotarySocketState.Probing)
+                    {
+                        probeSock.SetState(RotarySocketState.Probed);
+                    }
+                }
+                RequestProbe = false;
+            }
+            else
+            {
+                if (probeSock.State == RotarySocketState.Aligned)
+                {
+                    RequestProbe = true;
+                    lock (_socketLock)
+                    {
+                        if (probeSock.State == RotarySocketState.Aligned)
+                        {
+                            probeSock.SetState(RotarySocketState.Probing);
+                        }
+                    }
+                }
+            }
+
+            if (IndexUnloadAligner != null && IndexUnloadAligner.CompleteUnloadAligner)
+            {
+                lock (_socketLock)
+                {
+                    if (unloadAlignSock.State == RotarySocketState.Probed || unloadAlignSock.State == RotarySocketState.Unloading)
+                    {
+                        unloadAlignSock.SetState(RotarySocketState.Outputting);
+                    }
+                }
+                RequestUnloaderAligner = false;
+                RequestOutputDieTrDie = true; // 다음 단계인 배출로 진행
+            }
+            else
+            {
+                if (unloadAlignSock.State == RotarySocketState.Probed)
+                {
+                    RequestUnloaderAligner = true;
+                    lock (_socketLock)
+                    {
+                        if (unloadAlignSock.State == RotarySocketState.Probed)
+                        {
+                            unloadAlignSock.SetState(RotarySocketState.Unloading);
+                        }
+                    }
+                }
+            }
+
+            if (OutputDieTransfer != null && OutputDieTransfer.CompleteOutputDie)
+            {
+                lock (_socketLock)
+                {
+                    if (unloadSock.State == RotarySocketState.Outputting)
+                    {
+                        unloadSock.SetState(RotarySocketState.Completed);
+                        unloadSock.SetMaterialDie(null);
+                    }
+                }
+                RequestOutputDieTrDie = false;
+            }
+            else
+            {
+                if (unloadSock.State == RotarySocketState.Outputting)
                 {
                     RequestOutputDieTrDie = true;
                 }
             }
-            else
-            {
-                RequestOutputDieTrDie = true;
-            }
-            if (!Config.IsSimulation)
-            {
-                if (InputDieTransfer.CompleteInputDie &&
-                IndexLoadAligner.CompleteLoadAligner &&
-                IndexChipProbeController.CompleteProbe &&
-                IndexUnloadAligner.CompleteUnloadAligner &&
-                OutputDieTransfer.CompleteOutputDie)
-                {
-                    // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
-                    PostRotateStateTransition();
-                    // (추가) 공정 상태 갱신
-                    UpdateProcessStates();
-                    Thread.Sleep(2000); // 시뮬레이션용 대기
-                    State = ProcessState.None;
-                }
-            }
-            else
-            {
-                InputDieTransfer.CompleteInputDie = true;
-                IndexLoadAligner.CompleteLoadAligner = true;
-                IndexChipProbeController.CompleteProbe = true;
-                IndexUnloadAligner.CompleteUnloadAligner = true;
-                OutputDieTransfer.CompleteOutputDie = true;
 
-                if (InputDieTransfer.CompleteInputDie &&
-                IndexLoadAligner.CompleteLoadAligner &&
-                IndexChipProbeController.CompleteProbe &&
-                IndexUnloadAligner.CompleteUnloadAligner &&
-                OutputDieTransfer.CompleteOutputDie)
-                {
-                    // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
-                    PostRotateStateTransition();
-                    // (추가) 공정 상태 갱신
-                    UpdateProcessStates();
-                    //Thread.Sleep(2000); // 시뮬레이션용 대기
-                    State = ProcessState.None;
-                }
-            }
+            // 다음 사이클 준비
+            State = ProcessState.Ready;
+            return nRtn;
 
-            return nRtn; 
+            //if (!Config.IsSimulation)
+            //{
+            //    if (IndexUnloadAligner.CompleteUnloadAligner)
+            //    {
+            //        RequestOutputDieTrDie = true;
+            //    }
+            //}
+            //else
+            //{
+            //    RequestOutputDieTrDie = true;
+            //}
+            //if (!Config.IsSimulation)
+            //{
+            //    if (InputDieTransfer.CompleteInputDie &&
+            //    IndexLoadAligner.CompleteLoadAligner &&
+            //    IndexChipProbeController.CompleteProbe &&
+            //    IndexUnloadAligner.CompleteUnloadAligner &&
+            //    OutputDieTransfer.CompleteOutputDie)
+            //    {
+            //        // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
+            //        PostRotateStateTransition();
+            //        // (추가) 공정 상태 갱신
+            //        UpdateProcessStates();
+            //        Thread.Sleep(2000); // 시뮬레이션용 대기
+            //        State = ProcessState.None;
+            //    }
+            //}
+            //else
+            //{
+            //    InputDieTransfer.CompleteInputDie = true;
+            //    IndexLoadAligner.CompleteLoadAligner = true;
+            //    IndexChipProbeController.CompleteProbe = true;
+            //    IndexUnloadAligner.CompleteUnloadAligner = true;
+            //    OutputDieTransfer.CompleteOutputDie = true;
+            //    if (InputDieTransfer.CompleteInputDie &&
+            //    IndexLoadAligner.CompleteLoadAligner &&
+            //    IndexChipProbeController.CompleteProbe &&
+            //    IndexUnloadAligner.CompleteUnloadAligner &&
+            //    OutputDieTransfer.CompleteOutputDie)
+            //    {
+            //        // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
+            //        PostRotateStateTransition();
+            //        // (추가) 공정 상태 갱신
+            //        UpdateProcessStates();
+            //        //Thread.Sleep(2000); // 시뮬레이션용 대기
+            //        State = ProcessState.None;
+            //    }
+            //}
+            //return nRtn; 
         }
 
         protected override void OnMakeSequence()
@@ -1553,7 +1936,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             return st != RotarySocketState.Empty;
         }
-
         // - Unit Complete 신호를 무조건 보지 않고:
         // "소켓에 제품이 있고 그 소켓이 해당 스테이션에서 아직 처리 상태
         // (BlockingStates)에 속하며 Unit Complete == false" 인 경우에만 BLOCK
@@ -1579,8 +1961,6 @@ namespace QMC.LCP_280.Process.Unit
                 default: return $"Unknown({code})";
             }
         }
-
-
         // ====== 추가: 스테이션 오프셋 상수 (기존 InitStationRules 와 동일하게 유지) ======
         // (신규) 공정 상태 자동 갱신
         private void UpdateProcessStates()
@@ -2057,7 +2437,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
-            PostRotateStateTransition();
+            //PostRotateStateTransition();
             return nRet;
         }
         public int MovePositionRotate(bool isFine = false)
@@ -2231,7 +2611,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRtn;
         }
-        //ExecuteUnitAction
+       
         public int ExecuteUnitAction(bool isFine = false)
         {
             int nRtn = 0;
@@ -2360,7 +2740,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-
             return nRet;
         }
 
@@ -2389,7 +2768,6 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             nRet &= IndexChipProbeController.ContactReady();
-            //nRet &= IndexUnloadAligner.AlignSocketOnceReady();
             if (nRet != 0)
             {
                 Log.Write(UnitName, "ExecuteUnitAction Ready Fail");
@@ -2397,7 +2775,6 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             nRet &= IndexChipProbeController.ContactBottomOrTop();
-            //nRet &= IndexUnloadAligner.AlignSocketOnce();
             if (nRet != 0)
             {
                 Log.Write(UnitName, "ExecuteUnitAction Fail");
@@ -2409,7 +2786,6 @@ namespace QMC.LCP_280.Process.Unit
         public int ExecuteUnitActionInterlockProbe(bool isFine = false)
         {
             int nRet = 0;
-
 
             return nRet;
         }
@@ -2439,7 +2815,6 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             RequestInputDieTrDie = true; // InputDieTransfer에 Chip 요청 상태로 변경.
-
             nRet &= IndexUnloadAligner.AlignSocketOnceReady();
             if (nRet != 0)
             {
