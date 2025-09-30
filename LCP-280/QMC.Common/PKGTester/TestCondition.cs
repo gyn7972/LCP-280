@@ -319,11 +319,6 @@ namespace QMC.Common.PKGTester
         }
         #endregion
 
-        #region Event
-        public delegate void ItemsChangedEventHandler(object sender);
-        public event ItemsChangedEventHandler ItemsChanged;
-        #endregion
-
         #region Edit Item
         public int AddItem(TestConditionItem item)
         {
@@ -333,7 +328,6 @@ namespace QMC.Common.PKGTester
             //    return -1;
 
             items.Add(item);
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         public int InsertItem(int index, TestConditionItem item)
@@ -346,7 +340,6 @@ namespace QMC.Common.PKGTester
                 return -1;
 
             items.Insert(index, item);
-            ItemsChanged?.Invoke(this);
             return 0;
         }   
         public int RemoveItemAt(int index)
@@ -355,7 +348,6 @@ namespace QMC.Common.PKGTester
                 return -1;
 
             items.RemoveAt(index);
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         private bool SwapItems(int index1, int index2)
@@ -368,7 +360,6 @@ namespace QMC.Common.PKGTester
             var temp = items[index1];
             items[index1] = items[index2];
             items[index2] = temp;
-            ItemsChanged?.Invoke(this);
             return true;
         }
         public int MoveItemUp(int index)
@@ -380,8 +371,7 @@ namespace QMC.Common.PKGTester
             
             if (!SwapItems(index, index - 1))
                 return -1;
-            
-            ItemsChanged?.Invoke(this);
+
             return 0;
         }
         public int MoveItemDown(int index)
@@ -394,23 +384,20 @@ namespace QMC.Common.PKGTester
             if (!SwapItems(index, index + 1))
                 return -1;
 
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         public int ClearItems()
         {
             items.Clear();
-            ItemsChanged?.Invoke(this);
             return 0;
         }
-        public int CopyConditionFrom(TestConditionSet testConditionSet)
+        public int CopyFrom(TestConditionSet testConditionSet)
         {
             if (testConditionSet == null)
                 return -1;
 
             items.Clear();
             items.AddRange(testConditionSet.Items);
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         #endregion
@@ -438,7 +425,6 @@ namespace QMC.Common.PKGTester
 
                 items.Clear();
                 items.AddRange(data.Items);
-                ItemsChanged?.Invoke(this);
                 return 0;
             }
             catch (Exception ex)

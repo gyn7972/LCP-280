@@ -219,7 +219,7 @@ namespace QMC.Common.PKGTester
             if (conditionSet.LoadFromFile(filePath) != 0)
                 return -1;
 
-            this.conditionSet.CopyConditionFrom(conditionSet);
+            this.conditionSet.CopyFrom(conditionSet);
             if (RebuildTestMechanism() != 0)
                 return -1;
 

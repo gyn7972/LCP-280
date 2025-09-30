@@ -95,6 +95,10 @@ namespace QMC.Common
                     int idx = propTitle.IndexOf(" (");
                     string compareTitle = idx > 0 ? propTitle.Substring(0, idx) : propTitle;
 
+                    // TitleOnlyProperty´Â Á¦¿Ü
+                    if (p is TitleOnlyProperty)
+                        continue;
+
                     if (title.Equals(compareTitle, StringComparison.OrdinalIgnoreCase))
                     {
                         prop = p;
