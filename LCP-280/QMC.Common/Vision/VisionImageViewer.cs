@@ -13,6 +13,7 @@
  * 
  */
 
+using Newtonsoft.Json.Linq;
 using QMC.Common.Cameras;
 using QMC.Common.Component;
 using QMC.Common.Unit;
@@ -29,6 +30,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.Common.Vision.Tools.PatternMatchingResult;
+using static System.Net.Mime.MediaTypeNames;
 //using QMC.eFramework.Vision.Tools;
 
 namespace QMC.Common.Vision
@@ -620,6 +622,7 @@ namespace QMC.Common.Vision
         private LineFrameVisionImageOverlay m_HorizentalLine;
         private LineFrameVisionImageOverlay m_VerticalLine;
         private bool m_FixedByWidth;
+        private double m_AspectRatio;
         #endregion
 
         #region Constructor
@@ -641,6 +644,7 @@ namespace QMC.Common.Vision
             this.VisibleCrossLine = true;
 
             this.HandleDestroyed += VisionImageViewer_HandleDestroyed;
+            this.Resize += VisionImageViewer_Resize;
 
             this.m_FixedByWidth = false;
             ViewerSyncRoot = new object();
@@ -669,7 +673,7 @@ namespace QMC.Common.Vision
         private void VisionImageViewer_Resize(object sender, EventArgs e)
         {
             //if (_initialized)
-            //    InitializeBufferedGraphics();
+                InitializeBufferedGraphics();
         }
 
         private void InitializeBufferedGraphics()
@@ -926,8 +930,6 @@ namespace QMC.Common.Vision
 
 
                 }
-
-
 
                 m_bitmap = new Bitmap(Size.Width, Size.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
                 m_doubleBuffer = Graphics.FromImage(m_bitmap);
@@ -1301,6 +1303,7 @@ namespace QMC.Common.Vision
             m_VerticalLine.Visible = true;
 
         }
+
         public void ShowCrossLine(bool bVisible)
         {
             // 라인 객체가 없으면 생성
@@ -1321,6 +1324,7 @@ namespace QMC.Common.Vision
                 if (m_VerticalLine != null) NormalOverlays.Remove(m_VerticalLine);
             }
         }
+
         public static void DisplayAll(Control control)
         {
             VisionImageViewer viewer = null;
@@ -1377,9 +1381,11 @@ namespace QMC.Common.Vision
                 if (this.m_GraphicsDisplay != null)
                 {
                     lock (m_Graphics)
-
                     {
-                        m_Graphics.Render(this.m_GraphicsDisplay);
+                        if (m_Graphics.Graphics != null)
+                        {
+                            m_Graphics.Render(this.m_GraphicsDisplay);
+                        }
                     }
                 }
             }
@@ -1387,9 +1393,7 @@ namespace QMC.Common.Vision
             {
                 Log.Write(ex);
             }
-            
         }
-
 
         /// <summary>
         /// Display를 정지한다.
@@ -1556,7 +1560,36 @@ namespace QMC.Common.Vision
                                 {
                                     if (bufferedGrphics.Graphics != null)
                                     {
-                                        bufferedGrphics.Graphics.DrawImage(bmpCutImage, 0, 0, this.Width, this.Height);
+                                        //bufferedGrphics.Graphics.DrawImage(bmpCutImage, 0, 0, this.Width, this.Height);
+
+                                        int imgW = bmpCutImage.Width;
+                                        int imgH = bmpCutImage.Height;
+                                        int ctrlW = this.ClientSize.Width;
+                                        int ctrlH = this.ClientSize.Height;
+
+                                        float imgRatio = (float)imgW / imgH;
+                                        float ctrlRatio = (float)ctrlW / ctrlH;
+
+                                        float drawX, drawY, drawW, drawH;
+                                        if (imgRatio > ctrlRatio)
+                                        {
+                                            // 컨트롤보다 이미지가 더 넓음: 너비 기준 맞춤
+                                            drawW = ctrlW;
+                                            drawH = (float)(ctrlW / imgRatio);
+                                            drawX = 0;
+                                            drawY = (ctrlH - drawH) / 2;
+                                        }
+                                        else
+                                        {
+                                            // 컨트롤보다 이미지가 더 높음: 높이 기준 맞춤
+                                            drawH = ctrlH;
+                                            drawW = (float)(ctrlH * imgRatio);
+                                            drawX = (ctrlW - drawW) / 2;
+                                            drawY = 0;
+                                        }
+
+                                        bufferedGrphics.Graphics.Clear(this.BackColor);
+                                        bufferedGrphics.Graphics.DrawImage(bmpCutImage, drawX, drawY, drawW, drawH);
                                     }
                                 }
                                 if (bmpCutImage != null)
@@ -1577,7 +1610,8 @@ namespace QMC.Common.Vision
                                         //Log.Write("VisionViewer", $"CutImage() 실패 - Point: {point}, Size: {size}");
                                         return;
                                     }
-                                    bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);
+                                    //bmpCutImage = new Bitmap(bmpCutImage, this.Width, this.Height);
+                                    
 
                                     //여기서 계속 Exeption 발생함.
                                     //bmpCutImage = (Bitmap)visionImage.CutImage(point, (Size)size);
@@ -1595,15 +1629,42 @@ namespace QMC.Common.Vision
                                     {
                                         if(bmpCutImage != null)
                                         {
-
                                             //bufferedGrphics.Graphics.DrawImage(bmpCutImage, 0, 0, this.Width, this.Height);
-                                            bufferedGrphics.Graphics.DrawImageUnscaled(bmpCutImage, 0, 0);
+                                            //bufferedGrphics.Graphics.DrawImageUnscaled(bmpCutImage, 0, 0);
 
+                                            int imgW = bmpCutImage.Width;
+                                            int imgH = bmpCutImage.Height;
+                                            int ctrlW = this.ClientSize.Width;
+                                            int ctrlH = this.ClientSize.Height;
+        
+                                            float imgRatio = (float)imgW / imgH;
+                                            float ctrlRatio = (float)ctrlW / ctrlH;
+
+                                            float drawX, drawY, drawW, drawH;
+                                            if (imgRatio > ctrlRatio)
+                                            {
+                                                // 컨트롤보다 이미지가 더 넓음: 너비 기준 맞춤
+                                                drawW = ctrlW;
+                                                drawH = (float)(ctrlW / imgRatio);
+                                                drawX = 0;
+                                                drawY = (ctrlH - drawH) / 2;
+                                            }
+                                            else
+                                            {
+                                                // 컨트롤보다 이미지가 더 높음: 높이 기준 맞춤
+                                                drawH = ctrlH;
+                                                drawW = (float)(ctrlH * imgRatio);
+                                                drawX = (ctrlW - drawW) / 2;
+                                                drawY = 0;
+                                            }
+
+                                            bufferedGrphics.Graphics.Clear(this.BackColor);
+                                            bufferedGrphics.Graphics.DrawImage(bmpCutImage, drawX, drawY, drawW, drawH);
                                         }
                                     }
                                 }
 
-                                if (bmpCutImage != null)
+                                if (bmpCutImage != null) 
                                 {
                                     bmpCutImage.Dispose();
                                     bmpCutImage = null;

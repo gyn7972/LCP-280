@@ -131,7 +131,7 @@ namespace QMC.LCP_280.Process.Unit
 
             InputFeeder = Equipment.Instance.GetUnit("InputFeeder") as InputFeeder;
             InputStage = Equipment.Instance.GetUnit("InputStage") as InputStage;
-        }
+        } 
 
         public override void AddComponents()
         {
