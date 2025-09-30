@@ -76,6 +76,19 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             InitializeToolTip();
             InitializeDies();
             SetupMouseHandlers();
+
+            // 더블 버퍼링 활성화 추가
+            SetupDoubleBuffering();
+        }
+
+        private void SetupDoubleBuffering()
+        {
+            // Panel의 더블 버퍼링 활성화
+            typeof(Panel).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.SetProperty |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic,
+                null, displayPanel, new object[] { true });
         }
 
         private void InitializeToolTip()
@@ -203,6 +216,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 _toolTip.Hide(displayPanel);
             }
+            // Invalidate 제거 - 툴팁 표시는 화면 갱신 불필요
         }
 
         #endregion
@@ -254,15 +268,15 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             // 선택된 다이 강조
             if (die == _selectedDie)
             {
-                using (Pen highlightPen = new Pen(Color.Yellow, 3f / _scale))
+                using (Pen hoverPen = new Pen(Color.FromArgb(128, Color.Yellow), 2f / _scale))
                 {
-                    float inflateSize = 3f / _scale;
-                    RectangleF highlightBounds = new RectangleF(
+                    float inflateSize = 2f / _scale;
+                    RectangleF hoverBounds = new RectangleF(
                         bounds.X - inflateSize,
                         bounds.Y - inflateSize,
                         bounds.Width + inflateSize * 2,
                         bounds.Height + inflateSize * 2);
-                    g.DrawEllipse(highlightPen, highlightBounds);
+                    g.DrawEllipse(hoverPen, hoverBounds);
                 }
             }
 
@@ -477,12 +491,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 // 호버 처리
                 Die hoveredDie = GetDieAtPoint(e.Location);
-                if (hoveredDie != _hoveredDie)
+                if (hoveredDie != _hoveredDie) // 변경되었을 때만 처리
                 {
                     _hoveredDie = hoveredDie;
                     _hoverTimer.Stop();
                     _hoverTimer.Start();
-                    displayPanel.Invalidate();
+                    // 호버 상태가 바뀔 때만 다시 그리기
+                    // displayPanel.Invalidate(); // 제거 - 불필요한 깜빡임 유발
                 }
                 UpdateCursor(e.Location);
             }
@@ -502,7 +517,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             _hoveredDie = null;
             _toolTip.Hide(displayPanel);
             _hoverTimer.Stop();
-            displayPanel.Invalidate();
+            // 마우스가 나갔을 때만 다시 그리기 (필요한 경우)
+            // displayPanel.Invalidate(); // 제거 가능
         }
         #endregion
 
