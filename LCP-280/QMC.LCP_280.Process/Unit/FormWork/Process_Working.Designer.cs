@@ -53,11 +53,11 @@
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.manualSequenceControlOutAlign = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this._ProcessCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.groupBoxProcessSeq.SuspendLayout();
@@ -66,9 +66,9 @@
             this.tabPage2.SuspendLayout();
             this.tabPage3.SuspendLayout();
             this.groupBox1.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
-            this.tableLayoutPanel5.SuspendLayout();
             this.SuspendLayout();
             // 
             // groupBoxManual
@@ -126,7 +126,7 @@
             this.label4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label4.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.label4.Location = new System.Drawing.Point(3, 38);
-            this.label4.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.label4.Margin = new System.Windows.Forms.Padding(3);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(117, 29);
             this.label4.TabIndex = 28;
@@ -139,7 +139,7 @@
             this.labelIndexSocketNo.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelIndexSocketNo.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.labelIndexSocketNo.Location = new System.Drawing.Point(3, 3);
-            this.labelIndexSocketNo.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.labelIndexSocketNo.Margin = new System.Windows.Forms.Padding(3);
             this.labelIndexSocketNo.Name = "labelIndexSocketNo";
             this.labelIndexSocketNo.Size = new System.Drawing.Size(117, 29);
             this.labelIndexSocketNo.TabIndex = 22;
@@ -193,10 +193,10 @@
             this.labelsocketNumberInput.AutoSize = true;
             this.labelsocketNumberInput.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberInput.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberInput.Location = new System.Drawing.Point(125, 0);
-            this.labelsocketNumberInput.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelsocketNumberInput.Location = new System.Drawing.Point(126, 3);
+            this.labelsocketNumberInput.Margin = new System.Windows.Forms.Padding(3);
             this.labelsocketNumberInput.Name = "labelsocketNumberInput";
-            this.labelsocketNumberInput.Size = new System.Drawing.Size(119, 35);
+            this.labelsocketNumberInput.Size = new System.Drawing.Size(117, 29);
             this.labelsocketNumberInput.TabIndex = 24;
             this.labelsocketNumberInput.Text = "---";
             this.labelsocketNumberInput.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -226,10 +226,10 @@
             this.labelsocketNumberLAlign.AutoSize = true;
             this.labelsocketNumberLAlign.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberLAlign.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberLAlign.Location = new System.Drawing.Point(125, 35);
-            this.labelsocketNumberLAlign.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelsocketNumberLAlign.Location = new System.Drawing.Point(126, 38);
+            this.labelsocketNumberLAlign.Margin = new System.Windows.Forms.Padding(3);
             this.labelsocketNumberLAlign.Name = "labelsocketNumberLAlign";
-            this.labelsocketNumberLAlign.Size = new System.Drawing.Size(119, 35);
+            this.labelsocketNumberLAlign.Size = new System.Drawing.Size(117, 29);
             this.labelsocketNumberLAlign.TabIndex = 25;
             this.labelsocketNumberLAlign.Text = "---";
             this.labelsocketNumberLAlign.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -239,10 +239,10 @@
             this.labelsocketNumberProbe.AutoSize = true;
             this.labelsocketNumberProbe.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberProbe.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberProbe.Location = new System.Drawing.Point(125, 70);
-            this.labelsocketNumberProbe.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelsocketNumberProbe.Location = new System.Drawing.Point(126, 73);
+            this.labelsocketNumberProbe.Margin = new System.Windows.Forms.Padding(3);
             this.labelsocketNumberProbe.Name = "labelsocketNumberProbe";
-            this.labelsocketNumberProbe.Size = new System.Drawing.Size(119, 35);
+            this.labelsocketNumberProbe.Size = new System.Drawing.Size(117, 29);
             this.labelsocketNumberProbe.TabIndex = 26;
             this.labelsocketNumberProbe.Text = "---";
             this.labelsocketNumberProbe.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -252,10 +252,10 @@
             this.labelsocketNumberUnload.AutoSize = true;
             this.labelsocketNumberUnload.Dock = System.Windows.Forms.DockStyle.Fill;
             this.labelsocketNumberUnload.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.labelsocketNumberUnload.Location = new System.Drawing.Point(125, 105);
-            this.labelsocketNumberUnload.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelsocketNumberUnload.Location = new System.Drawing.Point(126, 108);
+            this.labelsocketNumberUnload.Margin = new System.Windows.Forms.Padding(3);
             this.labelsocketNumberUnload.Name = "labelsocketNumberUnload";
-            this.labelsocketNumberUnload.Size = new System.Drawing.Size(119, 35);
+            this.labelsocketNumberUnload.Size = new System.Drawing.Size(117, 29);
             this.labelsocketNumberUnload.TabIndex = 27;
             this.labelsocketNumberUnload.Text = "---";
             this.labelsocketNumberUnload.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -266,7 +266,7 @@
             this.label5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label5.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.label5.Location = new System.Drawing.Point(3, 73);
-            this.label5.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.label5.Margin = new System.Windows.Forms.Padding(3);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(117, 29);
             this.label5.TabIndex = 29;
@@ -279,7 +279,7 @@
             this.label6.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label6.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.label6.Location = new System.Drawing.Point(3, 108);
-            this.label6.Margin = new System.Windows.Forms.Padding(3, 3, 3, 3);
+            this.label6.Margin = new System.Windows.Forms.Padding(3);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(117, 29);
             this.label6.TabIndex = 30;
@@ -302,13 +302,13 @@
             // 
             // manualSequenceControlProcessSeq
             // 
-            this.manualSequenceControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlProcessSeq.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualSequenceControlProcessSeq.Location = new System.Drawing.Point(2, 20);
             this.manualSequenceControlProcessSeq.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.manualSequenceControlProcessSeq.MinimumSize = new System.Drawing.Size(238, 200);
             this.manualSequenceControlProcessSeq.Name = "manualSequenceControlProcessSeq";
             this.manualSequenceControlProcessSeq.ParentUnit = null;
-            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(372, 257);
+            this.manualSequenceControlProcessSeq.Size = new System.Drawing.Size(372, 349);
             this.manualSequenceControlProcessSeq.TabIndex = 14;
             // 
             // tabControl1
@@ -339,13 +339,13 @@
             // 
             // manualSequenceControl
             // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualSequenceControl.Location = new System.Drawing.Point(2, 2);
             this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.manualSequenceControl.MinimumSize = new System.Drawing.Size(238, 200);
             this.manualSequenceControl.Name = "manualSequenceControl";
             this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(364, 248);
+            this.manualSequenceControl.Size = new System.Drawing.Size(364, 338);
             this.manualSequenceControl.TabIndex = 14;
             // 
             // tabPage2
@@ -355,7 +355,7 @@
             this.tabPage2.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage2.Name = "tabPage2";
             this.tabPage2.Padding = new System.Windows.Forms.Padding(2);
-            this.tabPage2.Size = new System.Drawing.Size(368, 343);
+            this.tabPage2.Size = new System.Drawing.Size(368, 342);
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Probe";
             this.tabPage2.UseVisualStyleBackColor = true;
@@ -377,7 +377,7 @@
             this.tabPage3.Location = new System.Drawing.Point(4, 26);
             this.tabPage3.Margin = new System.Windows.Forms.Padding(2);
             this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(368, 343);
+            this.tabPage3.Size = new System.Drawing.Size(368, 342);
             this.tabPage3.TabIndex = 2;
             this.tabPage3.Text = "OutAlign";
             this.tabPage3.UseVisualStyleBackColor = true;
@@ -406,6 +406,20 @@
             this.groupBox1.TabIndex = 29;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "ImageView";
+            // 
+            // tableLayoutPanel5
+            // 
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this._ProcessCameraviewer, 0, 0);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
+            this.tableLayoutPanel5.TabIndex = 2;
             // 
             // _ProcessCameraviewer
             // 
@@ -474,20 +488,6 @@
             this.teachingPositionControl.TabIndex = 31;
             this.teachingPositionControl.UnitName = null;
             // 
-            // tableLayoutPanel5
-            // 
-            this.tableLayoutPanel5.ColumnCount = 1;
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Controls.Add(this._ProcessCameraviewer, 0, 0);
-            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
-            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
-            this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
-            this.tableLayoutPanel5.TabIndex = 2;
-            // 
             // Process_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -506,9 +506,9 @@
             this.tabPage2.ResumeLayout(false);
             this.tabPage3.ResumeLayout(false);
             this.groupBox1.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._ProcessCameraviewer)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
-            this.tableLayoutPanel5.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

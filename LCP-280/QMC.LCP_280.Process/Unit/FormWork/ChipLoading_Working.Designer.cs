@@ -17,26 +17,21 @@ namespace QMC.LCP_280.Process.Unit
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this._btnVisionSetting = new System.Windows.Forms.Button();
-            this.buttonDataManual = new System.Windows.Forms.Button();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this._ChipLoadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.groupBoxManualTrSeq = new System.Windows.Forms.GroupBox();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
+            this._btnVisionSetting = new QMC.Common.IndividualMenuButton();
+            this.buttonDataManual = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
+            this.buttonTest = new QMC.Common.IndividualMenuButton();
             this.btnSafetyZ = new QMC.Common.IndividualMenuButton();
             this.btnTest = new QMC.Common.IndividualMenuButton();
             this.btnAlignXY = new QMC.Common.IndividualMenuButton();
             this.btnPickUp = new QMC.Common.IndividualMenuButton();
             this.btnWaferUnloading = new QMC.Common.IndividualMenuButton();
-            this.buttonPickUpNiddle_Move = new System.Windows.Forms.Button();
-            this.buttonTest = new System.Windows.Forms.Button();
-            this.buttonTest2 = new System.Windows.Forms.Button();
             this.btnWaferLoading = new QMC.Common.IndividualMenuButton();
             this.btnReleaseVacuumAndPlaceUp = new QMC.Common.IndividualMenuButton();
             this.btnPlaceChipDown = new QMC.Common.IndividualMenuButton();
@@ -46,42 +41,23 @@ namespace QMC.LCP_280.Process.Unit
             this.btnAlignT = new QMC.Common.IndividualMenuButton();
             this.btnEjecterZUp = new QMC.Common.IndividualMenuButton();
             this.btnPickUpDn = new QMC.Common.IndividualMenuButton();
+            this.buttonTest2 = new QMC.Common.IndividualMenuButton();
+            this.buttonPickUpNiddle_Move = new QMC.Common.IndividualMenuButton();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
+            this.groupBoxManualTrSeq = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBoxImageView.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).BeginInit();
             this.tableLayoutPanel5.SuspendLayout();
-            this.groupBoxManualTrSeq.SuspendLayout();
-            this.tableLayoutPanel3.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
+            this.groupBoxManualTrSeq.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // _btnVisionSetting
-            // 
-            this._btnVisionSetting.Dock = System.Windows.Forms.DockStyle.Fill;
-            this._btnVisionSetting.Location = new System.Drawing.Point(2, 2);
-            this._btnVisionSetting.Margin = new System.Windows.Forms.Padding(2);
-            this._btnVisionSetting.Name = "_btnVisionSetting";
-            this._btnVisionSetting.Size = new System.Drawing.Size(178, 42);
-            this._btnVisionSetting.TabIndex = 13;
-            this._btnVisionSetting.Text = "VisionSetting";
-            this._btnVisionSetting.UseVisualStyleBackColor = true;
-            this._btnVisionSetting.Click += new System.EventHandler(this._btnVisionSetting_Click);
-            // 
-            // buttonDataManual
-            // 
-            this.buttonDataManual.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.buttonDataManual.Location = new System.Drawing.Point(184, 2);
-            this.buttonDataManual.Margin = new System.Windows.Forms.Padding(2);
-            this.buttonDataManual.Name = "buttonDataManual";
-            this.buttonDataManual.Size = new System.Drawing.Size(179, 42);
-            this.buttonDataManual.TabIndex = 14;
-            this.buttonDataManual.Text = "ManualData";
-            this.buttonDataManual.UseVisualStyleBackColor = true;
-            this.buttonDataManual.Click += new System.EventHandler(this.buttonDataManual_Click);
             // 
             // groupBoxImageView
             // 
@@ -150,42 +126,49 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel5.Size = new System.Drawing.Size(365, 46);
             this.tableLayoutPanel5.TabIndex = 15;
             // 
-            // groupBoxManualTrSeq
+            // _btnVisionSetting
             // 
-            this.groupBoxManualTrSeq.Controls.Add(this.tableLayoutPanel3);
-            this.groupBoxManualTrSeq.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBoxManualTrSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxManualTrSeq.Location = new System.Drawing.Point(886, 2);
-            this.groupBoxManualTrSeq.Margin = new System.Windows.Forms.Padding(2);
-            this.groupBoxManualTrSeq.Name = "groupBoxManualTrSeq";
-            this.groupBoxManualTrSeq.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxManualTrSeq.Size = new System.Drawing.Size(376, 371);
-            this.groupBoxManualTrSeq.TabIndex = 23;
-            this.groupBoxManualTrSeq.TabStop = false;
-            this.groupBoxManualTrSeq.Text = "ChipLoading Seq.";
+            this._btnVisionSetting.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this._btnVisionSetting.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this._btnVisionSetting.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this._btnVisionSetting.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.CustomForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this._btnVisionSetting.ForeColor = System.Drawing.Color.Black;
+            this._btnVisionSetting.ImageSize = new System.Drawing.Size(45, 45);
+            this._btnVisionSetting.Location = new System.Drawing.Point(2, 2);
+            this._btnVisionSetting.Margin = new System.Windows.Forms.Padding(2);
+            this._btnVisionSetting.Name = "_btnVisionSetting";
+            this._btnVisionSetting.Size = new System.Drawing.Size(178, 42);
+            this._btnVisionSetting.TabIndex = 34;
+            this._btnVisionSetting.TabStop = false;
+            this._btnVisionSetting.Text = "VisionSetting";
+            this._btnVisionSetting.UseVisualStyleBackColor = false;
             // 
-            // tableLayoutPanel3
+            // buttonDataManual
             // 
-            this.tableLayoutPanel3.ColumnCount = 1;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Controls.Add(this.manualSequenceControl, 0, 0);
-            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 20);
-            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 1;
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(372, 349);
-            this.tableLayoutPanel3.TabIndex = 20;
-            // 
-            // manualSequenceControl
-            // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
-            this.manualSequenceControl.Location = new System.Drawing.Point(2, 2);
-            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2);
-            this.manualSequenceControl.Name = "manualSequenceControl";
-            this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(368, 247);
-            this.manualSequenceControl.TabIndex = 19;
+            this.buttonDataManual.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonDataManual.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonDataManual.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonDataManual.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonDataManual.ForeColor = System.Drawing.Color.Black;
+            this.buttonDataManual.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonDataManual.Location = new System.Drawing.Point(184, 2);
+            this.buttonDataManual.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonDataManual.Name = "buttonDataManual";
+            this.buttonDataManual.Size = new System.Drawing.Size(179, 42);
+            this.buttonDataManual.TabIndex = 35;
+            this.buttonDataManual.TabStop = false;
+            this.buttonDataManual.Text = "ManualData";
+            this.buttonDataManual.UseVisualStyleBackColor = false;
             // 
             // tableLayoutPanel1
             // 
@@ -193,9 +176,9 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 30F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 30F));
+            this.tableLayoutPanel1.Controls.Add(this.groupBoxManualTrSeq, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.groupBoxManual, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.dioControl, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.groupBoxManualTrSeq, 2, 0);
             this.tableLayoutPanel1.Controls.Add(this.teachingPositionControl, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.groupBoxImageView, 1, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -228,14 +211,12 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel2.Controls.Add(this.buttonTest, 2, 1);
             this.tableLayoutPanel2.Controls.Add(this.btnSafetyZ, 0, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnTest, 1, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnAlignXY, 1, 1);
             this.tableLayoutPanel2.Controls.Add(this.btnPickUp, 1, 2);
             this.tableLayoutPanel2.Controls.Add(this.btnWaferUnloading, 0, 1);
-            this.tableLayoutPanel2.Controls.Add(this.buttonPickUpNiddle_Move, 2, 2);
-            this.tableLayoutPanel2.Controls.Add(this.buttonTest, 2, 1);
-            this.tableLayoutPanel2.Controls.Add(this.buttonTest2, 2, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnWaferLoading, 0, 2);
             this.tableLayoutPanel2.Controls.Add(this.btnReleaseVacuumAndPlaceUp, 0, 3);
             this.tableLayoutPanel2.Controls.Add(this.btnPlaceChipDown, 1, 3);
@@ -245,6 +226,8 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.Controls.Add(this.btnAlignT, 1, 5);
             this.tableLayoutPanel2.Controls.Add(this.btnEjecterZUp, 0, 6);
             this.tableLayoutPanel2.Controls.Add(this.btnPickUpDn, 1, 6);
+            this.tableLayoutPanel2.Controls.Add(this.buttonTest2, 2, 0);
+            this.tableLayoutPanel2.Controls.Add(this.buttonPickUpNiddle_Move, 2, 2);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 20);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
@@ -261,6 +244,28 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(371, 350);
             this.tableLayoutPanel2.TabIndex = 34;
+            // 
+            // buttonTest
+            // 
+            this.buttonTest.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonTest.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonTest.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonTest.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonTest.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonTest.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonTest.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonTest.ForeColor = System.Drawing.Color.Black;
+            this.buttonTest.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonTest.Location = new System.Drawing.Point(248, 38);
+            this.buttonTest.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonTest.Name = "buttonTest";
+            this.buttonTest.Size = new System.Drawing.Size(121, 32);
+            this.buttonTest.TabIndex = 37;
+            this.buttonTest.TabStop = false;
+            this.buttonTest.Text = "SEQ STOP";
+            this.buttonTest.UseVisualStyleBackColor = false;
             // 
             // btnSafetyZ
             // 
@@ -374,48 +379,6 @@ namespace QMC.LCP_280.Process.Unit
             this.btnWaferUnloading.Text = "WaferUnloading";
             this.btnWaferUnloading.UseVisualStyleBackColor = false;
             this.btnWaferUnloading.Visible = false;
-            // 
-            // buttonPickUpNiddle_Move
-            // 
-            this.buttonPickUpNiddle_Move.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(248, 74);
-            this.buttonPickUpNiddle_Move.Margin = new System.Windows.Forms.Padding(2);
-            this.buttonPickUpNiddle_Move.Name = "buttonPickUpNiddle_Move";
-            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(121, 32);
-            this.buttonPickUpNiddle_Move.TabIndex = 17;
-            this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
-            this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = true;
-            this.buttonPickUpNiddle_Move.Visible = false;
-            // 
-            // buttonTest
-            // 
-            this.buttonTest.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonTest.Location = new System.Drawing.Point(248, 38);
-            this.buttonTest.Margin = new System.Windows.Forms.Padding(2);
-            this.buttonTest.Name = "buttonTest";
-            this.buttonTest.Size = new System.Drawing.Size(121, 32);
-            this.buttonTest.TabIndex = 18;
-            this.buttonTest.Text = "SEQ STOP";
-            this.buttonTest.UseVisualStyleBackColor = true;
-            this.buttonTest.Visible = false;
-            // 
-            // buttonTest2
-            // 
-            this.buttonTest2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonTest2.Location = new System.Drawing.Point(248, 2);
-            this.buttonTest2.Margin = new System.Windows.Forms.Padding(2);
-            this.buttonTest2.Name = "buttonTest2";
-            this.buttonTest2.Size = new System.Drawing.Size(121, 32);
-            this.buttonTest2.TabIndex = 19;
-            this.buttonTest2.Text = "Test2";
-            this.buttonTest2.UseVisualStyleBackColor = true;
-            this.buttonTest2.Visible = false;
             // 
             // btnWaferLoading
             // 
@@ -624,8 +587,53 @@ namespace QMC.LCP_280.Process.Unit
             this.btnPickUpDn.UseVisualStyleBackColor = false;
             this.btnPickUpDn.Visible = false;
             // 
+            // buttonTest2
+            // 
+            this.buttonTest2.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonTest2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonTest2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonTest2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonTest2.CustomFont = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonTest2.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonTest2.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonTest2.ForeColor = System.Drawing.Color.Black;
+            this.buttonTest2.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonTest2.Location = new System.Drawing.Point(248, 2);
+            this.buttonTest2.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonTest2.Name = "buttonTest2";
+            this.buttonTest2.Size = new System.Drawing.Size(121, 32);
+            this.buttonTest2.TabIndex = 34;
+            this.buttonTest2.TabStop = false;
+            this.buttonTest2.Text = "Test2";
+            this.buttonTest2.UseVisualStyleBackColor = false;
+            // 
+            // buttonPickUpNiddle_Move
+            // 
+            this.buttonPickUpNiddle_Move.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonPickUpNiddle_Move.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonPickUpNiddle_Move.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.buttonPickUpNiddle_Move.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.buttonPickUpNiddle_Move.CustomFont = new System.Drawing.Font("Arial", 6.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonPickUpNiddle_Move.CustomForeColor = System.Drawing.Color.Black;
+            this.buttonPickUpNiddle_Move.Font = new System.Drawing.Font("Arial", 6.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonPickUpNiddle_Move.ForeColor = System.Drawing.Color.Black;
+            this.buttonPickUpNiddle_Move.ImageSize = new System.Drawing.Size(45, 45);
+            this.buttonPickUpNiddle_Move.Location = new System.Drawing.Point(248, 74);
+            this.buttonPickUpNiddle_Move.Margin = new System.Windows.Forms.Padding(2);
+            this.buttonPickUpNiddle_Move.Name = "buttonPickUpNiddle_Move";
+            this.buttonPickUpNiddle_Move.Size = new System.Drawing.Size(121, 32);
+            this.buttonPickUpNiddle_Move.TabIndex = 36;
+            this.buttonPickUpNiddle_Move.TabStop = false;
+            this.buttonPickUpNiddle_Move.Text = "PickUp && Niddle Move";
+            this.buttonPickUpNiddle_Move.UseVisualStyleBackColor = false;
+            // 
             // dioControl
             // 
+            this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
             this.dioControl.Location = new System.Drawing.Point(2, 378);
             this.dioControl.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
@@ -647,6 +655,43 @@ namespace QMC.LCP_280.Process.Unit
             this.teachingPositionControl.TabIndex = 18;
             this.teachingPositionControl.UnitName = null;
             // 
+            // groupBoxManualTrSeq
+            // 
+            this.groupBoxManualTrSeq.Controls.Add(this.tableLayoutPanel3);
+            this.groupBoxManualTrSeq.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupBoxManualTrSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.groupBoxManualTrSeq.Location = new System.Drawing.Point(886, 2);
+            this.groupBoxManualTrSeq.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxManualTrSeq.Name = "groupBoxManualTrSeq";
+            this.groupBoxManualTrSeq.Padding = new System.Windows.Forms.Padding(2);
+            this.groupBoxManualTrSeq.Size = new System.Drawing.Size(376, 371);
+            this.groupBoxManualTrSeq.TabIndex = 29;
+            this.groupBoxManualTrSeq.TabStop = false;
+            this.groupBoxManualTrSeq.Text = "ChipLoading Seq.";
+            // 
+            // tableLayoutPanel3
+            // 
+            this.tableLayoutPanel3.ColumnCount = 1;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Controls.Add(this.manualSequenceControl, 0, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 1;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(372, 349);
+            this.tableLayoutPanel3.TabIndex = 20;
+            // 
+            // manualSequenceControl
+            // 
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.manualSequenceControl.Location = new System.Drawing.Point(2, 2);
+            this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2);
+            this.manualSequenceControl.Name = "manualSequenceControl";
+            this.manualSequenceControl.ParentUnit = null;
+            this.manualSequenceControl.Size = new System.Drawing.Size(368, 345);
+            this.manualSequenceControl.TabIndex = 19;
+            // 
             // ChipLoading_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -660,11 +705,11 @@ namespace QMC.LCP_280.Process.Unit
             this.tableLayoutPanel4.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._ChipLoadingCameraviewer)).EndInit();
             this.tableLayoutPanel5.ResumeLayout(false);
-            this.groupBoxManualTrSeq.ResumeLayout(false);
-            this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.groupBoxManual.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
+            this.groupBoxManualTrSeq.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -674,16 +719,10 @@ namespace QMC.LCP_280.Process.Unit
             if (disposing && (components != null)) components.Dispose();
             base.Dispose(disposing);
         }
-
-        private ManualSequenceControl manualSequenceControl;
         private TeachingPositionControl teachingPositionControl;
         private Common.Vision.VisionImageViewer _ChipLoadingCameraviewer;
-        private Button _btnVisionSetting;
-        private Button buttonDataManual;
         private GroupBox groupBoxImageView;
-        private GroupBox groupBoxManualTrSeq;
         private TableLayoutPanel tableLayoutPanel1;
-        private TableLayoutPanel tableLayoutPanel3;
         private GroupBox groupBoxManual;
         private TableLayoutPanel tableLayoutPanel2;
         private IndividualMenuButton btnSafetyZ;
@@ -691,9 +730,6 @@ namespace QMC.LCP_280.Process.Unit
         private IndividualMenuButton btnAlignXY;
         private IndividualMenuButton btnPickUp;
         private IndividualMenuButton btnWaferUnloading;
-        private Button buttonPickUpNiddle_Move;
-        private Button buttonTest;
-        private Button buttonTest2;
         private IndividualMenuButton btnWaferLoading;
         private IndividualMenuButton btnReleaseVacuumAndPlaceUp;
         private IndividualMenuButton btnPlaceChipDown;
@@ -706,5 +742,13 @@ namespace QMC.LCP_280.Process.Unit
         private DIOControl dioControl;
         private TableLayoutPanel tableLayoutPanel4;
         private TableLayoutPanel tableLayoutPanel5;
+        private IndividualMenuButton buttonDataManual;
+        private IndividualMenuButton _btnVisionSetting;
+        private IndividualMenuButton buttonTest;
+        private IndividualMenuButton buttonTest2;
+        private IndividualMenuButton buttonPickUpNiddle_Move;
+        private GroupBox groupBoxManualTrSeq;
+        private TableLayoutPanel tableLayoutPanel3;
+        private ManualSequenceControl manualSequenceControl;
     }
 }
