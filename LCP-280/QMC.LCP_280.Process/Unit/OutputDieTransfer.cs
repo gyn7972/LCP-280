@@ -1126,18 +1126,7 @@ namespace QMC.LCP_280.Process.Unit
                 OutputStage.PlaceDie(die);
                 SetMaterial(new MaterialDie() { Presence = Material.MaterialPresence.NotExist });
 
-
-
-
-
-
-
-
-
             }
-
-
-            
 
             State = ProcessState.None;
             return 0;
