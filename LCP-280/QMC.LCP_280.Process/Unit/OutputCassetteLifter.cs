@@ -65,6 +65,52 @@ namespace QMC.LCP_280.Process.Unit
         public MotionAxis BinLifterZ => _BinLiftZ;
         #endregion
 
+
+        #region Simulation Mapping Support
+        // Simulation 모드에서 MappingSensor()를 슬롯 단위로 안정적으로 에뮬레이션하기 위한 상태
+        private int _simLastMappingSlot = -1;
+        private HashSet<int> _simPresentSlots;          // 존재한다고 가정할 슬롯 인덱스 집합
+        private bool _simSimMappingInitialized = false; // 초기화 여부
+        private int _currentSlotID;
+        private readonly object _simMapLock = new object();
+
+        private void InitSimMappingIfNeeded()
+        {
+            if (!Config.IsSimulation && !Config.IsDryRun)
+            {
+                return;
+            }
+
+            lock (_simMapLock)
+            {
+                if (_simSimMappingInitialized)
+                    return;
+
+                _simPresentSlots = new HashSet<int>();
+                // 모든 슬롯 존재로 가정 (필요 시 패턴 변경 가능)
+                for (int i = 0; i < Config.SlotCount; i++)
+                    _simPresentSlots.Add(i);
+
+                _simLastMappingSlot = -1;
+                _simSimMappingInitialized = true;
+            }
+        }
+
+        private void ResetSimMapping()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                lock (_simMapLock)
+                {
+                    _simLastMappingSlot = -1;
+                    _simSimMappingInitialized = false;
+                }
+                InitSimMappingIfNeeded();
+            }
+        }
+        #endregion
+
+
         #region ctor / Initialization
         public OutputCassetteLifter(OutputCassetteLifterConfig config = null) 
             : base(new OutputCassetteLifterConfig())
@@ -165,8 +211,29 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
 
-        public bool IsCassettePresent0() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
-        public bool IsCassettePresent1() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        //public bool IsCassettePresent0() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+        //public bool IsCassettePresent1() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+
+        public bool IsCassettePresent0()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+        }
+        public bool IsCassettePresent1()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        }
+
+
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
         public bool RingJut() => !ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);
@@ -175,7 +242,40 @@ namespace QMC.LCP_280.Process.Unit
             bool sensorstate = RingJut();
             return !sensorstate;
         }
-        public bool MappingSensor() => ReadInput(OutputCassetteLifterConfig.IO.MAPPING_SENSOR);
+        public bool MappingSensor()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                // 시뮬레이션: 축 위치 기반 슬롯 단위 펄스 생성
+                InitSimMappingIfNeeded();
+
+                double pos = BinLifterZ?.GetPosition() ?? 0.0;
+                double start = GetTP(InputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.WaferLifterZ);
+                double traveled = Math.Abs(pos - start);
+                if (Config.SlotPitch <= 0)
+                    return false;
+
+                int slot = (int)(traveled / Config.SlotPitch);
+                if (slot < 0 || slot >= Config.SlotCount)
+                    return false;
+
+                bool emit = false;
+                lock (_simMapLock)
+                {
+                    if (_simPresentSlots != null &&
+                        _simPresentSlots.Contains(slot) &&
+                        slot != _simLastMappingSlot)
+                    {
+                        // 새 슬롯 진입 → 한 번 true
+                        _simLastMappingSlot = slot;
+                        emit = true;
+                    }
+                }
+                return emit;
+            }
+
+            return  ReadInput(OutputCassetteLifterConfig.IO.MAPPING_SENSOR);
+        }
         #endregion
 
         public int MoveToScanStartPosition(bool isFine = false)
@@ -281,8 +381,6 @@ namespace QMC.LCP_280.Process.Unit
         #region seq signals
         public bool IsBinReadyForUnloding { get; set; } = false;
         public bool RequestStageLoading { get; set; } = false;
-
-        private int _currentSlotID;
         #endregion
 
         #region Lifecycle
@@ -475,13 +573,22 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Config.IsSimulation || Config.IsDryRun)
             {
-                Log.Write(this, "Bin Protrusion Detected - Simulation");
+                ResetSimMapping();
+                //Log.Write(this, "Bin Protrusion Detected - Simulation");
             }
             else if (IsBinProtrusionDetectionSensor())
             {
                 this.BinLifterZ.EmgStop();
                 Log.Write(this, "Bin Protrusion Detected");
                 PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
+                return -1;
+            }
+
+            if (!OutputFeeder.IsFeederYSafetyPosition())
+            {
+                BinLifterZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                Log.Write(this, "Feeder Y Axis is not in Safety Position");
                 return -1;
             }
 
@@ -492,6 +599,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 material.Slots.Add(new MaterialWafer());
             }
+            material.Presence = Material.MaterialPresence.Exist;
+
+
             nRtn = MoveToScanStartPosition(bFineSpeed);
 
             if (nRtn != 0)
@@ -526,42 +636,15 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (Config.IsSimulation || Config.IsDryRun)
+                if (!OutputFeeder.IsFeederYSafetyPosition())
                 {
-                    Log.Write(this, "Bin Protrusion Detected - Simulation");
-
-                    if (bDetected == true)
-                    {
-                        Thread.Sleep(0);
-                        continue;
-                    }
-                    bDetected = true;
-                    double dPos = BinLifterZ.GetPosition();
-                    double dSlotPitch = base.Config.SlotPitch;
-                    double dStartPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.BinLifterZ);
-                    int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
-                    Log.Write(this.UnitName, "Start : " + dStartPos.ToString() + " Current :  " + dPos.ToString("3f_ Slot : ") + slot.ToString());
-                    if (slot >= 0 && slot < material.Slots.Count)
-                    {
-                        MaterialWafer Bin = material.Slots[slot];
-                        if (Bin == null ||
-                            Bin.Presence == Material.MaterialPresence.Unknown ||
-                            Bin.Presence == Material.MaterialPresence.NotExist)
-                        {
-                            Bin = new MaterialWafer() { Presence = Material.MaterialPresence.Exist };
-                        }
-                        Bin.ProcessSatate = MaterialWafer.MaterialProcessSatate.Ready;
-
-                        Bin.SlotIndex = slot;
-                        material.SetWafer(slot, Bin);
-                        Log.Write(this, $"Mapping Sensor Detected at Slot {slot + 1} Position {dPos:F3}");
-                    }
-                    else
-                    {
-                        Log.Write(this, $"Mapping Sensor Detected at Invalid Slot {slot + 1} Position {dPos:F3}");
-                    }
+                    BinLifterZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                    Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                    return -1;
                 }
-                else if (MappingSensor())
+
+                if (MappingSensor())
                 {
                     if (bDetected == true)
                     {
@@ -601,7 +684,7 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(0);
             }
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
-            Log.Write(this, "End ScanWafer");
+            Log.Write(this, "End ScanBin");
             return nRtn;
         }
         public Task<int> ScanWaferAsync(bool bFineSpeed = false)

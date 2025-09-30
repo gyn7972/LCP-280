@@ -997,28 +997,13 @@ namespace QMC.LCP_280.Process.Unit
                     switch (State)
                     {
                         case ProcessState.Ready:
-                            //여기서 앞의 공정 InputWafer_working 신호 대기
-                            if (OutputStage.RequestInputDie)
-                            {
-                                CompleteOutputDie = false;
-                                ret = OnRunReady();
-                            }
+                            ret = OnRunReady();
                             break;
                         case ProcessState.Work:
                             ret = OnRunWork();
                             break;
                         case ProcessState.Complete:
-                            OutputStage.RequestInputDie = false;
-                            // 여기서 인덱스 투입 신호 받고 수행.
-                            if (Rotary.RequestInputDieTrDie)
-                            {
-                                ret = OnRunComplete();
-                                if (ret == 0)
-                                {
-                                    CompleteOutputDie = true;
-                                    Rotary.RequestInputDieTrDie = false;
-                                }
-                            }
+                            ret = OnRunComplete();
                             break;
                         default:
                             this.State = ProcessState.Ready;
@@ -1078,31 +1063,28 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            MaterialDie die = Rotary.GetUnloaderAlignSocketMaterial();
+            MaterialDie die = Rotary.GetUnloadSocketMaterial();
             if(die == null || die.Presence != Material.MaterialPresence.Exist)
             {
-                return -1;
-            }
-
-            //if(die.UnloadAlignOffsetX
-
-            nRtn = MoveOutStage();
-            if (nRtn != 0)
-            {
-                return -1;
+                return 0;
             }
 
             nRtn = ChipPickDown();
             if (nRtn != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                 return -1;
             }
 
             nRtn = ChipPickUp();
             if (nRtn != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
                 return -1;
             }
+            die.State = DieProcessState.Picked;
+            die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+            SetMaterial(die);
 
             State = ProcessState.Complete;
             return 0;
@@ -1111,17 +1093,51 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            nRtn = RotateToolTForPlace();
-            if (nRtn != 0)
+            Material wafer = OutputStage.GetMaterialWafer();
+            if(wafer != null && wafer.Presence == Material.MaterialPresence.Exist)
             {
-                return -1;
+                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+
+                nRtn = MoveOutStage();
+                if (nRtn != 0)
+                {
+                    Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
+                    return -1;
+                }
+
+                nRtn = RotateToolTForPlace();
+                if (nRtn != 0)
+                {
+                    Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace failed");
+                    return -1;
+                }
+
+                nRtn = ReleaseVacuumAndPlaceUp();
+                if (nRtn != 0)
+                {
+                    Log.Write(UnitName, "[OnRunWork] ReleaseVacuumAndPlaceUp failed");
+                    return -1;
+                }
+
+                MaterialDie die = GetMaterial() as MaterialDie;
+                die.State = DieProcessState.Placed;
+                die.ProcessSatate = Material.MaterialProcessSatate.Completed;
+
+                OutputStage.PlaceDie(die);
+                SetMaterial(new MaterialDie() { Presence = Material.MaterialPresence.NotExist });
+
+
+
+
+
+
+
+
+
             }
 
-            nRtn = ReleaseVacuumAndPlaceUp();
-            if (nRtn != 0)
-            {
-                return -1;
-            }
+
+            
 
             State = ProcessState.None;
             return 0;

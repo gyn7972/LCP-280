@@ -27,6 +27,11 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(0)] public int MapX { get; set; } = 0;
         [DefaultValue(0)] public int MapY { get; set; } = 0;
 
+        [DefaultValue(0)] public int BinX { get; set; } = 0;
+        [DefaultValue(0)] public int BinY { get; set; } = 0;
+
+
+
         // ===== Vision 위치 =====
         [DefaultValue(0.0)] public double CenterX { get; set; } = 0.0;
         [DefaultValue(0.0)] public double CenterY { get; set; } = 0.0;
