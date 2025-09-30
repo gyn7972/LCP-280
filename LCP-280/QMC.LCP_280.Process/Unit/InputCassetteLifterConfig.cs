@@ -35,6 +35,7 @@ namespace QMC.LCP_280.Process.Unit
             UnloadOffset,
             LoadPort
         }
+
         public override bool GetTeachingPositionName(int selIndex, out string name)
         {
             if (Enum.GetNames(typeof(TeachingPositionName)).Length <= selIndex)

@@ -1,19 +1,21 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.ComponentModel;
-using Newtonsoft.Json.Converters;
 using System.Text.RegularExpressions;
-using System.Data;
+using System.Threading.Tasks;
 
 namespace QMC.Common.PKGTester
 {
-    public class TestConditionItem : BaseConfig
+    public class TestConditionItem// : BaseConfig
     {
         #region Properties
         // Defines
+        public string Name { get; set; }
         public TestItemType Type { get; set; }
 
         // Source
@@ -35,13 +37,15 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Constructor
-        public TestConditionItem(string name) : base(name)
+        public TestConditionItem(string name)// : base(name)
         {
+            Name = name;
+            Reset();
         }
         #endregion
 
         #region Methods
-        public override void Reset()
+        public /*override*/ void Reset()
         {
             Type = TestItemType.None;
             SourceValue = 0;
@@ -59,7 +63,7 @@ namespace QMC.Common.PKGTester
                 Offset[i] = 0;
             }
         }
-        public override bool Validate()
+        public /*override*/ bool Validate()
         {
             if (string.IsNullOrWhiteSpace(Name))
                 return false;
@@ -96,7 +100,7 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
-        public override PropertyCollection GetPropertyCollection()
+        public /*override*/ PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
             
@@ -177,7 +181,7 @@ namespace QMC.Common.PKGTester
             }
             return pc;
         }
-        public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
+        public /*override*/ int ApplyValueFromPropertyCollection(PropertyCollection pc)
         {
             if (pc == null)
                 return -1;
@@ -247,6 +251,12 @@ namespace QMC.Common.PKGTester
             }
             return 0;
         }
+        public TestConditionItem Clone()
+        {
+            TestConditionItem clone = new TestConditionItem(this.Name);
+            clone.ApplyValueFromPropertyCollection(this.GetPropertyCollection());
+            return clone;
+        }
         public TestItemCategory GetTestItemCategory()
         {
             return Type.GetCategory();
@@ -309,21 +319,14 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Proerties
-        public string Name { get; set; }
         public IReadOnlyList<TestConditionItem> Items => items.AsReadOnly();
         #endregion
 
         #region Constructor
-        public TestConditionSet(string name) : base()
+        public TestConditionSet() : base()
         {
-            Name = name;
             items = new List<TestConditionItem>();
         }
-        #endregion
-
-        #region Event
-        public delegate void ItemsChangedEventHandler(object sender);
-        public event ItemsChangedEventHandler ItemsChanged;
         #endregion
 
         #region Edit Item
@@ -335,7 +338,6 @@ namespace QMC.Common.PKGTester
             //    return -1;
 
             items.Add(item);
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         public int InsertItem(int index, TestConditionItem item)
@@ -348,7 +350,6 @@ namespace QMC.Common.PKGTester
                 return -1;
 
             items.Insert(index, item);
-            ItemsChanged?.Invoke(this);
             return 0;
         }   
         public int RemoveItemAt(int index)
@@ -357,7 +358,6 @@ namespace QMC.Common.PKGTester
                 return -1;
 
             items.RemoveAt(index);
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         private bool SwapItems(int index1, int index2)
@@ -370,7 +370,6 @@ namespace QMC.Common.PKGTester
             var temp = items[index1];
             items[index1] = items[index2];
             items[index2] = temp;
-            ItemsChanged?.Invoke(this);
             return true;
         }
         public int MoveItemUp(int index)
@@ -382,8 +381,7 @@ namespace QMC.Common.PKGTester
             
             if (!SwapItems(index, index - 1))
                 return -1;
-            
-            ItemsChanged?.Invoke(this);
+
             return 0;
         }
         public int MoveItemDown(int index)
@@ -396,25 +394,20 @@ namespace QMC.Common.PKGTester
             if (!SwapItems(index, index + 1))
                 return -1;
 
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         public int ClearItems()
         {
             items.Clear();
-            ItemsChanged?.Invoke(this);
             return 0;
         }
-        public int CopyConditionFrom(TestConditionSet testConditionSet)
+        public int CopyFrom(TestConditionSet testConditionSet)
         {
             if (testConditionSet == null)
                 return -1;
 
-            Name = testConditionSet.Name;
-
             items.Clear();
             items.AddRange(testConditionSet.Items);
-            ItemsChanged?.Invoke(this);
             return 0;
         }
         #endregion
@@ -423,7 +416,6 @@ namespace QMC.Common.PKGTester
         // 래퍼 클래스 정의
         class TestConditionSetData
         {
-            public string Name { get; set; }
             public List<TestConditionItem> Items { get; set; }
         }
 
@@ -441,10 +433,8 @@ namespace QMC.Common.PKGTester
                 if (data == null || data.Items == null)
                     return -1;
 
-                Name = data.Name;
                 items.Clear();
                 items.AddRange(data.Items);
-                ItemsChanged?.Invoke(this);
                 return 0;
             }
             catch (Exception ex)
@@ -455,14 +445,10 @@ namespace QMC.Common.PKGTester
         }
         public int SaveToFile(string filePath)
         {
-            string name = Name;
-
             try
             {
-                Name = System.IO.Path.GetFileNameWithoutExtension(filePath);
                 var data = new TestConditionSetData
                 {
-                    Name = this.Name,
                     Items = this.items.ToList()
                 };
 
@@ -474,7 +460,6 @@ namespace QMC.Common.PKGTester
             }
             catch (Exception ex)
             {
-                Name = name;
                 Log.Write(ex);
                 return -1;
             }

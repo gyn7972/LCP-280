@@ -869,5 +869,11 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #endregion
+
+        private void unitConfigControl_Load(object sender, EventArgs e)
+        {
+
+
+        }
     }
 }

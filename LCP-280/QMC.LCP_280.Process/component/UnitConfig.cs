@@ -100,7 +100,7 @@ namespace QMC.LCP_280.Process.Component
 
         private void btnApplyConfig_Click(object sender, EventArgs e)
         {
-            if (_mapper == null || _config == null) 
+             if (_mapper == null || _config == null) 
                 return;
 
             try

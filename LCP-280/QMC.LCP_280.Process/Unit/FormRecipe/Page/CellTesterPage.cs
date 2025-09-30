@@ -18,7 +18,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
     {
         private PKGTester tester => Equipment.Instance.Tester;
 
-        // Repeat
         private CancellationTokenSource _ctsRepeat;
 
         public CellTesterPage()
@@ -33,50 +32,44 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
             {
                 tester.OnConditionSetChanged += Tester_OnConditionSetChanged;
                 tester.OnManualMeasureCompleted += Tester_OnMeasureCompleted;
+                tester.OnMeasureAborted += Tester_OnMeasureAborted;
 
                 casSpectrumViewer.AttachSpectrometer(tester.Spectrometer);
-
-                tester.Sourcemeter.OnMeasureFailed += Sourcemeter_OnMeasureFailed;
-                tester.Spectrometer.OnMeasureFailed += Spectrometer_OnMeasureFailed;
             }
-        }
+        }  
 
-        private void Spectrometer_OnMeasureFailed(object sender, string e)
+        private void CellTesterPage_Load(object sender, EventArgs e)
         {
-            if (this.InvokeRequired)
-            {
-                this.Invoke(new Action(() => MessageBox.Show(e)));
-                return;
-            }
-            MessageBox.Show(e);
-        }
-
-        private void Sourcemeter_OnMeasureFailed(object sender, string e)
-        {
-            if (this.InvokeRequired)
-            {
-                this.Invoke(new Action(() => MessageBox.Show(e)));
-                return;
-            }
-            MessageBox.Show(e);
+            UpdateNewResultGrid();
         }
 
         private void Tester_OnMeasureCompleted(object sender)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new Action(() => Tester_OnMeasureCompleted(sender)));
+                Invoke(new Action(() => Tester_OnMeasureCompleted(sender)));
                 return;
             }
 
             AddNewManualMeasureResult();
         }
 
+        private void Tester_OnMeasureAborted(object sender)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => Tester_OnMeasureAborted(sender)));
+                return;
+            }
+
+            MessageBox.Show("Measurement was stopped due to an error.", "Error");
+        }
+
         private void Tester_OnConditionSetChanged(object sender)
         {
-            if (this.InvokeRequired)
+            if (InvokeRequired)
             {
-                this.Invoke(new Action(() => Tester_OnConditionSetChanged(sender)));
+                Invoke(new Action(() => Tester_OnConditionSetChanged(sender)));
                 return;
             }
 
@@ -309,6 +302,6 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         private void btnTestStop_Click(object sender, EventArgs e)
         {
             _ctsRepeat?.Cancel();
-        }
+        }    
     }
 }

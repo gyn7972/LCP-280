@@ -203,8 +203,8 @@ namespace QMC.LCP_280.Process
         public Dictionary<string, OpticonBarcodeReader> Barcoders { get; } = new Dictionary<string, OpticonBarcodeReader>(StringComparer.OrdinalIgnoreCase);
 
         // === 편의 프로퍼티 (Barcoder) ===
-        public OpticonBarcodeReader BarcoderReader1 => GetBarcoderController("BarcoderReader1");
-        public OpticonBarcodeReader BarcoderReader2 => GetBarcoderController("BarcoderReader2");
+        public OpticonBarcodeReader BarcoderReader1 => GetBarcoderController("BarcoderReader1"); //Output
+        public OpticonBarcodeReader BarcoderReader2 => GetBarcoderController("BarcoderReader2"); //Input
 
         private OpticonBarcodeReader GetBarcoderController(string key)
         {
@@ -346,6 +346,20 @@ namespace QMC.LCP_280.Process
 
                 // 홈 후처리 글로벌 구독(1회)
                 HomeHooks.EnsureSubscribed();
+
+                // PKG Tester Load Recipe
+                var currentRecipe = EquipmentRecipe?.CurrentRecipe;
+                if (currentRecipe != null && Tester != null)
+                {
+                    if (Tester.LoadTestConditionSet(currentRecipe.TestConditionSetPath) != 0)
+                    {
+                        MessageBox.Show("Failed to load test condition set.");
+                    }
+                    if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetPath) != 0)
+                    {
+                        MessageBox.Show("Failed to load binning spec sheet.");
+                    }
+                }
 
                 OnStateChanged(EquipmentState.Ready);
             }
@@ -1731,6 +1745,13 @@ namespace QMC.LCP_280.Process
                 Tester = new PKGTester("PKGTester");
                 Tester.BindSourcemeter(Sourcemeter);
                 Tester.BindSpectrometer(Spectrometer);
+
+                var currentRecipe = EquipmentRecipe?.CurrentRecipe;
+                if (currentRecipe != null)
+                {
+                    Tester.LoadTestConditionSet(currentRecipe.TestConditionSetPath);
+                    Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetPath);
+                }
             }
             catch (Exception ex) { Log.Write(ex); }
         }

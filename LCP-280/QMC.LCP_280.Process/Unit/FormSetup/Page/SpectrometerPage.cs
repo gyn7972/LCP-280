@@ -32,23 +32,19 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
 
         private void SetupDialog_OnNewDeviceConfigApplied(object sender, CASSpectrometerConfig e)
         {
-            try
+            if (InvokeRequired)
             {
-                if (e == null)
-                {
-                    throw new ArgumentNullException("argument is null.");
-                }
+                Invoke(new Action(() => SetupDialog_OnNewDeviceConfigApplied(sender, e)));
+                return;
+            }
 
+            if (e != null && pcConfig != null)
+            {
                 pcConfig["DeviceInterfaceType"].Value = e.DeviceInterfaceType;
                 pcConfig["DeviceInterfaceOption"].Value = e.DeviceInterfaceOption;
                 pcConfig["ConfigFileName"].Value = e.ConfigFileName;
                 pcConfig["CalibFileName"].Value = e.CalibFileName;
-                pcvSpectrometerConfig.SetProperties(pcConfig);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                pcvConfig.SetProperties(pcConfig);
             }
         }
 
@@ -84,115 +80,49 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
 
         private void Spectrometer_OnDeviceCreated(object sender)
         {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => Spectrometer_OnDeviceCreated(sender)));
+                return;
+            }
+
             CASSpectrometer spectrometer = sender as CASSpectrometer;
             if (selectSpectrometer == spectrometer && spectrometer != null)
             {
                 // Device Info
-                {
-                    if (lbSpectrometerModelValue.InvokeRequired)
-                    {
-                        lbSpectrometerModelValue.Invoke(new Action(() => lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Name));
-                    }
-                    else
-                    {
-                        lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Name;
-                    }
-                    if (lbSpectrometerSerialNoValue.InvokeRequired)
-                    {
-                        lbSpectrometerSerialNoValue.Invoke(new Action(() => lbSpectrometerSerialNoValue.Text = spectrometer.DeviceInfo.SerialNumber));
-                    }
-                    else
-                    {
-                        lbSpectrometerSerialNoValue.Text = spectrometer.DeviceInfo.SerialNumber;
-                    }
-                }
+                lbSpectrometerModelValue.Text = spectrometer.DeviceInfo.Name;
+                lbSpectrometerSerialNoValue.Text = spectrometer.DeviceInfo.SerialNumber;
+
                 // Status
-                {
-                    if (lbSpectrometerStatusValue.InvokeRequired)
-                    {
-                        lbSpectrometerStatusValue.Invoke(new Action(() => lbSpectrometerStatusValue.Text = "Device Created"));
-                    }
-                    else
-                    {
-                        lbSpectrometerStatusValue.Text = "Device Created";
-                    }
-                }
+                lbSpectrometerStatusValue.Text = "Device Created";
+
                 // Interface
-                {
-                    if (lbSpectrometerDeviceInterfaceValue.InvokeRequired)
-                    {
-                        lbSpectrometerDeviceInterfaceValue.Invoke(new Action(() => lbSpectrometerDeviceInterfaceValue.Text = spectrometer.DeviceInfo.InterfaceType));
-                    }
-                    else
-                    {
-                        lbSpectrometerDeviceInterfaceValue.Text = spectrometer.DeviceInfo.InterfaceType;
-                    }
-                    if (lbSpectrometerDeviceOption.InvokeRequired)
-                    {
-                        lbSpectrometerDeviceOption.Invoke(new Action(() => lbSpectrometerDeviceOption.Text = spectrometer.DeviceInfo.InterfaceOption));
-                    }
-                    else
-                    {
-                        lbSpectrometerDeviceOption.Text = spectrometer.DeviceInfo.InterfaceOption;
-                    }
-                }
+                lbSpectrometerDeviceInterfaceValue.Text = spectrometer.DeviceInfo.InterfaceType;
+                lbSpectrometerDeviceOption.Text = spectrometer.DeviceInfo.InterfaceOption;
             }
         }
 
         private void Spectrometer_OnDeviceTerminated(object sender)
         {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => Spectrometer_OnDeviceCreated(sender)));
+                return;
+            }
+
             CASSpectrometer spectrometer = sender as CASSpectrometer;
             if (selectSpectrometer == spectrometer && spectrometer != null)
             {
                 // Device Info
-                {
-                    if (lbSpectrometerModelValue.InvokeRequired)
-                    {
-                        lbSpectrometerModelValue.Invoke(new Action(() => lbSpectrometerModelValue.Text = ""));
-                    }
-                    else
-                    {
-                        lbSpectrometerModelValue.Text = "";
-                    }
-                    if (lbSpectrometerSerialNoValue.InvokeRequired)
-                    {
-                        lbSpectrometerSerialNoValue.Invoke(new Action(() => lbSpectrometerSerialNoValue.Text = ""));
-                    }
-                    else
-                    {
-                        lbSpectrometerSerialNoValue.Text = "";
-                    }
-                }
+                lbSpectrometerModelValue.Text = "";
+                lbSpectrometerSerialNoValue.Text = "";
+
                 // Status
-                {
-                    if (lbSpectrometerStatusValue.InvokeRequired)
-                    {
-                        lbSpectrometerStatusValue.Invoke(new Action(() => lbSpectrometerStatusValue.Text = "Device Terminated"));
-                    }
-                    else
-                    {
-                        lbSpectrometerStatusValue.Text = "Device Terminated";
-                    }
-                }
+                lbSpectrometerStatusValue.Text = "Device Terminated";
+
                 // Interface
-                {
-                    if (lbSpectrometerDeviceInterfaceValue.InvokeRequired)
-                    {
-                        lbSpectrometerDeviceInterfaceValue.Invoke(new Action(() => lbSpectrometerDeviceInterfaceValue.Text = ""));
-                    }
-                    else
-                    {
-                        lbSpectrometerDeviceInterfaceValue.Text = "";
-                    }
-                    if (lbSpectrometerDeviceOption.InvokeRequired)
-                    {
-                        lbSpectrometerDeviceOption.Invoke(new Action(() => lbSpectrometerDeviceOption.Text = ""));
-                    }
-                    else
-                    {
-                        lbSpectrometerDeviceOption.Text = "";
-                    }
-                }
+                lbSpectrometerDeviceInterfaceValue.Text = "";
+                lbSpectrometerDeviceOption.Text = "";
             }
         }
 
@@ -210,7 +140,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                 lbSpectrometerDeviceOption.Text = spectrometer.DeviceInfo.InterfaceOption;
 
                 pcConfig = spectrometer.Config.GetPropertyCollection();
-                pcvSpectrometerConfig.SetProperties(pcConfig);
+                pcvConfig.SetProperties(pcConfig);
 
                 casSpectrumViewer.AttachSpectrometer(spectrometer);
             }
@@ -261,17 +191,21 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             {
                 if (MessageBox.Show("Would you like to save your settings?", "Save", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
-                    pcvSpectrometerConfig.Apply();
+                    pcvConfig.Apply();
 
                     selectSpectrometer.Config.ApplyValueFromPropertyCollection(pcConfig);
-                    if (selectSpectrometer.Config.Save() == 0)
-                    {
-                        MessageBox.Show($"The settings for [{selectSpectrometer.Name}] have been successfully saved.");
-                    }
-                    else
+                    if (selectSpectrometer.Config.Save() != 0)
                     {
                         MessageBox.Show($"Failed to save the settings of [{selectSpectrometer.Name}].");
+                        return;
                     }
+                    if (selectSpectrometer.ApplyParameterAndMeasureDarkCurrent() != 0)
+                    {
+                        MessageBox.Show($"Failed to apply the settings to the device of [{selectSpectrometer.Name}].");
+                        return;
+                    }
+
+                    MessageBox.Show($"The settings for [{selectSpectrometer.Name}] have been successfully save and apply.");
                 }
             }
             catch (Exception ex)

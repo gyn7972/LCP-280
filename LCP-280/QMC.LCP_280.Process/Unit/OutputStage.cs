@@ -19,6 +19,11 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputStage : BaseUnit<OutputStageConfig>
     {
+
+        public delegate void UpdateUIWafer(MaterialWafer wafer);
+
+        public event UpdateUIWafer EventUpdateUIWafer;
+
         public enum AlarmKeys
         {
             eDieTransferPlaceZNotSafe = 3001,
@@ -106,6 +111,7 @@ namespace QMC.LCP_280.Process.Unit
         OutputCassetteLifter OutputCassetteLifter { get; set; }
 
 
+        MaterialDie _currentDie = null;
         public OutputStage(OutputStageConfig config = null)
             : base(new OutputStageConfig())
         {
@@ -1038,6 +1044,31 @@ namespace QMC.LCP_280.Process.Unit
 
 
             return bRet;
+        }
+        public void UpdateUI()
+        {
+
+            MaterialWafer materialWafer = GetMaterialWafer();
+            EventUpdateUIWafer?.BeginInvoke(materialWafer, null, null);
+        }
+
+        internal void PlaceDie(MaterialDie die)
+        {
+            if(_currentDie != null)
+            {
+                die.BinX = _currentDie.BinX;
+                die.BinY = _currentDie.BinY;
+                MaterialWafer wafer = GetMaterialWafer();
+                if(wafer!= null)
+                {
+                    int index = wafer.Dies.IndexOf(_currentDie);
+                    if(index >=0)
+                    {
+                        wafer.Dies[index] = die;
+                    }
+                }
+                _currentDie = null;
+            }
         }
 
 

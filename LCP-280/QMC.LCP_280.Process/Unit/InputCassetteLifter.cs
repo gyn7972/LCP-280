@@ -1,6 +1,7 @@
 using LCP_280;
 using QMC.Common;
 using QMC.Common.Alarm;
+using QMC.Common.BarcodeReader;
 using QMC.Common.Component;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
@@ -68,6 +69,10 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsWaferReadyForloading { get; private set; } = false;
         #endregion
 
+        #region Barcder
+        private OpticonBarcodeReader BarcoderReader;
+        #endregion
+
         #region Simulation Mapping Support
         // Simulation 모드에서 MappingSensor()를 슬롯 단위로 안정적으로 에뮬레이션하기 위한 상태
         private int _simLastMappingSlot = -1;
@@ -113,7 +118,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
 
-
         #region ctor / Initialization
         public InputCassetteLifter(InputCassetteLifterConfig config = null)
             : base(config ?? new InputCassetteLifterConfig())
@@ -127,13 +131,48 @@ namespace QMC.LCP_280.Process.Unit
 
             InputFeeder = Equipment.Instance.GetUnit("InputFeeder") as InputFeeder;
             InputStage = Equipment.Instance.GetUnit("InputStage") as InputStage;
-        }
+        } 
 
         public override void AddComponents()
         {
             base.Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             base.Config.InitializeDefaultTeachingPositions();
+
             BindAxes();
+            BindBarcodeReader();
+        }
+        #endregion
+
+        #region Barcoder Test
+        private void BindBarcodeReader()
+        {
+            BarcoderReader = Equipment.Instance?.BarcoderReader2;
+
+            if (BarcoderReader == null)
+                Log.Write("InputCassetteLifter", "[BindBarcodeReader] BarcoderReader null");
+        }
+
+        public string ReadBarcoder()
+        {
+            if (BarcoderReader == null)
+            {
+                Log.Write(this, "BarcoderReader is not initialized");
+                return string.Empty;
+            }
+
+            try
+            {
+                string barcode;
+                int result = BarcoderReader.Read(out barcode);
+
+                Log.Write(this, $"BarcoderReader Read: {barcode}");
+                return barcode;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(this, $"BarcoderReader Read Error: {ex.Message}");
+                return string.Empty;
+            }
         }
         #endregion
 
