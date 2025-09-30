@@ -46,7 +46,7 @@ namespace QMC.LCP_280.Process.Component
                 Index = index,
                 MapX = mapX,
                 MapY = mapY,
-                Exists = true,
+                Presence = MaterialPresence.Exist,
                 State = DieProcessState.Mapped,
                 SourceWaferId = LotId
             };
@@ -160,7 +160,7 @@ namespace QMC.LCP_280.Process.Component
                         CenterX = p.X,
                         CenterY = p.Y,
                         Angle = 0.0,
-                        Exists = true,
+                        Presence = MaterialPresence.Exist,
                         State = DieProcessState.Mapped,
                         SourceWaferId = LotId
                     };

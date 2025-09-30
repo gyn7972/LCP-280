@@ -179,7 +179,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 // Sensors
                 dioControl.BindDIOInput(() => OutputFeeder.IsFeederUp(), "Feeder UP Sns", "ORT_FeederUp");
                 dioControl.BindDIOInput(() => OutputFeeder.IsFeederDown(), "Feeder DOWN Sns", "ORT_FeederDown");
-                dioControl.BindDIOInput(() => OutputFeeder.IsUnclamped(), "Feeder UNCLAMP Sns", "ORT_Unclamp");
+                dioControl.BindDIOInput(() => OutputFeeder.IsUnClamped(), "Feeder UNCLAMP Sns", "ORT_Unclamp");
                 dioControl.BindDIOInput(() => OutputFeeder.IsRingPresent(), "Feeder RING Sns", "ORT_Ring");
                 dioControl.BindDIOInput(() => OutputFeeder.IsOverload(), "Feeder OVERLOAD Sns", "ORT_Overload");
 

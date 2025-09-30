@@ -127,6 +127,37 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
 
+
+        private readonly AutoResetEvent _pickUpStartEvent = new AutoResetEvent(false);
+        private readonly AutoResetEvent _pickUpdoneEvent = new AutoResetEvent(false);
+
+        public void RisePickupStartEvent()
+        {
+            _pickUpStartEvent.Set();
+        }
+
+        
+        public bool WaitPickupStartEvent(int timeoutMs = Timeout.Infinite)
+        {
+            bool bRet = false;
+            bRet = _pickUpStartEvent.WaitOne(timeoutMs);
+            return bRet;
+        }
+
+        public void RisePickupDoneEvent()
+        {
+            _pickUpdoneEvent.Set();
+        }
+
+        public bool WaitPickupDoneEvent(int timeoutMs = Timeout.Infinite)
+        {
+            bool bRet = false;
+            bRet = _pickUpdoneEvent.WaitOne(timeoutMs);
+            return bRet;
+        }
+
+
+
         public OutputDieTransfer(OutputDieTransferConfig config = null)
             : base(new OutputDieTransferConfig())
         {
@@ -1021,18 +1052,39 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            //신호 들어오면 Stage Center 기준에서 n번째 칩 위치로 이동
-            //ChipData와 Mapping 연동 필요.
+            MaterialWafer wafer = OutputStage.GetMaterialWafer();
+            if(wafer== null || wafer.Presence != Material.MaterialPresence.Exist)
+            {   
+                return 0;
+            }
 
-            //Stage 이동 완료 후에.
+            if(wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+            {
+                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
 
-            //OnRunWork로 상태 변경
-            State = ProcessState.Work;
+            }
+
+            if(wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
+            {
+                State = ProcessState.Work;
+            }
+            else if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+            {
+                State = ProcessState.Complete;
+            }
             return nRtn;
         }
         protected override int OnRunWork()
         {
             int nRtn = 0;
+
+            MaterialDie die = Rotary.GetUnloaderAlignSocketMaterial();
+            if(die == null || die.Presence != Material.MaterialPresence.Exist)
+            {
+                return -1;
+            }
+
+            //if(die.UnloadAlignOffsetX
 
             nRtn = MoveOutStage();
             if (nRtn != 0)

@@ -32,8 +32,13 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(0.0)] public double CenterY { get; set; } = 0.0;
         [DefaultValue(0.0)] public double Angle { get; set; } = 0.0;
 
+        [DefaultValue(0.0)] public double UnloadAlignOffsetX { get; set; } = 0.0;
+        [DefaultValue(0.0)] public double UnloadAlignOffsetY { get; set; } = 0.0;
+        [DefaultValue(0.0)] public double UnloadAlignOffsetT { get; set; } = 0.0;
+
+
         // ===== 상태 =====
-        [DefaultValue(false)] public bool Exists { get; set; } = false;
+
         [DefaultValue(DieProcessState.None)] public DieProcessState State { get; set; } = DieProcessState.None;
         [DefaultValue(true)] public bool IsPass { get; set; } = true;
         [DefaultValue("")] public string RejectReason { get; set; } = "";

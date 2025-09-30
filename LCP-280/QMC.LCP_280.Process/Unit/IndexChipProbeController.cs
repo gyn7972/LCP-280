@@ -1222,12 +1222,12 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsTopRequired()
         {
             //Todo: Recipe Data로 사용해야함.
-            return Config.ContectMode;
+            return Config.ContectTopMode;
         }
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
-            this.SequencePlayers.Add(ContactReady);
+            this.SequencePlayers.Add(RunInspectionReady);
             this.SequencePlayers.Add(RunInspection);
             
             //this.SequencePlayers.Add(b => (IsBottomRequired() ? BottomContactOnce(b) : TopContact(b)));
@@ -1238,7 +1238,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         #region Seq 단위 동작 함수
 
-        public int ContactReady(bool bFineSpeed = false)
+        public int RunInspectionReady(bool bFineSpeed = false)
         {
             int nRet = -1;
 
@@ -1262,7 +1262,14 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            //nRet = MovePositionSphereZReady();
+            // 적분구 공정 위치.
+            nRet = MovePositionSphereZDown();
+            if (nRet != 0)
+            {
+                return -1;
+            }
+
+            // 하부 Z-Axis.
             nRet = MovePositionSafetyZ();
             if (nRet != 0)
             {
@@ -1287,14 +1294,32 @@ namespace QMC.LCP_280.Process.Unit
             this.CurrentFunc = RunInspection;
             LogSequence("Start");
 
-            if(IsTopRequired())
+            MaterialDie die =  this.Rotary.GetProbeSocketMaterial();
+            int nIndex = this.GetProbeIndexNo();
+            bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
+            
+            if (bUseSocket == false)
+            {
+                Log.Write(UnitName, "[RunInspection] Socket not used. Skip inspection.");
+                return 0;
+            }
+
+            if (die == null)
+            {
+                return 0;
+            }
+            if (die.Presence != Material.MaterialPresence.Exist)
+            {
+                return 0;
+            }
+
+            if (IsTopRequired())
             {
                 nRet = TopContactAndMeasureOnce(bFineSpeed);
                 if (nRet != 0)
                 {
                     return -1;
                 }
-                CompleteProbe = true;
             }
             else
             {
@@ -1303,9 +1328,22 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
-                CompleteProbe = true;
+            }
+            if(IsAxisProbeCardZSafetyPos() == false)
+            {
+                Log.Write(UnitName, "[RunInspection] ProbeCardZ not in SafetyPos");
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
             }
 
+            if (IsAxisProbeZSafetyPos() == false)
+            {
+                Log.Write(UnitName, "[RunInspection] ProbeZ not in SafetyPos");
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                return -1;
+            }
+
+            die.State = DieProcessState.Inspected;
             LogSequence("End");
             return nRet; 
         }
@@ -1317,7 +1355,6 @@ namespace QMC.LCP_280.Process.Unit
             int nIndex = GetProbeIndexNo();
             try
             {
-                
                 this.CurrentFunc = TopContactAndMeasureOnce;
                 LogSequence("Start");
 
@@ -1335,6 +1372,7 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = MovePositionSphereZDown(); //실제로는 다운임.
                 if (nRet != 0)
                 {
+                    Log.Write(UnitName, "[TopContactOnce] MovePositionSphereZDown failed");
                     return -1;
                 }
 
@@ -1366,9 +1404,11 @@ namespace QMC.LCP_280.Process.Unit
             finally
             {
                 // 9) Ready Z축 하강
-                nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
+                //nRet = OnMovePositionTopContact_Index_ReadyZ(nIndex, bFineSpeed);
+                nRet = MovePositionSafetyZ();
                 if (nRet != 0)
                 {
+                    Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
                     nRet = -1;
                 }
                 LogSequence("End");
@@ -1418,6 +1458,7 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = MovePositionSphereZDown(); //실제로는 다운임.
                 if (nRet != 0)
                 {
+                    Log.Write(UnitName, "[BottomContactOnce] MovePositionSphereZDown failed");
                     return -1;
                 }
 
@@ -1442,7 +1483,7 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = ContactInspectionWait();
                 if (nRet != 0)
                 {
-
+                    Log.Write(UnitName, "[BottomContactOnce] ContactInspectionWait failed");
                     return -1;
                 }
 
@@ -1450,10 +1491,11 @@ namespace QMC.LCP_280.Process.Unit
                 SetChipProberRequest(false);
 
                 // 9) Ready Z축 하강
-                nRet = OnMovePositionBottomContact_Index_ReadyZ(nIndex, bFineSpeed);
+                //nRet = OnMovePositionBottomContact_Index_ReadyZ(nIndex, bFineSpeed);
+                nRet = MovePositionSafetyZ();
                 if (nRet != 0)
                 {
-
+                    Log.Write(UnitName, "[BottomContactOnce] MovePositionSafetyZ failed");
                     return -1;
                 }
             }

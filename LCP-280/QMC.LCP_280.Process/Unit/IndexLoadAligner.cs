@@ -756,7 +756,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            nRet = AlignSocketOnceReady();
+            nRet = RunAlignSocketOnceReady();
             if(nRet != 0)
             {
                 return -1;
@@ -769,7 +769,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            nRet = AlignSocketOnce();
+            nRet = RunAlignSocketOnce();
             if (nRet != 0)
             {
                 return -1;
@@ -795,8 +795,8 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
-            this.SequencePlayers.Add(AlignSocketOnceReady);
-            this.SequencePlayers.Add(AlignSocketOnce);
+            this.SequencePlayers.Add(RunAlignSocketOnceReady);
+            this.SequencePlayers.Add(RunAlignSocketOnce);
         }
 
         #region Seq 단위 동작 함수
@@ -820,15 +820,17 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
-        public int AlignSocketOnceReady(bool bFineSpeed = false)
+        public int RunAlignSocketOnceReady(bool bFineSpeed = false)
         {
             int bRtn = 0;
-            this.CurrentFunc = AlignSocketOnceReady;
+            this.CurrentFunc = RunAlignSocketOnceReady;
             try
             {
                 LogSequence("Start");
-                this.CurrentFunc = AlignSocketOnceReady;
+                this.CurrentFunc = RunAlignSocketOnceReady;
                 int nIndex = GetAlignIndexNo();
+
+
 
                 bRtn = IsRotaryIdle();
                 if(bRtn != 0)
@@ -867,27 +869,45 @@ namespace QMC.LCP_280.Process.Unit
         /// 순서: Z Up(해당 소켓) -> T Forward -> T Backward -> T Ready
         /// 모든 축 이동은 안전 Async 버전 사용(내부 폴링).
         /// </summary>
-        public int AlignSocketOnce(bool bFineSpeed = false)
+        public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
             int bRtn = 0;
-            this.CurrentFunc = AlignSocketOnce;
+            this.CurrentFunc = RunAlignSocketOnce;
             int nIndex = GetAlignIndexNo();
+            
             try
             {
+                bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
+                if(bUseSocket == false)
+                {
+                    Log.Write(UnitName, "MAlign", "Skip: No socket at unload align position");
+                    return 0;
+                }
+                MaterialDie die = this.Rotary.GetMAlignSocketMaterial();
+                if(die == null)
+                {
+                    return 0;
+                }
+                if(die.Presence != Material.MaterialPresence.Exist)
+                {
+                    return 0;
+                }
+
+
                 bRtn = IsRotaryIdle();
                 if(bRtn != 0)
                 {
                     return 0;
                 }
+
                 //if (bRtn != 0)
                 //    return -1;
 
-                LogSequence("Start");
-                this.CurrentFunc = AlignSocketOnce;
                 
+                this.CurrentFunc = RunAlignSocketOnce;
+                LogSequence("Start");
 
-
-                // 2) T Ready
+                // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
                 bRtn &= MovePositionAlignTReady(bFineSpeed);
                 bRtn &= MovePositionAlignZReady(nIndex, bFineSpeed);
                 if (bRtn != 0)
@@ -908,7 +928,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (bRtn != 0)
                     return -1;
 
-               
+                die.State = DieProcessState.Inspecting;
 
             }
             catch (Exception ex)
@@ -920,12 +940,13 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // 6) T Ready
                 bRtn = MovePositionAlignTReady(bFineSpeed);
-                
-                // 7) Z Ready
-                bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
-                
-                CompleteLoadAligner = true;
 
+                // 7) Z Ready
+                bRtn += MovePositionAlignZReady(nIndex, bFineSpeed);
+                if(bRtn == 0)
+                {
+                    CompleteLoadAligner = true;
+                }
                 LogSequence("End");
             }
 

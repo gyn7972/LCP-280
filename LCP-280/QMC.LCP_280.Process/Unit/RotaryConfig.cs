@@ -129,26 +129,34 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(false)]
         public bool UseSocket1 { get; set; } = false;
         [Category("SocketInfo"), DisplayName("Use_Socket2")]
+        
         [DefaultValue(false)]
         public bool UseSocket2 { get; set; } = false;
         [Category("SocketInfo"), DisplayName("Use_Socket3")]
+        
         [DefaultValue(false)]
         public bool UseSocket3 { get; set; } = false;
         [Category("SocketInfo"), DisplayName("Use_Socket4")]
+        
         [DefaultValue(false)]
         public bool UseSocket4 { get; set; } = false;
         [Category("SocketInfo"), DisplayName("Use_Socket5")]
+        
         [DefaultValue(false)]
         public bool UseSocket5 { get; set; } = false;
         [Category("SocketInfo"), DisplayName("Use_Socket6")]
+        
         [DefaultValue(false)]
         public bool UseSocket6 { get; set; } = false;
         [Category("SocketInfo"), DisplayName("Use_Socket7")]
+       
         [DefaultValue(false)]
         public bool UseSocket7 { get; set; } = false;
         [Category("SocketInfo"), DisplayName("Use_Socket8")]
+        
         [DefaultValue(false)]
         public bool UseSocket8 { get; set; } = false;
+
 
 
 
@@ -172,6 +180,33 @@ namespace QMC.LCP_280.Process.Unit
             }
             ApplyAxisMapping();
             Saveconfig();
+        }
+        public bool GetUseSocket(int nIndex)
+        {
+            bool bRet = false;
+            switch (nIndex)
+            {
+                case 0:
+                    return this.UseSocket1;
+                case 1:
+                    return this.UseSocket2;
+                case 2:
+                    return this.UseSocket3;
+                case 3:
+                    return this.UseSocket4;
+                case 4:
+                    return this.UseSocket5;
+                case 5:
+                    return this.UseSocket6;
+                case 6:
+                    return this.UseSocket7;
+                case 7:
+                    return this.UseSocket8;
+                default:
+                    bRet = false;
+                    break;
+            }
+            return bRet;
         }
 
         public void SetTeachingPosition(TeachingPosition tp)
