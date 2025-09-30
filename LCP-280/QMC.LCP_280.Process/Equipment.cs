@@ -1588,7 +1588,9 @@ namespace QMC.LCP_280.Process
                         ret = lightController.Initialize();
                         if (ret != 0)
                         {
-                            MessageBox.Show($"LightController [{lightController.Name}] initialize NG.");
+                            var mb = new MessageBoxOk();
+                            var st = $"LightController [{lightController.Name}] initialize NG.";
+                            mb.ShowDialog("initialize NG", st);
                         }
                         else
                         {
@@ -1640,7 +1642,9 @@ namespace QMC.LCP_280.Process
                         ret = barcoderReader.Initialize();
                         if (ret != 0)
                         {
-                            MessageBox.Show($"BarcoderReader [{barcoderReader.Name}] initialize NG.");
+                            var mb = new MessageBoxOk();
+                            var st = $"BarcoderReader [{barcoderReader.Name}] initialize NG.";
+                            mb.ShowDialog("initialize NG", st);
                         }
                         else
                         {
@@ -1680,7 +1684,9 @@ namespace QMC.LCP_280.Process
                     ret = smu.Initialize();
                     if (ret != 0)
                     {
-                        MessageBox.Show($"Sourcemeter [{smu.Name}] initialize NG.");
+                        var mb = new MessageBoxOk();
+                        var st = $"Sourcemeter [{smu.Name}] initialize NG.";
+                        mb.ShowDialog("initialize NG", st);
                     }
                     Sourcemeters[name] = smu;
                     Console.WriteLine($"[Sourcemeter] {name} ready");
@@ -1707,7 +1713,9 @@ namespace QMC.LCP_280.Process
                     ret = spc.Initialize();
                     if (ret != 0)
                     {
-                        MessageBox.Show($"Spectrometer [{spc.Name}] initialize NG.");
+                        var mb = new MessageBoxOk();
+                        var st = $"Sourcemeter [{spc.Name}] initialize NG.";
+                        mb.ShowDialog("initialize NG", st);
                     }
                     Spectrometers[name] = spc;
                     Console.WriteLine($"[Spectrometer] {name} ready");
@@ -1745,7 +1753,9 @@ namespace QMC.LCP_280.Process
                     ret = gage.Initialize();
                     if (ret != 0)
                     {
-                        MessageBox.Show($"StrainGage [{gage.Name}] initialize NG.");
+                        var mb = new MessageBoxOk();
+                        var st = $"Sourcemeter [{gage.Name}] initialize NG.";
+                        mb.ShowDialog("initialize NG", st);
                     }
                     StrainGages[name] = gage;
                     Console.WriteLine($"[StrainGage] {name} ready");

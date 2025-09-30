@@ -619,7 +619,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             RotateCounterClockwise();
         }
 
-        private async void BtnAutoSequence_Click(object sender, EventArgs e)
+        private async void btnAutoSequence_Click(object sender, EventArgs e)
         {
             if (_isAutoSequencing) return;
 
@@ -647,7 +647,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-        private void BtnReset_Click(object sender, EventArgs e)
+        private void btnReset_Click(object sender, EventArgs e)
         {
             Reset();
         }

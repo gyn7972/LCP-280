@@ -34,14 +34,14 @@
             this.manualSequenceControl = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this._ChipUnloadingCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox1.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._ChipUnloadingCameraviewer)).BeginInit();
             this.tableLayoutPanel1.SuspendLayout();
-            this.tableLayoutPanel5.SuspendLayout();
             this.SuspendLayout();
             // 
             // dioControl
@@ -70,13 +70,13 @@
             // 
             // manualSequenceControl
             // 
-            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualSequenceControl.Location = new System.Drawing.Point(2, 20);
             this.manualSequenceControl.Margin = new System.Windows.Forms.Padding(2);
             this.manualSequenceControl.MinimumSize = new System.Drawing.Size(238, 200);
             this.manualSequenceControl.Name = "manualSequenceControl";
             this.manualSequenceControl.ParentUnit = null;
-            this.manualSequenceControl.Size = new System.Drawing.Size(372, 255);
+            this.manualSequenceControl.Size = new System.Drawing.Size(372, 349);
             this.manualSequenceControl.TabIndex = 14;
             // 
             // groupBox1
@@ -106,6 +106,20 @@
             this.groupBoxImageView.TabIndex = 18;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
+            // 
+            // tableLayoutPanel5
+            // 
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this._ChipUnloadingCameraviewer, 0, 0);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
+            this.tableLayoutPanel5.TabIndex = 1;
             // 
             // _ChipUnloadingCameraviewer
             // 
@@ -148,20 +162,6 @@
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
             this.tableLayoutPanel1.TabIndex = 19;
             // 
-            // tableLayoutPanel5
-            // 
-            this.tableLayoutPanel5.ColumnCount = 1;
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Controls.Add(this._ChipUnloadingCameraviewer, 0, 0);
-            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
-            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
-            this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
-            this.tableLayoutPanel5.TabIndex = 1;
-            // 
             // ChipUnloading_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -173,9 +173,9 @@
             this.Text = "ChipUnloading_Working";
             this.groupBox1.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._ChipUnloadingCameraviewer)).EndInit();
             this.tableLayoutPanel1.ResumeLayout(false);
-            this.tableLayoutPanel5.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

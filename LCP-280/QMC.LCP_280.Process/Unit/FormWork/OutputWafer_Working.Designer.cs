@@ -34,6 +34,7 @@
             this.manualSequenceControlCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBoxImageView = new System.Windows.Forms.GroupBox();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this._OutputWaferCameraviewer = new QMC.Common.Vision.VisionImageViewer();
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
@@ -43,16 +44,15 @@
             this.groupBoxOutputStageSeq = new System.Windows.Forms.GroupBox();
             this.manualSequenceControlOutputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox1.SuspendLayout();
             this.groupBoxImageView.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._OutputWaferCameraviewer)).BeginInit();
             this.groupBoxManual.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
             this.groupBoxOutputStageSeq.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
-            this.tableLayoutPanel5.SuspendLayout();
             this.SuspendLayout();
             // 
             // dioControl
@@ -81,24 +81,25 @@
             // 
             // manualSequenceControlCassette
             // 
-            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualSequenceControlCassette.Location = new System.Drawing.Point(2, 20);
             this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(238, 200);
             this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
             this.manualSequenceControlCassette.ParentUnit = null;
-            this.manualSequenceControlCassette.Size = new System.Drawing.Size(312, 254);
+            this.manualSequenceControlCassette.Size = new System.Drawing.Size(372, 349);
             this.manualSequenceControlCassette.TabIndex = 13;
             // 
             // groupBox1
             // 
             this.groupBox1.Controls.Add(this.manualSequenceControlCassette);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.groupBox1.Location = new System.Drawing.Point(886, 2);
             this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox1.Size = new System.Drawing.Size(316, 268);
+            this.groupBox1.Size = new System.Drawing.Size(376, 371);
             this.groupBox1.TabIndex = 16;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output Wafer Seq";
@@ -116,6 +117,20 @@
             this.groupBoxImageView.TabIndex = 22;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
+            // 
+            // tableLayoutPanel5
+            // 
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this._OutputWaferCameraviewer, 0, 0);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 2;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
+            this.tableLayoutPanel5.TabIndex = 1;
             // 
             // _OutputWaferCameraviewer
             // 
@@ -216,25 +231,26 @@
             // groupBoxOutputStageSeq
             // 
             this.groupBoxOutputStageSeq.Controls.Add(this.manualSequenceControlOutputStage);
+            this.groupBoxOutputStageSeq.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxOutputStageSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.groupBoxOutputStageSeq.Location = new System.Drawing.Point(886, 377);
             this.groupBoxOutputStageSeq.Margin = new System.Windows.Forms.Padding(2);
             this.groupBoxOutputStageSeq.Name = "groupBoxOutputStageSeq";
             this.groupBoxOutputStageSeq.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxOutputStageSeq.Size = new System.Drawing.Size(316, 268);
+            this.groupBoxOutputStageSeq.Size = new System.Drawing.Size(376, 372);
             this.groupBoxOutputStageSeq.TabIndex = 23;
             this.groupBoxOutputStageSeq.TabStop = false;
             this.groupBoxOutputStageSeq.Text = "OutputStage Manual Seq";
             // 
             // manualSequenceControlOutputStage
             // 
-            this.manualSequenceControlOutputStage.Dock = System.Windows.Forms.DockStyle.Top;
+            this.manualSequenceControlOutputStage.Dock = System.Windows.Forms.DockStyle.Fill;
             this.manualSequenceControlOutputStage.Location = new System.Drawing.Point(2, 20);
             this.manualSequenceControlOutputStage.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.manualSequenceControlOutputStage.MinimumSize = new System.Drawing.Size(238, 200);
             this.manualSequenceControlOutputStage.Name = "manualSequenceControlOutputStage";
             this.manualSequenceControlOutputStage.ParentUnit = null;
-            this.manualSequenceControlOutputStage.Size = new System.Drawing.Size(312, 253);
+            this.manualSequenceControlOutputStage.Size = new System.Drawing.Size(372, 350);
             this.manualSequenceControlOutputStage.TabIndex = 13;
             // 
             // tableLayoutPanel1
@@ -258,20 +274,6 @@
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
             this.tableLayoutPanel1.TabIndex = 24;
             // 
-            // tableLayoutPanel5
-            // 
-            this.tableLayoutPanel5.ColumnCount = 1;
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Controls.Add(this._OutputWaferCameraviewer, 0, 0);
-            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
-            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
-            this.tableLayoutPanel5.RowCount = 2;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
-            this.tableLayoutPanel5.TabIndex = 1;
-            // 
             // OutputWafer_Working
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -283,13 +285,13 @@
             this.Text = "WaferBin_Working";
             this.groupBox1.ResumeLayout(false);
             this.groupBoxImageView.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._OutputWaferCameraviewer)).EndInit();
             this.groupBoxManual.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel4.ResumeLayout(false);
             this.groupBoxOutputStageSeq.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
-            this.tableLayoutPanel5.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
