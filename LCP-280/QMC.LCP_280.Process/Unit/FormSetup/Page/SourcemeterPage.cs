@@ -213,14 +213,18 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                     pcvConfig.Apply();
 
                     selectSourcemeter.Config.ApplyValueFromPropertyCollection(pcConfig);
-                    if (selectSourcemeter.Config.Save() == 0)
-                    {
-                        MessageBox.Show($"The settings for [{selectSourcemeter.Name}] have been successfully saved.");
-                    }
-                    else
+                    if (selectSourcemeter.Config.Save() != 0)
                     {
                         MessageBox.Show($"Failed to save the settings of [{selectSourcemeter.Name}].");
+                        return;
                     }
+                    if (selectSourcemeter.ApplyConfig() != 0)
+                    {
+                        MessageBox.Show($"Failed to apply the settings of [{selectSourcemeter.Name}].");
+                        return;
+                    }
+
+                    MessageBox.Show($"The settings for [{selectSourcemeter.Name}] have been successfully save and apply.");
                 }
             }
             catch (Exception ex)

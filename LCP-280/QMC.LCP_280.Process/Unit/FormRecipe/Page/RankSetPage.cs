@@ -253,8 +253,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         {
             using (OpenFileDialog dialog = new OpenFileDialog())
             {
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BinningSpecSheet");
                 dialog.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
                 dialog.Title = "Open Binning Spec Sheet";
+
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
                     var filePath = dialog.FileName;
@@ -286,8 +288,10 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
         {
             using (SaveFileDialog dialog = new SaveFileDialog())
             {
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BinningSpecSheet");
                 dialog.Filter = "Binning Spec Sheet (*.csv)|*.csv|All Files (*.*)|*.*";
                 dialog.Title = "Save Binning Spec Sheet";
+
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
                     var filePath = dialog.FileName;

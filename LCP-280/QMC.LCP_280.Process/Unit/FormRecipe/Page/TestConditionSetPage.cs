@@ -142,21 +142,28 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             case TestItemCategory.Electrical:
                                 {
-                                    object value = pd.GetValue(item);
-
-                                    if (value is Array arr && !(value is string))
+                                    if (pd.Name.Contains("Expression"))
                                     {
-                                        row.Cells[pd.Name].Value = "[values]";
+                                        row.Cells[pd.Name].Value = "-";
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
-                                    }
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            row.Cells[pd.Name].Value = "[values]";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
+                                    }   
                                 }
                                 break;
                             case TestItemCategory.Optical:
                                 {
-                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure"))
+                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure") || pd.Name.Contains("Expression"))
                                     {
                                         row.Cells[pd.Name].Value = "-";
                                     }

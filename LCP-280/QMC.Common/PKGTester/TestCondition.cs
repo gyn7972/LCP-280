@@ -1,19 +1,21 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.ComponentModel;
-using Newtonsoft.Json.Converters;
 using System.Text.RegularExpressions;
-using System.Data;
+using System.Threading.Tasks;
 
 namespace QMC.Common.PKGTester
 {
-    public class TestConditionItem : BaseConfig
+    public class TestConditionItem// : BaseConfig
     {
         #region Properties
         // Defines
+        public string Name { get; set; }
         public TestItemType Type { get; set; }
 
         // Source
@@ -35,13 +37,15 @@ namespace QMC.Common.PKGTester
         #endregion
 
         #region Constructor
-        public TestConditionItem(string name) : base(name)
+        public TestConditionItem(string name)// : base(name)
         {
+            Name = name;
+            Reset();
         }
         #endregion
 
         #region Methods
-        public override void Reset()
+        public /*override*/ void Reset()
         {
             Type = TestItemType.None;
             SourceValue = 0;
@@ -59,7 +63,7 @@ namespace QMC.Common.PKGTester
                 Offset[i] = 0;
             }
         }
-        public override bool Validate()
+        public /*override*/ bool Validate()
         {
             if (string.IsNullOrWhiteSpace(Name))
                 return false;
@@ -96,7 +100,7 @@ namespace QMC.Common.PKGTester
             }
             return true;
         }
-        public override PropertyCollection GetPropertyCollection()
+        public /*override*/ PropertyCollection GetPropertyCollection()
         {
             PropertyCollection pc = new PropertyCollection();
             
@@ -177,7 +181,7 @@ namespace QMC.Common.PKGTester
             }
             return pc;
         }
-        public override int ApplyValueFromPropertyCollection(PropertyCollection pc)
+        public /*override*/ int ApplyValueFromPropertyCollection(PropertyCollection pc)
         {
             if (pc == null)
                 return -1;
@@ -246,6 +250,12 @@ namespace QMC.Common.PKGTester
                 return -1;
             }
             return 0;
+        }
+        public TestConditionItem Clone()
+        {
+            TestConditionItem clone = new TestConditionItem(this.Name);
+            clone.ApplyValueFromPropertyCollection(this.GetPropertyCollection());
+            return clone;
         }
         public TestItemCategory GetTestItemCategory()
         {

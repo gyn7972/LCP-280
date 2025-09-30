@@ -194,14 +194,18 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                     pcvConfig.Apply();
 
                     selectSpectrometer.Config.ApplyValueFromPropertyCollection(pcConfig);
-                    if (selectSpectrometer.Config.Save() == 0)
-                    {
-                        MessageBox.Show($"The settings for [{selectSpectrometer.Name}] have been successfully saved.");
-                    }
-                    else
+                    if (selectSpectrometer.Config.Save() != 0)
                     {
                         MessageBox.Show($"Failed to save the settings of [{selectSpectrometer.Name}].");
+                        return;
                     }
+                    if (selectSpectrometer.ApplyParameterAndMeasureDarkCurrent() != 0)
+                    {
+                        MessageBox.Show($"Failed to apply the settings to the device of [{selectSpectrometer.Name}].");
+                        return;
+                    }
+
+                    MessageBox.Show($"The settings for [{selectSpectrometer.Name}] have been successfully save and apply.");
                 }
             }
             catch (Exception ex)
