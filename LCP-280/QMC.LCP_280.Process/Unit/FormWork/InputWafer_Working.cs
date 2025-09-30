@@ -254,28 +254,17 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 
                 if (InputCassetteLifter != null)
                 {
-                    // InputFeeder, InputStage 시컨스 등록시 InputCassetteLifter를통하여 등록.
-                    // 순차적으로 시컨스 진행 형태로.
-                    // 완전 Manual Mode는 따로 등록해서 Test 하자.
-
-                    // 완전 Manual Mode.
-                    // InputStage Align, Mapping은 따로 등록해서 Test 하자.
-                    manualSequenceControlCassette.ParentUnit = InputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
-                    
-
-                    manualSequenceControlInputCassette.ParentUnit = InputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
-
+                    manualSequenceControlInputCassette.ParentUnit = InputCassetteLifter;
                 }
 
                 if (InputFeeder != null)
                 {
-                    //manualSequenceControlInputStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
-                    manualSequenceControlInputFeeder.ParentUnit = InputFeeder; // 시퀀스 등록 대상 유닛 지정
+                    //manualSequenceControlInputWafer.ParentUnit = InputFeeder; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlInputFeeder.ParentUnit = InputFeeder;
                 }
 
                 if (InputStage != null)
                 {
-                    //manualSequenceControlInputStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
                     manualSequenceControlInputWaferStage.ParentUnit = InputStage; // 시퀀스 등록 대상 유닛 지정
                 }
             }

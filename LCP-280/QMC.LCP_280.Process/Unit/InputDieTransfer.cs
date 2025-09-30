@@ -1313,29 +1313,34 @@ namespace QMC.LCP_280.Process.Unit
             nRet = RaiseEjectorForPick();
             if (nRet != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] RaiseEjectorForPick failed");
                 return -1;
             }
 
             nRet = ChipPickDown();
             if (nRet != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                 return -1;
             }
 
             nRet = EjectorVacuumOn();
             if (nRet != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
                 return -1;
             }
 
             nRet = SyncPickPinUp();
             if (nRet != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] SyncPickPinUp failed");
                 return -1;
             }
             nRet = SyncPickPinRetreat();
             if (nRet != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] SyncPickPinRetreat failed");
                 return -1;
             }
             die.State = DieProcessState.Picked;
@@ -1345,6 +1350,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = RotateToolTForPlace();
             if (nRet != 0)
             {
+                Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace failed");
                 return -1;
             }
             State = ProcessState.Complete;

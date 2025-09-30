@@ -87,13 +87,16 @@ namespace QMC.Common
         {
             //var prop = _properties.FirstOrDefault(p => p.Title == title);
             PropertyBase prop = null;
+
+            
+            title = RemoveUint(title);
+
             foreach (var p in _properties)
             {
                 if (p != null)
                 {
                     string propTitle = p.Title;
-                    int idx = propTitle.IndexOf(" (");
-                    string compareTitle = idx > 0 ? propTitle.Substring(0, idx) : propTitle;
+                    string compareTitle = RemoveUint(propTitle);
 
                     // TitleOnlyProperty´Â Á¦¿Ü
                     if (p is TitleOnlyProperty)
@@ -194,6 +197,13 @@ namespace QMC.Common
             {
                 throw new NotSupportedException($"Type '{type.Name}' is not supported.");
             }
+        }
+
+        private static string RemoveUint(string propTitle)
+        {
+            int idx = propTitle.IndexOf(" (");
+            string compareTitle = idx > 0 ? propTitle.Substring(0, idx) : propTitle;
+            return compareTitle;
         }
 
         public PropertyBase this[int index]

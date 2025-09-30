@@ -34,6 +34,7 @@
             this.btnCancel = new System.Windows.Forms.Button();
             this.gbTeachingMove = new System.Windows.Forms.GroupBox();
             this.moveTable = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.gbMoveMode = new System.Windows.Forms.GroupBox();
             this.rdoCoarse = new System.Windows.Forms.RadioButton();
             this.rdoFine = new System.Windows.Forms.RadioButton();
@@ -45,6 +46,7 @@
             this.flowButtonsPanel.SuspendLayout();
             this.gbTeachingMove.SuspendLayout();
             this.moveTable.SuspendLayout();
+            this.tableLayoutPanel1.SuspendLayout();
             this.gbMoveMode.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -125,10 +127,12 @@
             // positionEditorView
             // 
             this.positionEditorView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionEditorView.FastBuild = true;
             this.positionEditorView.GroupName = "Editor";
             this.positionEditorView.Location = new System.Drawing.Point(0, 0);
             this.positionEditorView.Name = "positionEditorView";
             this.positionEditorView.Size = new System.Drawing.Size(284, 144);
+            this.positionEditorView.SuppressResizeInvalidation = true;
             this.positionEditorView.TabIndex = 0;
             // 
             // flowButtonsPanel
@@ -177,10 +181,9 @@
             // moveTable
             // 
             this.moveTable.ColumnCount = 2;
-            this.moveTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
-            this.moveTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.moveTable.Controls.Add(this.gbMoveMode, 0, 0);
-            this.moveTable.Controls.Add(this.btnMovePosition, 1, 0);
+            this.moveTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.moveTable.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.moveTable.Controls.Add(this.tableLayoutPanel1, 0, 0);
             this.moveTable.Dock = System.Windows.Forms.DockStyle.Fill;
             this.moveTable.Location = new System.Drawing.Point(3, 21);
             this.moveTable.Name = "moveTable";
@@ -188,6 +191,21 @@
             this.moveTable.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.moveTable.Size = new System.Drawing.Size(278, 93);
             this.moveTable.TabIndex = 0;
+            // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 1;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Controls.Add(this.gbMoveMode, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.btnMovePosition, 0, 1);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 2;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 60F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(216, 87);
+            this.tableLayoutPanel1.TabIndex = 1;
             // 
             // gbMoveMode
             // 
@@ -197,7 +215,7 @@
             this.gbMoveMode.Font = new System.Drawing.Font("맑은 고딕", 9F);
             this.gbMoveMode.Location = new System.Drawing.Point(3, 3);
             this.gbMoveMode.Name = "gbMoveMode";
-            this.gbMoveMode.Size = new System.Drawing.Size(160, 87);
+            this.gbMoveMode.Size = new System.Drawing.Size(210, 46);
             this.gbMoveMode.TabIndex = 0;
             this.gbMoveMode.TabStop = false;
             this.gbMoveMode.Text = "Move Mode";
@@ -235,9 +253,9 @@
             this.btnMovePosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnMovePosition.ForeColor = System.Drawing.Color.Black;
             this.btnMovePosition.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMovePosition.Location = new System.Drawing.Point(169, 3);
+            this.btnMovePosition.Location = new System.Drawing.Point(3, 55);
             this.btnMovePosition.Name = "btnMovePosition";
-            this.btnMovePosition.Size = new System.Drawing.Size(106, 87);
+            this.btnMovePosition.Size = new System.Drawing.Size(210, 29);
             this.btnMovePosition.TabIndex = 1;
             this.btnMovePosition.TabStop = false;
             this.btnMovePosition.Text = "Move\r\nPosition";
@@ -257,6 +275,7 @@
             this.flowButtonsPanel.ResumeLayout(false);
             this.gbTeachingMove.ResumeLayout(false);
             this.moveTable.ResumeLayout(false);
+            this.tableLayoutPanel1.ResumeLayout(false);
             this.gbMoveMode.ResumeLayout(false);
             this.gbMoveMode.PerformLayout();
             this.ResumeLayout(false);
@@ -279,5 +298,6 @@
         private System.Windows.Forms.RadioButton rdoCoarse;
         private System.Windows.Forms.RadioButton rdoFine;
         private QMC.Common.IndividualMenuButton btnMovePosition;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
     }
 }
