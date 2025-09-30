@@ -2550,6 +2550,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
+            if(die.Exists == false)
+            {
+                return -1;
+            }
             nRet = MoveStage(die.CenterX, die.CenterY, false);
             return nRet;
         }
@@ -2562,12 +2566,30 @@ namespace QMC.LCP_280.Process.Unit
                 var wafer = GetMaterialWafer();
                 if (wafer == null)
                     return null;
-                if (wafer.Presence == Material.MaterialPresence.Exist)
+                lock(wafer)
                 {
-                    if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                    if (wafer.Presence == Material.MaterialPresence.Exist)
                     {
-                        die = wafer.Dies.Where(t => t.Presence == Material.MaterialPresence.Exist 
-                        && t.State == DieProcessState.Mapped).OrderBy(t => t.Index).FirstOrDefault();
+                        if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                        {
+                            if(wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
+                            {
+                                var v = wafer.Dies.Where(t => t.Presence == Material.MaterialPresence.Exist
+                                && t.State == DieProcessState.Mapped).OrderBy(t => t.Index);
+                                if(v.Count() > 0)
+                                {
+                                    die = v.FirstOrDefault();
+                                }
+                                else
+                                {
+                                    wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
+                                    return null;
+                                }
+                                
+
+                            }
+                            
+                        }
                     }
                 }
             }
@@ -2576,8 +2598,6 @@ namespace QMC.LCP_280.Process.Unit
                 die = null;
             }
             return die;
-
-
         }
 
 

@@ -1228,7 +1228,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.OnMakeSequence();
             this.SequencePlayers.Add(ContactReady);
-            this.SequencePlayers.Add(ContactBottomOrTop);
+            this.SequencePlayers.Add(RunInspection);
             
             //this.SequencePlayers.Add(b => (IsBottomRequired() ? BottomContactOnce(b) : TopContact(b)));
             //this.SequencePlayers.Add(ContactBottomOrTop);
@@ -1281,15 +1281,15 @@ namespace QMC.LCP_280.Process.Unit
         ///    4) 둘 다 실패하면 마지막 실패 코드 반환
         ///  - 필요 시 모드(Top/Bottom/Auto) 확장 가능
         /// </summary>
-        public int ContactBottomOrTop(bool bFineSpeed = false)
+        public int RunInspection(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = ContactBottomOrTop;
+            this.CurrentFunc = RunInspection;
             LogSequence("Start");
 
             if(IsTopRequired())
             {
-                nRet = TopContactOnce(bFineSpeed);
+                nRet = TopContactAndMeasureOnce(bFineSpeed);
                 if (nRet != 0)
                 {
                     return -1;
@@ -1298,7 +1298,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                nRet = BottomContactOnce(bFineSpeed);
+                nRet = BottomContactAndMeasureOnce(bFineSpeed);
                 if (nRet != 0)
                 {
                     return -1;
@@ -1310,16 +1310,16 @@ namespace QMC.LCP_280.Process.Unit
             return nRet; 
         }
 
-        public int TopContactOnce(bool bFineSpeed = false)
+        public int TopContactAndMeasureOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
 
             int nIndex = GetProbeIndexNo();
             try
             {
+                
+                this.CurrentFunc = TopContactAndMeasureOnce;
                 LogSequence("Start");
-                this.CurrentFunc = TopContactOnce;
-
 
                 nRet = IsRotaryIdle();
                 if (nRet != 0)
@@ -1392,7 +1392,7 @@ namespace QMC.LCP_280.Process.Unit
         ///  9) ProbeCard Ready Z축 하강
         ///  10) 완료
         /// </summary>
-        public int BottomContactOnce(bool bFineSpeed = false)
+        public int BottomContactAndMeasureOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
 
@@ -1400,7 +1400,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 
                 LogSequence("Start");
-                this.CurrentFunc = BottomContactOnce;
+                this.CurrentFunc = BottomContactAndMeasureOnce;
 
                 int nIndex = GetProbeIndexNo();
 
