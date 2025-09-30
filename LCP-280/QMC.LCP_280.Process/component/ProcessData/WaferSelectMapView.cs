@@ -64,13 +64,8 @@ namespace QMC.LCP_280.Process.Component
         {
             InitializeComponent();
 
-            // 고성능 / 깜빡임 최소화 스타일 (기존 유지)
-            SetStyle(ControlStyles.UserPaint |
-                     ControlStyles.AllPaintingInWmPaint |
-                     ControlStyles.OptimizedDoubleBuffer |
-                     ControlStyles.ResizeRedraw,
-                     true);
-            UpdateStyles();
+            // 더블 버퍼링 설정 강화
+            SetupDoubleBuffering();
 
             // 툴팁 초기화
             InitializeToolTip();
@@ -87,7 +82,35 @@ namespace QMC.LCP_280.Process.Component
                 pWaferImage.MouseClick += WaferImage_MouseClick;
                 pWaferImage.MouseMove += WaferImage_MouseMove;
                 pWaferImage.MouseLeave += WaferImage_MouseLeave;
+
+                // pWaferImage 패널의 더블 버퍼링 활성화
+                EnablePanelDoubleBuffering(pWaferImage);
             }
+        }
+
+        // 더블 버퍼링 설정 메서드
+        private void SetupDoubleBuffering()
+        {
+            // UserControl 자체의 더블 버퍼링
+            this.DoubleBuffered = true;
+            this.SetStyle(ControlStyles.UserPaint |
+                         ControlStyles.AllPaintingInWmPaint |
+                         ControlStyles.OptimizedDoubleBuffer |
+                         ControlStyles.ResizeRedraw,
+                         true);
+            this.UpdateStyles();
+        }
+
+        // Panel의 더블 버퍼링 활성화
+        private void EnablePanelDoubleBuffering(Control control)
+        {
+            if (control == null) return;
+
+            typeof(Control).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.SetProperty |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic,
+                null, control, new object[] { true });
         }
 
         private void InitializeTestButtons()
@@ -101,6 +124,9 @@ namespace QMC.LCP_280.Process.Component
                 BackColor = Color.FromArgb(248, 249, 250),
                 Padding = new Padding(5)
             };
+
+            // 우측 패널도 더블 버퍼링 활성화
+            EnablePanelDoubleBuffering(rightPanel);
 
             int yPos = 10;
             int buttonHeight = 25;
@@ -326,8 +352,10 @@ namespace QMC.LCP_280.Process.Component
                 try { BeginInvoke((Action)SafeInvalidate); } catch { }
                 return;
             }
+
             if (pWaferImage != null) pWaferImage.Invalidate();
-            Invalidate(); // 부모도 함께
+            // 부모 Invalidate 제거 - 불필요한 이중 렌더링 방지
+            // Invalidate();
         }
 
         #endregion
@@ -361,6 +389,7 @@ namespace QMC.LCP_280.Process.Component
                 {
                     _toolTip.Hide(pWaferImage);
                 }
+                // 호버 시 Invalidate 제거 - 툴팁만 표시
             }
         }
 
@@ -369,6 +398,7 @@ namespace QMC.LCP_280.Process.Component
             _hoveredSlot = -1;
             _toolTip.Hide(pWaferImage);
             _hoverTimer.Stop();
+            // Invalidate 제거
         }
 
         /// <summary>마우스 위치에서 슬롯 번호 계산 (아래부터 1번)</summary>
@@ -682,15 +712,17 @@ namespace QMC.LCP_280.Process.Component
             var selectedSlots = GetSelectedSlots();
             var selectedInOrder = GetSelectedSlotsInOrder();
 
-            lblSelectedCountValue.Text = selectedSlots.Count.ToString();
-            
+            // 값이 실제로 변경될 때만 업데이트
+            string countText = selectedSlots.Count.ToString();
+            if (lblSelectedCountValue.Text != countText)
+            {
+                lblSelectedCountValue.Text = countText;
+            }
 
-            if(_nextSelectionNumber > _materialCassette.SlotCount)
+            string nextOrderText = _nextSelectionNumber > _materialCassette.SlotCount ? "1" : _nextSelectionNumber.ToString();
+            if (lblNextOrderValue.Text != nextOrderText)
             {
-                lblNextOrderValue.Text = "1";
-            } else
-            {
-                lblNextOrderValue.Text = (_nextSelectionNumber).ToString();
+                lblNextOrderValue.Text = nextOrderText;
             }
 
             // 선택된 슬롯 목록 업데이트
