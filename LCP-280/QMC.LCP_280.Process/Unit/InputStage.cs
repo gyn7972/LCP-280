@@ -2023,8 +2023,6 @@ namespace QMC.LCP_280.Process.Unit
                 if (dChipPitchX <= 0) dChipPitchX = 0.5;
                 if (dChipPitchY <= 0) dChipPitchY = 0.5;
 
-
-
                 dRoiWidth -= dChipPitchX * 2;
                 dRoiHeight -= dChipPitchY * 2;
                 int nHorzCount = (int)((dRadius - dChipPitchX) * 2 / dRoiWidth) + 1;

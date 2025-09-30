@@ -1145,7 +1145,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Seq 단위 동작 함수
-        public int MoveOutStage(bool bFineSpeed = false)
+        public int MoveOutStage(bool bFineSpeed = false) 
         {
             int nRet = 0;
             this.CurrentFunc = MoveOutStage;
@@ -1219,8 +1219,7 @@ namespace QMC.LCP_280.Process.Unit
                         PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
                         Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
                         return -1;
-                    }
-                    
+                    }   
                 }
 
                 if(!Rotary.SetBlow(nIndex, true))

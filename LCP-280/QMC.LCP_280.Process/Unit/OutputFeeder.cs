@@ -771,7 +771,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 this.MoveMaterial(new MaterialWafer(), OutputStage);
 
-                nRet = MoveToReay();
+                nRet = MoveToReady();
                 if (nRet != 0)
                 {
                     AxisFeederY.EmgStop();
@@ -795,7 +795,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                nRet = MoveToReay();
+                nRet = MoveToReady();
                 if (nRet != 0)
                 {
                     AxisFeederY.EmgStop();
@@ -909,7 +909,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            nRet = MoveToReay(isFine);
+            nRet = MoveToReady(isFine);
             if (nRet != 0)
             {
                 Log.Write(this, "MoveToReay Failed");
@@ -1089,7 +1089,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRet;
         }
-        public int MoveToReay(bool isFine = false)
+        public int MoveToReady(bool isFine = false)
         {
             int nRet = 0;
 

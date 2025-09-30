@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Controls;
+using QMC.Common.Unit;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -13,9 +14,18 @@ namespace QMC.LCP_280.Process.Unit.FormMain
     public partial class Operator_Main : Form
     {
         // Units
+        //private InputCassetteLifter InputCassetteLifter { get; set; }
+        private InputFeeder InputFeeder { get; set; }
         private InputStage InputStage { get; set; }
+        private InputDieTransfer InputDieTransfer { get; set; }
+        private Rotary Rotary { get; set; }
+        //private IndexLoadAligner IndexLoadAligner { get; set; }
+        //private IndexChipProbeController IndexChipProbeController { get; set; }
         private IndexUnloadAligner IndexUnloadAligner { get; set; }
+        private OutputDieTransfer OutputDieTransfer { get; set; }
         private OutputStage OutputStage { get; set; }
+        private OutputFeeder OutputFeeder{ get; set; }
+        //private OutputCassetteLifter OutputCassetteLifter { get; set; }
 
         // State
         private bool _initialized;
@@ -32,16 +42,28 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private HashSet<string> _startSequences;
 
         public Operator_Main() : this(
+            TryGetUnit<InputFeeder>("InputFeeder"),
+            TryGetUnit<InputDieTransfer>("InputDieTransfer"),
+            TryGetUnit<Rotary>("Rotary"),
+            TryGetUnit<OutputDieTransfer>("OutputDieTransfer"),
+            TryGetUnit<OutputFeeder>("OutputFeeder"),
             TryGetUnit<InputStage>("InputStage"),
             TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner"),
-            TryGetUnit<OutputStage>("OutputStage"))
+            TryGetUnit<OutputStage>("OutputStage")  )
         {
         }
 
-        public Operator_Main(InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage)
+        public Operator_Main(InputFeeder inputFeeder, InputDieTransfer inputDieTransfer, Rotary rotary,
+                            OutputDieTransfer outputDieTransfer, OutputFeeder outputFeeder,
+                            InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage)
         {
             InitializeComponent();
 
+            InputFeeder = inputFeeder;
+            InputDieTransfer = inputDieTransfer;
+            Rotary = rotary;
+            OutputDieTransfer = outputDieTransfer;
+            OutputFeeder = outputFeeder;
             InputStage = inputStage;
             IndexUnloadAligner = indexUnloadAligner;
             OutputStage = outputStage;
@@ -363,21 +385,67 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-        private void HandleInputWafer(string action)
+        private async void HandleInputWafer(string action)
         {
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "InputWafer Ready 위치로 이동");
                 // 실제: InputStage?.MoveToReadyPosition();
+                //InputFeeder.
+
+
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "InputWafer 시퀀스 실행");
-                // 실제: InputStage?.ExecuteInputSequence();
+                if (InputFeeder == null)
+                    return;
+
+                try
+                {
+                    var eq = Equipment.Instance;
+                    if (eq == null)
+                    {
+                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var unitName = InputFeeder.UnitName;
+                    if (string.IsNullOrEmpty(unitName))
+                    {
+                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
+                    if (InputFeeder.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    Cursor prev = Cursor.Current;
+                    Cursor.Current = Cursors.WaitCursor;
+
+                    bool ok = await eq.StartUnitAsync(unitName);
+                    if (!ok)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    Cursor.Current = prev;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 
-        private void HandleChipLoading(string action)
+        private async void HandleChipLoading(string action)
         {
             if (action == "Ready")
             {
@@ -386,10 +454,54 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "ChipLoading Start");
+                if (InputDieTransfer == null)
+                    return;
+
+                try
+                {
+                    var eq = Equipment.Instance;
+                    if (eq == null)
+                    {
+                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var unitName = InputDieTransfer.UnitName;
+                    if (string.IsNullOrEmpty(unitName))
+                    {
+                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
+                    if (InputDieTransfer.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    Cursor prev = Cursor.Current;
+                    Cursor.Current = Cursors.WaitCursor;
+
+                    bool ok = await eq.StartUnitAsync(unitName);
+                    if (!ok)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    Cursor.Current = prev;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 
-        private void HandleProcess(string action)
+        private async void HandleProcess(string action)
         {
             if (action == "Ready")
             {
@@ -398,10 +510,54 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "Process Start");
+                if (Rotary == null)
+                    return;
+
+                try
+                {
+                    var eq = Equipment.Instance;
+                    if (eq == null)
+                    {
+                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var unitName = Rotary.UnitName;
+                    if (string.IsNullOrEmpty(unitName))
+                    {
+                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
+                    if (Rotary.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    Cursor prev = Cursor.Current;
+                    Cursor.Current = Cursors.WaitCursor;
+
+                    bool ok = await eq.StartUnitAsync(unitName);
+                    if (!ok)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    Cursor.Current = prev;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 
-        private void HandleChipUnloading(string action)
+        private async void HandleChipUnloading(string action)
         {
             if (action == "Ready")
             {
@@ -410,10 +566,54 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "ChipUnloading Start");
+                if (OutputDieTransfer == null)
+                    return;
+
+                try
+                {
+                    var eq = Equipment.Instance;
+                    if (eq == null)
+                    {
+                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var unitName = OutputDieTransfer.UnitName;
+                    if (string.IsNullOrEmpty(unitName))
+                    {
+                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
+                    if (OutputDieTransfer.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    Cursor prev = Cursor.Current;
+                    Cursor.Current = Cursors.WaitCursor;
+
+                    bool ok = await eq.StartUnitAsync(unitName);
+                    if (!ok)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    Cursor.Current = prev;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 
-        private void HandleOutputWafer(string action)
+        private async void HandleOutputWafer(string action)
         {
             if (action == "Ready")
             {
@@ -423,7 +623,50 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "OutputWafer 시퀀스 실행");
-                // 실제: OutputStage?.ExecuteOutputSequence();
+                if (OutputFeeder == null)
+                    return;
+
+                try
+                {
+                    var eq = Equipment.Instance;
+                    if (eq == null)
+                    {
+                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    var unitName = OutputFeeder.UnitName;
+                    if (string.IsNullOrEmpty(unitName))
+                    {
+                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
+                    if (OutputFeeder.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    Cursor prev = Cursor.Current;
+                    Cursor.Current = Cursors.WaitCursor;
+
+                    bool ok = await eq.StartUnitAsync(unitName);
+                    if (!ok)
+                    {
+                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    Cursor.Current = prev;
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
             }
         }
 

@@ -165,8 +165,24 @@ namespace QMC.LCP_280.Process.Unit
             return false;
         }
 
-        public bool IsCassettePresent0() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
-        public bool IsCassettePresent1() => ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        public bool IsCassettePresent0()
+        {
+            if(Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+        }
+        public bool IsCassettePresent1()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+        }
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
         public bool RingJut() => !ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);

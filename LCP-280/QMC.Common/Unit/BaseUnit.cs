@@ -176,7 +176,8 @@ namespace QMC.Common.Unit
         protected virtual void InitAlarm()
         {
             // 원래 코드 구조 유지 (AlarmPost가 먼저 호출되는 구조 그대로 둠)
-            AlarmRegister(PostAlarm((int)AlarmKeys.ePrepareFailed), "PrepareFialed", "PrepareFialed", "Error");
+            //AlarmRegister(PostAlarm((int)AlarmKeys.ePrepareFailed), "PrepareFialed", "PrepareFialed", "Error");
+            //AlarmRegister((int)AlarmKeys.ePrepareFailed, "PrepareFialed", "PrepareFialed", "Error");
         }
 
         protected void AlarmRegister(int alarmCode, string title, string cause, string grade)
