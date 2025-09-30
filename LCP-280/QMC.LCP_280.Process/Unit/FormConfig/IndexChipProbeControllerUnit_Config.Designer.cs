@@ -13,7 +13,6 @@ namespace QMC.LCP_280.Process.Unit
         private IOPropertyCollectionView outputView;
         private TableLayoutPanel positionTableLayoutPanel;
         private GroupBox gbTeachingMove;
-        private IndividualMenuButton btnMovePosition;
         private RadioButtonView rbTeachingMoveMode;
         private Panel editorPanel;
         private PropertyCollectionView positionEditorView;
@@ -45,7 +44,6 @@ namespace QMC.LCP_280.Process.Unit
             this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
             this.positionTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.gbTeachingMove = new System.Windows.Forms.GroupBox();
-            this.btnMovePosition = new QMC.Common.IndividualMenuButton();
             this.rbTeachingMoveMode = new QMC.Common.RadioButtonView();
             this.editorPanel = new System.Windows.Forms.Panel();
             this.positionEditorView = new QMC.Common.PropertyCollectionView();
@@ -60,8 +58,9 @@ namespace QMC.LCP_280.Process.Unit
             this.jogControl = new QMC.LCP_280.Process.Unit.JogControl();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.positionItemPanel = new System.Windows.Forms.Panel();
             this.unitConfigControl = new QMC.LCP_280.Process.Component.UnitConfig();
+            this.positionItemPanel = new System.Windows.Forms.Panel();
+            this.btnMovePosition = new QMC.Common.IndividualMenuButton();
             this.gbPositionTeaching.SuspendLayout();
             this.positionTableLayoutPanel.SuspendLayout();
             this.gbTeachingMove.SuspendLayout();
@@ -116,30 +115,11 @@ namespace QMC.LCP_280.Process.Unit
             this.gbTeachingMove.TabStop = false;
             this.gbTeachingMove.Text = "Teaching Move";
             // 
-            // btnMovePosition
-            // 
-            this.btnMovePosition.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnMovePosition.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnMovePosition.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnMovePosition.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnMovePosition.CustomForeColor = System.Drawing.Color.Black;
-            this.btnMovePosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnMovePosition.ForeColor = System.Drawing.Color.Black;
-            this.btnMovePosition.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMovePosition.Location = new System.Drawing.Point(242, 34);
-            this.btnMovePosition.Name = "btnMovePosition";
-            this.btnMovePosition.Size = new System.Drawing.Size(117, 95);
-            this.btnMovePosition.TabIndex = 6;
-            this.btnMovePosition.TabStop = false;
-            this.btnMovePosition.Text = "Move\r\nPosition";
-            this.btnMovePosition.UseVisualStyleBackColor = false;
-            this.btnMovePosition.Click += new System.EventHandler(this.btnMovePosition_Click);
-            // 
             // rbTeachingMoveMode
             // 
             this.rbTeachingMoveMode.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.rbTeachingMoveMode.GroupName = "Move Mode";
-            this.rbTeachingMoveMode.Location = new System.Drawing.Point(6, 25);
+            this.rbTeachingMoveMode.Location = new System.Drawing.Point(6, 26);
             this.rbTeachingMoveMode.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.rbTeachingMoveMode.Name = "rbTeachingMoveMode";
             this.rbTeachingMoveMode.Orientation = System.Windows.Forms.Orientation.Vertical;
@@ -355,15 +335,9 @@ namespace QMC.LCP_280.Process.Unit
             this.mainTableLayoutPanel.Size = new System.Drawing.Size(1264, 780);
             this.mainTableLayoutPanel.TabIndex = 12;
             // 
-            // positionItemPanel
-            // 
-            this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
-            this.positionItemPanel.Name = "positionItemPanel";
-            this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
-            this.positionItemPanel.TabIndex = 0;
-            // 
             // unitConfigControl
             // 
+            this.unitConfigControl.AutoReloadOnActivate = true;
             this.unitConfigControl.BackColor = System.Drawing.Color.White;
             this.unitConfigControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.unitConfigControl.Location = new System.Drawing.Point(948, 0);
@@ -372,6 +346,33 @@ namespace QMC.LCP_280.Process.Unit
             this.mainTableLayoutPanel.SetRowSpan(this.unitConfigControl, 2);
             this.unitConfigControl.Size = new System.Drawing.Size(316, 780);
             this.unitConfigControl.TabIndex = 12;
+            this.unitConfigControl.Load += new System.EventHandler(this.unitConfigControl_Load);
+            // 
+            // positionItemPanel
+            // 
+            this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
+            this.positionItemPanel.Name = "positionItemPanel";
+            this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
+            this.positionItemPanel.TabIndex = 0;
+            // 
+            // btnMovePosition
+            // 
+            this.btnMovePosition.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMovePosition.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnMovePosition.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnMovePosition.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMovePosition.CustomForeColor = System.Drawing.Color.Black;
+            this.btnMovePosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnMovePosition.ForeColor = System.Drawing.Color.Black;
+            this.btnMovePosition.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnMovePosition.Location = new System.Drawing.Point(242, 76);
+            this.btnMovePosition.Name = "btnMovePosition";
+            this.btnMovePosition.Size = new System.Drawing.Size(117, 53);
+            this.btnMovePosition.TabIndex = 6;
+            this.btnMovePosition.TabStop = false;
+            this.btnMovePosition.Text = "Move\r\nPosition";
+            this.btnMovePosition.UseVisualStyleBackColor = false;
+            this.btnMovePosition.Click += new System.EventHandler(this.btnMovePosition_Click);
             // 
             // IndexChipProbeControllerUnit_Config
             // 
@@ -395,5 +396,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         private Component.UnitConfig unitConfigControl;
+        private IndividualMenuButton btnMovePosition;
     }
 }

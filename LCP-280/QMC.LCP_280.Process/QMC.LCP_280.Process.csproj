@@ -213,6 +213,12 @@
     <Compile Include="Component\VisionRunnerHub.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
+    <Compile Include="Unit\FormConfig\Page\PositionTeachingControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\FormConfig\Page\PositionTeachingControl.Designer.cs">
+      <DependentUpon>PositionTeachingControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\FormLog\Alarm_Log.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -635,6 +641,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Component\UnitConfig.resx">
       <DependentUpon>UnitConfig.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormConfig\Page\PositionTeachingControl.resx">
+      <DependentUpon>PositionTeachingControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormLog\Alarm_Log.resx">
       <DependentUpon>Alarm_Log.cs</DependentUpon>

@@ -9,8 +9,6 @@
 
         private QMC.Common.PropertyCollectionView configurationPropertyView;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanelMain;
-        private System.Windows.Forms.Button btnApplyConfig;
-        private System.Windows.Forms.Button btnReloadConfig;
 
         /// <summary>
         /// 리소스 정리
@@ -28,11 +26,10 @@
         #region 디자이너 생성 코드
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             this.tableLayoutPanelMain = new System.Windows.Forms.TableLayoutPanel();
             this.configurationPropertyView = new QMC.Common.PropertyCollectionView();
-            this.btnApplyConfig = new System.Windows.Forms.Button();
-            this.btnReloadConfig = new System.Windows.Forms.Button();
+            this.btnApplyConfig = new QMC.Common.IndividualMenuButton();
+            this.btnReloadConfig = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanelMain.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -69,29 +66,43 @@
             // 
             // btnApplyConfig
             // 
+            this.btnApplyConfig.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnApplyConfig.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnApplyConfig.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnApplyConfig.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnApplyConfig.CustomForeColor = System.Drawing.Color.Black;
             this.btnApplyConfig.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnApplyConfig.Location = new System.Drawing.Point(3, 723);
-            this.btnApplyConfig.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
+            this.btnApplyConfig.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnApplyConfig.ForeColor = System.Drawing.Color.Black;
+            this.btnApplyConfig.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnApplyConfig.Location = new System.Drawing.Point(3, 721);
             this.btnApplyConfig.Name = "btnApplyConfig";
-            this.btnApplyConfig.Size = new System.Drawing.Size(194, 32);
-            this.btnApplyConfig.TabIndex = 1;
+            this.btnApplyConfig.Size = new System.Drawing.Size(194, 36);
+            this.btnApplyConfig.TabIndex = 4;
+            this.btnApplyConfig.TabStop = false;
             this.btnApplyConfig.Text = "Apply && Save";
-            this.btnApplyConfig.UseVisualStyleBackColor = true;
-            this.btnApplyConfig.Click += new System.EventHandler(this.btnApplyConfig_Click);
+            this.btnApplyConfig.UseVisualStyleBackColor = false;
             // 
             // btnReloadConfig
             // 
+            this.btnReloadConfig.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnReloadConfig.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnReloadConfig.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnReloadConfig.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnReloadConfig.CustomForeColor = System.Drawing.Color.Black;
             this.btnReloadConfig.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnReloadConfig.Location = new System.Drawing.Point(203, 723);
-            this.btnReloadConfig.Margin = new System.Windows.Forms.Padding(3, 5, 3, 5);
+            this.btnReloadConfig.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnReloadConfig.ForeColor = System.Drawing.Color.Black;
+            this.btnReloadConfig.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnReloadConfig.Location = new System.Drawing.Point(203, 721);
             this.btnReloadConfig.Name = "btnReloadConfig";
-            this.btnReloadConfig.Size = new System.Drawing.Size(194, 32);
-            this.btnReloadConfig.TabIndex = 2;
+            this.btnReloadConfig.Size = new System.Drawing.Size(194, 36);
+            this.btnReloadConfig.TabIndex = 5;
+            this.btnReloadConfig.TabStop = false;
             this.btnReloadConfig.Text = "Reload";
-            this.btnReloadConfig.UseVisualStyleBackColor = true;
-            this.btnReloadConfig.Click += new System.EventHandler(this.btnReloadConfig_Click);
+            this.btnReloadConfig.UseVisualStyleBackColor = false;
             // 
-            // UnitConfig (UserControl)
+            // UnitConfig
             // 
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.BackColor = System.Drawing.Color.White;
@@ -104,5 +115,8 @@
 
         }
         #endregion
+
+        private Common.IndividualMenuButton btnApplyConfig;
+        private Common.IndividualMenuButton btnReloadConfig;
     }
 }

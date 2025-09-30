@@ -46,10 +46,10 @@ namespace QMC.LCP_280.Process.Component
             | System.Windows.Forms.AnchorStyles.Right)));
             this._lstSteps.FormattingEnabled = true;
             this._lstSteps.ItemHeight = 12;
-            this._lstSteps.Location = new System.Drawing.Point(2, 62);
+            this._lstSteps.Location = new System.Drawing.Point(2, 52);
             this._lstSteps.Margin = new System.Windows.Forms.Padding(2);
             this._lstSteps.Name = "_lstSteps";
-            this._lstSteps.Size = new System.Drawing.Size(296, 136);
+            this._lstSteps.Size = new System.Drawing.Size(296, 244);
             this._lstSteps.TabIndex = 5;
             // 
             // tableLayoutPanel1
@@ -62,9 +62,9 @@ namespace QMC.LCP_280.Process.Component
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 30F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 70F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(300, 200);
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 50F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(300, 300);
             this.tableLayoutPanel1.TabIndex = 7;
             // 
             // tableLayoutPanel2
@@ -83,7 +83,7 @@ namespace QMC.LCP_280.Process.Component
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 1;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(294, 54);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(294, 44);
             this.tableLayoutPanel2.TabIndex = 8;
             // 
             // button1
@@ -100,7 +100,7 @@ namespace QMC.LCP_280.Process.Component
             this.button1.Location = new System.Drawing.Point(221, 3);
             this.button1.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(71, 48);
+            this.button1.Size = new System.Drawing.Size(71, 38);
             this.button1.TabIndex = 21;
             this.button1.TabStop = false;
             this.button1.Text = "Play";
@@ -120,7 +120,7 @@ namespace QMC.LCP_280.Process.Component
             this.button3.Location = new System.Drawing.Point(148, 3);
             this.button3.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(69, 48);
+            this.button3.Size = new System.Drawing.Size(69, 38);
             this.button3.TabIndex = 20;
             this.button3.TabStop = false;
             this.button3.Text = "Stop";
@@ -140,7 +140,7 @@ namespace QMC.LCP_280.Process.Component
             this.button4.Location = new System.Drawing.Point(75, 3);
             this.button4.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(69, 48);
+            this.button4.Size = new System.Drawing.Size(69, 38);
             this.button4.TabIndex = 19;
             this.button4.TabStop = false;
             this.button4.Text = "Next ¢º";
@@ -160,7 +160,7 @@ namespace QMC.LCP_280.Process.Component
             this.button2.Location = new System.Drawing.Point(2, 3);
             this.button2.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(69, 48);
+            this.button2.Size = new System.Drawing.Size(69, 38);
             this.button2.TabIndex = 18;
             this.button2.TabStop = false;
             this.button2.Text = "Run";
@@ -173,7 +173,7 @@ namespace QMC.LCP_280.Process.Component
             this.Controls.Add(this.tableLayoutPanel1);
             this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "ManualSequenceControl";
-            this.Size = new System.Drawing.Size(300, 200);
+            this.Size = new System.Drawing.Size(300, 300);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.ResumeLayout(false);
