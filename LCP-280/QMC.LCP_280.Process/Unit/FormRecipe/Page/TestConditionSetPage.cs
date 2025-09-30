@@ -16,35 +16,64 @@ namespace QMC.LCP_280.Process.Unit
     public partial class TestConditionSetPage : UserControl
     {
         private Equipment equipment => Equipment.Instance;
+        private Component.MeasurementRecipe currentRecipe => equipment.EquipmentRecipe.CurrentRecipe;
 
-        private TestConditionSet tempSet = new TestConditionSet(""); // 임시 변수
+        private TestConditionSet tempSet = new TestConditionSet(); // 임시 변수
         private TestConditionItem clipboardItem;
         private PropertyCollection pcItem;
+
+        private string filePath = "";
+        private bool isModified = false;
 
         public TestConditionSetPage()
         {
             InitializeComponent();
             InitiaizeConditionSetGrid();
-
-            tempSet.ItemsChanged += TempSet_ItemsChanged;
         }
 
         private void TestConditionSetPage_Load(object sender, EventArgs e)
         {
-            if (equipment != null && equipment.Tester != null)
+            if (currentRecipe != null)
             {
-                tempSet.CopyConditionFrom(equipment.Tester.ConditionSet);
+                if (tempSet.LoadFromFile(currentRecipe.TestConditionSetPath) == 0)
+                {                     
+                    filePath = currentRecipe.TestConditionSetPath;
+                    lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                    UpdateConditionSetGrid();
+                }
+                else
+                {
+                    filePath = "";
+                    lbSetNameValue.Text = "";
+                    ClearConditionSetGrid();
+                }
             }
         }
 
         private void TestConditionSetPage_VisibleChanged(object sender, EventArgs e)
         {
-
-        }
-
-        private void TempSet_ItemsChanged(object sender)
-        {
-            UpdateConditionSetGrid();
+            // 수정 후 저장하지 않고 다른 Page로 이동 시, 적용되지 않은 상태로 유지하기 위함
+            if (Visible)
+            {
+                if (currentRecipe != null)
+                {
+                    if (filePath != currentRecipe.TestConditionSetPath || isModified)
+                    {
+                        if (tempSet.LoadFromFile(currentRecipe.TestConditionSetPath) == 0)
+                        {
+                            filePath = currentRecipe.TestConditionSetPath;
+                            lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                            UpdateConditionSetGrid();
+                        }
+                        else
+                        {
+                            filePath = "";
+                            lbSetNameValue.Text = "";
+                            ClearConditionSetGrid();
+                        }
+                    }
+                }
+            }
         }
 
         private void InitiaizeConditionSetGrid()
@@ -80,16 +109,14 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        private void ClearConditionSet()
+        private void ClearConditionSetGrid()
         {
             dataGrid.Rows.Clear();
         }
 
         private void UpdateConditionSetGrid()
         {
-            lbSetNameValue.Text = tempSet.Name;
-
-            ClearConditionSet();
+            ClearConditionSetGrid();
             foreach (var item in tempSet.Items)
             {
                 int index = dataGrid.Rows.Add();
@@ -115,21 +142,28 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             case TestItemCategory.Electrical:
                                 {
-                                    object value = pd.GetValue(item);
-
-                                    if (value is Array arr && !(value is string))
+                                    if (pd.Name.Contains("Expression"))
                                     {
-                                        row.Cells[pd.Name].Value = "[values]";
+                                        row.Cells[pd.Name].Value = "-";
                                     }
                                     else
                                     {
-                                        row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
-                                    }
+                                        object value = pd.GetValue(item);
+
+                                        if (value is Array arr && !(value is string))
+                                        {
+                                            row.Cells[pd.Name].Value = "[values]";
+                                        }
+                                        else
+                                        {
+                                            row.Cells[pd.Name].Value = pd.GetValue(item)?.ToString();
+                                        }
+                                    }   
                                 }
                                 break;
                             case TestItemCategory.Optical:
                                 {
-                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure"))
+                                    if (pd.Name.Contains("Source") || pd.Name.Contains("Measure") || pd.Name.Contains("Expression"))
                                     {
                                         row.Cells[pd.Name].Value = "-";
                                     }
@@ -195,143 +229,121 @@ namespace QMC.LCP_280.Process.Unit
         {
             TestConditionItem newItem = new TestConditionItem("NewItem");
             tempSet.AddItem(newItem);
+            isModified = true;
+
+            UpdateConditionSetGrid();
         }
 
         private void btnItemDelete_Click(object sender, EventArgs e)
         {
-            if (dataGrid.CurrentCell == null)
+            var currentCell = dataGrid.CurrentCell;
+            if (currentCell == null || currentCell.RowIndex < 0 || currentCell.RowIndex >= tempSet.Items.Count)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (dataGrid.CurrentCell.RowIndex < 0 || dataGrid.CurrentCell.RowIndex >= tempSet.Items.Count)
-            {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            int selectIndex = dataGrid.CurrentCell.RowIndex;
+            int selectIndex = currentCell.RowIndex;
             tempSet.RemoveItemAt(selectIndex);
+            isModified = true;
+
+            UpdateConditionSetGrid();
         }
 
         private void btnItemCopy_Click(object sender, EventArgs e)
         {
-            if (dataGrid.CurrentCell == null)
+            var currentCell = dataGrid.CurrentCell;
+            if (currentCell == null || currentCell.RowIndex < 0 || currentCell.RowIndex >= tempSet.Items.Count)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (dataGrid.CurrentCell.RowIndex < 0 || dataGrid.CurrentCell.RowIndex >= tempSet.Items.Count)
-            {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            int selectIndex = dataGrid.CurrentCell.RowIndex;
+            int selectIndex = currentCell.RowIndex;
             clipboardItem = tempSet.Items[selectIndex].Clone() as TestConditionItem;
         }
 
         private void btnItemPaste_Click(object sender, EventArgs e)
         {
-            if (dataGrid.CurrentCell == null)
+            var currentCell = dataGrid.CurrentCell;
+            if (currentCell == null || currentCell.RowIndex < 0 || currentCell.RowIndex >= tempSet.Items.Count)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            if (dataGrid.CurrentCell.RowIndex < 0 || dataGrid.CurrentCell.RowIndex >= tempSet.Items.Count)
+            if (clipboardItem == null)
             {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            int selectIndex = dataGrid.CurrentCell.RowIndex;
-            if (clipboardItem != null)
-            {
-                TestConditionItem newItem = clipboardItem.Clone() as TestConditionItem;
-                newItem.Name += "_Copy";
-                tempSet.InsertItem(selectIndex, newItem);
-            }
-            else
-            {
-                MessageBox.Show("Clipboard is empty.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            int selectIndex = currentCell.RowIndex;
+            TestConditionItem newItem = clipboardItem.Clone() as TestConditionItem;
+            newItem.Name += "_Copy";
+            tempSet.InsertItem(selectIndex, newItem);
+            isModified = true;
+
+            UpdateConditionSetGrid();
         }
 
         private void btnItemUp_Click(object sender, EventArgs e)
         {
-            if (dataGrid.CurrentCell == null)
+            var currentCell = dataGrid.CurrentCell;
+            if (currentCell == null || currentCell.RowIndex < 0 || currentCell.RowIndex >= tempSet.Items.Count)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (dataGrid.CurrentCell.RowIndex < 0 || dataGrid.CurrentCell.RowIndex >= tempSet.Items.Count)
-            {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            int selectIndex = dataGrid.CurrentCell.RowIndex;
+            int selectIndex = currentCell.RowIndex;
             if (selectIndex > 0)
             {
                 tempSet.MoveItemUp(selectIndex);
                 dataGrid.CurrentCell = dataGrid.Rows[selectIndex - 1].Cells[0];
+                isModified = true;
+
+                UpdateConditionSetGrid();
             }
         }
 
         private void btnItemDown_Click(object sender, EventArgs e)
         {
-            if (dataGrid.CurrentCell == null)
+            var currentCell = dataGrid.CurrentCell;
+            if (currentCell == null || currentCell.RowIndex < 0 || currentCell.RowIndex >= tempSet.Items.Count)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (dataGrid.CurrentCell.RowIndex < 0 || dataGrid.CurrentCell.RowIndex >= tempSet.Items.Count)
-            {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            int selectIndex = dataGrid.CurrentCell.RowIndex;
+            int selectIndex = currentCell.RowIndex;
             if (selectIndex < tempSet.Items.Count - 1)
             {
                 tempSet.MoveItemDown(selectIndex);
                 dataGrid.CurrentCell = dataGrid.Rows[selectIndex + 1].Cells[0];
+                isModified = true;
+
+                UpdateConditionSetGrid();
             }
         }
 
         private void btnItemClear_Click(object sender, EventArgs e)
         {
-            if (dataGrid.CurrentCell == null)
+            var currentCell = dataGrid.CurrentCell;
+            if (currentCell == null || currentCell.RowIndex < 0 || currentCell.RowIndex >= tempSet.Items.Count)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (dataGrid.CurrentCell.RowIndex < 0 || dataGrid.CurrentCell.RowIndex >= tempSet.Items.Count)
-            {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            int selectIndex = dataGrid.CurrentCell.RowIndex;
+            int selectIndex = currentCell.RowIndex;
             tempSet.Items[selectIndex].Reset();
+            isModified = true;
+
             UpdateConditionSetGrid();
         }
 
         private void btnItemModify_Click(object sender, EventArgs e)
         {
-            if (dataGrid.CurrentCell == null)
+            var currentCell = dataGrid.CurrentCell;
+            if (currentCell == null || currentCell.RowIndex < 0 || currentCell.RowIndex >= tempSet.Items.Count)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-            if (dataGrid.CurrentCell.RowIndex < 0 || dataGrid.CurrentCell.RowIndex >= tempSet.Items.Count)
-            {
-                MessageBox.Show("Invalid item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
             if (pcItem == null)
             {
-                MessageBox.Show("No item selected.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -339,34 +351,60 @@ namespace QMC.LCP_280.Process.Unit
             {
                 pcvItem.Apply();
 
-                int selectIndex = dataGrid.CurrentCell.RowIndex; 
+                int selectIndex = currentCell.RowIndex; 
                 tempSet.Items[selectIndex].ApplyValueFromPropertyCollection(pcItem);
+                isModified = true;
+
                 UpdateConditionSetGrid();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"{ex.Message}", "Error");
                 return;
             }
         }
 
         private void btnNewSet_Click(object sender, EventArgs e)
         {
-            tempSet.ClearItems();
+            filePath = "";
+            lbSetNameValue.Text = "";
+            ClearConditionSetGrid();
+
+            isModified = true;
+
+            UpdateConditionSetGrid();
         }
 
         private void btnOpenSet_Click(object sender, EventArgs e)
         {
-            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            using (OpenFileDialog dialog = new OpenFileDialog())
             {
-                openFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
-                openFileDialog.Title = "Open Test Condition Set";
-                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "TestConditionSet");
+                dialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+                dialog.Title = "Open Test Condition Set";
+
+                if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    var filePath = openFileDialog.FileName;
-                    if (tempSet.LoadFromFile(filePath) != 0)
+                    var filePath = dialog.FileName;
+                    if (tempSet.LoadFromFile(filePath) == 0)
                     {
-                        MessageBox.Show("Failed to load the test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        // Apply
+                        equipment.Tester.LoadTestConditionSet(filePath);
+                        if (currentRecipe != null)
+                        {
+                            currentRecipe.TestConditionSetPath = filePath;
+                            currentRecipe.Save();
+                        }
+
+                        this.filePath = filePath;
+                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                        isModified = false;
+
+                        UpdateConditionSetGrid();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Failed to load file.", "Error");
                     }
                 }
             }
@@ -374,50 +412,40 @@ namespace QMC.LCP_280.Process.Unit
 
         private void btnSaveSet_Click(object sender, EventArgs e)
         {
-            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
-            {
-                saveFileDialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
-                saveFileDialog.Title = "Save Test Condition Set";
-                saveFileDialog.FileName = tempSet.Name + ".json";
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    var filePath = saveFileDialog.FileName;
-                    if (tempSet.SaveToFile(filePath) != 0)
-                    {
-                        MessageBox.Show("Failed to save the test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    lbSetNameValue.Text = tempSet.Name;
-                }
-            }
-        }
-
-        private void btnApply_Click(object sender, EventArgs e)
-        {
-            // Interlock
             if (!tempSet.Validate())
             {
-                MessageBox.Show("Invalid test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Test condition set is not valid.", "Error");
                 return;
             }
 
-            var result = MessageBox.Show("Do you want to save it in the Apply and Recipe data?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.Yes)
+            using (SaveFileDialog dialog = new SaveFileDialog())
             {
-                try
+                dialog.InitialDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Measurement", "TestConditionSet");
+                dialog.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
+                dialog.Title = "Save Test Condition Set";
+                dialog.FileName = "*.json";
+
+                if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    if (Equipment.Instance.Tester.LoadTestConditionSet(tempSet) == 0)
+                    var filePath = dialog.FileName;
+                    if (tempSet.SaveToFile(filePath) == 0)
                     {
-                        // 레시피 처리 수정 필요...
+                        // Apply
+                        equipment.Tester.LoadTestConditionSet(filePath);
+                        if (currentRecipe != null)
+                        {
+                            currentRecipe.TestConditionSetPath = filePath;
+                            currentRecipe.Save();
+                        }
+
+                        this.filePath = filePath;
+                        lbSetNameValue.Text = Path.GetFileNameWithoutExtension(filePath);
+                        isModified = false;
                     }
                     else
                     {
-                        MessageBox.Show("Failed to apply the test condition set.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Failed to save file.", "Error");
                     }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
                 }
             }
         }

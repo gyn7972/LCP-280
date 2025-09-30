@@ -145,6 +145,7 @@ namespace QMC.Common.Spectrometer
         
         private DeviceInformation deviceInfo = new DeviceInformation();
         private bool useHardwareTrigger = false;
+        private bool isInitialized = false;
         #endregion
 
         #region Property
@@ -225,6 +226,13 @@ namespace QMC.Common.Spectrometer
                     ret = -1;
                     break;
                 }
+                if (!SendMeasureDarkCurrentComand())
+                {
+                    ret = -1;
+                    break;
+                }
+
+                isInitialized = true;
             }
             while (false);
             return ret;
@@ -409,7 +417,19 @@ namespace QMC.Common.Spectrometer
         {
             if (!Config.IsSimulation)
             {
-                return IsCreated();
+                if (IsCreated())
+                {
+                    try
+                    {
+                        double value = 0;
+                        GetDeviceParameter(CAS4DLL.dpidInitialized, ref value);
+                        return (value > 0);
+                    }
+                    catch (Exception)
+                    {
+                        return false;
+                    }
+                }
             }
             return true;
         }
@@ -462,6 +482,30 @@ namespace QMC.Common.Spectrometer
             do
             {
                 if (!IsCreated())
+                {
+                    ret = -1;
+                    break;
+                }
+                if (!SendMeasureDarkCurrentComand())
+                {
+                    ret = -1;
+                    break;
+                }
+            }
+            while (false);
+            return ret;
+        }
+        public int ApplyParameterAndMeasureDarkCurrent()
+        {
+            int ret = 0;
+            do
+            {
+                if(!IsCreated())
+                {
+                    ret = -1;
+                    break;
+                }
+                if (!ApplyMeasurementCondition())
                 {
                     ret = -1;
                     break;
@@ -560,6 +604,8 @@ namespace QMC.Common.Spectrometer
                 {
                     OnDeviceTerminated?.Invoke(this);
                 }
+
+                isInitialized = false;
                 return true;
             }
             catch (Exception ex)

@@ -185,13 +185,13 @@ namespace QMC.LCP_280.Process.Unit
                 if (bRet != 0)
                     return -1;
 
-
                 MaterialDie die = this.Rotary.GetProbeSocketMaterial();
                 if(die.Presence == Material.MaterialPresence.Exist)
                 {
                     die.TesterResult = tester.Result;
                     die.ProcessSatate = Material.MaterialProcessSatate.Processing;
                 }
+
                 // 3) Data Assign
                 bRet &= AssignDataToMaterialObject();
                 if (bRet != 0)

@@ -74,8 +74,8 @@ namespace QMC.Common.PKGTester
         #region Fields
         private KeithleySourcemeter sourcemeter;
         private CASSpectrometer spectrometer;
-        private TestConditionSet conditionSet;
-        private BinningSpecSheet binningSpecSheet;
+        private TestConditionSet conditionSet = new TestConditionSet();
+        private BinningSpecSheet binningSpecSheet = new BinningSpecSheet();
 
         private PKGTesterResult result = new PKGTesterResult();
         private bool isMeasuring = false;
@@ -101,7 +101,6 @@ namespace QMC.Common.PKGTester
         #region Constructor / Initialize
         public PKGTester(string name) : base(name)
         {
-            conditionSet = new TestConditionSet($"{name}_conditionSet");
         }
 
         public bool BindSourcemeter(KeithleySourcemeter sourcemeter)
@@ -211,12 +210,16 @@ namespace QMC.Common.PKGTester
             return true;
         }
 
-        public int LoadTestConditionSet(TestConditionSet conditionSet)
+        public int LoadTestConditionSet(string filePath)
         {
-            if (conditionSet == null || !conditionSet.Validate())
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
                 return -1;
 
-            this.conditionSet.CopyConditionFrom(conditionSet);
+            TestConditionSet conditionSet = new TestConditionSet();
+            if (conditionSet.LoadFromFile(filePath) != 0)
+                return -1;
+
+            this.conditionSet.CopyFrom(conditionSet);
             if (RebuildTestMechanism() != 0)
                 return -1;
 
@@ -224,11 +227,13 @@ namespace QMC.Common.PKGTester
             return 0;
         }
 
-        public int LoadBinningSpecSheet(BinningSpecSheet specSheet)
+        public int LoadBinningSpecSheet(string filePath)
         {
-            if (specSheet == null)
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
                 return -1;
-            if (!specSheet.Validate())
+
+            BinningSpecSheet specSheet = new BinningSpecSheet();
+            if (specSheet.LoadFromFile(filePath) != 0)
                 return -1;
 
             binningSpecSheet = new BinningSpecSheet();

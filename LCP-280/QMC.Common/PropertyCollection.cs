@@ -98,6 +98,10 @@ namespace QMC.Common
                     string propTitle = p.Title;
                     string compareTitle = RemoveUint(propTitle);
 
+                    // TitleOnlyProperty´Â Á¦¿Ü
+                    if (p is TitleOnlyProperty)
+                        continue;
+
                     if (title.Equals(compareTitle, StringComparison.OrdinalIgnoreCase))
                     {
                         prop = p;

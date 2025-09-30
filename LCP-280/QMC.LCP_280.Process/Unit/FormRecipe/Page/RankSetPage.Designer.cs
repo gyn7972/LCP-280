@@ -34,7 +34,6 @@
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.panel2 = new System.Windows.Forms.Panel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
-            this.btnApply = new QMC.Common.IndividualMenuButton();
             this.btnSave = new QMC.Common.IndividualMenuButton();
             this.btnOpen = new QMC.Common.IndividualMenuButton();
             this.btnNew = new QMC.Common.IndividualMenuButton();
@@ -139,41 +138,20 @@
             // 
             this.tableLayoutPanel6.ColumnCount = 1;
             this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel6.Controls.Add(this.btnApply, 0, 3);
             this.tableLayoutPanel6.Controls.Add(this.btnSave, 0, 2);
             this.tableLayoutPanel6.Controls.Add(this.btnOpen, 0, 1);
             this.tableLayoutPanel6.Controls.Add(this.btnNew, 0, 0);
             this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(3, 473);
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(3, 510);
             this.tableLayoutPanel6.Name = "tableLayoutPanel6";
             this.tableLayoutPanel6.Padding = new System.Windows.Forms.Padding(5, 3, 5, 3);
-            this.tableLayoutPanel6.RowCount = 4;
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(196, 170);
+            this.tableLayoutPanel6.RowCount = 3;
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(196, 133);
             this.tableLayoutPanel6.TabIndex = 1;
-            // 
-            // btnApply
-            // 
-            this.btnApply.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnApply.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnApply.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnApply.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnApply.CustomForeColor = System.Drawing.Color.Black;
-            this.btnApply.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnApply.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnApply.ForeColor = System.Drawing.Color.Black;
-            this.btnApply.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnApply.Location = new System.Drawing.Point(8, 129);
-            this.btnApply.Name = "btnApply";
-            this.btnApply.Size = new System.Drawing.Size(180, 35);
-            this.btnApply.TabIndex = 3;
-            this.btnApply.TabStop = false;
-            this.btnApply.Text = "Apply";
-            this.btnApply.UseVisualStyleBackColor = false;
-            this.btnApply.Click += new System.EventHandler(this.btnApply_Click);
             // 
             // btnSave
             // 
@@ -186,9 +164,9 @@
             this.btnSave.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSave.ForeColor = System.Drawing.Color.Black;
             this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnSave.Location = new System.Drawing.Point(8, 88);
+            this.btnSave.Location = new System.Drawing.Point(8, 90);
             this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(180, 35);
+            this.btnSave.Size = new System.Drawing.Size(180, 37);
             this.btnSave.TabIndex = 2;
             this.btnSave.TabStop = false;
             this.btnSave.Text = "Save";
@@ -206,9 +184,9 @@
             this.btnOpen.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnOpen.ForeColor = System.Drawing.Color.Black;
             this.btnOpen.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnOpen.Location = new System.Drawing.Point(8, 47);
+            this.btnOpen.Location = new System.Drawing.Point(8, 48);
             this.btnOpen.Name = "btnOpen";
-            this.btnOpen.Size = new System.Drawing.Size(180, 35);
+            this.btnOpen.Size = new System.Drawing.Size(180, 36);
             this.btnOpen.TabIndex = 1;
             this.btnOpen.TabStop = false;
             this.btnOpen.Text = "Open";
@@ -228,7 +206,7 @@
             this.btnNew.ImageSize = new System.Drawing.Size(45, 45);
             this.btnNew.Location = new System.Drawing.Point(8, 6);
             this.btnNew.Name = "btnNew";
-            this.btnNew.Size = new System.Drawing.Size(180, 35);
+            this.btnNew.Size = new System.Drawing.Size(180, 36);
             this.btnNew.TabIndex = 0;
             this.btnNew.TabStop = false;
             this.btnNew.Text = "New";
@@ -414,6 +392,8 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "RankSetPage";
             this.Size = new System.Drawing.Size(1250, 700);
+            this.Load += new System.EventHandler(this.RankSetPage_Load);
+            this.VisibleChanged += new System.EventHandler(this.RankSetPage_VisibleChanged);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.tableLayoutPanel3.ResumeLayout(false);
@@ -449,7 +429,6 @@
         private Common.IndividualMenuButton btnNew;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel7;
         private Common.IndividualMenuButton btnMaxRankUpdate;
-        private Common.IndividualMenuButton btnApply;
         private Common.CustomControl.CustomBorderLabel lbStatusCaption;
         private System.Windows.Forms.NumericUpDown nudMaxRank;
         private Common.IndividualMenuButton btnModify;

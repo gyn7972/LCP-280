@@ -45,15 +45,15 @@
             this.nudRepeatCount = new System.Windows.Forms.NumericUpDown();
             this.panel1 = new System.Windows.Forms.Panel();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel10 = new System.Windows.Forms.TableLayoutPanel();
+            this.lbCurrentIndexNo = new System.Windows.Forms.Label();
+            this.lbMeasureTime = new System.Windows.Forms.Label();
             this.btnResultSave = new QMC.Common.IndividualMenuButton();
             this.btnResultClear = new QMC.Common.IndividualMenuButton();
             this.btnLastClear = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btnTestStop = new QMC.Common.IndividualMenuButton();
             this.btnTestStart = new QMC.Common.IndividualMenuButton();
-            this.tableLayoutPanel10 = new System.Windows.Forms.TableLayoutPanel();
-            this.lbCurrentIndexNo = new System.Windows.Forms.Label();
-            this.lbMeasureTime = new System.Windows.Forms.Label();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridResult)).BeginInit();
@@ -66,8 +66,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.nudRepeatCount)).BeginInit();
             this.panel1.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
-            this.tableLayoutPanel7.SuspendLayout();
             this.tableLayoutPanel10.SuspendLayout();
+            this.tableLayoutPanel7.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -331,6 +331,43 @@
             this.tableLayoutPanel6.Size = new System.Drawing.Size(332, 136);
             this.tableLayoutPanel6.TabIndex = 3;
             // 
+            // tableLayoutPanel10
+            // 
+            this.tableLayoutPanel10.ColumnCount = 1;
+            this.tableLayoutPanel10.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel10.Controls.Add(this.lbCurrentIndexNo, 0, 1);
+            this.tableLayoutPanel10.Controls.Add(this.lbMeasureTime, 0, 0);
+            this.tableLayoutPanel10.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel10.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel10.Name = "tableLayoutPanel10";
+            this.tableLayoutPanel10.RowCount = 2;
+            this.tableLayoutPanel10.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel10.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel10.Size = new System.Drawing.Size(206, 39);
+            this.tableLayoutPanel10.TabIndex = 5;
+            // 
+            // lbCurrentIndexNo
+            // 
+            this.lbCurrentIndexNo.AutoSize = true;
+            this.lbCurrentIndexNo.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lbCurrentIndexNo.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lbCurrentIndexNo.Location = new System.Drawing.Point(3, 19);
+            this.lbCurrentIndexNo.Name = "lbCurrentIndexNo";
+            this.lbCurrentIndexNo.Size = new System.Drawing.Size(200, 15);
+            this.lbCurrentIndexNo.TabIndex = 5;
+            this.lbCurrentIndexNo.Text = "Index No: -";
+            // 
+            // lbMeasureTime
+            // 
+            this.lbMeasureTime.AutoSize = true;
+            this.lbMeasureTime.Dock = System.Windows.Forms.DockStyle.Top;
+            this.lbMeasureTime.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.lbMeasureTime.Location = new System.Drawing.Point(3, 0);
+            this.lbMeasureTime.Name = "lbMeasureTime";
+            this.lbMeasureTime.Size = new System.Drawing.Size(200, 15);
+            this.lbMeasureTime.TabIndex = 4;
+            this.lbMeasureTime.Text = "Measure Time: -";
+            // 
             // btnResultSave
             // 
             this.btnResultSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
@@ -448,43 +485,6 @@
             this.btnTestStart.UseVisualStyleBackColor = false;
             this.btnTestStart.Click += new System.EventHandler(this.btnTestStart_Click);
             // 
-            // tableLayoutPanel10
-            // 
-            this.tableLayoutPanel10.ColumnCount = 1;
-            this.tableLayoutPanel10.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel10.Controls.Add(this.lbCurrentIndexNo, 0, 1);
-            this.tableLayoutPanel10.Controls.Add(this.lbMeasureTime, 0, 0);
-            this.tableLayoutPanel10.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel10.Location = new System.Drawing.Point(3, 3);
-            this.tableLayoutPanel10.Name = "tableLayoutPanel10";
-            this.tableLayoutPanel10.RowCount = 2;
-            this.tableLayoutPanel10.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel10.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel10.Size = new System.Drawing.Size(206, 39);
-            this.tableLayoutPanel10.TabIndex = 5;
-            // 
-            // lbCurrentIndexNo
-            // 
-            this.lbCurrentIndexNo.AutoSize = true;
-            this.lbCurrentIndexNo.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lbCurrentIndexNo.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lbCurrentIndexNo.Location = new System.Drawing.Point(3, 19);
-            this.lbCurrentIndexNo.Name = "lbCurrentIndexNo";
-            this.lbCurrentIndexNo.Size = new System.Drawing.Size(200, 15);
-            this.lbCurrentIndexNo.TabIndex = 5;
-            this.lbCurrentIndexNo.Text = "Index No: -";
-            // 
-            // lbMeasureTime
-            // 
-            this.lbMeasureTime.AutoSize = true;
-            this.lbMeasureTime.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lbMeasureTime.Font = new System.Drawing.Font("맑은 고딕", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lbMeasureTime.Location = new System.Drawing.Point(3, 0);
-            this.lbMeasureTime.Name = "lbMeasureTime";
-            this.lbMeasureTime.Size = new System.Drawing.Size(200, 15);
-            this.lbMeasureTime.TabIndex = 4;
-            this.lbMeasureTime.Text = "Measure Time: -";
-            // 
             // CellTesterPage
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -492,6 +492,7 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "CellTesterPage";
             this.Size = new System.Drawing.Size(1250, 700);
+            this.Load += new System.EventHandler(this.CellTesterPage_Load);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.dataGridResult)).EndInit();
@@ -505,9 +506,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.nudRepeatCount)).EndInit();
             this.panel1.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
-            this.tableLayoutPanel7.ResumeLayout(false);
             this.tableLayoutPanel10.ResumeLayout(false);
             this.tableLayoutPanel10.PerformLayout();
+            this.tableLayoutPanel7.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
