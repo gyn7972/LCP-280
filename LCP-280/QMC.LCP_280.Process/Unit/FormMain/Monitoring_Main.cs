@@ -12,6 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.Common.Material;
 
 namespace QMC.LCP_280.Process
 {
@@ -337,7 +338,7 @@ namespace QMC.LCP_280.Process
                             MapX = (int)Math.Round(x),
                             MapY = (int)Math.Round(y),
                             State = DieProcessState.Mapped,
-                            Exists = true
+                            Presence = MaterialPresence.Exist,
                         });
                     }
                 }

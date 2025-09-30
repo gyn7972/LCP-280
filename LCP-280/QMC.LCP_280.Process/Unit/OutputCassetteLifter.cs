@@ -24,12 +24,12 @@ namespace QMC.LCP_280.Process.Unit
         public enum AlarmKeys
         {
             eBinProtrusionDetected = 5001,
+            eFeederYSafetyPosition = 5002,
         }
 
         #region InitAlarm
         protected override void InitAlarm()
         {
-            base.InitAlarm();
             base.InitAlarm();
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eBinProtrusionDetected;
@@ -38,6 +38,16 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eFeederYSafetyPosition;
+            alarm.Title = "Feeder Y축이 안전 위치에 있지 않습니다.";
+            alarm.Cause = "Feeder Y축이 안전 위치에 있지 않습니다.\n Feeder Y축을 안전 위치로 이동 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+
             //AlarmRegister((int)AlarmKeys.eBinProtrusionDetected,
             //                "Bin Protrusion Detected",
             //                "Bin protrusion detected by sensor during operation. Please check and clear the obstruction before retrying.",
@@ -52,7 +62,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Axis
         private MotionAxis _BinLiftZ;
-        public MotionAxis AxisBinLiftZ => _BinLiftZ;
+        public MotionAxis BinLifterZ => _BinLiftZ;
         #endregion
 
         #region ctor / Initialization
@@ -93,11 +103,6 @@ namespace QMC.LCP_280.Process.Unit
 
             const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
             BindAxis(mgr, unitName, AxisNames.BinLifterZ, ref _BinLiftZ);
-        }
-
-        public bool IsBinReadyForLoading()
-        {
-            return true;// this.IsBinReadyForloading;
         }
 
         public void MoveAxisOnce(MotionAxis ax, double target)
@@ -184,7 +189,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else if (this.IsBinProtrusionDetectionSensor())
                 {
-                    this.AxisBinLiftZ.EmgStop();
+                    this.BinLifterZ.EmgStop();
                     PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
                     return -1;
                 }
@@ -212,7 +217,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (this.IsBinProtrusionDetectionSensor())
                 {
-                    this.AxisBinLiftZ.EmgStop();
+                    this.BinLifterZ.EmgStop();
                     PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
                     return -1;
                 }
@@ -222,14 +227,14 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int OnMoveToScanEndPosition(bool isFine = false)
         {
-            var axisPos = GetTeachingPositionValue(OutputCassetteLifterConfig.TeachingPositionName.MappingStart, this.AxisBinLiftZ.Name);
+            var axisPos = GetTeachingPositionValue(OutputCassetteLifterConfig.TeachingPositionName.MappingStart, this.BinLifterZ.Name);
             axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
-            int ret = this.AxisBinLiftZ.MoveAbs(axisPos, isFine);
+            int ret = this.BinLifterZ.MoveAbs(axisPos, isFine);
 
             Thread.Sleep(10);
             if (ret == 0)
             {
-                while (this.AxisBinLiftZ.IsMoveDone() == false)
+                while (this.BinLifterZ.IsMoveDone() == false)
                 {
                     Thread.Sleep(0);
                 }
@@ -276,6 +281,8 @@ namespace QMC.LCP_280.Process.Unit
         #region seq signals
         public bool IsBinReadyForUnloding { get; set; } = false;
         public bool RequestStageLoading { get; set; } = false;
+
+        private int _currentSlotID;
         #endregion
 
         #region Lifecycle
@@ -389,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 else
                                 {
-                                    MaterialWafer StageBin = OutputStage.GetWaferMaterial();
+                                    MaterialWafer StageBin = OutputStage.GetMaterialWafer();
                                     if (StageBin == null || StageBin.Presence == Material.MaterialPresence.NotExist)
                                     {
                                         // Stage wafer is not exist
@@ -472,7 +479,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else if (IsBinProtrusionDetectionSensor())
             {
-                this.AxisBinLiftZ.EmgStop();
+                this.BinLifterZ.EmgStop();
                 Log.Write(this, "Bin Protrusion Detected");
                 PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
                 return -1;
@@ -512,7 +519,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else if (IsBinProtrusionDetectionSensor())
                 {
-                    this.AxisBinLiftZ.EmgStop();
+                    this.BinLifterZ.EmgStop();
                     Log.Write(this, "Bin Protrusion Detected");
                     PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
 
@@ -529,7 +536,7 @@ namespace QMC.LCP_280.Process.Unit
                         continue;
                     }
                     bDetected = true;
-                    double dPos = AxisBinLiftZ.GetPosition();
+                    double dPos = BinLifterZ.GetPosition();
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.BinLifterZ);
                     int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
@@ -562,7 +569,7 @@ namespace QMC.LCP_280.Process.Unit
                         continue;
                     }
                     bDetected = true;
-                    double dPos = AxisBinLiftZ.GetPosition();
+                    double dPos = BinLifterZ.GetPosition();
                     double dSlotPitch = base.Config.SlotPitch;
                     double dStartPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.MappingStart.ToString(), AxisNames.BinLifterZ);
                     int slot = (int)(Math.Abs(dPos - dStartPos) / base.Config.SlotPitch);
@@ -634,32 +641,80 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRtn;
         }
-        private int MoveToSlot(int slotIndex, bool bFineSpeed = false)
+        public int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
-            if (IsBinProtrusionDetectionSensor())
-            {
-                this.AxisBinLiftZ.EmgStop();
-                Log.Write(this, "Wafer Protrusion Detected");
-                PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
-                return -1;
-            }
-
-            double dPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.BinLifterZ);
-            dPos += base.Config.SlotPitch * slotIndex;
-            MoveAxisOnce(AxisBinLiftZ, dPos);
-            while (!InPos(AxisBinLiftZ, dPos))
+            int nRet = 0;
+            if (!Config.IsSimulation && !Config.IsDryRun)
             {
                 if (IsBinProtrusionDetectionSensor())
                 {
-                    AxisBinLiftZ.EmgStop();
-                    Log.Write(this, "Wafer Protrusion Detected");
+                    this.BinLifterZ.EmgStop();
+                    Log.Write(this, "Bin Protrusion Detected");
                     PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
                     return -1;
                 }
-                Thread.Sleep(0);
+            }
+
+            if (OutputFeeder.IsInterlockOKWithCassete() == false)
+            {
+                BinLifterZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                return -1;
+            }
+            if (slotIndex < 0 || slotIndex >= base.Config.SlotCount)
+            {
+                Log.Write(this, $"Invalid Slot Index {slotIndex}");
+                return -1;
+            }
+            Log.Write(this, $"MoveToSlot {slotIndex + 1}");
+            double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
+            dPos += base.Config.SlotPitch * slotIndex;
+            MoveAxisOnce(BinLifterZ, dPos);
+            while (!InPos(BinLifterZ, dPos))
+            {
+                if (!Config.IsSimulation && !Config.IsDryRun)
+                {
+                    if (IsBinProtrusionDetectionSensor())
+                    {
+                        BinLifterZ.EmgStop();
+                        Log.Write(this, "Wafer Protrusion Detected");
+                        PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
+                        return -1;
+                    }
+
+                    if (!OutputFeeder.IsInterlockOKWithCassete())
+                    {
+                        BinLifterZ.EmgStop();
+                        PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                        Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                        return -1;
+                    }
+
+                    Thread.Sleep(0);
+                }
             }
             this.IsBinReadyForUnloding = true;
-            return 0;
+            this._currentSlotID = slotIndex;
+            return nRet;
+
+
+            //double dPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.BinLifterZ);
+            //dPos += base.Config.SlotPitch * slotIndex;
+            //MoveAxisOnce(AxisBinLiftZ, dPos);
+            //while (!InPos(AxisBinLiftZ, dPos))
+            //{
+            //    if (IsBinProtrusionDetectionSensor())
+            //    {
+            //        AxisBinLiftZ.EmgStop();
+            //        Log.Write(this, "Wafer Protrusion Detected");
+            //        PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
+            //        return -1;
+            //    }
+            //    Thread.Sleep(0);
+            //}
+            //this.IsBinReadyForUnloding = true;
+            //return 0;
         }
         public Task<int> MoveToSlotAsync(int slotIndex)
         {
@@ -669,6 +724,55 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             });
         }
+
+        public bool IsScanCompleted()
+        {
+            bool bRet = false;
+            MaterialCassette material = GetMaterialCassette();
+            if (material != null)
+            {
+                if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                {
+                    foreach (var v in material.Slots)
+                    {
+                        if (v.Presence == Material.MaterialPresence.Exist)
+                        {
+                            bRet = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return bRet;
+        }
+        public bool IsHaveMoreProcessWafer()
+        {
+            bool bRet = false;
+            MaterialCassette material = GetMaterialCassette();
+            if (material != null)
+            {
+                if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                {
+                    foreach (var v in material.Slots)
+                    {
+                        if (v.Presence == Material.MaterialPresence.Exist)
+                        {
+                            if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
+                            {
+                                bRet = true;
+                                break;
+                            }
+                        }
+
+                    }
+                }
+            }
+            return bRet;
+        }
+
+
+
+
 
         private int BinLoadingBeforeStage(bool bFineSpeed = false)
         {
@@ -751,6 +855,17 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRtn;
         }
+
+        public bool IsBinReadyForLoading()
+        {
+            return true;// this.IsBinReadyForloading;
+        }
+
+        public int GetCurrectSlotID()
+        {
+            return _currentSlotID;
+        }
+
         #endregion
     }
 }

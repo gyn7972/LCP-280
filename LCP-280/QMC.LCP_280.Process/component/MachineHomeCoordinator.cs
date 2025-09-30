@@ -284,10 +284,10 @@ namespace QMC.LCP_280.Process.Component
                                 var until2 = DateTime.UtcNow.AddMilliseconds(1500);
                                 while (DateTime.UtcNow < until2)
                                 {
-                                    if (outFeeder.IsUnclamped()) break;
+                                    if (outFeeder.IsUnClamped()) break;
                                     await Task.Delay(20, ct).ConfigureAwait(false);
                                 }
-                                if (!outFeeder.IsUnclamped())
+                                if (!outFeeder.IsUnClamped())
                                     return (false, "Bin Feeder Unclamp Sensor Not Detected");
 
                                 // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
