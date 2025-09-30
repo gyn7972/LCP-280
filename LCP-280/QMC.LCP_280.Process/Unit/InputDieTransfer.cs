@@ -1293,6 +1293,14 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] wafer is null");
                 return -1;
             }
+            if (wafer.Presence != Material.MaterialPresence.Exist)
+            {
+                return 0;
+            }
+            if (wafer.ProcessSatate != Material.MaterialProcessSatate.Processing)
+            {
+                return 0;
+            }
             MaterialDie die;
             nRet = MoveStageToNextDie(out die);
 
@@ -1940,6 +1948,20 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsWork()
         {
             return isWork;
+        }
+
+        internal bool IsInterlockOKWidthRotary()
+        {
+            double dPos = this.AxisPlaceZ.GetPosition();
+            double tp = this.GetTP(InputDieTransferConfig.TeachingPositionName.Ready.ToString(),
+                        AxisNames.LeftPlaceZ);
+            bool bResult = false;
+            if (dPos <= (tp + 0.007))
+            {
+                bResult = true;
+            }
+            return bResult;
+
         }
 
         #endregion
