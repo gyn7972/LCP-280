@@ -213,6 +213,12 @@
     <Compile Include="Component\VisionRunnerHub.cs" />
     <Compile Include="Equipment.cs" />
     <Compile Include="EquipmentConfig.cs" />
+    <Compile Include="Unit\FormConfig\Page\DigitalIOControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Unit\FormConfig\Page\DigitalIOControl.Designer.cs">
+      <DependentUpon>DigitalIOControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\FormConfig\Page\PositionTeachingControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -642,6 +648,9 @@
     <EmbeddedResource Include="Component\UnitConfig.resx">
       <DependentUpon>UnitConfig.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Unit\FormConfig\Page\DigitalIOControl.resx">
+      <DependentUpon>DigitalIOControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormConfig\Page\PositionTeachingControl.resx">
       <DependentUpon>PositionTeachingControl.cs</DependentUpon>
     </EmbeddedResource>
@@ -870,6 +879,5 @@
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

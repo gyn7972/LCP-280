@@ -9,9 +9,6 @@ namespace QMC.LCP_280.Process.Unit
 {
     partial class IndexChipProbeControllerUnit_Config
     {
-        private IOPropertyCollectionView inputView;
-        private IOPropertyCollectionView outputView;
-        private TableLayoutPanel ioTableLayoutPanel;
         private TableLayoutPanel mainTableLayoutPanel;
         private Panel positionItemPanel;
         private ListBoxItemsView axisListBoxItemsView;
@@ -20,6 +17,7 @@ namespace QMC.LCP_280.Process.Unit
         private GroupBox gbMoveAxis;
         private JogControl jogControl;
         private QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl positionTeachingControl;
+        private QMC.LCP_280.Process.Unit.FormConfig.DigitalIOControl digitalIOControl;
         private IContainer components = null;
 
         protected override void Dispose(bool disposing)
@@ -35,20 +33,16 @@ namespace QMC.LCP_280.Process.Unit
         private void InitializeComponent()
         {
             this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
-            this.positionTeachingControl = new QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
-            this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.inputView = new QMC.Common.IOPropertyCollectionView();
-            this.outputView = new QMC.Common.IOPropertyCollectionView();
             this.gbMoveAxis = new System.Windows.Forms.GroupBox();
-            this.jogControl = new QMC.LCP_280.Process.Unit.JogControl();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.unitConfigControl = new QMC.LCP_280.Process.Component.UnitConfig();
             this.positionItemPanel = new System.Windows.Forms.Panel();
+            this.positionTeachingControl = new QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl();
+            this.digitalIOControl = new QMC.LCP_280.Process.Unit.FormConfig.DigitalIOControl();
+            this.jogControl = new QMC.LCP_280.Process.Unit.JogControl();
+            this.unitConfigControl = new QMC.LCP_280.Process.Component.UnitConfig();
             this.gbPositionTeaching.SuspendLayout();
-            this.gbDigitalIO.SuspendLayout();
-            this.ioTableLayoutPanel.SuspendLayout();
             this.gbMoveAxis.SuspendLayout();
             this.mainTableLayoutPanel.SuspendLayout();
             this.SuspendLayout();
@@ -66,23 +60,11 @@ namespace QMC.LCP_280.Process.Unit
             this.gbPositionTeaching.TabStop = false;
             this.gbPositionTeaching.Text = "Position Teaching";
             // 
-            // positionTeachingControl
-            // 
-            this.positionTeachingControl.BackColor = System.Drawing.Color.White;
-            this.positionTeachingControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.positionTeachingControl.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.positionTeachingControl.Location = new System.Drawing.Point(3, 21);
-            this.positionTeachingControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.positionTeachingControl.Name = "positionTeachingControl";
-            this.positionTeachingControl.Size = new System.Drawing.Size(620, 360);
-            this.positionTeachingControl.TabIndex = 8;
-            this.positionTeachingControl.TabStop = false;
-            // 
             // gbDigitalIO
             // 
+            this.gbDigitalIO.Controls.Add(this.digitalIOControl);
             this.gbDigitalIO.BackColor = System.Drawing.Color.White;
             this.mainTableLayoutPanel.SetColumnSpan(this.gbDigitalIO, 2);
-            this.gbDigitalIO.Controls.Add(this.ioTableLayoutPanel);
             this.gbDigitalIO.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbDigitalIO.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.gbDigitalIO.Location = new System.Drawing.Point(3, 393);
@@ -92,54 +74,17 @@ namespace QMC.LCP_280.Process.Unit
             this.gbDigitalIO.TabStop = false;
             this.gbDigitalIO.Text = "Digital I/O";
             // 
-            // ioTableLayoutPanel
+            // digitalIOControl
             // 
-            this.ioTableLayoutPanel.ColumnCount = 2;
-            this.ioTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.ioTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.ioTableLayoutPanel.Controls.Add(this.inputView, 0, 0);
-            this.ioTableLayoutPanel.Controls.Add(this.outputView, 1, 0);
-            this.ioTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.ioTableLayoutPanel.Location = new System.Drawing.Point(3, 21);
-            this.ioTableLayoutPanel.Name = "ioTableLayoutPanel";
-            this.ioTableLayoutPanel.RowCount = 1;
-            this.ioTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.ioTableLayoutPanel.Size = new System.Drawing.Size(620, 360);
-            this.ioTableLayoutPanel.TabIndex = 2;
-            // 
-            // inputView
-            // 
-            this.inputView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.inputView.FastBuild = true;
-            this.inputView.FastInitialPaint = true;
-            this.inputView.GroupName = "Input";
-            this.inputView.ListBackColor = System.Drawing.Color.Black;
-            this.inputView.ListForeColor = System.Drawing.Color.Lime;
-            this.inputView.Location = new System.Drawing.Point(4, 6);
-            this.inputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            this.inputView.Name = "inputView";
-            this.inputView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
-            this.inputView.SelectedForeColor = System.Drawing.Color.Black;
-            this.inputView.Size = new System.Drawing.Size(302, 348);
-            this.inputView.SuppressResizeInvalidation = true;
-            this.inputView.TabIndex = 1;
-            // 
-            // outputView
-            // 
-            this.outputView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.outputView.FastBuild = true;
-            this.outputView.FastInitialPaint = true;
-            this.outputView.GroupName = "Output";
-            this.outputView.ListBackColor = System.Drawing.Color.Black;
-            this.outputView.ListForeColor = System.Drawing.Color.Lime;
-            this.outputView.Location = new System.Drawing.Point(314, 6);
-            this.outputView.Margin = new System.Windows.Forms.Padding(4, 6, 4, 6);
-            this.outputView.Name = "outputView";
-            this.outputView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
-            this.outputView.SelectedForeColor = System.Drawing.Color.Black;
-            this.outputView.Size = new System.Drawing.Size(302, 348);
-            this.outputView.SuppressResizeInvalidation = true;
-            this.outputView.TabIndex = 1;
+            this.digitalIOControl.BackColor = System.Drawing.Color.White;
+            this.digitalIOControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.digitalIOControl.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.digitalIOControl.Location = new System.Drawing.Point(3, 21);
+            this.digitalIOControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.digitalIOControl.Name = "digitalIOControl";
+            this.digitalIOControl.Size = new System.Drawing.Size(620, 360);
+            this.digitalIOControl.TabIndex = 8;
+            this.digitalIOControl.TabStop = false;
             // 
             // gbMoveAxis
             // 
@@ -154,15 +99,6 @@ namespace QMC.LCP_280.Process.Unit
             this.gbMoveAxis.TabIndex = 10;
             this.gbMoveAxis.TabStop = false;
             this.gbMoveAxis.Text = "Move Axis";
-            // 
-            // jogControl
-            // 
-            this.jogControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.jogControl.Location = new System.Drawing.Point(3, 21);
-            this.jogControl.Margin = new System.Windows.Forms.Padding(0);
-            this.jogControl.Name = "jogControl";
-            this.jogControl.Size = new System.Drawing.Size(304, 750);
-            this.jogControl.TabIndex = 0;
             // 
             // axisListBoxItemsView
             // 
@@ -204,6 +140,34 @@ namespace QMC.LCP_280.Process.Unit
             this.mainTableLayoutPanel.Size = new System.Drawing.Size(1264, 780);
             this.mainTableLayoutPanel.TabIndex = 12;
             // 
+            // positionItemPanel
+            // 
+            this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
+            this.positionItemPanel.Name = "positionItemPanel";
+            this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
+            this.positionItemPanel.TabIndex = 0;
+            // 
+            // positionTeachingControl
+            // 
+            this.positionTeachingControl.BackColor = System.Drawing.Color.White;
+            this.positionTeachingControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionTeachingControl.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.positionTeachingControl.Location = new System.Drawing.Point(3, 21);
+            this.positionTeachingControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.positionTeachingControl.Name = "positionTeachingControl";
+            this.positionTeachingControl.Size = new System.Drawing.Size(620, 360);
+            this.positionTeachingControl.TabIndex = 8;
+            this.positionTeachingControl.TabStop = false;
+            // 
+            // jogControl
+            // 
+            this.jogControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.jogControl.Location = new System.Drawing.Point(3, 21);
+            this.jogControl.Margin = new System.Windows.Forms.Padding(0);
+            this.jogControl.Name = "jogControl";
+            this.jogControl.Size = new System.Drawing.Size(304, 750);
+            this.jogControl.TabIndex = 0;
+            // 
             // unitConfigControl
             // 
             this.unitConfigControl.AutoReloadOnActivate = true;
@@ -217,13 +181,6 @@ namespace QMC.LCP_280.Process.Unit
             this.unitConfigControl.TabIndex = 12;
             this.unitConfigControl.Load += new System.EventHandler(this.unitConfigControl_Load);
             // 
-            // positionItemPanel
-            // 
-            this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
-            this.positionItemPanel.Name = "positionItemPanel";
-            this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
-            this.positionItemPanel.TabIndex = 0;
-            // 
             // IndexChipProbeControllerUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -233,8 +190,6 @@ namespace QMC.LCP_280.Process.Unit
             this.Name = "IndexChipProbeControllerUnit_Config";
             this.Text = "IndexChipProbeController Unit Configuration";
             this.gbPositionTeaching.ResumeLayout(false);
-            this.gbDigitalIO.ResumeLayout(false);
-            this.ioTableLayoutPanel.ResumeLayout(false);
             this.gbMoveAxis.ResumeLayout(false);
             this.mainTableLayoutPanel.ResumeLayout(false);
             this.ResumeLayout(false);
