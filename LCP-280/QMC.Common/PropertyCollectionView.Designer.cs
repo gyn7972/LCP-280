@@ -39,6 +39,11 @@
 
         }
 
+        public void View_RefreshProperties()
+        {
+            RefreshProperties();
+        }
+
         #endregion
     }
 }
