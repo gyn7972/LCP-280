@@ -44,7 +44,9 @@ namespace QMC.Common.Keithley
             string selectItem = comboBoxInterface.SelectedItem as string;
             if (string.IsNullOrEmpty(selectItem))
             {
-                MessageBox.Show("Please select an interface type.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Please select an interface type.");
+
                 return;
             }
 
@@ -85,11 +87,14 @@ namespace QMC.Common.Keithley
         {
             if (string.IsNullOrEmpty(selectResourceName))
             {
-                MessageBox.Show("Please select a resource.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Please select a resource.");
+
                 return;
             }
 
-            if (MessageBox.Show($"Apply selected resource?\n\n{selectResourceName}", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            var ask = new MessageBoxYesNo();
+            if (ask.ShowDialog("Confirm", $"Apply selected resource?\n\n{selectResourceName}") == DialogResult.Yes)
             {
                 OnNewResourceSelected?.Invoke(this, selectResourceName);
                 this.DialogResult = DialogResult.OK;

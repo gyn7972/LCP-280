@@ -1,4 +1,5 @@
-﻿using QMC.Common.Motions;
+﻿using QMC.Common;
+using QMC.Common.Motions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -32,8 +33,9 @@ namespace QMC.LCP_280.Process
             {
                 if (_axisManager == null)
                 {
-                    MessageBox.Show("AxisManager가 초기화되지 않았습니다.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", $"AxisManager가 초기화되지 않았습니다.");
+
                     return;
                 }
 
@@ -58,8 +60,8 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"축 목록 로딩 오류:\n{ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"축 목록 로딩 오류:\n{ex.Message}");
             }
         }
         private void comboUnit_SelectedIndexChanged(object sender, EventArgs e)
@@ -96,16 +98,16 @@ namespace QMC.LCP_280.Process
         {
             if (_axisManager == null)
             {
-                MessageBox.Show("AxisManager가 없습니다.", "알림",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Notification!", $"AxisManager가 없습니다.");
                 return;
             }
 
             var axis = GetSelectedAxis();
             if (axis == null)
             {
-                MessageBox.Show("유닛/축을 올바르게 선택하세요.", "알림",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Notification!", $"유닛/축을 올바르게 선택하세요.");
                 return;
             }
 
@@ -124,14 +126,13 @@ namespace QMC.LCP_280.Process
                 axis.MoveAbs(-dist, false);
                 while (axis.InPosition(-dist)) await Task.Delay(20);
 
-                MessageBox.Show($"[{axis.Name}] ({comboUnit.SelectedItem})  ±{dist:F3} mm 이동 완료.", "완료",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Complete!", $"[{axis.Name}] ({comboUnit.SelectedItem})  ±{dist:F3} mm 이동 완료.");
             }
             catch (Exception ex)
             {
-                try { axis?.Stop(); } catch { /* ignore */ }
-                MessageBox.Show($"축 테스트 중 오류:\n{ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"축 테스트 중 오류:\n{ex.Message}");
             }
             finally
             {
@@ -143,16 +144,18 @@ namespace QMC.LCP_280.Process
         {
             if (_axisManager == null)
             {
-                MessageBox.Show("AxisManager가 없습니다.", "알림",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Notification!", "AxisManager가 없습니다.");
+
                 return;
             }
 
             var axis = GetSelectedAxis();
             if (axis == null)
             {
-                MessageBox.Show("유닛/축을 올바르게 선택하세요.", "알림",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Notification!", "유닛/축을 올바르게 선택하세요.");
+
                 return;
             }
 

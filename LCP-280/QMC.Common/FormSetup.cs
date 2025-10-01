@@ -121,8 +121,9 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"setup 폼 로드 중 오류 발생: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"setup 폼 로드 중 오류 발생: {ex.Message}");
+
                 CreateSampleTabs();
             }
         }
@@ -170,8 +171,9 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"폼 로드 중 오류 발생: {ex.Message}");
+
                 var lbl = new Label
                 {
                     Text = $"폼 로드 실패: {formInfo.DisplayName}",

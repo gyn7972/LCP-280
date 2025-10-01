@@ -351,13 +351,15 @@ namespace QMC.LCP_280.Process
                 var currentRecipe = EquipmentRecipe?.CurrentRecipe;
                 if (currentRecipe != null && Tester != null)
                 {
+                    var mb = new MessageBoxOk();
+
                     if (Tester.LoadTestConditionSet(currentRecipe.TestConditionSetPath) != 0)
                     {
-                        MessageBox.Show("Failed to load test condition set.");
+                        mb.ShowDialog("Error!", $"Failed to load test condition set.");
                     }
                     if (Tester.LoadBinningSpecSheet(currentRecipe.BinningSpecSheetPath) != 0)
                     {
-                        MessageBox.Show("Failed to load binning spec sheet.");
+                        mb.ShowDialog("Error!", $"Failed to load binning spec sheet.");
                     }
                 }
 

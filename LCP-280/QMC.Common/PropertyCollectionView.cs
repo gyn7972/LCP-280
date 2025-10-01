@@ -613,7 +613,8 @@ namespace QMC.Common
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, "파일/폴더 선택 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"파일/폴더 선택 중 오류: " + ex.Message);
                 }
             };
 

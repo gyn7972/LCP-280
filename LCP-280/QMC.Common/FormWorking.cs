@@ -24,18 +24,18 @@ namespace QMC.Common
         {
             InitializeComponent();
 
-            // 🔧 배경색을 흰색으로 설정
+            // 배경색을 흰색으로 설정
             this.BackColor = Color.White;
 
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializeworkingUI();
 
-            // 🔧 Visible 상태 변경 이벤트 추가(자식 크기만 동기화)
+            // Visible 상태 변경 이벤트 추가(자식 크기만 동기화)
             this.VisibleChanged += Formworking_VisibleChanged;
         }
 
         /// <summary>
-        /// 🔧 FormWorking이 보여질 때 탭 자식 크기만 갱신
+        /// FormWorking이 보여질 때 탭 자식 크기만 갱신
         /// </summary>
         private void Formworking_VisibleChanged(object sender, EventArgs e)
         {
@@ -47,14 +47,14 @@ namespace QMC.Common
 
         private void InitializeworkingUI()
         {
-            Console.WriteLine("🚀 Formworking.InitializeworkingUI() 시작");
+            Console.WriteLine("Formworking.InitializeworkingUI() 시작");
 
-            // 🔧 Formworking 배경색을 확실히 흰색으로 설정
+            // Formworking 배경색을 확실히 흰색으로 설정
             this.BackColor = Color.White;
 
             // TabControl 생성 및 테마 적용
             workingTabControl = new TabControl();
-            // 🔧 Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
+            // Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
             workingTabControl.Dock = DockStyle.Fill;
             workingTabControl.Font = _tabFont;
             workingTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
@@ -63,15 +63,15 @@ namespace QMC.Common
             workingTabControl.DrawItem += workingTabControl_DrawItem;
             workingTabControl.SelectedIndexChanged += workingTabControl_SelectedIndexChanged;
 
-            // 🔧 TabControl 배경색도 흰색으로 설정
+            // TabControl 배경색도 흰색으로 설정
             workingTabControl.BackColor = Color.White;
 
-            Console.WriteLine($"   TabControl 생성 완료: Size={workingTabControl.Size}, Visible={workingTabControl.Visible}");
+            Console.WriteLine($"TabControl 생성 완료: Size={workingTabControl.Size}, Visible={workingTabControl.Visible}");
 
             this.Controls.Add(workingTabControl);
 
-            Console.WriteLine($"   TabControl을 Formworking에 추가 완료");
-            Console.WriteLine($"   Formworking.Controls.Count: {this.Controls.Count}");
+            Console.WriteLine($"TabControl을 Formworking에 추가 완료");
+            Console.WriteLine($"Formworking.Controls.Count: {this.Controls.Count}");
 
             // FormManager에서 등록된 working 폼들을 자동으로 탭으로 추가
             LoadFormsFromManager();
@@ -80,10 +80,10 @@ namespace QMC.Common
             workingTabControl.Visible = true;
             workingTabControl.BringToFront();
 
-            // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
+            // 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
             EnsureFirstTabLoaded();
 
-            Console.WriteLine($"✅ InitializeworkingUI 완료");
+            Console.WriteLine($"InitializeworkingUI 완료");
             Console.WriteLine($"   최종 TabControl 상태: Visible={workingTabControl.Visible}, TabCount={workingTabControl.TabPages.Count}");
         }
 
@@ -112,7 +112,7 @@ namespace QMC.Common
         {
             try
             {
-                Console.WriteLine("🔍 Formworking.LoadFormsFromManager() 시작");
+                Console.WriteLine("Formworking.LoadFormsFromManager() 시작");
 
                 var workingForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Working);
 
@@ -129,7 +129,7 @@ namespace QMC.Common
                 string Normalize(string s) => (s ?? string.Empty).Trim();
 
                 // 원본 목록 진단 로그
-                Console.WriteLine("   ▶ 등록된 폼(DisplayName 원본): " +
+                Console.WriteLine("등록된 폼(DisplayName 원본): " +
                     string.Join(", ", workingForms.Select(f => $"[{f.DisplayName}]")));
 
                 // DisplayName 정규화된 Lookup (동일 이름 여러 개일 수도 있으므로)
@@ -152,13 +152,13 @@ namespace QMC.Common
                             if (used.Add(fi))
                             {
                                 ordered.Add(fi);
-                                Console.WriteLine($"   ✅ 순서 반영: {fi.DisplayName}");
+                                Console.WriteLine($"순서 반영: {fi.DisplayName}");
                             }
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"   ⚠️ 미존재: {rawName}");
+                        Console.WriteLine($"미존재: {rawName}");
                     }
                 }
 
@@ -169,7 +169,7 @@ namespace QMC.Common
                     {
                         ordered.Add(fi);
                         used.Add(fi);
-                        Console.WriteLine($"   ➕ 잔여 추가: {fi.DisplayName}");
+                        Console.WriteLine($"잔여 추가: {fi.DisplayName}");
                     }
                 }
 
@@ -179,12 +179,12 @@ namespace QMC.Common
 
                 if (ordered.Count == 0)
                 {
-                    Console.WriteLine("⚠️ 등록된 working 폼이 없어서 기본 샘플 탭 생성");
+                    Console.WriteLine("등록된 working 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
 
                 // 최종 진단
-                Console.WriteLine("   ▶ 최종 탭 순서: " +
+                Console.WriteLine("최종 탭 순서: " +
                     string.Join(" > ", ordered.Select(f => f.DisplayName)));
 
                 // desiredOrder 대비 실제 매칭 안된 이름 추출
@@ -195,13 +195,16 @@ namespace QMC.Common
 
                 if (missing.Count > 0)
                 {
-                    Console.WriteLine("   ❗ desiredOrder 미매칭 목록: " + string.Join(", ", missing));
+                    Console.WriteLine("desiredOrder 미매칭 목록: " + string.Join(", ", missing));
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ working 폼 로드 중 오류: {ex.Message}");
-                MessageBox.Show($"working 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Console.WriteLine($"working 폼 로드 중 오류: {ex.Message}");
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"working 폼 로드 중 오류 발생: {ex.Message}");
+
                 CreateSampleTabs();
             }
 
@@ -259,12 +262,12 @@ namespace QMC.Common
 
         private void CreateTabFromFormInfo(FormInfo formInfo)
         {
-            Console.WriteLine($"🔧 탭 생성: {formInfo.DisplayName}");
+            Console.WriteLine($"탭 생성: {formInfo.DisplayName}");
             TabPage tabPage = new TabPage(formInfo.DisplayName);
             tabPage.Tag = formInfo;
             tabPage.BackColor = Color.White;
             workingTabControl.TabPages.Add(tabPage);
-            Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {workingTabControl.TabPages.Count}");
+            Console.WriteLine($" 탭 추가 완료. 현재 탭 수: {workingTabControl.TabPages.Count}");
         }
 
         private void workingTabControl_SelectedIndexChanged(object sender, EventArgs e)
@@ -302,7 +305,9 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"폼 로드 중 오류 발생: {ex.Message}");
+
                 Label errorLabel = new Label
                 {
                     Text = $"폼 로드 실패: {formInfo.DisplayName}",
@@ -332,13 +337,13 @@ namespace QMC.Common
                 // 너무 작은 초기값(예: 600x400) 필터링
                 if (availableWidth < 800 || availableHeight < 450)
                 {
-                    Console.WriteLine($"   ⏭️ 크기 전달 보류(Working): {availableWidth}x{availableHeight}");
+                    Console.WriteLine($"크기 전달 보류(Working): {availableWidth}x{availableHeight}");
                     return;
                 }
                 var setPanelSizeMethod = activeForm.GetType().GetMethod("SetPanelSize", new Type[] { typeof(int), typeof(int) });
                 if (setPanelSizeMethod != null)
                 {
-                    Console.WriteLine($"   활성 폼 {activeForm.GetType().Name}에 정확한 크기 전달(Working): {availableWidth}x{availableHeight}");
+                    Console.WriteLine($"활성 폼 {activeForm.GetType().Name}에 정확한 크기 전달(Working): {availableWidth}x{availableHeight}");
                     setPanelSizeMethod.Invoke(activeForm, new object[] { availableWidth, availableHeight });
                 }
             }
@@ -449,14 +454,14 @@ namespace QMC.Common
 
         public void SetPanelSize(int width, int height)
         {
-            Console.WriteLine($"🔧 Formworking.SetPanelSize() 호출: width={width}, height={height}");
+            Console.WriteLine($"Formworking.SetPanelSize() 호출: width={width}, height={height}");
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
             _hostSized = true; // 호스트에서 유효 사이즈 전달 받음
             UpdateActiveChildSize();
             this.Invalidate();
             this.Update();
-            Console.WriteLine($"✅ Formworking.SetPanelSize() 완료: 최종 크기={this.Size}");
+            Console.WriteLine($"Formworking.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
 
         #region Form Border Drawing
@@ -468,7 +473,7 @@ namespace QMC.Common
                 Rectangle borderRect = new Rectangle(0, 0, this.ClientSize.Width - 1, this.ClientSize.Height - 1);
                 e.Graphics.DrawRectangle(borderPen, borderRect);
             }
-            Console.WriteLine($"🖌️ Formworking 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
+            Console.WriteLine($"Formworking 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
         }
         protected override void OnResize(EventArgs e)
         {
@@ -482,7 +487,7 @@ namespace QMC.Common
         {
             FormBorderColor = color;
             FormBorderWidth = width;
-            Console.WriteLine($"🎨 Formworking 테두리 스타일 변경: Color={color}, Width={width}");
+            Console.WriteLine($"Formworking 테두리 스타일 변경: Color={color}, Width={width}");
         }
         public void ResetBorderStyle()
         {

@@ -397,8 +397,8 @@ namespace QMC.Common
                 // 사이즈 적용
                 ApplySizes();
 
-                // 🔧 뷰가 표시된 후 추가로 크기 확인
-                Console.WriteLine($"📏 최종 표시된 뷰: {currentCenterView.GetType().Name}, Size={currentCenterView.Size}, Visible={currentCenterView.Visible}");
+                // 뷰가 표시된 후 추가로 크기 확인
+                Console.WriteLine($"최종 표시된 뷰: {currentCenterView.GetType().Name}, Size={currentCenterView.Size}, Visible={currentCenterView.Visible}");
             }
         }
 
@@ -497,7 +497,8 @@ namespace QMC.Common
             }
             message += $"\n\nFormManager{menuName}.Instance.Register{menuName}Form()을 사용하여 폼을 등록하세요.";
 
-            MessageBox.Show(message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            var mb = new MessageBoxOk();
+            mb.ShowDialog("Notification!", message);
 
             // 기본 동작: 중앙 컨텐츠 비우기
             centerPanel.Controls.Clear();
@@ -508,7 +509,7 @@ namespace QMC.Common
         {
             try
             {
-                Console.WriteLine("🚀 FormManager 시스템 초기화 시작");
+                Console.WriteLine("FormManager 시스템 초기화 시작");
 
                 // 모든 FormManager 타입의 자동 등록 실행
                 FormManagerConfig.Instance.AutoRegisterUnitConfigForms();
@@ -518,12 +519,14 @@ namespace QMC.Common
                 FormManagerSetup.Instance.AutoRegisterUnitSetupForms();
                 FormManagerLog.Instance.AutoRegisterUnitLogForms();
 
-                Console.WriteLine("✅ FormManager 시스템 초기화 완료");
+                Console.WriteLine("FormManager 시스템 초기화 완료");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ FormManager 초기화 오류: {ex.Message}");
-                MessageBox.Show($"FormManager 초기화 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                Console.WriteLine($"FormManager 초기화 오류: {ex.Message}");
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"FormManager 초기화 중 오류 발생: {ex.Message}");
             }
         }
     }

@@ -356,7 +356,8 @@ namespace QMC.Common.Cameras.HIKVISION
                 }
                 else if (strSerialNumber == "")
                 {
-                    MessageBox.Show(String.Format("Check SerialNumber, Current = {0}", this.SerialNumber));
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Check SerialNumber!", String.Format("Check SerialNumber, Current = {0}", this.SerialNumber));
                 }
                 devices.Add(deviceInformation);
             }

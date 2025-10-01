@@ -766,6 +766,12 @@
     <Content Include="Resources\megaphone_80px.png" />
     <Content Include="Resources\megaphone_80px_q.png" />
     <None Include="Resources\QMC.ico" />
+    <None Include="Resources\megaphone_Error.png" />
+    <None Include="Resources\megaphone_Notification.png" />
+    <None Include="Resources\megaphone_Warning.png" />
+    <None Include="Resources\megaphone_Error1.png" />
+    <None Include="Resources\megaphone_Notification1.png" />
+    <None Include="Resources\megaphone_Warning1.png" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.CogNamer.PC.dll" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.SDK.Discovery.PC.dll" />
     <Content Include="Vision\Cognex\Library\Cognex.DataMan.SDK.PC.dll" />

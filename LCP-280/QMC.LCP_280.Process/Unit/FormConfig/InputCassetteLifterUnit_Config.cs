@@ -134,7 +134,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_cfg.TeachingPositions != null && _cfg.TeachingPositions.Count == 0)
                 {
                     try { _cfg.InitializeDefaultTeachingPositions(); } catch { }
-                    //PopulateTeachingPositionList();
+                    positionTeachingControl.RefreshPositionList();
                 }
             }
             catch (Exception ex)

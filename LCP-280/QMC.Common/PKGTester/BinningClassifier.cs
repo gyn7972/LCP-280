@@ -101,6 +101,7 @@ namespace QMC.Common.PKGTester
                             continue;
                         }
                     }
+
                     // 사양을 모두 만족하는 경우 해당 빈을 결과로 설정하고 반환
                     if (allInRange)
                     {
@@ -110,6 +111,7 @@ namespace QMC.Common.PKGTester
                         return result;
                     }
                 }
+
                 // 어떤 빈에도 속하지 않는 경우
                 result.BinNo = -1;
                 result.BinType = BinningType.NgBin;

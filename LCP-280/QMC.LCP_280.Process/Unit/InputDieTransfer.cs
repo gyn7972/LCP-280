@@ -1345,8 +1345,20 @@ namespace QMC.LCP_280.Process.Unit
             die.State = DieProcessState.Picked;
             die.ProcessSatate = Material.MaterialProcessSatate.Processing;
             SetMaterial(die);
+            Task<int> t = Task.Factory.StartNew(() =>
+            {
+                return RotateToolTForPlace();
+            });
+            while(t.IsCompleted == false)
+            {
+                double dPos = AxisToolT.GetPosition();
+                // Todo 사진 한장 찍어서 좌표 업데이트 한번 한다. 옵션 처리 해야 될까?
+                
+            }
+            
+            t.Wait();
+            nRet = t.Result;
 
-            nRet = RotateToolTForPlace();
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace failed");
