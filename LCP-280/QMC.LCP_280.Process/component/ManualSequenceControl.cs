@@ -101,7 +101,9 @@ namespace QMC.LCP_280.Process.Component
                             else if (t.IsFaulted)
                             {
                                 // 예외 메시지 표시
-                                MessageBox.Show(t.Exception?.GetBaseException().Message, "Manual Run Error");
+                                var mb = new MessageBoxOk();
+                                mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
+
                             }
                         }
                         catch (Exception ex)
@@ -161,24 +163,26 @@ namespace QMC.LCP_280.Process.Component
                 var eq = Equipment.Instance;
                 if (eq == null)
                 {
-                    MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Equipment 인스턴스가 초기화되지 않았습니다.");
+
                     return;
                 }
 
                 var unitName = m_ParentUnit.UnitName;
                 if (string.IsNullOrEmpty(unitName))
                 {
-                    MessageBox.Show("UnitName 이 비어있습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"UnitName 이 비어있습니다.");
                     return;
                 }
 
                 // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
                 if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Running)
                 {
-                    MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Info!", $"Unit '{unitName}' 는 이미 실행 중입니다.");
+
                     return;
                 }
 
@@ -195,8 +199,8 @@ namespace QMC.LCP_280.Process.Component
                 bool ok = await eq.StartUnitAsync(unitName);
                 if (!ok)
                 {
-                    MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Unit '{unitName}' 시작 실패.");
                 }
                 else
                 {
@@ -224,16 +228,17 @@ namespace QMC.LCP_280.Process.Component
                 var eq = Equipment.Instance;
                 if (eq == null)
                 {
-                    MessageBox.Show("Equipment 인스턴스가 없습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Equipment 인스턴스가 없습니다.");
+
                     return;
                 }
 
                 var unitName = m_ParentUnit.UnitName;
                 if (string.IsNullOrEmpty(unitName))
                 {
-                    MessageBox.Show("UnitName 이 비어 있습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"UnitName 이 비어 있습니다.");
                     return;
                 }
 
@@ -260,8 +265,8 @@ namespace QMC.LCP_280.Process.Component
                 bool ok = await eq.StopUnitAsync(unitName);
                 if (!ok)
                 {
-                    MessageBox.Show($"Unit '{unitName}' 정지 실패.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Unit '{unitName}' 정지 실패.");
                 }
                 else
                 {
@@ -274,7 +279,9 @@ namespace QMC.LCP_280.Process.Component
             catch (Exception ex)
             {
                 Log.Write(ex);
-                MessageBox.Show(ex.Message, "정지 처리 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", ex.Message);
             }
         }
     }

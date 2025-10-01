@@ -111,11 +111,14 @@ namespace QMC.LCP_280.Process.Component
                     _mapper.ApplyToObject(pc);
 
                 InvokeSave(_config);
-                MessageBox.Show("저장 완료", "Config", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Config!", $"저장 완료");
             }
             catch (Exception ex)
             {
-                MessageBox.Show("저장 실패: " + ex.Message, "Config", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Config!", $"저장 실패: " + ex.Message);
             }
         }
 
@@ -126,9 +129,11 @@ namespace QMC.LCP_280.Process.Component
 
             if (IsDirty())
             {
-                if (MessageBox.Show("저장되지 않은 변경 사항이 있습니다. 폐기 후 다시 로드할까요?",
-                                    "Reload", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("Reload", "저장되지 않은 변경 사항이 있습니다. 폐기 후 다시 로드할까요?") != DialogResult.Yes)
+                {
                     return;
+                }
             }
             InvokeLoad(_config);
             RebuildMapperAndView();

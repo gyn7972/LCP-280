@@ -73,8 +73,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_axisManager == null)
                 {
-                    MessageBox.Show("AxisManager가 초기화되지 않았습니다.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "AxisManager가 초기화되지 않았습니다.");
+
                     selectAxisListBoxItemsView.SetItems();
                     return;
                 }
@@ -281,7 +282,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (!CheckSafeToDrive(axis, jc))
                 {
-                    MessageBox.Show(this, "현재 상태에서 해당 축을 구동할 수 없습니다.", "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Interlock!", "현재 상태에서 해당 축을 구동할 수 없습니다.");
                     return;
                 }
 
@@ -332,7 +334,10 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     string reason;
                     if (!rotary.TryMoveIndexPrev(out reason) && !string.IsNullOrEmpty(reason))
-                        MessageBox.Show(this, reason, "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Interlock!", reason);
+                    }
                     return;
                 }
 
@@ -365,7 +370,10 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     string reason;
                     if (!rotary.TryMoveIndexNext(out reason) && !string.IsNullOrEmpty(reason))
-                        MessageBox.Show(this, reason, "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Interlock!", reason);
+                    }
                     return;
                 }
 

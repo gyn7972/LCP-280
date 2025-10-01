@@ -310,7 +310,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (!CheckSafeToDrive(axis, jc))
                 {
-                    MessageBox.Show(this, "현재 상태에서 해당 축을 구동할 수 없습니다.", "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Interlock!", $"현재 상태에서 해당 축을 구동할 수 없습니다.");
                     return;
                 }
 

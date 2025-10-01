@@ -17,6 +17,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.Common.MessageBoxOk;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -64,22 +65,14 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (_unit == null)
                 {
-                    MessageBox.Show(
-                        _UNIT_NAME + " Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", _UNIT_NAME + " Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "Unit 초기화 중 오류 발생: " + ex.Message,
-                    "오류",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Unit 초기화 중 오류 발생: " + ex.Message);
             }
         }
 
@@ -159,8 +152,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_unit == null || e.Index < 0 || e.Index >= _unit.TeachingPositions.Count)
                 {
-                    MessageBox.Show("선택된 Teaching Position이 없습니다.",
-                        "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "선택된 Teaching Position이 없습니다.");
+
                     return;
                 }
 
@@ -221,13 +215,13 @@ namespace QMC.LCP_280.Process.Unit
                 // UI 갱신
                 positionTeachingControl.RefreshPositionList();
 
-                MessageBox.Show("변경된 Teaching Position이 저장되었습니다.",
-                    "저장 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb1 = new MessageBoxOk();
+                mb1.ShowDialog("Notification!", "변경된 Teaching Position이 저장되었습니다.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"저장 처리 중 오류: {ex.Message}",
-                    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"저장 처리 중 오류: {ex.Message}");
             }
         }
 
@@ -253,19 +247,19 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (result == 0)
                 {
-                    MessageBox.Show("Teaching Position 이동 완료",
-                        "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "Teaching Position 이동 완료.");
                 }
                 else
                 {
-                    MessageBox.Show("일부 축 이동 실패 또는 타임아웃",
-                        "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "일부 축 이동 실패 또는 타임아웃");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Move 처리 중 오류: {ex.Message}",
-                    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"Move 처리 중 오류: {ex.Message}");
             }
         }
 
@@ -275,8 +269,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_cfg?.TeachingPositions == null || e.Index < 0 || e.Index >= _cfg.TeachingPositions.Count)
                 {
-                    MessageBox.Show("선택된 Teaching Position이 없습니다.",
-                        "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "선택된 Teaching Position이 없습니다.");
                     return;
                 }
 
@@ -339,8 +333,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"현재 위치 읽기 중 오류: {ex.Message}",
-                    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"현재 위치 읽기 중 오류: {ex.Message}");
             }
         }
 
@@ -509,24 +503,18 @@ namespace QMC.LCP_280.Process.Unit
                 bool before = false;
                 scan.TryGetOutput(module, originalDisp, out before);
 
-                var dr = MessageBox.Show(
-                    "[" + module + ":" + originalDisp + "] 현재 상태 = " + before + "\r\n변경하시겠습니까?",
-                    "Output Toggle",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question
-                );
-
-                if (dr != DialogResult.Yes) return;
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("Output Toggle", "[" + module + ":" + originalDisp + "] 현재 상태 = " + before + "\r\n변경하시겠습니까?") != DialogResult.Yes)
+                {
+                    return;
+                }
 
                 int rc = scan.WriteOutput(module, originalDisp, !before);
                 if (rc != 0)
                 {
-                    MessageBox.Show(
-                        "WriteOutput 실패 (rc=" + rc + ")",
-                        "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", "WriteOutput 실패 (rc=" + rc + ")");
+
                     return;
                 }
 
@@ -549,21 +537,13 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
 
-                MessageBox.Show(
-                    originalDisp + ": " + before + " -> " + after,
-                    "Info",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                var mb1 = new MessageBoxOk();
+                mb1.ShowDialog("Info!", originalDisp + ": " + before + " -> " + after);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "Output 토글 처리 중 오류: " + ex.Message,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Output 토글 처리 중 오류: " + ex.Message);
             }
         }
 

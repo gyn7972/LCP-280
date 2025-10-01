@@ -575,12 +575,16 @@ namespace QMC.LCP_280.Process.Component
                 if (!_displayToEntry.TryGetValue(display, out var entry)) return;
 
                 // 이동 확인 메시지
-                var msg = $"{entry.Display} 위치로 이동하시겠습니까?";
-                if (MessageBox.Show(msg, "Move Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("Move Confirm", $"{entry.Display} 위치로 이동하시겠습니까?") != DialogResult.Yes)
+                {
                     return;
+                }
 
                 if (_moveExecutors.TryGetValue(entry.UnitKey, out var mover))
+                {
                     mover(entry.PositionName, GetJogVelocityFactor());
+                }
             }
             catch (Exception ex)
             {
