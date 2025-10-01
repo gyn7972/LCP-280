@@ -40,11 +40,6 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             }
         }
 
-        private void InitializeRadioButtonView()
-        {
-            rbTeachingMoveMode?.SetOptions(true, "Fine", "Coarse");
-        }
-
         public void SetUnitData(BaseUnit unit, BaseConfig config)
         {
             _unit = unit;
@@ -52,6 +47,11 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
 
             InitializeUI();
             InitializeRadioButtonView();
+        }
+
+        private void InitializeRadioButtonView()
+        {
+            rbTeachingMoveMode?.SetOptions(true, "Fine", "Coarse");
         }
 
         public void RefreshPositionList()

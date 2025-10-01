@@ -52,6 +52,7 @@
             // 
             // positionTableLayoutPanel
             // 
+            this.positionTableLayoutPanel.BackColor = System.Drawing.Color.White;
             this.positionTableLayoutPanel.ColumnCount = 2;
             this.positionTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 35F));
             this.positionTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 65F));

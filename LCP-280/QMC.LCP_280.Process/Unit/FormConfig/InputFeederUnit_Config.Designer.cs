@@ -21,6 +21,7 @@ namespace QMC.LCP_280.Process.Unit
         private Panel positionItemPanel; // placeholder
         private IContainer components = null;
         private QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl positionTeachingControl;
+        private QMC.LCP_280.Process.Unit.FormConfig.DigitalIOControl digitalIOControl;
 
         protected override void Dispose(bool disposing)
         {
@@ -36,6 +37,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
             this.positionTeachingControl = new QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl();
+            this.digitalIOControl = new QMC.LCP_280.Process.Unit.FormConfig.DigitalIOControl();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
             this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.inputView = new QMC.Common.IOPropertyCollectionView();
@@ -79,6 +81,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // gbDigitalIO
             // 
+            this.gbDigitalIO.Controls.Add(this.digitalIOControl);
             this.gbDigitalIO.BackColor = System.Drawing.Color.White;
             this.mainTableLayoutPanel.SetColumnSpan(this.gbDigitalIO, 2);
             this.gbDigitalIO.Controls.Add(this.ioTableLayoutPanel);
@@ -90,6 +93,18 @@ namespace QMC.LCP_280.Process.Unit
             this.gbDigitalIO.TabIndex = 9;
             this.gbDigitalIO.TabStop = false;
             this.gbDigitalIO.Text = "Digital I/O";
+            // 
+            // digitalIOControl
+            // 
+            this.digitalIOControl.BackColor = System.Drawing.Color.White;
+            this.digitalIOControl.Controls.Add(this.ioTableLayoutPanel);
+            this.digitalIOControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.digitalIOControl.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.digitalIOControl.Location = new System.Drawing.Point(3, 393);
+            this.digitalIOControl.Name = "digitalIOControl";
+            this.digitalIOControl.Size = new System.Drawing.Size(626, 384);
+            this.digitalIOControl.TabIndex = 9;
+            this.digitalIOControl.TabStop = false;
             // 
             // ioTableLayoutPanel
             // 
