@@ -12,8 +12,6 @@ namespace QMC.LCP_280.Process.Unit
         private IOPropertyCollectionView inputView;
         private IOPropertyCollectionView outputView;
         private ListBoxItemsView axisListBoxItemsView; // not placed in layout
-        private IndividualMenuButton btnSave;
-        private IndividualMenuButton btnCancel;
         private GroupBox gbPositionTeaching;
         private GroupBox gbDigitalIO;
         private GroupBox gbMoveAxis;
@@ -21,14 +19,8 @@ namespace QMC.LCP_280.Process.Unit
         private TableLayoutPanel mainTableLayoutPanel;
         private TableLayoutPanel ioTableLayoutPanel;
         private Panel positionItemPanel; // placeholder
-        private ListBoxItemsView positionItemView;
-        private TableLayoutPanel positionTableLayoutPanel;
-        private PropertyCollectionView positionEditorView;
-        private GroupBox gbTeachingMove;
-        private IndividualMenuButton btnMovePosition;
-        private RadioButtonView rbTeachingMoveMode;
-        private Panel editorPanel;
         private IContainer components = null;
+        private QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl positionTeachingControl;
 
         protected override void Dispose(bool disposing)
         {
@@ -43,15 +35,7 @@ namespace QMC.LCP_280.Process.Unit
         private void InitializeComponent()
         {
             this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
-            this.positionTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.gbTeachingMove = new System.Windows.Forms.GroupBox();
-            this.btnMovePosition = new QMC.Common.IndividualMenuButton();
-            this.rbTeachingMoveMode = new QMC.Common.RadioButtonView();
-            this.editorPanel = new System.Windows.Forms.Panel();
-            this.positionEditorView = new QMC.Common.PropertyCollectionView();
-            this.btnCancel = new QMC.Common.IndividualMenuButton();
-            this.btnSave = new QMC.Common.IndividualMenuButton();
-            this.positionItemView = new QMC.Common.ListBoxItemsView();
+            this.positionTeachingControl = new QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
             this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.inputView = new QMC.Common.IOPropertyCollectionView();
@@ -60,12 +44,8 @@ namespace QMC.LCP_280.Process.Unit
             this.jogControl = new QMC.LCP_280.Process.Unit.JogControl();
             this.axisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.positionItemPanel = new System.Windows.Forms.Panel();
             this.unitConfigControl = new QMC.LCP_280.Process.Component.UnitConfig();
-            this.gbPositionTeaching.SuspendLayout();
-            this.positionTableLayoutPanel.SuspendLayout();
-            this.gbTeachingMove.SuspendLayout();
-            this.editorPanel.SuspendLayout();
+            this.positionItemPanel = new System.Windows.Forms.Panel();
             this.gbDigitalIO.SuspendLayout();
             this.ioTableLayoutPanel.SuspendLayout();
             this.gbMoveAxis.SuspendLayout();
@@ -74,9 +54,9 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // gbPositionTeaching
             // 
+            this.gbPositionTeaching.Controls.Add(this.positionTeachingControl);
             this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
             this.mainTableLayoutPanel.SetColumnSpan(this.gbPositionTeaching, 2);
-            this.gbPositionTeaching.Controls.Add(this.positionTableLayoutPanel);
             this.gbPositionTeaching.Font = new System.Drawing.Font("맑은 고딕", 10F);
             this.gbPositionTeaching.Location = new System.Drawing.Point(3, 3);
             this.gbPositionTeaching.Name = "gbPositionTeaching";
@@ -85,149 +65,17 @@ namespace QMC.LCP_280.Process.Unit
             this.gbPositionTeaching.TabStop = false;
             this.gbPositionTeaching.Text = "Position Teaching";
             // 
-            // positionTableLayoutPanel
+            // positionTeachingControl
             // 
-            this.positionTableLayoutPanel.ColumnCount = 2;
-            this.positionTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.positionTableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
-            this.positionTableLayoutPanel.Controls.Add(this.gbTeachingMove, 1, 1);
-            this.positionTableLayoutPanel.Controls.Add(this.editorPanel, 1, 0);
-            this.positionTableLayoutPanel.Controls.Add(this.positionItemView, 0, 0);
-            this.positionTableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.positionTableLayoutPanel.Location = new System.Drawing.Point(3, 21);
-            this.positionTableLayoutPanel.Name = "positionTableLayoutPanel";
-            this.positionTableLayoutPanel.RowCount = 2;
-            this.positionTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 60F));
-            this.positionTableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.positionTableLayoutPanel.Size = new System.Drawing.Size(620, 360);
-            this.positionTableLayoutPanel.TabIndex = 13;
-            // 
-            // gbTeachingMove
-            // 
-            this.gbTeachingMove.BackColor = System.Drawing.Color.White;
-            this.gbTeachingMove.Controls.Add(this.btnMovePosition);
-            this.gbTeachingMove.Controls.Add(this.rbTeachingMoveMode);
-            this.gbTeachingMove.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gbTeachingMove.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.gbTeachingMove.Location = new System.Drawing.Point(251, 219);
-            this.gbTeachingMove.Name = "gbTeachingMove";
-            this.gbTeachingMove.Size = new System.Drawing.Size(366, 138);
-            this.gbTeachingMove.TabIndex = 7;
-            this.gbTeachingMove.TabStop = false;
-            this.gbTeachingMove.Text = "Teaching Move";
-            // 
-            // btnMovePosition
-            // 
-            this.btnMovePosition.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnMovePosition.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnMovePosition.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnMovePosition.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnMovePosition.CustomForeColor = System.Drawing.Color.Black;
-            this.btnMovePosition.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnMovePosition.ForeColor = System.Drawing.Color.Black;
-            this.btnMovePosition.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMovePosition.Location = new System.Drawing.Point(242, 34);
-            this.btnMovePosition.Name = "btnMovePosition";
-            this.btnMovePosition.Size = new System.Drawing.Size(117, 95);
-            this.btnMovePosition.TabIndex = 6;
-            this.btnMovePosition.TabStop = false;
-            this.btnMovePosition.Text = "Move\r\nPosition";
-            this.btnMovePosition.UseVisualStyleBackColor = false;
-            this.btnMovePosition.Click += new System.EventHandler(this.btnMovePosition_Click);
-            // 
-            // rbTeachingMoveMode
-            // 
-            this.rbTeachingMoveMode.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.rbTeachingMoveMode.GroupName = "Move Mode";
-            this.rbTeachingMoveMode.Location = new System.Drawing.Point(6, 25);
-            this.rbTeachingMoveMode.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
-            this.rbTeachingMoveMode.Name = "rbTeachingMoveMode";
-            this.rbTeachingMoveMode.Orientation = System.Windows.Forms.Orientation.Vertical;
-            this.rbTeachingMoveMode.SelectedIndex = -1;
-            this.rbTeachingMoveMode.Size = new System.Drawing.Size(230, 105);
-            this.rbTeachingMoveMode.TabIndex = 5;
-            // 
-            // editorPanel
-            // 
-            this.editorPanel.Controls.Add(this.positionEditorView);
-            this.editorPanel.Controls.Add(this.btnCancel);
-            this.editorPanel.Controls.Add(this.btnSave);
-            this.editorPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.editorPanel.Location = new System.Drawing.Point(251, 3);
-            this.editorPanel.Name = "editorPanel";
-            this.editorPanel.Size = new System.Drawing.Size(366, 210);
-            this.editorPanel.TabIndex = 8;
-            // 
-            // positionEditorView
-            // 
-            this.positionEditorView.FastBuild = true;
-            this.positionEditorView.GroupName = "Editor";
-            this.positionEditorView.Location = new System.Drawing.Point(4, 4);
-            this.positionEditorView.Margin = new System.Windows.Forms.Padding(4);
-            this.positionEditorView.Name = "positionEditorView";
-            this.positionEditorView.Size = new System.Drawing.Size(358, 145);
-            this.positionEditorView.SuppressResizeInvalidation = true;
-            this.positionEditorView.TabIndex = 0;
-            // 
-            // btnCancel
-            // 
-            this.btnCancel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnCancel.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnCancel.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnCancel.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnCancel.CustomForeColor = System.Drawing.Color.Black;
-            this.btnCancel.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnCancel.ForeColor = System.Drawing.Color.Black;
-            this.btnCancel.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnCancel.Location = new System.Drawing.Point(263, 156);
-            this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(100, 45);
-            this.btnCancel.TabIndex = 4;
-            this.btnCancel.TabStop = false;
-            this.btnCancel.Text = "CurrentPos";
-            this.btnCancel.UseVisualStyleBackColor = false;
-            this.btnCancel.Click += new System.EventHandler(this.btnCurrentPos_Click);
-            // 
-            // btnSave
-            // 
-            this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnSave.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnSave.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnSave.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSave.CustomForeColor = System.Drawing.Color.Black;
-            this.btnSave.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnSave.ForeColor = System.Drawing.Color.Black;
-            this.btnSave.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnSave.Location = new System.Drawing.Point(4, 156);
-            this.btnSave.Name = "btnSave";
-            this.btnSave.Size = new System.Drawing.Size(100, 45);
-            this.btnSave.TabIndex = 3;
-            this.btnSave.TabStop = false;
-            this.btnSave.Text = "Save";
-            this.btnSave.UseVisualStyleBackColor = false;
-            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
-            // 
-            // positionItemView
-            // 
-            this.positionItemView.BorderColor = System.Drawing.Color.White;
-            this.positionItemView.BorderWidth = 2;
-            this.positionItemView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.positionItemView.GroupBackColor = System.Drawing.Color.White;
-            this.positionItemView.GroupForeColor = System.Drawing.Color.Black;
-            this.positionItemView.GroupName = "Position Item";
-            this.positionItemView.ItemBackColor = System.Drawing.Color.Black;
-            this.positionItemView.ItemForeColor = System.Drawing.Color.Lime;
-            this.positionItemView.ListBackColor = System.Drawing.Color.Black;
-            this.positionItemView.ListForeColor = System.Drawing.Color.Lime;
-            this.positionItemView.Location = new System.Drawing.Point(3, 8);
-            this.positionItemView.Margin = new System.Windows.Forms.Padding(3, 8, 3, 8);
-            this.positionItemView.Name = "positionItemView";
-            this.positionTableLayoutPanel.SetRowSpan(this.positionItemView, 2);
-            this.positionItemView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
-            this.positionItemView.SelectedForeColor = System.Drawing.Color.Black;
-            this.positionItemView.SelectedIndex = -1;
-            this.positionItemView.Size = new System.Drawing.Size(242, 344);
-            this.positionItemView.TabIndex = 2;
+            this.positionTeachingControl.BackColor = System.Drawing.Color.White;
+            this.positionTeachingControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionTeachingControl.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.positionTeachingControl.Location = new System.Drawing.Point(3, 21);
+            this.positionTeachingControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.positionTeachingControl.Name = "positionTeachingControl";
+            this.positionTeachingControl.Size = new System.Drawing.Size(620, 360);
+            this.positionTeachingControl.TabIndex = 8;
+            this.positionTeachingControl.TabStop = false;
             // 
             // gbDigitalIO
             // 
@@ -354,15 +202,9 @@ namespace QMC.LCP_280.Process.Unit
             this.mainTableLayoutPanel.Size = new System.Drawing.Size(1264, 780);
             this.mainTableLayoutPanel.TabIndex = 12;
             // 
-            // positionItemPanel
-            // 
-            this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
-            this.positionItemPanel.Name = "positionItemPanel";
-            this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
-            this.positionItemPanel.TabIndex = 0;
-            // 
             // unitConfigControl
             // 
+            this.unitConfigControl.AutoReloadOnActivate = true;
             this.unitConfigControl.BackColor = System.Drawing.Color.White;
             this.unitConfigControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.unitConfigControl.Location = new System.Drawing.Point(948, 0);
@@ -372,6 +214,13 @@ namespace QMC.LCP_280.Process.Unit
             this.unitConfigControl.Size = new System.Drawing.Size(316, 780);
             this.unitConfigControl.TabIndex = 12;
             // 
+            // positionItemPanel
+            // 
+            this.positionItemPanel.Location = new System.Drawing.Point(0, 0);
+            this.positionItemPanel.Name = "positionItemPanel";
+            this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
+            this.positionItemPanel.TabIndex = 0;
+            // 
             // InputFeederUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -380,10 +229,6 @@ namespace QMC.LCP_280.Process.Unit
             this.Controls.Add(this.mainTableLayoutPanel);
             this.Name = "InputFeederUnit_Config";
             this.Text = "InputFeeder Unit Configuration";
-            this.gbPositionTeaching.ResumeLayout(false);
-            this.positionTableLayoutPanel.ResumeLayout(false);
-            this.gbTeachingMove.ResumeLayout(false);
-            this.editorPanel.ResumeLayout(false);
             this.gbDigitalIO.ResumeLayout(false);
             this.ioTableLayoutPanel.ResumeLayout(false);
             this.gbMoveAxis.ResumeLayout(false);

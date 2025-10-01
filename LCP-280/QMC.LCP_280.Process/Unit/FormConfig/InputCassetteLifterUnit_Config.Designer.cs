@@ -10,10 +10,11 @@ namespace QMC.LCP_280.Process.Unit
 {
     partial class InputCassetteLifterUnit_Config
     {
+        private Component.UnitConfig unitConfigControl;
+        private GroupBox gbPositionTeaching;
         private IOPropertyCollectionView inputView;
         private IOPropertyCollectionView outputView;
         private ListBoxItemsView axisListBoxItemsView;
-        private GroupBox gbPositionTeaching;
         private GroupBox gbDigitalIO;
         private GroupBox gbMoveAxis;
         private JogControl jogControl;
@@ -35,7 +36,6 @@ namespace QMC.LCP_280.Process.Unit
         #region Windows Form Designer generated code
         private void InitializeComponent()
         {
-            this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
             this.gbDigitalIO = new System.Windows.Forms.GroupBox();
             this.ioTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.inputView = new QMC.Common.IOPropertyCollectionView();
@@ -46,35 +46,13 @@ namespace QMC.LCP_280.Process.Unit
             this.mainTableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
             this.unitConfigControl = new QMC.LCP_280.Process.Component.UnitConfig();
             this.positionItemPanel = new System.Windows.Forms.Panel();
+            this.gbPositionTeaching = new System.Windows.Forms.GroupBox();
             this.positionTeachingControl = new QMC.LCP_280.Process.Unit.FormConfig.PositionTeachingControl();
             this.gbDigitalIO.SuspendLayout();
             this.ioTableLayoutPanel.SuspendLayout();
             this.gbMoveAxis.SuspendLayout();
             this.mainTableLayoutPanel.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // gbPositionTeaching
-            // 
-            this.gbPositionTeaching.Controls.Add(this.positionTeachingControl);
-            this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
-            this.mainTableLayoutPanel.SetColumnSpan(this.gbPositionTeaching, 2);
-            this.gbPositionTeaching.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.gbPositionTeaching.Location = new System.Drawing.Point(3, 3);
-            this.gbPositionTeaching.Name = "gbPositionTeaching";
-            this.gbPositionTeaching.Size = new System.Drawing.Size(626, 384);
-            this.gbPositionTeaching.TabIndex = 8;
-            this.gbPositionTeaching.TabStop = false;
-            this.gbPositionTeaching.Text = "Position Teaching";
-            // 
-            // positionTeachingControl
-            // 
-            this.positionTeachingControl.BackColor = System.Drawing.Color.White;
-            this.positionTeachingControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.positionTeachingControl.Location = new System.Drawing.Point(3, 22);
-            this.positionTeachingControl.Margin = new System.Windows.Forms.Padding(2);
-            this.positionTeachingControl.Name = "positionTeachingControl";
-            this.positionTeachingControl.Size = new System.Drawing.Size(624, 364);
-            this.positionTeachingControl.TabIndex = 0;
             // 
             // gbDigitalIO
             // 
@@ -221,6 +199,31 @@ namespace QMC.LCP_280.Process.Unit
             this.positionItemPanel.Size = new System.Drawing.Size(200, 100);
             this.positionItemPanel.TabIndex = 0;
             // 
+            // gbPositionTeaching
+            // 
+            this.gbPositionTeaching.Controls.Add(this.positionTeachingControl);
+            this.gbPositionTeaching.BackColor = System.Drawing.Color.White;
+            this.mainTableLayoutPanel.SetColumnSpan(this.gbPositionTeaching, 2);
+            this.gbPositionTeaching.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.gbPositionTeaching.Location = new System.Drawing.Point(3, 3);
+            this.gbPositionTeaching.Name = "gbPositionTeaching";
+            this.gbPositionTeaching.Size = new System.Drawing.Size(626, 384);
+            this.gbPositionTeaching.TabIndex = 8;
+            this.gbPositionTeaching.TabStop = false;
+            this.gbPositionTeaching.Text = "Position Teaching";
+            // 
+            // positionTeachingControl
+            // 
+            this.positionTeachingControl.BackColor = System.Drawing.Color.White;
+            this.positionTeachingControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.positionTeachingControl.Font = new System.Drawing.Font("맑은 고딕", 10F);
+            this.positionTeachingControl.Location = new System.Drawing.Point(3, 21);
+            this.positionTeachingControl.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.positionTeachingControl.Name = "positionTeachingControl";
+            this.positionTeachingControl.Size = new System.Drawing.Size(620, 360);
+            this.positionTeachingControl.TabIndex = 8;
+            this.positionTeachingControl.TabStop = false;
+            // 
             // InputCassetteLifterUnit_Config
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
@@ -239,6 +242,6 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
-        private Component.UnitConfig unitConfigControl;
+
     }
 }
