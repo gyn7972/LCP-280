@@ -468,6 +468,8 @@ namespace QMC.LCP_280.Process.Unit
             //        }
             //    }
             //}
+
+            bRet = true;
             return bRet;
         }
 
@@ -698,32 +700,42 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
             this.CurrentFunc = MoveToNextSlot;
 
-            MaterialCassette material = GetMaterialCassette();
-            if (material != null)
+            try
             {
-                foreach (var v in GetMaterialCassette().Slots)
+                MaterialCassette material = GetMaterialCassette();
+                if (material != null)
                 {
-                    if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
+                    foreach (var v in GetMaterialCassette().Slots)
                     {
-                        continue;
-                    }
-
-                    if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
-                    {
-                        nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
+                        if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
                         {
-                            if (nRtn != 0)
+                            continue;
+                        }
+
+                        if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
+                        {
+                            nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
                             {
-                                Log.Write(this, "MoveToSlot Failed");
-                                return -1;
+                                if (nRtn != 0)
+                                {
+                                    Log.Write(this, "MoveToSlot Failed");
+                                    return -1;
+                                }
+
+                                return nRtn;
                             }
-                            
-                            return nRtn;
                         }
                     }
+                    nRtn = -1;
                 }
-                nRtn = -1;
+
+                return nRtn;
             }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+
             return nRtn;
         }
         public int MoveToSlot(int slotIndex, bool bFineSpeed = false)

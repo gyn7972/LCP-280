@@ -1911,11 +1911,11 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 MaterialWafer materialWafer = GetMaterialWafer();
-                if(materialWafer != null)
-                {
-                    Log.Write(UnitName, "ChipMap", $"Total Chips found: {chips.Count}");
-                    return;
-                }
+                //if(materialWafer != null)
+                //{
+                //    Log.Write(UnitName, "ChipMap", $"Total Chips found: {chips.Count}");
+                //    return;
+                //}
 
                 materialWafer.Dies.Clear();
                 materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
