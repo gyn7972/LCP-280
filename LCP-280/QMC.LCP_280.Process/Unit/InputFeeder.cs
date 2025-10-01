@@ -647,7 +647,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                return 1;
+                return -1;
             }
 
             switch (State)
@@ -679,11 +679,57 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
+            nRet = RunWorkFeederSequence();
+            if (nRet != 0)
+            {
+                Log.Write(this.UnitName, "OnRunWork", "RunWorkFeederSequence Fail");
+            }
+            return nRet;
+        }
+        protected override int OnRunComplete()
+        {
+            int ret = 0;
+            this.State = ProcessState.Ready;
+            return ret;
+        }
+        protected override int OnStart()
+        {
+            this.InputCassetteLifter.Start();
+            this.InputStage.Start();
+
+            return base.OnStart();
+        }
+        public override int OnStop() 
+        {
+            int ret = 0;
+            this.RunUnitStatus = UnitStatus.Stopped;
+            this.State = ProcessState.Stop;
+
+            InputStage.Stop();
+            InputCassetteLifter.Stop();
+
+            base.OnStop();
+            return ret;
+        }
+
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            this.SequencePlayers.Add(RunWorkFeederSequence);
+        }
+
+        #region Sequence Auto
+
+        public int RunWorkFeederSequence(bool isFine = false)
+        {
+            int nRet = 0;
+            CurrentFunc = RunWorkFeederSequence;
+
             MaterialWafer wafer = this.InputStage.GetMaterialWafer();
             // Stage 요청 인지 시 Busy로 표시(선택)
             if (this.InputStage.IsWorking() == true)
             {
-                if(wafer != null)
+                if (wafer != null)
                 {
                     if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
                     {
@@ -698,21 +744,21 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 needUnloadFirst = InputStage.IsCompletedWork();
-                if(needUnloadFirst)
+                if (needUnloadFirst)
                 {
-                    
+
                 }
             }
             catch (Exception ex)
             {
                 Log.Write(ex);
-                needUnloadFirst = false; 
+                needUnloadFirst = false;
             }
 
             if (needUnloadFirst)
             {
                 // 8) Feeder -> Stage: WaferUnloadingBeforeStage
-                nRet =  WaferUnloading(wafer);
+                nRet = WaferUnloading(wafer);
                 if (nRet != 0)
                 {
                     FeederY.EmgStop();
@@ -863,34 +909,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRet;
         }
-        protected override int OnRunComplete()
-        {
-            int ret = 0;
-            this.State = ProcessState.Ready;
-            return ret;
-        }
-        protected override int OnStart()
-        {
-            int ret = 0;
-            this.InputCassetteLifter.Start();
-            this.InputStage.Start();
-            return ret;
-        }
-        public override int OnStop() 
-        {
-            int ret = 0;
-            this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
 
-            InputStage.Stop();
-            InputCassetteLifter.Stop();
-
-            base.OnStop();
-            return ret;
-        }
-
-
-        #region Sequence Auto
         private int PreparetoInputStage()
         {
             int nRet = 0;
@@ -1140,15 +1159,8 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        protected override void OnMakeSequence()
-        {
-            base.OnMakeSequence();
-            this.SequencePlayers.Add(MoveToReady);
-            this.SequencePlayers.Add(MoveToCassette);
-            this.SequencePlayers.Add(BarcodeReading);
-        }
-
         #region Seq 단위 동작
+
         // 단위에 단위.
         public int MoveToReady(bool isFine = false)
         {

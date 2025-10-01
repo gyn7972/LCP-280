@@ -1302,7 +1302,7 @@ namespace QMC.LCP_280.Process.Unit
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                return 1;
+                return -1;
             }
 
             switch (State)
@@ -1327,6 +1327,16 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRtn;
         }
+
+        protected override int OnStart()
+        {
+            this.IndexLoadAligner.Start();
+            this.IndexChipProbeController.Start();
+            this.IndexUnloadAligner.Start();
+            
+            return base.OnStart();
+        }
+
         public override int OnStop()
         {
             int ret = 0;
@@ -1364,10 +1374,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-
-            
-
-
             int nIndex = GetLoadIndexNo();
             bool useSocket = this.Config.GetUseSocket(nIndex);
 
@@ -1401,41 +1407,18 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (RequestInputDieTrDie == true && useSocket == true)
+            // 여기 블록(Load 투입 대기 + Unloader 배출 확인)이 확실히 완료된 다음에만 Rotate
+            bool needLoadWait = (RequestInputDieTrDie == true) && useSocket;
+            nRet = WaitPostActionSettled(needLoadWait, 60000 * 10);
+            if (nRet != 0)
             {
-                if(InputDieTransfer != null)
-                {
-                    TimeoutChecker timeoutChecker = new TimeoutChecker(60000 * 10, autoStart: true);
-
-                    //여기 조건 이상하다.
-                    while (true)
-                    {
-                        var die = GetLoadSocketMaterial();
-                        if (die.Presence == Material.MaterialPresence.Exist)
-                        {
-                            RequestInputDieTrDie = false;
-                            break;
-                        }
-
-                        if (this.InputDieTransfer.State == ProcessState.Complete)
-                        {
-                            
-                        }
-
-                        if(timeoutChecker.IsCompleted)
-                        {
-                            Log.Write(UnitName, "[InputDieTransfer] Timeout");
-                            PostAlarm(PostAlarm((int)AlarmKeys.InputDieTransferTimeout));
-                            return -1;
-                        }
-
-                        Thread.Sleep(1);
-                    }
-                }
+                return -1;
             }
+            // 투입 완료되었으면 요청 플래그 내림
+            RequestInputDieTrDie = false;
 
             nRet = Rotate();
-            if(nRet != 0)
+            if (nRet != 0)
             {
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
                 return nRet;
@@ -1444,6 +1427,59 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
+        // OnRunWork 아래 적절한 위치(같은 클래스 내부)에 추가
+        private int WaitPostActionSettled(bool needLoadWait, int timeoutMs)
+        {
+            var timeout = new TimeoutChecker(timeoutMs, autoStart: true);
+
+            while (true)
+            {
+                // 알람 발생 시 즉시 종료
+                if (AlarmManager.Instance.IsAlarm)
+                    return -1;
+
+                if(IsStop)
+                    return -1;
+
+                // 1) Load 소켓 투입 완료 대기
+                bool loadOk = true;
+                if (needLoadWait)
+                {
+                    var loadDie = GetLoadSocketMaterial();
+                    loadOk = (loadDie != null && loadDie.Presence == Material.MaterialPresence.Exist);
+                }
+
+                // 2) Unloader Aligner에 잔류품 없음을 확인
+                bool unloadOk = true;
+                if (IndexUnloadAligner != null)
+                {
+                    var unloaderDie = GetUnloaderAlignSocketMaterial();
+                    unloadOk = (unloaderDie == null || unloaderDie.Presence != Material.MaterialPresence.Exist);
+                }
+
+                if (loadOk && unloadOk)
+                    return 0;
+
+                if (timeout.IsCompleted)
+                {
+                    if (!loadOk)
+                    {
+                        Log.Write(UnitName, "[WaitPostActionSettled] Load socket die not supplied (timeout)");
+                        PostAlarm((int)AlarmKeys.InputDieTransferTimeout);
+                    }
+                    if (!unloadOk)
+                    {
+                        Log.Write(UnitName, "[WaitPostActionSettled] UnloadAligner still has die (timeout)");
+                        PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
+                    }
+                    return -1;
+                }
+
+                Thread.Sleep(1);
+            }
+        }
+
         protected override int OnRunComplete() 
         {
             int nRtn = 0;
@@ -1461,7 +1497,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             base.OnMakeSequence();
 
-            this.SequencePlayers.Add(CanRotate);
+            //this.SequencePlayers.Add(CanRotate);
             this.SequencePlayers.Add(ExecuteUnitActionReady);
             this.SequencePlayers.Add(Rotate);
             this.SequencePlayers.Add(ExecuteUnitLoadDie);
@@ -1861,7 +1897,8 @@ namespace QMC.LCP_280.Process.Unit
 
             if (state == RotarySocketState.Outputting)
             {
-                if (OutputDieTransfer != null || OutputDieTransfer.CompleteOutputDie)
+                // 기존: if (OutputDieTransfer != null || OutputDieTransfer.CompleteOutputDie)
+                if (OutputDieTransfer != null && OutputDieTransfer.CompleteOutputDie)
                 {
                     lock (_socketLock)
                     {
@@ -2217,9 +2254,19 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
+                if (IsStop)
+                    return -1;
+
                 ExecuteUnitActionInterlockLoadMAlign();
                 ExecuteUnitActionInterlockProbe();
                 Thread.Sleep(1);
+            }
+
+            // 예외 전파 및 결과 반영
+            if (task.IsFaulted)
+            {
+                Log.Write(UnitName, "[ExecuteUnitAction] Faulted: " + task.Exception?.GetBaseException().Message);
+                return -1;
             }
             return task.Result;
         }
@@ -2275,10 +2322,43 @@ namespace QMC.LCP_280.Process.Unit
 
                 // 언로더 얼라인 준비가 끝난 후 픽업 시작 신호
                 t3.Wait();
-                this.OutputDieTransfer.RisePickupStartEvent();
+                Thread.Sleep(1);
 
+                this.OutputDieTransfer.RisePickupStartEvent();
                 bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000);
-                if (bRet == false)
+                if(bRet == true)
+                {
+                    // OutputDieTransfer 완료 시: OutputDieTransfer의 소켓 정보만 사용하여 비우기
+                    try
+                    {
+                        if (this.OutputDieTransfer == null)
+                        {
+                            Log.Write(UnitName, "[OutputDieTransfer] NULL - cannot clear socket");
+                        }
+                        else
+                        {
+                            int idx = this.OutputDieTransfer.GetUnloaderIndexNo();
+                            if (idx >= 0 && idx < GetIndexCount())
+                            {
+                                lock (_socketLock)
+                                {
+                                    _sockets[idx].SetMaterialDie(null);
+                                    _sockets[idx].SetState(RotarySocketState.Empty);
+                                }
+                                Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
+                            }
+                            else
+                            {
+                                Log.Write(UnitName, $"[OutputDieTransfer] Invalid unloader socket index: {idx}");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(UnitName, $"[OutputDieTransfer] 소켓 상태 초기화 실패: {ex.Message}");
+                    }
+                }
+                else if (bRet == false)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
                     Log.Write(UnitName, $"OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
@@ -2295,43 +2375,6 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3})");
                     return -1;
-                }
-
-
-                // OutputDieTransfer가 완료되면 OutputDieTransfer쪽에서 수행한
-                // 소켓은 여기서 Empty로 변경해야 한다.
-                try
-                {
-                    int idx = -1;
-                    if (this.OutputDieTransfer != null)
-                    {
-                        idx = this.OutputDieTransfer.GetUnloaderIndexNo();
-                    }
-                    else if (this.IndexUnloadAligner != null)
-                    {
-                        // 백업: OutputDieTransfer가 null인 경우 Align 인덱스 사용
-                        idx = this.IndexUnloadAligner.GetUnloaderAlignIndexNo();
-                    }
-
-                    if (idx >= 0 && idx < GetIndexCount())
-                    {
-                        lock (_socketLock)
-                        {
-                            // 소재 제거 및 상태 초기화
-                            _sockets[idx].SetMaterialDie(null);
-                            _sockets[idx].SetState(RotarySocketState.Empty);
-                        }
-                        Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
-                    }
-                    else
-                    {
-                        Log.Write(UnitName, "[OutputDieTransfer] Unloader socket index out of range");
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(UnitName, $"[OutputDieTransfer] 소켓 상태 초기화 실패: {ex.Message}");
                 }
 
                 return 0;

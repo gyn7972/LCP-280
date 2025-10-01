@@ -820,10 +820,10 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnStart()
         {
-            int ret = 0;
             this.OutputCassetteLifter.Start();
             this.OutputStage.Start();
-            return ret;
+            
+            return base.OnStart();
         }
         public override int OnStop()
         {

@@ -1136,54 +1136,29 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnRun()
         {
             int ret = 0;
-
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                ret = 1;
+                ret = -1;
             }
-
             if (this.RunUnitStatus == UnitStatus.Running)
             {
                 return 0;
             }
-
-            else
-            {
-                switch (State)
-                {
-                    case ProcessState.Ready:
-                        if (Rotary.RequestProbe)
-                        {
-                            CompleteProbe = false;
-                            ret = OnRunReady();
-                        }
-                        break;
-                    case ProcessState.Work:
-                        ret = OnRunWork();
-                        break;
-                    case ProcessState.Complete:
-                        ret = OnRunComplete();
-                        if (ret == 0)
-                        {
-                            CompleteProbe = true;
-                        }
-                        break;
-                    default:
-                        this.State = ProcessState.Ready;
-                        break;
-                }
-            }
-
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return ret;
+        }
+        protected override int OnStart()
+        {
+            this.IndexChipProber.Start();
+
+            return base.OnStart();
         }
         public override int OnStop() 
         {
@@ -1364,11 +1339,19 @@ namespace QMC.LCP_280.Process.Unit
                 if (nRet != 0)
                     return -1;
 
-                if (!IsSphereForward())
+                if (SetSphereFB(true))
                 {
-                    PostAlarm((int)AlarmKeys.eSphereNotForward);
-                    Log.Write(UnitName, "[TopContactOnce] Sphere not forward");
-                    return -1;
+                    var sw = Stopwatch.StartNew();
+                    while (!IsSphereForward())
+                    {
+                        if (sw.ElapsedMilliseconds > 2000)
+                        {
+                            PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                            Log.Write(UnitName, "[BottomContactOnce] SphereFB-F Timeout");
+                            return -1;
+                        }
+                        Thread.Sleep(1);
+                    }
                 }
 
                 nRet = MovePositionSphereZDown(); //실제로는 다운임.
@@ -1437,7 +1420,6 @@ namespace QMC.LCP_280.Process.Unit
         public int BottomContactAndMeasureOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
-
             try
             {
                 
@@ -1445,18 +1427,25 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = BottomContactAndMeasureOnce;
 
                 int nIndex = GetProbeIndexNo();
-
                 nRet = IsRotaryIdle();
                 if (nRet != 0)
                     return -1;
 
-                if (!IsSphereForward())
+                if(SetSphereFB(true))
                 {
-                    PostAlarm((int)AlarmKeys.eSphereNotForward);
-                    Log.Write(UnitName, "[BottomContactOnce] Sphere not forward");
-                    return -1;
+                    var sw = Stopwatch.StartNew();
+                    while (!IsSphereForward())
+                    {
+                        if (sw.ElapsedMilliseconds > 2000)
+                        {
+                            PostAlarm((int)AlarmKeys.eSphereFBTimeout);
+                            Log.Write(UnitName, "[BottomContactOnce] SphereFB-F Timeout");
+                            return -1;
+                        }
+                        Thread.Sleep(1);
+                    }
                 }
-
+                
                 nRet = MovePositionSphereZDown(); //실제로는 다운임.
                 if (nRet != 0)
                 {

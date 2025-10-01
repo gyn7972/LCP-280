@@ -776,52 +776,22 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnRun()
         {
             int ret = 0;
-
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                ret = 1;
+                ret = -1;
             }
-
             if (this.RunUnitStatus == UnitStatus.Running)
             {
                 return 0;
             }
-
-            {
-                switch (State)
-                {
-                    case ProcessState.Ready:
-                        if (Rotary.RequestLoadAligner)
-                        {
-                            CompleteLoadAligner = false;
-                            ret = OnRunReady();
-                        }
-                        break;
-                    case ProcessState.Work:
-                        ret = OnRunWork();
-                        break;
-                    case ProcessState.Complete:
-                        ret = OnRunComplete();
-                        if(ret == 0)
-                        {
-                            
-                        }
-                        break;
-                    default:
-                        this.State = ProcessState.Ready;
-                        break;
-                }
-            }
-
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return ret;
         }
 

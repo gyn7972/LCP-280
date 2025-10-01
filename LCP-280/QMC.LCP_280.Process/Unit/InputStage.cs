@@ -1026,44 +1026,22 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnRun()
         {
             int ret = 0;
-
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
-                this.RunUnitStatus == UnitStatus.CycleStop )
+                this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                return 1;
+                ret = -1;
             }
-
-
             if (this.RunUnitStatus == UnitStatus.Running)
             {
                 return 0;
-            }
-
-            switch (State)
-            {
-                case ProcessState.Ready:
-                    //ret = OnRunReady();
-                    break;
-                case ProcessState.Work:
-                    //ret = OnRunWork();
-                    break;
-                case ProcessState.Complete:
-                    //ret = OnRunComplete();
-                    break;
-                default:
-                    //IsStatus_StageLoadingReady = false;
-                    //IsStatus_StageLoadingDone = false;
-                    this.State = ProcessState.Ready;
-                    break;
             }
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return ret;
         }
         public override int OnStop()
@@ -1146,33 +1124,6 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(PerformChipMapping);
         }
 
-        // 주석   
-        /* TODO */
-        //웨이퍼 있냐 없냐? 
-        // Ring check
-        //있으면
-        //나가는거고. 
-        //없으면
-        //인터락 - 외부 유닛 위치 확인
-        //스테이지이젝터핀 Z축
-        //다이트렌스퍼 Z축
-        //링피커 - 실린더 Up 유무
-        //웨이퍼 로딩 위치 이동.
-        //실린더 Plate Down
-        //실린더 백 -> 다운
-        //웨이퍼 로딩 준비 완료 플래그 ON
-        // 링피커가 로딩 했다는 신호 주면 
-        // Plate Up
-        // 실린더 Up
-        // 실린더 전진
-        //인터락 - 외부 유닛 위치 확인
-        //스테이지이젝터핀 Z축
-        //다이트렌스퍼 Z축
-        //링피커 - 실린더 Up 유무
-        //스테이지 센터 이동.
-        //스테이지 로딩 완료 플래그 ON ?
-        // 반환 코드 규약 (선택적): 0 = OK, 1 = 대기(조건 미충족), -1 = 오류
-
         #region Seq 단위 동작 함수
         
         public bool IsRingPresent()
@@ -1190,7 +1141,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
-
         public bool IsWaferLoadingPosition()
         {
             var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
@@ -1212,9 +1162,6 @@ namespace QMC.LCP_280.Process.Unit
             return InPosTeaching(tp);
         }
 
-        //MoveToLaod_Stage
-        //ClampBackwordDown_Stage
-        //PlateDown_Stage
         public int LoadingWaferPrepare()
         {
             int nRtn = 0;
@@ -1284,7 +1231,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "End LoadingWaferPrepare");
             return 0;
         }
-
         public int MoveToStageLoadPosition(bool isFine = false)
         {
             int nRet = 0;
@@ -1382,10 +1328,6 @@ namespace QMC.LCP_280.Process.Unit
             return MoveTeachingPositionOnce((int)InputStageConfig.TeachingPositionName.Loading, isFine);
         }
 
-        //Feeder_Stage에 Wafer올리고 Safety 위치로 이동 후
-        //PlateUp_Stage
-        //ClampUpForword_Stage
-        //MoveToCenter_Stage
         public int LoadingWaferComplete()
         {
             int ret = 0;
@@ -1450,7 +1392,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
         }
-
         public bool IsInterlockWithFeederAndDieTransferOk()
         {
             // InputFeeder
@@ -1488,9 +1429,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return 0;
         }
-
-
-
 
         public int MoveToStageCenterPosition(bool isFine = false)
         {
@@ -1689,7 +1627,13 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} currentT={currentAngle:F4}");
 
                 IsStatus_LastFoundTRawAngle = angle;
-                this.AxisT.MoveAbs(dTarget, bFineSpeed);
+
+                bool IsAuto = false;
+                if (RunMode == UnitRunMode.Auto)
+                    IsAuto = true;
+                else
+                    IsAuto = false;
+                this.AxisT.MoveAbs(dTarget, IsAuto, bFineSpeed);
                 nRet = WaitUntil(() => InPos(this.AxisT , dTarget), MoveTimeoutMs);
             }
             catch(Exception ex)
@@ -1788,14 +1732,21 @@ namespace QMC.LCP_280.Process.Unit
             if (IsStageInterLockOK(x, y))
             {
                 ret = 0;
-                ret = this.AxisX.MoveAbs(x, bFineSpeed);
+                bool IsAuto = false;
+                if (RunMode == UnitRunMode.Auto)
+                    IsAuto = true;
+                else
+                    IsAuto = false;
+
+                ret = this.AxisX.MoveAbs(x, IsAuto,bFineSpeed);
                 if (ret != 0)
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eInputStageMoveFail);
                     return ret;
                 }
-                ret = this.AxisY.MoveAbs(y, bFineSpeed);
+
+                ret = this.AxisY.MoveAbs(y, IsAuto,bFineSpeed);
                 if (ret != 0)
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
@@ -1815,12 +1766,6 @@ namespace QMC.LCP_280.Process.Unit
 
 
             return ret;
-        }
-        private bool IsStageInterLockOK()
-        {
-            double x = this.AxisX.GetPosition();
-            double y = this.AxisY.GetPosition();
-            return IsStageInterLockOK(x, y);
         }
         private bool IsStageInterLockOK(double x, double y)
         {
@@ -1933,7 +1878,6 @@ namespace QMC.LCP_280.Process.Unit
                         double dy = pt.Y;
                         tImageProcess = Task.Factory.StartNew(() =>
                         {
-
                             return SearchDies(grabImage, ref chips, dx, dy);
                         });
                     }
@@ -1962,13 +1906,16 @@ namespace QMC.LCP_280.Process.Unit
             wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
             return nRet;
         }
-
         private void UpdateChipInfo(List<PointD> chips)
         {
-
             try
             {
                 MaterialWafer materialWafer = GetMaterialWafer();
+                if(materialWafer != null)
+                {
+                    Log.Write(UnitName, "ChipMap", $"Total Chips found: {chips.Count}");
+                    return;
+                }
 
                 materialWafer.Dies.Clear();
                 materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
@@ -1988,7 +1935,6 @@ namespace QMC.LCP_280.Process.Unit
                 EventUpdateUIWafer?.BeginInvoke(materialWafer,null,null);
             }
         }
-
         private void MakeScanPath(out List<PointD> path)
         {
             path = new List<PointD>();
@@ -2067,10 +2013,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             //StageCamera.CameraConfig.Scale
         }
-
-        //MoveToUnlaod_Stage
-        //ClampBackwordDown_Stage
-        //PlateDown_Stage
         public int PrepareInputStageUnloadingWafer()
         {
             int nRtn = 0;
@@ -2219,7 +2161,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region CHIP MAPPING / PICKUP
-
         // 매핑 파라미터 (Config 로 승격 가능)
         public double MappingRoiWidthMm { get; set; } = 2.0;
         public double MappingRoiHeightMm { get; set; } = 2.0;

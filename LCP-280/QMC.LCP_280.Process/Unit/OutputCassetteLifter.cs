@@ -193,11 +193,20 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.BinLifterZ, ref _BinLiftZ);
         }
 
-        public void MoveAxisOnce(MotionAxis ax, double target)
+        public void MoveAxisOnce(MotionAxis ax, double target, bool isFine = false)
         {
-            if (ax == null) return;
+            if (ax == null) 
+                return;
+
+            bool IsAuto = false;
+            if (RunMode == UnitRunMode.Auto)
+                IsAuto = true;
+            else
+                IsAuto = false;
+
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+                ax.MoveAbs(target, IsAuto, isFine);
+                //ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
         //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         //public double GetTP(string tpName, string axisName)
@@ -366,7 +375,14 @@ namespace QMC.LCP_280.Process.Unit
         {
             var axisPos = GetTeachingPositionValue(OutputCassetteLifterConfig.TeachingPositionName.MappingStart, this.BinLifterZ.Name);
             axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
-            int ret = this.BinLifterZ.MoveAbs(axisPos, isFine);
+
+
+            bool IsAuto = false;
+            if (RunMode == UnitRunMode.Auto)
+                IsAuto = true;
+            else
+                IsAuto = false;
+            int ret = this.BinLifterZ.MoveAbs(axisPos, IsAuto, isFine);
 
             Thread.Sleep(10);
             if (ret == 0)
@@ -424,47 +440,23 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnRun()
         {
             int ret = 0;
-
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                return 1;
+                ret = -1;
             }
-
             if (this.RunUnitStatus == UnitStatus.Running)
             {
                 return 0;
-            }
-
-            switch (State)
-            {
-                case ProcessState.Ready:
-                    //ret = OnRunReady();
-                    break;
-                case ProcessState.Work:
-                    //ret = OnRunWork();
-                    break;
-                case ProcessState.Complete:
-                    //ret = OnRunComplete();
-                    
-                    break;
-                default:
-                    this.State = ProcessState.Ready;
-                    break;
             }
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return ret;
-        }
-        protected override int OnStart()
-        {
-            return base.OnStart();
         }
         public override int OnStop()
         {

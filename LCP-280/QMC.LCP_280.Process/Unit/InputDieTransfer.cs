@@ -1215,34 +1215,33 @@ namespace QMC.LCP_280.Process.Unit
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                ret = 1;
+                return -1;
             }
-            else
+            
+            try
             {
-                try
+                switch (State)
                 {
-                    switch (State)
-                    {
-                        case ProcessState.Ready:
-                            ret = OnRunReady();
-                            break;
-                        case ProcessState.Work:
-                            ret = OnRunWork();
-                            break;
-                        case ProcessState.Complete:
-                            ret = OnRunComplete();
-                            break;
-                        default:
-                            this.State = ProcessState.Ready;
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
-                    ret = -1;
+                    case ProcessState.Ready:
+                        ret = OnRunReady();
+                        break;
+                    case ProcessState.Work:
+                        ret = OnRunWork();
+                        break;
+                    case ProcessState.Complete:
+                        ret = OnRunComplete();
+                        break;
+                    default:
+                        this.State = ProcessState.Ready;
+                        break;
                 }
             }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                ret = -1;
+            }
+           
 
             if (ret != 0)
             {

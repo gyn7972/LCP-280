@@ -365,8 +365,7 @@ namespace QMC.Common.Motions
 
             if ((rc = AXM.SetZPhaseLevel(axisNo, setup.ZPhaseLevel)) != 0) return rc; // Z상 레벨
             if ((rc = AXM.SetAmpEnableLevel(axisNo, setup.ServoOnLevel)) != 0) return rc;// Servo On 레벨
-                                                                                       // ※ Inpos/Alarm 레벨 setter가 래퍼에 없으면 .mot 기본값 사용(필요 시 래퍼 추가)
-
+               
             return 0;
         }
 

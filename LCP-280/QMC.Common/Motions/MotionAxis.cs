@@ -454,7 +454,7 @@ namespace QMC.Common.Motions
             return 0;
         }
 
-        public int MoveAbs(double logicalTarget, bool isFine)
+        public int MoveAbs(double logicalTarget, bool isAuto = false, bool isFine = false)
         {
             double defaultFineVel = 5.0;
             double defaultCoarseVel = 20.0;
@@ -462,12 +462,30 @@ namespace QMC.Common.Motions
             double defaultDec = 10.0;
             double defaultJerk = 50.0;
 
-            double vel = isFine ? (this.Config != null && this.Config.JogFineVelocity > 0 ? this.Config.JogFineVelocity : defaultFineVel)
-                                  : (this.Config != null && this.Config.JogCoarseVelocity > 0 ? this.Config.JogCoarseVelocity : defaultCoarseVel);
+            double vel = 0.0;
+            double acc = 0.0;
+            double dec = 0.0;
+            double jerk = 0.0;
 
-            double acc = this.Config != null && this.Config.JogAcc > 0 ? this.Config.JogAcc : defaultAcc;
-            double dec = this.Config != null && this.Config.JogDec > 0 ? this.Config.JogDec : defaultDec;
-            double jerk = this.Config != null ? (this.Config.AccJerkPercent + this.Config.DecJerkPercent) / 2.0 : defaultJerk;
+            if (isAuto)
+            {
+                //vel = isFine ? (this.Config != null && this.Config.JogFineVelocity > 0 ? this.Config.JogFineVelocity : defaultFineVel)
+                //               : (this.Config != null && this.Config.JogCoarseVelocity > 0 ? this.Config.JogCoarseVelocity : defaultCoarseVel);
+
+                vel = this.Config != null && this.Config.MaxVelocity > 0 ? this.Config.MaxVelocity : defaultFineVel;
+                acc = this.Config != null && this.Config.RunAcc > 0 ? this.Config.RunAcc : defaultAcc;
+                dec = this.Config != null && this.Config.RunDec > 0 ? this.Config.RunDec : defaultDec;
+                jerk = this.Config != null ? (this.Config.AccJerkPercent + this.Config.DecJerkPercent) / 2.0 : defaultJerk;
+            }
+            else
+            {
+                vel = isFine ? (this.Config != null && this.Config.JogFineVelocity > 0 ? this.Config.JogFineVelocity : defaultFineVel)
+                               : (this.Config != null && this.Config.JogCoarseVelocity > 0 ? this.Config.JogCoarseVelocity : defaultCoarseVel);
+
+                acc = this.Config != null && this.Config.JogAcc > 0 ? this.Config.JogAcc : defaultAcc;
+                dec = this.Config != null && this.Config.JogDec > 0 ? this.Config.JogDec : defaultDec;
+                jerk = this.Config != null ? (this.Config.AccJerkPercent + this.Config.DecJerkPercent) / 2.0 : defaultJerk;
+            }
             return MoveAbs(logicalTarget,vel,acc,dec,jerk);
         }
 
@@ -548,17 +566,6 @@ namespace QMC.Common.Motions
         }
 
         // --- 아래 유틸 메서드 추가 ---
-        private bool IsIndexAxis()
-        {
-            // 회전 Index 축 추정 조건: 소프트리밋 0~360 또는 이름에 Index/Rotary 포함
-            if (Math.Abs(Setup.SoftLimitMin) < 1e-6 && Math.Abs(Setup.SoftLimitMax - 360.0) < 1e-6)
-                return true;
-            var n = Name ?? "";
-            if (n.IndexOf("Index", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (n.IndexOf("Rotary", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            return false;
-        }
-
         // 360도 래핑 공용 헬퍼 (Simulation 전용 사용)
         private static double Wrap360(double angle)
         {
@@ -826,7 +833,6 @@ namespace QMC.Common.Motions
                 throw new InvalidOperationException("This axis does not support Jog EStop.");
             }
         }
-
 
         public int Stop() 
         { 

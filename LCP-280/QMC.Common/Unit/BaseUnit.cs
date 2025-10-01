@@ -458,7 +458,6 @@ namespace QMC.Common.Unit
             }
             TeachingPosition tp = TeachingPositions.FirstOrDefault(t => t.Name == teachName);
 
-
             var axisPos = GetAxisPositions(tp);
             if (axisPos == null) 
                 return -1;
@@ -491,7 +490,13 @@ namespace QMC.Common.Unit
                 if (axis == null) 
                     continue;
 
-                axis.MoveAbs(target, isFine);
+                bool IsAuto = false;
+                if (RunMode == UnitRunMode.Auto)
+                    IsAuto = true;
+                else
+                    IsAuto = false;
+
+                axis.MoveAbs(target, IsAuto, isFine);
             }
 
             // 완료 대기
@@ -673,17 +678,14 @@ namespace QMC.Common.Unit
                     return 0;
                 }
 
-                //double vel = cfg != null ? cfg.MaxVelocity : 0;
-                //if (isFine && vel > 0)
-                //    vel *= 0.2;
+                int rc = 0;
+                bool IsAuto = false;
+                if (RunMode == UnitRunMode.Auto)
+                    IsAuto = true;
+                else
+                    IsAuto = false;
 
-                int rc;
-                rc = axis.MoveAbs(target, false);
-                //if (cfg != null)
-                //    rc = axis.MoveAbs(target, vel, cfg.RunAcc, cfg.RunDec, cfg.AccJerkPercent);
-                //else
-                //    rc = axis.MoveAbs(target, false);
-
+                rc = axis.MoveAbs(target, IsAuto, isFine);
                 if (rc != 0)
                 {
                     Log.Write(UnitName, "MoveAxisWithSafety",

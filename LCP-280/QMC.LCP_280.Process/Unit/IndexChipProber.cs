@@ -74,7 +74,27 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        public override int OnRun() { int ret = 0; return ret; }
+        public override int OnRun() 
+        {
+            int ret = 0;
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                ret = -1;
+            }
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+            return ret;
+        }
         public override int OnStop() 
         {
             int ret = 0;
