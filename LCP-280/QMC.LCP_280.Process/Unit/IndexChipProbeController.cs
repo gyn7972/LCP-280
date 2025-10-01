@@ -681,7 +681,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            string tpName = $"Bottom_index{teachingIdx}_Up";
+            string tpName = $"Bottom_Index{teachingIdx}_Up";
             var tpObj = IndexChipProbeControllerConfig.GetTeachingPosition(tpName);
             if (tpObj == null)
             {
@@ -1338,7 +1338,6 @@ namespace QMC.LCP_280.Process.Unit
                 PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
-
             if (IsAxisProbeZSafetyPos() == false)
             {
                 Log.Write(UnitName, "[RunInspection] ProbeZ not in SafetyPos");

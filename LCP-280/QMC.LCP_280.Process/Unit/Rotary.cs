@@ -1291,7 +1291,6 @@ namespace QMC.LCP_280.Process.Unit
             //get { return System.Threading.Thread.VolatileRead(ref _reqUnloadAligner) != 0; }
             //set { System.Threading.Interlocked.Exchange(ref _reqUnloadAligner, value ? 1 : 0); }
         }
-        public bool RequestOutputDieTrDie { get; set; } = false;
         #endregion
 
         public override int OnRun()
@@ -1318,11 +1317,6 @@ namespace QMC.LCP_280.Process.Unit
                     nRtn = OnRunComplete();
                     break;
                 default:
-                    RequestInputDieTrDie = false;
-                    RequestLoadAligner = false;
-                    RequestProbe = false;
-                    RequestUnloaderAligner = false;
-                    RequestOutputDieTrDie = false;
                     this.State = ProcessState.Ready;
                     break;
             }
@@ -2203,8 +2197,6 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
             this.CurrentFunc = ExecuteUnitUnLoadDie;
 
-            RequestOutputDieTrDie = true;
-
             return nRtn;
         }
         //ExecuteUnitAction
@@ -2281,10 +2273,11 @@ namespace QMC.LCP_280.Process.Unit
                     })
                     : Task.FromResult(0);
 
+                // 언로더 얼라인 준비가 끝난 후 픽업 시작 신호
                 t3.Wait();
                 this.OutputDieTransfer.RisePickupStartEvent();
 
-                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000 * 100); // 60초
+                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000);
                 if (bRet == false)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
@@ -2304,50 +2297,41 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                return 0;
-            }
-            catch (Exception ex)
-            {
-                Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
-                return -1;
-            }
 
-
-            try
-            {
-                bool bRet = false;
-
-                var t1 = (IndexLoadAligner != null)
-                    ? Task.Run(() => IndexLoadAligner.RunAlignSocketOnce())
-                    : Task.FromResult(0);
-                var t2 = (IndexChipProbeController != null)
-                    ? Task.Run(() => IndexChipProbeController.RunInspection())
-                    : Task.FromResult(0);
-                var t3 = (IndexUnloadAligner != null)
-                    ? Task.Run(() => IndexUnloadAligner.RunAlignSocketOnce())
-                    : Task.FromResult(0);
-
-                t3.Wait();
-                this.OutputDieTransfer.RisePickupStartEvent();
-
-                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000*100); // 60초
-                if (bRet == false)
+                // OutputDieTransfer가 완료되면 OutputDieTransfer쪽에서 수행한
+                // 소켓은 여기서 Empty로 변경해야 한다.
+                try
                 {
-                    PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
-                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
-                    return -1;
+                    int idx = -1;
+                    if (this.OutputDieTransfer != null)
+                    {
+                        idx = this.OutputDieTransfer.GetUnloaderIndexNo();
+                    }
+                    else if (this.IndexUnloadAligner != null)
+                    {
+                        // 백업: OutputDieTransfer가 null인 경우 Align 인덱스 사용
+                        idx = this.IndexUnloadAligner.GetUnloaderAlignIndexNo();
+                    }
+
+                    if (idx >= 0 && idx < GetIndexCount())
+                    {
+                        lock (_socketLock)
+                        {
+                            // 소재 제거 및 상태 초기화
+                            _sockets[idx].SetMaterialDie(null);
+                            _sockets[idx].SetState(RotarySocketState.Empty);
+                        }
+                        Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
+                    }
+                    else
+                    {
+                        Log.Write(UnitName, "[OutputDieTransfer] Unloader socket index out of range");
+                    }
+
                 }
-
-                Task.WaitAll(t1, t2, t3);
-
-                int r1 = t1.Result;
-                int r2 = t2.Result;
-                int r3 = t3.Result;
-
-                if (r1 != 0 || r2 != 0 || r3 != 0)
+                catch (Exception ex)
                 {
-                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3})");
-                    return -1;
+                    Log.Write(UnitName, $"[OutputDieTransfer] 소켓 상태 초기화 실패: {ex.Message}");
                 }
 
                 return 0;

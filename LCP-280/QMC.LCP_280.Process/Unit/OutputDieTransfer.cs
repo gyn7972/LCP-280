@@ -126,8 +126,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-
-
         private readonly AutoResetEvent _pickUpStartEvent = new AutoResetEvent(false);
         private readonly AutoResetEvent _pickUpdoneEvent = new AutoResetEvent(false);
 
@@ -203,6 +201,17 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (axis == AxisPickZ)
                 {
+                    if (Rotary.IsAnyAxisMoving())
+                    {
+                        AxisToolT.EmgStop();
+                        AxisPickZ.EmgStop();
+                        AxisPlaceZ.EmgStop();
+                        PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                    }
+                }
+
+                if (axis == AxisPlaceZ)
+                {
                     if (OutputStage.IsAnyAxisMoving())
                     {
                         AxisToolT.EmgStop();
@@ -210,17 +219,6 @@ namespace QMC.LCP_280.Process.Unit
                         AxisPlaceZ.EmgStop();
                         PostAlarm((int)AlarmKeys.eOutputStageAxesMoving);
                         return -1;
-                    }
-                }
-
-                if (axis == AxisPlaceZ)
-                {
-                    if (Rotary.IsAnyAxisMoving())
-                    {
-                        AxisToolT.EmgStop();
-                        AxisPickZ.EmgStop();
-                        AxisPlaceZ.EmgStop();
-                        PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                     }
                 }
 
@@ -602,14 +600,14 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
-            {
-                AxisToolT?.EmgStop();
-                AxisPickZ?.EmgStop();
-                AxisPlaceZ?.EmgStop();
-                PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
-                return -1;
-            }
+            //if (Rotary != null && Rotary.IsAnyAxisMoving())
+            //{
+            //    AxisToolT?.EmgStop();
+            //    AxisPickZ?.EmgStop();
+            //    AxisPlaceZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+            //    return -1;
+            //}
 
             return nRet;
         }
@@ -1027,6 +1025,9 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnStop()
         {
             int ret = 0;
+            _pickUpStartEvent.Set();
+            _pickUpdoneEvent.Set();
+
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
             base.OnStop();
@@ -1064,10 +1065,19 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
             try
             {
+                const int timeoutMs = 60000*5; // 필요시 설정값으로 치환
+                bool started = WaitPickupStartEvent(timeoutMs);
+                if (!started)
+                {
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferError);
+                    Log.Write(UnitName, "[OnRunWork] WaitPickupStartEvent timeout");
+                    return -1;
+                }
 
                 MaterialDie die = Rotary.GetUnloadSocketMaterial();
                 if (die == null || die.Presence != Material.MaterialPresence.Exist)
                 {
+                    RisePickupDoneEvent();
                     return 0;
                 }
 
@@ -1088,7 +1098,10 @@ namespace QMC.LCP_280.Process.Unit
                 die.ProcessSatate = Material.MaterialProcessSatate.Processing;
                 SetMaterial(die);
 
+                // 3) 완료 신호 (Rotary 대기 해제)
+                RisePickupDoneEvent();
                 State = ProcessState.Complete;
+
             }
             catch (Exception ex)
             {
@@ -1096,7 +1109,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(ex);
             }finally
             {
-                RisePickupDoneEvent();
+                //RisePickupDoneEvent();
             }
             return 0;
         }

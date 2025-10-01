@@ -149,6 +149,10 @@ namespace QMC.Common
 
                 if (menuButtons == MenuButtonType.Exit)
                 {
+                    var ask = new MessageBoxYesNo();
+                    if (ask.ShowDialog("확인", "Exit?") != DialogResult.Yes)
+                        return;
+
                     Application.Exit();
                     return;
                 }

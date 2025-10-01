@@ -2,12 +2,69 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace QMC.Common
 {
     public partial class FormMain : Form
     {
+
+        // ==X 버튼 비활성화 코드 시작==
+        private const int CS_NOCLOSE = 0x200;
+        private const int WM_SYSCOMMAND = 0x0112;
+        private const int SC_CLOSE = 0xF060;
+
+        private const int MF_BYCOMMAND = 0x00000000;
+        private const int MF_GRAYED = 0x00000001;
+        private const int MF_DISABLED = 0x00000002;
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                // 시스템 메뉴의 Close 항목 비활성화(X 버튼 회색)
+                cp.ClassStyle |= CS_NOCLOSE;
+                return cp;
+            }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+
+            // 최소화/최대화는 유지
+            this.ControlBox = true;
+            this.MinimizeBox = true;
+            this.MaximizeBox = true;
+
+            // 시스템 메뉴에서 Close 항목 회색 처리 및 제거
+            IntPtr hMenu = GetSystemMenu(this.Handle, false);
+            if (hMenu != IntPtr.Zero)
+            {
+                EnableMenuItem(hMenu, (uint)SC_CLOSE, MF_BYCOMMAND | MF_GRAYED | MF_DISABLED);
+                RemoveMenu(hMenu, (uint)SC_CLOSE, MF_BYCOMMAND);
+                DrawMenuBar(this.Handle);
+            }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            // X 버튼, Alt+F4, 시스템 메뉴 Close 등 SC_CLOSE을 무시
+            if (m.Msg == WM_SYSCOMMAND && ((m.WParam.ToInt32() & 0xFFF0) == SC_CLOSE))
+                return;
+
+            base.WndProc(ref m);
+        }
+
+        [DllImport("user32.dll")] private static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+        [DllImport("user32.dll")] private static extern bool RemoveMenu(IntPtr hMenu, uint uPosition, uint uFlags);
+        [DllImport("user32.dll")] private static extern bool EnableMenuItem(IntPtr hMenu, uint uIDEnableItem, uint uEnable);
+        [DllImport("user32.dll")] private static extern bool DrawMenuBar(IntPtr hWnd);
+        // ==X 버튼 비활성화 코드 끝==
+
+
         private TabControl mainTabControl;
         private Dictionary<TabPage, Form> _tabFormInstances;
 

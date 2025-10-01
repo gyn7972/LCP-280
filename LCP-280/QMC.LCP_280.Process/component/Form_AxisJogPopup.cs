@@ -224,7 +224,7 @@ namespace QMC.LCP_280.Process.Unit
             if (axis == null || axis.Status == null || axis.Status.PV == null) return;
 
             double pos = axis.Status.PV.ActualPosition;
-            lblPosition.Text = pos.ToString("0.000", CultureInfo.InvariantCulture);
+            lblPosition.Text = pos.ToString("0.000", CultureInfo.InvariantCulture) + " mm";
         }
 
         // ===== Jog 처리 =====
