@@ -61,15 +61,6 @@ namespace QMC.Common.Unit
             Manual = 6
         }
 
-        //유닛간 인터페이스 상태
-        public enum IfState
-        {
-            None = 0,
-            Request,
-            Busy,
-            Complete
-        }
-
         protected Dictionary<int, AlarmInfo> m_dicAlarms;
         private bool m_bExit;
 
@@ -110,7 +101,6 @@ namespace QMC.Common.Unit
             }
         }
 
-
         public string UnitName { get; set; }
         public List<BaseComponent> Components { get; } = new List<BaseComponent>();
         public BaseConfig Config { get; internal set; }
@@ -137,10 +127,11 @@ namespace QMC.Common.Unit
         public UnitRunMode RunMode { get; set; } = UnitRunMode.Manual;
 
         public bool IsRunning => RunUnitStatus == UnitStatus.Running;
+        public bool IsStop => RunUnitStatus == UnitStatus.Stopped;
         public bool IsAutoMode => RunMode == UnitRunMode.Auto;
         public bool IsManualMode => RunMode == UnitRunMode.Manual;
         public bool IsCycleStop => RunUnitStatus == UnitStatus.CycleStop;
-
+        
         public CancellationTokenSource CalcelToken { get;  set; }
 
         public ProcessState State { get; set; }
@@ -277,6 +268,7 @@ namespace QMC.Common.Unit
             }
 
             SetRunMode(UnitRunMode.Auto);
+            RunUnitStatus = UnitStatus.Running;
             
             m_bExit = false;
             m_workThread = new Thread(OnMainProcedure) { IsBackground = true };
@@ -411,9 +403,10 @@ namespace QMC.Common.Unit
 
         protected virtual int OnPrepareToMainProcedure() => 0;
 
+
+
         #region TeachingPosition Helpers (기존 구조 유지)
         public virtual bool IsInterlockOK(int selIndex) => true;
-
         protected IList<object> ResolveTeachingPositionObjectList()
         {
             try
@@ -431,7 +424,6 @@ namespace QMC.Common.Unit
             catch { }
             return null;
         }
-
         protected static IDictionary<string, double> GetAxisPositions(object tp)
         {
             if (tp == null) return null;
@@ -439,7 +431,6 @@ namespace QMC.Common.Unit
             if (pi == null) return null;
             return pi.GetValue(tp, null) as IDictionary<string, double>;
         }
-
         private static IDictionary<string, MotionAxis> GetAxisObjects(object tp)
         {
             if (tp == null) return null;
@@ -447,7 +438,6 @@ namespace QMC.Common.Unit
             if (pi == null) return null;
             return pi.GetValue(tp, null) as IDictionary<string, MotionAxis>;
         }
-
         private static string GetTpName(object tp)
         {
             if (tp == null) return string.Empty;
@@ -456,8 +446,6 @@ namespace QMC.Common.Unit
             try { return pi.GetValue(tp, null) as string ?? string.Empty; }
             catch { return string.Empty; }
         }
-
-       
         public virtual int MoveTeachingPositionOnce(int selIndex, bool isFine)
         {
             string teachName = string.Empty;
@@ -564,10 +552,8 @@ namespace QMC.Common.Unit
                 //return err == 0 ? 0 : -1;
             }
         }
-
         public Task<int> MoveTeachingPositionOnceAsync(int selIndex, bool isFine)
             => Task.Run(() => MoveTeachingPositionOnce(selIndex, isFine));
-
         public virtual void StopTeachingPositionOnce(int selIndex)
         {
             var list = ResolveTeachingPositionObjectList();
@@ -613,9 +599,9 @@ namespace QMC.Common.Unit
                 return false;
             return !axis.IsMoveDone();
         }
-
         // 이동 완료 여부 바로 얻고 싶을 때(가독성):
         public virtual bool IsAxisStopped(string axisKeyOrName) => !IsAxisMoving(axisKeyOrName);
+
 
         // 하나라도 이동 중이면 true, 전부 멈췄으면 false
         public virtual bool IsAnyAxisMoving()
@@ -664,38 +650,11 @@ namespace QMC.Common.Unit
             }
             return OnMoveAxisPositionOne(axis, target, isFine);
         }
-
-        /// <summary>
-        /// 단일 축 안전 이동(동기). CheckMoveSafety != 0 이면 모든 축 EmgStop 후 알람.
-        /// </summary>
-        //public virtual int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
-        //{
-        //    if (axis == null) return -1;
-
-        //    var task = MoveAxisPositionOneAsync(axis, target, isFine);
-        //    while (!IsEndTask(task))
-        //    {
-        //        int alarmCode = CheckMoveSafety(axis);
-        //        if (alarmCode != 0)
-        //        {
-        //            foreach (var ax in Axes.Values)
-        //            {
-        //                try { ax?.EmgStop(); } catch { }
-        //            }
-        //            PostAlarm(alarmCode);
-        //            return -1;
-        //        }
-        //        Thread.Sleep(0);
-        //    }
-        //    return task.Result;
-        //}
-
         /// <summary>
         /// 단일 축 안전 이동(비동기).
         /// </summary>
         public virtual Task<int> MoveAxisPositionOneAsync(MotionAxis axis, double target, bool isFine = false)
             => Task.Run(() => OnMoveAxisPositionOne(axis, target, isFine));
-
         /// <summary>
         /// 실제 이동 실행 (파생 Override 가능).
         /// </summary>
@@ -751,27 +710,23 @@ namespace QMC.Common.Unit
             
             return 0;
         }
-
         protected void LogAxisMoveDone(MotionAxis axis, double target, bool isFine)
         {
             Log.Write(UnitName, "MoveAxisWithSafety",
                 $"MoveAxisWithSafety Done axis={axis.Name} target={target} isFine={isFine} " +
                 $"cur={axis.GetPosition()}");
         }
-
         protected void LogAxisMove(MotionAxis axis, double target, bool isFine)
         {
             Log.Write(UnitName, "MoveAxisWithSafety",
                 $"MoveAxisWithSafety axis={axis.Name} target={target} isFine={isFine} " +
                 $"cur={axis.GetPosition()}");
         }
-
         /// <summary>
         /// Safety 인터락 검사 (0=OK, 알람코드!=0 → 중단/알람).
         /// 파생 클래스에서 조건 구현.
         /// </summary>
         public virtual int CheckMoveSafety(MotionAxis movingAxis) => 0;
-
         /// <summary>
         /// 기본 축 검색 (Key 우선 → Name 매칭). 파생에서 필요 시 Override.
         /// </summary>
@@ -792,6 +747,33 @@ namespace QMC.Common.Unit
             }
             return null;
         }
+
+
+
+        //Position 확인
+        public bool InPosTeaching(TeachingPosition tp)
+        {
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp.Name);
+        }
+        public bool InPosTeaching(string positionName)
+        {
+            var tp = Config.GetTeachingPosition(positionName);
+            if (tp == null) return false;
+            foreach (var kv in tp.AxisPositions)
+                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            return true;
+        }
+        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        public double GetTP(string tpName, string axisName)
+        {
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            return 0.0;
+        }
+
+
         #endregion
 
         #region IDisposable

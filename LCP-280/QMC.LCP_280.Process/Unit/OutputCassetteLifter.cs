@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -198,13 +199,13 @@ namespace QMC.LCP_280.Process.Unit
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
                 ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         #endregion
 
         #region Teaching Helpers
@@ -232,13 +233,13 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-        public bool InPosTeaching(string positionName)
-        {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            double z = tp.AxisPositions.TryGetValue("Bin Lifter Z Axis", out var vz) ? vz : 0;
-            return InPos(_BinLiftZ, z);
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = Config.GetTeachingPosition(positionName);
+        //    if (tp == null) return false;
+        //    double z = tp.AxisPositions.TryGetValue("Bin Lifter Z Axis", out var vz) ? vz : 0;
+        //    return InPos(_BinLiftZ, z);
+        //}
         #endregion
 
         #region IO / Sensors
@@ -321,7 +322,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (Config.IsSimulation || Config.IsDryRun)
                 {
-                    Log.Write(this, "Bin Protrusion Detected - Simulation");
+                    //Log.Write(this, "Bin Protrusion Detected - Simulation");
                 }
                 else if (this.IsBinProtrusionDetectionSensor())
                 {
@@ -432,23 +433,24 @@ namespace QMC.LCP_280.Process.Unit
                 return 1;
             }
 
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+
             switch (State)
             {
                 case ProcessState.Ready:
-                    ret = OnRunReady();
+                    //ret = OnRunReady();
                     break;
                 case ProcessState.Work:
-                    ret = OnRunWork();
+                    //ret = OnRunWork();
                     break;
                 case ProcessState.Complete:
-                    ret = OnRunComplete();
-                    if(ret == 0)
-                    {
-                        RequestStageLoading = true;
-                    }
+                    //ret = OnRunComplete();
+                    
                     break;
                 default:
-                    this.IsBinReadyForUnloding = false;
                     this.State = ProcessState.Ready;
                     break;
             }
@@ -459,6 +461,10 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return ret;
+        }
+        protected override int OnStart()
+        {
+            return base.OnStart();
         }
         public override int OnStop()
         {
@@ -472,103 +478,19 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunReady()
         {
             int ret = 0;
-            MaterialCassette material = GetMaterialCassette();
-            if (material.Presence == Material.MaterialPresence.Exist)
-            {
-                if (material.ProcessSatate == MaterialCassette.MaterialProcessSatate.Unknown)
-                {
-                    ret = ScanBin();
-                    if (ret != 0)
-                    {
-                        Log.Write(this, "ScanWafer Failed");
-                        return -1;
-                    }
-                }
-                State = ProcessState.Work;
-            }
-            else
-            {
-                State = ProcessState.None;
-            }
-            return 0;
+            return ret;
         }
 
         protected override int OnRunWork()
         {
-            MaterialCassette material = GetMaterialCassette();
-            if (material.Presence == Material.MaterialPresence.NotExist)
-            {
-                State = ProcessState.Complete;
-                return 0;
-            }
-            else if (material.Presence == Material.MaterialPresence.Exist)
-            {
-                if (material.ProcessSatate == Material.MaterialProcessSatate.Unknown)
-                {
-                    Log.Write(this, "Material Process State Unknown in Work State");
-                    return -1;
-                }
-                else if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
-                {
-                    foreach (var wafer in material.Slots)
-                    {
-                        if (wafer == null || wafer.Presence == Material.MaterialPresence.NotExist)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
-                            {
-                                continue;
-                            }
-                            else
-                            {
-                                if (OutputStage.RequestBin)
-                                {
-                                    MoveToNextSlot();
-                                }
-                                else
-                                {
-                                    MaterialWafer StageBin = OutputStage.GetMaterialWafer();
-                                    if (StageBin == null || StageBin.Presence == Material.MaterialPresence.NotExist)
-                                    {
-                                        // Stage wafer is not exist
-                                        return 0;
-                                    }
-                                    else
-                                    {
-                                        if (StageBin.SlotIndex != wafer.SlotIndex)
-                                        {
-                                            // Stage wafer slot index is different
-                                            return 0;
-                                        }
-                                    }
-                                    if (StageBin.ProcessSatate == Material.MaterialProcessSatate.Processing)
-                                    {
-                                        return 0;
-                                    }
-                                    else if (StageBin.ProcessSatate == Material.MaterialProcessSatate.Completed)
-                                    {
-                                        MoveToSlot(StageBin.SlotIndex);
-                                    }
-                                    else
-                                    {
-                                        // Stage wafer is not ready
-                                        return 0;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return 0;
+            int ret = 0;
+            return ret;
         }
 
         protected override int OnRunComplete()
         {
-            return 0;
+            int ret = 0;
+            return ret;
         }
         #endregion
 

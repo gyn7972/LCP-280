@@ -202,11 +202,18 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
-                AxisEjectorZ.EmgStop();
-                AxisPinZ.EmgStop();
+                if(Config.IsSimulation)
+                {
+                    Thread.Sleep(100);
+                }
+                if(InputStage.IsAnyAxisMoving())
+                {
+                    AxisEjectorZ.EmgStop();
+                    AxisPinZ.EmgStop();
 
-                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                return -1;
+                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
             }
 
             if (InputStage.CheckMoveSafety(InputStage.AxisX) != 0 ||
@@ -488,15 +495,15 @@ namespace QMC.LCP_280.Process.Unit
 
 
 
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(TeachingPosition tp, string axisKey) => (tp == null || string.IsNullOrEmpty(axisKey)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisKey, out var v) ? v : 0.0);
         public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         #endregion
 
         #region Teaching
@@ -516,14 +523,14 @@ namespace QMC.LCP_280.Process.Unit
             return rc;
         }
         public int MoveToTeachingPosition(InputStageEjectorConfig.TeachingPositionName name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0) => MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
-        public bool InPosTeaching(string positionName)
-        {
-            var (z, pz) = Config.GetPositionWithOffset(positionName);
-            return InPos(_axEjectorZ, z) && InPos(_axPinZ, pz);
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var (z, pz) = Config.GetPositionWithOffset(positionName);
+        //    return InPos(_axEjectorZ, z) && InPos(_axPinZ, pz);
+        //}
         #endregion
 
-        public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
+        //public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
         /// <summary>
         /// EjectorZ 축이 Safety Teaching 위치(또는 허용 오차 범위)에 있는지 확인.
         /// 우선순위: EjectBlockSafety → EjectBlockUp → EjectBlockReady

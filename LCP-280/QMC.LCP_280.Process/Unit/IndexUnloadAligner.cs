@@ -106,6 +106,12 @@ namespace QMC.LCP_280.Process.Unit
                 this.State = ProcessState.Stop;
                 ret = 1;
             }
+
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+
             else
             {
                 switch (State)

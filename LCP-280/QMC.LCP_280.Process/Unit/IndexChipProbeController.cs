@@ -637,6 +637,8 @@ namespace QMC.LCP_280.Process.Unit
 
         }
 
+
+
         public int MovePositionBottomContact_Index_Up(int nIndex = 0, bool isFine = false)
         {
             Task<int> task = MovePositionAsyncBottomContact_Index_Up(nIndex, isFine);
@@ -728,42 +730,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRet;
         }
-        public Task<int> MovePositionAsyncSafeBottomContact_Index_Up(int nIndex, bool isFine = false, CancellationToken ct = default(CancellationToken))
-        {
-            return Task.Run(() =>
-            {
-                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
-                var coreTask = Task.Run(() => OnMovePositionBottomContact_Index_Up(nIndex, isFine), ct);
-
-                while (!IsEndTask(coreTask))
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            AxisProbeZ?.EmgStop();
-                            AxisProbeCardX?.EmgStop();
-                            AxisProbeCardY?.EmgStop();
-                            AxisProbeCardZ?.EmgStop();
-                            AxisSphereZ?.EmgStop();
-                        }
-                        catch { }
-                        return -999; // 취소 코드
-                    }
-
-                    int nRtn = IsMoveInterLockBottomContact_Index_Up();
-                    if (nRtn != 0)
-                    {
-                        return -1;
-                    }
-
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
-                }
-
-                return coreTask.Result;
-            },
-            ct);
-        }
 
 
         public int MovePositionBottomContact_Index_Ready(int nIndex = 0, bool isFine = false)
@@ -848,43 +814,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRet;
         }
-        public Task<int> MovePositionAsyncSafeBottomContact_Index_Ready(int nIndex, bool isFine = false, CancellationToken ct = default(CancellationToken))
-        {
-            return Task.Run(() =>
-            {
-                // OnMovePickUpPosition을 Task로 돌리고 별도 인터락/취소 감시
-                var coreTask = Task.Run(() => OnMovePositionBottomContact_Index_Ready(nIndex, isFine), ct);
-
-                while (!IsEndTask(coreTask))
-                {
-                    if (ct.IsCancellationRequested)
-                    {
-                        try
-                        {
-                            AxisProbeZ?.EmgStop();
-                            AxisProbeCardX?.EmgStop();
-                            AxisProbeCardY?.EmgStop();
-                            AxisProbeCardZ?.EmgStop();
-                            AxisSphereZ?.EmgStop();
-                        }
-                        catch { }
-                        return -999; // 취소 코드
-                    }
-
-                    int nRtn = IsMoveInterLockBottomContact_Index_Ready();
-                    if (nRtn != 0)
-                    {
-                        return -1;
-                    }
-
-                    Thread.Sleep(5); // 0→5ms로 약간 여유 (CPU 점유 감소)
-                }
-
-                return coreTask.Result;
-            },
-            ct);
-        }
-
         private int OnMovePositionBottomContact_Index_ReadyZ(int nIndex = 0, bool isFine = false)
         {
             int nRet = 0;
@@ -921,6 +850,85 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
+        #region Z-Axis In-Position Checkers (Teaching별 Z축만 검사)
+
+        // Sphere Z 개별 확인
+        public bool IsSphereZAtReady()
+            => IsAxisInTeachingPosition(AxisSphereZ,
+                IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready.ToString(),
+                AxisNames.SphereZ);
+
+        public bool IsSphereZAtDown()
+            => IsAxisInTeachingPosition(AxisSphereZ,
+                IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Down.ToString(),
+                AxisNames.SphereZ);
+
+        // SafetyZone에서 각 Z축만 개별 확인 (기존 함수 활용)
+        public bool IsProbeZAtSafetyZone()
+            => IsAxisProbeZSafetyPos();       // SafetyZone의 ProbeZ만 검사
+        public bool IsProbeCardZAtSafetyZone()
+            => IsAxisProbeCardZSafetyPos();   // SafetyZone의 ProbeCardZ만 검사
+
+        // TopContact: ProbeZ만 검사 (Index 0~7 또는 1~8 허용)
+        public bool IsTopContactIndexZUp(int nIndex)
+        {
+            int idx;
+            if (nIndex >= 1 && nIndex <= 8)
+                idx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8)
+                idx = nIndex + 1;
+            else 
+                return false;
+
+            string tpName = $"TopContact_Index{idx}_Up";
+            return IsAxisInTeachingPosition(AxisProbeZ, tpName, AxisNames.ProbeZ);
+        }
+
+        public bool IsTopContactIndexZReady(int nIndex)
+        {
+            int idx;
+            if (nIndex >= 1 && nIndex <= 8) 
+                idx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8) 
+                idx = nIndex + 1;
+            else return false;
+
+            string tpName = $"TopContact_Index{idx}_Ready";
+            return IsAxisInTeachingPosition(AxisProbeZ, tpName, AxisNames.ProbeZ);
+        }
+
+        // BottomContact: ProbeCardZ만 검사 (Index 0~7 또는 1~8 허용)
+        public bool IsBottomIndexZUp(int nIndex)
+        {
+            int idx;
+            if (nIndex >= 1 && nIndex <= 8) 
+                idx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8) 
+                idx = nIndex + 1;
+            else 
+                return false;
+
+            string tpName = $"Bottom_Index{idx}_Up";
+            return IsAxisInTeachingPosition(AxisProbeCardZ, tpName, AxisNames.ProbeCardZ);
+        }
+
+        public bool IsBottomIndexZReady(int nIndex)
+        {
+            int idx;
+            if (nIndex >= 1 && nIndex <= 8) 
+                idx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8) 
+                idx = nIndex + 1;
+            else 
+                return false;
+
+            string tpName = $"Bottom_Index{idx}_Ready";
+            return IsAxisInTeachingPosition(AxisProbeCardZ, tpName, AxisNames.ProbeCardZ);
+        }
+        #endregion
+
+
+
         #region Safety Position Helpers (Individual Axis)
         /// <summary>
         /// 내부 헬퍼: TeachingPosition에서 특정 축 목표값을 얻는다.
@@ -947,25 +955,14 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        /// <summary>
-        /// ProbeZ 축이 SafetyZone TeachingPosition 의 ProbeZ 위치에 InPosition 인가
-        /// </summary>
         public bool IsAxisProbeZSafetyPos()
             => IsAxisInTeachingPosition(AxisProbeZ,
                 IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString(),
                 AxisNames.ProbeZ);
-
-        /// <summary>
-        /// ProbeCardZ 축이 SafetyZone TeachingPosition 의 ProbeCardZ 위치에 InPosition 인가
-        /// </summary>
         public bool IsAxisProbeCardZSafetyPos()
             => IsAxisInTeachingPosition(AxisProbeCardZ,
                 IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString(),
                 AxisNames.ProbeCardZ);
-
-        /// <summary>
-        /// SphereZ 축이 SphereZ_Up (우선) 또는 SphereZ_Ready TeachingPosition 위치에 InPosition 인가
-        /// </summary>
         public bool IsAxisSphereZSafetyPos()
         {
             // Up 우선
@@ -979,7 +976,6 @@ namespace QMC.LCP_280.Process.Unit
                     IndexChipProbeControllerConfig.TeachingPositionName.SphereZ_Ready.ToString(),
                     AxisNames.SphereZ);
         }
-
         /// <summary>
         /// 세 축(ProbeZ, ProbeCardZ, SphereZ)이 모두 Safety 위치인가
         /// </summary>
@@ -987,17 +983,15 @@ namespace QMC.LCP_280.Process.Unit
             => IsAxisProbeZSafetyPos() &&
                IsAxisProbeCardZSafetyPos() &&
                IsAxisSphereZSafetyPos();
-        
 
 
-
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         #endregion
 
         #region Teaching Helpers
@@ -1025,14 +1019,14 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-        public bool InPosTeaching(string positionName)
-        {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            foreach (var kv in tp.AxisPositions)
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
-            return true;
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = Config.GetTeachingPosition(positionName);
+        //    if (tp == null) return false;
+        //    foreach (var kv in tp.AxisPositions)
+        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+        //    return true;
+        //}
         #endregion
 
         #region Low-Level IO Access
@@ -1150,6 +1144,12 @@ namespace QMC.LCP_280.Process.Unit
                 this.State = ProcessState.Stop;
                 ret = 1;
             }
+
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+
             else
             {
                 switch (State)
@@ -1190,6 +1190,9 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
+
+            IndexChipProber?.OnStop();
+
             base.OnStop();
             return ret;
         }

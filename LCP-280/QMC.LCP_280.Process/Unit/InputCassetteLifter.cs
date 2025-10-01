@@ -196,13 +196,13 @@ namespace QMC.LCP_280.Process.Unit
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
                 ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = base.Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = base.Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         #endregion
 
         #region Teaching Helpers
@@ -230,14 +230,14 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-        public bool InPosTeaching(string positionName)
-        {
-            var tp = base.Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            foreach (var kv in tp.AxisPositions)
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
-            return true;
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = base.Config.GetTeachingPosition(positionName);
+        //    if (tp == null) return false;
+        //    foreach (var kv in tp.AxisPositions)
+        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+        //    return true;
+        //}
         #endregion
 
         #region IO / Sensors
@@ -430,23 +430,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             return GetTP(pos.ToString(), axis);
         }
-
-
-        #region Seq Signals
-       
-        private static bool WaitIf(System.Func<IfState> get, IfState target, int timeoutMs = 10000, System.Threading.CancellationToken? ct = null, int pollMs = 5)
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (true)
-            {
-                if (ct.HasValue && ct.Value.IsCancellationRequested) return false;
-                if (get() == target) return true;
-                if (timeoutMs >= 0 && sw.ElapsedMilliseconds > timeoutMs) return false;
-                System.Threading.Thread.Sleep(pollMs);
-            }
-        }
-        #endregion
-
 
         #region Lifecycle
         public override int OnRun()
@@ -648,11 +631,17 @@ namespace QMC.LCP_280.Process.Unit
                 material.Slots.Add(new MaterialWafer());
             }
             nRtn = MoveToScanStartPosition(bFineSpeed);
-
             if (nRtn != 0)
             {
+                Log.Write(this, "MoveToScanStartPosition Failed");
                 return nRtn;
             }
+            if (this.IsStop)
+            {
+                Log.Write(this, "InputFeeder Stop");
+                return -1;
+            }
+
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(bFineSpeed);
             bool bDetected = false;
             while (true)
@@ -732,6 +721,7 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(this, "End ScanWafer");
             return nRtn;
         }
+
         public Task<int> ScanWaferAsync(bool bFineSpeed = false)
         {
             return Task.Run(() => ScanWafer(bFineSpeed));

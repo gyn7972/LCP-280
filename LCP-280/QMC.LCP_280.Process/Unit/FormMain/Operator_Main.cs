@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Controls;
+using QMC.Common.UI;
 using QMC.Common.Unit;
 using System;
 using System.Collections.Generic;
@@ -14,18 +15,18 @@ namespace QMC.LCP_280.Process.Unit.FormMain
     public partial class Operator_Main : Form
     {
         // Units
-        //private InputCassetteLifter InputCassetteLifter { get; set; }
+        private InputCassetteLifter InputCassetteLifter { get; set; }
         private InputFeeder InputFeeder { get; set; }
         private InputStage InputStage { get; set; }
         private InputDieTransfer InputDieTransfer { get; set; }
         private Rotary Rotary { get; set; }
-        //private IndexLoadAligner IndexLoadAligner { get; set; }
-        //private IndexChipProbeController IndexChipProbeController { get; set; }
+        private IndexLoadAligner IndexLoadAligner { get; set; }
+        private IndexChipProbeController IndexChipProbeController { get; set; }
         private IndexUnloadAligner IndexUnloadAligner { get; set; }
         private OutputDieTransfer OutputDieTransfer { get; set; }
         private OutputStage OutputStage { get; set; }
         private OutputFeeder OutputFeeder{ get; set; }
-        //private OutputCassetteLifter OutputCassetteLifter { get; set; }
+        private OutputCassetteLifter OutputCassetteLifter { get; set; }
 
         // State
         private bool _initialized;
@@ -49,13 +50,20 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             TryGetUnit<OutputFeeder>("OutputFeeder"),
             TryGetUnit<InputStage>("InputStage"),
             TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner"),
-            TryGetUnit<OutputStage>("OutputStage")  )
+            TryGetUnit<OutputStage>("OutputStage"),
+
+            TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
+            TryGetUnit<IndexLoadAligner>("IndexLoadAligner"),
+            TryGetUnit<IndexChipProbeController>("IndexChipProbeController"),
+            TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"))
         {
         }
 
         public Operator_Main(InputFeeder inputFeeder, InputDieTransfer inputDieTransfer, Rotary rotary,
                             OutputDieTransfer outputDieTransfer, OutputFeeder outputFeeder,
-                            InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage)
+                            InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage,
+                            InputCassetteLifter inputCassetteLifter, IndexLoadAligner indexLoadAligner,
+                            IndexChipProbeController indexChipProbeController, OutputCassetteLifter outputCassetteLifter)
         {
             InitializeComponent();
 
@@ -67,6 +75,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             InputStage = inputStage;
             IndexUnloadAligner = indexUnloadAligner;
             OutputStage = outputStage;
+
+            InputCassetteLifter = inputCassetteLifter;
+            IndexLoadAligner = indexLoadAligner;
+            IndexChipProbeController = indexChipProbeController;
+            OutputCassetteLifter = outputCassetteLifter;
 
             // 상태 초기화
             _readySequences = new HashSet<string>();
@@ -186,7 +199,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             // Auto Control UI 초기화
             sequenceAutoControl.ResetAllButtons();
-
             // Manual Control UI 초기화
             sequenceManualControl.ResetAllButtons();
 
@@ -353,9 +365,12 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             // Auto Start 로직 구현
         }
 
-        private void ExecuteAutoStop()
+        private async void ExecuteAutoStop()
         {
+            var equipment = Equipment.Instance;
             // Auto Stop 로직 구현
+            var result = await equipment.StopAllUnitsAsync(false);
+
         }
 
         private void ExecuteAutoCycleStop()
@@ -390,10 +405,45 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "InputWafer Ready 위치로 이동");
-                // 실제: InputStage?.MoveToReadyPosition();
-                //InputFeeder.
+                bool isFine = false;
+                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
+                int selIndex = -1;
+                try
+                {
+                    var cfg = InputFeeder.Config;
+                    var tp = cfg?.GetTeachingPosition(InputFeederConfig.TeachingPositionName.Ready.ToString());
+                    if (tp != null && cfg.TeachingPositions != null)
+                        selIndex = cfg.TeachingPositions.IndexOf(tp);
+                }
+                catch { selIndex = -1; }
 
+                if (selIndex < 0)
+                {
+                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
 
+                var task = InputFeeder.MoveTeachingPositionOnceAsync(selIndex, isFine);
+                using (var pf = new ProgressForm(InputFeeder.UnitName, "Teaching Position 이동 중...", task))
+                {
+                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                    if (dr == DialogResult.Cancel)
+                    {
+                        InputFeeder.StopTeachingPositionOnce(selIndex);
+                        return;
+                    }
+                }
+
+                var result = await task; // 완료 결과 수집
+
+                if (result == 0)
+                {
+                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
             else if (action == "Start")
             {
@@ -450,6 +500,45 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "ChipLoading Ready");
+                bool isFine = false;
+                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
+                int selIndex = -1;
+                try
+                {
+                    var cfg = InputDieTransfer.Config;
+                    var tp = cfg?.GetTeachingPosition(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
+                    if (tp != null && cfg.TeachingPositions != null)
+                        selIndex = cfg.TeachingPositions.IndexOf(tp);
+                }
+                catch { selIndex = -1; }
+
+                if (selIndex < 0)
+                {
+                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var task = InputDieTransfer.MoveTeachingPositionOnceAsync(selIndex, isFine);
+                using (var pf = new ProgressForm(InputDieTransfer.UnitName, "Teaching Position 이동 중...", task))
+                {
+                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                    if (dr == DialogResult.Cancel)
+                    {
+                        InputDieTransfer.StopTeachingPositionOnce(selIndex);
+                        return;
+                    }
+                }
+
+                var result = await task; // 완료 결과 수집
+
+                if (result == 0)
+                {
+                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
             }
             else if (action == "Start")
             {
@@ -506,6 +595,78 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "Process Ready");
+                bool isFine = false;
+                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
+                int selIndex = -1;
+                
+                try
+                {
+                    var cfg = IndexLoadAligner.Config;
+                    var tp = cfg?.GetTeachingPosition(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone.ToString());
+                    if (tp != null && cfg.TeachingPositions != null)
+                        selIndex = cfg.TeachingPositions.IndexOf(tp);
+                }
+                catch { selIndex = -1; }
+                if (selIndex < 0)
+                {
+                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                var task = IndexLoadAligner.MoveTeachingPositionOnceAsync(selIndex, isFine);
+                using (var pf = new ProgressForm(IndexLoadAligner.UnitName, "Teaching Position 이동 중...", task))
+                {
+                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                    if (dr == DialogResult.Cancel)
+                    {
+                        IndexLoadAligner.StopTeachingPositionOnce(selIndex);
+                        return;
+                    }
+                }
+                var result = await task; // 완료 결과 수집
+                if (result == 0)
+                {
+                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
+
+                //
+                try
+                {
+                    var cfg = IndexChipProbeController.Config;
+                    var tp = cfg?.GetTeachingPosition(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString());
+                    if (tp != null && cfg.TeachingPositions != null)
+                        selIndex = cfg.TeachingPositions.IndexOf(tp);
+                }
+                catch { selIndex = -1; }
+                if (selIndex < 0)
+                {
+                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                task = IndexChipProbeController.MoveTeachingPositionOnceAsync(selIndex, isFine);
+                using (var pf = new ProgressForm(IndexChipProbeController.UnitName, "Teaching Position 이동 중...", task))
+                {
+                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                    if (dr == DialogResult.Cancel)
+                    {
+                        IndexChipProbeController.StopTeachingPositionOnce(selIndex);
+                        return;
+                    }
+                }
+                result = await task; // 완료 결과 수집
+                if (result == 0)
+                {
+                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
             }
             else if (action == "Start")
             {
@@ -562,6 +723,46 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "ChipUnloading Ready");
+                bool isFine = false;
+                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
+                int selIndex = -1;
+                try
+                {
+                    var cfg = OutputDieTransfer.Config;
+                    var tp = cfg?.GetTeachingPosition(OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
+                    if (tp != null && cfg.TeachingPositions != null)
+                        selIndex = cfg.TeachingPositions.IndexOf(tp);
+                }
+                catch { selIndex = -1; }
+
+                if (selIndex < 0)
+                {
+                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var task = OutputDieTransfer.MoveTeachingPositionOnceAsync(selIndex, isFine);
+                using (var pf = new ProgressForm(OutputDieTransfer.UnitName, "Teaching Position 이동 중...", task))
+                {
+                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                    if (dr == DialogResult.Cancel)
+                    {
+                        OutputDieTransfer.StopTeachingPositionOnce(selIndex);
+                        return;
+                    }
+                }
+
+                var result = await task; // 완료 결과 수집
+
+                if (result == 0)
+                {
+                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
             }
             else if (action == "Start")
             {
@@ -618,7 +819,47 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "OutputWafer Ready 위치로 이동");
-                // 실제: OutputStage?.MoveToReadyPosition();
+
+                bool isFine = false;
+                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
+                int selIndex = -1;
+                try
+                {
+                    var cfg = OutputFeeder.Config;
+                    var tp = cfg?.GetTeachingPosition(OutputFeederConfig.TeachingPositionName.Ready.ToString());
+                    if (tp != null && cfg.TeachingPositions != null)
+                        selIndex = cfg.TeachingPositions.IndexOf(tp);
+                }
+                catch { selIndex = -1; }
+
+                if (selIndex < 0)
+                {
+                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var task = OutputFeeder.MoveTeachingPositionOnceAsync(selIndex, isFine);
+                using (var pf = new ProgressForm(OutputFeeder.UnitName, "Teaching Position 이동 중...", task))
+                {
+                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                    if (dr == DialogResult.Cancel)
+                    {
+                        OutputFeeder.StopTeachingPositionOnce(selIndex);
+                        return;
+                    }
+                }
+
+                var result = await task; // 완료 결과 수집
+
+                if (result == 0)
+                {
+                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
             }
             else if (action == "Start")
             {

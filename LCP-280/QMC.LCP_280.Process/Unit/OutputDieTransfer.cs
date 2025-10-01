@@ -817,25 +817,25 @@ namespace QMC.LCP_280.Process.Unit
             return result;
         }
 
-        public bool InPosTeaching(string positionName)
-        {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            foreach (var kv in tp.AxisPositions)
-            {
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) 
-                    return false;
-            }
-            return true;
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = Config.GetTeachingPosition(positionName);
+        //    if (tp == null) return false;
+        //    foreach (var kv in tp.AxisPositions)
+        //    {
+        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) 
+        //            return false;
+        //    }
+        //    return true;
+        //}
 
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         
         #region IO Helpers (Input / Output ป๓ลย)
         public bool ReadInput(string name)
@@ -1062,31 +1062,42 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunWork()
         {
             int nRtn = 0;
-
-            MaterialDie die = Rotary.GetUnloadSocketMaterial();
-            if(die == null || die.Presence != Material.MaterialPresence.Exist)
+            try
             {
-                return 0;
-            }
 
-            nRtn = ChipPickDown();
-            if (nRtn != 0)
+                MaterialDie die = Rotary.GetUnloadSocketMaterial();
+                if (die == null || die.Presence != Material.MaterialPresence.Exist)
+                {
+                    return 0;
+                }
+
+                nRtn = ChipPickDown();
+                if (nRtn != 0)
+                {
+                    Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
+                    return -1;
+                }
+
+                nRtn = ChipPickUp();
+                if (nRtn != 0)
+                {
+                    Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
+                    return -1;
+                }
+                die.State = DieProcessState.Picked;
+                die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                SetMaterial(die);
+
+                State = ProcessState.Complete;
+            }
+            catch (Exception ex)
             {
-                Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
-                return -1;
-            }
 
-            nRtn = ChipPickUp();
-            if (nRtn != 0)
+                Log.Write(ex);
+            }finally
             {
-                Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
-                return -1;
+                RisePickupDoneEvent();
             }
-            die.State = DieProcessState.Picked;
-            die.ProcessSatate = Material.MaterialProcessSatate.Processing;
-            SetMaterial(die);
-
-            State = ProcessState.Complete;
             return 0;
         }
         protected override int OnRunComplete()

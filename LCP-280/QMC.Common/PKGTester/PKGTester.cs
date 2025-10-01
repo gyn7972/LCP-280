@@ -373,6 +373,7 @@ namespace QMC.Common.PKGTester
                 var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));
 
                 // Spectrometer task start
+                Thread.CurrentThread.Name = "DoSpectrometerMeasure";
                 spcTask = Task.Run(() => DoSpectrometerMeasure());
 
                 // Wait spectrometer command sent
@@ -387,6 +388,7 @@ namespace QMC.Common.PKGTester
                 }
 
                 // Sourcemeter task start
+                Thread.CurrentThread.Name = "DoSourcemeterMeasure";
                 smuTask = Task.Run(() => DoSourcemeterMeasure());
 
                 // Wait for both tasks to complete

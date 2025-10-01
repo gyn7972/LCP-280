@@ -590,6 +590,91 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
+        // ===== 위치 확인 (TeachingPosition 기준) =====
+
+        // 공통: enum으로 지정된 TeachingPosition에 현재 In-Position 여부
+        public bool IsInTeachingPosition(IndexLoadAlignerConfig.TeachingPositionName pos)
+        {
+            var tp = Config.GetTeachingPosition(pos.ToString());
+            if (tp == null) return false;
+            return InPosTeaching(tp);
+        }
+
+        // AlignT 위치 확인
+        public bool IsAlignTReady()
+        {
+            var name = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Ready.ToString();
+            return InPosTeaching(name);
+        }
+
+        public bool IsAlignTForward()
+        {
+            var name = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Foward.ToString();
+            return InPosTeaching(name);
+        }
+
+        public bool IsAlignTBackward()
+        {
+            var name = IndexLoadAlignerConfig.TeachingPositionName.AlignT_Backward.ToString();
+            return InPosTeaching(name);
+        }
+
+        // AlignZ(IndexZ) 위치 확인: 현재 인덱스 버전
+        public bool IsAlignZIndexUp()
+        {
+            int nIndex = GetAlignIndexNo();
+            return IsAlignZIndexUp(nIndex);
+        }
+
+        public bool IsAlignZIndexReady()
+        {
+            int nIndex = GetAlignIndexNo();
+            return IsAlignZIndexReady(nIndex);
+        }
+
+        // AlignZ(IndexZ) 위치 확인: 특정 인덱스(0~7 또는 1~8 허용)
+        public bool IsAlignZIndexUp(int nIndex)
+        {
+            // 기존 이동 로직과 동일한 인덱스 보정 규칙 유지
+            int teachingIdx;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1;
+            else
+                return false;
+
+            string tpName = $"AlignZ_Index{teachingIdx}_Up";
+
+            // Z축만 판정 (축별 확인)
+            if (AxisIndexZ == null) return true;
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null) return false;
+
+            double target = GetTP(tpName, AxisNames.IndexZ);
+            try { return AxisIndexZ.InPosition(target); } catch { return false; }
+        }
+
+        public bool IsAlignZIndexReady(int nIndex)
+        {
+            int teachingIdx;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1;
+            else
+                return false;
+
+            string tpName = $"AlignZ_Index{teachingIdx}_Ready";
+
+            // Z축만 판정 (축별 확인)
+            if (AxisIndexZ == null) return true;
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null) return false;
+
+            double target = GetTP(tpName, AxisNames.IndexZ);
+            try { return AxisIndexZ.InPosition(target); } catch { return false; }
+        }
 
         public bool IsAlignZSafetyPos(double fallbackTolerance = 0.01,
                                       bool useAxisInposTolerance = true,
@@ -637,15 +722,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return System.Math.Abs(cur - target) <= tol;
         }
-
-
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
         #endregion
 
         #region Teaching
@@ -676,14 +752,14 @@ namespace QMC.LCP_280.Process.Unit
 
             return result;
         }
-        public bool InPosTeaching(string positionName)
-        {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            foreach (var kv in tp.AxisPositions)
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
-            return true;
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = Config.GetTeachingPosition(positionName);
+        //    if (tp == null) return false;
+        //    foreach (var kv in tp.AxisPositions)
+        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+        //    return true;
+        //}
         #endregion
 
         #region IO Placeholders
@@ -708,7 +784,12 @@ namespace QMC.LCP_280.Process.Unit
                 this.State = ProcessState.Stop;
                 ret = 1;
             }
-            else
+
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+
             {
                 switch (State)
                 {

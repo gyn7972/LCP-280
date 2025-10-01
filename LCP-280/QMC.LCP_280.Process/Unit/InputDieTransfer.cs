@@ -325,7 +325,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MovePositionAsyncPickUp(isFine);
             while (IsEndTask(task) == false)
             {
-                int nRtn = IsMoveInterLockPickUp();
+                int nRtn = CheckMoveInterLockPickUp();
                 if (nRtn != 0)
                 {
                     return -1;
@@ -374,7 +374,7 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
             //return MoveTeachingPositionOnce((int)InputDieTransferConfig.TeachingPositionName.Pickup, isFine);
         }
-        private int IsMoveInterLockPickUp()
+        private int CheckMoveInterLockPickUp()
         {
             int nRet = 0;
             if (InputStage != null && InputStage.IsAnyAxisMoving())
@@ -395,14 +395,15 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary != null && Rotary.IsAnyAxisMoving())
-            {
-                AxisToolT?.EmgStop();
-                AxisPickZ?.EmgStop();
-                AxisPlaceZ?.EmgStop();
-                PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
-                return -1;
-            }
+            //Input할때는 이 조건 필요없음.! Place 할때만 필요.!!!
+            //if (Rotary != null && Rotary.IsAnyAxisMoving())
+            //{
+            //    AxisToolT?.EmgStop();
+            //    AxisPickZ?.EmgStop();
+            //    AxisPlaceZ?.EmgStop();
+            //    PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+            //    return -1;
+            //}
 
             return nRet;
         }
@@ -427,7 +428,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -999; // 취소 코드
                     }
 
-                    int nRtn = IsMoveInterLockPickUp();
+                    int nRtn = CheckMoveInterLockPickUp();
                     if (nRtn != 0)
                     {
                         return -1;
@@ -1016,13 +1017,13 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
 
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         #endregion
 
         #region Teaching Helpers
@@ -1041,19 +1042,17 @@ namespace QMC.LCP_280.Process.Unit
 
             return rc;
         }
-        public bool InPosTeaching(string positionName)
-        {
-            //var (t, pz, plz) = Config.GetPositionWithOffset(name);
-            //return InPos(_toolT, t) && InPos(_pickZ, pz) && InPos(_placeZ, plz);
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            foreach (var kv in tp.AxisPositions)
-            {
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value))
-                    return false;
-            }
-            return true;
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = Config.GetTeachingPosition(positionName);
+        //    if (tp == null) return false;
+        //    foreach (var kv in tp.AxisPositions)
+        //    {
+        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value))
+        //            return false;
+        //    }
+        //    return true;
+        //}
        
         public void ApplyOffset(string name, double t, double pickZ, double placeZ)
             => Config.SetOffset(name, t, pickZ, placeZ);
@@ -1370,9 +1369,11 @@ namespace QMC.LCP_280.Process.Unit
             MaterialDie Die = this.Rotary.GetLoadSocketMaterial();
             if(Die != null)
             {
-                if (Die.Presence == Material.MaterialPresence.NotExist)
+                if (Die.Presence == Material.MaterialPresence.NotExist
+                 || Die.Presence == Material.MaterialPresence.Unknown)
                 {
-                    if (Die.ProcessSatate == Material.MaterialProcessSatate.Unknown)
+                    if (Die.ProcessSatate == Material.MaterialProcessSatate.Unknown &&
+                        Rotary.IsAnyAxisMoving() == false)
                     {
                         nRet = PlaceChipDown();
                         if (nRet != 0)
@@ -1397,6 +1398,7 @@ namespace QMC.LCP_280.Process.Unit
 
                         die.State = DieProcessState.Inspecting;
                         die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                        die.Presence = Material.MaterialPresence.Exist;
                         Rotary.SetMaterial(die);
                         SetMaterial(new Material());
 

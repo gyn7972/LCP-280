@@ -37,16 +37,25 @@ namespace QMC.Common.Unit
         /// <summary>입력 신호 읽기</summary>
         public static bool ReadInput(this BaseUnit unit, string name)
         {
-            if (unit == null || string.IsNullOrWhiteSpace(name)) return false;
+            if (unit == null || string.IsNullOrWhiteSpace(name)) 
+                return false;
+
             var hi = GetHardList(unit.Config, "HardInputs")
                 .FirstOrDefault(i => i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (string.IsNullOrEmpty(hi.Name)) return false;
+            
+            if (string.IsNullOrEmpty(hi.Name)) 
+                return false;
 
             var eq = EquipmentLocator.Instance; // EquipmentLocator는 Common에서 접근 가능하다고 가정
-            var dio = eq?.DioScan; if (dio == null) return false;
+            var dio = eq?.DioScan; 
+            
+            if (dio == null) 
+                return false;
 
             foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
+                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) 
+                    return v;
+
             return false;
         }
 

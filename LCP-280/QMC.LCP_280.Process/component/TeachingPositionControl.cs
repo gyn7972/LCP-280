@@ -526,14 +526,25 @@ namespace QMC.LCP_280.Process.Component
 
                 foreach (var key in keys)
                 {
-                    if (!_tpProviders.TryGetValue(key, out var provider)) continue;
+                    if (!_tpProviders.TryGetValue(key, out var provider))
+                        continue;
+                    
                     IEnumerable<TeachingPosition> list = null;
-                    try { list = provider?.Invoke(); } catch { }
-                    if (list == null) continue;
+                    
+                    try 
+                    { 
+                        list = provider?.Invoke(); 
+                    } 
+                    catch { }
+                    
+                    if (list == null) 
+                        continue;
 
                     foreach (var tp in list)
                     {
-                        if (tp == null || string.IsNullOrWhiteSpace(tp.Name)) continue;
+                        if (tp == null || string.IsNullOrWhiteSpace(tp.Name)) 
+                            continue;
+
                         var disp = key + "." + tp.Name;
                         var entry = new TPEntry
                         {
@@ -562,7 +573,8 @@ namespace QMC.LCP_280.Process.Component
             }
             catch (Exception ex)
             {
-                try { Log.Write("TeachingPositionControl", "Reload", ex.Message); } catch { }
+                try { Log.Write("TeachingPositionControl", "Reload", ex.Message); } 
+                catch { }
             }
         }
 

@@ -166,25 +166,25 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.BinStageY, ref _axY);
             BindAxis(mgr, unitName, AxisNames.BinStageT, ref _axT);
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public bool InPosTeaching(TeachingPosition tp)
-        {
-            if (tp == null)
-                return false;
-            return InPosTeaching(tp.Name);
-        }
-        public bool InPosTeaching(string name)
-        {
-            var (t, pz, plz) = Config.GetPositionWithOffset(name);
-            return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
-        }
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public bool InPosTeaching(TeachingPosition tp)
+        //{
+        //    if (tp == null)
+        //        return false;
+        //    return InPosTeaching(tp.Name);
+        //}
+        //public bool InPosTeaching(string name)
+        //{
+        //    var (t, pz, plz) = Config.GetPositionWithOffset(name);
+        //    return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
+        //}
         #endregion
 
         #region IO Low-Level
@@ -716,6 +716,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.State = ProcessState.Stop;
                 return 1;
+            }
+
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
             }
 
             switch (State)

@@ -548,6 +548,12 @@ namespace QMC.LCP_280.Process.Unit
             int idx = GetLoadIndexNo();
             lock (_socketLock)
             {
+                var die = _sockets[idx].GetMaterialDie();
+                if (die == null)
+                {
+                    _sockets[idx].SetMaterialDie(new MaterialDie());
+                }
+
                 return _sockets[idx];
             }
         }
@@ -687,17 +693,17 @@ namespace QMC.LCP_280.Process.Unit
             return nRtn; 
         }
 
-        public bool InPosTeaching(string name)
-        {
-            double t = Config.GetPositionWithOffset(name);
-            return InPos(_axisT, t);
-        }
+        //public bool InPosTeaching(string name)
+        //{
+        //    double t = Config.GetPositionWithOffset(name);
+        //    return InPos(_axisT, t);
+        //}
 
         public void ApplyOffset(string name, double deltaT) => Config.SetOffset(name, deltaT);
         #endregion
 
         #region Axis helpers
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
         #region Index Move (with Interlock)
@@ -713,6 +719,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private bool TryMoveIndexStep(int step, out string reason)
         {
+            bool bRtn = false;
             reason = null;
             var axis = _axisT;
             if (axis == null)
@@ -721,9 +728,15 @@ namespace QMC.LCP_280.Process.Unit
                 return false;
             }
 
-            // 1) Safe-Zone check.
-            if (!VerifyAllUnitsSafe(out reason))
-                return false;
+            if(RunUnitStatus != UnitStatus.Running)
+            {
+                // 1) Safe-Zone check.
+                if (!VerifyAllUnitsSafe(out reason))
+                {
+                    Log.Write("Rotary", $"Index Move Blocked: {reason}");
+                    return false;
+                }
+            }
 
             // 3) Move Check.
             int rc = step < 0 ? axis.MovePrevIndex() : axis.MoveNextIndex();
@@ -1251,6 +1264,9 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq Signal
         public bool RequestInputDieTrDie { get; set; } = false;
+        public bool DoneInputDieTrDie { get; set; } = false;
+
+
         // Thread-safe 플래그 (기존 이름 유지해 외부 영향 최소화)
         private int _reqLoadAligner;
         public bool RequestLoadAligner
@@ -1323,6 +1339,11 @@ namespace QMC.LCP_280.Process.Unit
 
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
+
+            IndexLoadAligner?.OnStop();
+            IndexChipProbeController?.OnStop();
+            IndexUnloadAligner?.OnStop();
+
             base.OnStop();
             return ret;
         }
@@ -1349,21 +1370,34 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[Rotate] Failed");
-                return -1;
-            }
+
+            
 
 
             int nIndex = GetLoadIndexNo();
             bool useSocket = this.Config.GetUseSocket(nIndex);
+
+            //Complete 상태가 아니면 Die 받지 말고 진행하나?
+            //무조건 받고 진행해야 하나?
+            RequestInputDieTrDie = false;
             if (this.InputDieTransfer.State == ProcessState.Complete)
             {
-                if(useSocket)
+                var die = GetLoadSocketMaterial();
+                if (die != null)
                 {
-                    RequestInputDieTrDie = true;
+                    if (die.Presence != Material.MaterialPresence.Exist)
+                    {
+                        if (useSocket)
+                        {
+                            RequestInputDieTrDie = true;
+                        }
+                    }
                 }
+            }
+            else
+            {
+                //사용안하는 Socket도 있으니깐.. 무조건 돌려야 하네.
+                //return nRet;
             }
 
             nRet = ExecuteUnitAction();
@@ -1377,18 +1411,31 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if(InputDieTransfer != null)
                 {
-                    TimeoutChecker timeoutChecker = new TimeoutChecker(5000, autoStart: true);
+                    TimeoutChecker timeoutChecker = new TimeoutChecker(60000 * 10, autoStart: true);
 
-                    while (this.InputDieTransfer.State == ProcessState.Complete)
+                    //여기 조건 이상하다.
+                    while (true)
                     {
-                     
-                        Thread.Sleep(10);
+                        var die = GetLoadSocketMaterial();
+                        if (die.Presence == Material.MaterialPresence.Exist)
+                        {
+                            RequestInputDieTrDie = false;
+                            break;
+                        }
+
+                        if (this.InputDieTransfer.State == ProcessState.Complete)
+                        {
+                            
+                        }
+
                         if(timeoutChecker.IsCompleted)
                         {
                             Log.Write(UnitName, "[InputDieTransfer] Timeout");
                             PostAlarm(PostAlarm((int)AlarmKeys.InputDieTransferTimeout));
                             return -1;
                         }
+
+                        Thread.Sleep(1);
                     }
                 }
             }
@@ -1403,7 +1450,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-
         protected override int OnRunComplete() 
         {
             int nRtn = 0;
@@ -1413,6 +1459,7 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
+            State = ProcessState.None;
             return nRtn; 
         }
 
@@ -1910,19 +1957,94 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 3. 회전 후 소켓 상태 전이 (예: Load -> Loading 등)
-            PostRotateStateTransition();
+            //PostRotateStateTransition();
             return nRet;
         }
         public bool IsInterlockOKWidthAllUnit()
         {
-            bool bResult = false;
+            bool bRet = true;
+            string reason = null;
+            if (_axisT == null)
+            {
+                //PostAlarm((int)AlarmKeys.eIndexRotary);
+                reason = "AxisT NULL";
+                return false;
+            }
 
-            return bResult;
+            // ZUp이 아닌 경우 OK
+            //bRet = (IndexChipProbeController == null)
+            //    ? true
+            //    : !IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
+            // Z-Up이 아닌 경우 OK (고전 if/else 방식)
+            if (IndexChipProbeController == null)
+            {
+                bRet = true;
+            }
+            else
+            {
+                bool isZUp = false;
+                try
+                {
+                    if(IndexChipProbeController.Config.ContectTopMode)
+                    {
+                        isZUp = IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
+                    }
+                    else
+                    {
+                        isZUp = IndexChipProbeController.IsBottomIndexZUp(IndexChipProbeController.GetProbeIndexNo());
+                    } 
+                }
+                catch
+                {
+                    isZUp = false;
+                }
+                bRet = !isZUp; // Z-Up이 아니면 OK
+            }
+
+
+            if (IndexLoadAligner == null)
+            {
+                bRet = true;
+            }
+            else
+            {
+                bool isZUp = false;
+                try
+                {
+                    isZUp = IndexLoadAligner.IsAlignZIndexUp(IndexLoadAligner.GetAlignIndexNo());
+                }
+                catch
+                {
+                    isZUp = false;
+                }
+                bRet = !isZUp; // Z-Up이 아니면 OK
+            }
+
+
+            if (RunUnitStatus != UnitStatus.Running)
+            {
+                if (!VerifyAllUnitsSafe(out reason))
+                {
+                    //PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                    reason = "Not Safe: " + reason;
+                    return false;
+                }
+            }
+
+            if (_sockets == null)
+            {
+                //PostAlarm((int)AlarmKeys.eIndexRotary);
+                reason = "Socket array NULL";
+                return false;
+            }
+
+            return bRet;
         }
         public int MovePositionRotate(bool isFine = false)
         {
             if(IsInterlockOKWidthAllUnit() == false)
             {
+                Log.Write(UnitName, "MovePositionRotate Interlock Fail");
                 return -1;
             }
 
@@ -1931,6 +2053,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if(IsInterlockOKWidthAllUnit() == false)
                 {   
+                    Log.Write(UnitName, "MovePositionRotate Interlock Fail");
                     return -1;
                 }
                 
@@ -1949,7 +2072,6 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionRotate(bool isFine = false)
         {
             int nRet = 0;
-            //nRet = Rotate(isFine);
 
             string reason;
             if (!TryMoveIndexNext(out reason))
@@ -2009,13 +2131,39 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 var t1 = (IndexLoadAligner != null)
-                    ? Task.Run(() => IndexLoadAligner.RunAlignSocketOnceReady())
+                    ? Task.Run(() =>
+                    {
+                        var th = Thread.CurrentThread;
+                        if (th.Name == null)
+                        {
+                            try { th.Name = "RunAlignSocketOnceReady(LoadAligner)"; } catch { }
+                        }
+                        return IndexLoadAligner.RunAlignSocketOnceReady();
+                    })
                     : Task.FromResult(0);
+
                 var t2 = (IndexChipProbeController != null)
-                    ? Task.Run(() => IndexChipProbeController.RunInspectionReady())
+                    ? Task.Run(() =>
+                    {
+                        var th = Thread.CurrentThread;
+                        if (th.Name == null)
+                        {
+                            try { th.Name = "RunInspectionReady(ProbeController)"; } catch { }
+                        }
+                        return IndexChipProbeController.RunInspectionReady();
+                    })
                     : Task.FromResult(0);
+
                 var t3 = (IndexUnloadAligner != null)
-                    ? Task.Run(() => IndexUnloadAligner.RunAlignSocketOnceReady())
+                    ? Task.Run(() =>
+                    {
+                        var th = Thread.CurrentThread;
+                        if (th.Name == null)
+                        {
+                            try { th.Name = "RunAlignSocketOnceReady(UnloadAligner)"; } catch { }
+                        }
+                        return IndexUnloadAligner.RunAlignSocketOnceReady();
+                    })
                     : Task.FromResult(0);
 
                 Task.WaitAll(t1, t2, t3);
@@ -2026,7 +2174,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (r1 != 0 || r2 != 0 || r3 != 0)
                 {
-                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3})");
+                    Log.Write(UnitName, $"OnExecuteUnitActionReady Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3})");
                     return -1;
                 }
 
@@ -2034,7 +2182,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
+                Log.Write(UnitName, $"OnExecuteUnitActionReady Exception: {ex.Message}");
                 return -1;
             }
         }
@@ -2098,6 +2246,78 @@ namespace QMC.LCP_280.Process.Unit
                 bool bRet = false;
 
                 var t1 = (IndexLoadAligner != null)
+                    ? Task.Run(() =>
+                    {
+                        var th = Thread.CurrentThread;
+                        if (th.Name == null)
+                        {
+                            try { th.Name = "RunAlignSocketOnce(LoadAligner)"; } catch { }
+                        }
+                        return IndexLoadAligner.RunAlignSocketOnce();
+                    })
+                    : Task.FromResult(0);
+
+                var t2 = (IndexChipProbeController != null)
+                    ? Task.Run(() =>
+                    {
+                        var th = Thread.CurrentThread;
+                        if (th.Name == null)
+                        {
+                            try { th.Name = "RunInspection(ProbeController)"; } catch { }
+                        }
+                        return IndexChipProbeController.RunInspection();
+                    })
+                    : Task.FromResult(0);
+
+                var t3 = (IndexUnloadAligner != null)
+                    ? Task.Run(() =>
+                    {
+                        var th = Thread.CurrentThread;
+                        if (th.Name == null)
+                        {
+                            try { th.Name = "RunAlignSocketOnce(UnloadAligner)"; } catch { }
+                        }
+                        return IndexUnloadAligner.RunAlignSocketOnce();
+                    })
+                    : Task.FromResult(0);
+
+                t3.Wait();
+                this.OutputDieTransfer.RisePickupStartEvent();
+
+                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000 * 100); // 60초
+                if (bRet == false)
+                {
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
+                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
+                    return -1;
+                }
+
+                Task.WaitAll(t1, t2, t3);
+
+                int r1 = t1.Result;
+                int r2 = t2.Result;
+                int r3 = t3.Result;
+
+                if (r1 != 0 || r2 != 0 || r3 != 0)
+                {
+                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3})");
+                    return -1;
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
+                return -1;
+            }
+
+
+            try
+            {
+                bool bRet = false;
+
+                var t1 = (IndexLoadAligner != null)
                     ? Task.Run(() => IndexLoadAligner.RunAlignSocketOnce())
                     : Task.FromResult(0);
                 var t2 = (IndexChipProbeController != null)
@@ -2107,12 +2327,10 @@ namespace QMC.LCP_280.Process.Unit
                     ? Task.Run(() => IndexUnloadAligner.RunAlignSocketOnce())
                     : Task.FromResult(0);
 
-
-
                 t3.Wait();
                 this.OutputDieTransfer.RisePickupStartEvent();
 
-                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000*5); // 60초
+                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000*100); // 60초
                 if (bRet == false)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);

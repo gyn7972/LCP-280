@@ -132,6 +132,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                         InputFeeder,
                         () => InputFeeder.Config?.TeachingPositions,
                         (name, vel) => InputFeeder.MoveToTeachingPosition(name, vel: vel),
+                        //(name, vel) => InputFeeder.MoveTeachingPositionOnce(name, vel),
                         tp => InputFeeder.Config?.SetTeachingPosition(tp),
                         autoReload: false);
                 }

@@ -122,13 +122,13 @@ namespace QMC.LCP_280.Process.Unit
             _boundAxes.Clear();
             foreach (var kv in Axes) _boundAxes.Add(kv.Value);
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
         #region IO Helpers

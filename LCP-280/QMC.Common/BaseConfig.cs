@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -34,6 +35,11 @@ namespace QMC.Common
         //[JsonIgnore]
         //public PropertyPosition PropertyPosition { get; set; } = new PropertyPosition();
         public List<TeachingPosition> TeachingPositions { get; set; } = new List<TeachingPosition>();
+
+        // =====
+        // TeachingPosition 관련 유틸
+        public TeachingPosition GetTeachingPosition(string name) => TeachingPositions.FirstOrDefault(p => p.Name == name);
+
 
 
         // ===== (추가) 전역 DryRun 관리 =====

@@ -602,11 +602,12 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        public bool InPosTeaching(string name)
-        {
-            var (t, pz, plz) = Config.GetPositionWithOffset(name);
-            return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
-        }
+        //public bool InPosTeaching(string name)
+        //{
+        //    var (t, pz, plz) = Config.GetPositionWithOffset(name);
+        //    return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
+        //}
+
         /// <summary>
         /// 지정한 Teaching Position에서 특정 축만 InPosition 여부를 확인.
         /// - T / PickZ / PlaceZ 는 Offset 적용 값을 사용
@@ -655,7 +656,7 @@ namespace QMC.LCP_280.Process.Unit
             double target = tp.GetAxisPosition(axisName, 0.0);
             return InPos(axis, target);
         }
-        protected bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //protected bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
 
         #region Teaching Position Move (Batch Style)
         public int MoveToTeachingPosition(string positionName, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
@@ -672,20 +673,20 @@ namespace QMC.LCP_280.Process.Unit
 
             return rc;
         }
-        public bool InPosTeaching(TeachingPosition tp)
-        {
-            if (tp == null)
-                return false;
-            return InPosTeaching(tp.Name);
-        }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public bool InPosTeaching(TeachingPosition tp)
+        //{
+        //    if (tp == null)
+        //        return false;
+        //    return InPosTeaching(tp.Name);
+        //}
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
+
         public double GetTP(TeachingPosition tp, string axisName) => (tp == null || string.IsNullOrEmpty(axisName)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisName, out var v) ? v : 0.0);
-        public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
         #endregion
 
         #region Low-Level IO Access (Refactored to match OutputStage pattern)
@@ -993,24 +994,6 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #region Seq Signal
-        public bool CompleteWorking { get; set; }   // Stage -> Feeder (Cycle 완료 통지용)
-
-        // 간단 대기 유틸(필요시)
-        private static bool WaitIf(System.Func<IfState> get, IfState target, int timeoutMs = 10000, System.Threading.CancellationToken? ct = null, int pollMs = 5)
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (true)
-            {
-                if (ct.HasValue && ct.Value.IsCancellationRequested) return false;
-                if (get() == target) return true;
-                if (timeoutMs >= 0 && sw.ElapsedMilliseconds > timeoutMs) return false;
-                System.Threading.Thread.Sleep(pollMs);
-            }
-        }
-
-        
-
-
         // ====== Align Refactor: 상태/결과 보관 필드 ======
         public bool IsStatus_TAlignPrepared { get; private set; }
         public bool IsStatus_TAlignDone { get; private set; }
@@ -1256,6 +1239,12 @@ namespace QMC.LCP_280.Process.Unit
                 return nRtn;
             }
 
+            if (this.IsStop)
+            {
+                Log.Write(this, "InputFeeder Stop");
+                return -1;
+            }
+
             // Clamp Back → Lift Down
             SetClampFB(false);
             if (!IsClampBwd())
@@ -1264,10 +1253,22 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            if (this.IsStop)
+            {
+                Log.Write(this, "InputFeeder Stop");
+                return -1;
+            }
+
             SetClampLift(false);
             if (!IsClampLiftDown())
             {
                 Log.Write(this, "Fail: ClampLiftDown");
+                return -1;
+            }
+
+            if (this.IsStop)
+            {
+                Log.Write(this, "InputFeeder Stop");
                 return -1;
             }
 
@@ -1280,10 +1281,10 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
-
-            Log.Write(this, "End LoadingWaferPrepare");
+            Log.Write(UnitName, "End LoadingWaferPrepare");
             return 0;
         }
+
         public int MoveToStageLoadPosition(bool isFine = false)
         {
             int nRet = 0;
