@@ -25,14 +25,7 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             InitializeComponent();
         }
 
-        public void SetUnitData(BaseUnit unit, BaseConfig config)
-        {
-            _unit = unit;
-            _config = config;
 
-            InitializeUI();
-            InitializeRadioButtonView();
-        }
 
         private void InitializeUI()
         {
@@ -50,6 +43,15 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
         private void InitializeRadioButtonView()
         {
             rbTeachingMoveMode?.SetOptions(true, "Fine", "Coarse");
+        }
+
+        public void SetUnitData(BaseUnit unit, BaseConfig config)
+        {
+            _unit = unit;
+            _config = config;
+
+            InitializeUI();
+            InitializeRadioButtonView();
         }
 
         public void RefreshPositionList()
@@ -210,7 +212,6 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
         #endregion
 
         #region Helper Methods
-
         private void ShowTeachingPositionInEditor(int selectedIndex)
         {
             if (_config?.TeachingPositions == null) return;
