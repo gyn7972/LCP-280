@@ -1111,6 +1111,13 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             nRet = ClampGripper();
+            if(nRet != 0)
+            {
+                FeederY.EmgStop();
+                Log.Write(this, "UnloadWaferFeederToCassette Fail - ClampGripper");
+                nRet = -1;
+                return nRet;
+            }
             MaterialWafer wafer = new MaterialWafer();
             this.InputStage.MoveMaterial(wafer, this);
 

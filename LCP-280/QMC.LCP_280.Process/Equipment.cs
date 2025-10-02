@@ -80,6 +80,8 @@ namespace QMC.LCP_280.Process
 
         #region Fields & Properties
 
+        private volatile bool _isShuttingDown;
+
         /// <summary>
         /// 설비에 등록된 모든 Unit들
         /// </summary>
@@ -560,8 +562,7 @@ namespace QMC.LCP_280.Process
                 }
                 else
                 {
-                    // [MOD] 실패 시에도 EquipmentStatus 는 유지 (StopAllUnitsAsync 호출 시 보호)
-                    //await StopAllUnitsAsync(includeEquipmentStatus: false);
+                    // 실패 시에도 EquipmentStatus는 유지
                     await StopAllUnitsAsync(includeEquipmentStatus: false).ConfigureAwait(false);
                     OnStateChanged(EquipmentState.Error);
                     OnErrorOccurred("설비 시작 중 일부 Unit 실패");
@@ -750,7 +751,7 @@ namespace QMC.LCP_280.Process
         public System.Threading.Tasks.Task<bool> StopAllUnitsAsync()
         {
             // IEquipment 인터페이스(매개변수 없는 버전) 요구 충족용 래퍼
-            return StopAllUnitsAsync(includeEquipmentStatus: true);
+            return StopAllUnitsAsync(includeEquipmentStatus: false);
         }
         /// <summary>
         /// 설비 전체 정지
@@ -775,7 +776,6 @@ namespace QMC.LCP_280.Process
                     if (execInfo.IsRunning)
                     {
                         SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
-                        //OnUnitStateChanged(unitName, UnitStatus.Stopping);
 
                         // [FIX] 실제 유닛도 멈추도록 호출
                         if (Units.TryGetValue(unitName, out var u))
@@ -790,7 +790,6 @@ namespace QMC.LCP_280.Process
 
                         // [FIX] 즉시 Stopped 알림 (Task 루프 미사용 구조 대응)
                         SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
-                        //OnUnitStateChanged(unitName, UnitStatus.Stopped);
                     }
                 }
 
@@ -1040,6 +1039,17 @@ namespace QMC.LCP_280.Process
             if (string.IsNullOrWhiteSpace(unitName))
                 return;
 
+            // 보호 유닛 상태 보호: 종료(Dispose) 중이 아닐 때는 Stopping/Stopped 전환 무시
+            if (IsProtectedUnit(unitName) && !_isShuttingDown)
+            {
+                if (newState == UnitStatus.Stopping || newState == UnitStatus.Stopped)
+                {
+                    // 무시: EquipmentStatus는 프로그램 종료 전까지 멈추지 않음
+                    return;
+                }
+            }
+
+
             // 1) BaseUnit 반영
             if (Units != null && Units.TryGetValue(unitName, out var u) && u is BaseUnit bu)
             {
@@ -1121,17 +1131,22 @@ namespace QMC.LCP_280.Process
         protected virtual void Dispose(bool disposing)
         {
             if (!disposing) return;
-            //if (!_disposed) return;
+
             _disposed = true;
+            _isShuttingDown = true; // 종료(프로세스 종료/Dispose) 중 표시
 
             try
             {
                 // 1) 일반 유닛 정지 (EquipmentStatus 제외)
                 try 
                 { 
-                    StopAllUnitsAsync(includeEquipmentStatus: true).GetAwaiter().GetResult(); 
+                    StopAllUnitsAsync(includeEquipmentStatus: false).GetAwaiter().GetResult(); 
                 } 
-                catch { }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
+
                 // 2) 보호 유닛 강제 정지
                 ForceStopEquipmentStatus();
 
