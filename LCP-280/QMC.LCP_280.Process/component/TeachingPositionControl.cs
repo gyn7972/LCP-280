@@ -625,11 +625,17 @@ namespace QMC.LCP_280.Process.Component
             {
                 var pcType = typeof(QMC.Common.PropertyCollection);
                 var pc = Activator.CreateInstance(pcType);
-                var addMi = pcType.GetMethod("Add", new[] { typeof(string), typeof(object) });
+
+                // 올바른 시그니처: Add(string title, string valueUnit, object obj)
+                var addMi = pcType.GetMethod("Add", new[] { typeof(string), typeof(string), typeof(object) });
+
                 if (addMi != null && tp.AxisPositions != null)
                 {
                     foreach (var kv in tp.AxisPositions)
-                        addMi.Invoke(pc, new object[] { kv.Key, kv.Value });
+                    {
+                        // 중간에 valueUnit 파라미터 추가 (빈 문자열 또는 단위)
+                        addMi.Invoke(pc, new object[] { kv.Key, "", kv.Value });
+                    }
                 }
                 var setMi = positionEditorView.GetType().GetMethod("SetProperties",
                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
