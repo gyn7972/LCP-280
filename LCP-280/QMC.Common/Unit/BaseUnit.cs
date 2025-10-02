@@ -374,7 +374,11 @@ namespace QMC.Common.Unit
 
         public string GetUnitName() => UnitName;
         public Material GetMaterial() => m_currentMaterial;
-        public virtual void SetMaterial(Material m) => m_currentMaterial = m;
+        //public virtual void SetMaterial(Material m) => m_currentMaterial = m;
+        public virtual void SetMaterial(Material m)
+        {
+            m_currentMaterial = m;
+        }
 
         public virtual void MoveMaterial(Material  material , BaseUnit destinyUnit)
         {

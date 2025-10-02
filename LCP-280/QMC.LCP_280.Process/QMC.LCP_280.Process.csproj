@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>게시\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -24,7 +25,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -278,6 +278,12 @@
     </Compile>
     <Compile Include="Unit\FormMain\Page\InputWaferCarrierControl.Designer.cs">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Component\LightChannelControlcs.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Component\LightChannelControlcs.Designer.cs">
+      <DependentUpon>LightChannelControlcs.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormMain\Page\MeasurementControl.cs">
       <SubType>UserControl</SubType>
@@ -681,6 +687,9 @@
     <EmbeddedResource Include="Unit\FormMain\Page\InputWaferCarrierControl.resx">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Component\LightChannelControlcs.resx">
+      <DependentUpon>LightChannelControlcs.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\MeasurementControl.resx">
       <DependentUpon>MeasurementControl.cs</DependentUpon>
     </EmbeddedResource>
@@ -853,7 +862,7 @@
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.8">
       <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.8%28x86 �?x64%29</ProductName>
+      <ProductName>Microsoft .NET Framework 4.8%28x86 및 x64%29</ProductName>
       <Install>true</Install>
     </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">

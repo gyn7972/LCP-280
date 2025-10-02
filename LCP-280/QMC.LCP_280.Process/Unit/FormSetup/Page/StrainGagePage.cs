@@ -113,7 +113,7 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
         }
 
         private void btnZeroSet_Click(object sender, EventArgs e)
-        {
+        { 
             if (selectGage == null)
                 return;
 

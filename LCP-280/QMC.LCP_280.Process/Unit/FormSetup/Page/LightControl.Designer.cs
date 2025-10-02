@@ -339,21 +339,22 @@
             // 
             // label_Intensity
             // 
-            this.label_Intensity.Location = new System.Drawing.Point(3, 0);
+            this.label_Intensity.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label_Intensity.Location = new System.Drawing.Point(3, 3);
+            this.label_Intensity.Margin = new System.Windows.Forms.Padding(3);
             this.label_Intensity.Name = "label_Intensity";
-            this.label_Intensity.Size = new System.Drawing.Size(74, 23);
+            this.label_Intensity.Size = new System.Drawing.Size(74, 24);
             this.label_Intensity.TabIndex = 0;
             // 
             // trackBar_LightIntensity
             // 
             this.trackBar_LightIntensity.Dock = System.Windows.Forms.DockStyle.Fill;
             this.trackBar_LightIntensity.Location = new System.Drawing.Point(83, 3);
-            this.trackBar_LightIntensity.Maximum = 4095;  // 변경: 100 → 4095
+            this.trackBar_LightIntensity.Maximum = 4095;
             this.trackBar_LightIntensity.Name = "trackBar_LightIntensity";
             this.trackBar_LightIntensity.Size = new System.Drawing.Size(337, 24);
             this.trackBar_LightIntensity.TabIndex = 1;
-            this.trackBar_LightIntensity.TickFrequency = 256;  // 변경: 10 → 256 (약 16단계로 눈금 표시)
-            this.trackBar_LightIntensity.Value = 0;
+            this.trackBar_LightIntensity.TickFrequency = 256;
             // 
             // LightControl
             // 
