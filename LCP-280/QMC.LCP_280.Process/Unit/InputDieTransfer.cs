@@ -1525,9 +1525,14 @@ namespace QMC.LCP_280.Process.Unit
             if (InputStage.SetVacuum(true))
             {
                 var sw = Stopwatch.StartNew();
-                while (!InputStage.IsVacuumOn())
+                while (true)
                 {
-                    if(!Config.IsSimulation && !Config.IsDryRun)
+
+                    if(InputStage.IsVacuumOn())
+                    {
+                        break;
+                    }
+                    else if (!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
