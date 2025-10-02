@@ -35,17 +35,25 @@
             this.panel2 = new System.Windows.Forms.Panel();
             this.btnSave = new QMC.Common.IndividualMenuButton();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.btnZeroSet = new QMC.Common.IndividualMenuButton();
-            this.btnResetZeroSet = new QMC.Common.IndividualMenuButton();
-            this.btnShowDialog = new QMC.Common.IndividualMenuButton();
-            this.strainGageDataGridViewer1 = new QMC.Common.StrainGage.StrainGageDataGridViewer();
-            this.btnDeviceInfo = new QMC.Common.IndividualMenuButton();
-            this.btnStop = new QMC.Common.IndividualMenuButton();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton2 = new QMC.Common.IndividualMenuButton();
+            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.btnStart = new QMC.Common.IndividualMenuButton();
+            this.btnResetZeroSet = new QMC.Common.IndividualMenuButton();
+            this.btnZeroSet = new QMC.Common.IndividualMenuButton();
+            this.btnStop = new QMC.Common.IndividualMenuButton();
+            this.strainGageDataGridViewer1 = new QMC.Common.StrainGage.StrainGageDataGridViewer();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel1.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
+            this.tableLayoutPanel4.SuspendLayout();
+            this.tableLayoutPanel7.SuspendLayout();
+            this.tableLayoutPanel5.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -143,120 +151,130 @@
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.btnZeroSet);
-            this.panel1.Controls.Add(this.btnResetZeroSet);
-            this.panel1.Controls.Add(this.btnShowDialog);
-            this.panel1.Controls.Add(this.strainGageDataGridViewer1);
-            this.panel1.Controls.Add(this.btnDeviceInfo);
-            this.panel1.Controls.Add(this.btnStop);
-            this.panel1.Controls.Add(this.btnStart);
+            this.panel1.Controls.Add(this.tableLayoutPanel3);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(372, 3);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(875, 694);
             this.panel1.TabIndex = 1;
             // 
-            // btnZeroSet
+            // tableLayoutPanel3
             // 
-            this.btnZeroSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnZeroSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnZeroSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnZeroSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnZeroSet.CustomForeColor = System.Drawing.Color.Black;
-            this.btnZeroSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnZeroSet.ForeColor = System.Drawing.Color.Black;
-            this.btnZeroSet.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnZeroSet.Location = new System.Drawing.Point(631, 109);
-            this.btnZeroSet.Name = "btnZeroSet";
-            this.btnZeroSet.Size = new System.Drawing.Size(132, 39);
-            this.btnZeroSet.TabIndex = 33;
-            this.btnZeroSet.TabStop = false;
-            this.btnZeroSet.Text = "ZeroSet";
-            this.btnZeroSet.UseVisualStyleBackColor = false;
-            this.btnZeroSet.Click += new System.EventHandler(this.btnZeroSet_Click);
+            this.tableLayoutPanel3.ColumnCount = 2;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 83.33334F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 16.66666F));
+            this.tableLayoutPanel3.Controls.Add(this.tableLayoutPanel4, 0, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 4;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 15F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 15F));
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(875, 694);
+            this.tableLayoutPanel3.TabIndex = 34;
             // 
-            // btnResetZeroSet
+            // tableLayoutPanel4
             // 
-            this.btnResetZeroSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnResetZeroSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnResetZeroSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnResetZeroSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnResetZeroSet.CustomForeColor = System.Drawing.Color.Black;
-            this.btnResetZeroSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnResetZeroSet.ForeColor = System.Drawing.Color.Black;
-            this.btnResetZeroSet.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnResetZeroSet.Location = new System.Drawing.Point(631, 158);
-            this.btnResetZeroSet.Name = "btnResetZeroSet";
-            this.btnResetZeroSet.Size = new System.Drawing.Size(132, 39);
-            this.btnResetZeroSet.TabIndex = 32;
-            this.btnResetZeroSet.TabStop = false;
-            this.btnResetZeroSet.Text = "Reset ZeroSet";
-            this.btnResetZeroSet.UseVisualStyleBackColor = false;
-            this.btnResetZeroSet.Click += new System.EventHandler(this.btnResetZeroSet_Click);
+            this.tableLayoutPanel4.ColumnCount = 2;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 83F));
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 17F));
+            this.tableLayoutPanel4.Controls.Add(this.tableLayoutPanel7, 0, 1);
+            this.tableLayoutPanel4.Controls.Add(this.tableLayoutPanel5, 1, 0);
+            this.tableLayoutPanel4.Controls.Add(this.strainGageDataGridViewer1, 0, 0);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 2;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 70F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 30F));
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(723, 341);
+            this.tableLayoutPanel4.TabIndex = 0;
             // 
-            // btnShowDialog
+            // tableLayoutPanel7
             // 
-            this.btnShowDialog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnShowDialog.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnShowDialog.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnShowDialog.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnShowDialog.CustomForeColor = System.Drawing.Color.Black;
-            this.btnShowDialog.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnShowDialog.ForeColor = System.Drawing.Color.Black;
-            this.btnShowDialog.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnShowDialog.Location = new System.Drawing.Point(8, 252);
-            this.btnShowDialog.Name = "btnShowDialog";
-            this.btnShowDialog.Size = new System.Drawing.Size(132, 56);
-            this.btnShowDialog.TabIndex = 31;
-            this.btnShowDialog.TabStop = false;
-            this.btnShowDialog.Text = "Show Monitoring Dialog";
-            this.btnShowDialog.UseVisualStyleBackColor = false;
-            this.btnShowDialog.Click += new System.EventHandler(this.btnShowDialog_Click);
+            this.tableLayoutPanel7.ColumnCount = 11;
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 15.38461F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 12.82052F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 12.82051F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 12.82051F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 21F));
+            this.tableLayoutPanel7.Controls.Add(this.individualMenuButton1, 0, 1);
+            this.tableLayoutPanel7.Controls.Add(this.individualMenuButton2, 0, 0);
+            this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 241);
+            this.tableLayoutPanel7.Name = "tableLayoutPanel7";
+            this.tableLayoutPanel7.RowCount = 2;
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(594, 97);
+            this.tableLayoutPanel7.TabIndex = 30;
             // 
-            // strainGageDataGridViewer1
+            // individualMenuButton1
             // 
-            this.strainGageDataGridViewer1.Location = new System.Drawing.Point(8, 3);
-            this.strainGageDataGridViewer1.Name = "strainGageDataGridViewer1";
-            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(617, 194);
-            this.strainGageDataGridViewer1.TabIndex = 29;
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(3, 51);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(123, 43);
+            this.individualMenuButton1.TabIndex = 31;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "Show Monitoring Dialog";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
             // 
-            // btnDeviceInfo
+            // individualMenuButton2
             // 
-            this.btnDeviceInfo.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnDeviceInfo.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnDeviceInfo.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnDeviceInfo.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnDeviceInfo.CustomForeColor = System.Drawing.Color.Black;
-            this.btnDeviceInfo.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDeviceInfo.ForeColor = System.Drawing.Color.Black;
-            this.btnDeviceInfo.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnDeviceInfo.Location = new System.Drawing.Point(8, 203);
-            this.btnDeviceInfo.Name = "btnDeviceInfo";
-            this.btnDeviceInfo.Size = new System.Drawing.Size(132, 43);
-            this.btnDeviceInfo.TabIndex = 28;
-            this.btnDeviceInfo.TabStop = false;
-            this.btnDeviceInfo.Text = "Show Device";
-            this.btnDeviceInfo.UseVisualStyleBackColor = false;
-            this.btnDeviceInfo.Click += new System.EventHandler(this.btnDeviceInfo_Click);
+            this.individualMenuButton2.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton2.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton2.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton2.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.individualMenuButton2.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.individualMenuButton2.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton2.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton2.Location = new System.Drawing.Point(3, 3);
+            this.individualMenuButton2.Name = "individualMenuButton2";
+            this.individualMenuButton2.Size = new System.Drawing.Size(123, 42);
+            this.individualMenuButton2.TabIndex = 28;
+            this.individualMenuButton2.TabStop = false;
+            this.individualMenuButton2.Text = "Show Device";
+            this.individualMenuButton2.UseVisualStyleBackColor = false;
             // 
-            // btnStop
+            // tableLayoutPanel5
             // 
-            this.btnStop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStop.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnStop.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStop.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStop.CustomForeColor = System.Drawing.Color.Black;
-            this.btnStop.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnStop.ForeColor = System.Drawing.Color.Black;
-            this.btnStop.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStop.Location = new System.Drawing.Point(631, 60);
-            this.btnStop.Name = "btnStop";
-            this.btnStop.Size = new System.Drawing.Size(132, 39);
-            this.btnStop.TabIndex = 26;
-            this.btnStop.TabStop = false;
-            this.btnStop.Text = "Monitoring Stop";
-            this.btnStop.UseVisualStyleBackColor = false;
-            this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
+            this.tableLayoutPanel5.ColumnCount = 1;
+            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel5.Controls.Add(this.btnStart, 0, 1);
+            this.tableLayoutPanel5.Controls.Add(this.btnResetZeroSet, 0, 4);
+            this.tableLayoutPanel5.Controls.Add(this.btnZeroSet, 0, 3);
+            this.tableLayoutPanel5.Controls.Add(this.btnStop, 0, 2);
+            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(603, 3);
+            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
+            this.tableLayoutPanel5.RowCount = 5;
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 8F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 25F));
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(117, 232);
+            this.tableLayoutPanel5.TabIndex = 0;
             // 
             // btnStart
             // 
@@ -265,17 +283,86 @@
             this.btnStart.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
             this.btnStart.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnStart.CustomForeColor = System.Drawing.Color.Black;
+            this.btnStart.Dock = System.Windows.Forms.DockStyle.Fill;
             this.btnStart.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStart.ForeColor = System.Drawing.Color.Black;
             this.btnStart.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStart.Location = new System.Drawing.Point(631, 12);
+            this.btnStart.Location = new System.Drawing.Point(3, 11);
             this.btnStart.Name = "btnStart";
-            this.btnStart.Size = new System.Drawing.Size(132, 39);
+            this.btnStart.Size = new System.Drawing.Size(111, 50);
             this.btnStart.TabIndex = 25;
             this.btnStart.TabStop = false;
             this.btnStart.Text = "Monitoring Start";
             this.btnStart.UseVisualStyleBackColor = false;
             this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
+            // 
+            // btnResetZeroSet
+            // 
+            this.btnResetZeroSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnResetZeroSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnResetZeroSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnResetZeroSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnResetZeroSet.CustomForeColor = System.Drawing.Color.Black;
+            this.btnResetZeroSet.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnResetZeroSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnResetZeroSet.ForeColor = System.Drawing.Color.Black;
+            this.btnResetZeroSet.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnResetZeroSet.Location = new System.Drawing.Point(3, 179);
+            this.btnResetZeroSet.Name = "btnResetZeroSet";
+            this.btnResetZeroSet.Size = new System.Drawing.Size(111, 50);
+            this.btnResetZeroSet.TabIndex = 32;
+            this.btnResetZeroSet.TabStop = false;
+            this.btnResetZeroSet.Text = "Reset ZeroSet";
+            this.btnResetZeroSet.UseVisualStyleBackColor = false;
+            this.btnResetZeroSet.Click += new System.EventHandler(this.btnResetZeroSet_Click);
+            // 
+            // btnZeroSet
+            // 
+            this.btnZeroSet.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnZeroSet.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnZeroSet.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnZeroSet.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnZeroSet.CustomForeColor = System.Drawing.Color.Black;
+            this.btnZeroSet.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnZeroSet.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnZeroSet.ForeColor = System.Drawing.Color.Black;
+            this.btnZeroSet.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnZeroSet.Location = new System.Drawing.Point(3, 123);
+            this.btnZeroSet.Name = "btnZeroSet";
+            this.btnZeroSet.Size = new System.Drawing.Size(111, 50);
+            this.btnZeroSet.TabIndex = 33;
+            this.btnZeroSet.TabStop = false;
+            this.btnZeroSet.Text = "ZeroSet";
+            this.btnZeroSet.UseVisualStyleBackColor = false;
+            this.btnZeroSet.Click += new System.EventHandler(this.btnZeroSet_Click);
+            // 
+            // btnStop
+            // 
+            this.btnStop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStop.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnStop.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStop.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStop.CustomForeColor = System.Drawing.Color.Black;
+            this.btnStop.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStop.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnStop.ForeColor = System.Drawing.Color.Black;
+            this.btnStop.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnStop.Location = new System.Drawing.Point(3, 67);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(111, 50);
+            this.btnStop.TabIndex = 26;
+            this.btnStop.TabStop = false;
+            this.btnStop.Text = "Monitoring Stop";
+            this.btnStop.UseVisualStyleBackColor = false;
+            this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
+            // 
+            // strainGageDataGridViewer1
+            // 
+            this.strainGageDataGridViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.strainGageDataGridViewer1.Location = new System.Drawing.Point(3, 3);
+            this.strainGageDataGridViewer1.Name = "strainGageDataGridViewer1";
+            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(594, 232);
+            this.strainGageDataGridViewer1.TabIndex = 29;
             // 
             // StrainGagePage
             // 
@@ -288,6 +375,10 @@
             this.tableLayoutPanel2.ResumeLayout(false);
             this.panel2.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
+            this.tableLayoutPanel4.ResumeLayout(false);
+            this.tableLayoutPanel7.ResumeLayout(false);
+            this.tableLayoutPanel5.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -301,12 +392,16 @@
         private System.Windows.Forms.Panel panel1;
         private Common.IndividualMenuButton btnStop;
         private Common.IndividualMenuButton btnStart;
-        private Common.IndividualMenuButton btnDeviceInfo;
         private System.Windows.Forms.Panel panel2;
         private Common.IndividualMenuButton btnSave;
         private Common.StrainGage.StrainGageDataGridViewer strainGageDataGridViewer1;
-        private Common.IndividualMenuButton btnShowDialog;
         private Common.IndividualMenuButton btnZeroSet;
         private Common.IndividualMenuButton btnResetZeroSet;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel7;
+        private Common.IndividualMenuButton individualMenuButton2;
+        private Common.IndividualMenuButton individualMenuButton1;
     }
 }

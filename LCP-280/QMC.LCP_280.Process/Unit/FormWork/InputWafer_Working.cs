@@ -52,8 +52,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             Load += InputWafer_Working_Load;
             FormClosing += InputWafer_Working_FormClosing;
 
-            var materialCassette = InputCassetteLifter.GetMaterialCassette();
-            waferMapView.SetMaterialCassette(materialCassette);
+            waferMapView.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
 
         }
 
