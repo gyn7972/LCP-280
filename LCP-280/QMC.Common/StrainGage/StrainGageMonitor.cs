@@ -37,6 +37,7 @@ namespace QMC.Common.StrainGage
 
         #region Event
         public event EventHandler OnVoltageUpdated;
+        public event EventHandler OnVoltageUpdated2;
         #endregion
 
         #region IDisposable
@@ -147,6 +148,7 @@ namespace QMC.Common.StrainGage
 
                             // Event
                             OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
+                            OnVoltageUpdated2?.Invoke(this, EventArgs.Empty);
                             await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
                         }
                         catch { }
@@ -196,6 +198,7 @@ namespace QMC.Common.StrainGage
 
                         // Event
                         OnVoltageUpdated?.Invoke(this, EventArgs.Empty);
+                        OnVoltageUpdated2?.Invoke(this, EventArgs.Empty);
                         await System.Threading.Tasks.Task.Delay(MonitoringIntervalMs, token);
                     }
                     catch { }
