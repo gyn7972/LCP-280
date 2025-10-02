@@ -874,11 +874,13 @@ namespace QMC.LCP_280.Process.Unit
         public int RunAlignSocketOnceReady(bool bFineSpeed = false)
         {
             int bRtn = 0;
-            this.CurrentFunc = RunAlignSocketOnceReady;
             try
             {
-                LogSequence("Start");
-                this.CurrentFunc = RunAlignSocketOnceReady;
+                if (RunMode == UnitRunMode.Manual)
+                {
+                    this.CurrentFunc = RunAlignSocketOnceReady;
+                    LogSequence("Start");
+                }
                 int nIndex = GetAlignIndexNo();
 
 
@@ -923,9 +925,13 @@ namespace QMC.LCP_280.Process.Unit
         public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
             int bRtn = 0;
-            this.CurrentFunc = RunAlignSocketOnce;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = RunAlignSocketOnce;
+                LogSequence("Start");
+            }
+
             int nIndex = GetAlignIndexNo();
-            
             try
             {
                 bool bUseSocket = this.Rotary.Config.GetUseSocket(nIndex);
@@ -953,10 +959,6 @@ namespace QMC.LCP_280.Process.Unit
 
                 //if (bRtn != 0)
                 //    return -1;
-
-                
-                this.CurrentFunc = RunAlignSocketOnce;
-                LogSequence("Start");
 
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
                 bRtn &= MovePositionAlignTReady(bFineSpeed);
@@ -1006,7 +1008,11 @@ namespace QMC.LCP_280.Process.Unit
 
         private void LogSequence(string log)
         {
-            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+            if(RunMode == UnitRunMode.Manual)
+            {
+                Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+
+            }
         }
 
         public int GetAlignIndexNo()

@@ -1194,7 +1194,11 @@ namespace QMC.LCP_280.Process.Unit
 
         private void LogSequence(string log)
         {
-            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+            if(RunMode == UnitRunMode.Manual)
+            {
+                Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+
+            }
         }
 
         public bool IsTopRequired()
@@ -1269,8 +1273,12 @@ namespace QMC.LCP_280.Process.Unit
         public int RunInspection(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = RunInspection;
-            LogSequence("Start");
+
+            if(RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = RunInspection;
+                LogSequence("Start");
+            }
 
             MaterialDie die =  this.Rotary.GetProbeSocketMaterial();
             int nIndex = this.GetProbeIndexNo();
@@ -1332,8 +1340,11 @@ namespace QMC.LCP_280.Process.Unit
             int nIndex = GetProbeIndexNo();
             try
             {
-                this.CurrentFunc = TopContactAndMeasureOnce;
-                LogSequence("Start");
+                if (RunMode == UnitRunMode.Manual)
+                {
+                    this.CurrentFunc = TopContactAndMeasureOnce;
+                    LogSequence("Start");
+                }
 
                 nRet = IsRotaryIdle();
                 if (nRet != 0)
@@ -1422,10 +1433,12 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             try
             {
-                
-                LogSequence("Start");
-                this.CurrentFunc = BottomContactAndMeasureOnce;
+                if (RunMode == UnitRunMode.Manual)
+                {
+                        LogSequence("Start");
+                    this.CurrentFunc = BottomContactAndMeasureOnce;
 
+                }
                 int nIndex = GetProbeIndexNo();
                 nRet = IsRotaryIdle();
                 if (nRet != 0)

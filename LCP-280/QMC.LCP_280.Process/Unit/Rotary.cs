@@ -1945,7 +1945,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            this.CurrentFunc = CanRotate;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = CanRotate;
+
+            }
 
             UpdateUnloadOutputComposite();
 
@@ -1978,7 +1982,11 @@ namespace QMC.LCP_280.Process.Unit
         public int Rotate(bool isFine = false)
         {
             int nRet = 0;
-            this.CurrentFunc = Rotate;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = Rotate;
+
+            }
 
             nRet = MovePositionRotate();
             if (nRet != 0)
@@ -2131,7 +2139,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ExecuteUnitActionReady(bool isFine = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = ExecuteUnitActionReady;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ExecuteUnitActionReady;
+
+            }
 
             Task<int> task = ExecuteUnitActionReadyAsync(isFine);
             while (IsEndTask(task) == false)
@@ -2222,7 +2234,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ExecuteUnitLoadDie(bool isFine = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = ExecuteUnitLoadDie;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ExecuteUnitLoadDie;
+
+            }
 
             RequestInputDieTrDie = true; // InputDieTransfer에 Chip 요청 상태로 변경.
 
@@ -2232,7 +2248,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ExecuteUnitUnLoadDie(bool isFine = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = ExecuteUnitUnLoadDie;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ExecuteUnitUnLoadDie;
+
+            }
 
             return nRtn;
         }
@@ -2240,7 +2260,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ExecuteUnitAction(bool isFine = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = ExecuteUnitAction;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ExecuteUnitAction;
+
+            }
 
             RequestInputDieTrDie = true; // InputDieTransfer에 Chip 요청 상태로 변경.
 

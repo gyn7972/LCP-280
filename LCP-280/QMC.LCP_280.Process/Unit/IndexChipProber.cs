@@ -183,7 +183,10 @@ namespace QMC.LCP_280.Process.Unit
         public int MeasureChip(bool bFineSpeed = false)
         {
             int bRet = 0;
-            this.CurrentFunc = MeasureChip;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = MeasureChip;
+            }
             try
             {
                 LogSequence("Start");
@@ -280,7 +283,10 @@ namespace QMC.LCP_280.Process.Unit
 
         private void LogSequence(string log)
         {
-            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+            if (RunMode == UnitRunMode.Manual)
+            {
+                Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+            }
         }
         #endregion
     }

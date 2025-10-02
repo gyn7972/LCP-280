@@ -339,8 +339,11 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (InputStageEjector != null)
                 {
-                    pinZSafe = InputStageEjector.IsPinZSafetyPos();
-                    ejectorZSafe = InputStageEjector.IsEjectorZSafetyPos();
+                    pinZSafe |= InputStageEjector.IsPinZSafetyPos();
+                    pinZSafe |= InputStageEjector.IsAtEjectPinReady();
+
+                    ejectorZSafe |= InputStageEjector.IsEjectorZSafetyPos();
+                    ejectorZSafe |= InputStageEjector.IsAtEjectBlockReady();
 
                     if (!pinZSafe || !ejectorZSafe)
                     {
@@ -1649,7 +1652,11 @@ namespace QMC.LCP_280.Process.Unit
         public int AlignT(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = AlignT;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = AlignT;
+
+            }
 
             nRet = AlignTPrepare(bFineSpeed);
             if (nRet != 0)
@@ -1697,7 +1704,11 @@ namespace QMC.LCP_280.Process.Unit
         public int AlignXY(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = AlignXY;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = AlignXY;
+
+            }
 
             nRet = AlignXYPrepare(bFineSpeed);
             if (nRet != 0)
@@ -1825,7 +1836,11 @@ namespace QMC.LCP_280.Process.Unit
         public int PerformChipMapping(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = PerformChipMapping;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = PerformChipMapping;
+
+            }
 
             // 기본 인터락
             if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
@@ -1901,6 +1916,12 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "ChipMap", "Exception: " + ex.Message);
                 return -1;
             }
+
+            if(RunMode == UnitRunMode.Manual)
+            {
+                SetMaterial(new MaterialWafer());
+            }
+
             UpdateChipInfo(chips);
             MaterialWafer wafer = GetMaterialWafer();
             wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;

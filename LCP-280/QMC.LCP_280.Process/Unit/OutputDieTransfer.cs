@@ -1172,7 +1172,11 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveOutStage(bool bFineSpeed = false) 
         {
             int nRet = 0;
-            this.CurrentFunc = MoveOutStage;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = MoveOutStage;
+
+            }
 
             // Chip을 순차적으로 Place 하는 위치로 이동
 
@@ -1183,7 +1187,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ChipPickDown(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = ChipPickDown;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ChipPickDown;
+
+            }
 
             int nIndex = 0;
             nIndex = GetUnloaderIndexNo();
@@ -1228,7 +1236,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ChipPickUp(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = ChipPickUp;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ChipPickUp;
+
+            }
 
             int nIndex = 0;
             nIndex = GetUnloaderIndexNo();
@@ -1314,7 +1326,11 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
 
             int nRet = 0;
-            this.CurrentFunc = RotateToolTForPlace;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = RotateToolTForPlace;
+
+            }
 
             nRet = MovePositionPlace(bFineSpeed);
             if (nRet != 0)
@@ -1331,9 +1347,13 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
             try
             {
-                this.CurrentFunc = ReleaseVacuumAndPlaceUp;
-                LogSequence("Start");
+                if (RunMode == UnitRunMode.Manual)
+                {
+                    this.CurrentFunc = ReleaseVacuumAndPlaceUp;
+                    LogSequence("Start");
 
+
+                }
                 int armIndex = GetPlaceArmIndex();
                 if (armIndex < 0 || armIndex > 3) 
                     return -1;
@@ -1393,7 +1413,11 @@ namespace QMC.LCP_280.Process.Unit
 
         private void LogSequence(string log)
         {
+            if (RunMode == UnitRunMode.Manual)
+            {
             Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+
+            }
         }
 
         #endregion

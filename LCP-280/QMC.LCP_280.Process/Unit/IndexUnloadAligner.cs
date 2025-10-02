@@ -236,7 +236,11 @@ namespace QMC.LCP_280.Process.Unit
         public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = RunAlignSocketOnce;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = RunAlignSocketOnce;
+             
+            }
             Log.Write(UnitName, "Align Start");
 
 

@@ -147,6 +147,12 @@ namespace QMC.LCP_280.Process.Unit
         [Category("PIckUp"), DisplayName("Up Dec (mm/sec2)")]
         [DefaultValue(0.0)]
         public double dPickUpDec { get; set; } = 0.0;
+        [Category("PIckUp"), DisplayName("PickUpWaitTime (ms)")]
+        [DefaultValue(0)]
+        public int nPickUpWaitTime { get; set; } = 0;
+        [Category("PlaceUp"), DisplayName("PlaceUpWaitTime (ms)")]
+        [DefaultValue(0)]
+        public int nPlaceUpWaitTime { get; set; } = 0;
 
         [Category("SetupConfig"), DisplayName("IndexOfStart")]
         [DefaultValue(0)]
@@ -309,6 +315,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 { "General", 0 },   // Name 속성 (Category 없음) 정렬 위치 지정
                 { "Common", 1 },
+                { "SetupConfig", 2 },
+                { "PickUp", 3 },
+                { "PlaceUp", 4 },
             };
 
         // Property 순서: (DisplayName 또는 PropertyName)
@@ -319,8 +328,15 @@ namespace QMC.LCP_280.Process.Unit
             {
                 "Name",
                 "Simulation",
-                "SlotPitch (mm)",
-                "SlotCount (ea)"
+                "DryRun",
+                "IndexOfStart",
+                "SeqType",
+                "Up Offset (mm)",
+                "Up Speed (mm/sec)",
+                "Up Acc (mm/sec2)",
+                "Up Dec (mm/sec2)",
+                "PickUpWaitTime (ms)",
+                "PlaceUpWaitTime (ms)"
             };
         #endregion
     }

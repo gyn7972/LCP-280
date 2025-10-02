@@ -8,6 +8,7 @@ using QMC.Common.Motion;
 using QMC.Common.Motions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -86,11 +87,11 @@ namespace QMC.Common.Unit
                 if(_currentFunc != null)
                 {
 
-                    Log.Write(this.UnitName, "Before Function : " + _currentFunc.Method.Name);
+                    //Log.Write(this.UnitName, "Before Function : " + _currentFunc.Method.Name);
                 }
                 if(value !=null)
                 {
-                    Log.Write(this.UnitName, "Current Function : " + value.Method.Name);
+                    //Log.Write(this.UnitName, "Current Function : " + value.Method.Name);
                 }
                  _currentFunc = value;
                 _currentIndex = _sequencePlayers.IndexOf(value);
@@ -857,6 +858,20 @@ namespace QMC.Common.Unit
         ~BaseUnit()
         {
             Dispose(false);
+        }
+        #endregion
+
+        #region Timing Helpers
+        public void WaitByTime(int milliseconds, int pollMs = 1)
+        {
+            if (milliseconds <= 0) return;
+            if (pollMs < 0) pollMs = 0;
+
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < milliseconds)
+            {
+                Thread.Sleep(pollMs);
+            }
         }
         #endregion
     }

@@ -517,7 +517,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ScanBin(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = ScanBin;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ScanBin;
+
+            }
 
             Log.Write(this, "Start ScanBin");
 
@@ -645,7 +649,11 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToNextSlot(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = MoveToNextSlot;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = MoveToNextSlot;
+
+            }
 
             MaterialCassette material = GetMaterialCassette();
             if (material != null)
@@ -810,7 +818,11 @@ namespace QMC.LCP_280.Process.Unit
         private int BinLoadingBeforeStage(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = BinLoadingBeforeStage;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = BinLoadingBeforeStage;
+
+            }
             MaterialCassette material = GetMaterialCassette();
 
             nRtn = OutputStage.LoadingBinPrepare();
@@ -826,7 +838,11 @@ namespace QMC.LCP_280.Process.Unit
         public int BinLoadingFeeder(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = BinLoadingFeeder;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = BinLoadingFeeder;
+
+            }
 
             nRet = OutputFeeder.BinLoading();
             if (nRet != 0)
@@ -842,7 +858,11 @@ namespace QMC.LCP_280.Process.Unit
         private int BinLoadingAfterStage(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = BinLoadingAfterStage;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = BinLoadingAfterStage;
+
+            }
             MaterialCassette material = GetMaterialCassette();
 
             nRtn = OutputStage.LoadingBinComplete();
@@ -857,7 +877,11 @@ namespace QMC.LCP_280.Process.Unit
         private int BinUnloadingBeforeStage(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = BinUnloadingBeforeStage;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = BinUnloadingBeforeStage;
+
+            }
             MaterialCassette material = GetMaterialCassette();
 
 
@@ -867,7 +891,11 @@ namespace QMC.LCP_280.Process.Unit
         public int BinUnloadingFeeder(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = BinUnloadingFeeder;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = BinUnloadingFeeder;
+
+            }
 
             //nRet = OutputFeeder.BinUnloading();
             //if (nRet != 0)
@@ -882,7 +910,11 @@ namespace QMC.LCP_280.Process.Unit
         private int BinUnloadingAfterStage(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = BinUnloadingAfterStage;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = BinUnloadingAfterStage;
+
+            }
             MaterialCassette material = GetMaterialCassette();
 
 

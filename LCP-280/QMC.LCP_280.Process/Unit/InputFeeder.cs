@@ -723,7 +723,10 @@ namespace QMC.LCP_280.Process.Unit
         public int RunWorkFeederSequence(bool isFine = false)
         {
             int nRet = 0;
-            CurrentFunc = RunWorkFeederSequence;
+            if(RunMode == UnitRunMode.Manual)
+            {
+                CurrentFunc = RunWorkFeederSequence;
+            }
 
             MaterialWafer wafer = this.InputStage.GetMaterialWafer();
             // Stage 요청 인지 시 Busy로 표시(선택)
@@ -1452,10 +1455,15 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = true;
 
             double dYSafePosOffset = Config.FeederToCassetteOverapLength;
-            if (IsClamped())
+
+            if(Config.IsSimulation == false)
             {
-                dYSafePosOffset += Config.WaferRingframeSize;
+                if (IsClamped())
+                {
+                    dYSafePosOffset += Config.WaferRingframeSize;
+                }
             }
+
             var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Cassette];
             double dInterlockPos = tp.GetAxisPosition(this.FeederY.Name);
 

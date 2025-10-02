@@ -566,7 +566,11 @@ namespace QMC.LCP_280.Process.Unit
         public int ScanWafer(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = ScanWafer;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ScanWafer;
+
+            }
 
             Log.Write(this, "Start ScanWafer");
 
@@ -698,7 +702,11 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToNextSlot(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = MoveToNextSlot;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = MoveToNextSlot;
+
+            }
 
             try
             {
