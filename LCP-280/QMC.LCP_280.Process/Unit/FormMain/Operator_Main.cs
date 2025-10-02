@@ -2,9 +2,11 @@
 using QMC.Common.Controls;
 using QMC.Common.UI;
 using QMC.Common.Unit;
+using QMC.Common.Vision;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
@@ -90,6 +92,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             // Control → Form 이벤트 등록
             sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
             sequenceManualControl.SequenceButtonRequested += OnManualSequenceButtonRequested;
+
+            // Vision
+            InputWaferCamera.LightControlRequested += VisionImageViewer_LightControlRequested;
+
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
@@ -1000,6 +1006,30 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 }
             }
             catch { }
+        }
+
+        private void VisionImageViewer_LightControlRequested(object sender, EventArgs e)
+        {
+            //Form popupForm = new Form();
+            //popupForm.Text = "Light Control";
+            //popupForm.Size = new Size(450, 350);
+            //popupForm.StartPosition = FormStartPosition.CenterParent;
+
+            //LightChannelControlcs lightControl = new LightChannelControlcs();
+            //lightControl.Dock = DockStyle.Fill;
+            //popupForm.Controls.Add(lightControl);
+
+            //var viewer = sender as VisionImageViewer;
+            //var cam = viewer?.CurrentCamera;
+            //string illuminatorName = cam?.LightController?.Name ??
+            //                        Equipment.Instance.LightControllers.Keys.FirstOrDefault();
+
+            //if (!string.IsNullOrEmpty(illuminatorName))
+            //{
+            //    lightControl.BinIlluminatorChannelList(illuminatorName);
+            //}
+
+            //popupForm.ShowDialog();
         }
 
         #endregion

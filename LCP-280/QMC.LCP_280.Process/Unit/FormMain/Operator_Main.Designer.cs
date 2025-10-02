@@ -28,6 +28,8 @@
         private System.Windows.Forms.GroupBox groupBox_SequenceAuto;
         private QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl sequenceAutoControl;
 
+        private QMC.LCP_280.Process.Unit.LightChannelControlcs lightChannelControlcs;
+
         /// <summary>
         /// Clean up any resources being used.
         /// </summary>
@@ -67,6 +69,7 @@
             this.sequenceManualControl = new QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl();
             this.groupBox_SequenceAuto = new System.Windows.Forms.GroupBox();
             this.sequenceAutoControl = new QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl();
+            this.lightChannelControlcs = new QMC.LCP_280.Process.Unit.LightChannelControlcs();
             this.tableLayoutPanel2.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
