@@ -1594,6 +1594,13 @@ namespace QMC.LCP_280.Process.Unit
 
             if(this.Config.IsSimulation)
             {
+                MaterialWafer wafer = GetMaterialWafer();
+                if (wafer is null)
+                {
+                    wafer = new MaterialWafer();
+                    SetMaterial(wafer);
+                }
+
                 IsStatus_TAlignPrepared = true;
                 return 0;
             }
@@ -1919,7 +1926,10 @@ namespace QMC.LCP_280.Process.Unit
 
                 materialWafer.Dies.Clear();
                 materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
-                var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
+                var list = materialWafer?.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
+
+                if (list == null) return;
+
                 foreach (var c in list)
                 {
                     Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
@@ -1947,12 +1957,16 @@ namespace QMC.LCP_280.Process.Unit
                 var recip = eq.EquipmentRecipe.CurrentRecipe;
                 double dRadius = recip.WaferDiameter / 2;
                  
+                
                 try
                 {
 
-                    if (PmRunner.IsRecipeLoaded == false)
+                    if (Config.IsSimulation == false)
                     {
-                        PmRunner.LoadRecipe();
+                        if (PmRunner.IsRecipeLoaded == false)
+                        {
+                            PmRunner.LoadRecipe();
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -1960,9 +1974,19 @@ namespace QMC.LCP_280.Process.Unit
 
                     Log.Write(ex);
                 }
-                double dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
-                double dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
 
+                double dRoiWidth = 0.0;// Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                double dRoiHeight = 0.0;//Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                if (Config.IsSimulation == false)
+                {
+                    dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
+                    dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
+                }
+                else
+                {
+                    dRoiWidth = 2;
+                    dRoiHeight = 2;
+                }
 
                 double dChipPitchX = ChipPitchXmm;
                 double dChipPitchY = ChipPitchYmm;

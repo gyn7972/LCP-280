@@ -2,17 +2,19 @@
 using QMC.Common.Controls;
 using QMC.Common.UI;
 using QMC.Common.Unit;
+using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
-    [FormOrder(1)]
+    [FormOrder(2)]
     public partial class Operator_Main : Form
     {
         // Units
@@ -47,7 +49,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private Form_AxisJogPopup _jogPopup = null;
         private AxisPostionPopup _axisPosPopup = null;
 
-
+        private Form _lightControlPopup = null;
         public Operator_Main() : this(
             TryGetUnit<InputFeeder>("InputFeeder"),
             TryGetUnit<InputDieTransfer>("InputDieTransfer"),
@@ -96,6 +98,53 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             // Control → Form 이벤트 등록
             sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
             sequenceManualControl.SequenceButtonRequested += OnManualSequenceButtonRequested;
+            InputWaferCamera.LightControlRequested += InputWaferCamera_LightControlRequested;
+        }
+
+        private void InputWaferCamera_LightControlRequested(object sender, EventArgs e)
+        {
+            // 기존 팝업이 있으면 닫기
+            if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
+            {
+                _lightControlPopup.Close();
+            }
+
+            Form popupForm = new Form();
+            popupForm.Text = "Light Control";
+            popupForm.Size = new Size(450, 350);
+            popupForm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            popupForm.MaximizeBox = false;
+            popupForm.MinimizeBox = false;
+            popupForm.ShowInTaskbar = false;
+
+            // 마우스 커서 위치로 설정
+            popupForm.StartPosition = FormStartPosition.Manual;
+            Point cursorPos = Cursor.Position;
+            popupForm.Location = cursorPos;
+
+            // Owner 설정 안 함 (독립적으로 움직임)
+            popupForm.Owner = null;
+
+            LightChannelControlcs lightControl = new LightChannelControlcs();
+            lightControl.Dock = DockStyle.Fill;
+            popupForm.Controls.Add(lightControl);
+
+            var viewer = sender as VisionImageViewer;
+            var cam = viewer?.CurrentCamera;
+
+            // 팝업 참조 저장
+            _lightControlPopup = popupForm;
+
+            popupForm.FormClosed += (s, ev) =>
+            {
+                _lightControlPopup = null;
+            };
+
+            // Modeless로 표시
+            popupForm.Show();
+
+            // 원래 폼으로 포커스 복원
+            this.Activate();
         }
 
         private static T TryGetUnit<T>(string unitName) where T : class
