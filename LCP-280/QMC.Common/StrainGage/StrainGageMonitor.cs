@@ -85,7 +85,7 @@ namespace QMC.Common.StrainGage
                     return;
                 cts = new CancellationTokenSource();
 
-                Thread.CurrentThread.Name = "StrainGageMonitor";
+                //Thread.CurrentThread.Name = "StrainGageMonitor";
                 monitoringTask = System.Threading.Tasks.Task.Run(() => RunMonitoring(cts.Token), cts.Token);
             }
         }
