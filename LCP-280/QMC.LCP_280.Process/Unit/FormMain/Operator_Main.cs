@@ -2,6 +2,7 @@
 using QMC.Common.Controls;
 using QMC.Common.UI;
 using QMC.Common.Unit;
+using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -11,7 +12,7 @@ using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
-    [FormOrder(2)]
+    [FormOrder(1)]
     public partial class Operator_Main : Form
     {
         // Units
@@ -41,6 +42,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // Manual Sequence 상태
         private HashSet<string> _readySequences;
         private HashSet<string> _startSequences;
+
+        // Jog Popup
+        private Form_AxisJogPopup _jogPopup = null;
+        private AxisPostionPopup _axisPosPopup = null;
+
 
         public Operator_Main() : this(
             TryGetUnit<InputFeeder>("InputFeeder"),
@@ -104,8 +110,110 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             return null;
         }
 
-        #region Auto Sequence 처리
+        #region UI 초기화
+        public void PreloadUI()
+        {
+            if (IsDisposed || Disposing) return;
+            if (_preloadRequested) return;
+            _preloadRequested = true;
+            EnsureInitialized();
+            var handle = Handle;
+        }
+        private void Vision_Manual_Load(object sender, EventArgs e) => EnsureInitialized();
+        private void EnsureInitialized()
+        {
+            if (_initialized) return;
+            _initialized = true;
 
+            try
+            {
+                BeginInvoke(new Action(StartDeferredInit));
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    Controls.Add(new Label
+                    {
+                        Dock = DockStyle.Fill,
+                        Text = $"Init 실패: {ex.Message}",
+                        ForeColor = Color.Red,
+                        TextAlign = ContentAlignment.MiddleCenter
+                    });
+                }
+                catch { }
+            }
+        }
+        private async void StartDeferredInit()
+        {
+            if (_deferredInitDone) return;
+            _deferredInitDone = true;
+            await System.Threading.Tasks.Task.Delay(30);
+            if (IsDisposed || Disposing) return;
+            try
+            {
+                BindCamera();
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Camera
+        private void BindCamera()
+        {
+            try
+            {
+                // Input Stage Camera
+                if (InputWaferCamera != null && InputStage?.StageCamera != null)
+                {
+                    if (InputWaferCamera.Camera != InputStage.StageCamera)
+                        InputWaferCamera.Camera = InputStage.StageCamera;
+                    try { InputStage.StageCamera.StartLive(); } catch { }
+                    try { InputWaferCamera.StartUpdateTask(); } catch { }
+                }
+
+                // Index Output Camera
+                if (IndexOutputCamera != null && IndexUnloadAligner?.IndexOutCamera != null)
+                {
+                    if (IndexOutputCamera.Camera != IndexUnloadAligner.IndexOutCamera)
+                        IndexOutputCamera.Camera = IndexUnloadAligner.IndexOutCamera;
+                    try { IndexUnloadAligner.IndexOutCamera.StartLive(); } catch { }
+                    try { IndexOutputCamera.StartUpdateTask(); } catch { }
+                }
+
+                // Output Wafer Camera
+                if (OutputWaferCamera != null && OutputStage?.OutStageCamera != null)
+                {
+                    if (OutputWaferCamera.Camera != OutputStage.OutStageCamera)
+                        OutputWaferCamera.Camera = OutputStage.OutStageCamera;
+                    try { OutputStage.OutStageCamera.StartLive(); } catch { }
+                    try { OutputWaferCamera.StartUpdateTask(); } catch { }
+                }
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Form Cleanup
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // 이벤트 해제
+            if (sequenceAutoControl != null)
+            {
+                sequenceAutoControl.SequenceButtonRequested -= OnAutoSequenceButtonRequested;
+            }
+
+            if (sequenceManualControl != null)
+            {
+                sequenceManualControl.SequenceButtonRequested -= OnManualSequenceButtonRequested;
+            }
+
+            base.OnFormClosing(e);
+        }
+        #endregion
+
+
+        #region Auto Sequence 처리
         private void OnAutoSequenceButtonRequested(object sender, AutoSequenceEventArgs e)
         {
             Log.Write("Operator_Main", $"Auto Sequence {e.Command} 요청");
@@ -262,11 +370,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 IsActive = isActive
             });
         }
-
         #endregion
 
-        #region Manual Sequence 처리
 
+
+        #region Manual Sequence 처리
         private void OnManualSequenceButtonRequested(object sender, SequenceEventArgs e)
         {
             Log.Write("Operator_Main", $"Manual Sequence {e.SequenceName} {e.Action} 요청");
@@ -285,7 +393,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             // Ready 상태 토글
             bool isActive = !_readySequences.Contains(sequenceName);
-
             if (isActive)
             {
                 _readySequences.Add(sequenceName);
@@ -350,27 +457,92 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 UpdateText = updateText
             });
         }
-
         #endregion
 
-        #region 비즈니스 로직 (실제 하드웨어 제어)
 
-        private void ExecuteAutoReady()
+        #region 비즈니스 로직 (실제 하드웨어 제어)
+        private async void ExecuteAutoReady()
         {
             // Auto Ready 로직 구현
+            bool flowControl = await HandleInputWaferReady();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Ready 실패 - InputWafer Ready 위치 이동 실패");
+                return;
+            }
+
+            flowControl = await HandleChipLoadingReady();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Ready 실패 - ChipLoading Ready 위치 이동 실패");
+                return;
+            }
+
+            flowControl = await HandleProcessReady();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Ready 실패 - Process Ready 위치 이동 실패");
+                return;
+            }
+
+            flowControl = await HandleChipUnloadingReady();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Ready 실패 - ChipUnloading Ready 위치 이동 실패");
+                return;
+            }
+
+            flowControl = await HandleOutputWaferReady();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Ready 실패 - OutputWafer Ready 위치 이동 실패");
+                return;
+            }
+
+            Log.Write("Operator_Main", "Auto Ready 완료 - 모든 Sequence Ready 위치로 이동");
         }
 
-        private void ExecuteAutoStart()
+        private async void ExecuteAutoStart()
         {
             // Auto Start 로직 구현
+            bool flowControl = await HandleInputStart();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Start 실패 - InputWafer Start 실패");
+                return;
+            }
+            flowControl = await HandleChipLoadingStart();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Start 실패 - ChipLoading Start 실패");
+                return;
+            }
+            flowControl = await HandleProcessStart();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Start 실패 - Process Start 실패");
+                return;
+            }
+            flowControl = await HandleChipUnloadingStart();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Start 실패 - ChipUnloading Start 실패");
+                return;
+            }
+            flowControl = await HandleOutputWaferStart();
+            if (!flowControl)
+            {
+                Log.Write("Operator_Main", "Auto Start 실패 - OutputWafer Start 실패");
+                return;
+            }
+            Log.Write("Operator_Main", "Auto Start 완료 - 모든 Sequence Start 실행");
         }
 
         private async void ExecuteAutoStop()
         {
             var equipment = Equipment.Instance;
             // Auto Stop 로직 구현
-            var result = await equipment.StopAllUnitsAsync(false);
-
+            var result = await equipment.StopAllUnitsAsync();
         }
 
         private void ExecuteAutoCycleStop()
@@ -400,97 +572,270 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-        private async void HandleInputWafer(string action)
+        #region Handle Manual
+        // 공통 Ready 이동 함수 (TeachingPosition 이름으로 인덱스 계산 → 이동 → 진행 UI → 결과 확인)
+        // 공통 Ready 이동 함수 (TeachingPosition 이름으로 인덱스 계산 → 이동 → 진행 UI → 결과 확인)
+        private async System.Threading.Tasks.Task<bool> MoveToTeachingPositionReadyAsync(
+            BaseUnit unit,
+            string teachingPositionName,
+            string progressMessage = "Teaching Position 이동 중...",
+            bool isFine = false)
         {
-            if (action == "Ready")
+            if (unit == null)
             {
-                Log.Write("Operator_Main", "InputWafer Ready 위치로 이동");
-                bool isFine = false;
-                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
-                int selIndex = -1;
-                try
-                {
-                    var cfg = InputFeeder.Config;
-                    var tp = cfg?.GetTeachingPosition(InputFeederConfig.TeachingPositionName.Ready.ToString());
-                    if (tp != null && cfg.TeachingPositions != null)
-                        selIndex = cfg.TeachingPositions.IndexOf(tp);
-                }
-                catch { selIndex = -1; }
+                MessageBox.Show("Unit가 초기화되지 않았습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
 
-                if (selIndex < 0)
+            int selIndex = -1;
+            string unitName = unit.UnitName ?? "Unit";
+
+            try
+            {
+                var cfg = unit.Config;
+                if (cfg == null)
                 {
-                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
+                    MessageBox.Show("Config를 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
                 }
 
-                var task = InputFeeder.MoveTeachingPositionOnceAsync(selIndex, isFine);
-                using (var pf = new ProgressForm(InputFeeder.UnitName, "Teaching Position 이동 중...", task))
+                // Config.GetTeachingPosition(string) → 인덱스 계산
+                var tp = cfg.GetTeachingPosition(teachingPositionName);
+                var tpListObj = cfg.TeachingPositions;
+
+                if (tp != null && tpListObj is System.Collections.IEnumerable enumerable)
                 {
-                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
-                    if (dr == DialogResult.Cancel)
+                    int i = 0;
+                    foreach (var item in enumerable)
                     {
-                        InputFeeder.StopTeachingPositionOnce(selIndex);
-                        return;
+                        if (Equals(item, tp))
+                        {
+                            selIndex = i;
+                            break;
+                        }
+                        i++;
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                selIndex = -1;
+            }
 
-                var result = await task; // 완료 결과 수집
+            if (selIndex < 0)
+            {
+                MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
 
-                if (result == 0)
+            // MoveTeachingPositionOnceAsync 또는 동기 API 감싸기
+            System.Threading.Tasks.Task<int> task = null;
+            System.Reflection.MethodInfo moveAsync = null;
+            System.Reflection.MethodInfo moveOnce = null;
+            System.Reflection.MethodInfo stopOnce = null;
+
+            try
+            {
+                var unitType = unit.GetType();
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+
+                // 정확한 시그니처로 조회하여 추가 모호성 방지
+                moveAsync = unitType.GetMethod("MoveTeachingPositionOnceAsync", flags, null, new[] { typeof(int), typeof(bool) }, null);
+                if (moveAsync != null)
                 {
-                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    task = (System.Threading.Tasks.Task<int>)moveAsync.Invoke(unit, new object[] { selIndex, isFine });
                 }
                 else
                 {
-                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    // 비동기 메서드가 없으면 동기 메서드를 Task로 래핑
+                    moveOnce = unitType.GetMethod("MoveTeachingPositionOnce", flags, null, new[] { typeof(int), typeof(bool) }, null);
+                    if (moveOnce == null)
+                    {
+                        MessageBox.Show("이동 API를 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false;
+                    }
+
+                    task = System.Threading.Tasks.Task.Run(() =>
+                    {
+                        var r = (int)moveOnce.Invoke(unit, new object[] { selIndex, isFine });
+                        return r;
+                    });
+                }
+
+                stopOnce = unitType.GetMethod("StopTeachingPositionOnce", flags, null, new[] { typeof(int) }, null);
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show("이동 작업을 시작할 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+
+            using (var pf = new ProgressForm(unitName, progressMessage, task))
+            {
+                var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
+                if (dr == DialogResult.Cancel)
+                {
+                    try
+                    {
+                        // 취소 시 중지 시도
+                        stopOnce?.Invoke(unit, new object[] { selIndex });
+                    }
+                    catch { }
+                    return false;
                 }
             }
-            else if (action == "Start")
+
+            var result = await task; // 완료 결과 수집
+            if (result != 0)
             {
-                Log.Write("Operator_Main", "InputWafer 시퀀스 실행");
-                if (InputFeeder == null)
-                    return;
+                MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+
+            return true;
+        }
+        private async System.Threading.Tasks.Task<bool> HandleInputWaferReady()
+        {
+            return await MoveToTeachingPositionReadyAsync(
+                        InputFeeder,
+                        InputFeederConfig.TeachingPositionName.Ready.ToString());
+        }
+        private async System.Threading.Tasks.Task<bool> HandleChipLoadingReady()
+        {
+            return await MoveToTeachingPositionReadyAsync(
+                        InputDieTransfer,
+                        InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
+        }
+        private async System.Threading.Tasks.Task<bool> HandleProcessReady()
+        {
+            // 1) IndexLoadAligner → SafetyZone
+            var ok = await MoveToTeachingPositionReadyAsync(
+                IndexLoadAligner,
+                IndexLoadAlignerConfig.TeachingPositionName.SafetyZone.ToString());
+            if (!ok) return false;
+
+            // 2) IndexChipProbeController → SafetyZone
+            ok = await MoveToTeachingPositionReadyAsync(
+                IndexChipProbeController,
+                IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString());
+            if (!ok) return false;
+
+            return true;
+        }
+        private async System.Threading.Tasks.Task<bool> HandleChipUnloadingReady()
+        {
+            return await MoveToTeachingPositionReadyAsync(
+                        OutputDieTransfer,
+                        OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
+        }
+        private async System.Threading.Tasks.Task<bool> HandleOutputWaferReady()
+        {
+            return await MoveToTeachingPositionReadyAsync(
+                        OutputFeeder,
+                        OutputFeederConfig.TeachingPositionName.Ready.ToString());
+        }
+
+        // 공통 Start 함수: 유닛 기본 검사 → 이미 실행 중 여부 확인 → Start 요청 → Cursor 복원
+        private async System.Threading.Tasks.Task<bool> TryStartUnitAsync(BaseUnit unit)
+        {
+            if (unit == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var eq = Equipment.Instance;
+                if (eq == null)
+                {
+                    MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                var unitName = unit.UnitName;
+                if (string.IsNullOrEmpty(unitName))
+                {
+                    MessageBox.Show("UnitName 이 비어있습니다.", "오류",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                {
+                    MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return false;
+                }
+
+                var prev = Cursor.Current;
+                Cursor.Current = Cursors.WaitCursor;
 
                 try
                 {
-                    var eq = Equipment.Instance;
-                    if (eq == null)
-                    {
-                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    var unitName = InputFeeder.UnitName;
-                    if (string.IsNullOrEmpty(unitName))
-                    {
-                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
-                    if (InputFeeder.RunUnitStatus == BaseUnit.UnitStatus.Running)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                    }
-
-                    Cursor prev = Cursor.Current;
-                    Cursor.Current = Cursors.WaitCursor;
-
                     bool ok = await eq.StartUnitAsync(unitName);
                     if (!ok)
                     {
                         MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
+                }
+                finally
+                {
                     Cursor.Current = prev;
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+
+            return true;
+        }
+        private async System.Threading.Tasks.Task<bool> HandleInputStart()
+        {
+            return await TryStartUnitAsync(InputFeeder);
+        }
+        private async System.Threading.Tasks.Task<bool> HandleChipLoadingStart()
+        {
+            return await TryStartUnitAsync(InputDieTransfer);
+        }
+        private async System.Threading.Tasks.Task<bool> HandleProcessStart()
+        {
+            return await TryStartUnitAsync(Rotary);
+        }
+        private async System.Threading.Tasks.Task<bool> HandleChipUnloadingStart()
+        {
+            return await TryStartUnitAsync(OutputDieTransfer);
+        }
+        private async System.Threading.Tasks.Task<bool> HandleOutputWaferStart()
+        {
+            return await TryStartUnitAsync(OutputFeeder);
+        }
+        #endregion
+
+
+        private async void HandleInputWafer(string action)
+        {
+            if (action == "Ready")
+            {
+                Log.Write("Operator_Main", "InputWafer Ready 위치로 이동");
+
+                bool flowControl = await HandleInputWaferReady();
+                if (!flowControl)
                 {
-                    Log.Write(ex);
+                    return;
+                }
+            }
+            else if (action == "Start")
+            {
+                Log.Write("Operator_Main", "InputWafer 시퀀스 실행");
+
+                bool flowControl = await HandleInputStart();
+                if (!flowControl)
+                {
+                    return;
                 }
             }
         }
@@ -500,92 +845,20 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "ChipLoading Ready");
-                bool isFine = false;
-                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
-                int selIndex = -1;
-                try
-                {
-                    var cfg = InputDieTransfer.Config;
-                    var tp = cfg?.GetTeachingPosition(InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
-                    if (tp != null && cfg.TeachingPositions != null)
-                        selIndex = cfg.TeachingPositions.IndexOf(tp);
-                }
-                catch { selIndex = -1; }
 
-                if (selIndex < 0)
+                bool flowControl = await HandleChipLoadingReady();
+                if (!flowControl)
                 {
-                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
-                }
-
-                var task = InputDieTransfer.MoveTeachingPositionOnceAsync(selIndex, isFine);
-                using (var pf = new ProgressForm(InputDieTransfer.UnitName, "Teaching Position 이동 중...", task))
-                {
-                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
-                    if (dr == DialogResult.Cancel)
-                    {
-                        InputDieTransfer.StopTeachingPositionOnce(selIndex);
-                        return;
-                    }
-                }
-
-                var result = await task; // 완료 결과 수집
-
-                if (result == 0)
-                {
-                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "ChipLoading Start");
-                if (InputDieTransfer == null)
+                bool flowControl = await HandleChipLoadingStart();
+                if (!flowControl)
+                {
                     return;
-
-                try
-                {
-                    var eq = Equipment.Instance;
-                    if (eq == null)
-                    {
-                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    var unitName = InputDieTransfer.UnitName;
-                    if (string.IsNullOrEmpty(unitName))
-                    {
-                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
-                    if (InputDieTransfer.RunUnitStatus == BaseUnit.UnitStatus.Running)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                    }
-
-                    Cursor prev = Cursor.Current;
-                    Cursor.Current = Cursors.WaitCursor;
-
-                    bool ok = await eq.StartUnitAsync(unitName);
-                    if (!ok)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    Cursor.Current = prev;
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
                 }
             }
         }
@@ -595,125 +868,21 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "Process Ready");
-                bool isFine = false;
-                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
-                int selIndex = -1;
-                
-                try
+                bool flowControl = await HandleProcessReady();
+                if (!flowControl)
                 {
-                    var cfg = IndexLoadAligner.Config;
-                    var tp = cfg?.GetTeachingPosition(IndexLoadAlignerConfig.TeachingPositionName.SafetyZone.ToString());
-                    if (tp != null && cfg.TeachingPositions != null)
-                        selIndex = cfg.TeachingPositions.IndexOf(tp);
-                }
-                catch { selIndex = -1; }
-                if (selIndex < 0)
-                {
-                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
-                }
-                var task = IndexLoadAligner.MoveTeachingPositionOnceAsync(selIndex, isFine);
-                using (var pf = new ProgressForm(IndexLoadAligner.UnitName, "Teaching Position 이동 중...", task))
-                {
-                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
-                    if (dr == DialogResult.Cancel)
-                    {
-                        IndexLoadAligner.StopTeachingPositionOnce(selIndex);
-                        return;
-                    }
-                }
-                var result = await task; // 완료 결과 수집
-                if (result == 0)
-                {
-                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
-
-
-                //
-                try
-                {
-                    var cfg = IndexChipProbeController.Config;
-                    var tp = cfg?.GetTeachingPosition(IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString());
-                    if (tp != null && cfg.TeachingPositions != null)
-                        selIndex = cfg.TeachingPositions.IndexOf(tp);
-                }
-                catch { selIndex = -1; }
-                if (selIndex < 0)
-                {
-                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                task = IndexChipProbeController.MoveTeachingPositionOnceAsync(selIndex, isFine);
-                using (var pf = new ProgressForm(IndexChipProbeController.UnitName, "Teaching Position 이동 중...", task))
-                {
-                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
-                    if (dr == DialogResult.Cancel)
-                    {
-                        IndexChipProbeController.StopTeachingPositionOnce(selIndex);
-                        return;
-                    }
-                }
-                result = await task; // 완료 결과 수집
-                if (result == 0)
-                {
-                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "Process Start");
-                if (Rotary == null)
+
+                bool flowControl = await HandleProcessStart();
+                if (!flowControl)
+                {
                     return;
-
-                try
-                {
-                    var eq = Equipment.Instance;
-                    if (eq == null)
-                    {
-                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    var unitName = Rotary.UnitName;
-                    if (string.IsNullOrEmpty(unitName))
-                    {
-                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
-                    if (Rotary.RunUnitStatus == BaseUnit.UnitStatus.Running)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                    }
-
-                    Cursor prev = Cursor.Current;
-                    Cursor.Current = Cursors.WaitCursor;
-
-                    bool ok = await eq.StartUnitAsync(unitName);
-                    if (!ok)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    Cursor.Current = prev;
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
                 }
             }
         }
@@ -723,93 +892,21 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "ChipUnloading Ready");
-                bool isFine = false;
-                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
-                int selIndex = -1;
-                try
+                bool flowControl = await HandleChipUnloadingReady();
+                if (!flowControl)
                 {
-                    var cfg = OutputDieTransfer.Config;
-                    var tp = cfg?.GetTeachingPosition(OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
-                    if (tp != null && cfg.TeachingPositions != null)
-                        selIndex = cfg.TeachingPositions.IndexOf(tp);
-                }
-                catch { selIndex = -1; }
-
-                if (selIndex < 0)
-                {
-                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
-                }
-
-                var task = OutputDieTransfer.MoveTeachingPositionOnceAsync(selIndex, isFine);
-                using (var pf = new ProgressForm(OutputDieTransfer.UnitName, "Teaching Position 이동 중...", task))
-                {
-                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
-                    if (dr == DialogResult.Cancel)
-                    {
-                        OutputDieTransfer.StopTeachingPositionOnce(selIndex);
-                        return;
-                    }
-                }
-
-                var result = await task; // 완료 결과 수집
-
-                if (result == 0)
-                {
-                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "ChipUnloading Start");
-                if (OutputDieTransfer == null)
+
+                bool flowControl = await HandleChipUnloadingStart();
+                if (!flowControl)
+                {
                     return;
-
-                try
-                {
-                    var eq = Equipment.Instance;
-                    if (eq == null)
-                    {
-                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    var unitName = OutputDieTransfer.UnitName;
-                    if (string.IsNullOrEmpty(unitName))
-                    {
-                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
-                    if (OutputDieTransfer.RunUnitStatus == BaseUnit.UnitStatus.Running)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                    }
-
-                    Cursor prev = Cursor.Current;
-                    Cursor.Current = Cursors.WaitCursor;
-
-                    bool ok = await eq.StartUnitAsync(unitName);
-                    if (!ok)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    Cursor.Current = prev;
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
                 }
             }
         }
@@ -820,208 +917,111 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 Log.Write("Operator_Main", "OutputWafer Ready 위치로 이동");
 
-                bool isFine = false;
-                // 기존 구성 요소만 활용해 Ready 티칭 인덱스 계산
-                int selIndex = -1;
-                try
+                bool flowControl = await HandleOutputWaferReady();
+                if (!flowControl)
                 {
-                    var cfg = OutputFeeder.Config;
-                    var tp = cfg?.GetTeachingPosition(OutputFeederConfig.TeachingPositionName.Ready.ToString());
-                    if (tp != null && cfg.TeachingPositions != null)
-                        selIndex = cfg.TeachingPositions.IndexOf(tp);
-                }
-                catch { selIndex = -1; }
-
-                if (selIndex < 0)
-                {
-                    MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
-                }
-
-                var task = OutputFeeder.MoveTeachingPositionOnceAsync(selIndex, isFine);
-                using (var pf = new ProgressForm(OutputFeeder.UnitName, "Teaching Position 이동 중...", task))
-                {
-                    var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
-                    if (dr == DialogResult.Cancel)
-                    {
-                        OutputFeeder.StopTeachingPositionOnce(selIndex);
-                        return;
-                    }
-                }
-
-                var result = await task; // 완료 결과 수집
-
-                if (result == 0)
-                {
-                    //MessageBox.Show("Ready 완료", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "OutputWafer 시퀀스 실행");
-                if (OutputFeeder == null)
+
+                bool flowControl = await HandleOutputWaferStart();
+                if (!flowControl)
+                {
                     return;
-
-                try
-                {
-                    var eq = Equipment.Instance;
-                    if (eq == null)
-                    {
-                        MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    var unitName = OutputFeeder.UnitName;
-                    if (string.IsNullOrEmpty(unitName))
-                    {
-                        MessageBox.Show("UnitName 이 비어있습니다.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
-                    if (OutputFeeder.RunUnitStatus == BaseUnit.UnitStatus.Running)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
-                            MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                    }
-
-                    Cursor prev = Cursor.Current;
-                    Cursor.Current = Cursors.WaitCursor;
-
-                    bool ok = await eq.StartUnitAsync(unitName);
-                    if (!ok)
-                    {
-                        MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    Cursor.Current = prev;
-                }
-                catch (Exception ex)
-                {
-                    Log.Write(ex);
                 }
             }
         }
 
         #endregion
 
-        #region UI 초기화
 
-        public void PreloadUI()
+        // ===== Jog Popup =====
+        private void btn_Jog_Click(object sender, EventArgs e)
         {
-            if (IsDisposed || Disposing) return;
-            if (_preloadRequested) return;
-            _preloadRequested = true;
-            EnsureInitialized();
-            var handle = Handle;
+            ShowOrRestoreJogPopup(this);
+            ShowOrRestoreAxisPosPopup(this);
         }
 
-        private void Vision_Manual_Load(object sender, EventArgs e) => EnsureInitialized();
-
-        private void EnsureInitialized()
+        private void ShowOrRestoreJogPopup(IWin32Window owner)
         {
-            if (_initialized) return;
-            _initialized = true;
+            if (_jogPopup == null || _jogPopup.IsDisposed)
+            {
+                _jogPopup = new Form_AxisJogPopup();
+                _jogPopup.StartPosition = FormStartPosition.CenterParent;
 
-            try
-            {
-                BeginInvoke(new Action(StartDeferredInit));
-            }
-            catch (Exception ex)
-            {
-                try
+                _jogPopup.ShowInTaskbar = true;
+                _jogPopup.StartPosition = FormStartPosition.CenterScreen;
+
+                _jogPopup.Owner = null;
+                _jogPopup.Load += (s, e) =>
                 {
-                    Controls.Add(new Label
+                    TaskbarHelper.SetAppId(_jogPopup.Handle, "MyApp.JogPanel");
+                };
+
+                _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
+                _jogPopup.FormClosing += (s, ev) =>
+                {
+                    if (ev.CloseReason == CloseReason.UserClosing)
                     {
-                        Dock = DockStyle.Fill,
-                        Text = $"Init 실패: {ex.Message}",
-                        ForeColor = Color.Red,
-                        TextAlign = ContentAlignment.MiddleCenter
-                    });
-                }
-                catch { }
+                        ev.Cancel = true;
+                        _jogPopup.Hide();
+                    }
+                };
             }
+            if (!_jogPopup.Visible)
+            {
+                _jogPopup.Show();
+            }
+
+            if (_jogPopup.WindowState == FormWindowState.Minimized)
+                _jogPopup.WindowState = FormWindowState.Normal;
+
+            _jogPopup.BringToFront();
+            _jogPopup.TopMost = true;
+            _jogPopup.Activate();
         }
 
-        private async void StartDeferredInit()
+        private void ShowOrRestoreAxisPosPopup(IWin32Window owner)
         {
-            if (_deferredInitDone) return;
-            _deferredInitDone = true;
-            await System.Threading.Tasks.Task.Delay(30);
-            if (IsDisposed || Disposing) return;
-            try
+            if (_axisPosPopup == null || _axisPosPopup.IsDisposed)
             {
-                BindCamera();
-            }
-            catch { }
-        }
+                _axisPosPopup = new AxisPostionPopup();
+                _axisPosPopup.StartPosition = FormStartPosition.CenterParent;
 
-        #endregion
+                _axisPosPopup.ShowInTaskbar = true;
+                _axisPosPopup.StartPosition = FormStartPosition.CenterScreen;
 
-        #region Camera
-
-        private void BindCamera()
-        {
-            try
-            {
-                // Input Stage Camera
-                if (InputWaferCamera != null && InputStage?.StageCamera != null)
+                _axisPosPopup.Owner = null;
+                _axisPosPopup.Load += (s, e) =>
                 {
-                    if (InputWaferCamera.Camera != InputStage.StageCamera)
-                        InputWaferCamera.Camera = InputStage.StageCamera;
-                    try { InputStage.StageCamera.StartLive(); } catch { }
-                    try { InputWaferCamera.StartUpdateTask(); } catch { }
-                }
+                    TaskbarHelper.SetAppId(_axisPosPopup.Handle, "MyApp.AxisPosition");
+                };
 
-                // Index Output Camera
-                if (IndexOutputCamera != null && IndexUnloadAligner?.IndexOutCamera != null)
+                _axisPosPopup.FormClosed += (s, _) => { _axisPosPopup = null; };
+                _axisPosPopup.FormClosing += (s, ev) =>
                 {
-                    if (IndexOutputCamera.Camera != IndexUnloadAligner.IndexOutCamera)
-                        IndexOutputCamera.Camera = IndexUnloadAligner.IndexOutCamera;
-                    try { IndexUnloadAligner.IndexOutCamera.StartLive(); } catch { }
-                    try { IndexOutputCamera.StartUpdateTask(); } catch { }
-                }
-
-                // Output Wafer Camera
-                if (OutputWaferCamera != null && OutputStage?.OutStageCamera != null)
-                {
-                    if (OutputWaferCamera.Camera != OutputStage.OutStageCamera)
-                        OutputWaferCamera.Camera = OutputStage.OutStageCamera;
-                    try { OutputStage.OutStageCamera.StartLive(); } catch { }
-                    try { OutputWaferCamera.StartUpdateTask(); } catch { }
-                }
+                    if (ev.CloseReason == CloseReason.UserClosing)
+                    {
+                        ev.Cancel = true;
+                        _axisPosPopup.Hide();
+                    }
+                };
             }
-            catch { }
-        }
-
-        #endregion
-
-        #region Form Cleanup
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            // 이벤트 해제
-            if (sequenceAutoControl != null)
+            if (!_axisPosPopup.Visible)
             {
-                sequenceAutoControl.SequenceButtonRequested -= OnAutoSequenceButtonRequested;
+                _axisPosPopup.Show();
             }
 
-            if (sequenceManualControl != null)
-            {
-                sequenceManualControl.SequenceButtonRequested -= OnManualSequenceButtonRequested;
-            }
+            if (_axisPosPopup.WindowState == FormWindowState.Minimized)
+                _axisPosPopup.WindowState = FormWindowState.Normal;
 
-            base.OnFormClosing(e);
+            _axisPosPopup.BringToFront();
+            _axisPosPopup.TopMost = true;
+            _axisPosPopup.Activate();
         }
-
-        #endregion
     }
 }

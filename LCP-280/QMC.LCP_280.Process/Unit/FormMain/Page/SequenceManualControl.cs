@@ -30,7 +30,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             public bool IsActive { get; set; }
             public bool UpdateText { get; set; } // Start 버튼 텍스트 변경 여부
         }
-
         #endregion
 
         #region Events

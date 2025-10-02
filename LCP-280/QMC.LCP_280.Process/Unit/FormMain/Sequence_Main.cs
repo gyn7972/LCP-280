@@ -266,7 +266,7 @@ namespace QMC.LCP_280.Process
             { 
                 btnStopAll.Enabled = false; 
                 LogMessage("설비 전체 정지 중..."); 
-                var result = await equipment.StopAllUnitsAsync(false); 
+                var result = await equipment.StopAllUnitsAsync(); 
                 LogMessage(result ? "설비 전체 정지 완료" : "설비 전체 정지 실패"); 
             } 
             catch (Exception ex) 

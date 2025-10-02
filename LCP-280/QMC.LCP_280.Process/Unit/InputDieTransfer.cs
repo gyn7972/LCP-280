@@ -1250,12 +1250,22 @@ namespace QMC.LCP_280.Process.Unit
 
             return ret;
         }
+
+        protected override int OnStart()
+        {
+            this.InputStageEjector.Start();
+
+            return base.OnStart();
+        }
         public override int OnStop() 
         { 
             int ret = 0;
 
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
+
+            this.InputStageEjector?.OnStop();
+
             base.OnStop(); 
             return ret; 
         }

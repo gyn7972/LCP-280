@@ -646,46 +646,71 @@ namespace QMC.LCP_280.Process.Component
             try
             {
                 var display = positionItemView?.SelectedItemName;
-                if (string.IsNullOrEmpty(display)) return;
-                if (!_displayToEntry.TryGetValue(display, out var entry) || entry.TP == null) return;
-
-                // 에디터 값 반영
-                var getMi = positionEditorView.GetType().GetMethod("GetCurrentProperties",
-                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                var pc = getMi?.Invoke(positionEditorView, null);
-                if (pc != null)
+                if (string.IsNullOrEmpty(display))
                 {
-                    var pcType = pc.GetType();
-                    var getValueMi = pcType.GetMethod("GetValue");
-                    if (getValueMi != null && entry.TP.AxisPositions != null)
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                if (!_displayToEntry.TryGetValue(display, out var entry) || entry.TP == null)
+                {
+                    MessageBox.Show("Teaching Position 데이터를 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // 에디터가 없으면 저장 불가
+                if (positionEditorView == null)
+                {
+                    MessageBox.Show("편집기를 찾을 수 없습니다. 편집 가능한 상태에서 다시 시도해 주세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    // 에디터 값 반영(가능할 때만)
+                    object pc = null;
+                    var getMi = positionEditorView.GetType().GetMethod("GetCurrentProperties",
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                    if (getMi != null)
                     {
-                        var keys = entry.TP.AxisPositions.Keys.ToList();
-                        foreach (var axisKey in keys)
+                        pc = getMi.Invoke(positionEditorView, null);
+                    }
+
+                    if (pc != null && entry.TP.AxisPositions != null)
+                    {
+                        var pcType = pc.GetType();
+                        var getValueMi = pcType.GetMethod("GetValue");
+                        if (getValueMi != null)
                         {
-                            try
+                            var keys = entry.TP.AxisPositions.Keys.ToList();
+                            foreach (var axisKey in keys)
                             {
-                                var generic = getValueMi.MakeGenericMethod(typeof(double));
-                                var valObj = generic.Invoke(pc, new object[] { axisKey });
-                                if (valObj is double d)
-                                    entry.TP.AxisPositions[axisKey] = d;
+                                try
+                                {
+                                    var generic = getValueMi.MakeGenericMethod(typeof(double));
+                                    var valObj = generic.Invoke(pc, new object[] { axisKey });
+                                    if (valObj is double d)
+                                        entry.TP.AxisPositions[axisKey] = d;
+                                }
+                                catch
+                                {
+                                    // 개별 키 갱신 실패는 무시하고 계속
+                                }
                             }
-                            catch { }
                         }
                     }
                 }
 
-                // 1) 사용자 정의 saveAction 우선
+                // 1) 사용자 지정 저장 로직이 있으면 우선
                 if (_saveExecutors.TryGetValue(entry.UnitKey, out var saver))
                 {
                     saver(entry.TP);
                 }
                 else
                 {
-                    // 2) reflection 저장 (UnitKey + "Config" 안에 SetTeachingPosition 함수 찾기)
+                    // 2) 리플렉션 기반 기본 저장
                     if (_unitRefs.TryGetValue(entry.UnitKey, out var unit) && unit != null)
                     {
-                        // <UnitKey>Config 프로퍼티 추정
-                        var cfgProp = unit.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                        var cfgProp = unit.GetType()
+                            .GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
                             .FirstOrDefault(p =>
                                 p.CanRead &&
                                 p.Name.EndsWith("Config", StringComparison.OrdinalIgnoreCase) &&
@@ -695,10 +720,9 @@ namespace QMC.LCP_280.Process.Component
                         if (cfgObj != null)
                         {
                             var setMi2 = cfgObj.GetType().GetMethod("SetTeachingPosition",
-                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic,
                                 null, new[] { typeof(TeachingPosition) }, null);
-                            if (setMi2 != null)
-                                setMi2.Invoke(cfgObj, new object[] { entry.TP });
+                            setMi2?.Invoke(cfgObj, new object[] { entry.TP });
                         }
                     }
                 }
@@ -707,7 +731,8 @@ namespace QMC.LCP_280.Process.Component
             }
             catch (Exception ex)
             {
-                try { Log.Write("TeachingPositionControl", "SaveError", ex.Message); } catch { }
+                try { Log.Write("TeachingPositionControl", "SaveError", ex.ToString()); } catch { }
+                MessageBox.Show($"저장 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

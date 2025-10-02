@@ -44,17 +44,18 @@
             this.tableLayoutPanel1.Controls.Add(this.strainGageChart1, 0, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 200F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 250F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(796, 740);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(995, 925);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // tableLayoutPanel2
             // 
             this.tableLayoutPanel2.ColumnCount = 2;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 625F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 781F));
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.Controls.Add(this.strainGageDataGridViewer1, 0, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -63,31 +64,33 @@
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 1;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(796, 200);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(995, 250);
             this.tableLayoutPanel2.TabIndex = 1;
             // 
             // strainGageDataGridViewer1
             // 
             this.strainGageDataGridViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.strainGageDataGridViewer1.Location = new System.Drawing.Point(3, 3);
+            this.strainGageDataGridViewer1.Location = new System.Drawing.Point(5, 5);
+            this.strainGageDataGridViewer1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.strainGageDataGridViewer1.Name = "strainGageDataGridViewer1";
-            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(619, 194);
+            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(771, 240);
             this.strainGageDataGridViewer1.TabIndex = 1;
             // 
             // strainGageChart1
             // 
-            this.strainGageChart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.strainGageChart1.Location = new System.Drawing.Point(3, 203);
+            this.strainGageChart1.Location = new System.Drawing.Point(5, 255);
+            this.strainGageChart1.Margin = new System.Windows.Forms.Padding(5, 5, 5, 5);
             this.strainGageChart1.Name = "strainGageChart1";
-            this.strainGageChart1.Size = new System.Drawing.Size(790, 534);
+            this.strainGageChart1.Size = new System.Drawing.Size(985, 665);
             this.strainGageChart1.TabIndex = 2;
             // 
             // FormStrainGageDialog
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(796, 740);
+            this.ClientSize = new System.Drawing.Size(995, 925);
             this.Controls.Add(this.tableLayoutPanel1);
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "FormStrainGageDialog";
             this.Text = "Strain Gage Monitor";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FormStrainGageDialog_FormClosed);
