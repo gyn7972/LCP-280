@@ -83,11 +83,6 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitSimMappingIfNeeded()
         {
-            if (!Config.IsSimulation && !Config.IsDryRun)
-            {
-                return;
-            }
-
             lock (_simMapLock)
             {
                 if (_simSimMappingInitialized)
@@ -250,33 +245,23 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region IO / Sensors
-        public bool ReadInput(string name)
-        {
-            var hi = base.Config.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
-        }
-
         public bool IsCassettePresent0()
         {
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
 
-            return ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+            return this.ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
         }
         public bool IsCassettePresent1()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
 
-            return ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+            return this.ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
         }
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
@@ -284,7 +269,7 @@ namespace QMC.LCP_280.Process.Unit
        
         public bool IsWaferProtrusionDetectionSensor()
         {
-            bool sensorState = ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+            bool sensorState = this.ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
             return !sensorState;
         }
         public bool MappingSensor()
@@ -319,7 +304,7 @@ namespace QMC.LCP_280.Process.Unit
                 return emit;
             }
 
-            return ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
+            return this.ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         }
         
         #endregion
@@ -569,7 +554,6 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = ScanWafer;
-
             }
 
             Log.Write(this, "Start ScanWafer");
@@ -775,7 +759,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             Log.Write(this, $"MoveToSlot {slotIndex + 1}");
             double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
-            dPos += base.Config.SlotPitch * slotIndex;
+
+            //Todo : 시컨스 수정
+            //첫번째 스타트 웨이퍼 어디인지에 따라 위로 아래로 피치 이동 필요
+            //dPos += base.Config.SlotPitch * slotIndex;
+            dPos -= base.Config.SlotPitch * slotIndex;
+
             MoveAxisOnce(WaferLifterZ, dPos);
             while (!InPos(WaferLifterZ, dPos))
             {

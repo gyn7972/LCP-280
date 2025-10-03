@@ -159,7 +159,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try
             {
-                if (dioControl == null) return;
+                if (dioControl == null) 
+                    return;
                 dioControl.IoSortMode = DIOControl.SortingMode.Insertion;
 
                 if (InputFeeder != null)
@@ -184,22 +185,49 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void StrongBindInputFeeder()
         {
             if (InputFeeder == null || dioControl == null) return;
+
+            // 간단 디바운스: required회 연속으로 true가 나와야 true로 인정
+            bool ConsecutiveTrue(Func<bool> read, int required = 2, int intervalMs = 10)
+            {
+                int count = 0;
+                for (int i = 0; i < required; i++)
+                {
+                    bool v = false;
+                    try { v = read(); } catch { v = false; }
+                    if (v) count++; else count = 0;
+                    if (i < required - 1) System.Threading.Thread.Sleep(intervalMs);
+                }
+                return count >= required;
+            }
+
+            // Lift(Up/Down): 두 센서 일관성 체크 + 디바운스
+            bool IsLiftUpStable() =>
+                ConsecutiveTrue(() => InputFeeder.IsFeederUp() && !InputFeeder.IsFeederDown(), 2, 10);
+            bool IsLiftDownStable() =>
+                ConsecutiveTrue(() => InputFeeder.IsFeederDown() && !InputFeeder.IsFeederUp(), 2, 10);
+
+            // Clamp/Unclamp: Unclamp 센서만 있는 경우
+            bool IsClampedStable() =>
+                ConsecutiveTrue(() => !InputFeeder.IsUnClamped(), 2, 10);
+            bool IsUnclampedStable() =>
+                ConsecutiveTrue(() => InputFeeder.IsUnClamped(), 2, 10);
+
             try
             {
-                // Sensors
-                dioControl.BindDIOInput(() => InputFeeder.IsFeederUp(), "Feeder UP Sns", "IRT_FeederUp");
-                dioControl.BindDIOInput(() => InputFeeder.IsFeederDown(), "Feeder DOWN Sns", "IRT_FeederDown");
-                dioControl.BindDIOInput(() => InputFeeder.IsUnClamped(), "Feeder UNCLAMP Sns", "IRT_Unclamp");
-                dioControl.BindDIOInput(() => InputFeeder.IsRingPresent(), "Feeder RING Sns", "IRT_Ring");
-                dioControl.BindDIOInput(() => InputFeeder.IsOverload(), "Feeder OVERLOAD Sns", "IRT_Overload");
+                // Sensors (표시용도 역시 흔들리면 동일 래퍼로 감싸는 것을 권장)
+                dioControl.BindDIOInput(() => ConsecutiveTrue(() => InputFeeder.IsFeederUp()), "Feeder UP Sns", "IRT_FeederUp");
+                dioControl.BindDIOInput(() => ConsecutiveTrue(() => InputFeeder.IsFeederDown()), "Feeder DOWN Sns", "IRT_FeederDown");
+                dioControl.BindDIOInput(() => ConsecutiveTrue(() => InputFeeder.IsUnClamped()), "Feeder UNCLAMP Sns", "IRT_Unclamp");
+                dioControl.BindDIOInput(() => ConsecutiveTrue(() => InputFeeder.IsRingPresent()), "Feeder RING Sns", "IRT_Ring");
+                dioControl.BindDIOInput(() => ConsecutiveTrue(() => InputFeeder.IsOverload()), "Feeder OVERLOAD Sns", "IRT_Overload");
 
                 // Feeder Up/Down (서로 배타 제어)
                 dioControl.BindCylinder(
                     label: "Up/Down",
-                    extend: () => InputFeeder.SetLift(true),
+                    extend: () => InputFeeder.SetLift(true),   // 반대 코일 OFF → 목표 코일 ON은 SetLift 내부에서 보장되도록
                     retract: () => InputFeeder.SetLift(false),
-                    isExtended: () => InputFeeder.IsFeederUpValveOn(),
-                    isRetracted: () => InputFeeder.IsFeederDownValveOn(),
+                    isExtended: () => IsLiftUpStable(),        // 밸브 코일이 아니라 '위치 센서' 기준
+                    isRetracted: () => IsLiftDownStable(),
                     displayKey: "FeederUpDn",
                     showSensors: false,
                     extendedName: "UP",
@@ -211,14 +239,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     label: "Clamp/Unclamp",
                     extend: () => InputFeeder.SetClamp(true),
                     retract: () => InputFeeder.SetClamp(false),
-                    isExtended: () => InputFeeder.IsFeederClampValveOn(),
-                    isRetracted: () => InputFeeder.IsFeederUnclampValveOn(),
+                    isExtended: () => IsClampedStable(),       // Unclamp 센서의 부정으로 클램프 상태 판단
+                    isRetracted: () => IsUnclampedStable(),
                     displayKey: "FeederClamp",
                     showSensors: false,
                     extendedName: "CLAMP",
                     retractedName: "UNCLAMP"
                 );
-
             }
             catch { }
         }

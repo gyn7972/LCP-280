@@ -16,7 +16,7 @@ using static QMC.Common.Material;
 
 namespace QMC.LCP_280.Process
 {
-    [FormOrder(1)]
+    [FormOrder(2)]
     public partial class Monitoring_Main : Form
     {
         private InputCassetteLifter InputCassetteLifter { get; set; }

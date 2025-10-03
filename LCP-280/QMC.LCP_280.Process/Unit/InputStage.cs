@@ -692,82 +692,6 @@ namespace QMC.LCP_280.Process.Unit
         public double GetTP(TeachingPosition tp, string axisName) => (tp == null || string.IsNullOrEmpty(axisName)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisName, out var v) ? v : 0.0);
         #endregion
 
-        #region Low-Level IO Access (Refactored to match OutputStage pattern)
-        public bool ReadInput(string name)
-        {
-            // 유효성 검사
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return false;
-            }
-
-            if (Config == null || Config.HardInputs == null)
-            {
-                return false;
-            }
-
-            // 정의된 하드웨어 입력 목록에서 이름 매칭
-            var hi = Config.HardInputs.FirstOrDefault(i =>
-                i != null &&
-                i.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-
-            if (hi == null)
-            {
-                return false;
-            }
-
-            // 설비 / DIO 스캐너 참조
-            var eq = Equipment.Instance;
-            if (eq == null)
-            {
-                return false;
-            }
-
-            var dio = eq.DioScan;
-            if (dio == null)
-            {
-                return false;
-            }
-
-            // 모듈 순회하며 입력 값 조회
-            if (eq.UnitIO != null && eq.UnitIO.Modules != null)
-            {
-                foreach (var module in eq.UnitIO.Modules)
-                {
-                    if (module == null)
-                    {
-                        continue;
-                    }
-
-                    bool value;
-                    if (dio.TryGetInput(module.ModuleName, hi.Disp, out value))
-                    {
-                        return value;
-                    }
-                }
-            }
-            return false;
-        }
-        public bool WriteOutput(string name, bool on)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
-            return false;
-        }
-        public bool IsOutputOn(string name)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
-            return false;
-        }
-        #endregion
-
         #region IO Domain Mapping (Reorganized)
         private Cylinder _cylClampLift;      // Lift Up/Down
         private Cylinder _cylClampFB;
@@ -862,43 +786,15 @@ namespace QMC.LCP_280.Process.Unit
             else
                 return _cylClampFB.Retract();
         }
+
         #region High-Level Actuator API (Interlock 포함)
-        public bool IsClampLiftUp()
+        public bool IsVacuumOn()
         {
             if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
-
-            return !IsClampLiftDown();
-        }
-        public bool IsClampLiftDown()
-        {
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-
-            return ReadInput(InputStageConfig.IO.CLAMP_DOWN_SNS);
-        }
-        public bool IsClampFwd()
-        {
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-
-            // Clamp Forward 센서 (클램프 전진 상태) 확인
-            return ReadInput(InputStageConfig.IO.CLAMP_FWD_SNS);
-        }
-        public bool IsClampBwd()
-        {
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-
-            return !IsClampFwd();
+            return this.ReadInput(InputStageConfig.IO.VAC_OK_SNS);
         }
         public bool Ring0()
         {
@@ -907,7 +803,7 @@ namespace QMC.LCP_280.Process.Unit
                 return true;
             }
 
-            return ReadInput(InputStageConfig.IO.RING_CHECK0);
+            return this.ReadInput(InputStageConfig.IO.RING_CHECK0);
         }
         public bool Ring1()
         {
@@ -916,49 +812,71 @@ namespace QMC.LCP_280.Process.Unit
                 return true;
             }
 
-            return ReadInput(InputStageConfig.IO.RING_CHECK1);
+            return this.ReadInput(InputStageConfig.IO.RING_CHECK1);
         }
-        #endregion
-        // === Direct Valve Control (강제 구동) ===
-        public bool IsVacuumValveOn()
+        public bool IsClampLiftUp()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation)
             {
                 return true;
             }
-            return IsOutputOn(InputStageConfig.IO.VAC_OUT);
+
+            return !IsClampLiftDown();
         }
-        public bool IsClampLiftUpValveOn()
+        public bool IsClampLiftDown()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation)
             {
                 return true;
             }
-            return IsOutputOn(InputStageConfig.IO.CLAMP_UP_OUT);
+
+            return this.ReadInput(InputStageConfig.IO.CLAMP_DOWN_SNS);
         }
-        public bool IsVacuumOn()
+        public bool IsClampFwd()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation)
             {
                 return true;
             }
-            return ReadInput(InputStageConfig.IO.VAC_OK_SNS);
+
+            // Clamp Forward 센서 (클램프 전진 상태) 확인
+            return this.ReadInput(InputStageConfig.IO.CLAMP_FWD_SNS);
+        }
+        public bool IsClampBwd()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return !IsClampFwd();
         }
         public bool IsPlateUp()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation)// || Config.IsDryRun)
             {
                 return true;
             }
-            return ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
+            return this.ReadInput(InputStageConfig.IO.EXPANDER_UP_SNS);
         }
         public bool IsPlateDown()
         {
-            if (Config.IsSimulation || Config.IsDryRun)
+            if (Config.IsSimulation)// || Config.IsDryRun)
             {
                 return true;
             }
-            return ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
+            return this.ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
+        }
+        #endregion
+
+        // === Direct Valve Control (강제 구동) ===
+        public bool IsVacuumValveOn()
+        {
+            if (Config.IsSimulation)// || Config.IsDryRun)
+            {
+                return true;
+            }
+            return this.IsOutputOn(InputStageConfig.IO.VAC_OUT);
         }
         #endregion
 
@@ -1348,35 +1266,30 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
-                if (!IsPlateUp() || bRtn || Config.IsDryRun)
+                SetClampPlate(true);
+                //Todo: wait 필요해 보인다.
+                if (!IsPlateUp())
                 {
-                    SetClampPlate(true);
-                    if (!IsPlateUp())
-                    {
-                        Log.Write(this, "Fail: PlateUp");
-                        return -1;
-                    }
-
-                    SetClampLift(true);
-                    if (!IsClampLiftUp())
-                    {
-                        Log.Write(this, "Fail: ClampLiftUp");
-                        return -1;
-                    }
-
-                    SetClampFB(true);
-                    if (!IsClampFwd())
-                    {
-                        Log.Write(this, "Fail: ClampForward");
-                        return -1;
-                    }
-                }
-                else
-                {
-                    Log.Write(UnitName, "LoadingComp", "Not IsPlateUp");
+                    Log.Write(this, "Fail: PlateUp");
                     return -1;
                 }
 
+                SetClampLift(true);
+                //Todo: wait 필요해 보인다.
+                if (!IsClampLiftUp())
+                {
+                    Log.Write(this, "Fail: ClampLiftUp");
+                    return -1;
+                }
+
+                SetClampFB(true);
+                //Todo: wait 필요해 보인다.
+                if (!IsClampFwd())
+                {
+                    Log.Write(this, "Fail: ClampForward");
+                    return -1;
+                }
+                
                 // 센터 Teaching 이동
                 ret = MoveToStageCenterPosition();
                 if (ret != 0)
@@ -1387,13 +1300,10 @@ namespace QMC.LCP_280.Process.Unit
 
                 Log.Write(UnitName, "LoadingComp", "Done");
 
-                return 0;
+                return ret;
             }
-            else
-            {
-                // 우선 대기? // 신호 이상?
-                return -1;
-            }
+
+            return -1;
         }
         public bool IsInterlockWithFeederAndDieTransferOk()
         {

@@ -145,66 +145,6 @@ namespace QMC.LCP_280.Process.Unit
 
 
         // Move with Interlock Check
-        private int EnsureMoveInterlockFor(InputFeederConfig.TeachingPositionName ctx)
-        {
-            int nRet = 0;
-            // Simulation / DryRun 우회
-            //if (this.Config != null && (this.Config.IsSimulation || this.Config.IsDryRun))
-            //    return 0;
-
-            // 공통(Ready/Stage/Barcode/Cassette): FeederUp, Stage 축 이동중 금지
-            if (!IsFeederUp())
-            {
-                FeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
-                return -1;
-            }
-
-            if(ctx == InputFeederConfig.TeachingPositionName.Ready)
-            {
-                CheckMoveInterLockReady();
-            }
-
-            if (ctx == InputFeederConfig.TeachingPositionName.Cassette)
-            {
-                if (InputCassetteLifter != null && InputCassetteLifter.IsAnyAxisMoving())
-                {
-                    FeederY.EmgStop();
-                    PostAlarm((int)AlarmKeys.Alarm_InputCassetteLifteInterlockFailed);
-                    return -1;
-                }
-
-                // Stage 로딩/언로딩 포지션(기존 로직 유지: 둘 다 true 요구)
-                if (InputStage != null)
-                {
-                    if (!InputStage.IsWaferLoadingPosition())
-                    {
-                        FeederY.EmgStop();
-                        PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
-                        return -1;
-                    }
-                    if (!InputStage.IsWaferUnloadingPosition())
-                    {
-                        FeederY.EmgStop();
-                        PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
-                        return -1;
-                    }
-                }
-            }
-            else if (ctx == InputFeederConfig.TeachingPositionName.Barcode)
-            {
-                // 바코드 위치: 카세트 리프터 이동 중 금지
-                if (InputCassetteLifter != null && InputCassetteLifter.IsAnyAxisMoving())
-                {
-                    FeederY.EmgStop();
-                    PostAlarm((int)AlarmKeys.Alarm_InputCassetteLifteInterlockFailed);
-                    return -1;
-                }
-            }
-
-            return 0;
-        }
-
         public int MovePositionReady(bool isFine = false)
         {
             bool bRet = false;
@@ -321,7 +261,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (!IsFeederUp())
+            if (IsFeederUp())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
@@ -367,7 +307,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (!IsFeederUp())
+            if (IsFeederUp())
             {
                 FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
@@ -426,12 +366,13 @@ namespace QMC.LCP_280.Process.Unit
         private bool IsMoveInterLockCassette()
         {
             bool bRet = false;
-            // Check Interlock.!!! 구문 넣을것.!!!
-            if (IsFeederUp() == false)
-            {
-                bRet = false;
-                return bRet;
-            }
+            
+            //Todo : 이거 ???
+            //if (IsFeederUp() != false)
+            //{
+            //    bRet = false;
+            //    return bRet;
+            //}
 
             if (InputStage.IsAnyAxisMoving())
             {
@@ -1037,6 +978,11 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            //todo : 시컨스 수정
+            //웨이퍼를 안잡고 있고...
+            //바코드 포지션에 있으면 바로 로딩하자.
+
+
             nRet = MoveToReady(isFine);
             if (nRet != 0)
             {
@@ -1229,6 +1175,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = ClampGripper();
             if (nRet != 0)
             {
+                FeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;
                 return nRet;
@@ -1412,6 +1359,7 @@ namespace QMC.LCP_280.Process.Unit
             this.SetLift(false);
             if (!IsFeederDown())
             {
+                FeederY.EmgStop();
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Failed");
                 PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                 nRet = -1;

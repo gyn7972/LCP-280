@@ -829,7 +829,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return System.Math.Abs(cur - placeZTarget) <= tol;
         }
-
+        #endregion
 
         #region Dual Axis (PickZ + PinZ) Simultaneous Move
         /// <summary>
@@ -1015,16 +1015,7 @@ namespace QMC.LCP_280.Process.Unit
             });
         }
         #endregion
-
-
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
-        #endregion
+       
 
         #region Teaching Helpers
         public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
@@ -1056,27 +1047,6 @@ namespace QMC.LCP_280.Process.Unit
        
         public void ApplyOffset(string name, double t, double pickZ, double placeZ)
             => Config.SetOffset(name, t, pickZ, placeZ);
-        #endregion
-
-        #region Low-Level IO (Name Based + DryRun)
-        public bool ReadInput(string name)
-        {
-            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
-        }
-        public bool WriteOutput(string name, bool on)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
-            return false;
-        }
         #endregion
 
         #region Arm Vacuum / Blow / Vent Control
@@ -1176,22 +1146,22 @@ namespace QMC.LCP_280.Process.Unit
             else _vent[nNo].Off();
             return true;
         }
-        public bool AirTankPressureOk() => ReadInput(InputDieTransferConfig.IO.AIR_TANK_PRESSURE);
-        public bool VacTankPressureOk() => ReadInput(InputDieTransferConfig.IO.VAC_TANK_PRESSURE);
+        public bool AirTankPressureOk() => this.ReadInput(InputDieTransferConfig.IO.AIR_TANK_PRESSURE);
+        public bool VacTankPressureOk() => this.ReadInput(InputDieTransferConfig.IO.VAC_TANK_PRESSURE);
         public bool ArmFlowOk(int armIndex)
         {
             if(Config.IsSimulation || Config.IsDryRun)
             {
-                Thread.Sleep(200);
+                Thread.Sleep(100);
                 return true;
             }
 
             switch (armIndex)
             {
-                case 0: return ReadInput(InputDieTransferConfig.IO.ARM1_FLOW);
-                case 1: return ReadInput(InputDieTransferConfig.IO.ARM2_FLOW);
-                case 2: return ReadInput(InputDieTransferConfig.IO.ARM3_FLOW);
-                case 3: return ReadInput(InputDieTransferConfig.IO.ARM4_FLOW);
+                case 0: return this.ReadInput(InputDieTransferConfig.IO.ARM1_FLOW);
+                case 1: return this.ReadInput(InputDieTransferConfig.IO.ARM2_FLOW);
+                case 2: return this.ReadInput(InputDieTransferConfig.IO.ARM3_FLOW);
+                case 3: return this.ReadInput(InputDieTransferConfig.IO.ARM4_FLOW);
             }
             return false;
         }
@@ -1315,8 +1285,9 @@ namespace QMC.LCP_280.Process.Unit
             nRet = PrepareNextDie();
             if (nRet != 0)
             {
-                Log.Write(UnitName, "[OnRunWork] PrepareNextDie failed");
-                return -1;
+                //Die 없음.
+                Log.Write(UnitName, "[OnRunWork] PrepareNextDie None.");
+                return 0;
             }
             // 아래 코드는 사실상 중복이지만 안전을 위해 남겨둠.
             if (_currentDie == null || _currentDie.Presence != Material.MaterialPresence.Exist)

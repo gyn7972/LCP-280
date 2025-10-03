@@ -281,7 +281,7 @@ namespace QMC.LCP_280.Process.Unit
                     extend: () => InputStage.SetClampLift(true),
                     retract: () => InputStage.SetClampLift(false),
                     // Up 센서가 없으면 밸브 상태 사용, Down은 센서 사용
-                    isExtended: () => InputStage.IsClampLiftUpValveOn(),
+                    isExtended: () => InputStage.IsClampLiftUp(),
                     isRetracted: () => InputStage.IsClampLiftDown(),
                     displayKey: "StageClampUpDn",
                     showSensors: false,
