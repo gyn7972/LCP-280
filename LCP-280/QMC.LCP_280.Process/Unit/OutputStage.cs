@@ -1062,7 +1062,6 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsCompletedWork()
         {
             bool bRet = false;
-
             try
             {
                 var wafer = GetMaterialWafer();
@@ -1081,10 +1080,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 bRet = false;
             }
-            return bRet;
-
-
-
             return bRet;
         }
         public void UpdateUI()

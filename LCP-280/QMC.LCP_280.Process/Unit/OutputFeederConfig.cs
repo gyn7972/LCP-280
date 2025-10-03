@@ -101,6 +101,10 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(false)]
         public double FeederToCassetteOverapLength { get; internal set; } = 30;
 
+        [Category("Common"), DisplayName("UnitDryRun")]
+        [DefaultValue(false)]
+        public bool dUnitDryRun { get; internal set; } = false;
+
 
         public OutputFeederConfig() : base("OutputFeederConfig") { }
 

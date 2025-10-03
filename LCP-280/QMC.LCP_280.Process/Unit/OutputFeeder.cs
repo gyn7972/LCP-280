@@ -455,6 +455,37 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        public bool IsPositionReady()
+        {
+            var tp = TeachingPositions[(int)OutputFeederConfig.TeachingPositionName.Ready];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+        public bool IsPositionStage()
+        {
+            var tp = TeachingPositions[(int)OutputFeederConfig.TeachingPositionName.Stage];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+        public bool IsPositionBarcode()
+        {
+            var tp = TeachingPositions[(int)OutputFeederConfig.TeachingPositionName.Barcode];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+        public bool IsPositionCassette()
+        {
+            var tp = TeachingPositions[(int)OutputFeederConfig.TeachingPositionName.Cassette];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+
+
+
 
         #region Teaching Helpers
         public void TeachCurrentPosition(string positionName, string description = null)
@@ -592,6 +623,12 @@ namespace QMC.LCP_280.Process.Unit
         public bool IsFeederUnclampValveOn() => this.IsOutputOn(OutputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
         #endregion
 
+        #region Sequence Signals
+        bool NeedUnloadFirst { get; set; } = false;
+
+        bool UnitDryRunTest { get; set; } = false;
+        #endregion
+
         #region Runtime
         public override int OnRun()
         {
@@ -630,6 +667,10 @@ namespace QMC.LCP_280.Process.Unit
             this.State = ProcessState.Work;
             return ret;
         }
+
+        // DryRun 반복 제어용 최소 상태(토글)
+        private bool _dryLoadedToStage = false;   // 마지막 사이클에서 Stage에 로딩했는지 여부
+        private int _dryLastSlotIndex = -1;       // 마지막으로 픽업한 Slot (언로딩 대상)
         protected override int OnRunWork()
         {
             int nRet = 0;
@@ -649,11 +690,10 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 0) Stage에 제품이 있으면 "언로딩 먼저"
-            bool needUnloadFirst = false;
             try
             {
-                needUnloadFirst = OutputStage.IsCompletedWork();
-                if (needUnloadFirst)
+                NeedUnloadFirst = OutputStage.IsCompletedWork();
+                if (NeedUnloadFirst)
                 {
 
                 }
@@ -661,10 +701,10 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Log.Write(ex);
-                needUnloadFirst = false;
+                NeedUnloadFirst = false;
             }
 
-            if (needUnloadFirst)
+            if (NeedUnloadFirst || _dryLoadedToStage)
             {
                 // 8) Feeder -> Stage: WaferUnloadingBeforeStage
                 nRet = BinUnloading(wafer);
@@ -675,6 +715,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                 }
             }
+            _dryLoadedToStage = false;
 
             // 1) Feeder -> Cassette: Scan
             if (this.OutputCassetteLifter.IsScanCompleted() == false)
@@ -756,6 +797,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 nRet = PreparetoOutputStage();
+
+                if(Config.dUnitDryRun)
+                {
+                    _dryLoadedToStage = true; // 다음엔 언로딩
+                    _dryLastSlotIndex = this.OutputCassetteLifter.GetCurrectSlotID();
+                }
+                
                 this.State = ProcessState.Complete;
             }
             else
@@ -905,18 +953,34 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            Log.Write(this, "WaferLoading Start");
+            Log.Write(this, "BinLoading Start");
             if (IsMoveInterLockCassette() == false)
             {
                 Log.Write(this, "Not IsMoveInterLockCassette");
                 return -1;
             }
 
-            nRet = MoveToReady(isFine);
-            if (nRet != 0)
+            if(NeedUnloadFirst)
             {
-                Log.Write(this, "MoveToReay Failed");
-                return nRet;
+                if (IsPositionBarcode() == false)
+                {
+                    Log.Write(this, "WaferLoading - MovePositionBarcode First");
+                    return -1;
+                }
+            }
+            else
+            {
+                nRet = UnClampGripper();
+                if (nRet != 0)
+                {
+                    Log.Write(this, "UnClampGripper Failed");
+                    return nRet;
+                }
+                if (IsStop)
+                {
+                    Log.Write(UnitName, "InputFeeder Stop");
+                    return 0;
+                }
             }
 
             nRet = UnClampGripper();
