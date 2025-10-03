@@ -677,16 +677,19 @@ namespace QMC.LCP_280.Process.Unit
 
             MaterialWafer wafer = this.OutputStage.GetMaterialWafer();
             // Stage 요청 인지 시 Busy로 표시(선택)
-            if (this.OutputStage.IsWorking() == true)
+            if(Config.dUnitDryRun == false && _dryLoadedToStage == false)
             {
-                if (wafer != null)
+                if (this.OutputStage.IsWorking() == true)
                 {
-                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                    if (wafer != null)
                     {
-                        nRet = PreparetoOutputStage();
+                        if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                        {
+                            nRet = PreparetoOutputStage();
+                        }
                     }
+                    return nRet;
                 }
-                return nRet;
             }
 
             // 0) Stage에 제품이 있으면 "언로딩 먼저"
@@ -713,6 +716,7 @@ namespace QMC.LCP_280.Process.Unit
                     AxisFeederY.EmgStop();
                     PostAlarm((int)AlarmKeys.Alarm_BinUnloadingFailed);
                     this.State = ProcessState.Error;
+                    return nRet;
                 }
             }
             _dryLoadedToStage = false;
