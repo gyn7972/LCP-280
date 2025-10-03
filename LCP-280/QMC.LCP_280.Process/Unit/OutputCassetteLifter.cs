@@ -252,16 +252,6 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region IO / Sensors
-        public bool ReadInput(string name)
-        {
-            var hi = Config.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
-        }
-
         public bool IsCassettePresent0()
         {
             if(Config.IsSimulation || Config.IsDryRun)
@@ -269,7 +259,7 @@ namespace QMC.LCP_280.Process.Unit
                 return true;
             }
 
-            return ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+            return this.ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK0);
         }
         public bool IsCassettePresent1()
         {
@@ -278,11 +268,11 @@ namespace QMC.LCP_280.Process.Unit
                 return true;
             }
 
-            return ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+            return this.ReadInput(OutputCassetteLifterConfig.IO.CASSETTE_CHECK1);
         }
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
-        public bool RingJut() => !ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);
+        public bool RingJut() => !this.ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);
         public bool IsBinProtrusionDetectionSensor()
         {
             bool sensorstate = RingJut();
@@ -320,7 +310,7 @@ namespace QMC.LCP_280.Process.Unit
                 return emit;
             }
 
-            return  ReadInput(OutputCassetteLifterConfig.IO.MAPPING_SENSOR);
+            return  this.ReadInput(OutputCassetteLifterConfig.IO.MAPPING_SENSOR);
         }
         #endregion
 

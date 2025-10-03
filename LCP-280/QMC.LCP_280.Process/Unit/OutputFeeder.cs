@@ -388,165 +388,6 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
-        #region Teaching Helpers
-        public void TeachCurrentPosition(string positionName, string description = null)
-        {
-            var axisPositions = new Dictionary<string, double>();
-            foreach (var axisPair in Axes)
-                axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
-            var tp = new TeachingPosition(positionName, axisPositions, description);
-            Config.SetTeachingPosition(tp);
-        }
-
-        public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
-        {
-            var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return -1;
-            int result = 0;
-            foreach (var axisKey in tp.AxisPositions.Keys)
-            {
-                if (Axes.TryGetValue(axisKey, out var axis))
-                {
-                    double pos = tp.AxisPositions[axisKey];
-                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
-                    if (r != 0) result = r;
-                }
-            }
-            return result;
-        }
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        #endregion
-
-        #region Low-Level IO (Read/Write/State)
-        public bool ReadInput(string name)
-        {
-            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
-        }
-        public bool WriteOutput(string name, bool on)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
-            return false;
-        }
-        public bool IsOutputOn(string name)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
-            return false;
-        }
-        #endregion
-
-        #region IO Domain Mapping
-        private void BindIoDomains()
-        {
-            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
-            if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederLift", out _feederLift))
-            {
-                Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederLift");
-            }
-
-            if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederClamp", out _cylClamp))
-            {
-                Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederClamp");
-            }
-        }
-        #endregion
-
-        // === Domain Control (표준 구동) ===
-        public bool SetLift(bool bUpDn)
-        {
-            if (_feederLift == null) return false;
-            if (bUpDn) return _feederLift.Extend();
-            else return _feederLift.Retract();
-        }
-        public bool SetClamp(bool bUpDn)
-        {
-            if (_cylClamp == null) return false;
-            if (bUpDn) return _cylClamp.Extend();
-            else return _cylClamp.Retract();
-        }
-
-        #region Status Helpers
-        public bool IsFeederUp()
-        {
-            if(Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-            return ReadInput(OutputFeederConfig.IO.FEEDER_UP);
-        }
-        
-        public bool IsFeederDown()
-        {
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-            return ReadInput(OutputFeederConfig.IO.FEEDER_DOWN);
-        }
-        
-        public bool IsClamped()
-        {
-            bool bRtn = false;
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                bRtn = true;
-                return true;
-            }
-            bRtn = !ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
-            return bRtn;
-        }
-
-        public bool IsUnClamped()
-        {
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-            return ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
-        }
-        public bool IsRingPresent()
-        {
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-            return ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
-        }
-        public bool IsOverload()
-        {
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                return true;
-            }
-            return ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
-        }
-        #endregion
-
-        /// ////////////////////////////////////////////////////////////////////////////////////////
-        #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public bool IsFeederUpValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UP_VALVE);
-        public bool IsFeederDownValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_DOWN_VALVE);
-        public bool IsFeederClampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_CLAMP_VALVE);
-        public bool IsFeederUnclampValveOn() => IsOutputOn(OutputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
-        #endregion
         public bool IsFeederZSafetyPosition(bool treatMissingAsSafe = true)
         {
             if (_feederLift == null)
@@ -631,6 +472,141 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
+        #region Teaching Helpers
+        public void TeachCurrentPosition(string positionName, string description = null)
+        {
+            var axisPositions = new Dictionary<string, double>();
+            foreach (var axisPair in Axes)
+                axisPositions[axisPair.Key] = axisPair.Value.GetPosition();
+            var tp = new TeachingPosition(positionName, axisPositions, description);
+            Config.SetTeachingPosition(tp);
+        }
+
+        public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
+        {
+            var tp = Config.GetTeachingPosition(positionName);
+            if (tp == null) return -1;
+            int result = 0;
+            foreach (var axisKey in tp.AxisPositions.Keys)
+            {
+                if (Axes.TryGetValue(axisKey, out var axis))
+                {
+                    double pos = tp.AxisPositions[axisKey];
+                    int r = axis.MoveAbs(pos, vel, acc, dec, jerk);
+                    if (r != 0) result = r;
+                }
+            }
+            return result;
+        }
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        #endregion
+
+        #region IO Domain Mapping
+        private void BindIoDomains()
+        {
+            var eq = Equipment.Instance; var unit = eq?.UnitIO; if (unit == null) return;
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederLift", out _feederLift))
+            {
+                Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederLift");
+            }
+
+            if (!IoAutoBindings.Cylinders.TryGetValue("OutFeederClamp", out _cylClamp))
+            {
+                Log.Write("OutputFeeder", "BindIoDomains", "Cylinder not found: OutFeederClamp");
+            }
+        }
+        #endregion
+
+        // === Domain Control (표준 구동) ===
+        public bool SetLift(bool bUpDn)
+        {
+            if (_feederLift == null) 
+                return false;
+            if (bUpDn) 
+                return _feederLift.Extend();
+            else 
+                return _feederLift.Retract();
+        }
+        public bool SetClamp(bool bUpDn)
+        {
+            if (_cylClamp == null) 
+                return false;
+            if (bUpDn) 
+                return _cylClamp.Extend();
+            else 
+                return _cylClamp.Retract();
+        }
+
+        #region Status Helpers
+        public bool IsFeederUp()
+        {
+            if(Config.IsSimulation)
+            {
+                return true;
+            }
+            return this.ReadInput(OutputFeederConfig.IO.FEEDER_UP);
+        }
+        
+        public bool IsFeederDown()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+            return this.ReadInput(OutputFeederConfig.IO.FEEDER_DOWN);
+        }
+        
+        public bool IsClamped()
+        {
+            bool bRtn = false;
+            if (Config.IsSimulation)
+            {
+                bRtn = true;
+                return true;
+            }
+            bRtn = !this.ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
+            return bRtn;
+        }
+
+        public bool IsUnClamped()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+            return this.ReadInput(OutputFeederConfig.IO.FEEDER_UNCLAMP);
+        }
+        public bool IsRingPresent()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return this.ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
+        }
+        public bool IsOverload()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return this.ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
+        }
+        #endregion
+
+        /// ////////////////////////////////////////////////////////////////////////////////////////
+        #region === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
+        public bool IsFeederUpValveOn() => this.IsOutputOn(OutputFeederConfig.IO.FEEDER_UP_VALVE);
+        public bool IsFeederDownValveOn() => this.IsOutputOn(OutputFeederConfig.IO.FEEDER_DOWN_VALVE);
+        public bool IsFeederClampValveOn() => this.IsOutputOn(OutputFeederConfig.IO.FEEDER_CLAMP_VALVE);
+        public bool IsFeederUnclampValveOn() => this.IsOutputOn(OutputFeederConfig.IO.FEEDER_UNCLAMP_VALVE);
+        #endregion
 
         #region Runtime
         public override int OnRun()
@@ -675,7 +651,6 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             MaterialWafer wafer = this.OutputStage.GetMaterialWafer();
-
             // Stage 요청 인지 시 Busy로 표시(선택)
             if (this.OutputStage.IsWorking() == true)
             {

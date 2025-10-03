@@ -6,6 +6,7 @@ using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
+using QMC.Common.VisionPart;
 using QMC.LCP_280.Process.Component;
 using System; // added for Obsolete attribute
 using System.Collections.Generic;
@@ -122,7 +123,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-            
+
             BindAxes();
             BindIoDomains();
             BindCamera();
@@ -172,7 +173,7 @@ namespace QMC.LCP_280.Process.Unit
         //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
         //    return 0.0;
         //}
-        
+
         //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         //public bool InPosTeaching(TeachingPosition tp)
         //{
@@ -185,36 +186,6 @@ namespace QMC.LCP_280.Process.Unit
         //    var (t, pz, plz) = Config.GetPositionWithOffset(name);
         //    return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
         //}
-        #endregion
-
-        #region IO Low-Level
-        public bool ReadInput(string name)
-        {
-            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
-        }
-        public bool WriteOutput(string name, bool on)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
-            return false;
-        }
-        public bool IsOutputOn(string name)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
-            return false;
-        }
         #endregion
 
         #region IO Domain Mapping (Reorganized)
@@ -273,11 +244,26 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // === Domain Control (표준 구동) ===
-        public bool SetVacuum(bool on)
+        public bool SetVacuum(bool on, bool bCheckSignal = false)
         {
-            if (_vacuum == null) return false;
-            if (on) _vacuum.On();
-            else _vacuum.Off();
+            if (_vacuum == null)
+                return false;
+
+            if (!bCheckSignal)
+            {
+                if (on)
+                    _vacuum.On();
+                else
+                    _vacuum.Off();
+            }
+            else
+            {
+                if (on)
+                    _vacuum.OnWaitOk();
+                else
+                    _vacuum.OffWaitOk();
+            }
+
             return true;
         }
 
@@ -344,20 +330,100 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // --- Existing High-Level APIs (인터락 포함) ---
-        public bool IsVacuum() => (_vacuum?.IsOk() ?? false) || ReadInput(OutputStageConfig.IO.VACUUM_CHECK);
-        public bool IsPlateUp() => ReadInput(OutputStageConfig.IO.PLATE_UP);
-        public bool IsPlateDown() => ReadInput(OutputStageConfig.IO.PLATE_DOWN);
-        public bool IsClampLiftUp() => !IsClampLiftDown();
-        public bool IsClampLiftDown() => ReadInput(OutputStageConfig.IO.CLAMP_DOWN_CHECK);
-        public bool IsClampFwd() => ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
-        public bool IsClampBwd() => !IsClampFwd();
-        public bool Ring0() => ReadInput(OutputStageConfig.IO.RING_CHECK0);
-        public bool Ring1() => ReadInput(OutputStageConfig.IO.RING_CHECK1);
-        
+        public bool IsVacuumOn()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.VACUUM_CHECK);
+        }
+        public bool Ring0()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.RING_CHECK0);
+        }
+
+        public bool Ring1()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.RING_CHECK1);
+        }
+        public bool IsClampLiftUp()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return !IsClampLiftDown(); 
+        }
+        public bool IsClampLiftDown()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.CLAMP_DOWN_CHECK);
+        }
+        public bool IsClampFwd()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
+        }
+        public bool IsClampBwd()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return !IsClampFwd();
+        }
+
+        public bool IsPlateUp()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.PLATE_UP);
+        }
+        public bool IsPlateDown()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.PLATE_DOWN);
+        }
 
         // === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
-        public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
+        public bool IsVacuumValveOn()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.IsOutputOn(OutputStageConfig.IO.VACUUM);
+        }
         #endregion
 
         // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
@@ -740,6 +806,12 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
         #endregion
 
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            //this.SequencePlayers.Add(AlignT);
+        }
+
         #region Seq 단위 동작 함수
         public int LoadingBinPrepare()
         {
@@ -896,7 +968,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return ret;
         }
-
         public int PrepareOutputStageUnloadingBin()
         {
             int nRtn = 0;
@@ -939,7 +1010,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
-
         public int UnloadingBinComplete()
         {
             int nRtn = 0;
@@ -955,7 +1025,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingComp", "Done");
             return nRtn;
         }
-
         public bool IsRingPresent()
         {
             bool bRtn = true;
@@ -971,7 +1040,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
-
         public bool IsBinLoadingPosition()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.Loading];
@@ -991,8 +1059,6 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
-
-
         public bool IsCompletedWork()
         {
             bool bRet = false;
@@ -1027,7 +1093,6 @@ namespace QMC.LCP_280.Process.Unit
             MaterialWafer materialWafer = GetMaterialWafer();
             EventUpdateUIWafer?.BeginInvoke(materialWafer, null, null);
         }
-
         internal void PlaceDie(MaterialDie die)
         {
             if(_currentDie != null)
@@ -1046,8 +1111,6 @@ namespace QMC.LCP_280.Process.Unit
                 _currentDie = null;
             }
         }
-
-
         #endregion
     }
 }

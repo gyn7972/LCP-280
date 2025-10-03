@@ -973,68 +973,9 @@ namespace QMC.LCP_280.Process.Unit
             base.OnStop();
             return ret;
         }
-        protected override int OnRunReady()
-        {
-            int ret = 0;
-
-            // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 Work 단계 가능)
-            if (IsRingPresent())
-            {
-                //Plate Up → 
-                SetClampPlate(true);
-                if (!IsPlateUp())
-                {
-                    Log.Write(this, "Fail: PlateUp");
-                    return -1;
-                }
-
-                int rc = LoadingWaferComplete();
-                if (rc != 0 && rc != 0)
-                    return rc; // rc !=0 이면 오류. (준비단계는 OK=0 외 다른 코드 없음)
-
-                State = ProcessState.Work;
-                Log.Write(this, "Wafer already present -> Skip prepare");
-                return 0;
-            }
-            else
-            {
-                IsStatus_RequestWafer = true;
-                ret = LoadingWaferPrepare();
-                if (ret != 0)
-                {
-                    State = ProcessState.Error;
-                    Log.Write(this, "LoadingWaferPrepare Failed");
-                    return -1;
-                }
-
-                if (InputFeeder.IsWaferLoadDone)
-                {
-                    ret = LoadingWaferComplete();
-                    if (ret != 0)
-                    {
-                        State = ProcessState.Error;
-                        Log.Write(this, "LoadingWaferComplete Failed");
-                        return -1;
-                    }
-                }
-            }
-
-            return 0;
-        }
-        protected override int OnRunWork()
-        {
-            int nRtn = 0;
-
-            return nRtn;
-        }
-
-        protected override int OnRunComplete()
-        {
-            int nRtn = 0;
-
-            State = ProcessState.None;
-            return 0;
-        }
+        protected override int OnRunReady() { return 0; }
+        protected override int OnRunWork() { return 0; }
+        protected override int OnRunComplete() { return 0; }
         #endregion
 
         protected override void OnMakeSequence()
@@ -1502,7 +1443,7 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_LastAppliedTAngle = 0;
             _lastCenterAlignTp = null;
 
-            if(this.Config.IsSimulation)
+            if(this.Config.IsSimulation || this.Config.IsDryRun)
             {
                 MaterialWafer wafer = GetMaterialWafer();
                 if (wafer is null)
@@ -1528,7 +1469,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || this.Config.IsDryRun)
             {
                 IsStatus_LastAppliedTAngle = 0;
                 IsStatus_TAlignDone = true;
@@ -1604,7 +1545,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public int AlignXYApply(bool bFineSpeed = false)
         {
-            if(this.Config.IsSimulation)
+            if(this.Config.IsSimulation || this.Config.IsDryRun)
             {
                 _lastCenterAlignTp = new TeachingPosition();
 
@@ -1753,7 +1694,6 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = PerformChipMapping;
-
             }
 
             // 기본 인터락
@@ -1782,7 +1722,7 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    if(this.Config.IsSimulation)
+                    if(this.Config.IsSimulation || this.Config.IsDryRun)
                     {
                         //시뮬레이션
                         Random rnd = new Random();
@@ -1856,7 +1796,8 @@ namespace QMC.LCP_280.Process.Unit
                 materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
                 var list = materialWafer?.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
 
-                if (list == null) return;
+                if (list == null)
+                    return;
 
                 foreach (var c in list)
                 {
@@ -1889,7 +1830,7 @@ namespace QMC.LCP_280.Process.Unit
                 try
                 {
 
-                    if (Config.IsSimulation == false)
+                    if (Config.IsSimulation == false && this.Config.IsDryRun == false)
                     {
                         if (PmRunner.IsRecipeLoaded == false)
                         {
@@ -1905,7 +1846,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 double dRoiWidth = 0.0;// Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
                 double dRoiHeight = 0.0;//Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);
-                if (Config.IsSimulation == false)
+                if (Config.IsSimulation == false && this.Config.IsDryRun == false)
                 {
                     dRoiWidth = Math.Abs((PmRunner._Roi.InspectEnd.X - PmRunner._Roi.InspectStart.X) * StageCamera.CameraConfig.Scale.X);
                     dRoiHeight = Math.Abs((PmRunner._Roi.InspectEnd.Y - PmRunner._Roi.InspectStart.Y) * StageCamera.CameraConfig.Scale.Y);

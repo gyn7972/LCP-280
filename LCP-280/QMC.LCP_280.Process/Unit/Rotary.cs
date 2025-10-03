@@ -1409,7 +1409,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // 여기 블록(Load 투입 대기 + Unloader 배출 확인)이 확실히 완료된 다음에만 Rotate
             bool needLoadWait = (RequestInputDieTrDie == true) && useSocket;
-            nRet = WaitPostActionSettled(needLoadWait, 60000 * 10);
+            nRet = WaitPostActionSettled(needLoadWait, 60000 * 1000);
             if (nRet != 0)
             {
                 return -1;

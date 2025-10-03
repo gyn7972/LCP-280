@@ -580,8 +580,22 @@ namespace QMC.LCP_280.Process.Unit
             }
             return this.ReadInput(InputFeederConfig.IO.FEEDER_UNCLAMP);
         }
-        public bool IsRingPresent() => this.ReadInput(InputFeederConfig.IO.FEEDER_RING_CHECK);
-        public bool IsOverload() => this.ReadInput(InputFeederConfig.IO.FEEDER_OVERLOAD);
+        public bool IsRingPresent()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return this.ReadInput(OutputFeederConfig.IO.FEEDER_RING_CHECK);
+        }
+        public bool IsOverload()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+            return this.ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
+        }
         #endregion
 
         #region === Direct Valve Control ===
