@@ -977,10 +977,14 @@ namespace QMC.LCP_280.Process.Unit
 
             if(NeedUnloadFirst)
             {
+                Thread.Sleep(500);
                 if (IsPositionBarcode() == false)
                 {
-                    Log.Write(this, "WaferLoading - MovePositionBarcode First");
-                    return -1;
+                    if (IsPositionBarcode() == false)
+                    {
+                        Log.Write(this, "WaferLoading - MovePositionBarcode First");
+                        return -1;
+                    }
                 }
             }
             else

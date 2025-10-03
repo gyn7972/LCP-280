@@ -1486,7 +1486,7 @@ namespace QMC.LCP_280.Process
                 MaxVelocity = 10,
                 RunAcc = 20,
                 RunDec = 20,
-                InposTolerance = 0.002,
+                InposTolerance = 0.010,
                 ProfileMode = ProfileMode.SCurve,
                 AccJerkPercent = 50,
                 DecJerkPercent = 50

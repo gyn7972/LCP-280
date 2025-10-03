@@ -563,14 +563,14 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!OutputFeeder.IsFeederZSafetyPosition())
-                {
-                    this.AxisX.EmgStop();
-                    this.AxisY.EmgStop();
-                    this.AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
-                    return -1;
-                }
+                //if (!OutputFeeder.IsFeederZSafetyPosition())
+                //{
+                //    this.AxisX.EmgStop();
+                //    this.AxisY.EmgStop();
+                //    this.AxisT.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
+                //    return -1;
+                //}
 
                 //if (!OutputFeeder.IsFeederYSafetyPosition())
                 //{

@@ -84,8 +84,8 @@ namespace QMC.Common.Motions
         // ===== Profile =====
         // ===== 공통 운전 보정/품질 =====
         [Category("Operation"), DisplayName("Inposition Tolerance (mm)")]
-        [DefaultValue(0.002)]
-        public double InposTolerance { get; set; } = 0.002;
+        [DefaultValue(0.010)]
+        public double InposTolerance { get; set; } = 0.010;
 
         [Category("Operation"), DisplayName("Logical Scale Factor")]
         [DefaultValue(1.0)]

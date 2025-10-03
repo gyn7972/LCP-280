@@ -760,8 +760,8 @@ namespace QMC.Common.Unit
         //Position 확인
         // BaseUnit 클래스 내부에 추가: Teaching 전용 판정 파라미터(필요 시 파생 클래스에서 override 가능)
         protected virtual double TeachingInposToleranceMultiplier => 2.5; // InposTolerance를 몇 배로 완화할지
-        protected virtual double TeachingInposEpsilon => 0.001;//1e-6;            // 부동소수 잡음 보정
-        protected virtual int TeachingInposStableSampleCount => 3;         // 안정 샘플 횟수
+        protected virtual double TeachingInposEpsilon => 0.010;//1e-6;            // 부동소수 잡음 보정
+        protected virtual int TeachingInposStableSampleCount => 5;         // 안정 샘플 횟수
         protected virtual int TeachingInposSampleDelayMs => 8;             // 샘플 간 간격(ms)
                                                                            // BaseUnit 클래스 내부에 추가: Teaching 전용 InPosition 판정
         protected bool InPosTeachingAxis(MotionAxis ax, double target)
