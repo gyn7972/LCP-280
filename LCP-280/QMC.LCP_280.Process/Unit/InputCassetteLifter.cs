@@ -699,7 +699,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     foreach (var v in GetMaterialCassette().Slots)
                     {
-                        if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
+                        if (v.Presence == Material.MaterialPresence.NotExist 
+                         || v.Presence == Material.MaterialPresence.Unknown)
                         {
                             continue;
                         }

@@ -451,10 +451,6 @@ namespace QMC.LCP_280.Process.Unit
             return InPosTeaching(tp);
         }
 
-
-
-
-
         #region Teaching Helpers
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
         {
@@ -474,39 +470,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        
         #region Low-Level IO (Read/Write by Name)
-        //public bool ReadInput(string name)
-        //{
-        //    var hi = Config.HardInputs
-        //    .FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-        //    if (hi == null) return false;
-        //    var eq = Equipment.Instance;
-        //    var dio = eq?.DioScan;
-        //    if (dio == null)
-        //    return false;
-        //    foreach (var m in eq.UnitIO.Modules)
-        //        if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-        //    return false;
-        //}
-        //public bool WriteOutput(string name, bool on)
-        //{
-        //    var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-        //    if (ho == null) return false;
-        //    var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-        //    foreach (var m in eq.UnitIO.Modules)
-        //        if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
-        //    return false;
-        //}
-        //public bool IsOutputOn(string name)
-        //{
-        //    var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-        //    if (ho == null) return false;
-        //    var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-        //    foreach (var m in eq.UnitIO.Modules)
-        //        if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
-        //    return false;
-        //}
         #endregion
 
         #region IO Domain Mapping

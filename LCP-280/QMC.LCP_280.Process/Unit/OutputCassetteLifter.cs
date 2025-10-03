@@ -314,6 +314,28 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        public MaterialCassette GetMaterialCassette()
+        {
+            MaterialCassette cd = GetMaterial() as MaterialCassette;
+            if (cd == null)
+            {
+                cd = new MaterialCassette();
+                SetMaterial((Material)cd);
+            }
+            if (IsCassettePresentAll())
+            {
+                cd.Presence = Material.MaterialPresence.Exist;
+                cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
+                cd.ArrivedTime = DateTime.Now;
+            }
+            else
+            {
+                cd.Presence = Material.MaterialPresence.NotExist;
+                cd.ProcessSatate = Material.MaterialProcessSatate.Unknown;
+            }
+            return cd;
+        }
+
         public int MoveToScanStartPosition(bool isFine = false)
         {
             Task<int> task = MoveToScanStartPositionAsync();
@@ -398,32 +420,16 @@ namespace QMC.LCP_280.Process.Unit
             return GetTP(pos.ToString(), axis);
         }
 
-        public MaterialCassette GetMaterialCassette()
+        public bool IsBinReadyForLoading()
         {
-            MaterialCassette cd = GetMaterial() as MaterialCassette;
-            if (cd == null)
-            {
-                cd = new MaterialCassette();
-                SetMaterial((Material)cd);
-            }
-            if (IsCassettePresentAll())
-            {
-                cd.Presence = Material.MaterialPresence.Exist;
-                cd.Name = "Cassette"; // TODO: 실제 캐리어 명칭
-                cd.ArrivedTime = DateTime.Now;
-            }
-            else
-            {
-                cd.Presence = Material.MaterialPresence.NotExist;
-                cd.ProcessSatate = Material.MaterialProcessSatate.Unknown;
-            }
-            return cd;
+            return true;// this.IsBinReadyForloading;
         }
 
 
         #region seq signals
         public bool IsBinReadyForUnloding { get; set; } = false;
         public bool RequestStageLoading { get; set; } = false;
+
         #endregion
 
         #region Lifecycle
@@ -448,6 +454,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return ret;
         }
+
         public override int OnStop()
         {
             int ret = 0;
@@ -456,26 +463,57 @@ namespace QMC.LCP_280.Process.Unit
             base.OnStop();
             return ret;
         }
-
-        protected override int OnRunReady()
-        {
-            int ret = 0;
-            return ret;
-        }
-
-        protected override int OnRunWork()
-        {
-            int ret = 0;
-            return ret;
-        }
-
-        protected override int OnRunComplete()
-        {
-            int ret = 0;
-            return ret;
-        }
         #endregion
 
+        public int GetCurrectSlotID()
+        {
+            return _currentSlotID;
+        }
+        public bool IsScanCompleted()
+        {
+            bool bRet = false;
+            MaterialCassette material = GetMaterialCassette();
+            if (material != null)
+            {
+                if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                {
+                    foreach (var v in material.Slots)
+                    {
+                        if (v.Presence == Material.MaterialPresence.Exist)
+                        {
+                            bRet = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return bRet;
+        }
+        public bool IsHaveMoreProcessWafer()
+        {
+            bool bRet = false;
+            MaterialCassette material = GetMaterialCassette();
+            if (material != null)
+            {
+                if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
+                {
+                    foreach (var v in material.Slots)
+                    {
+                        if (v.Presence == Material.MaterialPresence.Exist)
+                        {
+                            if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
+                            {
+                                bRet = true;
+                                break;
+                            }
+                        }
+
+                    }
+                }
+            }
+            return bRet;
+        }
+        
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
@@ -483,24 +521,6 @@ namespace QMC.LCP_280.Process.Unit
             //InputCassetteLifter
             this.SequencePlayers.Add(ScanBin);
             this.SequencePlayers.Add(MoveToNextSlot);
-
-            //InputStage
-            this.SequencePlayers.Add(BinLoadingBeforeStage);
-
-            //InputFeeder
-            this.SequencePlayers.Add(BinLoadingFeeder);
-
-            //InputStage
-            this.SequencePlayers.Add(BinLoadingAfterStage);
-
-            //InputStage
-            this.SequencePlayers.Add(BinUnloadingBeforeStage);
-
-            //InputFeeder
-            this.SequencePlayers.Add(BinUnloadingFeeder);
-
-            //InputStage
-            this.SequencePlayers.Add(BinUnloadingAfterStage);
         }
 
         #region Seq 단위 동작 함수
@@ -642,7 +662,6 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = MoveToNextSlot;
-
             }
 
             try
@@ -652,7 +671,8 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     foreach (var v in GetMaterialCassette().Slots)
                     {
-                        if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
+                        if (v.Presence == Material.MaterialPresence.NotExist 
+                         || v.Presence == Material.MaterialPresence.Unknown)
                         {
                             continue;
                         }
@@ -683,7 +703,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRtn;
         }
-
         public int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -745,23 +764,6 @@ namespace QMC.LCP_280.Process.Unit
             this._currentSlotID = slotIndex;
             return nRet;
 
-
-            //double dPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.BinLifterZ);
-            //dPos += base.Config.SlotPitch * slotIndex;
-            //MoveAxisOnce(AxisBinLiftZ, dPos);
-            //while (!InPos(AxisBinLiftZ, dPos))
-            //{
-            //    if (IsBinProtrusionDetectionSensor())
-            //    {
-            //        AxisBinLiftZ.EmgStop();
-            //        Log.Write(this, "Wafer Protrusion Detected");
-            //        PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
-            //        return -1;
-            //    }
-            //    Thread.Sleep(0);
-            //}
-            //this.IsBinReadyForUnloding = true;
-            //return 0;
         }
         public Task<int> MoveToSlotAsync(int slotIndex)
         {
@@ -771,172 +773,6 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             });
         }
-
-        public bool IsScanCompleted()
-        {
-            bool bRet = false;
-            MaterialCassette material = GetMaterialCassette();
-            if (material != null)
-            {
-                if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
-                {
-                    foreach (var v in material.Slots)
-                    {
-                        if (v.Presence == Material.MaterialPresence.Exist)
-                        {
-                            bRet = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            return bRet;
-        }
-        public bool IsHaveMoreProcessWafer()
-        {
-            bool bRet = false;
-            MaterialCassette material = GetMaterialCassette();
-            if (material != null)
-            {
-                if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
-                {
-                    foreach (var v in material.Slots)
-                    {
-                        if (v.Presence == Material.MaterialPresence.Exist)
-                        {
-                            if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
-                            {
-                                bRet = true;
-                                break;
-                            }
-                        }
-
-                    }
-                }
-            }
-            return bRet;
-        }
-
-
-
-
-
-        private int BinLoadingBeforeStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = BinLoadingBeforeStage;
-
-            }
-            MaterialCassette material = GetMaterialCassette();
-
-            nRtn = OutputStage.LoadingBinPrepare();
-            if (nRtn != 0)
-            {
-                Log.Write(this, "OutputStage LoadingBinPrepare Failed");
-                return -1;
-            }
-
-            return nRtn;
-        }
-
-        public int BinLoadingFeeder(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = BinLoadingFeeder;
-
-            }
-
-            nRet = OutputFeeder.BinLoading();
-            if (nRet != 0)
-            {
-                Log.Write(this, "InputFeeder WaferLoading Failed");
-                return -1;
-            }
-
-            return nRet;
-        }
-
-
-        private int BinLoadingAfterStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = BinLoadingAfterStage;
-
-            }
-            MaterialCassette material = GetMaterialCassette();
-
-            nRtn = OutputStage.LoadingBinComplete();
-            if (nRtn != 0)
-            {
-                Log.Write(this, "OutputStage LoadingBinComplete Failed");
-            }
-
-            return nRtn;
-        }
-
-        private int BinUnloadingBeforeStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = BinUnloadingBeforeStage;
-
-            }
-            MaterialCassette material = GetMaterialCassette();
-
-
-            return nRtn;
-        }
-
-        public int BinUnloadingFeeder(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = BinUnloadingFeeder;
-
-            }
-
-            //nRet = OutputFeeder.BinUnloading();
-            //if (nRet != 0)
-            //{
-            //    Log.Write(this, "InputFeeder WaferUnloading Failed");
-            //    return -1;
-            //}
-
-            return nRet;
-        }
-
-        private int BinUnloadingAfterStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = BinUnloadingAfterStage;
-
-            }
-            MaterialCassette material = GetMaterialCassette();
-
-
-            return nRtn;
-        }
-
-        public bool IsBinReadyForLoading()
-        {
-            return true;// this.IsBinReadyForloading;
-        }
-
-        public int GetCurrectSlotID()
-        {
-            return _currentSlotID;
-        }
-
         #endregion
     }
 }
