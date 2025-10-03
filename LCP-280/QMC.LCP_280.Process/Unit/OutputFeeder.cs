@@ -374,9 +374,15 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool IsFeederZSafetyPosition(bool treatMissingAsSafe = true)
         {
-            if (_feederLift == null)
-                return treatMissingAsSafe;
+            bool bRtn = false;
 
+            if (_feederLift == null)
+                return bRtn;
+
+            if (this.Config.IsSimulation)
+            {
+                return true;
+            }
             if (IsFeederUp())
                 return true;
 
@@ -384,77 +390,21 @@ namespace QMC.LCP_280.Process.Unit
                 return false;
 
             // 전이 상태(Up/Down 모두 OFF) → 안전 아님으로 판단
-            return false;
+            return bRtn;
         }
-        public bool IsFeederYSafetyPosition(double fallbackTolerance = 0.01,
-                                            bool useAxisInposTolerance = true,
-                                            bool treatMissingAsSafe = true,
-                                            bool allowPositiveBeyond = true,
-                                            IEnumerable<string> customCandidates = null)
+        public bool IsFeederYSafetyPosition()
         {
+            bool bRtn = false;
             if (AxisFeederY == null)
-                return treatMissingAsSafe;
+                return bRtn;
 
             var cfg = Config;
             if (cfg == null)
-                return treatMissingAsSafe;
+                return bRtn;
 
-            // 기본 후보 목록
-            var defaultCandidates = new[] { "SafetyPos", "Safety", "Safe", "Ready" };
-            var candidates = (customCandidates == null ? defaultCandidates : customCandidates)
-                             .Where(s => !string.IsNullOrWhiteSpace(s));
-
-            string axisKey = AxisNames.BinFeederY;
-            string selectedTpName = null;
-            TeachingPosition selectedTp = null;
-
-            foreach (var name in candidates)
-            {
-                var tp = cfg.GetTeachingPosition(name);
-                if (tp == null) continue;
-
-                // Teaching 에 해당 축 좌표가 실재 포함되는지 확인
-                if (tp.AxisPositions != null &&
-                    tp.AxisPositions.Keys.Any(k =>
-                        string.Equals(k, axisKey, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(k, AxisFeederY.Name, StringComparison.OrdinalIgnoreCase)))
-                {
-                    selectedTpName = name;
-                    selectedTp = tp;
-                    break;
-                }
-            }
-
-            if (selectedTp == null)
-                return treatMissingAsSafe;
-
-            // 목표 좌표 가져오기 (AxisPositions 사전에서 직접 조회)
-            double target;
-            if (!selectedTp.AxisPositions.TryGetValue(axisKey, out target))
-            {
-                // Axis 이름으로 재시도
-                if (!selectedTp.AxisPositions.TryGetValue(AxisFeederY.Name, out target))
-                    return treatMissingAsSafe; // 좌표가 없으면 안전 판단 불가 → 기본 정책대로
-            }
-
-            double cur = AxisFeederY.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisFeederY.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            if (allowPositiveBeyond)
-            {
-                // 목표 이상(+방향) 허용
-                if (cur >= target - tol) return true;
-                return false;
-            }
-            else
-            {
-                // 목표 근처만 허용
-                return System.Math.Abs(cur - target) <= tol;
-            }
+            bRtn = IsPositionReady();
+            return bRtn;
         }
-
         public bool IsPositionReady()
         {
             var tp = TeachingPositions[(int)OutputFeederConfig.TeachingPositionName.Ready];
@@ -1456,10 +1406,14 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = true;
 
             double dYSafePosOffset = Config.FeederToCassetteOverapLength;
-            if (IsClamped())
+            if (Config.IsSimulation == false)
             {
-                dYSafePosOffset += Config.WaferRingframeSize;
+                if (IsClamped())
+                {
+                    dYSafePosOffset += Config.WaferRingframeSize;
+                }
             }
+               
             var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Cassette];
             double dInterlockPos = tp.GetAxisPosition(this.AxisFeederY.Name);
 

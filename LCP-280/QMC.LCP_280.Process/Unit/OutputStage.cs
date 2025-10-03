@@ -11,6 +11,7 @@ using QMC.LCP_280.Process.Component;
 using System; // added for Obsolete attribute
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -562,27 +563,23 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if(Config.IsSimulation && Config.IsDryRun)
-                {
-                    if (!OutputFeeder.IsFeederZSafetyPosition())
-                    {
-                        this.AxisX.EmgStop();
-                        this.AxisY.EmgStop();
-                        this.AxisT.EmgStop();
-                        PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
-                        return -1;
-                    }
-
-                }
-
-                if (!OutputFeeder.IsFeederYSafetyPosition())
+                if (!OutputFeeder.IsFeederZSafetyPosition())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
                     this.AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
+                    PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
                     return -1;
                 }
+
+                //if (!OutputFeeder.IsFeederYSafetyPosition())
+                //{
+                //    this.AxisX.EmgStop();
+                //    this.AxisY.EmgStop();
+                //    this.AxisT.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
+                //    return -1;
+                //}
 
                 Thread.Sleep(0);
             }
@@ -676,14 +673,14 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!OutputFeeder.IsFeederYSafetyPosition())
-                {
-                    this.AxisX.EmgStop();
-                    this.AxisY.EmgStop();
-                    this.AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
-                    return -1;
-                }
+                //if (!OutputFeeder.IsFeederYSafetyPosition())
+                //{
+                //    this.AxisX.EmgStop();
+                //    this.AxisY.EmgStop();
+                //    this.AxisT.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
+                //    return -1;
+                //}
                 Thread.Sleep(0);
             }
             return task.Result;
@@ -837,6 +834,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(this, "Fail: Move Load");
                 return -1;
+            }
+            if(this.IsStop)
+            {
+                return 0;
             }
 
             bool bSimulation = Config.IsSimulation;

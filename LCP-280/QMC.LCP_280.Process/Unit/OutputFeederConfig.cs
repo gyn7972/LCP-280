@@ -96,14 +96,14 @@ namespace QMC.LCP_280.Process.Unit
 
         [Category("Info"), DisplayName("WaferRingframeSize")]
         [DefaultValue(false)]
-        public double WaferRingframeSize { get; internal set; } = 250;
+        public double WaferRingframeSize { get; set; } = 250;
         [Category("Info"), DisplayName("OverapLength")]
         [DefaultValue(false)]
-        public double FeederToCassetteOverapLength { get; internal set; } = 30;
+        public double FeederToCassetteOverapLength { get; set; } = 30;
 
         [Category("Common"), DisplayName("UnitDryRun")]
         [DefaultValue(false)]
-        public bool dUnitDryRun { get; internal set; } = false;
+        public bool dUnitDryRun { get; set; } = false;
 
 
         public OutputFeederConfig() : base("OutputFeederConfig") { }
