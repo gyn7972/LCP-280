@@ -758,6 +758,45 @@ namespace QMC.Common.Unit
 
 
         //Position 확인
+        // BaseUnit 클래스 내부에 추가: Teaching 전용 판정 파라미터(필요 시 파생 클래스에서 override 가능)
+        protected virtual double TeachingInposToleranceMultiplier => 2.5; // InposTolerance를 몇 배로 완화할지
+        protected virtual double TeachingInposEpsilon => 0.001;//1e-6;            // 부동소수 잡음 보정
+        protected virtual int TeachingInposStableSampleCount => 3;         // 안정 샘플 횟수
+        protected virtual int TeachingInposSampleDelayMs => 8;             // 샘플 간 간격(ms)
+                                                                           // BaseUnit 클래스 내부에 추가: Teaching 전용 InPosition 판정
+        protected bool InPosTeachingAxis(MotionAxis ax, double target)
+        {
+            if (ax == null) return true;
+
+            // 1) 드라이버/축 자체 판정이 이미 OK면 통과
+            if (ax.InPosition(target)) 
+                return true;
+
+            // 2) Teaching 전용 완화 허용오차 계산
+            var tol = ax.Config != null ? Math.Max(0.0, ax.Config.InposTolerance) : 0.0;
+            var relaxedTol = (tol * TeachingInposToleranceMultiplier) + TeachingInposEpsilon;
+
+            // 이동 중이면 아직 도달 아님
+            if (!ax.IsMoveDone()) 
+                return false;
+
+            // 3) 디바운싱: 짧게 N회 연속 허용오차 내 유지되는지 확인
+            for (int i = 0; i < TeachingInposStableSampleCount; i++)
+            {
+                var cur = ax.GetPosition();
+                if (double.IsNaN(cur) || double.IsInfinity(cur)) 
+                    return false;
+
+                if (Math.Abs(cur - target) > relaxedTol)
+                    return false;
+
+                if (TeachingInposSampleDelayMs > 0)
+                    Thread.Sleep(TeachingInposSampleDelayMs);
+            }
+            return true;
+        }
+
+
         public bool InPosTeaching(TeachingPosition tp)
         {
             if (tp == null)
@@ -767,12 +806,35 @@ namespace QMC.Common.Unit
         public bool InPosTeaching(string positionName)
         {
             var tp = Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
+            if (tp == null)
+                return false;
+
             foreach (var kv in tp.AxisPositions)
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+            {
+                if (!Axes.TryGetValue(kv.Key, out var axis))
+                    return false;
+
+                if (!InPosTeachingAxis(axis, kv.Value))
+                    return false;
+            }
             return true;
         }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = Config.GetTeachingPosition(positionName);
+
+        //    if (tp == null) 
+        //        return false;
+
+        //    foreach (var kv in tp.AxisPositions)
+        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) 
+        //            return false;
+
+        //    return true;
+        //}
+
         public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+
         public double GetTP(string tpName, string axisName)
         {
             var tp = Config.GetTeachingPosition(tpName);

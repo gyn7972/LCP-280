@@ -1715,52 +1715,6 @@ namespace QMC.Common.Vision
                                     }
                                 }
                             }
-                            //lock (bufferedGrphics)
-                            //{
-                            //    OwnedOverlayCollection resultNormal = this.NormalOverlays;
-                            //    try
-                            //    {
-                            //        for (int i = 0; i < resultNormal.Count; i++)
-                            //        {
-                            //            if (resultNormal[i].Visible == true)
-                            //                resultNormal[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-                            //        }
-                            //    }
-                            //    catch (Exception ex)
-                            //    {
-                            //        Log.Write(ex);
-                            //    }
-
-                            //    OwnedOverlayCollection resultOverlays = this.ResultOverlays;
-                            //    {
-                            //        try
-                            //        {
-                            //            lock(resultOverlays)
-                            //            {
-                            //                for (int i = 0; i < resultOverlays.Count; i++)
-                            //                {
-                            //                    lock(bufferedGrphics)
-                            //                    {
-                            //                        //Todo: 확인 해봐야함.
-                            //                        if (resultOverlays[i].Visible == true)
-                            //                        {
-                            //                            resultOverlays[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-                            //                            //resultOverlays[i].Draw( this.Scale.GetCenterPoint()+ this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-
-                            //                        }
-
-                            //                    }
-
-                            //                }
-                            //            }
-
-                            //        }
-                            //        catch (Exception ex)
-                            //        {
-                            //            Log.Write(ex);
-                            //        }
-                            //    }
-                            //}
                         }
 
                         this.m_IsChanged = false;

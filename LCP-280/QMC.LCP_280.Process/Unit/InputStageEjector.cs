@@ -939,21 +939,7 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
         #endregion
 
-
         #region Seq 단위 동작 함수
-        public int ChipPickUpWait()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
-
-        public int ChipLoading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
         #endregion
     }
 }

@@ -176,7 +176,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
-
         public Task<int> MovePositionAsyncReady(bool isFine = false)
         {
             return Task.Run(() =>
@@ -226,15 +225,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-        public bool IsPositionready()
-        {
-            var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Ready];
-            if (tp == null)
-                return false;
-            return InPosTeaching(tp);
-        }
-
-
+        
         public int MovePositionStage(bool isFine = false)
         {
             Task<int> task = MovePositionAsyncStage(isFine);
@@ -367,13 +358,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             bool bRet = false;
             
-            //Todo : 이거 ???
-            //if (IsFeederUp() != false)
-            //{
-            //    bRet = false;
-            //    return bRet;
-            //}
-
             if (InputStage.IsAnyAxisMoving())
             {
                 bRet = false;
@@ -413,7 +397,7 @@ namespace QMC.LCP_280.Process.Unit
             if (cfg == null)
                 return bRtn;
 
-            bRtn = IsPositionready();
+            bRtn = IsPositionReady();
             return bRtn;
         }
         public bool IsFeederZSafetyPosition()
@@ -436,6 +420,40 @@ namespace QMC.LCP_280.Process.Unit
             // 전이 상태(Up/Down 모두 OFF) → 안전 아님으로 판단
             return bRtn;
         }
+
+        public bool IsPositionReady()
+        {
+            var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Ready];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+
+        public bool IsPositionBarcode()
+        {
+            var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Barcode];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+        public bool IsPositionStage()
+        {
+            var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Stage];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+        public bool IsPositionCassette()
+        {
+            var tp = TeachingPositions[(int)InputFeederConfig.TeachingPositionName.Cassette];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
+        }
+
+
+
+
 
         #region Teaching Helpers
         public int MoveToTeachingPosition(string positionName, double vel = 5, double acc = 10, double dec = 10, double jerk = 50)
@@ -661,6 +679,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Sequence Auto
 
+        bool NeedUnloadFirst { get; set; } = false;
         public int RunWorkFeederSequence(bool isFine = false)
         {
             int nRet = 0;
@@ -684,11 +703,10 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // 0) Stage에 제품이 있으면 "언로딩 먼저"
-            bool needUnloadFirst = false;
             try
             {
-                needUnloadFirst = InputStage.IsCompletedWork();
-                if (needUnloadFirst)
+                NeedUnloadFirst = InputStage.IsCompletedWork();
+                if (NeedUnloadFirst)
                 {
 
                 }
@@ -696,10 +714,10 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 Log.Write(ex);
-                needUnloadFirst = false;
+                NeedUnloadFirst = false;
             }
 
-            if (needUnloadFirst)
+            if (NeedUnloadFirst)
             {
                 // 8) Feeder -> Stage: WaferUnloadingBeforeStage
                 nRet = WaferUnloading(wafer);
@@ -982,17 +1000,28 @@ namespace QMC.LCP_280.Process.Unit
             //웨이퍼를 안잡고 있고...
             //바코드 포지션에 있으면 바로 로딩하자.
 
-
-            nRet = MoveToReady(isFine);
-            if (nRet != 0)
+            //언로딩 완료 후 Barcode Position에 있으면 바로 로딩.
+            if (NeedUnloadFirst)
             {
-                Log.Write(this, "WaferLoading Fail - MoveToReay");
-                return nRet;
+                if(IsPositionBarcode() == false)
+                {
+                    Log.Write(this, "WaferLoading - MovePositionBarcode First");
+                    return -1;
+                } 
             }
-            if(IsStop)
+            else
             {
-                Log.Write(UnitName, "InputFeeder Stop");
-                return 0;
+                nRet = MoveToReady(isFine);
+                if (nRet != 0)
+                {
+                    Log.Write(this, "WaferLoading Fail - MoveToReay");
+                    return nRet;
+                }
+                if (IsStop)
+                {
+                    Log.Write(UnitName, "InputFeeder Stop");
+                    return 0;
+                }
             }
 
             nRet = UnClampGripper();

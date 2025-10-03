@@ -1267,7 +1267,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
                 SetClampPlate(true);
-                //Todo: wait 필요해 보인다.
                 if (!IsPlateUp())
                 {
                     Log.Write(this, "Fail: PlateUp");
@@ -1275,7 +1274,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 SetClampLift(true);
-                //Todo: wait 필요해 보인다.
                 if (!IsClampLiftUp())
                 {
                     Log.Write(this, "Fail: ClampLiftUp");
@@ -1283,7 +1281,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 SetClampFB(true);
-                //Todo: wait 필요해 보인다.
                 if (!IsClampFwd())
                 {
                     Log.Write(this, "Fail: ClampForward");
