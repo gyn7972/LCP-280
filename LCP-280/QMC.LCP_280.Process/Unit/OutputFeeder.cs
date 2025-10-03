@@ -709,6 +709,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (NeedUnloadFirst || _dryLoadedToStage)
             {
+                NeedUnloadFirst = true;
                 // 8) Feeder -> Stage: WaferUnloadingBeforeStage
                 nRet = BinUnloading(wafer);
                 if (nRet != 0)
@@ -718,6 +719,11 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
+            }
+            if(this.IsStop)
+            {
+                this.State = ProcessState.Stop;
+                return 0;
             }
             _dryLoadedToStage = false;
 
@@ -733,6 +739,11 @@ namespace QMC.LCP_280.Process.Unit
                     return nRet;
                 }
             }
+            if (this.IsStop)
+            {
+                this.State = ProcessState.Stop;
+                return 0;
+            }
 
             if (this.OutputCassetteLifter.IsHaveMoreProcessWafer())
             {
@@ -745,6 +756,11 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
+                if (this.IsStop)
+                {
+                    this.State = ProcessState.Stop;
+                    return 0;
+                }
 
                 // 3) Feeder -> Stage: WaferLoadingBeforeStage
                 nRet = OutputStage.LoadingBinPrepare();
@@ -754,6 +770,11 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.Alarm_OutputStageInterlockFailed);
                     this.State = ProcessState.Error;
                     return nRet;
+                }
+                if (this.IsStop)
+                {
+                    this.State = ProcessState.Stop;
+                    return 0;
                 }
 
                 // 4) Feeder 내부 로딩 Cascette에서 Wafer Pick
@@ -765,6 +786,11 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
+                if (this.IsStop)
+                {
+                    this.State = ProcessState.Stop;
+                    return 0;
+                }
 
                 // 4) Feeder 내부 로딩 Stage에 Wafer Load
                 nRet = StageLoading();
@@ -775,11 +801,15 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
-
                 MakePath();
                 this.MoveMaterial(new MaterialWafer(), OutputStage);
                 this.OutputStage.UpdateUI();
 
+                if (this.IsStop)
+                {
+                    this.State = ProcessState.Stop;
+                    return 0;
+                }
 
                 nRet = MoveToReady();
                 if (nRet != 0)
@@ -788,6 +818,11 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
                     this.State = ProcessState.Error;
                     return nRet;
+                }
+                if (this.IsStop)
+                {
+                    this.State = ProcessState.Stop;
+                    return 0;
                 }
 
                 // 5) Feeder -> Stage: WaferLoadingAfterStage
@@ -799,10 +834,21 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
+                if (this.IsStop)
+                {
+                    this.State = ProcessState.Stop;
+                    return 0;
+                }
 
                 nRet = PreparetoOutputStage();
-
-                if(Config.dUnitDryRun)
+                if (nRet != 0)
+                {
+                    AxisFeederY.EmgStop();
+                    PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+                    this.State = ProcessState.Error;
+                    return nRet;
+                }
+                if (Config.dUnitDryRun)
                 {
                     _dryLoadedToStage = true; // 다음엔 언로딩
                     _dryLastSlotIndex = this.OutputCassetteLifter.GetCurrectSlotID();
@@ -918,6 +964,11 @@ namespace QMC.LCP_280.Process.Unit
                 nRet = -1;
                 return nRet;
             }
+            if (this.IsStop)
+            {
+                Log.Write(this, "OutputFeeder Stop");
+                return 0;
+            }
 
             nRet = UnloadBinStageToFeeder(isFine);
             if (nRet != 0)
@@ -927,6 +978,11 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "UnloadBinStageToFeeder Failed");
                 nRet = -1;
                 return nRet;
+            }
+            if(this.IsStop)
+            {
+                Log.Write(this, "OutputFeeder Stop");
+                return 0;
             }
 
             int nSlot = wafer.SlotIndex;
@@ -938,6 +994,11 @@ namespace QMC.LCP_280.Process.Unit
                 this.State = ProcessState.Error;
                 Log.Write(this, "OutputCassetteLifter.MoveToSlot Failed");
                 return nRet;
+            }
+            if (this.IsStop)
+            {
+                Log.Write(this, "OutputFeeder Stop");
+                return 0;
             }
 
             nRet = UnloadBinFeederToCassette(true);
@@ -974,15 +1035,15 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                nRet = UnClampGripper();
+                nRet = MoveToReady(isFine);
                 if (nRet != 0)
                 {
-                    Log.Write(this, "UnClampGripper Failed");
+                    Log.Write(this, "BinLoading Failed - MoveToReady");
                     return nRet;
                 }
                 if (IsStop)
                 {
-                    Log.Write(UnitName, "InputFeeder Stop");
+                    Log.Write(UnitName, "OutputFeeder Stop");
                     return 0;
                 }
             }
@@ -1013,6 +1074,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(this, "BarcodeReading Failed");
                 return nRet;
+            }
+            if (IsStop)
+            {
+                Log.Write(UnitName, "OutputFeeder Stop");
+                return 0;
             }
 
             var c = this.OutputCassetteLifter.GetMaterialCassette();

@@ -732,8 +732,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (this.IsStop)
             {
-                Log.Write(this, "InputFeeder Stop");
-                return -1;
+                return 0;
             }
 
             if (this.InputCassetteLifter.IsHaveMoreProcessWafer())
@@ -747,11 +746,9 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
-
                 if (this.IsStop)
                 {
-                    Log.Write(this, "InputFeeder Stop");
-                    return -1;
+                    return 0;
                 }
 
                 // 3) Feeder -> Stage: WaferLoadingBeforeStage
@@ -763,11 +760,9 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
-
                 if (this.IsStop)
                 {
-                    Log.Write(this, "InputFeeder Stop");
-                    return -1;
+                    return 0;
                 }
 
                 // 4) Feeder 내부 로딩 Cascette에서 Wafer Pick
@@ -778,6 +773,11 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
                     this.State = ProcessState.Error;
                     return nRet;
+                }
+                if (this.IsStop)
+                {
+                    Log.Write(this, "InputFeeder Stop");
+                    return 0;
                 }
 
                 // 4) Feeder 내부 로딩 Stage에 Wafer Load
@@ -794,7 +794,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (this.IsStop)
                 {
                     Log.Write(this, "InputFeeder Stop");
-                    return -1;
+                    return 0;
                 }
 
                 nRet = MoveToReady();
@@ -805,7 +805,6 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
-
                 if (this.IsStop)
                 {
                     Log.Write(this, "InputFeeder Stop");
@@ -914,7 +913,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "WaferUnloading Fail - PrepareInputStageUnloadingWafer");
                 return nRet;
             }
-
             if (this.IsStop)
             {
                 Log.Write(this, "InputFeeder Stop");
@@ -931,7 +929,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "WaferUnloading Fail - UnloadWaferStagetToFeeder");
                 return nRet;
             }
-
             if (this.IsStop)
             {
                 Log.Write(this, "InputFeeder Stop");
@@ -964,6 +961,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
+            Log.Write(this, "WaferUnloading Complete");
             return nRet;
         }
         public int WaferLoading(bool isFine = false)
@@ -1035,22 +1033,25 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "WaferLoading Fail - MoveToCassette");
                 return nRet;
             }
-            var c = this.InputCassetteLifter.GetMaterialCassette();
-            int nIndex = this.InputCassetteLifter.GetCurrectSlotID();
-            MaterialWafer wafer = c.GetWafer(nIndex);
-            this.SetMaterial(wafer);
-
             if (IsStop)
             {
                 Log.Write(UnitName, "InputFeeder Stop");
                 return 0;
             }
+
             nRet = BarcodeReading(isFine);
             if (nRet != 0)
             {
                 Log.Write(this, "WaferLoading Fail - BarcodeReading");
                 return nRet;
             }
+
+            var c = this.InputCassetteLifter.GetMaterialCassette();
+            int nIndex = this.InputCassetteLifter.GetCurrectSlotID();
+            MaterialWafer wafer = c.GetWafer(nIndex);
+            this.SetMaterial(wafer);
+
+            
 
             Log.Write(this, "WaferLoading Complete");
             return nRet;
