@@ -201,13 +201,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (!IsFeederUp())
-            {
-                AxisFeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
-                nRet = -1;
-                return nRet;
-            }
+            //if (!IsFeederUp())
+            //{
+            //    AxisFeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
+            //    nRet = -1;
+            //    return nRet;
+            //}
 
             if (OutputStage.IsAnyAxisMoving())
             {
@@ -247,13 +247,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             // Check Interlock.!!! 구문 넣을것.!!!
-            if (!IsFeederUp())
-            {
-                AxisFeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
-                nRet = -1;
-                return nRet;
-            }
+            //if (!IsFeederUp())
+            //{
+            //    AxisFeederY.EmgStop();
+            //    PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
+            //    nRet = -1;
+            //    return nRet;
+            //}
 
             if (OutputStage.IsAnyAxisMoving())
             {
@@ -292,15 +292,6 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockBarcode()
         {
             int nRet = 0;
-            // Check Interlock.!!! 구문 넣을것.!!!
-            if (!IsFeederUp())
-            {
-                AxisFeederY.EmgStop();
-                PostAlarm((int)AlarmKeys.Alarm_FeederClampUp);
-                nRet = -1;
-                return nRet;
-            }
-
             if (OutputStage.IsAnyAxisMoving())
             {
                 AxisFeederY.EmgStop();
@@ -353,13 +344,6 @@ namespace QMC.LCP_280.Process.Unit
         private bool IsMoveInterLockCassette()
         {
             bool bRet = true;
-            // Check Interlock.!!! 구문 넣을것.!!!
-            if (IsFeederUp() == false)
-            {
-                bRet = false;
-                return bRet;
-            }
-
             if (OutputStage.IsAnyAxisMoving())
             {
                 bRet = false;
@@ -956,11 +940,6 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            var c = this.OutputCassetteLifter.GetMaterialCassette();
-            int nIndex = this.OutputCassetteLifter.GetCurrectSlotID();
-            MaterialWafer wafer = c.GetWafer(nIndex);
-            this.SetMaterial(wafer);
-
             nRet = BarcodeReading(isFine);
             if (nRet != 0)
             {
@@ -968,26 +947,10 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            //nRet = StageLoading(isFine);
-            //if (nRet != 0)
-            //{
-            //    Log.Write(this, "StageLoading Failed");
-            //    return nRet;
-            //}
-
-            //nRet = MoveToReay(isFine);
-            //if (nRet != 0)
-            //{
-            //    Log.Write(this, "MoveToReay Failed");
-            //    return nRet;
-            //}
-
-            //nRet = UpFeeder();
-            //if (nRet != 0)
-            //{
-            //    Log.Write(this, "UpFeeder Failed");
-            //    return nRet;
-            //}
+            var c = this.OutputCassetteLifter.GetMaterialCassette();
+            int nIndex = this.OutputCassetteLifter.GetCurrectSlotID();
+            MaterialWafer wafer = c.GetWafer(nIndex);
+            this.SetMaterial(wafer);
 
             Log.Write(this, "BinLoading Complete");
             return nRet;

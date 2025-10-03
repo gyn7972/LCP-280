@@ -33,9 +33,9 @@ namespace QMC.LCP_280.Process.Unit
 
         public enum TeachingPositionName
         {
-            CassetteSlot_1,
             MappingStart,
             MappingEnd,
+            CassetteSlot_1,
             UnloadOffset,
             LoadPort
         }
@@ -56,9 +56,9 @@ namespace QMC.LCP_280.Process.Unit
         [JsonIgnore]
         private static readonly Dictionary<TeachingPositionName, string[]> _axisMap = new Dictionary<TeachingPositionName, string[]>
         {
-            { TeachingPositionName.CassetteSlot_1, new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.MappingStart,   new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.MappingEnd,     new [] { AxisNames.BinLifterZ } },
+            { TeachingPositionName.CassetteSlot_1, new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.UnloadOffset,   new [] { AxisNames.BinLifterZ } },
             { TeachingPositionName.LoadPort,       new [] { AxisNames.BinLifterZ } },
         };

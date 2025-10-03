@@ -274,14 +274,14 @@ namespace QMC.LCP_280.Process.Unit
 
             if (bUpDn)
             {
-                if (!IsAtTeaching(OutputStageConfig.TeachingPositionName.Loading) &&
-                    !IsAtTeaching(OutputStageConfig.TeachingPositionName.Unloading))
-                {
-                    MessageBox.Show("SetClampPlate Interlock",
-                              "Plate UP blocked: not at Loading/Unloading teaching position.",
-                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return false;
-                }
+                //if (!IsAtTeaching(OutputStageConfig.TeachingPositionName.Loading) &&
+                //    !IsAtTeaching(OutputStageConfig.TeachingPositionName.Unloading))
+                //{
+                //    MessageBox.Show("SetClampPlate Interlock",
+                //              "Plate UP blocked: not at Loading/Unloading teaching position.",
+                //              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return false;
+                //}
                 return _cylPlate.Extend();
             }
             else

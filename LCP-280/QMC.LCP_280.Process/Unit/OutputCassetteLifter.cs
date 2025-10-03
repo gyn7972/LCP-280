@@ -645,33 +645,45 @@ namespace QMC.LCP_280.Process.Unit
 
             }
 
-            MaterialCassette material = GetMaterialCassette();
-            if (material != null)
+            try
             {
-                foreach (var v in GetMaterialCassette().Slots)
+                MaterialCassette material = GetMaterialCassette();
+                if (material != null)
                 {
-                    if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
+                    foreach (var v in GetMaterialCassette().Slots)
                     {
-                        continue;
-                    }
-
-                    if (v.ProcessSatate != MaterialWafer.MaterialProcessSatate.Completed)
-                    {
-                        nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
+                        if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
                         {
-                            if (nRtn != 0)
+                            continue;
+                        }
+
+                        if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
+                        {
+                            nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
                             {
-                                Log.Write(this, "MoveToSlot Failed");
-                                return -1;
+                                if (nRtn != 0)
+                                {
+                                    Log.Write(this, "MoveToSlot Failed");
+                                    return -1;
+                                }
+
+                                return nRtn;
                             }
-                            //this.IsWaferReadyForloading = true;
-                            //this.IsWaferReadyForUnloding = false;
                         }
                     }
+                    nRtn = -1;
                 }
+
+                return nRtn;
             }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+
             return nRtn;
         }
+
         public int MoveToSlot(int slotIndex, bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -699,8 +711,12 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             Log.Write(this, $"MoveToSlot {slotIndex + 1}");
-            double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
-            dPos += base.Config.SlotPitch * slotIndex;
+            double dPos = GetTP(OutputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), BinLifterZ.Name);
+            
+            //Todo : 첫 위치가 어디냐에 따라 달라짐.
+            //dPos += base.Config.SlotPitch * slotIndex;
+            dPos -= base.Config.SlotPitch * slotIndex;
+
             MoveAxisOnce(BinLifterZ, dPos);
             while (!InPos(BinLifterZ, dPos))
             {
