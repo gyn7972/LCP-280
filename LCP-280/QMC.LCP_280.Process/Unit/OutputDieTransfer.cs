@@ -1453,7 +1453,7 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!ArmFlowOk(nIndex))
                 {
-                    if(!Config.IsSimulation)
+                    if(!Config.IsSimulation && !Config.IsDryRun)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1477,7 +1477,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (Rotary.SetVent(nIndex, false))
+            if (Rotary.SetVent(nIndex, false) == false)
             {
                 if (!Config.IsSimulation)
                 {
@@ -1487,7 +1487,7 @@ namespace QMC.LCP_280.Process.Unit
                 } 
             }
 
-            if (Rotary.SetBlow(nIndex, false))
+            if (Rotary.SetBlow(nIndex, false) == false)
             {
                 if (!Config.IsSimulation)
                 {
