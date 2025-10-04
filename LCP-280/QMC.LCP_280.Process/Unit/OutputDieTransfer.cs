@@ -177,12 +177,6 @@ namespace QMC.LCP_280.Process.Unit
             OutputStage = Equipment.Instance.GetUnit(UnitKeys.OutputStage) as OutputStage;
         }
 
-
-        bool isWork = false;
-        public bool IsWork()
-        {
-            return isWork;
-        }
         public int GetUnloaderIndexNo()
         {
             int nIndex = 0;
@@ -190,8 +184,6 @@ namespace QMC.LCP_280.Process.Unit
             nIndex = (Rotary.GetLoadIndexNo() + this.Config.IndexOfEnd) % Rotary.GetIndexCount();
             return nIndex;
         }
-
-
         public int MoveAxisPositionOne(MotionAxis axis, double target, bool isFine = false)
         {
             if (axis == null) return -1;
@@ -306,7 +298,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
-        public Task<int> MovePositionAsyncReady(bool isFine = false)
+        private Task<int> MovePositionAsyncReady(bool isFine = false)
         {
             return Task.Run(() =>
             {
@@ -402,92 +394,67 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
+        /// ///////////////////////////////////////////////////////////////////////////////////////////
         public int MovePositionPickUp_Index(bool isFine = false)
         {
-            int nIndex = 0;
-            nIndex = GetUnloaderIndexNo();
+            int index = GetUnloaderIndexNo();
 
-            Task<int> task = MovePositionAsyncPickUp_Index(isFine, nIndex);
-            while (IsEndTask(task) == false)
+            Task<int> task = MovePositionAsyncPickUp_Index(isFine, index);
+            while (!IsEndTask(task))
             {
-                int nRtn = IsMoveInterLockPickUp_Index(nIndex);
-                if (nRtn != 0)
+                int interlock = IsMoveInterLockPickUp_Index(index);
+                if (interlock != 0)
                 {
                     return -1;
                 }
-
                 Thread.Sleep(0);
             }
             return task.Result;
         }
-
-        
-
-        public Task<int> MovePositionAsyncPickUp_Index(bool isFine = false, int nIndex = 0)
+        private Task<int> MovePositionAsyncPickUp_Index(bool isFine = false, int nIndex = 0)
         {
             return Task.Run(() =>
             {
-                OnMovePositionPickUp_Index(isFine, nIndex);
-                return 0;
+                return OnMovePositionPickUp_Index(isFine, nIndex);
             });
         }
         private int OnMovePositionPickUp_Index(bool isFine = false, int nIndex = 0)
         {
-            int nRet = 0;
+            // 안전 Z 위치 확인 후 필요 시 이동
             if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
             {
-                nRet = MovePositionSafetyZ();
-                if (nRet != 0)
+                int safetyMove = MovePositionSafetyZ(isFine);
+                if (safetyMove != 0)
                 {
                     return -1;
                 }
             }
 
-            // nIndex 처리 (0-based와 1-based 모두 지원)
-            //  - 1~8 : 그대로 사용 (PickUp_Index1 ~ PickUp_Index8)
-            //  - 0~7 : +1 보정하여 1~8 매핑
-            int teachingIdx;
-            if (nIndex >= 1 && nIndex <= 8)
-                teachingIdx = nIndex + 1;
-            else if (nIndex >= 0 && nIndex < 8)
-                teachingIdx = nIndex + 1; // 0-based 입력으로 판단
-            else
+            // Teaching 이름 확인
+            string tpName;
+            if (!TryGetPickupTeachingName(nIndex, out tpName))
             {
-                Log.Write(UnitName, $"[OnMovePositionPickUp_Index] Invalid index {nIndex}. Range 0~7 or 1~8");
                 return -1;
             }
 
-            string tpName = $"Pickup_Index{teachingIdx}";
-            var tpObj = Config.GetTeachingPosition(tpName);
-            if (tpObj == null)
+            // 1) ToolT 이동
+            int r = MoveToolT_ToPickupIndex(tpName, isFine);
+            if (r != 0)
             {
-                Log.Write(UnitName, $"[OnMovePositionPickUp_Index] Teaching not found: {tpName}");
                 return -1;
             }
 
-            double dTPos = GetTP(tpName, AxisNames.RightToolT);
-            nRet = MoveAxisPositionOne(AxisToolT, dTPos);
-            if (nRet != 0)
+            // 2) PickZ 이동
+            r = MovePickZ_ToPickupIndex(tpName, isFine);
+            if (r != 0)
             {
-                Log.Write(UnitName, $"[OnMovePositionPickUp_Index] ToolT move failed tp={tpName} pos={dTPos}");
                 return -1;
             }
 
-            double dZPos = GetTP(tpName, AxisNames.RightPickZ);
-            nRet = MoveAxisPositionOne(AxisPickZ, dZPos);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, $"[OnMovePositionPickUp_Index] PickUpZ move failed tp={tpName} pos={dZPos}");
-                return -1;
-            }
-
-            return nRet;
-            //return MoveTeachingPositionOnce((int)InputDieTransferConfig.TeachingPositionName.Pickup, isFine);
+            return 0;
         }
         private int IsMoveInterLockPickUp_Index(int nIndex = 0)
         {
-            int nRet = 0;
-
             if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
                 AxisToolT?.EmgStop();
@@ -496,9 +463,180 @@ namespace QMC.LCP_280.Process.Unit
                 PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
                 return -1;
             }
-
-            return nRet;
+            return 0;
         }
+
+        public int MovePositionPickUpToolT_Index(bool isFine = false)
+        {
+            int index = GetUnloaderIndexNo();
+
+            Task<int> task = MovePositionAsyncPickUpToolT_Index(isFine, index);
+            while (!IsEndTask(task))
+            {
+                int interlock = IsMoveInterLockPickUpToolT_Index(index);
+                if (interlock != 0)
+                {
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncPickUpToolT_Index(bool isFine = false, int nIndex = 0)
+        {
+            return Task.Run(() =>
+            {
+                return OnMovePositionPickUpToolT_Index(isFine, nIndex);
+            });
+        }
+        private int OnMovePositionPickUpToolT_Index(bool isFine = false, int nIndex = 0)
+        {
+            // 안전 Z 위치 확인 후 필요 시 이동
+            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            {
+                int safetyMove = MovePositionSafetyZ(isFine);
+                if (safetyMove != 0)
+                {
+                    return -1;
+                }
+            }
+
+            // Teaching 이름 확인
+            string tpName;
+            if (!TryGetPickupTeachingName(nIndex, out tpName))
+            {
+                return -1;
+            }
+
+            // 1) ToolT 이동
+            int r = MoveToolT_ToPickupIndex(tpName, isFine);
+            if (r != 0)
+            {
+                return -1;
+            }
+            return 0;
+        }
+        private int IsMoveInterLockPickUpToolT_Index(int nIndex = 0)
+        {
+            // 안전 Z 위치 확인 후 필요 시 이동
+            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            {
+                int safetyMove = MovePositionSafetyZ();
+                if (safetyMove != 0)
+                {
+                    return -1;
+                }
+            }
+            return 0;
+        }
+
+        public int MovePositionPickUpPickZ_Index(bool isFine = false)
+        {
+            int index = GetUnloaderIndexNo();
+
+            Task<int> task = MovePositionAsyncPickUpPickZ_Index(isFine, index);
+            while (!IsEndTask(task))
+            {
+                int interlock = IsMoveInterLockPickUpPickZ_Index(index);
+                if (interlock != 0)
+                {
+                    return -1;
+                }
+                Thread.Sleep(0);
+            }
+            return task.Result;
+        }
+        private Task<int> MovePositionAsyncPickUpPickZ_Index(bool isFine = false, int nIndex = 0)
+        {
+            return Task.Run(() =>
+            {
+                return OnMovePositionPickUpPickZ_Index(isFine, nIndex);
+            });
+        }
+        private int OnMovePositionPickUpPickZ_Index(bool isFine = false, int nIndex = 0)
+        {
+            // Teaching 이름 확인
+            string tpName;
+            if (!TryGetPickupTeachingName(nIndex, out tpName))
+            {
+                return -1;
+            }
+
+            // 2) PickZ 이동
+            int r = MovePickZ_ToPickupIndex(tpName, isFine);
+            if (r != 0)
+            {
+                return -1;
+            }
+
+            return 0;
+        }
+        private int IsMoveInterLockPickUpPickZ_Index(int nIndex = 0)
+        {
+            if (Rotary != null && Rotary.IsAnyAxisMoving())
+            {
+                AxisToolT?.EmgStop();
+                AxisPickZ?.EmgStop();
+                AxisPlaceZ?.EmgStop();
+                PostAlarm((int)AlarmKeys.eRotaryAxesMoving);
+                return -1;
+            }
+            return 0;
+        }
+
+        private bool TryGetPickupTeachingName(int index, out string tpName)
+        {
+            tpName = null;
+
+            int teachingIdx;
+            if (index >= 1 && index <= 8)
+            {
+                teachingIdx = index + 1;
+            }
+            else if (index >= 0 && index < 8)
+            {
+                teachingIdx = index + 1;
+            }
+            else
+            {
+                Log.Write(UnitName, $"[TryGetPickupTeachingName] Invalid index {index}. Range 0~7 or 1~8");
+                return false;
+            }
+
+            tpName = $"Pickup_Index{teachingIdx}";
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null)
+            {
+                Log.Write(UnitName, $"[TryGetPickupTeachingName] Teaching not found: {tpName}");
+                tpName = null;
+                return false;
+            }
+            return true;
+        }
+        private int MoveToolT_ToPickupIndex(string tpName, bool isFine)
+        {
+            double target = GetTP(tpName, AxisNames.RightToolT);
+            int r = MoveAxisPositionOne(AxisToolT, target, isFine);
+            if (r != 0)
+            {
+                Log.Write(UnitName, $"[MoveToolT_ToPickupIndex] ToolT move failed tp={tpName} pos={target}");
+                return -1;
+            }
+            return 0;
+        }
+        private int MovePickZ_ToPickupIndex(string tpName, bool isFine)
+        {
+            double target = GetTP(tpName, AxisNames.RightPickZ);
+            int r = MoveAxisPositionOne(AxisPickZ, target, isFine);
+            if (r != 0)
+            {
+                Log.Write(UnitName, $"[MovePickZ_ToPickupIndex] PickZ move failed tp={tpName} pos={target}");
+                return -1;
+            }
+            return 0;
+        }
+        /////////////////////////////////////////////////////////////////////////////////////////////
+
         public Task<int> MovePositionAsyncSafePickUp_Index(bool isFine = false, int nIndex = 0, CancellationToken ct = default(CancellationToken))
         {
             return Task.Run(() =>
@@ -586,7 +724,6 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return nRet;
-            //return MoveTeachingPositionOnce((int)InputDieTransferConfig.TeachingPositionName.Place, isFine);
         }
         private int IsMoveInterLockPlace()
         {
@@ -611,6 +748,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
         public Task<int> MovePositionAsyncSafePlace(bool isFine = false, CancellationToken ct = default(CancellationToken))
         {
             return Task.Run(() =>
@@ -743,8 +881,8 @@ namespace QMC.LCP_280.Process.Unit
         /// DieTransfer PlaceZ 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
         /// </summary>
         public bool IsPlaceZSafetyPos(double fallbackTolerance = 0.01,
-                                                  bool useAxisInposTolerance = true,
-                                                  bool treatMissingAsSafe = true)
+                                      bool useAxisInposTolerance = true,
+                                      bool treatMissingAsSafe = true)
         {
             if (AxisPlaceZ == null)
                 return treatMissingAsSafe;
@@ -782,6 +920,48 @@ namespace QMC.LCP_280.Process.Unit
             return System.Math.Abs(cur - placeZTarget) <= tol;
         }
 
+        //포지션 확인 함수 추가 필요.
+        public bool IsPositionPickUpToolT(int index, 
+                                          double fallbackTolerance = 0.01, 
+                                          bool useAxisInposTolerance = true)
+        {
+            if (AxisToolT == null) 
+                return false;
+
+            string tpName;
+            if (!TryGetPickupTeachingName(index, out tpName))
+                return false;
+
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null)
+                return false;
+
+            // Teaching + Offset 적용된 ToolT 목표값 사용
+            double target;
+            try
+            {
+                var (t, _, _) = Config.GetPositionWithOffset(tpName);
+                target = t;
+            }
+            catch
+            {
+                return false;
+            }
+
+            double cur = AxisToolT.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (AxisToolT.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            return Math.Abs(cur - target) <= tol;
+        }
+
+        // 기존 호환용 (이전 코드가 호출하고 있을 가능성) → 현재 Unloader Index 기준 자동 판단
+        public bool IsPositionPickUpToolT()
+        {
+            int idx = GetUnloaderIndexNo();
+            return IsPositionPickUpToolT(idx);
+        }
 
 
         public void TeachCurrentPosition(string positionName, string description = null)
@@ -1191,10 +1371,22 @@ namespace QMC.LCP_280.Process.Unit
             nIndex = GetUnloaderIndexNo();
             int nArmindex = 0;
             nArmindex = GetPlaceArmIndex();
-            nRet = MovePositionPickUp_Index(bFineSpeed);
+
+            // 1) ToolT 위치 확인.
+            if(IsPositionPickUpToolT() == false)
+            {
+                nRet = MovePositionPickUpToolT_Index(bFineSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[ChipPickDown] MovePositionPickUpToolT_Index failed");
+                    return -1;
+                }
+            }
+
+            nRet = MovePositionPickUpPickZ_Index(bFineSpeed);
             if (nRet != 0)
             {
-                Log.Write(UnitName, "[ChipPickDown] MovePositionPickUp_Index failed");
+                Log.Write(UnitName, "[ChipPickDown] MovePositionPickUpPickZ_Index failed");
                 return -1;
             }
             
@@ -1220,7 +1412,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            isWork = false;
             return nRet;
         }
 
@@ -1241,7 +1432,7 @@ namespace QMC.LCP_280.Process.Unit
                 Thread.Sleep(50); // 약간의 딜레이
                 if(!Rotary.SetVent(nIndex, true))
                 {
-                    if(!Config.IsSimulation && !Config.IsDryRun)
+                    if(!Config.IsSimulation)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
                         Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
@@ -1251,7 +1442,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if(!Rotary.SetBlow(nIndex, true))
                 {
-                    if (!Config.IsSimulation && !Config.IsDryRun)
+                    if (!Config.IsSimulation)
                     {
                         PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
                         Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
@@ -1262,7 +1453,7 @@ namespace QMC.LCP_280.Process.Unit
                 var sw = Stopwatch.StartNew();
                 while (!ArmFlowOk(nIndex))
                 {
-                    if(!Config.IsSimulation && !Config.IsDryRun)
+                    if(!Config.IsSimulation)
                     {
                         if (sw.ElapsedMilliseconds > 2000)
                         {
@@ -1288,7 +1479,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Rotary.SetVent(nIndex, false))
             {
-                if (!Config.IsSimulation && !Config.IsDryRun)
+                if (!Config.IsSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
                     Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
@@ -1298,7 +1489,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (Rotary.SetBlow(nIndex, false))
             {
-                if (!Config.IsSimulation && !Config.IsDryRun)
+                if (!Config.IsSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
                     Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
@@ -1306,7 +1497,6 @@ namespace QMC.LCP_280.Process.Unit
                 }   
             }
 
-            isWork = false;
             return nRet;
         }
 
@@ -1371,6 +1561,12 @@ namespace QMC.LCP_280.Process.Unit
                 SetVent(armIndex, false);
                 SetBlow(armIndex, false);
 
+                nRet = MovePositionPickUpToolT_Index(bFindSpeed);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] MovePositionPickUpToolT_Index failed");
+                    return -1;
+                }
             }
             catch (Exception ex)
             {
