@@ -1060,13 +1060,10 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
             try
             {
-                const int timeoutMs = 60000*5; // 필요시 설정값으로 치환
-                bool started = WaitPickupStartEvent(timeoutMs);
-                if (!started)
+                if (IsStop)
                 {
-                    PostAlarm((int)AlarmKeys.eOutputDieTransferError);
-                    Log.Write(UnitName, "[OnRunWork] WaitPickupStartEvent timeout");
-                    return -1;
+                    RisePickupDoneEvent();
+                    return 0;
                 }
 
                 MaterialDie die = Rotary.GetUnloadSocketMaterial();
@@ -1075,6 +1072,16 @@ namespace QMC.LCP_280.Process.Unit
                     RisePickupDoneEvent();
                     return 0;
                 }
+                
+                const int timeoutMs = 60000*5; // 필요시 설정값으로 치환
+                bool started = WaitPickupStartEvent(timeoutMs);
+                if (!started)
+                {
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferError);
+                    Log.Write(UnitName, "[OnRunWork] WaitPickupStartEvent timeout");
+                    return -1;
+                }
+                if (IsStop) { return 0; }
 
                 nRtn = ChipPickDown();
                 if (nRtn != 0)
@@ -1082,6 +1089,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                     return -1;
                 }
+                if (IsStop) { return 0; }
 
                 nRtn = ChipPickUp();
                 if (nRtn != 0)
@@ -1123,6 +1131,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
                     return -1;
                 }
+                if (IsStop) { return 0; }
 
                 nRtn = RotateToolTForPlace();
                 if (nRtn != 0)
@@ -1130,6 +1139,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace failed");
                     return -1;
                 }
+                if (IsStop) { return 0; }
 
                 nRtn = ReleaseVacuumAndPlaceUp();
                 if (nRtn != 0)
@@ -1137,6 +1147,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunWork] ReleaseVacuumAndPlaceUp failed");
                     return -1;
                 }
+                if (IsStop) { return 0; }
 
                 MaterialDie die = GetMaterial() as MaterialDie;
                 die.State = DieProcessState.Placed;
@@ -1175,7 +1186,6 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = MoveOutStage;
-
             }
 
             // Chip을 순차적으로 Place 하는 위치로 이동
@@ -1285,7 +1295,6 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         break;
                     }
-                    
                 }
             }
 
@@ -1415,8 +1424,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (RunMode == UnitRunMode.Manual)
             {
-            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+                if (this.CurrentFunc == null)
+                    return;
 
+                Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
             }
         }
 

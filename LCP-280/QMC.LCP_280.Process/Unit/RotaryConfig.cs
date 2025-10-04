@@ -123,37 +123,39 @@ namespace QMC.LCP_280.Process.Unit
         };
         #endregion
 
-
+        [Category("Common"), DisplayName("UnitDryRun")]
+        [DefaultValue(false)]
+        public bool IsUnitDryRun { get; set; } = false;
 
         [Category("SocketInfo"), DisplayName("Use_Socket1")]
         [DefaultValue(false)]
         public bool UseSocket1 { get; set; } = false;
+
         [Category("SocketInfo"), DisplayName("Use_Socket2")]
-        
         [DefaultValue(false)]
         public bool UseSocket2 { get; set; } = false;
+
         [Category("SocketInfo"), DisplayName("Use_Socket3")]
-        
         [DefaultValue(false)]
         public bool UseSocket3 { get; set; } = false;
+
         [Category("SocketInfo"), DisplayName("Use_Socket4")]
-        
         [DefaultValue(false)]
         public bool UseSocket4 { get; set; } = false;
+
         [Category("SocketInfo"), DisplayName("Use_Socket5")]
-        
         [DefaultValue(false)]
         public bool UseSocket5 { get; set; } = false;
+
         [Category("SocketInfo"), DisplayName("Use_Socket6")]
-        
         [DefaultValue(false)]
         public bool UseSocket6 { get; set; } = false;
+
         [Category("SocketInfo"), DisplayName("Use_Socket7")]
-       
         [DefaultValue(false)]
         public bool UseSocket7 { get; set; } = false;
+
         [Category("SocketInfo"), DisplayName("Use_Socket8")]
-        
         [DefaultValue(false)]
         public bool UseSocket8 { get; set; } = false;
 

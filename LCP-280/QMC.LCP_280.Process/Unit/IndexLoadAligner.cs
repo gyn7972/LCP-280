@@ -803,44 +803,9 @@ namespace QMC.LCP_280.Process.Unit
             base.OnStop();
             return ret;
         }
-        protected override int OnRunReady()
-        {
-            int nRet = 0;
-
-            nRet = RunAlignSocketOnceReady();
-            if(nRet != 0)
-            {
-                return -1;
-            }
-
-            State = ProcessState.Work;
-            return nRet;
-        }
-        protected override int OnRunWork()
-        {
-            int nRet = 0;
-
-            nRet = RunAlignSocketOnce();
-            if (nRet != 0)
-            {
-                return -1;
-            }
-
-            State = ProcessState.Complete;
-            return nRet;
-        }
-        protected override int OnRunComplete()
-        {
-            int ret = 0;
-
-            CompleteLoadAligner = true;
-            if (!Rotary.RequestLoadAligner)
-            {
-                State = ProcessState.None;
-            }
-
-            return 0;
-        }
+        protected override int OnRunReady() { return 0; }
+        protected override int OnRunWork() { return 0; }
+        protected override int OnRunComplete() { return 0; }
         #endregion
 
         protected override void OnMakeSequence()
@@ -882,27 +847,25 @@ namespace QMC.LCP_280.Process.Unit
                     LogSequence("Start");
                 }
                 int nIndex = GetAlignIndexNo();
-
-
-
                 bRtn = IsRotaryIdle();
-                if(bRtn != 0)
-                {
-                    return 0;
-                }
-
-                //if (bRtn != 0)
-                //    return -1;
+                if(bRtn != 0) { return 0; }
 
                 // 2) T Ready
                 bRtn = MovePositionAlignTReady(bFineSpeed);
                 if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
                     return -1;
+                }
+                if (IsStop) { return 0; }
 
                 // 3) Z Up
                 bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
                 if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignZReady");
                     return -1;
+                }
             }
             catch (Exception ex)
             {
@@ -950,36 +913,47 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
-
                 bRtn = IsRotaryIdle();
                 if(bRtn != 0)
                 {
                     return 0;
                 }
 
-                //if (bRtn != 0)
-                //    return -1;
-
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
                 bRtn &= MovePositionAlignTReady(bFineSpeed);
                 bRtn &= MovePositionAlignZReady(nIndex, bFineSpeed);
                 if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
                     return -1;
+                }
+                if (IsStop) { return 0; }
 
                 // 3) Z Up
                 bRtn = MovePositionAlignUp(nIndex, bFineSpeed);
                 if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
                     return -1;
+                }
+                if (IsStop) { return 0; }
 
                 // 4) T Forward
                 bRtn = MovePositionAlignTForward(bFineSpeed);
                 if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward");
                     return -1;
+                }
+                if (IsStop) { return 0; }
 
                 // 5) T Backward
                 bRtn = MovePositionAlignTBackward(bFineSpeed);
                 if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTBackward");
                     return -1;
+                }
 
                 die.State = DieProcessState.Inspecting;
 
@@ -1010,6 +984,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             if(RunMode == UnitRunMode.Manual)
             {
+                if (this.CurrentFunc == null)
+                    return;
+
                 Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
 
             }

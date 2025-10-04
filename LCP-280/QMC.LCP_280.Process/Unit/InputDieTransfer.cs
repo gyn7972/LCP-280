@@ -1294,6 +1294,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return 0;
             }
+            if (IsStop) { return 0; }
 
             nRet = RaiseEjectorForPick();
             if (nRet != 0)
@@ -1301,6 +1302,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] RaiseEjectorForPick failed");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             nRet = ChipPickDown();
             if (nRet != 0)
@@ -1308,6 +1310,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             nRet = EjectorVacuumOn();
             if (nRet != 0)
@@ -1315,6 +1318,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             nRet = SyncPickPinUp();
             if (nRet != 0)
@@ -1322,13 +1326,13 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] SyncPickPinUp failed");
                 return -1;
             }
-
             nRet = SyncPickPinRetreat();
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[OnRunWork] SyncPickPinRetreat failed");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             nRet = CommitPickedDie();
             if (nRet != 0)
@@ -1336,6 +1340,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             nRet = RotateToolTForPlace_AsyncWait();
             if (nRet != 0)
@@ -1343,6 +1348,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace_AsyncWait failed");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             State = ProcessState.Complete;
             return nRet;
@@ -1838,19 +1844,6 @@ namespace QMC.LCP_280.Process.Unit
             
             return nRet;
 
-            //// Place 위치로 이동 (없으면 SafetyZone)
-            //double dZPos = GetTP(InputDieTransferConfig.TeachingPositionName.Place_Index1.ToString(),
-            //            AxisNames.LeftPlaceZ);
-            //nRet = MoveAxisPositionOne(AxisPlaceZ, dZPos, bFineSpeed);
-            //if (nRet != 0)
-            //{
-            //    Log.Write(UnitName, "[RotateToolTForPlace] ToolT Place 이동 실패");
-            //    return -1;
-            //}
-            //Rotary.SetVacuum(nIndex, true);
-            //SetVacuum(armIndex, false);
-            //Thread.Sleep(10);
-            //return nRet;
         }
         public int ReleaseVacuumAndPlaceUp(bool bFindSpeed = false)
         {
@@ -1933,8 +1926,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (RunMode == UnitRunMode.Manual)
             {
-                Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+                if (this.CurrentFunc == null)
+                    return;
 
+                Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
             }
         }
         public int MoveStageToNextDie(out MaterialDie die)

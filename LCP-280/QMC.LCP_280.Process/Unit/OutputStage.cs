@@ -768,7 +768,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-            #region Lifecycle
+        #region Lifecycle
         public override int OnRun()
         {
             int ret = 0;
@@ -835,47 +835,46 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: Move Load");
                 return -1;
             }
-            if(this.IsStop)
-            {
-                return 0;
-            }
+            if (IsStop) { return 0; }
 
             bool bSimulation = Config.IsSimulation;
-
             // Clamp Back ¡æ Lift Down
             SetClampFB(false);
             if (!IsClampBwd())
             {
-                if(!bSimulation || !Config.IsDryRun)
+                if(!bSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eClampFB);
                     Log.Write(this, "Fail: ClampBack");
                     return -1;
                 }
             }
+            if (IsStop) { return 0; }
 
             SetClampLift(false);
             if (!IsClampLiftDown())
             {
-                if (!bSimulation || !Config.IsDryRun)
+                if (!bSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eClampLift);
                     Log.Write(this, "Fail: ClampLiftDown");
                     return -1;
                 }
             }
+            if (IsStop) { return 0; }
 
             //Plate Down ¡æ 
             SetClampPlate(false);
             if (!IsPlateDown())
             {
-                if (!bSimulation || !Config.IsDryRun)
+                if (!bSimulation)
                 {
                     PostAlarm((int)AlarmKeys.ePlate);
                     Log.Write(this, "Fail: PlateUp");
                     return -1;
                 }
             }
+            if (IsStop) { return 0; }
 
             BinLoadingReady = true;
             Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
@@ -908,35 +907,38 @@ namespace QMC.LCP_280.Process.Unit
                     SetClampPlate(true);
                     if (!IsPlateUp())
                     {
-                        if(!Config.IsSimulation && !Config.IsDryRun)
+                        if(!Config.IsSimulation)
                         {
                             PostAlarm((int)AlarmKeys.ePlate);
                             Log.Write(this, "Fail: PlateUp");
                             return -1;
                         }
                     }
+                    if (IsStop) { return 0; }
 
                     SetClampLift(true);
                     if (!IsClampLiftUp())
                     {
-                        if (!Config.IsSimulation && !Config.IsDryRun)
+                        if (!Config.IsSimulation)
                         {
                             PostAlarm((int)AlarmKeys.eClampLift);
                             Log.Write(this, "Fail: ClampLiftUp");
                             return -1;
                         }
                     }
+                    if (IsStop) { return 0; }
 
                     SetClampFB(true);
                     if (!IsClampFwd())
                     {
-                        if (!Config.IsSimulation && !Config.IsDryRun)
+                        if (!Config.IsSimulation)
                         {
                             PostAlarm((int)AlarmKeys.eClampFB);
                             Log.Write(this, "Fail: ClampForward");
                             return -1;
                         }
                     }
+                    if (IsStop) { return 0; }
                 }
                 else
                 {
@@ -983,8 +985,10 @@ namespace QMC.LCP_280.Process.Unit
             nRtn = MoveToStageUnloadPosition();
             if (nRtn != 0)
             {
+                Log.Write(this, "Fail: Move Unload");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             SetClampFB(false);
             if (!IsClampBwd())
@@ -993,6 +997,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: ClampBack");
                 return -1;
             }
+            if (IsStop) { return 0; }
+
             SetClampLift(false);
             if (!IsClampLiftDown())
             {
@@ -1000,6 +1006,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
             }
+            if (IsStop) { return 0; }
+
             SetClampPlate(false);
             if (!IsPlateDown())
             {
@@ -1007,10 +1015,12 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
+
         public int UnloadingBinComplete()
         {
             int nRtn = 0;
@@ -1085,7 +1095,6 @@ namespace QMC.LCP_280.Process.Unit
         }
         public void UpdateUI()
         {
-
             MaterialWafer materialWafer = GetMaterialWafer();
             EventUpdateUIWafer?.BeginInvoke(materialWafer, null, null);
         }

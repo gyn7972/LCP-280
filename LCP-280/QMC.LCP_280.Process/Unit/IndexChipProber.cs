@@ -285,6 +285,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (RunMode == UnitRunMode.Manual)
             {
+                if (this.CurrentFunc == null)
+                    return;
+
                 Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
             }
         }

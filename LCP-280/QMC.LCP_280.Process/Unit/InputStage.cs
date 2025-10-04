@@ -1819,17 +1819,14 @@ namespace QMC.LCP_280.Process.Unit
             path = new List<PointD>();
             try
             {
-                
                 double centerTpX = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisX.Name);
                 double centerTpY = GetTP(InputStageConfig.TeachingPositionName.CenterPoint.ToString(), AxisY.Name);
                 var eq = Equipment.Instance;
                 var recip = eq.EquipmentRecipe.CurrentRecipe;
                 double dRadius = recip.WaferDiameter / 2;
                  
-                
                 try
                 {
-
                     if (Config.IsSimulation == false && this.Config.IsDryRun == false)
                     {
                         if (PmRunner.IsRecipeLoaded == false)
