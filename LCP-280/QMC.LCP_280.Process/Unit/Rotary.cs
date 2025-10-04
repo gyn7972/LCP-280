@@ -1555,7 +1555,6 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     return -1;
                 }
-
                 Thread.Sleep(1);
             }
         }
