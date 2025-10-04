@@ -812,26 +812,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return result;
         }
-
-        //public bool InPosTeaching(string positionName)
-        //{
-        //    var tp = Config.GetTeachingPosition(positionName);
-        //    if (tp == null) return false;
-        //    foreach (var kv in tp.AxisPositions)
-        //    {
-        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) 
-        //            return false;
-        //    }
-        //    return true;
-        //}
-
-        //public double GetTP(string tpName, string axisName)
-        //{
-        //    var tp = Config.GetTeachingPosition(tpName);
-        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-        //    return 0.0;
-        //}
-        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         
         #region IO Helpers (Input / Output ป๓ลย)
         public bool ReadInput(string name)
