@@ -555,71 +555,59 @@ namespace QMC.LCP_280.Process.Unit
                                      bool treatMissingAsSafe = true,
                                      bool allowAbove = false)
         {
-            if (_axPinZ == null)
-                return treatMissingAsSafe;
-
-            var cfg = InputStageEjectorConfig;
-            if (cfg?.TeachingPositions == null || cfg.TeachingPositions.Count == 0)
-                return treatMissingAsSafe;
-
-            // 우선순위 (문서 주석 기준)
-            string[] candidates =
-            {
-                InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
-                InputStageEjectorConfig.TeachingPositionName.EjectPinChange.ToString(),
-                InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString()
-            };
-
-            var targetList = new List<double>();
-
-            foreach (var name in candidates)
-            {
-                var tp = cfg.GetTeachingPosition(name);
-                if (tp?.AxisPositions == null) continue;
-
-                if (tp.AxisPositions.TryGetValue(AxisNames.EjectPinZ, out double val))
-                {
-                    // 실제로 0.0 위치가 유효한 Teaching 일 수도 있으므로 그대로 사용
-                    targetList.Add(val);
-                }
-            }
-
-            if (targetList.Count == 0)
-                return treatMissingAsSafe; // Teaching 에 PinZ 가 하나도 정의 안된 경우 정책상 Safe 처리
-
-            double cur = _axPinZ.GetPosition();
-            double tol = useAxisInposTolerance
-                         ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
-                         : fallbackTolerance;
-
-            if (allowAbove)
-            {
-                // 가장 낮은 위치(위험 가능성 최대) 이상이면 Safe 로 본다 (양(+)방향이 Up 이라고 가정)
-                double minTarget = targetList.Min();
-                return cur >= (minTarget - tol);
-            }
-
-            // 어떤 후보라도 허용오차 내면 Safe
-            return targetList.Any(t => Math.Abs(cur - t) <= tol);
+            var tp = TeachingPositions[(int)InputStageEjectorConfig.TeachingPositionName.EjectPinReady];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
 
             //if (_axPinZ == null)
             //    return treatMissingAsSafe;
 
-            //double dSafetyZPos = 0.0;
-            //double dOffsetZPos = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString(),
-            //            AxisNames.EjectPinZ);
-            //double dReadyZPos = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
-            //            AxisNames.EjectPinZ);
+            //var cfg = InputStageEjectorConfig;
+            //if (cfg?.TeachingPositions == null || cfg.TeachingPositions.Count == 0)
+            //    return treatMissingAsSafe;
+
+            //// 우선순위 (문서 주석 기준)
+            //string[] candidates =
+            //{
+            //    InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
+            //    InputStageEjectorConfig.TeachingPositionName.EjectPinChange.ToString(),
+            //    InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString()
+            //};
+
+            //var targetList = new List<double>();
+
+            //foreach (var name in candidates)
+            //{
+            //    var tp = cfg.GetTeachingPosition(name);
+            //    if (tp?.AxisPositions == null) continue;
+
+            //    if (tp.AxisPositions.TryGetValue(AxisNames.EjectPinZ, out double val))
+            //    {
+            //        // 실제로 0.0 위치가 유효한 Teaching 일 수도 있으므로 그대로 사용
+            //        targetList.Add(val);
+            //    }
+            //}
+
+            //if (targetList.Count == 0)
+            //    return treatMissingAsSafe; // Teaching 에 PinZ 가 하나도 정의 안된 경우 정책상 Safe 처리
 
             //double cur = _axPinZ.GetPosition();
             //double tol = useAxisInposTolerance
-            //    ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
-            //    : fallbackTolerance;
-            //if (allowAbove)
-            //    return cur >= (dReadyZPos - tol);
+            //             ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
+            //             : fallbackTolerance;
 
-            //return System.Math.Abs(cur - dReadyZPos) <= tol;
+            //if (allowAbove)
+            //{
+            //    // 가장 낮은 위치(위험 가능성 최대) 이상이면 Safe 로 본다 (양(+)방향이 Up 이라고 가정)
+            //    double minTarget = targetList.Min();
+            //    return cur >= (minTarget - tol);
+            //}
+
+            //// 어떤 후보라도 허용오차 내면 Safe
+            //return targetList.Any(t => Math.Abs(cur - t) <= tol);
         }
+
         /// <summary>
         /// 두 축(EjectorZ & PinZ) 모두 Safety 판단
         /// </summary>

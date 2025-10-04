@@ -246,6 +246,7 @@ namespace QMC.LCP_280.Process.Component
                                         {
                                             try { axis.JogStop(); } catch { }
                                         }
+                                        
                                         if (inFeeder.IsRingPresent())
                                             return (false, "Wafer Feeder Ring Clear Timeout");
                                     }

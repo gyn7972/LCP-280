@@ -864,8 +864,8 @@ namespace QMC.LCP_280.Process.Unit
             if (IsStop) { return 0; }
 
             //Plate Down ¡æ 
-            SetClampPlate(false);
-            if (!IsPlateDown())
+            SetClampPlate(true);
+            if (!IsPlateUp())
             {
                 if (!bSimulation)
                 {
@@ -904,8 +904,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 if (!IsPlateUp()|| Config.IsSimulation || Config.IsDryRun)
                 {
-                    SetClampPlate(true);
-                    if (!IsPlateUp())
+                    SetClampPlate(false);
+                    if (!IsPlateDown())
                     {
                         if(!Config.IsSimulation)
                         {
@@ -1008,8 +1008,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             if (IsStop) { return 0; }
 
-            SetClampPlate(false);
-            if (!IsPlateDown())
+            SetClampPlate(true);
+            if (!IsPlateUp())
             {
                 PostAlarm((int)AlarmKeys.ePlate);
                 Log.Write(this, "Fail: PlateUp");

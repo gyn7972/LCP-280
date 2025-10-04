@@ -1046,6 +1046,11 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
+                if (Rotary != null && Rotary.IsAnyAxisMoving())
+                {
+                    return 0;
+                }
+
                 MaterialDie die = Rotary.GetUnloadSocketMaterial();
                 if (die == null || die.Presence != Material.MaterialPresence.Exist)
                 {
@@ -1136,9 +1141,9 @@ namespace QMC.LCP_280.Process.Unit
                 OutputStage.PlaceDie(die);
                 SetMaterial(new MaterialDie() { Presence = Material.MaterialPresence.NotExist });
 
+                State = ProcessState.None;
             }
 
-            State = ProcessState.None;
             return 0;
         }
 
@@ -1180,41 +1185,37 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = ChipPickDown;
-
             }
 
             int nIndex = 0;
             nIndex = GetUnloaderIndexNo();
             int nArmindex = 0;
             nArmindex = GetPlaceArmIndex();
-
             nRet = MovePositionPickUp_Index(bFineSpeed);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[ChipPickDown] MovePositionPickUp_Index failed");
                 return -1;
             }
-            else
+            
+            if (SetVacuum(nArmindex, true))
             {
-                if (SetVacuum(nArmindex, true))
+                var sw = Stopwatch.StartNew();
+                while (!ArmFlowOk(nArmindex))
                 {
-                    var sw = Stopwatch.StartNew();
-                    while (!ArmFlowOk(nArmindex))
+                    if (!Config.IsSimulation && !Config.IsDryRun)
                     {
-                        if (!Config.IsSimulation && !Config.IsDryRun)
+                        if (sw.ElapsedMilliseconds > 2000)
                         {
-                            if (sw.ElapsedMilliseconds > 2000)
-                            {
-                                PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
-                                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
-                                return -1;
-                            }
-                            Thread.Sleep(1);
+                            PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
+                            Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
+                            return -1;
                         }
-                        else
-                        {
-                            break;
-                        }
+                        Thread.Sleep(1);
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
             }
