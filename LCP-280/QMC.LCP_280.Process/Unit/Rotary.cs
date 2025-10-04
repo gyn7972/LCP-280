@@ -1120,6 +1120,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // === INPUT (Load 위치) 처리 영역 (DryRun 단순화) =========================
             RequestInputDieTrDie = false;
+
             if (Config.IsUnitDryRun)
             {
                 // DryRun: InputDieTransfer 와의 인터페이스 없이 즉시 소켓에 Die 존재 상태를 시뮬레이션
@@ -1161,20 +1162,33 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
+                    // 2) (기존 로직 교체) : "사용 중인 현재 Load 소켓이 비어있으면 절대 돌지 않는다"
+                    // (주의) 다른 소켓이 비어있어도 '현재 Load 위치 소켓' 이 이미 로딩되어 있다면 공정/회전 진행.
+                    // 요구사항: "소켓을 사용중인데(현재 위치) 로딩 안되어 있으면 돌면 안돼" 에 맞춘 최소 제한.
+                    var loadSock = GetLoadSocketInfo();
+                    var loadDie = loadSock.GetMaterialDie();
+                    bool needLoad = useSocket &&
+                                    (loadDie == null || loadDie.Presence != Material.MaterialPresence.Exist);
+                    if (needLoad)
+                    {
+                        RequestInputDieTrDie = true;
+                        return 0; // 아직 로딩 안됨 → 회전/후속 공정 금지
+                    }
+                    
+
                     // 요구사항:
                     // 1) 사용(Enable)된 소켓 중 하나라도 제품(Exist)이 있으면 → 이후 공정(Align/Probe/Unload)을 순차 진행
                     // 2) 사용 소켓 모두 비어있으면 → 제품이 투입될 때까지 대기 (회전/공정 진행 X)
-                    if (IsAllUsedSocketsEmpty())
-                    {
-                        // 제품이 전혀 없으므로 투입 대기.
-                        // Load 위치 소켓이 사용 가능하면 투입 요청 플래그를 올려 InputDieTransfer 가 준비될 때 픽업하도록 함.
-                        if (useSocket)
-                            RequestInputDieTrDie = true;
+                    //if (IsAllUsedSocketsEmpty())
+                    //{
+                    //    // 제품이 전혀 없으므로 투입 대기.
+                    //    // Load 위치 소켓이 사용 가능하면 투입 요청 플래그를 올려 InputDieTransfer 가 준비될 때 픽업하도록 함.
+                    //    if (useSocket)
+                    //        RequestInputDieTrDie = true;
 
-                        // 진행을 중단하고 다음 OnRunWork 사이클에서 다시 검사
-                        return 0;
-                    }
-                    // 하나라도 존재 → 그냥 아래 공정 진행
+                    //    // 진행을 중단하고 다음 OnRunWork 사이클에서 다시 검사
+                    //    return 0;
+                    //}
                 }
             }
             
@@ -1195,6 +1209,17 @@ namespace QMC.LCP_280.Process.Unit
             }
             // 투입 완료되었으면 요청 플래그 내림
             RequestInputDieTrDie = false;
+
+            // 5) 회전 전 최종 안전 조건:
+            //    - 현재 Load 소켓이 사용중 && 아직도 비어있다면 회전 금지 (이중 방어)
+            var finalLoadSock = GetLoadSocketInfo();
+            var finalDie = finalLoadSock.GetMaterialDie();
+            if (useSocket && (finalDie == null || finalDie.Presence != Material.MaterialPresence.Exist))
+            {
+                // 예상치 못하게 아직 로딩 안됨 → 다시 로딩 시도
+                RequestInputDieTrDie = true;
+                return 0;
+            }
 
             nRet = Rotate();
             if (nRet != 0)
@@ -1452,48 +1477,44 @@ namespace QMC.LCP_280.Process.Unit
                 t3.Wait();
                 Thread.Sleep(1);
 
-                this.OutputDieTransfer.RisePickupStartEvent();
-                bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000);
-                if (bRet == true)
+                if (OutputDieTransfer != null)
                 {
+                    this.OutputDieTransfer.RisePickupStartEvent();
+                    bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000);
+                    if (!bRet)
+                    {
+                        PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
+                        Log.Write(UnitName, "OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
+                        return -1;
+                    }
+                    
                     // OutputDieTransfer 완료 시: OutputDieTransfer의 소켓 정보만 사용하여 비우기
                     try
                     {
-                        if (this.OutputDieTransfer == null)
+                        int idx = this.OutputDieTransfer.GetUnloaderIndexNo();
+                        if (idx >= 0 && idx < GetIndexCount())
                         {
-                            Log.Write(UnitName, "[OutputDieTransfer] NULL - cannot clear socket");
+                            lock (_socketLock)
+                            {
+                                _sockets[idx].SetMaterialDie(null);
+                                _sockets[idx].SetState(RotarySocketState.Empty);
+                            }
+                            Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
                         }
                         else
                         {
-                            int idx = this.OutputDieTransfer.GetUnloaderIndexNo();
-                            if (idx >= 0 && idx < GetIndexCount())
-                            {
-                                lock (_socketLock)
-                                {
-                                    _sockets[idx].SetMaterialDie(null);
-                                    _sockets[idx].SetState(RotarySocketState.Empty);
-                                }
-                                Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
-                            }
-                            else
-                            {
-                                Log.Write(UnitName, $"[OutputDieTransfer] Invalid unloader socket index: {idx}");
-                            }
+                            Log.Write(UnitName, $"[OutputDieTransfer] Invalid unloader socket index: {idx}");
                         }
                     }
                     catch (Exception ex)
                     {
                         Log.Write(UnitName, $"[OutputDieTransfer] 소켓 상태 초기화 실패: {ex.Message}");
                     }
-                }
-                else if (bRet == false)
-                {
-                    PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
-                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
-                    return -1;
+                    
                 }
 
-                Task.WaitAll(t1, t2, t3);
+                //Task.WaitAll(t1, t2, t3);
+                Task.WaitAll(t1, t2);
 
                 int r1 = t1.Result;
                 int r2 = t2.Result;
