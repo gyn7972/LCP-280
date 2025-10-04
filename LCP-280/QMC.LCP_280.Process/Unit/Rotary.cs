@@ -1016,6 +1016,24 @@ namespace QMC.LCP_280.Process.Unit
         public bool DoneInputDieTrDie { get; set; } = false;
         #endregion
 
+
+        // 모든 사용 소켓이 비어있는지 검사 (사용 설정된 소켓만 대상)
+        private bool IsAllUsedSocketsEmpty()
+        {
+            if (_sockets == null) return true;
+            lock (_socketLock)
+            {
+                foreach (var s in _sockets)
+                {
+                    if (!s.UseSocket) continue;
+                    var die = s.GetMaterialDie();
+                    if (die != null && die.Presence == Material.MaterialPresence.Exist)
+                        return false; // 하나라도 존재
+                }
+                return true;
+            }
+        }
+
         public override int OnRun()
         {
             int nRtn = 0;
@@ -1143,7 +1161,20 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
-                    //사용안하는 Socket도 있으니깐.. 무조건 돌려야 하네.
+                    // 요구사항:
+                    // 1) 사용(Enable)된 소켓 중 하나라도 제품(Exist)이 있으면 → 이후 공정(Align/Probe/Unload)을 순차 진행
+                    // 2) 사용 소켓 모두 비어있으면 → 제품이 투입될 때까지 대기 (회전/공정 진행 X)
+                    if (IsAllUsedSocketsEmpty())
+                    {
+                        // 제품이 전혀 없으므로 투입 대기.
+                        // Load 위치 소켓이 사용 가능하면 투입 요청 플래그를 올려 InputDieTransfer 가 준비될 때 픽업하도록 함.
+                        if (useSocket)
+                            RequestInputDieTrDie = true;
+
+                        // 진행을 중단하고 다음 OnRunWork 사이클에서 다시 검사
+                        return 0;
+                    }
+                    // 하나라도 존재 → 그냥 아래 공정 진행
                 }
             }
             
