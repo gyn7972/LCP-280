@@ -196,18 +196,25 @@ namespace QMC.LCP_280.Process.Unit
                 // 1) Check Can Measure
                 InspectDone = false;
 
-                if (!tester.CanMeasure())
+                if(Config.IsSimulation == false
+                && Config.IsDryRun == false )
                 {
-                    PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
-                    Log.Write(this, "PKG Tester: Not ready to measure.");
-                    return -1;
+                    if (!tester.CanMeasure())
+                    {
+                        PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
+                        Log.Write(this, "PKG Tester: Not ready to measure.");
+                        return -1;
+                    }
+
+                    // 2) Measure Chip
+                    bRet &= Measure();
+                    if (bRet != 0)
+                    {
+                        Log.Write(UnitName, "Measure() Fail");
+                        return -1;
+                    }
                 }
-
-                // 2) Measure Chip
-                bRet &= Measure();
-                if (bRet != 0)
-                    return -1;
-
+                
                 MaterialDie die = this.Rotary.GetProbeSocketMaterial();
                 if(die.Presence == Material.MaterialPresence.Exist)
                 {

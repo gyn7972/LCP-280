@@ -267,7 +267,7 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
-                if (!Config.IsSimulation)
+                if (!Config.IsSimulation && !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eVisionSearch);
                     Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
