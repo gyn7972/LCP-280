@@ -207,6 +207,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
+            if (IsRingPresent() == true)
+            {
+                PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
+                Log.Write(this, "CheckMoveInterLockReady Fail - IsRingPresent()");
+                return -1;
+            }
+
             if (!IsUnClamped())
             {
                 AxisInputFeederY.EmgStop();
