@@ -207,12 +207,16 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (IsRingPresent() == true)
+            if(Config.IsSimulation == false || Config.IsDryRun == false)
             {
-                PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
-                Log.Write(this, "CheckMoveInterLockReady Fail - IsRingPresent()");
-                return -1;
+                if (IsRingPresent() == true)
+                {
+                    PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
+                    Log.Write(this, "CheckMoveInterLockReady Fail - IsRingPresent()");
+                    return -1;
+                }
             }
+            
 
             if (!IsUnClamped())
             {
@@ -1435,6 +1439,7 @@ namespace QMC.LCP_280.Process.Unit
                 IsPositionStage() == false &&
                 IsPositionReady() == false)
             {
+                AxisInputFeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_InputFeederNoPosition);
                 Log.Write(this, "CheckReady Fail - No Position");
                 return -1;
@@ -1448,6 +1453,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 else
                 {
+                    AxisInputFeederY.EmgStop();
                     PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                     Log.Write(this, "CheckReady Fail - InputStage.IsStageInterLockOK");
                     return -1;
@@ -1460,6 +1466,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (IsInterlockOKWithCassete() == false)
                 {
+                    AxisInputFeederY.EmgStop();
                     PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
                     Log.Write(this, "CheckReady Fail - IsInterlockOKWithCassete");
                     return -1;
@@ -1468,6 +1475,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (InputStage.IsWaferLoadingPosition() == false
                 || InputStage.IsWaferUnloadingPosition() == false)
                 {
+                    AxisInputFeederY.EmgStop();
                     PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                     Log.Write(this, "CheckReady Fail - InputStage.IsStageInterLockOK");
                     return -1;
