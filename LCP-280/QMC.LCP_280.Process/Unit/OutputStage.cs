@@ -435,11 +435,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (axis == null) return -1;
 
-            if (CheckMoveSafety(axis) != 0)
-            {
-                return -1;
-            }
-
             Task<int> task = MoveAxisPositionOneAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {

@@ -102,8 +102,19 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (axis == null) return -1;
 
-            if (CheckMoveSafety(axis) != 0)
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
+                AxisEjectorZ.EmgStop();
+                AxisPinZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+
+            if (InputStage.IsStageInterLockOK() == false)
+            {
+                AxisEjectorZ.EmgStop();
+                AxisPinZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
 
@@ -124,45 +135,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
-
-        public override int CheckMoveSafety(MotionAxis ax)
-        {
-            try
-            {
-                //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
-                // 1) Ejector / PinZ Safety 검사 (우선순위 높음)
-                if (InputStage != null && InputStage.IsAnyAxisMoving())
-                {
-                    AxisEjectorZ.EmgStop();
-                    AxisPinZ.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                    return -1;
-                }
-
-                if(InputStage.CheckMoveSafety(InputStage.AxisX) != 0 ||
-                   InputStage.CheckMoveSafety(InputStage.AxisY) != 0    )
-                {
-                    AxisEjectorZ.EmgStop();
-                    AxisPinZ.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                    return -1;
-                }
-
-                // 추가로 "다른 유닛 축 이동중" 등을 넣고 싶다면 여기서 검사 후 알람 코드 반환
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                // 예외 발생 시 보수적으로 이동 중단하도록 임의 알람 
-                AxisEjectorZ.EmgStop();
-                AxisPinZ.EmgStop();
-                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                return -1;
-            }
-
-            return 0; // 0 = OK
-        }
         /// //////////////////////////////////////////////////////////////////////////////////////////////
+        /// 
         // UI, sequence 용 Move 함수
 
         //EjectBlockUp
@@ -216,8 +190,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            if (InputStage.CheckMoveSafety(InputStage.AxisX) != 0 ||
-                InputStage.CheckMoveSafety(InputStage.AxisY) != 0  )
+            if (InputStage.IsStageInterLockOK() == false)
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();

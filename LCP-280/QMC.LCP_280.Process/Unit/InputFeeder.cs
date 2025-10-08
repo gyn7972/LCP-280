@@ -1413,9 +1413,12 @@ namespace QMC.LCP_280.Process.Unit
             if (InputStage.IsWaferLoadingPosition() == false
             || InputStage.IsWaferUnloadingPosition() == false)
             {
-                PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
-                Log.Write(this, "CheckReady Fail - InputStage.IsWaferLoadingPosition");
-                return -1;
+                if(InputStage.IsStageInterLockOK() == false)
+                {
+                    PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                    Log.Write(this, "CheckReady Fail - InputStage.IsStageInterLockOK");
+                    return -1;
+                }
             }
 
             if (IsPositionCassette()
