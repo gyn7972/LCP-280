@@ -106,7 +106,7 @@ namespace QMC.LCP_280.Process
         private void OutputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)
         {
             this.outputWaferCarrierControl1.GetWaferSelectMapView()?.SetMaterialCassette(Cassette);
-            this.outputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
+            //this.outputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
 
             this.outputWaferCarrierControl1.SetWaferCarrierId(Cassette.CarrierId);
             this.outputWaferCarrierControl1.UpdateWaferCount(Cassette.SlotCount);
@@ -115,7 +115,7 @@ namespace QMC.LCP_280.Process
         private void InputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)
         {
             this.inputWaferCarrierControl1.GetWaferSelectMapView()?.SetMaterialCassette(Cassette);
-            this.inputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
+            //this.inputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
 
             this.inputWaferCarrierControl1.SetWaferCarrierId(Cassette.CarrierId);
             this.inputWaferCarrierControl1.UpdateWaferCount(Cassette.SlotCount);
