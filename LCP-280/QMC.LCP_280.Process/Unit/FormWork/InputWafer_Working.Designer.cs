@@ -51,7 +51,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tabPage3 = new System.Windows.Forms.TabPage();
             this.tableLayoutPanel9 = new System.Windows.Forms.TableLayoutPanel();
             this.teachingPositionControl = new QMC.LCP_280.Process.Component.TeachingPositionControl();
-            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
+            this.waferMapView_InputWafer = new QMC.LCP_280.Process.Component.WaferMapView();
             this.dioControl = new QMC.LCP_280.Process.Component.DIOControl();
             this.manualSequenceControlInputCassette = new QMC.LCP_280.Process.Component.ManualSequenceControl();
             this.manualSequenceControlInputFeeder = new QMC.LCP_280.Process.Component.ManualSequenceControl();
@@ -108,7 +108,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             this.tableLayoutPanel4.ColumnCount = 1;
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel4.Controls.Add(this.waferMapView, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.waferMapView_InputWafer, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.btnMapping, 0, 1);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 3);
@@ -383,12 +383,12 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             // 
             // waferMapView
             // 
-            this.waferMapView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.waferMapView.Location = new System.Drawing.Point(2, 3);
-            this.waferMapView.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.waferMapView.Name = "waferMapView";
-            this.waferMapView.Size = new System.Drawing.Size(175, 232);
-            this.waferMapView.TabIndex = 16;
+            this.waferMapView_InputWafer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.waferMapView_InputWafer.Location = new System.Drawing.Point(2, 3);
+            this.waferMapView_InputWafer.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.waferMapView_InputWafer.Name = "waferMapView";
+            this.waferMapView_InputWafer.Size = new System.Drawing.Size(175, 232);
+            this.waferMapView_InputWafer.TabIndex = 16;
             // 
             // dioControl
             // 
@@ -465,7 +465,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         #endregion
         private Component.DIOControl dioControl;
         private Component.TeachingPositionControl teachingPositionControl;
-        private WaferMapView waferMapView;
+        private WaferMapView waferMapView_InputWafer;
         private Common.IndividualMenuButton btnMapping;
         private System.Windows.Forms.GroupBox groupBoxManual;
         private System.Windows.Forms.GroupBox groupBoxImageView;

@@ -23,6 +23,11 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class OutputCassetteLifter : BaseUnit<OutputCassetteLifterConfig>
     {
+        public delegate void UpdateUICassette(MaterialCassette Cassette);
+
+        public event UpdateUICassette EventUpdateUICassette;
+
+
         public enum AlarmKeys
         {
             eBinProtrusionDetected = 5001,
@@ -647,6 +652,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(0);
             }
+
+            EventUpdateUICassette?.BeginInvoke(material, null, null);
+
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
             Log.Write(this, "End ScanBin");
             return nRtn;

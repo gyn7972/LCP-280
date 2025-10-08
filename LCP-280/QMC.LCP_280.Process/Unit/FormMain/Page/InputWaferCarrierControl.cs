@@ -12,17 +12,15 @@ using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
+
+
+
     public partial class InputWaferCarrierControl : UserControl
     {
         public InputWaferCarrierControl()
         {
             InitializeComponent();
         }
-
-        //public Component.WaferMapView GetWaferMapView()
-        //{
-        //    return waferMapView;
-        //}
 
         public Component.WaferSelectMapView GetWaferSelectMapView()
         {

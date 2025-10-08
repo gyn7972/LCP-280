@@ -40,16 +40,18 @@ namespace QMC.LCP_280.Process
 
         }
 
-        public Monitoring_Main(InputCassetteLifter cassetteLifter, InputFeeder ringTransfer, 
+        public Monitoring_Main(InputCassetteLifter inputcassetteLifter, InputFeeder ringTransfer,
             InputStage inputStage, Rotary rotary, OutputStage outputStage, OutputCassetteLifter outputCassetteLifter)
         {
             InitializeComponent();
 
             #region Chart
-            InputCassetteLifter = cassetteLifter;
+            InputCassetteLifter = inputcassetteLifter;
             Feeder = ringTransfer;
             this.inputStage = inputStage;
             Rotary = rotary;
+            OutputStage = outputStage;
+            OutputCassetteLifter = outputCassetteLifter;
 
             var materialCassette = InputCassetteLifter?.GetMaterialCassette();
 
@@ -91,12 +93,32 @@ namespace QMC.LCP_280.Process
             dieInputControl1.MotorMoveRequested += OnDieInput_MotorMoveRequested;
 
             // 이벤트 - Select Control
-            dieIndexSelectControl1.DieClicked += OnDieClick_Requested;
+            //dieIndexSelectControl1.DieClicked += OnDieClick_Requested;
             dieIndexSelectControl1.RotationRequested += OnDieRotation_Requested;
             inputStage.EventUpdateUIWafer += InputStage_EventUpdateUIWafer;
             outputStage.EventUpdateUIWafer += OutputStage_EventUpdateUIWafer;
 
+            InputCassetteLifter.EventUpdateUICassette += InputCassetteLifter_EventUpdateUICassette;
+            OutputCassetteLifter.EventUpdateUICassette += OutputCassetteLifter_EventUpdateUICassette;
 
+        }
+
+        private void OutputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)
+        {
+            this.outputWaferCarrierControl1.GetWaferSelectMapView()?.SetMaterialCassette(Cassette);
+            this.outputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
+
+            this.outputWaferCarrierControl1.SetWaferCarrierId(Cassette.CarrierId);
+            this.outputWaferCarrierControl1.UpdateWaferCount(Cassette.SlotCount);
+        }
+
+        private void InputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)
+        {
+            this.inputWaferCarrierControl1.GetWaferSelectMapView()?.SetMaterialCassette(Cassette);
+            this.inputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
+
+            this.inputWaferCarrierControl1.SetWaferCarrierId(Cassette.CarrierId);
+            this.inputWaferCarrierControl1.UpdateWaferCount(Cassette.SlotCount);
         }
 
         private void OutputStage_EventUpdateUIWafer(MaterialWafer wafer)
@@ -229,10 +251,10 @@ namespace QMC.LCP_280.Process
         #endregion
 
         #region 이벤트 처리
-        private void OnDieClick_Requested(object sender, DieIndexSelectControl.Die e)
-        {
-            Console.WriteLine($"[Select] Die Num: {e.Number}");
-        }
+        //private void OnDieClick_Requested(object sender, DieIndexSelectControl.Die e)
+        //{
+        //    Console.WriteLine($"[Select] Die Num: {e.Number}");
+        //}
 
         private void OnDieRotation_Requested(object sender, int rotationOffset)
         {
@@ -245,13 +267,13 @@ namespace QMC.LCP_280.Process
                 return;
 
             int nRet = Rotary.MovePositionRotate();
-            if(nRet !=0 )
+            if (nRet != 0)
             {
                 MessageBox.Show("로터리 모터 구동 실패 인터락을 확인 하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-                // 회전 완료 후 상태 업데이트
+            // 회전 완료 후 상태 업데이트
             UpdateRotationStatus(Rotary.GetLoadIndexNo() + 1);
         }
 
@@ -375,6 +397,23 @@ namespace QMC.LCP_280.Process
             outputWaferCarrierControl1.SetWaferCarrierId("5678");
             outputWaferCarrierControl1.UpdateWaferCount(3);
             #endregion
+
+            if (Rotary != null)
+            {
+                dieIndexSelectControl1.BindRotary(Rotary);
+            }
         }
+
+        private void Monitoring_Main_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (Rotary != null)
+            {
+                Rotary.LoadIndexChanged -= dieIndexSelectControl1.Rotary_LoadIndexChanged; // 내부 메서드가 private이면 래퍼 필요
+            }
+        }
+
+
+
+
     }
 }

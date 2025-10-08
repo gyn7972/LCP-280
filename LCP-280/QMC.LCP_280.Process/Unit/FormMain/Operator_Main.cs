@@ -602,6 +602,18 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private void ExecuteAutoReset()
         {
             // Auto Reset 로직 구현
+            InputCassetteLifter.SetMaterial(new Material());
+            InputFeeder.SetMaterial(new Material());
+            InputStage.SetMaterial(new Material());
+            InputDieTransfer.SetMaterial(new Material());
+            Rotary.SetMaterial(new Material());
+            IndexLoadAligner.SetMaterial(new Material());
+            IndexChipProbeController.SetMaterial(new Material());
+            IndexUnloadAligner.SetMaterial(new Material());
+            OutputDieTransfer.SetMaterial(new Material());
+            OutputStage.SetMaterial(new Material());
+            OutputFeeder.SetMaterial(new Material());
+            OutputCassetteLifter.SetMaterial(new Material());
         }
 
         private void ExecuteSequence(string sequenceName, string action)

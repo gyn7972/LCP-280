@@ -353,9 +353,13 @@ namespace QMC.LCP_280.Process.Component
                 return;
             }
 
-            if (pWaferImage != null) pWaferImage.Invalidate();
-            // 부모 Invalidate 제거 - 불필요한 이중 렌더링 방지
-            // Invalidate();
+            if (pWaferImage != null)
+            {
+                pWaferImage.Invalidate();
+                pWaferImage.Refresh();
+            }
+
+            
         }
 
         #endregion

@@ -23,6 +23,11 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputCassetteLifter : BaseUnit<InputCassetteLifterConfig>
     {
+        public delegate void UpdateUICassette(MaterialCassette Cassette);
+
+        public event UpdateUICassette EventUpdateUICassette;
+
+
         public enum AlarmKeys
         {
             eWaferProtrusionDetected = 1001,
@@ -674,6 +679,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(0);
             }
+
+            EventUpdateUICassette?.BeginInvoke(material, null, null);
+
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
             Log.Write(this, "End ScanWafer");
             return nRtn;

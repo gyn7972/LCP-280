@@ -52,7 +52,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             Load += InputWafer_Working_Load;
             FormClosing += InputWafer_Working_FormClosing;
 
-            waferMapView.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
+            waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
 
         }
 
@@ -337,8 +337,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     MessageBox.Show("Wafer 감지 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                // WaferMapView에 데이터 설정 //material
-                waferMapView.SetMaterialCassette(materialCassette);
+
+                waferMapView_InputWafer.SetMaterialCassette(materialCassette);
+                waferMapView_InputWafer.Refresh();
 
                 MessageBox.Show("Wafer 감지가 완료되었습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }

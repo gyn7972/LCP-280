@@ -374,6 +374,13 @@ namespace QMC.LCP_280.Process.Unit
                         var mb = new MessageBoxOk();
                         mb.ShowDialog("Interlock!", reason);
                     }
+                    else
+                    {
+                        btnNextIndex.Enabled = btnPrevIndex.Enabled = false;
+                        // LoadIndexChanged 이벤트로 재활성화
+                        rotary.LoadIndexChanged -= Rotary_LoadIndexChanged_ForJog;
+                        rotary.LoadIndexChanged += Rotary_LoadIndexChanged_ForJog;
+                    }
                     return;
                 }
 
@@ -391,6 +398,19 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(ex);
             }
+        }
+        private void Rotary_LoadIndexChanged_ForJog(object sender, int idx)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<object, int>(Rotary_LoadIndexChanged_ForJog), sender, idx);
+                return;
+            }
+            btnNextIndex.Enabled = btnPrevIndex.Enabled = true;
+            // 필요시 한 번만 구독 유지: 해제
+            var r = sender as Rotary;
+            if (r != null)
+                r.LoadIndexChanged -= Rotary_LoadIndexChanged_ForJog;
         }
 
         private void btnStop_Click(object sender, EventArgs e)

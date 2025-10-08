@@ -7,7 +7,6 @@
         private System.Windows.Forms.Label lblWaferIdValue;
         private System.Windows.Forms.Label lblWaferCountTitle;
         private System.Windows.Forms.Label lblWaferCountValue;
-        //private QMC.LCP_280.Process.Component.WaferMapView waferMapView; // 수정: 네임스페이스 완전 지정
         private QMC.LCP_280.Process.Component.WaferSelectMapView waferSelectMapView; // 수정: 네임스페이스 완전 지정
         protected override void Dispose(bool disposing)
         {

@@ -24,6 +24,19 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class Rotary : BaseUnit<RotaryConfig>
     {
+        // === Load 인덱스 변경 이벤트 (UI 연동용) ===
+        public delegate void LoadIndexChangedHandler(object sender, int loadIndex0Based);
+        public event LoadIndexChangedHandler LoadIndexChanged;
+        protected virtual void OnLoadIndexChanged(int loadIndex0Based)
+        {
+            LoadIndexChangedHandler handler = this.LoadIndexChanged;
+            if (handler != null)
+            {
+                handler(this, loadIndex0Based);
+            }
+        }
+
+
         public enum AlarmKeys
         {
             eIndexRotary = 4800,
@@ -303,6 +316,29 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
+        #region Socket Public Accessors
+        public SocketInfo GetSocket(int no)
+        {
+            lock (_socketLock)
+            {
+                if (_sockets == null) return null;
+                if (no < 0 || no >= _sockets.Length) return null;
+                return _sockets[no]; // 참조 반환 (UI가 상태 변화를 즉시 반영 가능)
+            }
+        }
+
+        public SocketInfo[] GetAllSockets()
+        {
+            lock (_socketLock)
+            {
+                if (_sockets == null) return new SocketInfo[0];
+                // 원본 참조 배열 그대로 반환 (변경 감지 필요하면 ToArray()로 복사 가능)
+                return _sockets;
+            }
+        }
+        #endregion
+
+
         public override void SetMaterial(Material m)
         {
             var socket = GetLoadSocketInfo();
@@ -489,6 +525,7 @@ namespace QMC.LCP_280.Process.Unit
         private bool TryMoveIndexStep(int step, out string reason)
         {
             bool bRtn = false;
+
             reason = null;
             var axis = _axisT;
             if (axis == null)
@@ -516,6 +553,28 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             _moveStartTime = DateTime.Now;
+
+            // (변경) 이동 완료 후에 이벤트 발생하도록 비동기 처리
+            Task.Run(() =>
+            {
+                int wrc = WaitIndexMoveDone();
+                if (wrc == 0)
+                {
+                    try
+                    {
+                        OnLoadIndexChanged(GetLoadIndexNo());
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write("Rotary", $"LoadIndexChanged dispatch fail: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Log.Write("Rotary", $"Index move wait timeout/err (rc={wrc})");
+                }
+            });
+
             return true;
         }
 
@@ -1228,6 +1287,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[Rotate] Failed");
                 return nRet;
             }
+
+            
             State = ProcessState.Complete;
 
             return nRet;
@@ -1743,10 +1804,9 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (nRet != 0)
-            {
-                return nRet;
-            }
+            // 이동 완료 후 현재 Load 소켓 번호 이벤트 통지
+            //OnLoadIndexChanged(GetLoadIndexNo());
+
             return nRet;
         }
 
