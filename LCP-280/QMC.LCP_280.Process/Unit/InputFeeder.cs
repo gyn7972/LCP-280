@@ -1410,27 +1410,18 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (InputStage.IsWaferLoadingPosition() == false
-            || InputStage.IsWaferUnloadingPosition() == false)
+            if (InputStage.IsStageInterLockOK())
             {
-                if(InputStage.IsStageInterLockOK() == false)
+                if (IsPositionReady())
+                {
+                    return 0;
+                }
+                else
                 {
                     PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
                     Log.Write(this, "CheckReady Fail - InputStage.IsStageInterLockOK");
                     return -1;
                 }
-            }
-
-                if (IsFeederUp() == false)
-                {
-                    nRet = UpFeeder();
-                    if (nRet != 0)
-                    {
-                        Log.Write(this, "CheckReady Fail - UpFeeder");
-                        return nRet;
-                    }
-                }
-
             }
 
             if (IsPositionCassette()
@@ -1441,6 +1432,14 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     PostAlarm((int)AlarmKeys.Alarm_InputFeederInterlockFailed);
                     Log.Write(this, "CheckReady Fail - IsInterlockOKWithCassete");
+                    return -1;
+                }
+
+                if (InputStage.IsWaferLoadingPosition() == false
+                || InputStage.IsWaferUnloadingPosition() == false)
+                {
+                    PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                    Log.Write(this, "CheckReady Fail - InputStage.IsStageInterLockOK");
                     return -1;
                 }
 
