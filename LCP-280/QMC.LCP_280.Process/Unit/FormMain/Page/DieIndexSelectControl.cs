@@ -175,7 +175,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 int phys = sv.Socket.No & 7;
                 int relative = (phys - loadIndex + 8) & 7;
-                int angleDeg = guiAngles[relative];
+                //int angleDeg = guiAngles[relative]; //정방향
+                int angleDeg = guiAngles[(8 - relative) & 7];       // 역방향 매핑 (핵심 변경)
                 double rad = angleDeg * Math.PI / 180.0;
 
                 float x = centerX + radius * (float)Math.Cos(rad);
