@@ -953,7 +953,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if (IsAtEjectBlockSafety() == false &&
+            if (IsAtEjectBlockSafety() == false ||
                 IsAtEjectPinReady() == false)
             {
                 nRet = MovePositionEjectBlockSafety(isFine);
