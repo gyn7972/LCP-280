@@ -1421,6 +1421,18 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
+                if (IsFeederUp() == false)
+                {
+                    nRet = UpFeeder();
+                    if (nRet != 0)
+                    {
+                        Log.Write(this, "CheckReady Fail - UpFeeder");
+                        return nRet;
+                    }
+                }
+
+            }
+
             if (IsPositionCassette()
                 || IsPositionBarcode()
                 || IsPositionStage())
