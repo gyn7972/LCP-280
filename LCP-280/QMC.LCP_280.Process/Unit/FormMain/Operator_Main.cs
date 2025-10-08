@@ -30,7 +30,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private OutputStage OutputStage { get; set; }
         private OutputFeeder OutputFeeder{ get; set; }
         private OutputCassetteLifter OutputCassetteLifter { get; set; }
-
+        private InputStageEjector InputStageEjector { get; set; }
         // State
         private bool _initialized;
         private bool _preloadRequested;
@@ -63,7 +63,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
             TryGetUnit<IndexLoadAligner>("IndexLoadAligner"),
             TryGetUnit<IndexChipProbeController>("IndexChipProbeController"),
-            TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"))
+            TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"),
+            TryGetUnit<InputStageEjector>("InputStageEjector"))
         {
         }
 
@@ -71,7 +72,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                             OutputDieTransfer outputDieTransfer, OutputFeeder outputFeeder,
                             InputStage inputStage, IndexUnloadAligner indexUnloadAligner, OutputStage outputStage,
                             InputCassetteLifter inputCassetteLifter, IndexLoadAligner indexLoadAligner,
-                            IndexChipProbeController indexChipProbeController, OutputCassetteLifter outputCassetteLifter)
+                            IndexChipProbeController indexChipProbeController, OutputCassetteLifter outputCassetteLifter,
+                            InputStageEjector inputStageEjector)
         {
             InitializeComponent();
 
@@ -89,6 +91,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             IndexChipProbeController = indexChipProbeController;
             OutputCassetteLifter = outputCassetteLifter;
 
+            InputStageEjector = inputStageEjector;
             // 상태 초기화
             _readySequences = new HashSet<string>();
             _startSequences = new HashSet<string>();
@@ -513,14 +516,14 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private async void ExecuteAutoReady()
         {
             // Auto Ready 로직 구현
-            bool flowControl = await HandleInputWaferReady();
-            if (!flowControl)
+            int nflowControl = await HandleInputWaferReady();
+            if (nflowControl != 0)
             {
                 Log.Write("Operator_Main", "Auto Ready 실패 - InputWafer Ready 위치 이동 실패");
                 return;
             }
 
-            flowControl = await HandleChipLoadingReady();
+            bool flowControl = await HandleChipLoadingReady();
             if (!flowControl)
             {
                 Log.Write("Operator_Main", "Auto Ready 실패 - ChipLoading Ready 위치 이동 실패");
@@ -756,11 +759,26 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             return true;
         }
-        private async System.Threading.Tasks.Task<bool> HandleInputWaferReady()
+        private async System.Threading.Tasks.Task<int> HandleInputWaferReady()
         {
-            return await MoveToTeachingPositionReadyAsync(
-                        InputFeeder,
-                        InputFeederConfig.TeachingPositionName.Ready.ToString());
+            int nRet = 0;
+            nRet = InputFeeder.CheckReady();
+            if (nRet != 0)
+            {
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error", "InputFeeder 상태를 확인하세요.");
+                return nRet;
+            }
+
+            nRet = InputStageEjector.CheckReady();
+            if (nRet != 0)
+            {
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error", "InputStageEjector 상태를 확인하세요.");
+                return nRet;
+            }
+
+            return nRet;
         }
         private async System.Threading.Tasks.Task<bool> HandleChipLoadingReady()
         {
@@ -883,8 +901,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             {
                 Log.Write("Operator_Main", "InputWafer Ready 위치로 이동");
 
-                bool flowControl = await HandleInputWaferReady();
-                if (!flowControl)
+                int nflowControl = await HandleInputWaferReady();
+                if (nflowControl != 0)
                 {
                     return;
                 }

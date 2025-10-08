@@ -929,5 +929,42 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq 단위 동작 함수
         #endregion
+
+        #region Ready
+
+        public int CheckReady(bool isFine = false)
+        {
+            Task<int> task = CheckReadyAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> CheckReadyAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnCheckReady(isFine);
+                return 0;
+            });
+        }
+        private int OnCheckReady(bool isFine)
+        {
+            int nRet = 0;
+
+            if (IsAtEjectBlockSafety() == false &&
+                IsAtEjectPinReady() == false)
+            {
+                nRet = MovePositionEjectBlockSafety(isFine);
+                if (nRet != 0) return nRet;
+                nRet = MovePositionEjectPinReady(isFine);
+                if (nRet != 0) return nRet;
+            }
+
+            return nRet;
+        }
+
+        #endregion
     }
 }
