@@ -930,9 +930,11 @@ namespace QMC.LCP_280.Process.Unit
                 IsAtEjectPinReady() == false)
             {
                 nRet = MovePositionEjectBlockSafety(isFine);
-                if (nRet != 0) return nRet;
+                if (nRet != 0) 
+                    return nRet;
                 nRet = MovePositionEjectPinReady(isFine);
-                if (nRet != 0) return nRet;
+                if (nRet != 0) 
+                    return nRet;
             }
 
             return nRet;
