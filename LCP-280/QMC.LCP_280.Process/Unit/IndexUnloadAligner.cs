@@ -10,6 +10,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
 using static QMC.LCP_280.Process.Equipment;
 
@@ -258,6 +259,9 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
+            var socket = this.Rotary.GetSocket(nIndex);
+            socket.SetState(Rotary.RotarySocketState.Aligning);
+
             if (PrepareForAlign(out var _img) != 0)
             {
                 Log.Write(UnitName, "Fail: Prepare for align");
@@ -299,6 +303,8 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "Align", $"OK: dx={dx:F4} dy={dy:F4} dAngle={res.angle:F3}");
             
             die.State = DieProcessState.Inspected;
+            socket.SetState(Rotary.RotarySocketState.Aligned);
+
             return nRet;
         }
 

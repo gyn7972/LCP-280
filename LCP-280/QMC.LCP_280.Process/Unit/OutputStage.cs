@@ -439,7 +439,7 @@ namespace QMC.LCP_280.Process.Unit
             while (IsEndTask(task) == false)
             {
                 // 동일 Safety Interlock
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eDieTransferPlaceZNotSafe);
@@ -498,7 +498,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -549,7 +549,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPlaceZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPlaceZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -599,7 +599,7 @@ namespace QMC.LCP_280.Process.Unit
             while (IsEndTask(task) == false)
             {
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -650,7 +650,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -1046,25 +1046,71 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
-        public bool IsBinLoadingPosition()
+        public bool IsPositionBinLoading()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.Loading];
             if (tp == null) 
                 return false;
             return InPosTeaching(tp);
         }
-        public bool IsBinUnloadingPosition()
+        public bool IsPositionBinUnloading()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.Unloading];
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
-        public bool IsBinCenterPosition()
+        public bool IsPositionBinCenter()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.CenterPoint];
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
+        public bool IsStageInterLockOK()
+        {
+            // 1) CenterPoint Teaching 확보
+            var tp = Config.GetTeachingPosition(OutputStageConfig.TeachingPositionName.CenterPoint.ToString());
+            if (tp == null || tp.AxisPositions == null)
+            {
+                Log.Write(UnitName, "MoveSafety", "CenterPoint teaching not found");
+                return false;
+            }
+
+            // 2) Center 좌표 (OutputStage 축명은 BinStageX / BinStageY 사용)
+            if (!tp.AxisPositions.TryGetValue(AxisNames.BinStageX, out var centerX) ||
+                !tp.AxisPositions.TryGetValue(AxisNames.BinStageY, out var centerY))
+            {
+                Log.Write(UnitName, "MoveSafety", "CenterPoint BinStageX/BinStageY value missing");
+                return false;
+            }
+
+            // 3) 사각형 Half Range
+            double halfX = Config.SafeStageRectHalfWidthX;
+            double halfY = Config.SafeStageRectHalfHeightY;
+            if (halfX <= 0 || halfY <= 0)
+            {
+                Log.Write(UnitName, "MoveSafety",
+                    $"Invalid rectangle half sizes. HalfX={halfX:F3}, HalfY={halfY:F3}");
+                return false;
+            }
+
+            // 4) 현재 위치
+            double curX = AxisX?.GetPosition() ?? centerX;
+            double curY = AxisY?.GetPosition() ?? centerY;
+
+            // 5) 사각형 내부 판정
+            bool inRect =
+                Math.Abs(curX - centerX) <= halfX &&
+                Math.Abs(curY - centerY) <= halfY;
+
+            if (inRect)
+                return true;
+
+            Log.Write(UnitName, "MoveSafety",
+                $"Fail: Out of RECT safe window. Cur=({curX:F3},{curY:F3}) Center=({centerX:F3},{centerY:F3}) Half=({halfX:F3},{halfY:F3})");
+            return false;
+
+        }
+
         public bool IsCompletedWork()
         {
             bool bRet = false;

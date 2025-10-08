@@ -191,5 +191,19 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 button.Enabled = enabled;
             }
         }
+
+        public void SetAllEnabled(bool enabled)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<bool>(SetAllEnabled), enabled);
+                return;
+            }
+            foreach (Control c in Controls)
+            {
+                if (c is Button b)
+                    b.Enabled = enabled;
+            }
+        }
     }
 }

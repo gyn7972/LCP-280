@@ -63,13 +63,14 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
-            this.groupBox_SequenceManual = new System.Windows.Forms.GroupBox();
-            this.groupBox_SequenceAuto = new System.Windows.Forms.GroupBox();
-            this.btn_Jog = new QMC.Common.IndividualMenuButton();
-            this.sequenceManualControl = new QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl();
-            this.sequenceAutoControl = new QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl();
             this.groupBox4 = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel8 = new System.Windows.Forms.TableLayoutPanel();
+            this.btn_Jog = new QMC.Common.IndividualMenuButton();
+            this.groupBox_SequenceManual = new System.Windows.Forms.GroupBox();
+            this.sequenceManualControl = new QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl();
+            this.groupBox_SequenceAuto = new System.Windows.Forms.GroupBox();
+            this.sequenceAutoControl = new QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl();
+            this.btnHomeAll = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel2.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
@@ -83,10 +84,10 @@
             this.tableLayoutPanel1.SuspendLayout();
             this.groupBox3.SuspendLayout();
             this.tableLayoutPanel6.SuspendLayout();
-            this.groupBox_SequenceManual.SuspendLayout();
-            this.groupBox_SequenceAuto.SuspendLayout();
             this.groupBox4.SuspendLayout();
             this.tableLayoutPanel8.SuspendLayout();
+            this.groupBox_SequenceManual.SuspendLayout();
+            this.groupBox_SequenceAuto.SuspendLayout();
             this.SuspendLayout();
             // 
             // tableLayoutPanel2
@@ -313,79 +314,6 @@
             this.tableLayoutPanel6.Size = new System.Drawing.Size(1437, 439);
             this.tableLayoutPanel6.TabIndex = 19;
             // 
-            // groupBox_SequenceManual
-            // 
-            this.groupBox_SequenceManual.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox_SequenceManual.Controls.Add(this.sequenceManualControl);
-            this.groupBox_SequenceManual.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBox_SequenceManual.Location = new System.Drawing.Point(2, 2);
-            this.groupBox_SequenceManual.Margin = new System.Windows.Forms.Padding(2);
-            this.groupBox_SequenceManual.Name = "groupBox_SequenceManual";
-            this.groupBox_SequenceManual.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox_SequenceManual.Size = new System.Drawing.Size(714, 435);
-            this.groupBox_SequenceManual.TabIndex = 18;
-            this.groupBox_SequenceManual.TabStop = false;
-            this.groupBox_SequenceManual.Text = "Sequence Manual";
-            // 
-            // groupBox_SequenceAuto
-            // 
-            this.groupBox_SequenceAuto.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox_SequenceAuto.Controls.Add(this.sequenceAutoControl);
-            this.groupBox_SequenceAuto.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.groupBox_SequenceAuto.Location = new System.Drawing.Point(720, 2);
-            this.groupBox_SequenceAuto.Margin = new System.Windows.Forms.Padding(2);
-            this.groupBox_SequenceAuto.Name = "groupBox_SequenceAuto";
-            this.groupBox_SequenceAuto.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox_SequenceAuto.Size = new System.Drawing.Size(139, 435);
-            this.groupBox_SequenceAuto.TabIndex = 19;
-            this.groupBox_SequenceAuto.TabStop = false;
-            this.groupBox_SequenceAuto.Text = "Sequence Auto";
-            // 
-            // btn_Jog
-            // 
-            this.btn_Jog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Jog.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Jog.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Jog.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Jog.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Jog.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btn_Jog.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Jog.ForeColor = System.Drawing.Color.Black;
-            this.btn_Jog.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Jog.Location = new System.Drawing.Point(5, 329);
-            this.btn_Jog.Margin = new System.Windows.Forms.Padding(5);
-            this.btn_Jog.Name = "btn_Jog";
-            this.btn_Jog.Size = new System.Drawing.Size(132, 74);
-            this.btn_Jog.TabIndex = 17;
-            this.btn_Jog.TabStop = false;
-            this.btn_Jog.Text = "Jog Axis";
-            this.btn_Jog.UseVisualStyleBackColor = false;
-            this.btn_Jog.Click += new System.EventHandler(this.btn_Jog_Click);
-            // 
-            // sequenceManualControl
-            // 
-            this.sequenceManualControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
-            this.sequenceManualControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.sequenceManualControl.Location = new System.Drawing.Point(2, 25);
-            this.sequenceManualControl.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
-            this.sequenceManualControl.Name = "sequenceManualControl";
-            this.sequenceManualControl.Size = new System.Drawing.Size(710, 408);
-            this.sequenceManualControl.TabIndex = 1;
-            // 
-            // sequenceAutoControl
-            // 
-            this.sequenceAutoControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
-            this.sequenceAutoControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.sequenceAutoControl.Location = new System.Drawing.Point(2, 25);
-            this.sequenceAutoControl.Margin = new System.Windows.Forms.Padding(2);
-            this.sequenceAutoControl.Name = "sequenceAutoControl";
-            this.sequenceAutoControl.Size = new System.Drawing.Size(135, 408);
-            this.sequenceAutoControl.TabIndex = 1;
-            // 
             // groupBox4
             // 
             this.groupBox4.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -409,6 +337,7 @@
             this.tableLayoutPanel8.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel8.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel8.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel8.Controls.Add(this.btnHomeAll, 0, 0);
             this.tableLayoutPanel8.Controls.Add(this.btn_Jog, 0, 4);
             this.tableLayoutPanel8.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel8.Location = new System.Drawing.Point(2, 25);
@@ -422,6 +351,100 @@
             this.tableLayoutPanel8.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel8.Size = new System.Drawing.Size(568, 408);
             this.tableLayoutPanel8.TabIndex = 4;
+            // 
+            // btn_Jog
+            // 
+            this.btn_Jog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Jog.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Jog.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Jog.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Jog.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Jog.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btn_Jog.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Jog.ForeColor = System.Drawing.Color.Black;
+            this.btn_Jog.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Jog.Location = new System.Drawing.Point(5, 329);
+            this.btn_Jog.Margin = new System.Windows.Forms.Padding(5);
+            this.btn_Jog.Name = "btn_Jog";
+            this.btn_Jog.Size = new System.Drawing.Size(132, 74);
+            this.btn_Jog.TabIndex = 17;
+            this.btn_Jog.TabStop = false;
+            this.btn_Jog.Text = "Jog Axis";
+            this.btn_Jog.UseVisualStyleBackColor = false;
+            this.btn_Jog.Click += new System.EventHandler(this.btn_Jog_Click);
+            // 
+            // groupBox_SequenceManual
+            // 
+            this.groupBox_SequenceManual.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox_SequenceManual.Controls.Add(this.sequenceManualControl);
+            this.groupBox_SequenceManual.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBox_SequenceManual.Location = new System.Drawing.Point(2, 2);
+            this.groupBox_SequenceManual.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBox_SequenceManual.Name = "groupBox_SequenceManual";
+            this.groupBox_SequenceManual.Padding = new System.Windows.Forms.Padding(2);
+            this.groupBox_SequenceManual.Size = new System.Drawing.Size(714, 435);
+            this.groupBox_SequenceManual.TabIndex = 18;
+            this.groupBox_SequenceManual.TabStop = false;
+            this.groupBox_SequenceManual.Text = "Sequence Manual";
+            // 
+            // sequenceManualControl
+            // 
+            this.sequenceManualControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
+            this.sequenceManualControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.sequenceManualControl.Location = new System.Drawing.Point(2, 25);
+            this.sequenceManualControl.Margin = new System.Windows.Forms.Padding(2);
+            this.sequenceManualControl.Name = "sequenceManualControl";
+            this.sequenceManualControl.Size = new System.Drawing.Size(710, 408);
+            this.sequenceManualControl.TabIndex = 1;
+            // 
+            // groupBox_SequenceAuto
+            // 
+            this.groupBox_SequenceAuto.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox_SequenceAuto.Controls.Add(this.sequenceAutoControl);
+            this.groupBox_SequenceAuto.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.groupBox_SequenceAuto.Location = new System.Drawing.Point(720, 2);
+            this.groupBox_SequenceAuto.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBox_SequenceAuto.Name = "groupBox_SequenceAuto";
+            this.groupBox_SequenceAuto.Padding = new System.Windows.Forms.Padding(2);
+            this.groupBox_SequenceAuto.Size = new System.Drawing.Size(139, 435);
+            this.groupBox_SequenceAuto.TabIndex = 19;
+            this.groupBox_SequenceAuto.TabStop = false;
+            this.groupBox_SequenceAuto.Text = "Sequence Auto";
+            // 
+            // sequenceAutoControl
+            // 
+            this.sequenceAutoControl.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
+            this.sequenceAutoControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.sequenceAutoControl.Location = new System.Drawing.Point(2, 25);
+            this.sequenceAutoControl.Margin = new System.Windows.Forms.Padding(2);
+            this.sequenceAutoControl.Name = "sequenceAutoControl";
+            this.sequenceAutoControl.Size = new System.Drawing.Size(135, 408);
+            this.sequenceAutoControl.TabIndex = 1;
+            // 
+            // btnHomeAll
+            // 
+            this.btnHomeAll.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnHomeAll.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnHomeAll.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnHomeAll.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnHomeAll.CustomForeColor = System.Drawing.Color.Black;
+            this.btnHomeAll.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnHomeAll.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnHomeAll.ForeColor = System.Drawing.Color.Black;
+            this.btnHomeAll.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnHomeAll.Location = new System.Drawing.Point(5, 5);
+            this.btnHomeAll.Margin = new System.Windows.Forms.Padding(5);
+            this.btnHomeAll.Name = "btnHomeAll";
+            this.btnHomeAll.Size = new System.Drawing.Size(132, 71);
+            this.btnHomeAll.TabIndex = 18;
+            this.btnHomeAll.TabStop = false;
+            this.btnHomeAll.Text = "Motor Init.";
+            this.btnHomeAll.UseVisualStyleBackColor = false;
+            this.btnHomeAll.Click += new System.EventHandler(this.btnHomeAll_Click);
             // 
             // Operator_Main
             // 
@@ -445,10 +468,10 @@
             this.tableLayoutPanel1.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
             this.tableLayoutPanel6.ResumeLayout(false);
-            this.groupBox_SequenceManual.ResumeLayout(false);
-            this.groupBox_SequenceAuto.ResumeLayout(false);
             this.groupBox4.ResumeLayout(false);
             this.tableLayoutPanel8.ResumeLayout(false);
+            this.groupBox_SequenceManual.ResumeLayout(false);
+            this.groupBox_SequenceAuto.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -456,5 +479,6 @@
         private Common.IndividualMenuButton btn_Jog;
         private System.Windows.Forms.GroupBox groupBox4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel8;
+        private Common.IndividualMenuButton btnHomeAll;
     }
 }

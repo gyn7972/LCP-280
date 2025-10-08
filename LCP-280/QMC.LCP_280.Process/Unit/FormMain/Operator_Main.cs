@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Controls;
+using QMC.Common.Motions;
 using QMC.Common.UI;
 using QMC.Common.Unit;
 using QMC.Common.Vision;
@@ -8,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
@@ -17,6 +20,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
     [FormOrder(1)]
     public partial class Operator_Main : Form
     {
+        private Equipment _Equipment;
+
         // Units
         private InputCassetteLifter InputCassetteLifter { get; set; }
         private InputFeeder InputFeeder { get; set; }
@@ -50,6 +55,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private AxisPostionPopup _axisPosPopup = null;
 
         private Form _lightControlPopup = null;
+
         public Operator_Main() : this(
             TryGetUnit<InputFeeder>("InputFeeder"),
             TryGetUnit<InputDieTransfer>("InputDieTransfer"),
@@ -59,7 +65,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             TryGetUnit<InputStage>("InputStage"),
             TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner"),
             TryGetUnit<OutputStage>("OutputStage"),
-
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
             TryGetUnit<IndexLoadAligner>("IndexLoadAligner"),
             TryGetUnit<IndexChipProbeController>("IndexChipProbeController"),
@@ -77,6 +82,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             InitializeComponent();
 
+            _Equipment = Equipment.Instance;
+            if (_Equipment != null)
+            {
+                _Equipment.StateChanged += Eq_StateChanged_ForOperator;
+                _Equipment.UnitStateChanged += Eq_UnitStateChanged_ForOperator;
+            }
+
             InputFeeder = inputFeeder;
             InputDieTransfer = inputDieTransfer;
             Rotary = rotary;
@@ -92,21 +104,90 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             OutputCassetteLifter = outputCassetteLifter;
 
             InputStageEjector = inputStageEjector;
-            // 상태 초기화
+
             _readySequences = new HashSet<string>();
             _startSequences = new HashSet<string>();
 
             Load += Vision_Manual_Load;
 
-            // Control → Form 이벤트 등록
             sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
             sequenceManualControl.SequenceButtonRequested += OnManualSequenceButtonRequested;
             InputWaferCamera.LightControlRequested += InputWaferCamera_LightControlRequested;
         }
 
+        #region Form Cleanup
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (sequenceAutoControl != null)
+                sequenceAutoControl.SequenceButtonRequested -= OnAutoSequenceButtonRequested;
+            if (sequenceManualControl != null)
+                sequenceManualControl.SequenceButtonRequested -= OnManualSequenceButtonRequested;
+
+            try
+            {
+                if (_Equipment != null)
+                {
+                    _Equipment.StateChanged -= Eq_StateChanged_ForOperator;
+                    _Equipment.UnitStateChanged -= Eq_UnitStateChanged_ForOperator;
+                }
+            }
+            catch { }
+            base.OnFormClosing(e);
+        }
+        #endregion
+
+        // 장비 상태 반영
+        private void Eq_StateChanged_ForOperator(object sender, EquipmentStateChangedEventArgs e)
+        {
+            if (IsDisposed || Disposing) 
+                return;
+            if (InvokeRequired) 
+            { 
+                BeginInvoke(new Action<object, EquipmentStateChangedEventArgs>(Eq_StateChanged_ForOperator), sender, e); 
+                return; 
+            }
+
+            ApplyOperatorEquipmentState(e.NewState);
+        }
+
+        private void ApplyOperatorEquipmentState(EquipmentState state)
+        {
+            // Auto 버튼들 (sequenceAutoControl 내부 API 가정)
+            bool canReady = state == EquipmentState.Stopped || state == EquipmentState.Ready;
+            bool canStart = state == EquipmentState.Running || state == EquipmentState.Ready;
+            bool canStop = state == EquipmentState.Running || state == EquipmentState.Starting;
+
+            //sequenceAutoControl.SetButtonEnabled("Ready", canReady);
+            //sequenceAutoControl.SetButtonEnabled("Start", canStart);
+            //sequenceAutoControl.SetButtonEnabled("Stop", canStop);
+            //sequenceAutoControl.SetButtonEnabled("CycleStop", canStop);
+            //sequenceAutoControl.SetButtonEnabled("Reset", state != EquipmentState.Starting); // 예시
+
+            if (state == EquipmentState.Error)
+            {
+                //sequenceAutoControl.SetAllEnabled(false);
+                //sequenceManualControl.SetAllEnabled(false);
+            }
+            else
+            {
+                // Manual 컨트롤은 Running 중에도 Ready/Start 토글 제한 정책에 맞게
+                //sequenceAutoControl.SetAllEnabled(true);
+                //sequenceManualControl.SetAllEnabled(true);
+            }
+        }
+
+        // Unit 상태 반영 (필요 시 단일 유닛 수동 제어 UI 갱신 – 확장 여지)
+        private void Eq_UnitStateChanged_ForOperator(object sender, UnitStateChangedEventArgs e)
+        {
+            if (IsDisposed || Disposing) return;
+            if (InvokeRequired) { BeginInvoke(new Action<object, UnitStateChangedEventArgs>(Eq_UnitStateChanged_ForOperator), sender, e); return; }
+
+            // 예: Manual 버튼 깜빡임/비활성 처리 필요시 여기에 추가
+            // sequenceManualControl.OnSequenceStateChanged(new SequenceStateChangedEventArgs { ... });
+        }
+
         private void InputWaferCamera_LightControlRequested(object sender, EventArgs e)
         {
-            // 기존 팝업이 있으면 닫기
             if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
             {
                 _lightControlPopup.Close();
@@ -120,33 +201,19 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             popupForm.MinimizeBox = false;
             popupForm.ShowInTaskbar = false;
 
-            // 마우스 커서 위치로 설정
             popupForm.StartPosition = FormStartPosition.Manual;
             Point cursorPos = Cursor.Position;
             popupForm.Location = cursorPos;
 
-            // Owner 설정 안 함 (독립적으로 움직임)
             popupForm.Owner = null;
 
             LightChannelControlcs lightControl = new LightChannelControlcs();
             lightControl.Dock = DockStyle.Fill;
             popupForm.Controls.Add(lightControl);
 
-            var viewer = sender as VisionImageViewer;
-            var cam = viewer?.CurrentCamera;
-
-            // 팝업 참조 저장
             _lightControlPopup = popupForm;
-
-            popupForm.FormClosed += (s, ev) =>
-            {
-                _lightControlPopup = null;
-            };
-
-            // Modeless로 표시
+            popupForm.FormClosed += (s, ev) => { _lightControlPopup = null; };
             popupForm.Show();
-
-            // 원래 폼으로 포커스 복원
             this.Activate();
         }
 
@@ -200,13 +267,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             if (_deferredInitDone) return;
             _deferredInitDone = true;
-            await System.Threading.Tasks.Task.Delay(30);
+            await Task.Delay(30);
             if (IsDisposed || Disposing) return;
-            try
-            {
-                BindCamera();
-            }
-            catch { }
+            try { BindCamera(); } catch { }
         }
         #endregion
 
@@ -215,7 +278,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             try
             {
-                // Input Stage Camera
                 if (InputWaferCamera != null && InputStage?.StageCamera != null)
                 {
                     if (InputWaferCamera.Camera != InputStage.StageCamera)
@@ -223,8 +285,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     try { InputStage.StageCamera.StartLive(); } catch { }
                     try { InputWaferCamera.StartUpdateTask(); } catch { }
                 }
-
-                // Index Output Camera
                 if (IndexOutputCamera != null && IndexUnloadAligner?.IndexOutCamera != null)
                 {
                     if (IndexOutputCamera.Camera != IndexUnloadAligner.IndexOutCamera)
@@ -232,8 +292,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                     try { IndexUnloadAligner.IndexOutCamera.StartLive(); } catch { }
                     try { IndexOutputCamera.StartUpdateTask(); } catch { }
                 }
-
-                // Output Wafer Camera
                 if (OutputWaferCamera != null && OutputStage?.OutStageCamera != null)
                 {
                     if (OutputWaferCamera.Camera != OutputStage.OutStageCamera)
@@ -246,70 +304,53 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         }
         #endregion
 
-        #region Form Cleanup
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            // 이벤트 해제
-            if (sequenceAutoControl != null)
-            {
-                sequenceAutoControl.SequenceButtonRequested -= OnAutoSequenceButtonRequested;
-            }
-
-            if (sequenceManualControl != null)
-            {
-                sequenceManualControl.SequenceButtonRequested -= OnManualSequenceButtonRequested;
-            }
-
-            base.OnFormClosing(e);
-        }
-        #endregion
-
-
         #region Auto Sequence 처리
         private void OnAutoSequenceButtonRequested(object sender, AutoSequenceEventArgs e)
         {
             Log.Write("Operator_Main", $"Auto Sequence {e.Command} 요청");
-
             switch (e.Command)
             {
-                case "Ready":
-                    HandleAutoReady();
-                    break;
-
-                case "Start":
-                    HandleAutoStart();
-                    break;
-
-                case "Stop":
-                    HandleAutoStop();
-                    break;
-
-                case "CycleStop":
-                    HandleAutoCycleStop();
-                    break;
-
-                case "Reset":
-                    HandleAutoReset();
-                    break;
+                case "Ready": HandleAutoReady(); break;
+                case "Start": HandleAutoStart(); break;
+                case "Stop": HandleAutoStop(); break;
+                case "CycleStop": HandleAutoCycleStop(); break;
+                case "Reset": HandleAutoReset(); break;
             }
         }
 
         private void HandleAutoReady()
         {
-            // 상태 토글
             _autoReady = !_autoReady;
-
-            // UI 업데이트 (Form → Control)
             NotifyAutoSequenceStateChanged("Ready", _autoReady);
 
-            // 비즈니스 로직 실행
             if (_autoReady)
             {
-                ExecuteAutoReady();
+                _autoReadyCts?.Cancel();
+                _autoReadyCts = new CancellationTokenSource();
+                var ct = _autoReadyCts.Token;
+                var prev = Cursor.Current;
+                Cursor.Current = Cursors.WaitCursor;
+                ExecuteAutoReadyAsync(ct).ContinueWith(t =>
+                {
+                    try
+                    {
+                        if (IsDisposed || Disposing) return;
+                        BeginInvoke(new Action(() =>
+                        {
+                            Cursor.Current = prev;
+                            if (t.IsFaulted)
+                                Log.Write("Operator_Main", $"Auto Ready 예외: {t.Exception?.GetBaseException().Message}");
+                            if (t.IsCanceled)
+                                Log.Write("Operator_Main", "Auto Ready 취소됨");
+                        }));
+                    }
+                    catch { }
+                });
                 Log.Write("Operator_Main", "Auto Ready ON");
             }
             else
             {
+                _autoReadyCts?.Cancel();
                 Log.Write("Operator_Main", "Auto Ready OFF");
             }
         }
@@ -318,102 +359,65 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             if (!_autoStarting)
             {
-                // Ready 체크
                 if (!_autoReady)
                 {
                     MessageBox.Show("Auto Ready를 먼저 실행해주세요.");
                     return;
                 }
-
-                // 상태 변경
                 _autoReady = false;
                 _autoStarting = true;
-
-                // UI 업데이트 (Form → Control)
                 NotifyAutoSequenceStateChanged("Ready", false);
                 NotifyAutoSequenceStateChanged("Start", true);
-
-                // 비즈니스 로직 실행
                 ExecuteAutoStart();
                 Log.Write("Operator_Main", "Auto Start 실행 (Ready OFF)");
             }
             else
             {
-                // Start OFF
                 _autoStarting = false;
-
-                // UI 업데이트
                 NotifyAutoSequenceStateChanged("Start", false);
-
                 Log.Write("Operator_Main", "Auto Start OFF");
             }
         }
 
         private void HandleAutoStop()
         {
-            // 모든 상태 초기화
             _autoReady = false;
             _autoStarting = false;
             _readySequences.Clear();
             _startSequences.Clear();
-
-            // Auto Control UI 초기화
             sequenceAutoControl.ResetAllButtons();
-            // Manual Control UI 초기화
             sequenceManualControl.ResetAllButtons();
-
-            // Stop 버튼 깜빡임
             NotifyAutoSequenceStateChanged("Stop", true);
-            System.Threading.Tasks.Task.Delay(500).ContinueWith(_ =>
+            Task.Delay(500).ContinueWith(_ =>
             {
-                this.Invoke(new Action(() =>
-                {
-                    NotifyAutoSequenceStateChanged("Stop", false);
-                }));
+                this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("Stop", false); }));
             });
-
-            // 비즈니스 로직 실행
             ExecuteAutoStop();
             Log.Write("Operator_Main", "Auto Stop 실행 - 모든 Sequence 초기화");
         }
 
         private void HandleAutoCycleStop()
         {
-            // CycleStop 버튼 깜빡임
             NotifyAutoSequenceStateChanged("CycleStop", true);
-            System.Threading.Tasks.Task.Delay(500).ContinueWith(_ =>
+            Task.Delay(500).ContinueWith(_ =>
             {
-                this.Invoke(new Action(() =>
-                {
-                    NotifyAutoSequenceStateChanged("CycleStop", false);
-                }));
+                this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("CycleStop", false); }));
             });
-
-            // 비즈니스 로직 실행
             ExecuteAutoCycleStop();
             Log.Write("Operator_Main", "Auto CycleStop 실행");
         }
 
         private void HandleAutoReset()
         {
-            // Reset 버튼 깜빡임
             NotifyAutoSequenceStateChanged("Reset", true);
-            System.Threading.Tasks.Task.Delay(500).ContinueWith(_ =>
+            Task.Delay(500).ContinueWith(_ =>
             {
-                this.Invoke(new Action(() =>
-                {
-                    NotifyAutoSequenceStateChanged("Reset", false);
-                }));
+                this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("Reset", false); }));
             });
-
-            // 비즈니스 로직 실행
             ExecuteAutoReset();
             Log.Write("Operator_Main", "Auto Reset 실행");
         }
 
-        /// <summary>
-        /// Control에 상태 변경 알림 (Form → Control)
-        /// </summary>
         private void NotifyAutoSequenceStateChanged(string command, bool isActive)
         {
             sequenceAutoControl.OnAutoSequenceStateChanged(new AutoSequenceStateChangedEventArgs
@@ -424,81 +428,159 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         }
         #endregion
 
-
-
         #region Manual Sequence 처리
         private void OnManualSequenceButtonRequested(object sender, SequenceEventArgs e)
         {
             Log.Write("Operator_Main", $"Manual Sequence {e.SequenceName} {e.Action} 요청");
-
-            if (e.Action == "Ready")
-            {
+            if (e.Action == "Ready") 
                 HandleReadyAction(e.SequenceName);
-            }
-            else if (e.Action == "Start")
-            {
+            else if (e.Action == "Start") 
                 HandleStartAction(e.SequenceName);
-            }
         }
 
-        private void HandleReadyAction(string sequenceName)
+        private async void HandleReadyAction(string sequenceName)
         {
-            // Ready 상태 토글
-            bool isActive = !_readySequences.Contains(sequenceName);
-            if (isActive)
+            if (_readyBusy)
             {
-                _readySequences.Add(sequenceName);
-                ExecuteSequence(sequenceName, "Ready");
-                Log.Write("Operator_Main", $"{sequenceName} Ready ON");
+                Log.Write("Operator_Main", "Ready 작업 진행 중 - 중복 요청 무시");
+                return;
             }
-            else
+
+            bool isCurrentlyReady = _readySequences.Contains(sequenceName);
+            if (isCurrentlyReady)
             {
                 _readySequences.Remove(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Ready", false, false);
                 Log.Write("Operator_Main", $"{sequenceName} Ready OFF");
+                return;
             }
 
-            // UI 업데이트 (Form → Control)
-            NotifySequenceStateChanged(sequenceName, "Ready", isActive, false);
+            _readyBusy = true;
+            _readyCts?.Cancel();
+            _readyCts = new CancellationTokenSource();
+            var ct = _readyCts.Token;
+
+            var prevCursor = Cursor.Current;
+            Cursor.Current = Cursors.WaitCursor;
+            SetReadyUiBusy(true);
+
+            try
+            {
+                bool ok = await TryReadySequenceAsync(sequenceName, ct);
+                if (ok && !ct.IsCancellationRequested)
+                {
+                    _readySequences.Add(sequenceName);
+                    NotifySequenceStateChanged(sequenceName, "Ready", true, false);
+                    Log.Write("Operator_Main", $"{sequenceName} Ready ON");
+                }
+                else
+                {
+                    NotifySequenceStateChanged(sequenceName, "Ready", false, false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Write("Operator_Main", $"{sequenceName} Ready 취소");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                NotifySequenceStateChanged(sequenceName, "Ready", false, false);
+                MessageBox.Show($"{sequenceName} Ready 예외: {ex.Message}", "Ready Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                Cursor.Current = prevCursor;
+                SetReadyUiBusy(false);
+                _readyBusy = false;
+            }
         }
 
-        private void HandleStartAction(string sequenceName)
+        private void SetReadyUiBusy(bool busy)
         {
-            // Start 상태 토글
-            bool isStarting = _startSequences.Contains(sequenceName);
+            try { sequenceManualControl.Enabled = !busy; } catch { }
+        }
 
-            if (isStarting)
+
+        // 시퀀스명 → Unit 매핑 (새 함수 1개만 추가)
+        private BaseUnit GetUnitForSequence(string sequenceName)
+        {
+            switch (sequenceName)
             {
-                // Start OFF
+                case "InputWafer": return InputFeeder;
+                case "ChipLoading": return InputDieTransfer;
+                case "Process": return Rotary;
+                case "ChipUnloading": return OutputDieTransfer;
+                case "OutputWafer": return OutputFeeder;
+            }
+            return null;
+        }
+        private async void HandleStartAction(string sequenceName)
+        {
+            // Start ON → OFF (Stop)
+            if (_startSequences.Contains(sequenceName))
+            {
                 _startSequences.Remove(sequenceName);
                 NotifySequenceStateChanged(sequenceName, "Start", false, true);
-                Log.Write("Operator_Main", $"{sequenceName} Start OFF");
-            }
-            else
-            {
-                // Ready 체크
-                if (!_readySequences.Contains(sequenceName))
+                Log.Write("Operator_Main", $"{sequenceName} Start OFF (Stop 요청)");
+                var unit = GetUnitForSequence(sequenceName);
+                if (unit != null)
                 {
-                    MessageBox.Show($"{sequenceName}를 먼저 Ready 상태로 만들어주세요.");
-                    return;
+                    try { await Equipment.Instance.StopUnitAsync(unit.UnitName); } catch { }
                 }
+                return;
+            }
 
-                // 상태 변경
-                _readySequences.Remove(sequenceName);
-                _startSequences.Add(sequenceName);
+            // Start OFF → ON
+            if (!_readySequences.Contains(sequenceName))
+            {
+                MessageBox.Show($"{sequenceName}를 먼저 Ready 상태로 만들어주세요.");
+                return;
+            }
 
-                // UI 업데이트 (Ready OFF, Start ON)
-                NotifySequenceStateChanged(sequenceName, "Ready", false, false);
-                NotifySequenceStateChanged(sequenceName, "Start", true, true);
+            // Ready OFF 처리
+            _readySequences.Remove(sequenceName);
+            NotifySequenceStateChanged(sequenceName, "Ready", false, false);
 
-                // 비즈니스 로직 실행
-                ExecuteSequence(sequenceName, "Start");
-                Log.Write("Operator_Main", $"{sequenceName} Start ON (Ready OFF)");
+            _startSequences.Add(sequenceName);
+            NotifySequenceStateChanged(sequenceName, "Start", true, true);
+            Log.Write("Operator_Main", $"{sequenceName} Start ON (Ready OFF)");
+
+            // 공통 StartSequenceAsync 사용
+            bool ok = await StartSequenceAsync(sequenceName, CancellationToken.None);
+            if (!ok)
+            {
+                _startSequences.Remove(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Start", false, true);
+                Log.Write("Operator_Main", $"{sequenceName} Start 실패");
             }
         }
+        //private void HandleStartAction(string sequenceName)
+        //{
+        //    bool isStarting = _startSequences.Contains(sequenceName);
+        //    if (isStarting)
+        //    {
+        //        _startSequences.Remove(sequenceName);
+        //        NotifySequenceStateChanged(sequenceName, "Start", false, true);
+        //        Log.Write("Operator_Main", $"{sequenceName} Start OFF");
+        //    }
+        //    else
+        //    {
+        //        if (!_readySequences.Contains(sequenceName))
+        //        {
+        //            MessageBox.Show($"{sequenceName}를 먼저 Ready 상태로 만들어주세요.");
+        //            return;
+        //        }
+        //        _readySequences.Remove(sequenceName);
+        //        _startSequences.Add(sequenceName);
+        //        NotifySequenceStateChanged(sequenceName, "Ready", false, false);
+        //        NotifySequenceStateChanged(sequenceName, "Start", true, true);
+        //        ExecuteSequence(sequenceName, "Start");
+        //        Log.Write("Operator_Main", $"{sequenceName} Start ON (Ready OFF)");
+        //    }
+        //}
 
-        /// <summary>
-        /// Control에 상태 변경 알림 (Form → Control)
-        /// </summary>
         private void NotifySequenceStateChanged(string sequenceName, string action, bool isActive, bool updateText)
         {
             sequenceManualControl.OnSequenceStateChanged(new SequenceStateChangedEventArgs
@@ -511,100 +593,47 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         }
         #endregion
 
-
-        #region 비즈니스 로직 (실제 하드웨어 제어)
-        private async void ExecuteAutoReady()
+        #region 비즈니스 로직
+        private CancellationTokenSource _autoReadyCts;
+        private async Task ExecuteAutoReadyAsync(CancellationToken ct)
         {
-            // Auto Ready 로직 구현
-            int nflowControl = await HandleInputWaferReady();
-            if (nflowControl != 0)
-            {
-                Log.Write("Operator_Main", "Auto Ready 실패 - InputWafer Ready 위치 이동 실패");
-                return;
-            }
-
-            bool flowControl = await HandleChipLoadingReady();
-            if (!flowControl)
-            {
-                Log.Write("Operator_Main", "Auto Ready 실패 - ChipLoading Ready 위치 이동 실패");
-                return;
-            }
-
-            flowControl = await HandleProcessReady();
-            if (!flowControl)
-            {
-                Log.Write("Operator_Main", "Auto Ready 실패 - Process Ready 위치 이동 실패");
-                return;
-            }
-
-            flowControl = await HandleChipUnloadingReady();
-            if (!flowControl)
-            {
-                Log.Write("Operator_Main", "Auto Ready 실패 - ChipUnloading Ready 위치 이동 실패");
-                return;
-            }
-
-            flowControl = await HandleOutputWaferReady();
-            if (!flowControl)
-            {
-                Log.Write("Operator_Main", "Auto Ready 실패 - OutputWafer Ready 위치 이동 실패");
-                return;
-            }
-
-            Log.Write("Operator_Main", "Auto Ready 완료 - 모든 Sequence Ready 위치로 이동");
+            Log.Write("Operator_Main", "Auto Ready 시작 (공통 로직 사용)");
+            bool ok = await ReadyAllSequencesAsync(ct);
+            if (ok) Log.Write("Operator_Main", "Auto Ready 완료 (모든 시퀀스 Ready ON)");
+            else Log.Write("Operator_Main", "Auto Ready 실패");
         }
 
         private async void ExecuteAutoStart()
         {
-            // Auto Start 로직 구현
-            bool flowControl = await HandleInputStart();
-            if (!flowControl)
+            // Auto Start 도 Manual Start 와 동일한 흐름 (Ready 자동 보정 + Start 전환)
+            var cts = new CancellationTokenSource();
+            try
             {
-                Log.Write("Operator_Main", "Auto Start 실패 - InputWafer Start 실패");
-                return;
+                Log.Write("Operator_Main", "Auto Start 시작 (공통 로직 사용)");
+                bool ok = await StartAllSequencesAsync(cts.Token);
+                if (ok) Log.Write("Operator_Main", "Auto Start 완료 - 모든 Sequence Start ON");
+                else Log.Write("Operator_Main", "Auto Start 실패");
             }
-            flowControl = await HandleChipLoadingStart();
-            if (!flowControl)
+            catch (OperationCanceledException)
             {
-                Log.Write("Operator_Main", "Auto Start 실패 - ChipLoading Start 실패");
-                return;
+                Log.Write("Operator_Main", "Auto Start 취소됨");
             }
-            flowControl = await HandleProcessStart();
-            if (!flowControl)
-            {
-                Log.Write("Operator_Main", "Auto Start 실패 - Process Start 실패");
-                return;
-            }
-            flowControl = await HandleChipUnloadingStart();
-            if (!flowControl)
-            {
-                Log.Write("Operator_Main", "Auto Start 실패 - ChipUnloading Start 실패");
-                return;
-            }
-            flowControl = await HandleOutputWaferStart();
-            if (!flowControl)
-            {
-                Log.Write("Operator_Main", "Auto Start 실패 - OutputWafer Start 실패");
-                return;
-            }
-            Log.Write("Operator_Main", "Auto Start 완료 - 모든 Sequence Start 실행");
         }
 
         private async void ExecuteAutoStop()
         {
+            await StopAllSequencesAsync(); // UI & HashSet
             var equipment = Equipment.Instance;
-            // Auto Stop 로직 구현
-            var result = await equipment.StopAllUnitsAsync();
+            try { await equipment.StopAllUnitsAsync(); } catch { }
+            Log.Write("Operator_Main", "Auto Stop 완료 (공통 로직)");
         }
 
         private void ExecuteAutoCycleStop()
         {
-            // Auto CycleStop 로직 구현
         }
 
         private void ExecuteAutoReset()
         {
-            // Auto Reset 로직 구현
             InputCassetteLifter.SetMaterial(new Material());
             InputFeeder.SetMaterial(new Material());
             InputStage.SetMaterial(new Material());
@@ -629,200 +658,90 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 { "ChipUnloading", HandleChipUnloading },
                 { "OutputWafer", HandleOutputWafer }
             };
-
             if (sequenceHandlers.TryGetValue(sequenceName, out var handler))
-            {
                 handler(action);
-            }
         }
 
-        #region Handle Manual
-        // 공통 Ready 이동 함수 (TeachingPosition 이름으로 인덱스 계산 → 이동 → 진행 UI → 결과 확인)
-        // 공통 Ready 이동 함수 (TeachingPosition 이름으로 인덱스 계산 → 이동 → 진행 UI → 결과 확인)
-        private async System.Threading.Tasks.Task<bool> MoveToTeachingPositionReadyAsync(
-            BaseUnit unit,
-            string teachingPositionName,
-            string progressMessage = "Teaching Position 이동 중...",
-            bool isFine = false)
+        private CancellationTokenSource _readyCts;
+        private bool _readyBusy;
+
+        private async Task<bool> TryReadySequenceAsync(string sequenceName, CancellationToken ct)
         {
-            if (unit == null)
+            int rc;
+            switch (sequenceName)
             {
-                MessageBox.Show("Unit가 초기화되지 않았습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            int selIndex = -1;
-            string unitName = unit.UnitName ?? "Unit";
-
-            try
-            {
-                var cfg = unit.Config;
-                if (cfg == null)
-                {
-                    MessageBox.Show("Config를 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                case "InputWafer": rc = await HandleInputWaferReadyAsync(ct); break;
+                case "ChipLoading": rc = await HandleChipLoadingReadyAsync(ct); break;
+                case "Process": rc = await HandleProcessReadyAsync(ct); break;
+                case "ChipUnloading": rc = await HandleChipUnloadingReadyAsync(ct); break;
+                case "OutputWafer": rc = await HandleOutputWaferReadyAsync(ct); break;
+                default:
+                    Log.Write("Operator_Main", $"알 수 없는 Sequence '{sequenceName}' Ready 요청");
                     return false;
-                }
-
-                // Config.GetTeachingPosition(string) → 인덱스 계산
-                var tp = cfg.GetTeachingPosition(teachingPositionName);
-                var tpListObj = cfg.TeachingPositions;
-
-                if (tp != null && tpListObj is System.Collections.IEnumerable enumerable)
-                {
-                    int i = 0;
-                    foreach (var item in enumerable)
-                    {
-                        if (Equals(item, tp))
-                        {
-                            selIndex = i;
-                            break;
-                        }
-                        i++;
-                    }
-                }
             }
-            catch (Exception ex)
+            if (rc != 0)
             {
-                Log.Write(ex);
-                selIndex = -1;
-            }
-
-            if (selIndex < 0)
-            {
-                MessageBox.Show("Ready Teaching Position을 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Log.Write("Operator_Main", $"{sequenceName} Ready 실패(rc={rc})");
                 return false;
             }
-
-            // MoveTeachingPositionOnceAsync 또는 동기 API 감싸기
-            System.Threading.Tasks.Task<int> task = null;
-            System.Reflection.MethodInfo moveAsync = null;
-            System.Reflection.MethodInfo moveOnce = null;
-            System.Reflection.MethodInfo stopOnce = null;
-
-            try
-            {
-                var unitType = unit.GetType();
-                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
-
-                // 정확한 시그니처로 조회하여 추가 모호성 방지
-                moveAsync = unitType.GetMethod("MoveTeachingPositionOnceAsync", flags, null, new[] { typeof(int), typeof(bool) }, null);
-                if (moveAsync != null)
-                {
-                    task = (System.Threading.Tasks.Task<int>)moveAsync.Invoke(unit, new object[] { selIndex, isFine });
-                }
-                else
-                {
-                    // 비동기 메서드가 없으면 동기 메서드를 Task로 래핑
-                    moveOnce = unitType.GetMethod("MoveTeachingPositionOnce", flags, null, new[] { typeof(int), typeof(bool) }, null);
-                    if (moveOnce == null)
-                    {
-                        MessageBox.Show("이동 API를 찾을 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return false;
-                    }
-
-                    task = System.Threading.Tasks.Task.Run(() =>
-                    {
-                        var r = (int)moveOnce.Invoke(unit, new object[] { selIndex, isFine });
-                        return r;
-                    });
-                }
-
-                stopOnce = unitType.GetMethod("StopTeachingPositionOnce", flags, null, new[] { typeof(int) }, null);
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                MessageBox.Show("이동 작업을 시작할 수 없습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return false;
-            }
-
-            using (var pf = new ProgressForm(unitName, progressMessage, task))
-            {
-                var dr = pf.ShowDialog(this); // 모달: 메인 UI 입력 차단
-                if (dr == DialogResult.Cancel)
-                {
-                    try
-                    {
-                        // 취소 시 중지 시도
-                        stopOnce?.Invoke(unit, new object[] { selIndex });
-                    }
-                    catch { }
-                    return false;
-                }
-            }
-
-            var result = await task; // 완료 결과 수집
-            if (result != 0)
-            {
-                MessageBox.Show("Ready Fail.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-
             return true;
         }
-        private async System.Threading.Tasks.Task<int> HandleInputWaferReady()
+
+        #region Handle Manual Async Ready
+        private Task<int> HandleInputWaferReadyAsync(CancellationToken ct)
         {
-            int nRet = 0;
-            nRet = InputFeeder.CheckReady();
-            if (nRet != 0)
+            return Task.Run(() =>
             {
-                var mb = new MessageBoxOk();
-                mb.ShowDialog("Error", "InputFeeder 상태를 확인하세요.");
+                ct.ThrowIfCancellationRequested();
+                int nRet = InputFeeder?.EnsureReady() ?? -1;
+                if (nRet != 0) return nRet;
+                ct.ThrowIfCancellationRequested();
+                nRet = InputStageEjector?.CheckReady() ?? -1;
                 return nRet;
-            }
-
-            nRet = InputStageEjector.CheckReady();
-            if (nRet != 0)
+            }, ct);
+        }
+        private Task<int> HandleChipLoadingReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
             {
-                var mb = new MessageBoxOk();
-                mb.ShowDialog("Error", "InputStageEjector 상태를 확인하세요.");
+                ct.ThrowIfCancellationRequested();
+                return InputDieTransfer?.EnsureReady() ?? -1;
+            }, ct);
+        }
+        private Task<int> HandleProcessReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                int nRet = IndexLoadAligner?.EnsureReady() ?? -1;
+                if (nRet != 0) return nRet;
+                ct.ThrowIfCancellationRequested();
+                nRet = IndexChipProbeController?.EnsureReady() ?? -1;
                 return nRet;
-            }
-
-            return nRet;
+            }, ct);
         }
-        private async System.Threading.Tasks.Task<bool> HandleChipLoadingReady()
+        private Task<int> HandleChipUnloadingReadyAsync(CancellationToken ct)
         {
-            return await MoveToTeachingPositionReadyAsync(
-                        InputDieTransfer,
-                        InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
-        }
-        private async System.Threading.Tasks.Task<bool> HandleProcessReady()
-        {
-            // 1) IndexLoadAligner → SafetyZone
-            var ok = await MoveToTeachingPositionReadyAsync(
-                IndexLoadAligner,
-                IndexLoadAlignerConfig.TeachingPositionName.SafetyZone.ToString());
-            if (!ok) return false;
-
-            // 2) IndexChipProbeController → SafetyZone
-            ok = await MoveToTeachingPositionReadyAsync(
-                IndexChipProbeController,
-                IndexChipProbeControllerConfig.TeachingPositionName.SafetyZone.ToString());
-            if (!ok) return false;
-
-            return true;
-        }
-        private async System.Threading.Tasks.Task<bool> HandleChipUnloadingReady()
-        {
-            return await MoveToTeachingPositionReadyAsync(
-                        OutputDieTransfer,
-                        OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString());
-        }
-        private async System.Threading.Tasks.Task<bool> HandleOutputWaferReady()
-        {
-            return await MoveToTeachingPositionReadyAsync(
-                        OutputFeeder,
-                        OutputFeederConfig.TeachingPositionName.Ready.ToString());
-        }
-
-        // 공통 Start 함수: 유닛 기본 검사 → 이미 실행 중 여부 확인 → Start 요청 → Cursor 복원
-        private async System.Threading.Tasks.Task<bool> TryStartUnitAsync(BaseUnit unit)
-        {
-            if (unit == null)
+            return Task.Run(() =>
             {
-                return false;
-            }
+                ct.ThrowIfCancellationRequested();
+                return OutputDieTransfer?.EnsureReady() ?? -1;
+            }, ct);
+        }
+        private Task<int> HandleOutputWaferReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                return OutputFeeder?.EnsureReady() ?? -1;
+            }, ct);
+        }
+        #endregion
 
+        // 공통 Start
+        private async Task<bool> TryStartUnitAsync(BaseUnit unit)
+        {
+            if (unit == null) return false;
             try
             {
                 var eq = Equipment.Instance;
@@ -832,7 +751,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
                 }
-
                 var unitName = unit.UnitName;
                 if (string.IsNullOrEmpty(unitName))
                 {
@@ -840,7 +758,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false;
                 }
-
                 if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running)
                 {
                     MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
@@ -850,7 +767,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
                 var prev = Cursor.Current;
                 Cursor.Current = Cursors.WaitCursor;
-
                 try
                 {
                     bool ok = await eq.StartUnitAsync(unitName);
@@ -860,62 +776,32 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                finally
-                {
-                    Cursor.Current = prev;
-                }
+                finally { Cursor.Current = prev; }
             }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-            }
-
+            catch (Exception ex) { Log.Write(ex); }
             return true;
         }
-        private async System.Threading.Tasks.Task<bool> HandleInputStart()
-        {
-            return await TryStartUnitAsync(InputFeeder);
-        }
-        private async System.Threading.Tasks.Task<bool> HandleChipLoadingStart()
-        {
-            return await TryStartUnitAsync(InputDieTransfer);
-        }
-        private async System.Threading.Tasks.Task<bool> HandleProcessStart()
-        {
-            return await TryStartUnitAsync(Rotary);
-        }
-        private async System.Threading.Tasks.Task<bool> HandleChipUnloadingStart()
-        {
-            return await TryStartUnitAsync(OutputDieTransfer);
-        }
-        private async System.Threading.Tasks.Task<bool> HandleOutputWaferStart()
-        {
-            return await TryStartUnitAsync(OutputFeeder);
-        }
+
+        private Task<bool> HandleInputStart() => TryStartUnitAsync(InputFeeder);
+        private Task<bool> HandleChipLoadingStart() => TryStartUnitAsync(InputDieTransfer);
+        private Task<bool> HandleProcessStart() => TryStartUnitAsync(Rotary);
+        private Task<bool> HandleChipUnloadingStart() => TryStartUnitAsync(OutputDieTransfer);
+        private Task<bool> HandleOutputWaferStart() => TryStartUnitAsync(OutputFeeder);
         #endregion
 
-
+        #region Sequence Action Handlers (Ready 분기 비동기 방식으로 교체)
         private async void HandleInputWafer(string action)
         {
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "InputWafer Ready 위치로 이동");
-
-                int nflowControl = await HandleInputWaferReady();
-                if (nflowControl != 0)
-                {
-                    return;
-                }
+                int rc = await HandleInputWaferReadyAsync(CancellationToken.None);
+                if (rc != 0) return;
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "InputWafer 시퀀스 실행");
-
-                bool flowControl = await HandleInputStart();
-                if (!flowControl)
-                {
-                    return;
-                }
+                if (!await HandleInputStart()) return;
             }
         }
 
@@ -924,21 +810,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "ChipLoading Ready");
-
-                bool flowControl = await HandleChipLoadingReady();
-                if (!flowControl)
-                {
-                    return;
-                }
+                int rc = await HandleChipLoadingReadyAsync(CancellationToken.None);
+                if (rc != 0) return;
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "ChipLoading Start");
-                bool flowControl = await HandleChipLoadingStart();
-                if (!flowControl)
-                {
-                    return;
-                }
+                if (!await HandleChipLoadingStart()) return;
             }
         }
 
@@ -947,22 +825,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "Process Ready");
-                bool flowControl = await HandleProcessReady();
-                if (!flowControl)
-                {
-                    return;
-                }
-
+                int rc = await HandleProcessReadyAsync(CancellationToken.None);
+                if (rc != 0) return;
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "Process Start");
-
-                bool flowControl = await HandleProcessStart();
-                if (!flowControl)
-                {
-                    return;
-                }
+                if (!await HandleProcessStart()) return;
             }
         }
 
@@ -971,22 +840,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "ChipUnloading Ready");
-                bool flowControl = await HandleChipUnloadingReady();
-                if (!flowControl)
-                {
-                    return;
-                }
-
+                int rc = await HandleChipUnloadingReadyAsync(CancellationToken.None);
+                if (rc != 0) return;
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "ChipUnloading Start");
-
-                bool flowControl = await HandleChipUnloadingStart();
-                if (!flowControl)
-                {
-                    return;
-                }
+                if (!await HandleChipUnloadingStart()) return;
             }
         }
 
@@ -995,30 +855,146 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (action == "Ready")
             {
                 Log.Write("Operator_Main", "OutputWafer Ready 위치로 이동");
-
-                bool flowControl = await HandleOutputWaferReady();
-                if (!flowControl)
-                {
-                    return;
-                }
-
+                int rc = await HandleOutputWaferReadyAsync(CancellationToken.None);
+                if (rc != 0) return;
             }
             else if (action == "Start")
             {
                 Log.Write("Operator_Main", "OutputWafer 시퀀스 실행");
+                if (!await HandleOutputWaferStart()) return;
+            }
+        }
+        #endregion
 
-                bool flowControl = await HandleOutputWaferStart();
-                if (!flowControl)
+        // ====== (추가/수정 시작) : Manual / Auto 시퀀스 공통화를 위한 최소 공통 유틸 ======
+
+        #region Unified Sequence Helpers
+
+        // 실행 순서(필요하면 Config 로 대체 가능)
+        private static readonly string[] _sequenceOrder =
+        {
+    "InputWafer","ChipLoading","Process","ChipUnloading","OutputWafer"
+};
+
+        // (이미 존재) 시퀀스 → Unit 매핑 재사용
+        // private BaseUnit GetUnitForSequence(string sequenceName) { ... }
+
+        // Start 공통 (Manual/Auto 공용) : Start 토글 전용 내부 호출용
+        private async Task<bool> StartSequenceAsync(string sequenceName, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+            var unit = GetUnitForSequence(sequenceName);
+            if (unit == null)
+            {
+                Log.Write("Operator_Main", $"StartSequenceAsync 실패 - Unit 매핑 없음: {sequenceName}");
+                return false;
+            }
+            // 이미 Running 이면 성공 간주
+            if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running)
+                return true;
+
+            bool ok = await TryStartUnitAsync(unit);
+            if (!ok || unit.RunUnitStatus != BaseUnit.UnitStatus.Running)
+            {
+                Log.Write("Operator_Main", $"StartSequenceAsync 실패: {sequenceName}");
+                return false;
+            }
+            return true;
+        }
+
+        // Ready 공통 (Manual/Auto 공용) : 실패 시 false
+        private async Task<bool> ReadySequenceAsync(string sequenceName, CancellationToken ct)
+        {
+            if (_readySequences.Contains(sequenceName))
+                return true; // 이미 Ready
+
+            bool ok = await TryReadySequenceAsync(sequenceName, ct);
+            if (ok)
+            {
+                _readySequences.Add(sequenceName);
+                NotifySequenceStateChanged(sequenceName, "Ready", true, false);
+            }
+            return ok;
+        }
+
+        // 모든 시퀀스 Ready (Auto 전용이지만 Manual 과 동일 로직 재사용)
+        private async Task<bool> ReadyAllSequencesAsync(CancellationToken ct)
+        {
+            foreach (var seq in _sequenceOrder)
+            {
+                if (!await ReadySequenceAsync(seq, ct))
                 {
-                    return;
+                    Log.Write("Operator_Main", $"Auto Ready 중단 - {seq} 실패");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 모든 시퀀스 Start (Auto 전용이지만 Manual 과 동일 로직 재사용)
+        private async Task<bool> StartAllSequencesAsync(CancellationToken ct)
+        {
+            foreach (var seq in _sequenceOrder)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                // Auto 에서는 Ready 안 되어 있으면 자동 Ready 수행
+                if (!_readySequences.Contains(seq))
+                {
+                    if (!await ReadySequenceAsync(seq, ct))
+                    {
+                        Log.Write("Operator_Main", $"Auto Start 중 Ready 실패 - {seq}");
+                        return false;
+                    }
+                }
+
+                // Manual StartAction 과 동일한 상태 전환 (Ready OFF → Start ON)
+                _readySequences.Remove(seq);
+                NotifySequenceStateChanged(seq, "Ready", false, false);
+
+                if (_startSequences.Contains(seq))
+                    continue; // 이미 Start ON
+
+                _startSequences.Add(seq);
+                NotifySequenceStateChanged(seq, "Start", true, true);
+
+                if (!await StartSequenceAsync(seq, ct))
+                {
+                    // 실패 시 UI 복구
+                    _startSequences.Remove(seq);
+                    NotifySequenceStateChanged(seq, "Start", false, true);
+                    Log.Write("Operator_Main", $"Auto Start 실패 - {seq}");
+                    return false;
+                }
+                Log.Write("Operator_Main", $"Auto Start OK - {seq}");
+            }
+            return true;
+        }
+
+        // 모든 시퀀스 Stop (Manual 토글과 동일 논리)
+        private async Task StopAllSequencesAsync()
+        {
+            var eq = Equipment.Instance;
+            foreach (var seq in _sequenceOrder)
+            {
+                if (_startSequences.Contains(seq))
+                {
+                    _startSequences.Remove(seq);
+                    NotifySequenceStateChanged(seq, "Start", false, true);
+                    var u = GetUnitForSequence(seq);
+                    try { if (u != null) await eq.StopUnitAsync(u.UnitName); } catch { }
+                }
+                if (_readySequences.Contains(seq))
+                {
+                    _readySequences.Remove(seq);
+                    NotifySequenceStateChanged(seq, "Ready", false, false);
                 }
             }
         }
 
         #endregion
 
-
-        // ===== Jog Popup =====
+        // Jog Popup
         private void btn_Jog_Click(object sender, EventArgs e)
         {
             ShowOrRestoreJogPopup(this);
@@ -1029,18 +1005,17 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             if (_jogPopup == null || _jogPopup.IsDisposed)
             {
-                _jogPopup = new Form_AxisJogPopup();
-                _jogPopup.StartPosition = FormStartPosition.CenterParent;
-
-                _jogPopup.ShowInTaskbar = true;
+                _jogPopup = new Form_AxisJogPopup
+                {
+                    StartPosition = FormStartPosition.CenterParent,
+                    ShowInTaskbar = true
+                };
                 _jogPopup.StartPosition = FormStartPosition.CenterScreen;
-
                 _jogPopup.Owner = null;
                 _jogPopup.Load += (s, e) =>
                 {
                     TaskbarHelper.SetAppId(_jogPopup.Handle, "MyApp.JogPanel");
                 };
-
                 _jogPopup.FormClosed += (s, _) => { _jogPopup = null; };
                 _jogPopup.FormClosing += (s, ev) =>
                 {
@@ -1052,13 +1027,9 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 };
             }
             if (!_jogPopup.Visible)
-            {
                 _jogPopup.Show();
-            }
-
             if (_jogPopup.WindowState == FormWindowState.Minimized)
                 _jogPopup.WindowState = FormWindowState.Normal;
-
             _jogPopup.BringToFront();
             _jogPopup.TopMost = true;
             _jogPopup.Activate();
@@ -1068,18 +1039,17 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         {
             if (_axisPosPopup == null || _axisPosPopup.IsDisposed)
             {
-                _axisPosPopup = new AxisPostionPopup();
-                _axisPosPopup.StartPosition = FormStartPosition.CenterParent;
-
-                _axisPosPopup.ShowInTaskbar = true;
+                _axisPosPopup = new AxisPostionPopup
+                {
+                    StartPosition = FormStartPosition.CenterParent,
+                    ShowInTaskbar = true
+                };
                 _axisPosPopup.StartPosition = FormStartPosition.CenterScreen;
-
                 _axisPosPopup.Owner = null;
                 _axisPosPopup.Load += (s, e) =>
                 {
                     TaskbarHelper.SetAppId(_axisPosPopup.Handle, "MyApp.AxisPosition");
                 };
-
                 _axisPosPopup.FormClosed += (s, _) => { _axisPosPopup = null; };
                 _axisPosPopup.FormClosing += (s, ev) =>
                 {
@@ -1091,16 +1061,149 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 };
             }
             if (!_axisPosPopup.Visible)
-            {
                 _axisPosPopup.Show();
-            }
-
             if (_axisPosPopup.WindowState == FormWindowState.Minimized)
                 _axisPosPopup.WindowState = FormWindowState.Normal;
-
             _axisPosPopup.BringToFront();
             _axisPosPopup.TopMost = true;
             _axisPosPopup.Activate();
+        }
+
+        private CancellationTokenSource _homeCts;
+
+        private async void btnHomeAll_Click(object sender, EventArgs e)
+        {
+            HomeProgressForm dlg = null;
+            try
+            {
+                // 홈 진행 전 사용자 확인
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("확인", "축 홈을 진행하시겠습니까?") != DialogResult.Yes)
+                    return;
+
+                _homeCts?.Cancel();
+                _homeCts?.Dispose();
+                _homeCts = new CancellationTokenSource();
+                var token = _homeCts.Token;
+                //var axes = _axisManager?.GetAll();
+                var axes = _Equipment.AxisManager?.GetAll();
+                if (axes == null || axes.Length == 0)
+                {
+                    MessageBox.Show("등록된 축이 없습니다.");
+                    return;
+                }
+                foreach (var ax in axes)
+                {
+                    try { ax.ClearAlarm(); } catch { }
+                    try { ax.Servo(true); } catch { }
+                }
+                var seq = MachineHomeCoordinator.BuildDefaultHomeSequence(_Equipment);
+                dlg = new HomeProgressForm();
+                dlg.InitializeProgress("Machine Home", seq.TotalSteps);
+
+                seq.OnProgress(p =>
+                {
+                    dlg.SafeUpdate(p);
+                });
+
+                dlg.CancelRequested += () =>
+                {
+                    try { _homeCts.Cancel(); } catch { }
+                    try { _Equipment.AxisManager?.EmgStopAll(); } catch { }
+                };
+
+                dlg.ForceStopRequested += () =>
+                {
+                    try { _Equipment.AxisManager?.EmgStopAll(); } catch { }
+                };
+
+                var runTask = seq.RunAsync(token);
+
+                dlg.Show(this);
+                dlg.BringToFront();
+
+                // 취소/완료 중 먼저 끝난 것 대기
+                var completed = await Task.WhenAny(runTask, Task.Delay(Timeout.Infinite, token)).ConfigureAwait(true);
+
+                if (completed != runTask)
+                {
+                    // 취소됨: 2초 유예 후 여전히 미완료면 더 기다리지 않고 종료
+                    var grace = await Task.WhenAny(runTask, Task.Delay(2000)).ConfigureAwait(true);
+                    if (grace != runTask)
+                    {
+                        dlg.SafeUpdate(new OperationProgress
+                        {
+                            OperationId = "HOME",
+                            Title = "Home",
+                            StepIndex = seq.TotalSteps - 1,
+                            TotalSteps = seq.TotalSteps,
+                            IsCompleted = true,
+                            IsCanceled = true,
+                            IsAborted = true,
+                            Message = "Canceled"
+                        });
+                        MessageBox.Show("Home 취소됨");
+                        return;
+                    }
+                }
+
+                var results = await runTask.ConfigureAwait(true);
+                dlg.SafeUpdate(new OperationProgress { OperationId = "HOME", Title = "Home", StepIndex = seq.TotalSteps - 1, TotalSteps = seq.TotalSteps, IsCompleted = true, IsCanceled = token.IsCancellationRequested, IsAborted = seq.Aborted, Message = seq.AbortReason });
+                int success = results.Count(r => r.Success);
+                int notStarted = results.Count(r => !r.Started);
+                int fail = results.Count - success - notStarted;
+                string msg = $"Home 완료\r\n성공: {success}, 실패: {fail}, 미시작: {notStarted}";
+                if (fail > 0 || notStarted > 0)
+                {
+                    var detailList = new List<string>();
+                    foreach (var r in results)
+                    {
+                        string status;
+                        if (r.Success)
+                        {
+                            status = "OK";
+                        }
+                        else if (r.Started)
+                        {
+                            if (r.Error != null && r.Error.Message != null)
+                            {
+                                status = r.Error.Message;
+                            }
+                            else
+                            {
+                                status = "rc=" + r.ReturnCode;
+                            }
+                        }
+                        else
+                        {
+                            status = "NOT STARTED (" + r.FailReason + ")";
+                        }
+
+                        detailList.Add("- " + r.AxisName + ": " + status);
+                    }
+                    var detail = string.Join("\r\n", detailList);
+
+                    msg += "\r\n\r\n" + detail;
+                }
+                MessageBox.Show(msg, "Home");
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show("Home 취소됨");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Home 오류: " + ex.Message);
+            }
+            finally
+            {
+                try 
+                { 
+                    dlg?.Close(); 
+                    dlg?.Dispose(); 
+                } 
+                catch { }
+            }
         }
     }
 }

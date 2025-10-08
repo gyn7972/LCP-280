@@ -1311,6 +1311,9 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
+            var socket = this.Rotary.GetSocket(nIndex);
+            socket.SetState(Rotary.RotarySocketState.Probing);
+
             if (IsTopRequired())
             {
                 nRet = TopContactAndMeasureOnce(bFineSpeed);
@@ -1344,6 +1347,9 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             die.State = DieProcessState.Inspected;
+
+            socket.SetState(Rotary.RotarySocketState.Probed);
+
             LogSequence("End");
             return nRet; 
         }
@@ -1618,5 +1624,42 @@ namespace QMC.LCP_280.Process.Unit
 
         #endregion
 
+
+        #region Ready
+        public int EnsureReady(bool isFine = false)
+        {
+            Task<int> task = EnsureReadyAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> EnsureReadyAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnEnsureReady(isFine);
+                return 0;
+            });
+        }
+        private int OnEnsureReady(bool isFine)
+        {
+            int nRet = 0;
+
+            if (IsAxisProbeZSafetyPos() == false
+             || IsAxisProbeZSafetyPos() == false)
+            {
+                nRet = MovePositionSafetyZ();
+                if (nRet != 0)
+                {
+                    Log.Write(this, "CheckReady Fail - MovePositionSafetyZ");
+                    return nRet;
+                }
+            }
+
+            return nRet;
+        }
+        #endregion
     }
 }

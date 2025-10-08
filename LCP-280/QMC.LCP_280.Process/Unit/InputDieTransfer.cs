@@ -43,6 +43,7 @@ namespace QMC.LCP_280.Process.Unit
             eInputDieTransferError,
             eInputStageVaccum,
             eInputDieTransferVaccum,
+            eInputDieTransferNotSafety,
         }
         #region InitAlarm
         protected override void InitAlarm()
@@ -131,6 +132,15 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eInputDieTransferNotSafety;
+            alarm.Title = "InputDieTransfer Not Sfarety Pos.";
+            alarm.Cause = "InputDieTransfer가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
         }
         #endregion
 
@@ -348,7 +358,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionPickUp(bool isFine = false)
         {
             // 안전 Z 위치 확인 후 필요 시 이동
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 int safety = MovePositionSafetyZ(isFine);
                 if (safety != 0)
@@ -415,7 +425,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionPickUpToolT(bool isFine = false)
         {
             // Z 안전 확인
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 int safety = MovePositionSafetyZ(isFine);
                 if (safety != 0) return -1;
@@ -573,7 +583,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionReady(bool isFine = false)
         {
             int nRet = 0;
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)
@@ -693,7 +703,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionPlace_Index(bool isFine = false, int nIndex = 0)
         {
             int nRet = 0;
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)
@@ -792,148 +802,6 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
-        /// DieTransfer PickZ 축이 SafetyPos Teaching (Offset 적용) 위치(또는 허용오차 범위)인지 확인.
-        /// Teaching 이름이 SafetyPos 없으면 SafetyZone 순으로 fallback (둘 다 없으면 false).
-        /// 장치/축이 없으면 true(안전)로 간주. 필요 시 treatMissingAsSafe=false 로 변경 가능.
-        /// </summary>
-        /// <param name="fallbackTolerance">축 설정값을 못 가져올 때 사용할 기본 허용오차</param>
-        /// <param name="useAxisInposTolerance">축 Config.InposTolerance 사용 여부</param>
-        /// <param name="treatMissingAsSafe">장치/Teaching 미존재 시 true 반환할지 여부</param>
-        public bool IsPickZSafetyPos(double fallbackTolerance = 0.01,
-                                                 bool useAxisInposTolerance = true,
-                                                 bool treatMissingAsSafe = true)
-        {
-            if (AxisPickZ == null)
-                return treatMissingAsSafe;
-
-            var cfg = InputDieTransferConfig;
-            if (cfg == null) return false;
-
-            // 우선순위: SafetyPos → SafetyZone
-            string[] candidateNames =
-            {
-                "SafetyPos",
-                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
-            };
-
-            string foundName = null;
-            foreach (var name in candidateNames)
-            {
-                if (cfg.GetTeachingPosition(name) != null)
-                {
-                    foundName = name;
-                    break;
-                }
-            }
-
-            if (foundName == null)
-                return treatMissingAsSafe ? true : false;
-
-            var tp = cfg.GetTeachingPosition(foundName);
-            if (tp == null) return false;
-
-            // Offset 적용 PickZ 목표값
-            var (_, pickZTarget, _) = cfg.GetPositionWithOffset(foundName);
-
-            double cur = AxisPickZ.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisPickZ.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            // 동일위치(=InPos) 판정
-            return System.Math.Abs(cur - pickZTarget) <= tol;
-        }
-
-        /// <summary>
-        /// DieTransfer ToolT 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
-        /// SafetyZone Teaching에 ToolT 값이 없으면 다음 후보로 넘어감.
-        /// </summary>
-        public bool IsToolTSafetyPos(double fallbackTolerance = 0.01,
-                                                 bool useAxisInposTolerance = true,
-                                                 bool treatMissingAsSafe = true)
-        {
-            if (AxisToolT == null)
-                return treatMissingAsSafe;
-
-            var cfg = InputDieTransferConfig;
-            if (cfg == null) return false;
-
-            string[] candidateNames =
-            {
-                "SafetyPos",
-                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
-            };
-
-            string foundName = null;
-            foreach (var name in candidateNames)
-            {
-                var tpTest = cfg.GetTeachingPosition(name);
-                if (tpTest == null) continue;
-                // 해당 Teaching에 ToolT 좌표가 실제 존재하는지 확인 (없으면 스킵)
-                if (tpTest.AxisPositions != null &&
-                    tpTest.AxisPositions.Keys.Any(k => string.Equals(k, AxisNames.LeftToolT, StringComparison.OrdinalIgnoreCase)))
-                {
-                    foundName = name;
-                    break;
-                }
-            }
-
-            if (foundName == null)
-                return treatMissingAsSafe;
-
-            var (_, _, _) = cfg.GetPositionWithOffset(foundName);
-            // Offset 적용 튜플에서 t 사용
-            var (tTarget, _, _) = cfg.GetPositionWithOffset(foundName);
-
-            double cur = AxisToolT.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisToolT.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            return System.Math.Abs(cur - tTarget) <= tol;
-        }
-
-        /// <summary>
-        /// DieTransfer PlaceZ 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
-        /// </summary>
-        public bool IsPlaceZSafetyPos(double fallbackTolerance = 0.01,
-                                                  bool useAxisInposTolerance = true,
-                                                  bool treatMissingAsSafe = true)
-        {
-            if (AxisPlaceZ == null)
-                return treatMissingAsSafe;
-
-            var cfg = InputDieTransferConfig;
-            if (cfg == null) return false;
-
-            string[] candidateNames =
-            {
-                "SafetyPos",
-                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
-            };
-
-            string foundName = null;
-            foreach (var name in candidateNames)
-            {
-                if (cfg.GetTeachingPosition(name) != null)
-                {
-                    foundName = name;
-                    break;
-                }
-            }
-
-            if (foundName == null)
-                return treatMissingAsSafe;
-
-            var (_, _, placeZTarget) = cfg.GetPositionWithOffset(foundName);
-
-            double cur = AxisPlaceZ.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisPlaceZ.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            return System.Math.Abs(cur - placeZTarget) <= tol;
-        }
         #endregion
 
         #region Dual Axis (PickZ + PinZ) Simultaneous Move
@@ -1120,7 +988,240 @@ namespace QMC.LCP_280.Process.Unit
             });
         }
         #endregion
-       
+
+        #region Position Check (Pickup / Ready / Place Index)
+        /// DieTransfer PickZ 축이 SafetyPos Teaching (Offset 적용) 위치(또는 허용오차 범위)인지 확인.
+        /// Teaching 이름이 SafetyPos 없으면 SafetyZone 순으로 fallback (둘 다 없으면 false).
+        /// 장치/축이 없으면 true(안전)로 간주. 필요 시 treatMissingAsSafe=false 로 변경 가능.
+        /// </summary>
+        /// <param name="fallbackTolerance">축 설정값을 못 가져올 때 사용할 기본 허용오차</param>
+        /// <param name="useAxisInposTolerance">축 Config.InposTolerance 사용 여부</param>
+        /// <param name="treatMissingAsSafe">장치/Teaching 미존재 시 true 반환할지 여부</param>
+        public bool IsPositionPickZSafety(double fallbackTolerance = 0.01,
+                                                 bool useAxisInposTolerance = true,
+                                                 bool treatMissingAsSafe = true)
+        {
+            if (AxisPickZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputDieTransferConfig;
+            if (cfg == null) return false;
+
+            // 우선순위: SafetyPos → SafetyZone
+            string[] candidateNames =
+            {
+                "SafetyPos",
+                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidateNames)
+            {
+                if (cfg.GetTeachingPosition(name) != null)
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe ? true : false;
+
+            var tp = cfg.GetTeachingPosition(foundName);
+            if (tp == null) return false;
+
+            // Offset 적용 PickZ 목표값
+            var (_, pickZTarget, _) = cfg.GetPositionWithOffset(foundName);
+
+            double cur = AxisPickZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (AxisPickZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            // 동일위치(=InPos) 판정
+            return System.Math.Abs(cur - pickZTarget) <= tol;
+        }
+
+        /// <summary>
+        /// DieTransfer ToolT 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
+        /// SafetyZone Teaching에 ToolT 값이 없으면 다음 후보로 넘어감.
+        /// </summary>
+        public bool IsPositionToolTSafety(double fallbackTolerance = 0.01,
+                                                 bool useAxisInposTolerance = true,
+                                                 bool treatMissingAsSafe = true)
+        {
+            if (AxisToolT == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputDieTransferConfig;
+            if (cfg == null) return false;
+
+            string[] candidateNames =
+            {
+                "SafetyPos",
+                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidateNames)
+            {
+                var tpTest = cfg.GetTeachingPosition(name);
+                if (tpTest == null) continue;
+                // 해당 Teaching에 ToolT 좌표가 실제 존재하는지 확인 (없으면 스킵)
+                if (tpTest.AxisPositions != null &&
+                    tpTest.AxisPositions.Keys.Any(k => string.Equals(k, AxisNames.LeftToolT, StringComparison.OrdinalIgnoreCase)))
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe;
+
+            var (_, _, _) = cfg.GetPositionWithOffset(foundName);
+            // Offset 적용 튜플에서 t 사용
+            var (tTarget, _, _) = cfg.GetPositionWithOffset(foundName);
+
+            double cur = AxisToolT.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (AxisToolT.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            return System.Math.Abs(cur - tTarget) <= tol;
+        }
+
+        /// <summary>
+        /// DieTransfer PlaceZ 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
+        /// </summary>
+        public bool IsPositionPlaceZSafety(double fallbackTolerance = 0.01,
+                                                  bool useAxisInposTolerance = true,
+                                                  bool treatMissingAsSafe = true)
+        {
+            if (AxisPlaceZ == null)
+                return treatMissingAsSafe;
+
+            var cfg = InputDieTransferConfig;
+            if (cfg == null) return false;
+
+            string[] candidateNames =
+            {
+                "SafetyPos",
+                InputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            string foundName = null;
+            foreach (var name in candidateNames)
+            {
+                if (cfg.GetTeachingPosition(name) != null)
+                {
+                    foundName = name;
+                    break;
+                }
+            }
+
+            if (foundName == null)
+                return treatMissingAsSafe;
+
+            var (_, _, placeZTarget) = cfg.GetPositionWithOffset(foundName);
+
+            double cur = AxisPlaceZ.GetPosition();
+            double tol = useAxisInposTolerance
+                ? (AxisPlaceZ.Config?.InposTolerance ?? fallbackTolerance)
+                : fallbackTolerance;
+
+            return System.Math.Abs(cur - placeZTarget) <= tol;
+        }
+
+        // ---- Pickup ----
+        public bool IsPositionToolTPickup()
+        {
+            const string tpName = nameof(InputDieTransferConfig.TeachingPositionName.Pickup);
+            if (AxisToolT == null) return true;
+            double target = GetTP(tpName, AxisNames.LeftToolT);
+            try { return AxisToolT.InPosition(target); } catch { return false; }
+        }
+
+        public bool IsPositionPickZPickup()
+        {
+            const string tpName = nameof(InputDieTransferConfig.TeachingPositionName.Pickup);
+            if (AxisPickZ == null) return true;
+            double target = GetTP(tpName, AxisNames.LeftPickZ);
+            try { return AxisPickZ.InPosition(target); } catch { return false; }
+        }
+
+        // ---- Ready ----
+        public bool IsPositionToolTReady()
+        {
+            const string tpName = nameof(InputDieTransferConfig.TeachingPositionName.Ready);
+            if (AxisToolT == null) return true;
+            double target = GetTP(tpName, AxisNames.LeftToolT);
+            try { return AxisToolT.InPosition(target); } catch { return false; }
+        }
+
+        public bool IsPositionPlaceZReady()
+        {
+            const string tpName = nameof(InputDieTransferConfig.TeachingPositionName.Ready);
+            if (AxisPlaceZ == null) return true;
+            double target = GetTP(tpName, AxisNames.LeftPlaceZ);
+            try { return AxisPlaceZ.InPosition(target); } catch { return false; }
+        }
+
+        // ---- Current Place Index (ToolT / PlaceZ) ----
+        public bool IsPositionToolTPlaceIndex()
+        {
+            int nIndex = GetLoadIndexNo();
+            return IsPositionToolTPlaceIndex(nIndex);
+        }
+        public bool IsPositionPlaceZPlaceIndex()
+        {
+            int nIndex = GetLoadIndexNo();
+            return IsPositionPlaceZPlaceIndex(nIndex);
+        }
+        // ---- Specific Place Index (0~7 또는 1~8 허용) ----
+        public bool IsPositionToolTPlaceIndex(int nIndex)
+        {
+            if (AxisToolT == null) return true;
+            if (!TryGetPlaceTeachingName(nIndex, out string tpName)) return false;
+
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null) return false;
+
+            double target = GetTP(tpName, AxisNames.LeftToolT);
+            try { return AxisToolT.InPosition(target); } catch { return false; }
+        }
+        public bool IsPositionPlaceZPlaceIndex(int nIndex)
+        {
+            if (AxisPlaceZ == null) return true;
+            if (!TryGetPlaceTeachingName(nIndex, out string tpName)) return false;
+
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null) return false;
+
+            double target = GetTP(tpName, AxisNames.LeftPlaceZ);
+            try { return AxisPlaceZ.InPosition(target); } catch { return false; }
+        }
+        // ---- 내부 공통: Place Index Teaching 이름 변환 (이동 로직과 동일한 인덱스 보정 규칙 유지) ----
+        private bool TryGetPlaceTeachingName(int nIndex, out string tpName)
+        {
+            // OnMovePositionPlace_Index 와 동일 규칙:
+            //  1~8 입력  -> +1 (2~9)
+            //  0~7 입력  -> +1 (1~8)
+            int teachingIdx;
+            if (nIndex >= 1 && nIndex <= 8)
+                teachingIdx = nIndex + 1;
+            else if (nIndex >= 0 && nIndex < 8)
+                teachingIdx = nIndex + 1;
+            else
+            {
+                tpName = null;
+                return false;
+            }
+
+            tpName = $"Place_Index{teachingIdx}";
+            return true;
+        }
+        #endregion
 
         #region Teaching Helpers
         public int MoveToTeachingPosition(string name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0)
@@ -2139,6 +2240,43 @@ namespace QMC.LCP_280.Process.Unit
                 bResult = true;
             }
             return bResult;
+        }
+        #endregion
+
+        #region Ready
+        public int EnsureReady(bool isFine = false)
+        {
+            Task<int> task = EnsureReadyAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> EnsureReadyAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnEnsureReady(isFine);
+                return 0;
+            });
+        }
+        private int OnEnsureReady(bool isFine)
+        {
+            int nRet = 0;
+
+            if (IsPositionPickZSafety() == false
+             || IsPositionPlaceZSafety() == false)
+            {
+                nRet = MovePositionSafetyZ();
+                if (nRet != 0)
+                {
+                    Log.Write(this, "CheckReady Fail - MovePositionSafetyZ");
+                    return nRet;
+                }
+            }
+
+            return nRet;
         }
         #endregion
     }

@@ -2,6 +2,7 @@ using QMC.Common;
 using System;
 using System.ComponentModel; // DesignMode 판단
 using System.Drawing;
+using System.Threading;
 using System.Windows.Forms;
 using static QMC.Common.Unit.BaseUnit;
 
@@ -11,7 +12,7 @@ namespace QMC.LCP_280.Process
     public partial class Sequence_Main : Form
     {
         private Equipment equipment;
-        private Timer statusUpdateTimer;
+        private System.Windows.Forms.Timer statusUpdateTimer;
         private bool _unitColumnsAutosized = false;
         private bool _listViewInitChecked = false;
         private int _listViewLastItemCount = 0;
@@ -61,7 +62,7 @@ namespace QMC.LCP_280.Process
 
         private void InitializeTimer()
         {
-            statusUpdateTimer = new Timer { Interval = 1000 };
+            statusUpdateTimer = new System.Windows.Forms.Timer { Interval = 1000 };
             statusUpdateTimer.Tick += StatusUpdateTimer_Tick;
             statusUpdateTimer.Start();
         }
@@ -192,8 +193,101 @@ namespace QMC.LCP_280.Process
         #endregion
 
         #region Equipment Event Handlers
+
+        private int _eqStateUpdatePending;              // 0 or 1 (동시 업데이트 합치기)
+        private EquipmentStateChangedEventArgs _lastEqStateArgs; // 마지막 전달된 인자 (Coalesce 용)
+
         private void Equipment_StateChanged(object sender, EquipmentStateChangedEventArgs e)
-        { if (InvokeRequired) { Invoke(new Action(() => Equipment_StateChanged(sender, e))); return; } if (lblEquipmentState != null) { lblEquipmentState.Text = $"State: {e.NewState}"; switch (e.NewState) { case EquipmentState.Running: lblEquipmentState.ForeColor = Color.Green; break; case EquipmentState.Error: lblEquipmentState.ForeColor = Color.Red; break; case EquipmentState.Starting: case EquipmentState.Stopping: lblEquipmentState.ForeColor = Color.Orange; break; default: lblEquipmentState.ForeColor = Color.Black; break; } } LogMessage($"Equipment 상태 변경: {e.OldState} → {e.NewState}"); UpdateUnitStatus(); }
+        {
+            if (IsDisposed || Disposing) 
+                return;
+
+            // 가장 최근 이벤트 저장 (참조만)
+            _lastEqStateArgs = e;
+
+            // 이미 UI 업데이트 예약되어 있으면 또 예약하지 않음
+            if (Interlocked.Exchange(ref _eqStateUpdatePending, 1) == 1)
+                return;
+
+            //// UI 스레드 마샬링 (비동기)
+            //if (InvokeRequired) 
+            //{ 
+            //    Invoke(new Action(() => Equipment_StateChanged(sender, e))); 
+            //    return; 
+            //}
+            // UI 스레드 마샬링 (비동기)
+            if (InvokeRequired)
+            {
+                try
+                {
+                    BeginInvoke(new Action(ApplyEquipmentStateCoalesced));
+                }
+                catch { Interlocked.Exchange(ref _eqStateUpdatePending, 0); }
+            }
+            else
+            {
+                ApplyEquipmentStateCoalesced();
+            }
+            //}
+
+            //if (lblEquipmentState != null) 
+            //{ 
+            //    lblEquipmentState.Text = $"State: {e.NewState}"; 
+            //    switch (e.NewState) 
+            //    { 
+            //        case EquipmentState.Running: lblEquipmentState.ForeColor = Color.Green; break; 
+            //        case EquipmentState.Error: lblEquipmentState.ForeColor = Color.Red; break; 
+            //        case EquipmentState.Starting: 
+            //        case EquipmentState.Stopping: lblEquipmentState.ForeColor = Color.Orange; break; 
+            //        default: lblEquipmentState.ForeColor = Color.Black; break; 
+            //    }
+            //} 
+
+            //LogMessage($"Equipment 상태 변경: {e.OldState} → {e.NewState}"); 
+            //UpdateUnitStatus(); 
+        }
+
+            // 실제 UI 갱신 (합쳐진 마지막 상태 1회 반영)
+        private void ApplyEquipmentStateCoalesced()
+        {
+            // 플래그 리셋
+            Interlocked.Exchange(ref _eqStateUpdatePending, 0);
+
+            if (IsDisposed || Disposing) return;
+
+            var args = _lastEqStateArgs;
+            if (args == null) return;
+
+            try
+            {
+                if (lblEquipmentState != null)
+                {
+                    lblEquipmentState.Text = $"State: {args.NewState}";
+                    switch (args.NewState)
+                    {
+                        case EquipmentState.Running:
+                            lblEquipmentState.ForeColor = Color.Green; break;
+                        case EquipmentState.Error:
+                            lblEquipmentState.ForeColor = Color.Red; break;
+                        case EquipmentState.Starting:
+                        case EquipmentState.Stopping:
+                            lblEquipmentState.ForeColor = Color.Orange; break;
+                        default:
+                            lblEquipmentState.ForeColor = Color.Black; break;
+                    }
+                }
+
+                LogMessage($"Equipment 상태 변경: {args.OldState} → {args.NewState}");
+
+                // 전체 갱신 비용이 크다면 필요 시 지연/Throttle 가능
+                UpdateUnitStatus();
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"Equipment 상태 UI 반영 오류: {ex.Message}", Color.Red);
+            }
+        }
+
         private void Equipment_UnitStateChanged(object sender, UnitStateChangedEventArgs e) 
         { 
             if (InvokeRequired) 

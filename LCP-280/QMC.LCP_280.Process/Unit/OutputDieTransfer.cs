@@ -309,7 +309,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionReady(bool isFine = false)
         {
             int nRet = 0;
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)
@@ -421,7 +421,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionPickUp_Index(bool isFine = false, int nIndex = 0)
         {
             // 안전 Z 위치 확인 후 필요 시 이동
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 int safetyMove = MovePositionSafetyZ(isFine);
                 if (safetyMove != 0)
@@ -492,7 +492,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionPickUpToolT_Index(bool isFine = false, int nIndex = 0)
         {
             // 안전 Z 위치 확인 후 필요 시 이동
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 int safetyMove = MovePositionSafetyZ(isFine);
                 if (safetyMove != 0)
@@ -519,7 +519,7 @@ namespace QMC.LCP_280.Process.Unit
         private int IsMoveInterLockPickUpToolT_Index(int nIndex = 0)
         {
             // 안전 Z 위치 확인 후 필요 시 이동
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 int safetyMove = MovePositionSafetyZ();
                 if (safetyMove != 0)
@@ -584,35 +584,6 @@ namespace QMC.LCP_280.Process.Unit
             return 0;
         }
 
-        private bool TryGetPickupTeachingName(int index, out string tpName)
-        {
-            tpName = null;
-
-            int teachingIdx;
-            if (index >= 1 && index <= 8)
-            {
-                teachingIdx = index + 1;
-            }
-            else if (index >= 0 && index < 8)
-            {
-                teachingIdx = index + 1;
-            }
-            else
-            {
-                Log.Write(UnitName, $"[TryGetPickupTeachingName] Invalid index {index}. Range 0~7 or 1~8");
-                return false;
-            }
-
-            tpName = $"Pickup_Index{teachingIdx}";
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp == null)
-            {
-                Log.Write(UnitName, $"[TryGetPickupTeachingName] Teaching not found: {tpName}");
-                tpName = null;
-                return false;
-            }
-            return true;
-        }
         private int MoveToolT_ToPickupIndex(string tpName, bool isFine)
         {
             double target = GetTP(tpName, AxisNames.RightToolT);
@@ -698,7 +669,7 @@ namespace QMC.LCP_280.Process.Unit
         private int OnMovePositionPlace(bool isFine = false)
         {
             int nRet = 0;
-            if (!IsPlaceZSafetyPos() || !IsPickZSafetyPos())
+            if (!IsPositionPlaceZSafety() || !IsPositionPickZSafety())
             {
                 nRet = MovePositionSafetyZ();
                 if (nRet != 0)
@@ -783,185 +754,406 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
-        public bool IsPickZSafetyPos(double fallbackTolerance = 0.01,
-                                                 bool useAxisInposTolerance = true,
-                                                 bool treatMissingAsSafe = true)
-        {
-            if (AxisPickZ == null)
-                return treatMissingAsSafe;
 
-            var cfg = Config;
-            if (cfg == null) return false;
+        #region Position Check (Unified Refactored)
 
-            // 우선순위: SafetyPos → SafetyZone
-            string[] candidateNames =
-            {
-                "SafetyPos",
-                OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
-            };
-
-            string foundName = null;
-            foreach (var name in candidateNames)
-            {
-                if (cfg.GetTeachingPosition(name) != null)
-                {
-                    foundName = name;
-                    break;
-                }
-            }
-
-            if (foundName == null)
-                return treatMissingAsSafe ? true : false;
-
-            var tp = cfg.GetTeachingPosition(foundName);
-            if (tp == null) return false;
-
-            // Offset 적용 PickZ 목표값
-            var (_, pickZTarget, _) = cfg.GetPositionWithOffset(foundName);
-
-            double cur = AxisPickZ.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisPickZ.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            // 동일위치(=InPos) 판정
-            return System.Math.Abs(cur - pickZTarget) <= tol;
-        }
+        // ============================================================
+        // 리팩토링 개요
+        //  - 중복되던 위치 판정 함수를 단일 범용 헬퍼로 통합.
+        //  - Safety / Ready / Place / Pickup(Index) 모두 공통 로직 사용.
+        //  - 외부 기존 호출 호환 유지를 위해 기존 공개 메서드 이름은 유지.
+        //  - 한 줄 형태의 축약(식 본문) 사용하지 않고 명시적 전통 방식으로 작성.
+        // ============================================================
 
         /// <summary>
-        /// DieTransfer ToolT 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
-        /// SafetyZone Teaching에 ToolT 값이 없으면 다음 후보로 넘어감.
+        /// 지정 Teaching 위치(Offset 적용 기준)에서 해당 축이 InPosition 인지 확인.
         /// </summary>
-        public bool IsToolTSafetyPos(double fallbackTolerance = 0.01,
-                                                 bool useAxisInposTolerance = true,
-                                                 bool treatMissingAsSafe = true)
+        private bool IsAxisInTeaching(MotionAxis axis,
+                                      string axisName,
+                                      string teachingName,
+                                      bool treatAxisNullAsTrue = true,
+                                      bool useOffset = true,
+                                      double fallbackTolerance = 0.01,
+                                      bool useAxisInposTolerance = true)
         {
-            if (AxisToolT == null)
-                return treatMissingAsSafe;
-
-            var cfg = Config; 
-            if (cfg == null) return false;
-
-            string[] candidateNames =
+            if (string.IsNullOrWhiteSpace(teachingName))
             {
-                "SafetyPos",
-                OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
-            };
-
-            string foundName = null;
-            foreach (var name in candidateNames)
-            {
-                var tpTest = cfg.GetTeachingPosition(name);
-                if (tpTest == null) continue;
-                // 해당 Teaching에 ToolT 좌표가 실제 존재하는지 확인 (없으면 스킵)
-                if (tpTest.AxisPositions != null &&
-                    tpTest.AxisPositions.Keys.Any(k => string.Equals(k, AxisNames.LeftToolT, StringComparison.OrdinalIgnoreCase)))
-                {
-                    foundName = name;
-                    break;
-                }
+                return false;
             }
 
-            if (foundName == null)
-                return treatMissingAsSafe;
-
-            var (_, _, _) = cfg.GetPositionWithOffset(foundName);
-            // Offset 적용 튜플에서 t 사용
-            var (tTarget, _, _) = cfg.GetPositionWithOffset(foundName);
-
-            double cur = AxisToolT.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisToolT.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            return System.Math.Abs(cur - tTarget) <= tol;
-        }
-
-        /// <summary>
-        /// DieTransfer PlaceZ 축이 SafetyPos(or SafetyZone fallback) 위치인지 확인.
-        /// </summary>
-        public bool IsPlaceZSafetyPos(double fallbackTolerance = 0.01,
-                                      bool useAxisInposTolerance = true,
-                                      bool treatMissingAsSafe = true)
-        {
-            if (AxisPlaceZ == null)
-                return treatMissingAsSafe;
-
-            var cfg = Config;
-            if (cfg == null) 
-                return false;
-
-            string[] candidateNames =
+            if (axis == null)
             {
-                "SafetyPos",
-                OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
-            };
-
-            string foundName = null;
-            foreach (var name in candidateNames)
-            {
-                if (cfg.GetTeachingPosition(name) != null)
-                {
-                    foundName = name;
-                    break;
-                }
+                return treatAxisNullAsTrue;
             }
 
-            if (foundName == null)
-                return treatMissingAsSafe;
-
-            var (_, _, placeZTarget) = cfg.GetPositionWithOffset(foundName);
-
-            double cur = AxisPlaceZ.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisPlaceZ.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
-
-            return System.Math.Abs(cur - placeZTarget) <= tol;
-        }
-
-        //포지션 확인 함수 추가 필요.
-        public bool IsPositionPickUpToolT(int index, 
-                                          double fallbackTolerance = 0.01, 
-                                          bool useAxisInposTolerance = true)
-        {
-            if (AxisToolT == null) 
-                return false;
-
-            string tpName;
-            if (!TryGetPickupTeachingName(index, out tpName))
-                return false;
-
-            var tp = Config.GetTeachingPosition(tpName);
+            var tp = Config.GetTeachingPosition(teachingName);
             if (tp == null)
+            {
                 return false;
+            }
 
-            // Teaching + Offset 적용된 ToolT 목표값 사용
-            double target;
+            double target = 0.0;
+            bool targetResolved = false;
+
+            if (useOffset)
+            {
+                // OutputDieTransferConfig.GetPositionWithOffset() 의 반환 순서를 가정: (ToolT, PickZ, PlaceZ)
+                var tuple = Config.GetPositionWithOffset(teachingName);
+                double t = tuple.Item1;
+                double pz = tuple.Item2;
+                double plz = tuple.Item3;
+
+                if (string.Equals(axisName, AxisNames.RightToolT, StringComparison.OrdinalIgnoreCase))
+                {
+                    target = t;
+                    targetResolved = true;
+                }
+                else if (string.Equals(axisName, AxisNames.RightPickZ, StringComparison.OrdinalIgnoreCase))
+                {
+                    target = pz;
+                    targetResolved = true;
+                }
+                else if (string.Equals(axisName, AxisNames.RightPlaceZ, StringComparison.OrdinalIgnoreCase))
+                {
+                    target = plz;
+                    targetResolved = true;
+                }
+                else
+                {
+                    // TeachingPosition 내 원시 축 좌표를 직접 조회 (호환성)
+                    if (tp.AxisPositions != null && tp.AxisPositions.ContainsKey(axisName))
+                    {
+                        target = tp.AxisPositions[axisName];
+                        targetResolved = true;
+                    }
+                }
+            }
+            else
+            {
+                if (tp.AxisPositions != null && tp.AxisPositions.ContainsKey(axisName))
+                {
+                    target = tp.AxisPositions[axisName];
+                    targetResolved = true;
+                }
+            }
+
+            if (targetResolved == false)
+            {
+                return false;
+            }
+
+            double current = 0.0;
             try
             {
-                var (t, _, _) = Config.GetPositionWithOffset(tpName);
-                target = t;
+                current = axis.GetPosition();
             }
             catch
             {
                 return false;
             }
 
-            double cur = AxisToolT.GetPosition();
-            double tol = useAxisInposTolerance
-                ? (AxisToolT.Config?.InposTolerance ?? fallbackTolerance)
-                : fallbackTolerance;
+            double tolerance;
+            if (useAxisInposTolerance)
+            {
+                if (axis.Config != null && axis.Config.InposTolerance > 0)
+                {
+                    tolerance = axis.Config.InposTolerance;
+                }
+                else
+                {
+                    tolerance = fallbackTolerance;
+                }
+            }
+            else
+            {
+                tolerance = fallbackTolerance;
+            }
 
-            return Math.Abs(cur - target) <= tol;
+            double diff = Math.Abs(current - target);
+            bool inPos = diff <= tolerance;
+            return inPos;
         }
 
-        // 기존 호환용 (이전 코드가 호출하고 있을 가능성) → 현재 Unloader Index 기준 자동 판단
+        /// <summary>
+        /// Safety / SafetyZone 후보 Teaching 들 중 현재 축이 위치한지 판단.
+        /// (첫 번째로 조건을 만족하는 Teaching 을 사용)
+        /// </summary>
+        private bool IsAxisSafetyPos(MotionAxis axis,
+                                     string axisName,
+                                     string[] candidateTeachingNames,
+                                     bool treatMissingAsSafe,
+                                     double fallbackTolerance,
+                                     bool useAxisInposTolerance)
+        {
+            if (axis == null)
+            {
+                return treatMissingAsSafe;
+            }
+
+            if (candidateTeachingNames == null || candidateTeachingNames.Length == 0)
+            {
+                return treatMissingAsSafe;
+            }
+
+            foreach (var name in candidateTeachingNames)
+            {
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                var tp = Config.GetTeachingPosition(name);
+                if (tp == null)
+                {
+                    continue;
+                }
+
+                // 해당 Teaching 에 해당 축 좌표가 정의되어 있는지 검사
+                bool containsAxis = tp.AxisPositions != null &&
+                                    tp.AxisPositions.Keys.Any(k => string.Equals(k, axisName, StringComparison.OrdinalIgnoreCase));
+                if (!containsAxis)
+                {
+                    continue;
+                }
+
+                // 실제 InPos 여부 판단
+                bool result = IsAxisInTeaching(axis,
+                                               axisName,
+                                               name,
+                                               treatAxisNullAsTrue: false,
+                                               useOffset: true,
+                                               fallbackTolerance: fallbackTolerance,
+                                               useAxisInposTolerance: useAxisInposTolerance);
+                return result;
+            }
+
+            // 어떤 Teaching 도 찾지 못한 경우
+            return treatMissingAsSafe;
+        }
+
+        // ---------------- Safety Position Wrappers (기존 공개 메서드 시그니처 유지) ----------------
+        public bool IsPositionPickZSafety(double fallbackTolerance = 0.01,
+                                     bool useAxisInposTolerance = true,
+                                     bool treatMissingAsSafe = true)
+        {
+            string[] candidates = new string[]
+            {
+                "SafetyPos",
+                OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            bool result = IsAxisSafetyPos(AxisPickZ,
+                                          AxisNames.RightPickZ,
+                                          candidates,
+                                          treatMissingAsSafe,
+                                          fallbackTolerance,
+                                          useAxisInposTolerance);
+            return result;
+        }
+
+        public bool IsPositionToolTSafety(double fallbackTolerance = 0.01,
+                                     bool useAxisInposTolerance = true,
+                                     bool treatMissingAsSafe = true)
+        {
+            string[] candidates = new string[]
+            {
+                "SafetyPos",
+                OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            bool result = IsAxisSafetyPos(AxisToolT,
+                                          AxisNames.RightToolT,
+                                          candidates,
+                                          treatMissingAsSafe,
+                                          fallbackTolerance,
+                                          useAxisInposTolerance);
+            return result;
+        }
+
+        public bool IsPositionPlaceZSafety(double fallbackTolerance = 0.01,
+                                      bool useAxisInposTolerance = true,
+                                      bool treatMissingAsSafe = true)
+        {
+            string[] candidates = new string[]
+            {
+                "SafetyPos",
+                OutputDieTransferConfig.TeachingPositionName.SafetyZone.ToString()
+            };
+
+            bool result = IsAxisSafetyPos(AxisPlaceZ,
+                                          AxisNames.RightPlaceZ,
+                                          candidates,
+                                          treatMissingAsSafe,
+                                          fallbackTolerance,
+                                          useAxisInposTolerance);
+            return result;
+        }
+
+        // ---------------- Ready ----------------
+        public bool IsPositionToolTReady()
+        {
+            const string tpName = nameof(OutputDieTransferConfig.TeachingPositionName.Ready);
+            bool result = IsAxisInTeaching(AxisToolT,
+                                           AxisNames.RightToolT,
+                                           tpName,
+                                           treatAxisNullAsTrue: true,
+                                           useOffset: true);
+            return result;
+        }
+
+        public bool IsPositionPlaceZReady()
+        {
+            const string tpName = nameof(OutputDieTransferConfig.TeachingPositionName.Ready);
+            bool result = IsAxisInTeaching(AxisPlaceZ,
+                                           AxisNames.RightPlaceZ,
+                                           tpName,
+                                           treatAxisNullAsTrue: true,
+                                           useOffset: true);
+            return result;
+        }
+
+        // ---------------- Place (단일 Teaching) ----------------
+        public bool IsPositionToolTPlace()
+        {
+            const string tpName = nameof(OutputDieTransferConfig.TeachingPositionName.Place);
+            bool result = IsAxisInTeaching(AxisToolT,
+                                           AxisNames.RightToolT,
+                                           tpName,
+                                           treatAxisNullAsTrue: true,
+                                           useOffset: true);
+            return result;
+        }
+
+        public bool IsPositionPlaceZPlace()
+        {
+            const string tpName = nameof(OutputDieTransferConfig.TeachingPositionName.Place);
+            bool result = IsAxisInTeaching(AxisPlaceZ,
+                                           AxisNames.RightPlaceZ,
+                                           tpName,
+                                           treatAxisNullAsTrue: true,
+                                           useOffset: true);
+            return result;
+        }
+
+        // ---------------- Pickup (현재 Index) ----------------
+        public bool IsPositionToolTPickupIndex()
+        {
+            int idx = GetUnloaderIndexNo();
+            bool result = IsPositionToolTPickupIndex(idx);
+            return result;
+        }
+
+        public bool IsPositionPickZPickupIndex()
+        {
+            int idx = GetUnloaderIndexNo();
+            bool result = IsPositionPickZPickupIndex(idx);
+            return result;
+        }
+
+        // ---------------- Pickup (특정 Index) ----------------
+        public bool IsPositionToolTPickupIndex(int index)
+        {
+            string tpName = GetPickupTeachingName(index);
+            if (tpName == null)
+            {
+                return false;
+            }
+
+            bool result = IsAxisInTeaching(AxisToolT,
+                                           AxisNames.RightToolT,
+                                           tpName,
+                                           treatAxisNullAsTrue: true,
+                                           useOffset: true);
+            return result;
+        }
+
+        public bool IsPositionPickZPickupIndex(int index)
+        {
+            string tpName = GetPickupTeachingName(index);
+            if (tpName == null)
+            {
+                return false;
+            }
+
+            bool result = IsAxisInTeaching(AxisPickZ,
+                                           AxisNames.RightPickZ,
+                                           tpName,
+                                           treatAxisNullAsTrue: true,
+                                           useOffset: true);
+            return result;
+        }
+
+        // ---------------- 기존 호환 API (PickUp ToolT 위치) ----------------
+        public bool IsPositionPickUpToolT(int index,
+                                          double fallbackTolerance = 0.01,
+                                          bool useAxisInposTolerance = true)
+        {
+            string tpName = GetPickupTeachingName(index);
+            if (tpName == null)
+            {
+                return false;
+            }
+
+            bool result = IsAxisInTeaching(AxisToolT,
+                                           AxisNames.RightToolT,
+                                           tpName,
+                                           treatAxisNullAsTrue: false,
+                                           useOffset: true,
+                                           fallbackTolerance: fallbackTolerance,
+                                           useAxisInposTolerance: useAxisInposTolerance);
+            return result;
+        }
+
         public bool IsPositionPickUpToolT()
         {
             int idx = GetUnloaderIndexNo();
-            return IsPositionPickUpToolT(idx);
+            bool result = IsPositionPickUpToolT(idx);
+            return result;
         }
+
+        // ---------------- Pickup Index Teaching Name Helper ----------------
+        private string GetPickupTeachingName(int index)
+        {
+            int teachingIdx;
+
+            if (index >= 1 && index <= 8)
+            {
+                teachingIdx = index + 1;
+            }
+            else if (index >= 0 && index < 8)
+            {
+                teachingIdx = index + 1;
+            }
+            else
+            {
+                return null;
+            }
+
+            string name = $"Pickup_Index{teachingIdx}";
+            return name;
+        }
+
+        // 기존 함수 호환 (이동 코드에서 사용) - 내부적으로 새 Helper 사용
+        private bool TryGetPickupTeachingName(int index, out string tpName)
+        {
+            tpName = GetPickupTeachingName(index);
+            if (string.IsNullOrWhiteSpace(tpName))
+            {
+                Log.Write(UnitName, $"[TryGetPickupTeachingName] Invalid index {index}. Range 0~7 or 1~8");
+                return false;
+            }
+
+            var tp = Config.GetTeachingPosition(tpName);
+            if (tp == null)
+            {
+                Log.Write(UnitName, $"[TryGetPickupTeachingName] Teaching not found: {tpName}");
+                tpName = null;
+                return false;
+            }
+            return true;
+        }
+
+        #endregion
 
 
         public void TeachCurrentPosition(string positionName, string description = null)
@@ -1608,6 +1800,43 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        #endregion
+
+        #region Ready
+        public int EnsureReady(bool isFine = false)
+        {
+            Task<int> task = EnsureReadyAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> EnsureReadyAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnEnsureReady(isFine);
+                return 0;
+            });
+        }
+        private int OnEnsureReady(bool isFine)
+        {
+            int nRet = 0;
+
+            if (IsPositionPickZSafety() == false
+             || IsPositionPlaceZSafety() == false)
+            {
+                nRet = MovePositionSafetyZ();
+                if (nRet != 0)
+                {
+                    Log.Write(this, "CheckReady Fail - MovePositionSafetyZ");
+                    return nRet;
+                }
+            }
+
+            return nRet;
+        }
         #endregion
 
     }

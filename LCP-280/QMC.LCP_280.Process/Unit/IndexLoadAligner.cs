@@ -591,15 +591,6 @@ namespace QMC.LCP_280.Process.Unit
 
 
         // ===== 위치 확인 (TeachingPosition 기준) =====
-
-        // 공통: enum으로 지정된 TeachingPosition에 현재 In-Position 여부
-        public bool IsInTeachingPosition(IndexLoadAlignerConfig.TeachingPositionName pos)
-        {
-            var tp = Config.GetTeachingPosition(pos.ToString());
-            if (tp == null) return false;
-            return InPosTeaching(tp);
-        }
-
         // AlignT 위치 확인
         public bool IsAlignTReady()
         {
@@ -919,6 +910,9 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
+                var socket = this.Rotary.GetSocket(nIndex);
+                socket.SetState(Rotary.RotarySocketState.Aligning);
+
                 // 2) T Ready // tact Time 모자라면 비동기 처리 할것.
                 bRtn &= MovePositionAlignTReady(bFineSpeed);
                 bRtn &= MovePositionAlignZReady(nIndex, bFineSpeed);
@@ -956,6 +950,8 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 die.State = DieProcessState.Inspecting;
+
+                socket.SetState(Rotary.RotarySocketState.Aligned);
 
             }
             catch (Exception ex)
@@ -1005,5 +1001,52 @@ namespace QMC.LCP_280.Process.Unit
             return probeIndex;
         }
         #endregion
+
+        #region Ready
+        public int EnsureReady(bool isFine = false)
+        {
+            Task<int> task = EnsureReadyAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> EnsureReadyAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnEnsureReady(isFine);
+                return 0;
+            });
+        }
+        private int OnEnsureReady(bool isFine)
+        {
+            int nRet = 0;
+
+            if (IsAlignZSafetyPos() == false)
+            {
+                nRet = MovePositionSafetyZ();
+                if (nRet != 0)
+                {
+                    Log.Write(this, "CheckReady Fail - MovePositionSafetyZ");
+                    return nRet;
+                }
+            }
+
+            if(IsAlignTReady() == false)
+            {
+                nRet = MovePositionAlignTReady(isFine);
+                if (nRet != 0)
+                {
+                    Log.Write(this, "CheckReady Fail - MovePositionAlignTReady");
+                    return nRet;
+                }
+            }
+
+            return nRet;
+        }
+        #endregion
+
     }
 }

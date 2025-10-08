@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography;
@@ -1608,8 +1609,17 @@ namespace QMC.LCP_280.Process.Unit
                 bool loadOk = true;
                 if (needLoadWait)
                 {
+                    var socket = GetLoadSocketInfo();
+                    var die = socket.GetMaterialDie();
+
                     var loadDie = GetLoadSocketMaterial();
                     loadOk = (loadDie != null && loadDie.Presence == Material.MaterialPresence.Exist);
+
+                    //loadDie.Presence = Material.MaterialPresence.Exist;
+                    //loadDie.ProcessSatate = Material.MaterialProcessSatate.Ready;
+                    socket.SetMaterialDie(loadDie);
+                    socket.SetState(RotarySocketState.Loaded);
+
                 }
 
                 // 2) Unloader Aligner에 잔류품 없음을 확인

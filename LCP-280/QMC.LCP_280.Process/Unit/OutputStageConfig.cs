@@ -6,6 +6,7 @@ using QMC.Common.Unit;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 
 namespace QMC.LCP_280.Process.Unit
@@ -97,6 +98,15 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 7, Name = IO.VACUUM,         Disp = "Y088" },
         };
         #endregion
+
+        [Category("Interlock"), DisplayName("Safty StageX (mm)")]
+        [DefaultValue(20.0)]
+        public double SafeStageRectHalfWidthX { get; set; }
+
+        [Category("Interlock"), DisplayName("Safty StageY (mm)")]
+        [DefaultValue(20.0)]
+        public double SafeStageRectHalfHeightY { get; set; }
+
 
         public OutputStageConfig() : base("OutputStageConfig") { }
 
@@ -248,7 +258,7 @@ namespace QMC.LCP_280.Process.Unit
 
         /// 개별 Teaching Position 에 적용할 오프셋 (X / Y / T)
         public Dictionary<string, (double dx, double dy, double dt)> Offsets { get; set; } = new Dictionary<string, (double dx, double dy, double dt)>();
-
+        
         public (double x, double y, double t) GetPositionWithOffset(string name)
         {
             var tp = GetTeachingPosition(name);
