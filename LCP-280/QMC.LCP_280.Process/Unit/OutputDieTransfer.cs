@@ -134,7 +134,6 @@ namespace QMC.LCP_280.Process.Unit
             _pickUpStartEvent.Set();
         }
 
-        
         public bool WaitPickupStartEvent(int timeoutMs = Timeout.Infinite)
         {
             bool bRet = false;
@@ -1315,7 +1314,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Arm Vacuum / Blow / Vent Control
-        public bool ArmFlowOk(int armIndex) => armIndex >= 0 && armIndex < ARM_FLOW.Length && ReadInput(ARM_FLOW[armIndex]);
+        public bool IsVacuumOK(int armIndex) => armIndex >= 0 && armIndex < ARM_FLOW.Length && ReadInput(ARM_FLOW[armIndex]);
         public bool AirTankOk() => ReadInput(AIR_TANK_PRESS);
         public bool VacuumTankOk() => ReadInput(VAC_TANK_PRESS);
         #endregion
@@ -1407,6 +1406,10 @@ namespace QMC.LCP_280.Process.Unit
             }
             return nRtn;
         }
+
+        private volatile bool _lastPickSucceeded;
+        public bool LastPickSucceeded { get { return _lastPickSucceeded; } }
+
         protected override int OnRunWork()
         {
             int nRtn = 0;
@@ -1420,6 +1423,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (Rotary != null && Rotary.IsAnyAxisMoving())
                 {
+                    RisePickupDoneEvent();
                     return 0;
                 }
 
@@ -1440,24 +1444,33 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 if (IsStop) { return 0; }
 
-                nRtn = ChipPickDown();
-                if (nRtn != 0)
-                {
-                    Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
-                    return -1;
-                }
-                if (IsStop) { return 0; }
 
-                nRtn = ChipPickUp();
-                if (nRtn != 0)
-                {
-                    Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
-                    return -1;
-                }
-                die.State = DieProcessState.Picked;
-                die.ProcessSatate = Material.MaterialProcessSatate.Processing;
-                SetMaterial(die);
+                _lastPickSucceeded = false;
 
+                //Die를 가지고 있으면 바로 Place를 수행한다.
+                var MaterialDie = GetMaterial() as MaterialDie;
+                if (MaterialDie == null || MaterialDie.Presence != Material.MaterialPresence.Exist)
+                {
+                    nRtn = ChipPickDown();
+                    if (nRtn != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
+                        return -1;
+                    }
+                    if (IsStop) { return 0; }
+
+                    nRtn = ChipPickUp();
+                    if (nRtn != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
+                        return -1;
+                    }
+                    die.State = DieProcessState.Picked;
+                    die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                    SetMaterial(die);
+                }
+
+                _lastPickSucceeded = true;
                 // 3) 완료 신호 (Rotary 대기 해제)
                 RisePickupDoneEvent();
                 State = ProcessState.Complete;
@@ -1585,7 +1598,7 @@ namespace QMC.LCP_280.Process.Unit
             if (SetVacuum(nArmindex, true))
             {
                 var sw = Stopwatch.StartNew();
-                while (!ArmFlowOk(nArmindex))
+                while (!IsVacuumOK(nArmindex))
                 {
                     if (!Config.IsSimulation && !Config.IsDryRun)
                     {
@@ -1643,7 +1656,7 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 var sw = Stopwatch.StartNew();
-                while (!ArmFlowOk(nIndex))
+                while (!IsVacuumOK(nIndex))
                 {
                     if(!Config.IsSimulation && !Config.IsDryRun)
                     {

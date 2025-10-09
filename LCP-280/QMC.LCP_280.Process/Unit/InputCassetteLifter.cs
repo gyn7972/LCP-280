@@ -598,10 +598,10 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "MoveToScanStartPosition Failed");
                 return nRtn;
             }
-            if (this.IsStop)
+
+            if (RunMode == UnitRunMode.Auto)
             {
-                Log.Write(this, "InputFeeder Stop");
-                return -1;
+                if (this.IsStop) { return 0; }
             }
 
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(bFineSpeed);
@@ -753,7 +753,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-
             if(InputFeeder.IsInterlockOKWithCassete() == false)
             {
                 WaferLifterZ.EmgStop();
@@ -761,6 +760,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Feeder Y Axis is not in Safety Position");
                 return -1;
             }
+
             if (slotIndex < 0 || slotIndex >= base.Config.SlotCount)
             {
                 Log.Write(this, $"Invalid Slot Index {slotIndex}");
@@ -775,7 +775,7 @@ namespace QMC.LCP_280.Process.Unit
             dPos -= base.Config.SlotPitch * slotIndex;
 
             MoveAxisOnce(WaferLifterZ, dPos);
-            while (!InPos(WaferLifterZ, dPos))
+            while (InPos(WaferLifterZ, dPos) == false)
             {
                 if (!Config.IsSimulation && !Config.IsDryRun)
                 {

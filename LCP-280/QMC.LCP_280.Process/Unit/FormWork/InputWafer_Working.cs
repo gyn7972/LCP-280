@@ -323,7 +323,6 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 progressForm.ShowDialog(this);
 
                 int nRet = v.Result;
-
                 if (nRet != 0)
                 {
                     //MessageBox.Show($"Wafer 감지 실패. 오류 코드: {nRet}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);

@@ -943,10 +943,172 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(AlignT);
             this.SequencePlayers.Add(AlignXY);
             this.SequencePlayers.Add(PerformChipMapping);
+            this.SequencePlayers.Add(MoveStageToNextDie);
         }
 
         #region Seq 단위 동작 함수
-        
+        public int AlignT(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = AlignT;
+            }
+
+            nRet = AlignTPrepare(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "T_Align", "Fail: Prepare");
+                return -1;
+            }
+
+            nRet = AlignTheta(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "T_Align", "Fail: AlignTApply");
+                return -1;
+            }
+
+            return nRet;
+        }
+        public int AlignXY(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = AlignXY;
+            }
+
+            nRet = AlignXYPrepare(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "XY_Align", "Fail: Prepare");
+                return -1;
+            }
+            nRet = AlignXYApply(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "XY_Align", "Fail: Apply");
+                return -1;
+            }
+
+            return nRet;
+        }
+        public int PerformChipMapping(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = PerformChipMapping;
+            }
+
+            // 기본 인터락
+            if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
+            {
+                Log.Write(UnitName, "ChipMap", "Align not completed");
+                return -1;
+            }
+            if (!IsRingPresent())
+            {
+                Log.Write(UnitName, "ChipMap", "Wafer (Ring) not present");
+                return -1;
+            }
+            MakeScanPath(out List<PointD> path);
+            List<PointD> chips = new List<PointD>();
+            Task<int> tImageProcess = null;
+            try
+            {
+                foreach (var pt in path)
+                {
+                    this.CalcelToken?.Token.ThrowIfCancellationRequested();
+                    nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
+                        return -1;
+                    }
+
+                    if (this.Config.IsSimulation || this.Config.IsDryRun)
+                    {
+                        //시뮬레이션
+                        Random rnd = new Random();
+                        int nChips = rnd.Next(5, 15);
+                        for (int i = 0; i < nChips; i++)
+                        {
+                            double rx = (rnd.NextDouble() - 0.5) * 10;
+                            double ry = (rnd.NextDouble() - 0.5) * 10;
+                            chips.Add(new PointD(pt.X + rx, pt.Y + ry));
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        StageCamera.GrabSync(out VisionImage grabImage);
+                        //SearchDies(grabImage, ref chips, pt.X, pt.Y);
+                        if (tImageProcess != null)
+                        {
+                            tImageProcess.Wait();
+                        }
+                        double dx = pt.X;
+                        double dy = pt.Y;
+                        tImageProcess = Task.Factory.StartNew(() =>
+                        {
+                            return SearchDies(grabImage, ref chips, dx, dy);
+                        });
+                    }
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
+                        return -1;
+                    }
+                }
+                if (tImageProcess != null)
+                {
+                    tImageProcess.Wait();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Log.Write(UnitName, "ChipMap", "Cancelled");
+                return nRet;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "ChipMap", "Exception: " + ex.Message);
+                return -1;
+            }
+
+            if (RunMode == UnitRunMode.Manual)
+            {
+                SetMaterial(new MaterialWafer());
+            }
+
+            UpdateChipInfo(chips);
+            MaterialWafer wafer = GetMaterialWafer();
+            wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+            return nRet;
+        }
+        public int MoveStageToNextDie(bool bFine = false)
+        {
+            int nRet = 0;
+
+            if (RunMode == UnitRunMode.Manual)
+            {
+                CurrentFunc = MoveStageToNextDie;
+            }
+
+            MaterialDie die;
+            nRet = MoveStageToNextDie(out die);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "MoveStageToNextDie", "Fail");
+                return nRet;
+            }
+
+            return nRet;
+        }
+
+
         public bool IsRingPresent()
         {
             bool bRtn = true;
@@ -982,7 +1144,6 @@ namespace QMC.LCP_280.Process.Unit
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
-
         public int LoadingWaferPrepare()
         {
             int nRtn = 0;
@@ -1006,12 +1167,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: Move Load");
                 return nRtn;
             }
-
-            if (this.IsStop)
-            {
-                Log.Write(this, "InputFeeder Stop");
-                return -1;
-            }
+            if (this.IsStop) { return 0; }
 
             // Clamp Back → Lift Down
             SetClampFB(false);
@@ -1020,12 +1176,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: ClampBack");
                 return -1;
             }
-
-            if (this.IsStop)
-            {
-                Log.Write(this, "InputFeeder Stop");
-                return -1;
-            }
+            if (this.IsStop) { return 0; }
 
             SetClampLift(false);
             if (!IsClampLiftDown())
@@ -1033,12 +1184,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
             }
-
-            if (this.IsStop)
-            {
-                Log.Write(this, "InputFeeder Stop");
-                return -1;
-            }
+            if (this.IsStop) { return 0; }
 
             //Plate Down → 
             SetClampPlate(false);
@@ -1148,7 +1294,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int)InputStageConfig.TeachingPositionName.Loading, isFine);
         }
-
         public int LoadingWaferComplete()
         {
             int ret = 0;
@@ -1200,12 +1345,10 @@ namespace QMC.LCP_280.Process.Unit
                 return ret;
             }
 
-            return -1;
+            return ret;
         }
         public bool IsInterlockWithFeederAndDieTransferOk()
         {
-            // InputFeeder
-            
             return IsInterlockWithFeederAndDieTransferOkInt() == 0;
         }
         public int IsInterlockWithFeederAndDieTransferOkInt()
@@ -1239,7 +1382,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return 0;
         }
-
         public int MoveToStageCenterPosition(bool isFine = false)
         {
             int nRet = 0;
@@ -1463,31 +1605,6 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_TAlignDone = true;
             return nRet;
         }
-        public int AlignT(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = AlignT;
-
-            }
-
-            nRet = AlignTPrepare(bFineSpeed);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "T_Align", "Fail: Prepare");
-                return -1;
-            }
-
-            nRet = AlignTheta(bFineSpeed);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "T_Align", "Fail: AlignTApply");
-                return -1;
-            }
-
-            return nRet;
-        }
         public int AlignXYPrepare(bool bFineSpeed = false)
         {
             IsStatus_XYAlignPrepared = false;
@@ -1514,30 +1631,6 @@ namespace QMC.LCP_280.Process.Unit
             
             IsStatus_XYAlignDone = true;
             return 0;
-        }
-        public int AlignXY(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = AlignXY;
-
-            }
-
-            nRet = AlignXYPrepare(bFineSpeed);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "XY_Align", "Fail: Prepare");
-                return -1;
-            }
-            nRet = AlignXYApply(bFineSpeed);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "XY_Align", "Fail: Apply");
-                return -1;
-            }
-
-            return nRet;
         }
         public int MoveStage(double x, double y, bool bFineSpeed = false)
         {
@@ -1621,7 +1714,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
-
         public bool IsStageInterLockOK()
         {
             // Ejector / Pin Z 가 이미 Safety 이면 별도 제한 없이 통과 (호출부 로직 유지)
@@ -1661,9 +1753,6 @@ namespace QMC.LCP_280.Process.Unit
                 $"Fail: Current XY out of safe radius while Ejector/PinZ unsafe. Dist={dDist:F3} Limit={radius:F3} Center=({centerX:F3},{centerY:F3}) Cur=({curX:F3},{curY:F3})");
             return false;
         }
-
-
-
         PointD GetPixelToMmScale(double dX,double dY)
         {
             double mmPerPixelX = (dX - StageCamera.CameraConfig.Resolution.Width /2 ) * StageCamera.CameraConfig.Scale.X;
@@ -1689,99 +1778,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
             return ret;
-        }
-        public int PerformChipMapping(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            if (RunMode == UnitRunMode.Manual)
-            {
-                this.CurrentFunc = PerformChipMapping;
-            }
-
-            // 기본 인터락
-            if (!IsStatus_TAlignDone || !IsStatus_XYAlignDone)
-            {
-                Log.Write(UnitName, "ChipMap", "Align not completed");
-                return -1;
-            }
-            if (!IsRingPresent())
-            {
-                Log.Write(UnitName, "ChipMap", "Wafer (Ring) not present");
-                return -1;
-            }
-            MakeScanPath(out List<PointD> path);
-            List<PointD> chips = new List<PointD>();
-            Task<int> tImageProcess = null;
-            try
-            {
-                foreach (var pt in path)
-                {
-                    this.CalcelToken?.Token.ThrowIfCancellationRequested();
-                    nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "ChipMap", "Fail: MoveStage");
-                        return -1;
-                    }
-
-                    if(this.Config.IsSimulation || this.Config.IsDryRun)
-                    {
-                        //시뮬레이션
-                        Random rnd = new Random();
-                        int nChips = rnd.Next(5, 15);
-                        for(int i=0; i< nChips; i++)
-                        {
-                            double rx = (rnd.NextDouble() - 0.5) * 10;
-                            double ry = (rnd.NextDouble() - 0.5) * 10;
-                            chips.Add( new PointD(pt.X + rx, pt.Y + ry));
-                        }
-                        continue;
-                    }
-                    else
-                    {
-                        StageCamera.GrabSync(out VisionImage grabImage);
-                        //SearchDies(grabImage, ref chips, pt.X, pt.Y);
-                        if (tImageProcess != null)
-                        {
-                            tImageProcess.Wait();
-                        }
-                        double dx = pt.X;
-                        double dy = pt.Y;
-                        tImageProcess = Task.Factory.StartNew(() =>
-                        {
-                            return SearchDies(grabImage, ref chips, dx, dy);
-                        });
-                    }
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
-                        return -1;
-                    }
-                }
-                if(tImageProcess != null)
-                {
-                    tImageProcess.Wait();
-                }
-            }catch(OperationCanceledException)
-            {
-                Log.Write(UnitName, "ChipMap", "Cancelled");
-                return nRet;
-            }
-            catch(Exception ex)
-            {
-                Log.Write(UnitName, "ChipMap", "Exception: " + ex.Message);
-                return -1;
-            }
-
-            if(RunMode == UnitRunMode.Manual)
-            {
-                SetMaterial(new MaterialWafer());
-            }
-
-            UpdateChipInfo(chips);
-            MaterialWafer wafer = GetMaterialWafer();
-            wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
-            return nRet;
         }
         private void UpdateChipInfo(List<PointD> chips)
         {
@@ -2142,192 +2138,6 @@ namespace QMC.LCP_280.Process.Unit
             return MoveToNextChipForPickup();
         }
 
-        // === Multi Pattern Raw Search Wrapper (모든 매칭 XY/R/Score) ===
-        private (bool ok, List<PatternMatchingResult.PatternMatchingResultValue> matches) MultiPatternSearchViaRunner()
-        {
-            var ret = VisionRunnerHub.SearchAll(CameraKey);
-            if (!ret.ok || ret.matches == null || ret.matches.Count == 0) return (false, null);
-            return (true, ret.matches);
-        }
-
-        private bool SearchChip(int imgW, int imgH, List<ChipMapEntry> tempEntries, int ty, int tx, double targetX, double targetY, VisionImage snap)
-        {
-            PatternMatchRunResult pmrr = PmRunner.Search(snap);
-            if (!pmrr.Success)
-            {
-                Log.Write(UnitName, "ChipMapV2", $"Vision search fail tile ({tx},{ty})");
-                snap?.Dispose();
-                return false;
-            }
-            double cxPix = imgW / 2.0;
-            double cyPix = imgH / 2.0;
-            double stageTdeg = AxisT?.GetPosition() ?? 0.0;
-            bool useRotation = Math.Abs(stageTdeg) > 0.0005; // 필요시
-
-            foreach (var m in pmrr.Matches)
-            {
-                // 픽셀 → mm (카메라 좌표 오프셋)
-                double dxPix = m.X - cxPix;
-                double dyPix = m.Y - cyPix;
-                double dxMm = dxPix * PixelSizeXmm;
-                double dyMm = dyPix * PixelSizeYmm;
-
-                // 회전 보정 (Stage T 적용)
-                if (useRotation)
-                {
-                    var rot = qGeometry.CalculateRotationTransformation(
-                        new PointD(0, 0),
-                        new PointD(dxMm, dyMm),
-                        stageTdeg);
-                    dxMm = rot.X; dyMm = rot.Y;
-                }
-
-                double absX = targetX + dxMm;
-                double absY = targetY + dyMm;
-
-                // 중복 검사
-                if (tempEntries.Any(e =>
-                {
-                    double ddx = e.Xmm - absX;
-                    double ddy = e.Ymm - absY;
-                    return Math.Sqrt(ddx * ddx + ddy * ddy) <= DuplicateDistMm;
-                }))
-                {
-                    continue;
-                }
-
-                tempEntries.Add(new ChipMapEntry
-                {
-                    Index = -1, // 나중 재할당
-                    Row = -1,
-                    Col = -1,
-                    Xmm = absX,
-                    Ymm = absY,
-                    Present = true,
-                    Enabled = true,
-                    Score = m.Score
-                });
-            }
-
-            double dscaleX = StageCamera.CameraConfig.Scale.X;
-            double dscaleY = StageCamera.CameraConfig.Scale.Y;
-
-            snap?.Dispose();
-            return true;
-        }
-
-        private void EstimatePitch(List<ChipMapEntry> list, out double pitchX, out double pitchY)
-        {
-            pitchX = 0; pitchY = 0;
-            if (list.Count < 2) return;
-            var xs = list.Select(e => e.Xmm).OrderBy(v => v).ToList();
-            var ys = list.Select(e => e.Ymm).OrderBy(v => v).ToList();
-            List<double> dxs = new List<double>();
-            for (int i = 1; i < xs.Count; i++)
-            {
-                double d = xs[i] - xs[i - 1];
-                if (d > 0.2) dxs.Add(d); // 너무 작은 노이즈 제외 (임계 임의)
-            }
-            List<double> dys = new List<double>();
-            for (int i = 1; i < ys.Count; i++)
-            {
-                double d = ys[i] - ys[i - 1];
-                if (d > 0.2) dys.Add(d);
-            }
-            if (dxs.Count > 0) pitchX = Median(dxs);
-            if (dys.Count > 0) pitchY = Median(dys);
-        }
-        private double Median(List<double> v)
-        {
-            if (v == null || v.Count == 0) return 0;
-            var s = v.OrderBy(x => x).ToList();
-            int n = s.Count;
-            if (n % 2 == 1) return s[n / 2];
-            return 0.5 * (s[n / 2 - 1] + s[n / 2]);
-        }
-
-        private void BuildGrid(List<ChipMapEntry> raw, double pitchX, double pitchY,
-                               out List<ChipMapEntry> finalized, out int rows, out int cols)
-        {
-            finalized = new List<ChipMapEntry>();
-            rows = 0; cols = 0;
-            if (raw.Count == 0) return;
-
-            // Row 그룹핑 (Y 기준)
-            double yTol = (pitchY > 0 ? pitchY * 0.5 : 2.0);
-            var ordered = raw.OrderBy(e => e.Ymm).ToList();
-            List<List<ChipMapEntry>> rowGroups = new List<List<ChipMapEntry>>();
-            List<ChipMapEntry> cur = new List<ChipMapEntry>();
-            double lastY = double.NaN;
-
-            foreach (var e in ordered)
-            {
-                if (cur.Count == 0)
-                {
-                    cur.Add(e);
-                    lastY = e.Ymm;
-                }
-                else
-                {
-                    if (Math.Abs(e.Ymm - lastY) <= yTol)
-                    {
-                        cur.Add(e);
-                    }
-                    else
-                    {
-                        rowGroups.Add(cur);
-                        cur = new List<ChipMapEntry> { e };
-                    }
-                    lastY = e.Ymm;
-                }
-            }
-            if (cur.Count > 0) rowGroups.Add(cur);
-
-            rows = rowGroups.Count;
-
-            // 각 Row 정렬(X) & Col index
-            int globalMaxCol = 0;
-            for (int r = 0; r < rowGroups.Count; r++)
-            {
-                var rowList = rowGroups[r].OrderBy(e => e.Xmm).ToList();
-                double xTol = (pitchX > 0 ? pitchX * 0.5 : 2.0);
-                int col = 0;
-                ChipMapEntry prev = null;
-                foreach (var e in rowList)
-                {
-                    if (prev != null && pitchX > 0)
-                    {
-                        double gap = e.Xmm - prev.Xmm;
-                        if (gap > pitchX + xTol)
-                        {
-                            // 큰 갭 → 중간 Missing 예상 ⇒ gap/pitchX - 1 개 만큼 빈 칩 삽입(단순)
-                            int missingCount = (int)Math.Round(gap / pitchX) - 1;
-                            for (int m = 0; m < missingCount; m++)
-                            {
-                                finalized.Add(new ChipMapEntry
-                                {
-                                    Row = r,
-                                    Col = col + 1 + m,
-                                    Present = false,
-                                    Enabled = false,
-                                    Xmm = prev.Xmm + (m + 1) * pitchX,
-                                    Ymm = prev.Ymm,
-                                    Score = 0
-                                });
-                            }
-                            col += missingCount;
-                        }
-                    }
-                    e.Row = r;
-                    e.Col = col;
-                    finalized.Add(e);
-                    prev = e;
-                    col++;
-                }
-                if (col > globalMaxCol) globalMaxCol = col;
-            }
-            cols = globalMaxCol;
-        }
         public bool IsCompletedWork()
         {
             bool bRet = false;
@@ -2352,6 +2162,7 @@ namespace QMC.LCP_280.Process.Unit
             return bRet;
 
         }
+
         public bool IsWorking()
         {
             bool bRet = false;
@@ -2419,8 +2230,6 @@ namespace QMC.LCP_280.Process.Unit
                                     wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
                                     return null;
                                 }
-                                
-
                             }
                             
                         }
@@ -2433,7 +2242,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return die;
         }
-
 
         #endregion
     }

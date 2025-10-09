@@ -159,9 +159,9 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(false)]
         public bool UseSocket8 { get; set; } = false;
 
-
-
-
+        [Category("TimeOut"), DisplayName("TimeOut (ms)")]
+        [DefaultValue(false)]
+        public int OutputDieTransferTimeoutMs { get; set; }
 
         public RotaryConfig() : base("RotaryConfig") { }
 

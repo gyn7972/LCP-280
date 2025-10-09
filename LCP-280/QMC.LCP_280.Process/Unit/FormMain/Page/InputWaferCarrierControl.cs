@@ -1,4 +1,5 @@
-﻿using QMC.LCP_280.Process.Work;
+﻿using QMC.Common;
+using QMC.LCP_280.Process.Work;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -40,7 +41,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             if (InvokeRequired)
             {
-                try { BeginInvoke(action); } catch { /* Dispose 중 */ }
+                try 
+                { 
+                    BeginInvoke(action); 
+                } 
+                catch (Exception ex) { Log.Write(ex); }
             }
             else
             {

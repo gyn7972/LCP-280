@@ -360,8 +360,6 @@ namespace QMC.LCP_280.Process.Component
                 pWaferImage.Invalidate();
                 pWaferImage.Refresh();
             }
-
-            
         }
 
         #endregion

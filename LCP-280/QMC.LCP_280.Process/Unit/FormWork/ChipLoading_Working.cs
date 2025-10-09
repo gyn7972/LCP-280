@@ -196,7 +196,7 @@ namespace QMC.LCP_280.Process.Unit
 
                         // Flow 센서(입력) 표시
                         dioControl.BindDIOInput(
-                            () => InputDieTransfer.ArmFlowOk(idx),
+                            () => InputDieTransfer.IsVacuumOK(idx),
                             $"{labelBase} Flow OK(Sns)",
                             $"IDT_Arm{idx + 1}_FlowOk");
 
