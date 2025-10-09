@@ -1467,7 +1467,8 @@ namespace QMC.LCP_280.Process.Unit
             {
 
                 Log.Write(ex);
-            }finally
+            }
+            finally
             {
                 //RisePickupDoneEvent();
             }
