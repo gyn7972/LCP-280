@@ -277,7 +277,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
-        public bool RingJut() => !this.ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);
+        public bool RingJut() => this.ReadInput(OutputCassetteLifterConfig.IO.RING_JUT_CHECK);
         public bool IsBinProtrusionDetectionSensor()
         {
             bool sensorstate = RingJut();
