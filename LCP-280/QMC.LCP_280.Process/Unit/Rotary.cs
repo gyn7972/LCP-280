@@ -772,7 +772,6 @@ namespace QMC.LCP_280.Process.Unit
             reason = null;
             if (unit == null) { reason = "Unit null"; return false; }
 
-            // Config(BaseConfig)
             var t = unit.GetType();
             var propConfig = t.GetProperties(BindingFlags.Instance | BindingFlags.Public)
                 .FirstOrDefault(p => p.Name == "Config" && typeof(BaseConfig).IsAssignableFrom(p.PropertyType));
@@ -825,7 +824,6 @@ namespace QMC.LCP_280.Process.Unit
                 catch { /* ignore */ }
 
                 MotionAxis axis = null;
-
                 // 1) TeachingPosition 바인딩에서 우선 검색
                 if (tpAxes != null)
                 {
@@ -1312,9 +1310,7 @@ namespace QMC.LCP_280.Process.Unit
             //this.SequencePlayers.Add(CanRotate);
             this.SequencePlayers.Add(ExecuteUnitActionReady);
             this.SequencePlayers.Add(Rotate);
-            this.SequencePlayers.Add(ExecuteUnitLoadDie);
             this.SequencePlayers.Add(ExecuteUnitAction);
-            this.SequencePlayers.Add(ExecuteUnitUnLoadDie);
         }
 
         #region Auto Seq 함수
@@ -1557,6 +1553,14 @@ namespace QMC.LCP_280.Process.Unit
                     if (hasDie == true)
                     {
                         PrepareOutputDieTransferHandshake();
+                        
+                        // OutputDieTransfer가 Running 상태이고 Work로 진입해 Start 대기를 할 준비가 되었는지 확인
+                        //if (OutputDieTransfer.RunUnitStatus == UnitStatus.Running &&
+                        //    OutputDieTransfer.State == ProcessState.Work)
+                        //{
+                        //    return 0;
+                        //}
+
                         this.OutputDieTransfer.RisePickupStartEvent();
                         bRet = OutputDieTransfer.WaitPickupDoneEvent(Config.OutputDieTransferTimeoutMs > 0
                                                         ? Config.OutputDieTransferTimeoutMs
@@ -1705,6 +1709,7 @@ namespace QMC.LCP_280.Process.Unit
             nRet = MovePositionRotate();
             if (nRet != 0)
             {
+                AxisT.EmgStop();
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
                 Log.Write(UnitName, "Rotate Fail");
                 return -1;
@@ -1766,7 +1771,6 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     bRet = false;
                 }
-                //bRet = !isZUp; // Z-Up이 아니면 OK
             }
 
             if (IndexLoadAligner == null)
@@ -1787,6 +1791,41 @@ namespace QMC.LCP_280.Process.Unit
                 bRet = !isZUp; // Z-Up이 아니면 OK
             }
 
+            if (InputDieTransfer == null)
+            {
+                bRet = true;
+            }
+            else
+            {
+                bool isZUp = false;
+                try
+                {
+                    isZUp = InputDieTransfer.IsPositionPlaceZSafety();
+                }
+                catch
+                {
+                    isZUp = false;
+                }
+                bRet = isZUp; // Z-Up이 아니면 OK
+            }
+
+            if(OutputDieTransfer == null)
+            {
+                bRet = true;
+            }
+            else
+            {
+                bool isZUp = false;
+                try
+                {
+                    isZUp = OutputDieTransfer.IsPositionPickZSafety();
+                }
+                catch
+                {
+                    isZUp = false;
+                }
+                bRet = isZUp; // Z-Up이 아니면 OK
+            }
 
             if (RunUnitStatus != UnitStatus.Running)
             {

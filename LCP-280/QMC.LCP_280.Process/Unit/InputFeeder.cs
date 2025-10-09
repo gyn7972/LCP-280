@@ -1060,8 +1060,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 CurrentFunc = WaferUnloading;
             }
-
-            nRet = WaferUnloading(this.GetMaterial() as MaterialWafer);
+            MaterialWafer wafer = this.InputStage.GetMaterialWafer();
+            nRet = WaferUnloading(wafer);
             return nRet;
         }
 

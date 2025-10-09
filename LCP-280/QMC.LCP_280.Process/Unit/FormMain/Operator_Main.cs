@@ -310,11 +310,25 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             Log.Write("Operator_Main", $"Auto Sequence {e.Command} 요청");
             switch (e.Command)
             {
-                case "Ready": HandleAutoReady(); break;
-                case "Start": HandleAutoStart(); break;
-                case "Stop": HandleAutoStop(); break;
-                case "CycleStop": HandleAutoCycleStop(); break;
-                case "Reset": HandleAutoReset(); break;
+                case "Ready":
+                    HandleAutoReady();
+                    break;
+
+                case "Start":
+                    HandleAutoStart(); // 설비 전체 Start 위임
+                    break;
+
+                case "Stop":
+                    HandleAutoStop();  // 설비 전체 Stop 위임
+                    break;
+
+                case "CycleStop":
+                    HandleAutoCycleStop();
+                    break;
+
+                case "Reset":
+                    HandleAutoReset();
+                    break;
             }
         }
 
@@ -355,45 +369,110 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }
         }
 
-        private void HandleAutoStart()
+        private async void HandleAutoStart()
         {
-            if (!_autoStarting)
+            var eq = Equipment.Instance;
+            if (eq == null) return;
+
+            try
             {
-                if (!_autoReady)
+                // UI 토글 알림(즉시 반영), 최종 상태는 Eq.StateChanged에서 수렴
+                NotifyAutoSequenceStateChanged("Start", true);
+
+                // 설비 전체 시작
+                var ok = await eq.StartAllUnitsAsync().ConfigureAwait(true);
+                if (!ok)
                 {
-                    MessageBox.Show("Auto Ready를 먼저 실행해주세요.");
+                    NotifyAutoSequenceStateChanged("Start", false);
+                    MessageBox.Show("설비 시작 실패", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _autoStarting = false;
                     return;
                 }
+
+                // 성공 시 내부 플래그 정리
                 _autoReady = false;
                 _autoStarting = true;
-                NotifyAutoSequenceStateChanged("Ready", false);
-                NotifyAutoSequenceStateChanged("Start", true);
-                ExecuteAutoStart();
-                Log.Write("Operator_Main", "Auto Start 실행 (Ready OFF)");
+                Log.Write("Operator_Main", "Auto Start 완료 (Equipment.StartAllUnitsAsync)");
             }
-            else
+            catch (Exception ex)
             {
-                _autoStarting = false;
                 NotifyAutoSequenceStateChanged("Start", false);
-                Log.Write("Operator_Main", "Auto Start OFF");
+                _autoStarting = false;
+                Log.Write(ex);
+                MessageBox.Show($"설비 시작 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            //if (!_autoStarting)
+            //{
+            //    if (!_autoReady)
+            //    {
+            //        MessageBox.Show("Auto Ready를 먼저 실행해주세요.");
+            //        return;
+            //    }
+            //    _autoReady = false;
+            //    _autoStarting = true;
+            //    NotifyAutoSequenceStateChanged("Ready", false);
+            //    NotifyAutoSequenceStateChanged("Start", true);
+            //    ExecuteAutoStart();
+            //    Log.Write("Operator_Main", "Auto Start 실행 (Ready OFF)");
+            //}
+            //else
+            //{
+            //    _autoStarting = false;
+            //    NotifyAutoSequenceStateChanged("Start", false);
+            //    Log.Write("Operator_Main", "Auto Start OFF");
+            //}
         }
 
-        private void HandleAutoStop()
+        private async void HandleAutoStop()
         {
-            _autoReady = false;
-            _autoStarting = false;
-            _readySequences.Clear();
-            _startSequences.Clear();
-            sequenceAutoControl.ResetAllButtons();
-            sequenceManualControl.ResetAllButtons();
-            NotifyAutoSequenceStateChanged("Stop", true);
-            Task.Delay(500).ContinueWith(_ =>
+            var eq = Equipment.Instance;
+            if (eq == null) return;
+
+            try
             {
-                this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("Stop", false); }));
-            });
-            ExecuteAutoStop();
-            Log.Write("Operator_Main", "Auto Stop 실행 - 모든 Sequence 초기화");
+                NotifyAutoSequenceStateChanged("Stop", true);
+
+                // 로컬 시퀀스 토글/상태 정리(UI만)
+                _autoReady = false;
+                _autoStarting = false;
+                _readySequences.Clear();
+                _startSequences.Clear();
+                try { sequenceAutoControl.ResetAllButtons(); } catch { }
+                try { sequenceManualControl.ResetAllButtons(); } catch { }
+
+                // 설비 전체 정지
+                var ok = await eq.StopAllUnitsAsync().ConfigureAwait(true);
+                if (!ok)
+                {
+                    MessageBox.Show("설비 정지 실패(일부 유닛 타임아웃 가능)", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
+                Log.Write("Operator_Main", "Auto Stop 완료 (Equipment.StopAllUnitsAsync)");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show($"설비 정지 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // 최종 UI 토글 해제, 실제 상태는 Eq.StateChanged에서 최종 수렴
+                NotifyAutoSequenceStateChanged("Stop", false);
+            }
+
+            //_autoReady = false;
+            //_autoStarting = false;
+            //_readySequences.Clear();
+            //_startSequences.Clear();
+            //sequenceAutoControl.ResetAllButtons();
+            //sequenceManualControl.ResetAllButtons();
+            //NotifyAutoSequenceStateChanged("Stop", true);
+            //Task.Delay(500).ContinueWith(_ =>
+            //{
+            //    this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("Stop", false); }));
+            //});
+            //ExecuteAutoStop();
+            //Log.Write("Operator_Main", "Auto Stop 실행 - 모든 Sequence 초기화");
         }
 
         private void HandleAutoCycleStop()

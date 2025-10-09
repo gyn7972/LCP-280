@@ -692,9 +692,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             return MoveTeachingPositionOnce((int)OutputStageConfig.TeachingPositionName.Unloading, isFine);
         }
-
-
-
         public void TeachCurrentPosition(string positionName, string description = null)
         {
             var axisPositions = new Dictionary<string, double>();
@@ -801,13 +798,19 @@ namespace QMC.LCP_280.Process.Unit
         protected override void OnMakeSequence()
         {
             base.OnMakeSequence();
-            //this.SequencePlayers.Add(AlignT);
+            this.SequencePlayers.Add(LoadingBinPrepare);
+            this.SequencePlayers.Add(LoadingBinComplete);
         }
 
         #region Seq 단위 동작 함수
-        public int LoadingBinPrepare()
+        public int LoadingBinPrepare(bool isFine = false)
         {
             int nRtn = 0;
+
+            if(RunMode == UnitRunMode.Manual)
+            {
+                CurrentFunc = LoadingBinPrepare;
+            }
 
             Log.Write(this, "Start LoadingBinPrepare");
             BinLoadingReady = true;
@@ -877,9 +880,14 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(this, "End LoadingBinPrepare");
             return 0;
         }
-        public int LoadingBinComplete()
+        public int LoadingBinComplete(bool isFine = false)
         {
             int ret = 0;
+
+            if (RunMode == UnitRunMode.Manual)
+            {
+                CurrentFunc = LoadingBinComplete;
+            }
 
             // 이미 완료
             if (BinLoadingDone)
@@ -1018,7 +1026,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
-
         public int UnloadingBinComplete()
         {
             int nRtn = 0;
@@ -1113,7 +1120,6 @@ namespace QMC.LCP_280.Process.Unit
             return false;
 
         }
-
         public bool IsCompletedWork()
         {
             bool bRet = false;

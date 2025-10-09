@@ -272,21 +272,21 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 OutputFeeder = TryGetUnit<OutputFeeder>("OutputFeeder");
                 OutputStage = TryGetUnit<OutputStage>("OutputStage");
 
-                if (OutputFeeder != null)
+                if (OutputCassetteLifter != null)
                 {
-                    manualSequenceControlCassette.ParentUnit = OutputFeeder; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlOutputCassette.ParentUnit = OutputCassetteLifter;
                 }
 
-                //if (OutputCassetteLifter != null)
-                //{
-                //    manualSequenceControlCassette.ParentUnit = OutputCassetteLifter; // 시퀀스 등록 대상 유닛 지정
-                //}
+                if (OutputFeeder != null)
+                {
+                    //manualSequenceControlInputWafer.ParentUnit = InputFeeder; // 시퀀스 등록 대상 유닛 지정
+                    manualSequenceControlOutputFeeder.ParentUnit = OutputFeeder;
+                }
 
-                //if(OutputStage != null)
-                //{
-                //    manualSequenceControlOutputStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
-                //}
-
+                if (OutputStage != null)
+                {
+                    manualSequenceControlOutputBinStage.ParentUnit = OutputStage; // 시퀀스 등록 대상 유닛 지정
+                }
             }
             catch (Exception ex)
             {
@@ -311,7 +311,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 }
 
                 // Wafer 감지 수행.
-                var v = OutputCassetteLifter.ScanWaferAsync();
+                var v = OutputCassetteLifter.ScanBinAsync();
                 ProgressForm progressForm = new ProgressForm("Cassette Mapping", "Scanning......", v);
                 progressForm.ShowDialog(this);
 

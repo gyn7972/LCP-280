@@ -1962,14 +1962,16 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = CommitPickedDie;
             }
 
-            if (_currentDie == null || _currentDie.Presence != Material.MaterialPresence.Exist)
+            if (RunMode == UnitRunMode.Auto)
             {
-                return -1;  // 이 경우는 에러로 간주
-            }
-            _currentDie.State = DieProcessState.Picked;
-            _currentDie.ProcessSatate = Material.MaterialProcessSatate.Processing;
-            SetMaterial(_currentDie); // 이후 Complete 단계에서 Rotary로 전달
-
+                if (_currentDie == null || _currentDie.Presence != Material.MaterialPresence.Exist)
+                {
+                    return -1;  // 이 경우는 에러로 간주
+                }
+                _currentDie.State = DieProcessState.Picked;
+                _currentDie.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                SetMaterial(_currentDie); // 이후 Complete 단계에서 Rotary로 전달
+            } 
             return 0;
         }
         public int RotateToolTForPlace_AsyncWait(bool bFineSpeed = false)

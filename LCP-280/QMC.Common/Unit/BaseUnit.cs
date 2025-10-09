@@ -889,7 +889,6 @@ namespace QMC.Common.Unit
                         try
                         {
                             ret = func(false);
-
                         }
                         catch(Exception ex)
                         {

@@ -27,6 +27,8 @@ namespace QMC.LCP_280.Process.Unit
             public const string SPHERE_BW_SNS  = "SPHERE BW";                // X039 (Backward sensor)
             public const string PROBE_VAC_OK   = "PROBE CARD VACUUM CHECK";  // X050
             // Outputs
+            public const string BLADE_CONTACT_VLV = "BLADE CONTACT";                // Y012
+            public const string PROBECARD_CONTACT_VLV = "PROBECARD CONTACT";        // Y013
             public const string SPHERE_FW_VLV  = "SPHERE FW";                // Y026 (Forward valve)
             public const string SPHERE_BW_VLV  = "SPHERE BW";                // Y027 (Backward valve)
             public const string PROBE_VAC_VLV  = "PROBE CARD VACUUM";        // Y075 (Vac valve or combined channel)
@@ -138,9 +140,11 @@ namespace QMC.LCP_280.Process.Unit
         public HardOutputDef[] HardOutputs => _hardOutputs;
         private static readonly HardOutputDef[] _hardOutputs = new[]
         {
-            new HardOutputDef { No = 1, Name = IO.SPHERE_FW_VLV, Disp = "Y026" },
-            new HardOutputDef { No = 2, Name = IO.SPHERE_BW_VLV, Disp = "Y027" },
-            new HardOutputDef { No = 3, Name = IO.PROBE_VAC_VLV, Disp = "Y075" },
+            new HardOutputDef { No = 1, Name = IO.BLADE_CONTACT_VLV,        Disp = "Y012" },
+            new HardOutputDef { No = 2, Name = IO.PROBECARD_CONTACT_VLV,    Disp = "Y013" },
+            new HardOutputDef { No = 3, Name = IO.SPHERE_FW_VLV, Disp = "Y026" },
+            new HardOutputDef { No = 4, Name = IO.SPHERE_BW_VLV, Disp = "Y027" },
+            new HardOutputDef { No = 5, Name = IO.PROBE_VAC_VLV, Disp = "Y075" },
         };
         #endregion
 

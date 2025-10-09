@@ -330,6 +330,13 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     //    () => _probeControllerUnit.IsProbeVacValveOn(),
                     //    "ProbeVac");
 
+                    dioControl.BindDIOOutput(
+                        () => IndexChipProbeController.SetContectTop(true),
+                        () => IndexChipProbeController.SetContectTop(false),
+                        "Contect",
+                        () => IndexChipProbeController.IsContactTop(),
+                        "ContectTop");
+
                     dioControl.BindVacuum(
                         label: "Vacuum",
                         on: () => IndexChipProbeController.SetProbeVac(true),
