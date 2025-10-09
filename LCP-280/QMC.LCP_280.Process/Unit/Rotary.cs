@@ -1035,7 +1035,7 @@ namespace QMC.LCP_280.Process.Unit
             return true;
         }
 
-        public bool SlotFlowOk(int slotIndex)
+        public bool IsVacuumOk(int slotIndex)
         {
             if (FLOW == null)
             {
@@ -1234,8 +1234,6 @@ namespace QMC.LCP_280.Process.Unit
                         RequestInputDieTrDie = true;
                         return 0; // 아직 로딩 안됨 → 회전/후속 공정 금지
                     }
-                    
-
                     // 요구사항:
                     // 1) 사용(Enable)된 소켓 중 하나라도 제품(Exist)이 있으면 → 이후 공정(Align/Probe/Unload)을 순차 진행
                     // 2) 사용 소켓 모두 비어있으면 → 제품이 투입될 때까지 대기 (회전/공정 진행 X)
@@ -1541,38 +1539,73 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (OutputDieTransfer != null)
                 {
-                    this.OutputDieTransfer.RisePickupStartEvent();
-                    bRet = this.OutputDieTransfer.WaitPickupDoneEvent(60000);
-                    if (!bRet)
-                    {
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
-                        Log.Write(UnitName, "OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
-                        return -1;
-                    }
-                    
-                    // OutputDieTransfer 완료 시: OutputDieTransfer의 소켓 정보만 사용하여 비우기
+                    // 1) Unloader 위치 Die 존재 여부 선확인
+                    MaterialDie unloadDie = null;
                     try
                     {
-                        int idx = this.OutputDieTransfer.GetUnloaderIndexNo();
-                        if (idx >= 0 && idx < GetIndexCount())
+                        unloadDie = GetUnloadSocketMaterial();
+                    }
+                    catch
+                    {
+                        unloadDie = null;
+                    }
+
+                    bool hasDie =
+                        unloadDie != null &&
+                        unloadDie.Presence == Material.MaterialPresence.Exist;
+
+                    if (hasDie == true)
+                    {
+                        PrepareOutputDieTransferHandshake();
+                        this.OutputDieTransfer.RisePickupStartEvent();
+                        bRet = OutputDieTransfer.WaitPickupDoneEvent(Config.OutputDieTransferTimeoutMs > 0
+                                                        ? Config.OutputDieTransferTimeoutMs
+                                                        : 60000);
+                        if (!bRet)
                         {
-                            lock (_socketLock)
+                            PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
+                            Log.Write(UnitName, "OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
+                            return -1;
+                        }
+
+                        // 2) 픽 성공 여부 확인 (LastPickSucceeded 플래그 기반)
+                        if (OutputDieTransfer.LastPickSucceeded)
+                        {
+                            // OutputDieTransfer 완료 시: OutputDieTransfer의 소켓 정보만 사용하여 비우기
+                            try
                             {
-                                _sockets[idx].SetMaterialDie(null);
-                                _sockets[idx].SetState(RotarySocketState.Empty);
+                                int idx = this.OutputDieTransfer.GetUnloaderIndexNo();
+                                if (idx >= 0 && idx < GetIndexCount())
+                                {
+                                    lock (_socketLock)
+                                    {
+                                        _sockets[idx].SetMaterialDie(null);
+                                        _sockets[idx].SetState(RotarySocketState.Empty);
+                                    }
+                                    Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
+                                }
+                                else
+                                {
+                                    Log.Write(UnitName, $"[OutputDieTransfer] Invalid unloader socket index: {idx}");
+                                }
                             }
-                            Log.Write(UnitName, $"[OutputDieTransfer] Socket {(idx + 1)} -> Empty");
+                            catch (Exception ex)
+                            {
+                                Log.Write(UnitName, $"[OutputDieTransfer] 소켓 상태 초기화 실패: {ex.Message}");
+                            }
                         }
                         else
                         {
-                            Log.Write(UnitName, $"[OutputDieTransfer] Invalid unloader socket index: {idx}");
+                            // 픽업 동작은 끝났으나 성공 플래그 False → 소켓 유지
+                            Log.Write(UnitName, "[OutputDieTransfer] Pick sequence ended but LastPickSucceeded = false. Socket keep.");
                         }
+
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        Log.Write(UnitName, $"[OutputDieTransfer] 소켓 상태 초기화 실패: {ex.Message}");
+                        // OutputDieTransfer가 Work 상태에서 Start만 기다릴 가능성 → 직접 Done 보내 종료 유도
+                        OutputDieTransfer.RisePickupDoneEvent();
                     }
-                    
                 }
 
                 //Task.WaitAll(t1, t2, t3);
@@ -1595,6 +1628,16 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
                 return -1;
             }
+        }
+
+        // OutputDieTransfer 사용 직전 (Start 이벤트 Set 전에) 추가
+        private void PrepareOutputDieTransferHandshake()
+        {
+            if (OutputDieTransfer == null) return;
+            // 이전 Done 잔여 신호 제거 (있으면 소비)
+            OutputDieTransfer.WaitPickupDoneEvent(0);
+            // 이전 Start 잔여 신호 제거 (있으면 소비)
+            OutputDieTransfer.WaitPickupStartEvent(0);
         }
 
         private int WaitPostActionSettled(bool needLoadWait, int timeoutMs)

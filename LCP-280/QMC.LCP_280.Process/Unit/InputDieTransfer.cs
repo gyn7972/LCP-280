@@ -843,11 +843,7 @@ namespace QMC.LCP_280.Process.Unit
                 PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
-            //if (Rotary != null && Rotary.IsAnyAxisMoving())
-            //{
-            //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
-            //    return -1;
-            //}
+
             if (InputStageEjector != null && InputStageEjector.IsAnyAxisMoving())
             {
                 AxisToolT.EmgStop();
@@ -856,35 +852,6 @@ namespace QMC.LCP_280.Process.Unit
                 PostAlarm((int)AlarmKeys.eInputStageEjectorAxesMoving);
                 return -1;
             }
-
-            // 진공 On, Index 0번 - 우선 무조건 Index 0번 사용. 
-            // 추후 다중 Arm 사용 시 변경 필요 하지만 미리 다중으로 만들자.
-            //if(SetVacuum(0, true))
-            //{
-            //    var sw1 = Stopwatch.StartNew();
-            //    while (!InputStage.IsVacuumOn())
-            //    {
-            //        if (sw1.ElapsedMilliseconds > 2000)
-            //        {
-            //            Log.Write(UnitName, "[VacuumOn] Vacuum Timeout");
-            //            return -1;
-            //        }
-            //        Thread.Sleep(1);
-            //    }
-            //}
-            //else
-            //{
-            //    Log.Write(UnitName, "[MovePickZAndPinZByOffset] SetVacuum Failed");
-            //    return -1;
-            //}
-
-            //double vPick = velPickZ > 0 ? velPickZ : pick.Config.MaxVelocity;
-            //double aPick = acc > 0 ? acc : pick.Config.RunAcc;
-            //double dPick = dec > 0 ? dec : pick.Config.RunDec;
-
-            //double vPin = velPinZ > 0 ? velPinZ : pin.Config.MaxVelocity;
-            //double aPin = acc > 0 ? acc : pin.Config.RunAcc;
-            //double dPin = dec > 0 ? dec : pin.Config.RunDec;
 
             pickZOffset = Config.dPickUpOffset;
             double vPick = Config.dPickUpSpeed;
@@ -921,7 +888,6 @@ namespace QMC.LCP_280.Process.Unit
                     break;
                 }
                     
-
                 // 진행 중 Interlock 감시 (기존 MoveAxisWithSafety 로직과 유사)
                 if (InputStage != null && InputStage.IsAnyAxisMoving())
                 {
@@ -933,16 +899,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[MovePickZAndPinZByOffset] InputStage");
                     return -1;
                 }
-                //if (Rotary != null && Rotary.IsAnyAxisMoving())
-                //{
-                //    pick.EmgStop(); pin.EmgStop();
-                //    AxisToolT.EmgStop();
-                //    AxisPickZ.EmgStop();
-                //    AxisPlaceZ.EmgStop();
-                //    AlarmPost((int)AlarmKeys.eRotaryAxesMoving);
-                //    Log.Write(UnitName, "[MovePickZAndPinZByOffset] Rotary");
-                //    return -1;
-                //}
+                
                 // Ejector 다른 축(EjectorZ) 움직임 감시
                 if (InputStageEjector != null && 
                     InputStageEjector.IsAxisMoving(AxisNames.EjectorZ))
@@ -1331,11 +1288,25 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // === Domain Control (표준 구동) ===
-        public bool SetVacuum(int nNo, bool on)
+        public bool SetVacuum(int nNo, bool on, bool bCheckSignal = true)
         {
-            if (_vacuum[nNo] == null) return false;
-            if (on) _vacuum[nNo].On();
-            else _vacuum[nNo].Off();
+            if (_vacuum[nNo] == null) 
+                return false;
+
+            if (bCheckSignal == false)
+            {
+                if (on) 
+                    _vacuum[nNo].On();
+                else 
+                    _vacuum[nNo].Off();
+            }
+            else
+            {
+                if (on)
+                    _vacuum[nNo].OnWaitOk();
+                else
+                    _vacuum[nNo].OffWaitOk();
+            }
             return true;
         }
         public bool SetBlow(int nNo, bool on)
@@ -1354,7 +1325,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool AirTankPressureOk() => this.ReadInput(InputDieTransferConfig.IO.AIR_TANK_PRESSURE);
         public bool VacTankPressureOk() => this.ReadInput(InputDieTransferConfig.IO.VAC_TANK_PRESSURE);
-        public bool ArmFlowOk(int armIndex)
+        public bool IsVacuumOK(int armIndex)
         {
             if(Config.IsSimulation || Config.IsDryRun)
             {
@@ -1473,6 +1444,7 @@ namespace QMC.LCP_280.Process.Unit
             // PrepareNextDie 안에 있지만 여기서도 방어적으로 웨이퍼/상태 점검.
             // PrepareNextDie 안에서 0으로 리턴되면 여기서도 0으로 리턴되기 때문에 
             // 아래 코드는 사실상 중복이지만 안전을 위해 남겨둠.
+            int nArmIndex = GetInputTrArmIndex();
             MaterialWafer wafer = this.InputStage.GetMaterialWafer();
             if (wafer == null)
             {
@@ -1502,51 +1474,60 @@ namespace QMC.LCP_280.Process.Unit
             }
             if (IsStop) { return 0; }
 
-            nRet = RaiseEjectorForPick();
-            if (nRet != 0)
+            //Die를 가지고 있으면 바로 Place를 수행한다.
+            var MaterialDie = GetMaterial() as MaterialDie;
+            if (MaterialDie == null || MaterialDie.Presence != Material.MaterialPresence.Exist)
             {
-                Log.Write(UnitName, "[OnRunWork] RaiseEjectorForPick failed");
-                return -1;
-            }
-            if (IsStop) { return 0; }
+                if (IsVacuumOK(nArmIndex) == false
+                 || Config.IsSimulation || Config.IsDryRun)
+                {
+                    nRet = RaiseEjectorForPick();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] RaiseEjectorForPick failed");
+                        return -1;
+                    }
+                    if (IsStop) { return 0; }
 
-            nRet = ChipPickDown();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
-                return -1;
-            }
-            if (IsStop) { return 0; }
+                    nRet = ChipPickDown();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
+                        return -1;
+                    }
+                    if (IsStop) { return 0; }
 
-            nRet = EjectorVacuumOn();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
-                return -1;
-            }
-            if (IsStop) { return 0; }
+                    nRet = EjectorVacuumOn();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
+                        return -1;
+                    }
+                    if (IsStop) { return 0; }
 
-            nRet = SyncPickPinUp();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[OnRunWork] SyncPickPinUp failed");
-                return -1;
-            }
-            nRet = SyncPickPinRetreat();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[OnRunWork] SyncPickPinRetreat failed");
-                return -1;
-            }
-            if (IsStop) { return 0; }
+                    nRet = SyncPickPinUp();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] SyncPickPinUp failed");
+                        return -1;
+                    }
+                    nRet = SyncPickPinRetreat();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] SyncPickPinRetreat failed");
+                        return -1;
+                    }
+                    if (IsStop) { return 0; }
 
-            nRet = CommitPickedDie();
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
-                return -1;
+                    nRet = CommitPickedDie();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
+                        return -1;
+                    }
+                    if (IsStop) { return 0; }
+                }
             }
-            if (IsStop) { return 0; }
 
             nRet = RotateToolTForPlace_AsyncWait();
             if (nRet != 0)
@@ -1724,9 +1705,9 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = ChipPickDown;
-
             }
 
+            int nArmIndex = GetInputTrArmIndex();
             nRet = MovePositionPickUp(bFineSpeed);
             if (nRet != 0)
             {
@@ -1734,28 +1715,34 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
            
-            if (SetVacuum(0, true))
+            SetVacuum(nArmIndex, true);
+            if(IsVacuumOK(nArmIndex) == false)
             {
-                var sw = Stopwatch.StartNew();
-                while (!ArmFlowOk(0))
-                {
-                    if (!Config.IsSimulation && !Config.IsDryRun)
-                    {
-                        if (sw.ElapsedMilliseconds > 2000)
-                        {
-                            PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
-                            Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
-                            return -1;
-                        }
-                        Thread.Sleep(1);
-                    }
-                    else
-                    {
-                        break;
-                    }
-
-                }
+                PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
+                Log.Write(UnitName, "[ChipPickDown] Vacuum not OK");
+                return -1;
             }
+            //if (SetVacuum(nArmIndex, true))
+            //{
+            //    var sw = Stopwatch.StartNew();
+            //    while (!IsVacuumOK(nArmIndex))
+            //    {
+            //        if (!Config.IsSimulation && !Config.IsDryRun)
+            //        {
+            //            if (sw.ElapsedMilliseconds > 2000)
+            //            {
+            //                PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
+            //                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
+            //                return -1;
+            //            }
+            //            Thread.Sleep(1);
+            //        }
+            //        else
+            //        {
+            //            break;
+            //        }
+            //    }
+            //}
 
             return nRet;
         }
@@ -1767,41 +1754,47 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = EjectorVacuumOn;
-
             }
             int nRet = 0;
-            
-            if (InputStage.SetVacuum(true))
-            {
-                var sw = Stopwatch.StartNew();
-                while (true)
-                {
 
-                    if(InputStage.IsVacuumOn())
-                    {
-                        break;
-                    }
-                    else if (!Config.IsSimulation && !Config.IsDryRun)
-                    {
-                        if (sw.ElapsedMilliseconds > 2000)
-                        {
-                            PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                            Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-                            return -1;
-                        }
-                        Thread.Sleep(1);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
-            else
+            InputStage.SetVacuum(true, true);
+            if (InputStage.IsVacuumOn() == false)
             {
-                Log.Write(UnitName, "[EjectorVacuumOn] SetVacuum(true) failed");
+                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
                 return -1;
             }
+
+            //if (InputStage.SetVacuum(true))
+            //{
+            //    var sw = Stopwatch.StartNew();
+            //    while (true)
+            //    {
+            //        if(InputStage.IsVacuumOn())
+            //        {
+            //            break;
+            //        }
+            //        else if (!Config.IsSimulation && !Config.IsDryRun)
+            //        {
+            //            if (sw.ElapsedMilliseconds > 2000)
+            //            {
+            //                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+            //                Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
+            //                return -1;
+            //            }
+            //            Thread.Sleep(1);
+            //        }
+            //        else
+            //        {
+            //            break;
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    Log.Write(UnitName, "[EjectorVacuumOn] SetVacuum(true) failed");
+            //    return -1;
+            //}
 
             return nRet;
         }
@@ -1862,27 +1855,38 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Release
-            if(InputStage.SetVacuum(false))
+            InputStage.SetVacuum(false, true);
+            if (Config.IsSimulation || Config.IsDryRun)
             {
-                if(Config.IsSimulation || Config.IsDryRun)
-                {
-                    Thread.Sleep(100);
-                }
-                else
-                {
-                    var sw = Stopwatch.StartNew();
-                    while (InputStage.IsVacuumOn())
-                    {
-                        if (sw.ElapsedMilliseconds > 1000)
-                        {
-                            PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                            Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
-                            return -1;
-                        }
-                        Thread.Sleep(1);
-                    }
-                }
+                Thread.Sleep(100);
             }
+            else if (InputStage.IsVacuumOn() == false)
+            {
+                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
+                return -1;
+            }
+            //if (InputStage.SetVacuum(false))
+            //{
+            //    if(Config.IsSimulation || Config.IsDryRun)
+            //    {
+            //        Thread.Sleep(100);
+            //    }
+            //    else
+            //    {
+            //        var sw = Stopwatch.StartNew();
+            //        while (InputStage.IsVacuumOn())
+            //        {
+            //            if (sw.ElapsedMilliseconds > 1000)
+            //            {
+            //                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+            //                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
+            //                return -1;
+            //            }
+            //            Thread.Sleep(1);
+            //        }
+            //    }
+            //}
 
             this.WaitByTime(Config.nPickUpWaitTime, 1);
 
@@ -1948,16 +1952,13 @@ namespace QMC.LCP_280.Process.Unit
                 this.CurrentFunc = CommitPickedDie;
             }
 
-            if (RunMode == UnitRunMode.Auto)
+            if (_currentDie == null || _currentDie.Presence != Material.MaterialPresence.Exist)
             {
-                if (_currentDie == null || _currentDie.Presence != Material.MaterialPresence.Exist)
-                {
-                    return -1;  // 이 경우는 에러로 간주
-                }
-                _currentDie.State = DieProcessState.Picked;
-                _currentDie.ProcessSatate = Material.MaterialProcessSatate.Processing;
-                SetMaterial(_currentDie); // 이후 Complete 단계에서 Rotary로 전달
+                return -1;  // 이 경우는 에러로 간주
             }
+            _currentDie.State = DieProcessState.Picked;
+            _currentDie.ProcessSatate = Material.MaterialProcessSatate.Processing;
+            SetMaterial(_currentDie); // 이후 Complete 단계에서 Rotary로 전달
 
             return 0;
         }
@@ -1967,13 +1968,13 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = RotateToolTForPlace_AsyncWait;
-                nRet = RotateToolTForPlace(bFineSpeed);
-                if(nRet != 0)
-                {
-                    Log.Write(UnitName, "[RotateToolTForPlace_AsyncWait] RotateToolTForPlace failed");
-                    return -1;
-                }
-                return nRet;
+                //nRet = RotateToolTForPlace(bFineSpeed);
+                //if(nRet != 0)
+                //{
+                //    Log.Write(UnitName, "[RotateToolTForPlace_AsyncWait] RotateToolTForPlace failed");
+                //    return -1;
+                //}
+                //return nRet;
             }
 
             Task<int> t = Task.Factory.StartNew(() =>
@@ -2001,16 +2002,12 @@ namespace QMC.LCP_280.Process.Unit
         
         public int PlaceChipDown(bool bFineSpeed = false)
         {
-            if (AxisPlaceZ == null) 
-                return -1;
-
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = PlaceChipDown;
             }
             int nRet = 0;
-
-            int armIndex = GetPlaceArmIndex();
+            int armIndex = GetInputTrArmIndex();
             int nIndex = GetLoadIndexNo();
 
             // nIndex 처리 (0-based와 1-based 모두 지원)
@@ -2044,8 +2041,27 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             Rotary.SetVacuum(nIndex, true);
+            if(Rotary.IsVacuumOk(nIndex) == false)
+            {
+                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                Log.Write(UnitName, "[PlaceChipDown] Rotary Vacuum not OK");
+                return -1;
+            }
             SetVacuum(armIndex, false);
-            
+            if(Config.IsSimulation || Config.IsDryRun)
+            {
+                Thread.Sleep(100);
+            }
+            else if (IsVacuumOK(armIndex))
+            {
+                PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
+                Log.Write(UnitName, "[PlaceChipDown] Arm Vacuum not released");
+                return -1;
+            }
+
+            SetVent(armIndex, true);
+            SetBlow(armIndex, true);
+
             return nRet;
 
         }
@@ -2059,7 +2075,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.CurrentFunc = ReleaseVacuumAndPlaceUp;
                     LogSequence("Start");
                 }
-                int armIndex = GetPlaceArmIndex();
+                int armIndex = GetInputTrArmIndex();
                 int nIndex = GetLoadIndexNo();
 
                 if (armIndex < 0 || armIndex > 3)
@@ -2068,13 +2084,15 @@ namespace QMC.LCP_280.Process.Unit
                 if (Rotary.SetVacuum(nIndex, true))
                 {
                     SetVacuum(armIndex, false);
+                    Thread.Sleep(1);
                     SetVent(armIndex, true);
+                    Thread.Sleep(1);
                     SetBlow(armIndex, true);
 
                     var sw = Stopwatch.StartNew();
                     while (true)
                     {
-                        if (Rotary.SlotFlowOk(nIndex))
+                        if (Rotary.IsVacuumOk(nIndex))
                         {
                             break;
                         }
@@ -2109,6 +2127,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 Thread.Sleep(1);
                 SetVent(armIndex, false);
+                Thread.Sleep(1);
                 SetBlow(armIndex, false);
 
                 nRet = MovePositionPickUpToolT();
@@ -2219,7 +2238,7 @@ namespace QMC.LCP_280.Process.Unit
             nIndex = (Rotary.GetLoadIndexNo() + this.Config.IndexOfStart) % Rotary.GetIndexCount();
             return nIndex;
         }
-        public int GetPlaceArmIndex()
+        public int GetInputTrArmIndex()
         {
             //todo: 구현해라 구부장. 암 하나 더달면. Rotary Index에 따른 Arm Index 반환
 

@@ -64,25 +64,26 @@ namespace QMC.LCP_280.Process.Component
 
         private void _btnNext_Click(object sender, EventArgs e)
         {
+            if (m_ParentUnit == null) 
+                return;
 
-            if (m_ParentUnit == null) return;
             this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
             this._lstSteps.SelectedIndex = this.SelectedIndex;
             if (this._lstSteps.SelectedIndex < 0)
             {
                 this._lstSteps.SelectedIndex = 0;
             }
+
             if (this._lstSteps.SelectedIndex < m_ParentUnit.SequencePlayers.Count)
             {
                 var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
                 if (func != null)
                 {
-                    
                     Task<int> t = m_ParentUnit.RunManualFunction(func);
+                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Running;
 
                     UpdateSeqList();
                     ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
-
                     if (t != null)
                     {
                         try
@@ -111,15 +112,8 @@ namespace QMC.LCP_280.Process.Component
                             Log.Write(ex);
                         }
                     }
+                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
                 }
-
-                //form.ShowDialog();
-                //if(t.Result == 0)
-                //{
-                //    this.SelectedIndex++;
-                //    this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
-                //    this._lstSteps.SelectedIndex = this.SelectedIndex;
-                //}
             }
         }
 
@@ -131,11 +125,14 @@ namespace QMC.LCP_280.Process.Component
             {
                 this._lstSteps.SelectedIndex = 0;
             }
+
             if (this._lstSteps.SelectedIndex < m_ParentUnit.SequencePlayers.Count)
             {
                 var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
                 
                 Task<int> t = m_ParentUnit.RunManualFunction(func);
+                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Running;
+
                 SelectedIndex = this._lstSteps.SelectedIndex;
                 UpdateSeqList();
                 ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
@@ -145,6 +142,7 @@ namespace QMC.LCP_280.Process.Component
                     m_ParentUnit.CancelSequence();
                 }
 
+                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
             }
         }
 
@@ -241,16 +239,6 @@ namespace QMC.LCP_280.Process.Component
                     mb.ShowDialog("Error!", $"UnitName 이 비어 있습니다.");
                     return;
                 }
-
-                // 이미 정지 상태이면 반환
-                //if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopping ||
-                //    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopped ||
-                //    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.CycleStop)
-                //{
-                //    MessageBox.Show($"Unit '{unitName}' 는 이미 정지 상태입니다.", "정보",
-                //        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                //    return;
-                //}
 
                 var btn = sender as Button;
                 bool restore = false;

@@ -33,8 +33,14 @@ namespace QMC.Common.IOUtil
         public bool TryGetOk(out bool ok)
         {
             ok = false;
-            if (!HasOkSensor) return false;
-            if (DIO.In(_okInKey, out var v)) { ok = v; return true; }
+            if (!HasOkSensor) 
+                return false;
+            if (DIO.In(_okInKey, out var v)) 
+            { 
+                ok = v; 
+                return true; 
+            }
+
             return false;
         }
 
