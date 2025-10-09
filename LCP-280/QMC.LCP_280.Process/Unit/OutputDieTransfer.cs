@@ -1478,7 +1478,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-
                 Log.Write(ex);
             }
             finally
@@ -1494,8 +1493,12 @@ namespace QMC.LCP_280.Process.Unit
             Material wafer = OutputStage.GetMaterialWafer();
             if(wafer != null && wafer.Presence == Material.MaterialPresence.Exist)
             {
+                if(OutputStage.IsStageInterLockOK() == false)
+                {
+                    return 0;
+                }
+                
                 wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
-
                 nRtn = MoveOutStage();
                 if (nRtn != 0)
                 {

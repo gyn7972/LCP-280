@@ -1293,6 +1293,16 @@ namespace QMC.LCP_280.Process.Unit
             if (_vacuum[nNo] == null) 
                 return false;
 
+            if(Config.IsSimulation || Config.IsDryRun)
+            {
+                if (on)
+                    _vacuum[nNo].On();
+                else
+                    _vacuum[nNo].Off();
+
+                return true;
+            }
+
             if (bCheckSignal == false)
             {
                 if (on) 

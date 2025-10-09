@@ -207,7 +207,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            if(Config.IsSimulation == false || Config.IsDryRun == false)
+            if(Config.IsSimulation == false && Config.IsDryRun == false)
             {
                 if (IsRingPresent() == true)
                 {

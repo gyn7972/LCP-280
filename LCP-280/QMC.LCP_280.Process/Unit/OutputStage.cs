@@ -949,11 +949,14 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
+                var wafer = GetMaterialWafer();
+                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+
                 BinLoadingDone = true;
                 BinLoadingReady = false;
                 Log.Write(UnitName, "LoadingComp", "Done");
 
-                return 0;
+                return ret;
             }
             else
             {

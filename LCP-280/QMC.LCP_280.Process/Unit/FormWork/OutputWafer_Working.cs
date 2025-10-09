@@ -165,7 +165,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent0(), "Cassette Present 0", "OCL_Cass0");
                     dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent1(), "Cassette Present 1", "OCL_Cass1");
                     dioControl.BindDIOInput(() => OutputCassetteLifter.IsAnyCassettePresent(), "Cassette Any", "OCL_CassAny");
-                    dioControl.BindDIOInput(() => OutputCassetteLifter.RingJut(), "Ring Jut", "OCL_RingJut");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsBinProtrusionDetectionSensor(), "Ring Jut", "OCL_RingJut");
                     dioControl.BindDIOInput(() => OutputCassetteLifter.MappingSensor(), "Mapping Sensor", "OCL_Mapping");
                 }
 
