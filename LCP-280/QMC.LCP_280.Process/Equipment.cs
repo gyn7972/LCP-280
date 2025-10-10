@@ -544,16 +544,15 @@ namespace QMC.LCP_280.Process
                 _equipmentCancellationTokenSource?.Dispose();
                 _equipmentCancellationTokenSource = new CancellationTokenSource();
 
-                // [MOD] 1) 보호 유닛(EquipmentStatus) 먼저 기동 (실패해도 계속)
+                // 1) 보호 유닛(EquipmentStatus) 먼저 기동 (실패해도 계속)
                 if (Units.TryGetValue(UnitKeys.EquipmentStatus, out var statusUnit))
-                    await StartUnitAsync(UnitKeys.EquipmentStatus);
+                    await StartUnitAsync(UnitKeys.EquipmentStatus).ConfigureAwait(false);
 
                 // 2) 나머지 유닛 병렬 기동
                 var otherUnitNames = Units.Keys.Where(n => !IsProtectedUnit(n)).ToArray();
-                var startTasks = otherUnitNames.Select(StartUnitAsync);
-                var results = await Task.WhenAll(startTasks);
+                var startTasks = otherUnitNames.Select(StartUnitAsync).ToArray();
+                var results = await Task.WhenAll(startTasks).ConfigureAwait(false);
 
-                // 모든 Unit이 성공적으로 시작되었는지 확인
                 if (results.All(r => r))
                 {
                     OnStateChanged(EquipmentState.Running);
@@ -562,7 +561,6 @@ namespace QMC.LCP_280.Process
                 }
                 else
                 {
-                    // 실패 시에도 EquipmentStatus는 유지
                     await StopAllUnitsAsync(includeEquipmentStatus: false).ConfigureAwait(false);
                     OnStateChanged(EquipmentState.Error);
                     OnErrorOccurred("설비 시작 중 일부 Unit 실패");
@@ -588,6 +586,7 @@ namespace QMC.LCP_280.Process
                 OnErrorOccurred($"Unit '{unitName}'를 찾을 수 없습니다.");
                 return false;
             }
+
             if (!_unitExecutions.TryGetValue(unitName, out var execInfo))
             {
                 OnErrorOccurred($"Unit '{unitName}' 실행 정보를 찾을 수 없습니다.");
@@ -609,7 +608,6 @@ namespace QMC.LCP_280.Process
                         execInfo.IsRunning = false;
                         execInfo.StopTime = DateTime.Now;
                         SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
-                        //OnUnitStateChanged(unitName, UnitStatus.Stopped);
                     }
                     else
                     {
@@ -619,22 +617,48 @@ namespace QMC.LCP_280.Process
                 }
 
                 SetAndRaiseUnitState(unitName, UnitStatus.Starting);
-                //OnUnitStateChanged(unitName, UnitStatus.Starting);
 
-                if (_equipmentCancellationTokenSource == null)
+                // [FIX] 설비 토큰이 취소 상태면 재생성
+                if (_equipmentCancellationTokenSource == null || _equipmentCancellationTokenSource.IsCancellationRequested)
+                {
+                    try { _equipmentCancellationTokenSource?.Dispose(); } catch { }
                     _equipmentCancellationTokenSource = new CancellationTokenSource();
+                }
 
-                execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
-                    ? new CancellationTokenSource()
-                    : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
+                var linkedCts = IsProtectedUnit(unitObj)
+                               ? new CancellationTokenSource()
+                               : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
 
-
+                execInfo.CancellationTokenSource = linkedCts;
                 execInfo.IsRunning = true;
                 execInfo.StartTime = DateTime.Now;
-                SetAndRaiseUnitState(unitName, UnitStatus.Running);
-                //OnUnitStateChanged(unitName, UnitStatus.Running);
+                //SetAndRaiseUnitState(unitName, UnitStatus.Running);
+                //(unitObj as BaseUnit)?.Start();
 
-                (unitObj as BaseUnit)?.Start();
+                // 유닛 실행 수명과 바인딩되는 백그라운드 태스크
+                // 1) Start() 호출(블로킹이면 여기서 대기)
+                // 2) Running 전환
+                // 3) RunUnitLoopAsync로 주기 작업 + 취소 토큰으로 lifetime 유지
+                execInfo.ExecutionTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        (unitObj as BaseUnit)?.Start(); // 초기화/실행 진입
+                        SetAndRaiseUnitState(unitName, UnitStatus.Running);
+
+                        await RunUnitLoopAsync(unitName, bu, linkedCts.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // 정상 취소
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                        SetAndRaiseUnitState(unitName, UnitStatus.Error);
+                        OnErrorOccurred($"Unit '{unitName}' 시작 중 오류: {ex.Message}");
+                    }
+                }, linkedCts.Token);
 
                 return true;
             }
@@ -642,7 +666,6 @@ namespace QMC.LCP_280.Process
             {
                 Log.Write(ex);
                 SetAndRaiseUnitState(unitName, UnitStatus.Error);
-                //OnUnitStateChanged(unitName, UnitStatus.Error);
                 OnErrorOccurred($"Unit '{unitName}' 시작 중 오류: {ex.Message}");
                 return false;
             }
@@ -756,7 +779,7 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 설비 전체 정지
         /// </summary>
-        public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = true)
+        public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = false)
         {
             try
             {
@@ -777,19 +800,16 @@ namespace QMC.LCP_280.Process
                     {
                         SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
 
-                        // [FIX] 실제 유닛도 멈추도록 호출
+                        // 유닛 내부에도 Stop 신호
                         if (Units.TryGetValue(unitName, out var u))
                             (u as QMC.Common.Unit.BaseUnit)?.Stop();
 
+                        // 수명 태스크 취소
                         execInfo.CancellationTokenSource?.Cancel();
-                        execInfo.IsRunning = false;
-                        execInfo.StopTime = DateTime.Now;
 
+                        // 종료 대기(수명 태스크에 실제로 바인딩됨)
                         if (execInfo.ExecutionTask != null)
                             stopTasks.Add(WaitForUnitStopAsync(unitName, execInfo.ExecutionTask));
-
-                        // [FIX] 즉시 Stopped 알림 (Task 루프 미사용 구조 대응)
-                        SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
                     }
                 }
 
@@ -797,6 +817,11 @@ namespace QMC.LCP_280.Process
                     await Task.WhenAll(stopTasks).ConfigureAwait(false);
 
                 OnStateChanged(EquipmentState.Stopped);
+
+                // [FIX] 정지 후 취소된 설비 토큰 정리
+                try { _equipmentCancellationTokenSource?.Dispose(); } catch { }
+                _equipmentCancellationTokenSource = null;
+
                 Console.WriteLine("설비 전체 정지 완료");
                 return true;
             }
@@ -840,18 +865,28 @@ namespace QMC.LCP_280.Process
                     SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
 
                 (unitObj as QMC.Common.Unit.BaseUnit)?.Stop();
+                execInfo.CancellationTokenSource?.Cancel();
 
-                execInfo.IsRunning = false;
-                execInfo.StopTime = DateTime.Now;
+                if (execInfo.ExecutionTask != null)
+                {
+                    var ok = await WaitForUnitStopAsync(unitName, execInfo.ExecutionTask).ConfigureAwait(false);
+                    Console.WriteLine($"Unit '{unitName}' 정지 {(ok ? "완료" : "실패/타임아웃")}");
+                    return ok;
+                }
+                else
+                {
+                    // 수명 태스크가 없다면 즉시 정지로 간주(레거시 유닛)
+                    SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
+                    Console.WriteLine($"Unit '{unitName}' 정지 완료(ExecutionTask 없음)");
+                    return true;
+                }
+                //execInfo.IsRunning = false;
+                //execInfo.StopTime = DateTime.Now;
+                //SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
+                //SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
 
-
-                SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
-                SetAndRaiseUnitState(unitName, UnitStatus.Stopped);
-                //OnUnitStateChanged(unitName, UnitStatus.Stopping);
-                //OnUnitStateChanged(unitName, UnitStatus.Stopped);
-
-                Console.WriteLine($"Unit '{unitName}' 정지 완료");
-                return true;
+                //Console.WriteLine($"Unit '{unitName}' 정지 완료");
+                //return true;
             }
             catch (Exception ex)
             {
@@ -881,7 +916,7 @@ namespace QMC.LCP_280.Process
         {
             try
             {
-                var timeoutTask = Task.Delay(5000);
+                var timeoutTask = Task.Delay(10000);
                 var completedTask = await Task.WhenAny(executionTask, timeoutTask);
 
                 if (completedTask == timeoutTask)
@@ -889,7 +924,6 @@ namespace QMC.LCP_280.Process
                     OnErrorOccurred($"Unit '{unitName}' 정지 타임아웃");
 
                     SetAndRaiseUnitState(unitName, UnitStatus.Error);
-                    //OnUnitStateChanged(unitName, UnitStatus.Error);
                     return false;
                 }
 
@@ -899,7 +933,6 @@ namespace QMC.LCP_280.Process
             catch (Exception ex)
             {
                 SetAndRaiseUnitState(unitName, UnitStatus.Error);
-                //OnUnitStateChanged(unitName, UnitStatus.Error);
                 OnErrorOccurred($"Unit '{unitName}' 정지 중 오류: {ex.Message}");
                 return false;
             }

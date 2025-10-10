@@ -21,6 +21,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Shapes;
 using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.PatternMatchingRunner;
@@ -971,6 +972,7 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
         public int AlignXY(bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -1578,8 +1580,8 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
 
             }
-            try {
-
+            try 
+            {
                 StageCamera.GrabSync(out VisionImage img);
                 PmRunner.SearchTheta(img, out double angle);
                 double currentAngle = this.AxisT.GetPosition();
@@ -1602,7 +1604,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
             
-
             IsStatus_TAlignDone = true;
             return nRet;
         }
@@ -2240,6 +2241,54 @@ namespace QMC.LCP_280.Process.Unit
             return die;
         }
 
+        public int RecheckDieAndAlign(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            List<PointD> chips = new List<PointD>();
+            Task<int> tImageProcess = null;
+            try
+            {
+                this.CalcelToken?.Token.ThrowIfCancellationRequested();
+                if (this.Config.IsSimulation == false && this.Config.IsDryRun == false)
+                {
+                    double dpoX = AxisX.GetPosition();
+                    double dpoY = AxisY.GetPosition();
+
+                    StageCamera.GrabSync(out VisionImage grabImage);
+                    if (tImageProcess != null)
+                    {
+                        tImageProcess.Wait();
+                    }
+                    double dx = dpoX;
+                    double dy = dpoY;
+                    tImageProcess = Task.Factory.StartNew(() =>
+                    {
+                        return SearchDies(grabImage, ref chips, dx, dy);
+                    });
+
+                    //Update Chip Info가 되어야 한다.....
+                    //wafer die 정보가 갱신되어야 한다.
+
+
+                }
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "ChipMap", "Fail: GrabAndMap");
+                    return -1;
+                }
+
+                return nRet;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+            finally
+            {
+
+            }
+        }
         #endregion
     }
 }

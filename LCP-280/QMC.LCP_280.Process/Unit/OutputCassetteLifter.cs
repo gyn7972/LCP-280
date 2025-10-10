@@ -535,7 +535,6 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = ScanBin;
-
             }
 
             Log.Write(this, "Start ScanBin");
@@ -659,11 +658,10 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(this, "End ScanBin");
             return nRtn;
         }
-        public Task<int> ScanWaferAsync(bool bFineSpeed = false)
+        public Task<int> ScanBinAsync(bool bFineSpeed = false)
         {
             return Task.Run(() => ScanBin(bFineSpeed));
         }
-
         public int MoveToNextSlot(bool bFineSpeed = false)
         {
             int nRtn = 0;

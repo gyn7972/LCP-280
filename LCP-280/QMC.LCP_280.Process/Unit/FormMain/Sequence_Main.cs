@@ -323,7 +323,9 @@ namespace QMC.LCP_280.Process
         #region Buttons
         private async void BtnStartAll_Click(object sender, EventArgs e)
         {
-            if (equipment == null) return;
+            if (equipment == null) 
+                return;
+
             try
             {
                 btnStartAll.Enabled = false;

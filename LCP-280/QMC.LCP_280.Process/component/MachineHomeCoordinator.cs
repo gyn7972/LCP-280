@@ -352,8 +352,11 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (eq.Units != null && eq.Units.TryGetValue("InputCassetteLifter", out var uL) && uL is InputCassetteLifter lifter)
                             {
-                                if (lifter.IsWaferProtrusionDetectionSensor())
-                                    return (false, "InputCassetteLifter Ring JUT Detected");
+                                if (lifter.Config.IsSimulation == false || lifter.Config.IsDryRun == false)
+                                {
+                                    if (lifter.IsWaferProtrusionDetectionSensor())
+                                        return (false, "InputCassetteLifter Ring JUT Detected");
+                                }
                             }
                         }
                         catch (Exception ex)
@@ -368,9 +371,12 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (eq.Units != null && eq.Units.TryGetValue("OutputCassetteLifter", out var uOL) && uOL is OutputCassetteLifter outLifter)
                             {
-                                //if (outLifter.RingJut())
-                                if(outLifter.IsBinProtrusionDetectionSensor())
-                                    return (false, "OutputCassetteLifter Ring JUT Detected");
+                                if(outLifter.Config.IsSimulation == false || outLifter.Config.IsDryRun == false)
+                                {
+                                    if (outLifter.IsBinProtrusionDetectionSensor())
+                                        return (false, "OutputCassetteLifter Ring JUT Detected");
+                                }
+                                
                             }
                         }
                         catch (Exception ex)

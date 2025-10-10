@@ -184,7 +184,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             ("Y000","START_LAMP"),("Y001","STOP_LAMP"),("Y002","RESET_LAMP"),("Y003","TL_RED"),
             ("Y004","TL_YELLOW"),("Y005","TL_GREEN"),("Y006","BUZZER"),("Y012","BLADE_CONTACT"),
-            ("Y013","PROBE_CARD_CONTACT"),("Y014","WAFER_IONIZER_ON"),("Y015","BIN_IONIZER_ON"),
+            ("Y013","PROBECARD_CONTACT"),("Y014","WAFER_IONIZER_ON"),("Y015","BIN_IONIZER_ON"),
         };
         #endregion
 

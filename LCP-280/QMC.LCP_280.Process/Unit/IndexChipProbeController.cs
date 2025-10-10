@@ -149,7 +149,6 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.SphereZ, ref _sphereZ);
         }
 
-
         public int MovePositionSafetyZ(bool isFine = false)
         {
             Task<int> task = MovePositionAsyncSafetyZ(isFine);
@@ -225,7 +224,6 @@ namespace QMC.LCP_280.Process.Unit
             },
             ct);
         }
-
 
         public int MovePositionSphereZDown(bool isFine = false)
         {
@@ -1077,6 +1075,35 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // === Domain Control (표준 구동) ===
+        public bool SetContectTop(bool on)
+        {
+            bool bRet = true;
+
+            if (on)
+            {
+                // Top Contact
+                WriteOutput(IndexChipProbeControllerConfig.IO.PROBECARD_CONTACT_VLV, false);
+                Thread.Sleep(10); // 약간의 딜레이
+                WriteOutput(IndexChipProbeControllerConfig.IO.BLADE_CONTACT_VLV, true);
+            }
+            else
+            {
+                // Probe Contact
+                WriteOutput(IndexChipProbeControllerConfig.IO.BLADE_CONTACT_VLV, false);
+                Thread.Sleep(10); // 약간의 딜레이
+                WriteOutput(IndexChipProbeControllerConfig.IO.PROBECARD_CONTACT_VLV, true);
+            }
+
+            return bRet;
+        }
+        public bool IsContactTop()
+        {
+            return IsOutputOn(IndexChipProbeControllerConfig.IO.BLADE_CONTACT_VLV);
+        }
+        public bool IsContactProbe()
+        {
+            return IsOutputOn(IndexChipProbeControllerConfig.IO.PROBECARD_CONTACT_VLV);
+        }
         public bool SetProbeVac(bool on)
         {
             if (_vacProbeCard == null) return false;
@@ -1117,9 +1144,6 @@ namespace QMC.LCP_280.Process.Unit
             return ReadInput(NAME_SPHERE_BW);   // Backward sensor
         }
         
-        /////////////////////
-
-
         // === Direct Valve Control (강제 구동) ===
         public bool IsSphereFwdValveOn()       => IsOutputOn(NAME_SPHERE_FW);
         public bool IsProbeVacValveOn()        => IsOutputOn(NAME_PROBE_VAC);
@@ -1316,6 +1340,12 @@ namespace QMC.LCP_280.Process.Unit
 
             if (IsTopRequired())
             {
+                if(SetContectTop(true))
+                {
+                    Log.Write(UnitName, "[RunInspection] SetContectTop(Top) failed");
+                    return -1;
+                }
+
                 nRet = TopContactAndMeasureOnce(bFineSpeed);
                 if (nRet != 0)
                 {
@@ -1325,6 +1355,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
+                if (SetContectTop(false))
+                {
+                    Log.Write(UnitName, "[RunInspection] SetContectTop(Bottom) failed");
+                    return -1;
+                }
+
                 nRet = BottomContactAndMeasureOnce(bFineSpeed);
                 if (nRet != 0)
                 {
