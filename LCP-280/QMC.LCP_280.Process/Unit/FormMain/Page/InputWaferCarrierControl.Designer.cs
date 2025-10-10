@@ -24,8 +24,8 @@
             this.lblWaferCountTitle = new System.Windows.Forms.Label();
             this.lblWaferCountValue = new System.Windows.Forms.Label();
             this.tlpMain = new System.Windows.Forms.TableLayoutPanel();
-            this.waferSelectMapView = new QMC.LCP_280.Process.Component.WaferSelectMapView();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.waferSelectMapView = new QMC.LCP_280.Process.Component.WaferSelectMapView();
             this.tlpMain.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
@@ -36,10 +36,10 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblCarrierIdTitle.AutoSize = true;
             this.lblCarrierIdTitle.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lblCarrierIdTitle.Location = new System.Drawing.Point(120, 3);
+            this.lblCarrierIdTitle.Location = new System.Drawing.Point(105, 3);
             this.lblCarrierIdTitle.Margin = new System.Windows.Forms.Padding(3);
             this.lblCarrierIdTitle.Name = "lblCarrierIdTitle";
-            this.lblCarrierIdTitle.Size = new System.Drawing.Size(84, 25);
+            this.lblCarrierIdTitle.Size = new System.Drawing.Size(99, 25);
             this.lblCarrierIdTitle.TabIndex = 0;
             this.lblCarrierIdTitle.Text = "Carrier ID :";
             // 
@@ -65,10 +65,10 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblWaferCountTitle.AutoSize = true;
             this.lblWaferCountTitle.Font = new System.Drawing.Font("맑은 고딕", 10.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.lblWaferCountTitle.Location = new System.Drawing.Point(99, 34);
+            this.lblWaferCountTitle.Location = new System.Drawing.Point(81, 34);
             this.lblWaferCountTitle.Margin = new System.Windows.Forms.Padding(3);
             this.lblWaferCountTitle.Name = "lblWaferCountTitle";
-            this.lblWaferCountTitle.Size = new System.Drawing.Size(105, 26);
+            this.lblWaferCountTitle.Size = new System.Drawing.Size(123, 26);
             this.lblWaferCountTitle.TabIndex = 2;
             this.lblWaferCountTitle.Text = "Wafer Count :";
             // 
@@ -103,19 +103,8 @@
             this.tlpMain.Size = new System.Drawing.Size(421, 370);
             this.tlpMain.TabIndex = 19;
             // 
-            // waferSelectMapView
-            // 
-            this.waferSelectMapView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.waferSelectMapView.Location = new System.Drawing.Point(3, 72);
-            this.waferSelectMapView.Name = "waferSelectMapView";
-            this.waferSelectMapView.Size = new System.Drawing.Size(415, 295);
-            this.waferSelectMapView.TabIndex = 18;
-            // 
             // tableLayoutPanel1
             // 
-            this.tableLayoutPanel1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.tableLayoutPanel1.ColumnCount = 2;
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
@@ -123,6 +112,7 @@
             this.tableLayoutPanel1.Controls.Add(this.lblCarrierIdTitle, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.lblWaferCountValue, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.lblWaferCountTitle, 0, 1);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(3, 3);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
@@ -131,6 +121,15 @@
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(415, 63);
             this.tableLayoutPanel1.TabIndex = 5;
+            // 
+            // waferSelectMapView
+            // 
+            this.waferSelectMapView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.waferSelectMapView.Location = new System.Drawing.Point(4, 73);
+            this.waferSelectMapView.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.waferSelectMapView.Name = "waferSelectMapView";
+            this.waferSelectMapView.Size = new System.Drawing.Size(413, 293);
+            this.waferSelectMapView.TabIndex = 18;
             // 
             // InputWaferCarrierControl
             // 

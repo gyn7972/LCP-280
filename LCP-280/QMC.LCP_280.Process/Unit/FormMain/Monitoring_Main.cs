@@ -90,11 +90,14 @@ namespace QMC.LCP_280.Process
             _startSequences = new HashSet<string>();
             sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
             
-            var materialCassette = InputCassetteLifter?.GetMaterialCassette();
+            
 
             // WaferSelectMapView 이벤트 구독
             if (inputWaferCarrierControl1?.GetWaferSelectMapView() != null)
             {
+                var materialCassette = InputCassetteLifter?.GetMaterialCassette();
+                InputCassetteLifter.EventUpdateUICassette += InputCassetteLifter_EventUpdateUICassette;
+                
                 inputWaferCarrierControl1.GetWaferSelectMapView().SlotClicked += OnInputWaferSlot_Clicked;
                 inputWaferCarrierControl1.GetWaferSelectMapView().SlotSelectionChanged += OnInputWaferSlot_SelectionChanged;
 
@@ -105,12 +108,15 @@ namespace QMC.LCP_280.Process
                 else
                 {
                     // 테스트용 카세트 생성
-                    inputWaferCarrierControl1.GetWaferSelectMapView().CreateTestCassette(20);
+                    inputWaferCarrierControl1.GetWaferSelectMapView().CreateTestCassette(25);
                 }
             }
 
             if (outputWaferCarrierControl1?.GetWaferSelectMapView() != null)
             {
+                var materialCassette = OutputCassetteLifter?.GetMaterialCassette();
+                OutputCassetteLifter.EventUpdateUICassette += OutputCassetteLifter_EventUpdateUICassette;
+
                 outputWaferCarrierControl1.GetWaferSelectMapView().SlotClicked += OnInputWaferSlot_Clicked;
                 outputWaferCarrierControl1.GetWaferSelectMapView().SlotSelectionChanged += OnInputWaferSlot_SelectionChanged;
 
@@ -121,7 +127,7 @@ namespace QMC.LCP_280.Process
                 else
                 {
                     // 테스트용 카세트 생성
-                    outputWaferCarrierControl1.GetWaferSelectMapView().CreateTestCassette(20);
+                    outputWaferCarrierControl1.GetWaferSelectMapView().CreateTestCassette(25);
                 }
             }
             #endregion
@@ -130,11 +136,9 @@ namespace QMC.LCP_280.Process
             dieInputControl1.MotorMoveRequested += OnDieInput_MotorMoveRequested;
             dieIndexSelectControl1.RotationRequested += OnDieRotation_Requested;
 
-
             inputStage.EventUpdateUIWafer += InputStage_EventUpdateUIWafer;
             outputStage.EventUpdateUIWafer += OutputStage_EventUpdateUIWafer;
-            InputCassetteLifter.EventUpdateUICassette += InputCassetteLifter_EventUpdateUICassette;
-            OutputCassetteLifter.EventUpdateUICassette += OutputCassetteLifter_EventUpdateUICassette;
+            
 
             // 이벤트 구독: 픽업 완료 시 입력 뷰에서 해당 다이를 제거(Picked/Empty)로 반영
             if (InputDieTransfer != null)
@@ -195,22 +199,50 @@ namespace QMC.LCP_280.Process
         private void OutputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)
         {
             this.outputWaferCarrierControl1.GetWaferSelectMapView()?.SetMaterialCassette(Cassette);
-            //this.outputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
+            if (Cassette.CarrierId == string.Empty)
+            {
+                Cassette.CarrierId = string.Format("QMC_OUT_CASSETTE_{0}", Cassette.SlotCount);
+            }
 
             this.outputWaferCarrierControl1.SetWaferCarrierId(Cassette.CarrierId);
-            this.outputWaferCarrierControl1.UpdateWaferCount(Cassette.SlotCount);
+            // 실제 존재하는 웨이퍼 수로 갱신
+            var presentCount = GetPresentWaferCount(Cassette);
+            this.outputWaferCarrierControl1.UpdateWaferCount(presentCount);
+            Log.Write("Monitoring_Main", $"Output Cassette Updated: ID={Cassette.CarrierId}, Slots={Cassette.SlotCount}, Present={presentCount}");
         }
 
         private void InputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)
         {
             this.inputWaferCarrierControl1.GetWaferSelectMapView()?.SetMaterialCassette(Cassette);
-            //this.inputWaferCarrierControl1.GetWaferSelectMapView()?.Refresh();
+            if (Cassette.CarrierId == string.Empty)
+            {
+                Cassette.CarrierId = string.Format("QMC_IN_CASSETTE_{0}", Cassette.SlotCount);
+            }
 
             this.inputWaferCarrierControl1.SetWaferCarrierId(Cassette.CarrierId);
-            this.inputWaferCarrierControl1.UpdateWaferCount(Cassette.SlotCount);
+
+            // 실제 존재하는 웨이퍼 수로 갱신
+            var presentCount = GetPresentWaferCount(Cassette);
+            this.inputWaferCarrierControl1.UpdateWaferCount(presentCount);
+            Log.Write("Monitoring_Main", $"Input Cassette Updated: ID={Cassette.CarrierId}, Slots={Cassette.SlotCount}, Present={presentCount}");
         }
 
-        
+        // 헬퍼: 실제 존재(Exist) 웨이퍼 개수 계산
+        private static int GetPresentWaferCount(MaterialCassette cassette)
+        {
+            if (cassette == null || cassette.SlotCount <= 0) return 0;
+
+            int count = 0;
+            for (int i = 0; i < cassette.SlotCount; i++)
+            {
+                var w = cassette.GetWafer(i);
+                if (w != null && w.Presence == MaterialPresence.Exist)
+                    count++;
+            }
+            return count;
+        }
+
+
 
         private static T TryGetUnit<T>(string unitName) where T : class
         {
@@ -470,13 +502,13 @@ namespace QMC.LCP_280.Process
             #endregion
 
             #region InputWaferCarrierControl
-            inputWaferCarrierControl1.SetWaferCarrierId("1234");
-            inputWaferCarrierControl1.UpdateWaferCount(2);
+            inputWaferCarrierControl1.SetWaferCarrierId("N/A");
+            inputWaferCarrierControl1.UpdateWaferCount(0);
             #endregion
 
             #region OutputWaferCarrierControl
-            outputWaferCarrierControl1.SetWaferCarrierId("5678");
-            outputWaferCarrierControl1.UpdateWaferCount(3);
+            outputWaferCarrierControl1.SetWaferCarrierId("N/A");
+            outputWaferCarrierControl1.UpdateWaferCount(0);
             #endregion
 
             if (Rotary != null)

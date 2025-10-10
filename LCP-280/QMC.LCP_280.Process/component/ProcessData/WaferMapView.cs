@@ -34,8 +34,11 @@ namespace QMC.LCP_280.Process.Component
         /// <param name="materialCassette">MaterialCassette 객체</param>
         public void SetMaterialCassette(MaterialCassette materialCassette)
         {
-            if (materialCassette == null) throw new ArgumentNullException(nameof(materialCassette));
+            if (materialCassette == null) 
+                throw new ArgumentNullException(nameof(materialCassette));
+
             _materialCassette = materialCassette;
+
             AdjustCellSize();
             SafeInvalidate();
         }
@@ -107,7 +110,8 @@ namespace QMC.LCP_280.Process.Component
         {
             // 여전히 투명 영역 등에 대비해 부모에도 그리되, 실제 표시 영역은 groupBox에서 처리
             base.OnPaint(e);
-            if (groupBox == null) DrawMap(e.Graphics, ClientRectangle);
+            if (groupBox == null) 
+                DrawMap(e.Graphics, ClientRectangle);
         }
 
         private void DrawMap(Graphics g, Rectangle bounds)

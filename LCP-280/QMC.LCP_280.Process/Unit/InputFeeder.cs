@@ -749,6 +749,7 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
+
                 this.MoveMaterial(new MaterialWafer(), InputStage);
                 if (IsStop) { return 0; }
 
@@ -969,6 +970,8 @@ namespace QMC.LCP_280.Process.Unit
             var c = this.InputCassetteLifter.GetMaterialCassette();
             int nIndex = this.InputCassetteLifter.GetCurrectSlotID();
             MaterialWafer wafer = c.GetWafer(nIndex);
+
+            wafer.CarrierId = c.CarrierId;
             this.SetMaterial(wafer);
 
             Log.Write(this, "WaferLoading Complete");
