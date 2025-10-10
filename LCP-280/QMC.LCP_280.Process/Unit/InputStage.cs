@@ -1242,6 +1242,7 @@ namespace QMC.LCP_280.Process.Unit
             if(!Config.IsSimulation && !Config.IsDryRun)    
             {
                 if (IsRingPresent())
+                if (IsRingPresent())
                 {
                     Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
                     return nRtn;
@@ -1970,7 +1971,7 @@ namespace QMC.LCP_280.Process.Unit
                 MaterialWafer materialWafer = GetMaterialWafer();
 
                 materialWafer.Dies.Clear();
-                materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
+                materialWafer.MakeWaferInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
                 var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
                 foreach (var c in list)
                 {

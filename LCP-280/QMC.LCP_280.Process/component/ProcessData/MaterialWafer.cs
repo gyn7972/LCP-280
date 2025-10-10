@@ -72,7 +72,9 @@ namespace QMC.LCP_280.Process.Component
         /// <param name="centers">Chip 중심 좌표 목록 (mm)</param>
         /// <param name="chipPitchXmm">설정 Pitch X (mm)</param>
         /// <param name="chipPitchYmm">설정 Pitch Y (mm)</param>
-        public void UpdateChipInfo(List<PointD> centers, double chipPitchXmm, double chipPitchYmm)
+        /// 
+
+        public void MakeWaferInfo(List<PointD> centers, double chipPitchXmm, double chipPitchYmm)
         {
             lock(this)
             {
@@ -185,5 +187,23 @@ namespace QMC.LCP_280.Process.Component
             }
             
         }
+
+
+        public void UpdateChipInfo(List<Point3D> centers, double chipPitchXmm, double chipPitchYmm)
+        {
+            foreach (var p in centers)
+            {
+                double dMinTolx = chipPitchXmm * 0.3; // degree
+                double dMinToly = chipPitchYmm * 0.3;
+                var chip = Dies.FirstOrDefault(c => Math.Abs(c.CenterX - p.X) <= dMinTolx && Math.Abs(c.CenterY - p.Y) <= dMinToly);
+                if (chip != null)
+                {
+                    chip.CenterX = p.X;
+                    chip.CenterY = p.Y;
+                    chip.Angle = p.Z;
+                }
+            }   
+        }
+
     }
 }
