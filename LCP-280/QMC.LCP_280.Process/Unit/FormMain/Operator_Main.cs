@@ -18,7 +18,7 @@ using static QMC.LCP_280.Process.Unit.FormMain.SequenceManualControl;
 
 namespace QMC.LCP_280.Process.Unit.FormMain
 {
-    [FormOrder(1)]
+    [FormOrder(2)]
     public partial class Operator_Main : Form
     {
         private Equipment _Equipment;

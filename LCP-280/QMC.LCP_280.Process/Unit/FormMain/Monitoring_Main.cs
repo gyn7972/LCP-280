@@ -19,7 +19,7 @@ using static QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl;
 
 namespace QMC.LCP_280.Process
 {
-    [FormOrder(2)]
+    [FormOrder(1)]
     public partial class Monitoring_Main : Form
     {
         private bool _autoReady = false;
