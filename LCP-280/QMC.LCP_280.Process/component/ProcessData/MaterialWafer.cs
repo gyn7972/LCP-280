@@ -190,7 +190,7 @@ namespace QMC.LCP_280.Process.Component
         }
 
 
-        public void UpdateChipInfo(List<Point3D> centers, double chipPitchXmm, double chipPitchYmm)
+        public void UpdateChipInfo(List<PointD> centers, double chipPitchXmm, double chipPitchYmm)
         {
             foreach (var p in centers)
             {
@@ -201,7 +201,6 @@ namespace QMC.LCP_280.Process.Component
                 {
                     chip.CenterX = p.X;
                     chip.CenterY = p.Y;
-                    chip.Angle = p.Z;
                 }
             }   
         }

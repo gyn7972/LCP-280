@@ -2265,6 +2265,12 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return SearchDies(grabImage, ref chips, dx, dy);
                     });
+                    tImageProcess.Wait();
+
+                    var wafer = GetMaterialWafer();
+                
+
+                    wafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
 
                     //Update Chip Info가 되어야 한다.....
                     //wafer die 정보가 갱신되어야 한다.
