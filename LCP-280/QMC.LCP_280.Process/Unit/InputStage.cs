@@ -1156,6 +1156,7 @@ namespace QMC.LCP_280.Process.Unit
             if(!Config.IsSimulation && !Config.IsDryRun)    
             {
                 if (IsRingPresent())
+                if (IsRingPresent())
                 {
                     Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
                     return nRtn;
@@ -1792,12 +1793,8 @@ namespace QMC.LCP_280.Process.Unit
                 //}
 
                 materialWafer.Dies.Clear();
-                materialWafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
-                var list = materialWafer?.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
-
-                if (list == null)
-                    return;
-
+                materialWafer.MakeWaferInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
+                var list = materialWafer.Dies.OrderBy(t => t.MapX).ThenBy(t => t.MapY);
                 foreach (var c in list)
                 {
                     Log.Write(UnitName, "ChipMap", $"Chip: ,X={c.MapX}, Y={c.MapY}, PosX={c.CenterX:F3}, PosY{c.CenterY:F3}");
@@ -2296,6 +2293,12 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         return SearchDies(grabImage, ref chips, dx, dy);
                     });
+                    tImageProcess.Wait();
+
+                    var wafer = GetMaterialWafer();
+                
+
+                    wafer.UpdateChipInfo(chips, this.ChipPitchXmm, this.ChipPitchYmm);
 
                     //Update Chip Info가 되어야 한다.....
                     //wafer die 정보가 갱신되어야 한다.
