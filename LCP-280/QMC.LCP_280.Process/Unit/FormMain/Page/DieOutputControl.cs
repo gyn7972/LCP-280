@@ -31,6 +31,11 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         public void SetWaferId(string waferId)
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => SetWaferId(waferId)));
+                return;
+            }
             lblWaferIdValue.Text = waferId;
         }
 

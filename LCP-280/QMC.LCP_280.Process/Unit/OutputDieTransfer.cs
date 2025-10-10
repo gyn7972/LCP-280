@@ -1482,6 +1482,8 @@ namespace QMC.LCP_280.Process.Unit
                 bool started = WaitPickupStartEvent(timeoutMs);
                 if (!started)
                 {
+                    AxisPickZ?.EmgStop();
+                    AxisToolT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eOutputDieTransferError);
                     Log.Write(UnitName, "[OnRunWork] WaitPickupStartEvent timeout");
                     return -1;
@@ -1498,6 +1500,8 @@ namespace QMC.LCP_280.Process.Unit
                     nRtn = ChipPickDown();
                     if (nRtn != 0)
                     {
+                        AxisPickZ?.EmgStop();
+                        AxisToolT?.EmgStop();
                         Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                         return -1;
                     }
@@ -1506,6 +1510,8 @@ namespace QMC.LCP_280.Process.Unit
                     nRtn = ChipPickUp();
                     if (nRtn != 0)
                     {
+                        AxisPickZ?.EmgStop();
+                        AxisToolT?.EmgStop();
                         Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
                         return -1;
                     }
@@ -1546,6 +1552,8 @@ namespace QMC.LCP_280.Process.Unit
                 nRtn = MoveOutStage();
                 if (nRtn != 0)
                 {
+                    AxisPlaceZ?.EmgStop();
+                    AxisToolT?.EmgStop();
                     Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
                     return -1;
                 }
@@ -1554,6 +1562,8 @@ namespace QMC.LCP_280.Process.Unit
                 nRtn = RotateToolTForPlace();
                 if (nRtn != 0)
                 {
+                    AxisPlaceZ?.EmgStop();
+                    AxisToolT?.EmgStop();
                     Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace failed");
                     return -1;
                 }
@@ -1562,6 +1572,7 @@ namespace QMC.LCP_280.Process.Unit
                 nRtn = ReleaseVacuumAndPlaceUp();
                 if (nRtn != 0)
                 {
+                    AxisPlaceZ?.EmgStop();
                     Log.Write(UnitName, "[OnRunWork] ReleaseVacuumAndPlaceUp failed");
                     return -1;
                 }
@@ -1572,6 +1583,7 @@ namespace QMC.LCP_280.Process.Unit
                 die.ProcessSatate = Material.MaterialProcessSatate.Completed;
 
                 OutputStage.PlaceDie(die);
+
                 SetMaterial(new MaterialDie() { Presence = Material.MaterialPresence.NotExist });
 
                 State = ProcessState.None;
@@ -1607,7 +1619,28 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             // Chip을 순차적으로 Place 하는 위치로 이동
+            // 다음 빈 Bin 예약 및 이동
+            if (OutputStage == null)
+                return -1;
 
+            if (!OutputStage.IsStageInterLockOK())
+            {
+                Log.Write(UnitName, "[MoveOutStage] Stage Interlock not OK.");
+                return -1;
+            }
+
+            if (!OutputStage.TryReserveNextEmptyBin(out var binX, out var binY, out var slot))
+            {
+                Log.Write(UnitName, "[MoveOutStage] No empty bin slot.");
+                return 0; // 더 놓을 자리가 없으면 정상 종료로 간주
+            }
+
+            nRet = OutputStage.MoveToBinPosition(binX, binY, bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[MoveOutStage] MoveToBinPosition failed");
+                return -1;
+            }
 
             return nRet;
         }
@@ -1797,6 +1830,9 @@ namespace QMC.LCP_280.Process.Unit
                 SetVent(armIndex, false);
                 SetBlow(armIndex, false);
 
+                //여기서 OutStage Die 정보를 UI에 뿌려줘야함.
+
+
                 nRet = MovePositionPickUpToolT_Index(bFindSpeed);
                 if (nRet != 0)
                 {
@@ -1882,6 +1918,5 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
         #endregion
-
     }
 }

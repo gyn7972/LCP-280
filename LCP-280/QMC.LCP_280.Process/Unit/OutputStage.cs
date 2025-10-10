@@ -21,9 +21,26 @@ namespace QMC.LCP_280.Process.Unit
 {
     public class OutputStage : BaseUnit<OutputStageConfig>
     {
+        // 다이 배치 이벤트
+        public sealed class DiePlacedEventArgs : EventArgs
+        {
+            public MaterialDie Die { get; }
+            public int BinX { get; }
+            public int BinY { get; }
+
+            public DiePlacedEventArgs(MaterialDie die)
+            {
+                Die = die;
+                if (die != null)
+                {
+                    BinX = die.BinX;
+                    BinY = die.BinY;
+                }
+            }
+        }
+        public event EventHandler<DiePlacedEventArgs> DiePlaced;
 
         public delegate void UpdateUIWafer(MaterialWafer wafer);
-
         public event UpdateUIWafer EventUpdateUIWafer;
 
         public enum AlarmKeys
@@ -1148,22 +1165,107 @@ namespace QMC.LCP_280.Process.Unit
             MaterialWafer materialWafer = GetMaterialWafer();
             EventUpdateUIWafer?.BeginInvoke(materialWafer, null, null);
         }
-        internal void PlaceDie(MaterialDie die)
+        public void PlaceDie(MaterialDie die)
         {
-            if(_currentDie != null)
+            if (_currentDie != null)
             {
                 die.BinX = _currentDie.BinX;
                 die.BinY = _currentDie.BinY;
                 MaterialWafer wafer = GetMaterialWafer();
-                if(wafer!= null)
+                if (wafer != null)
                 {
                     int index = wafer.Dies.IndexOf(_currentDie);
-                    if(index >=0)
+                    if (index >= 0)
                     {
                         wafer.Dies[index] = die;
                     }
                 }
                 _currentDie = null;
+            }
+
+            // UI 갱신 이벤트 발행 + 개별 배치 이벤트
+            UpdateUI();
+            OnDiePlaced(die);
+        }
+        #endregion
+
+        // 다음 빈 Bin을 예약(내부 _currentDie 설정)하고 Bin 좌표 반환
+        public bool TryReserveNextEmptyBin(out int binX, out int binY, out MaterialDie slot)
+        {
+            binX = binY = -1;
+            slot = null;
+
+            var wafer = GetMaterialWafer();
+            if (wafer == null || wafer.Dies == null || wafer.Dies.Count == 0)
+                return false;
+
+            // BinY → BinX 순서로 빈 칸 검색
+            var next = wafer.Dies
+                .Where(d => d != null && d.Presence != Material.MaterialPresence.Exist)
+                .OrderBy(d => d.BinY).ThenBy(d => d.BinX)
+                .FirstOrDefault();
+
+            if (next == null)
+                return false;
+
+            _currentDie = next; // 예약
+            binX = next.BinX;
+            binY = next.BinY;
+            slot = next;
+            return true;
+        }
+
+        // 레시피와 센터 Teaching을 기준으로 Bin의 XY 세계좌표(mm) 계산
+        public (double x, double y) GetBinWorldPosition(int binX, int binY)
+        {
+            var eq = Equipment.Instance;
+            var recipe = eq.EquipmentRecipe.CurrentRecipe;
+
+            // Pitch 및 카운트
+            double pitchX = recipe.BinPitchXUm > 0 ? recipe.BinPitchXUm : 1.0;
+            double pitchY = recipe.BinPitchYUm > 0 ? recipe.BinPitchYUm : 1.0;
+            pitchX /= 1000;
+            pitchY /= 1000;
+            int cntX = recipe.BinCountX > 0 ? recipe.BinCountX : 1;
+            int cntY = recipe.BinCountY > 0 ? recipe.BinCountY : 1;
+
+            // 기준 Teaching (CenterPoint) 기반
+            var (centerX, centerY, _) = Config.GetPositionWithOffset(OutputStageConfig.TeachingPositionName.CenterPoint.ToString());
+
+            // 센터 기준 좌표계: 중앙이 (0,0)
+            double offsetX = (binX - (cntX - 1) / 2.0) * pitchX;
+            double offsetY = (binY - (cntY - 1) / 2.0) * pitchY;
+
+            double targetX = centerX + offsetX;
+            double targetY = centerY + offsetY;
+            return (targetX, targetY);
+        }
+        
+        
+        public int MoveToBinPosition(int binX, int binY, bool isFine = false)
+        {
+            // 지정 Bin 위치로 XY 이동
+            var (tx, ty) = GetBinWorldPosition(binX, binY);
+
+            int rc = 0;
+            if (AxisX != null) rc |= MoveAxisPositionOne(AxisX, tx, isFine);
+            if (AxisY != null) rc |= MoveAxisPositionOne(AxisY, ty, isFine);
+            
+            if (rc != 0) 
+                return -1;
+
+            return 0;
+        }
+        #region Update UI
+        public void OnDiePlaced(MaterialDie die)
+        {
+            try
+            {
+                DiePlaced?.Invoke(this, new DiePlacedEventArgs(die));
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "[OnDiePlaced] " + ex.Message);
             }
         }
         #endregion

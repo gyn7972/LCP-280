@@ -139,6 +139,10 @@ namespace QMC.LCP_280.Process
             // 이벤트 구독: 픽업 완료 시 입력 뷰에서 해당 다이를 제거(Picked/Empty)로 반영
             if (InputDieTransfer != null)
                 InputDieTransfer.DiePicked += InputDieTransfer_DiePicked;
+
+            if (OutputStage != null)
+                OutputStage.DiePlaced += OutputStage_DiePlaced;
+
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -146,18 +150,25 @@ namespace QMC.LCP_280.Process
             if (InputDieTransfer != null)
                 InputDieTransfer.DiePicked -= InputDieTransfer_DiePicked;
 
+            if (OutputDieTransfer != null)
+                OutputStage.DiePlaced -= OutputStage_DiePlaced;
+
             base.OnFormClosed(e);
         }
 
         private void OutputStage_EventUpdateUIWafer(MaterialWafer wafer)
         {
+            if (wafer.WaferId == string.Empty)
+                wafer.WaferId = string.Format("QMC_BIN_{0}", wafer.Dies.Count);
+
+            this.dieOutputControl1.SetWaferId(wafer.WaferId);
             this.dieOutputControl1.SetDieList(wafer.Dies);
         }
 
         private void InputStage_EventUpdateUIWafer(MaterialWafer wafer)
         {
             if(wafer.WaferId == string.Empty)
-                wafer.WaferId = string.Format("QMC_{0}", wafer.Dies.Count);
+                wafer.WaferId = string.Format("QMC_WAFER_{0}", wafer.Dies.Count);
 
             dieInputControl1.ResetPickedMarks();
 
@@ -170,6 +181,15 @@ namespace QMC.LCP_280.Process
             dieInputControl1.MarkCurrentPicked(new System.Drawing.Point(e.MapX, e.MapY));
             // MarkDieRemoved는 내부적으로 Invoke 처리하므로 바로 호출해도 안전
             //dieInputControl1.MarkDieRemoved(new System.Drawing.Point(e.MapX, e.MapY), showAsPicked: true);
+        }
+
+        private void OutputStage_DiePlaced(object sender, OutputStage.DiePlacedEventArgs e)
+        {
+            // 예: 로그/강조 처리. 실제 UI는 EventUpdateUIWafer로 전체 갱신됨.
+            Console.WriteLine($"[Out] Placed at Bin ({e.BinX},{e.BinY})");
+
+            // Placed를 초록색으로 보여주고 싶으면 Picked로 매핑
+            dieOutputControl1.UpdateDie(new Point(e.BinX, e.BinY), DieProcessState.Picked);
         }
 
         private void OutputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)

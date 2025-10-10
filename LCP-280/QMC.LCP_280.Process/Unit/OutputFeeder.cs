@@ -861,28 +861,81 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         var eq = Equipment.Instance;
                         var recipe = eq.EquipmentRecipe.CurrentRecipe;
+
+                        // 중심 기준(0,0) 계산을 위해 반쪽 인덱스를 실수로 보관
+                        double centerX = (recipe.BinCountX - 1) / 2.0;
+                        double centerY = (recipe.BinCountY - 1) / 2.0;
+
                         for (int y = 0; y < recipe.BinCountY; y++)
                         {
                             for (int x = 0; x < recipe.BinCountX; x++)
                             {
-                                MaterialDie die = new MaterialDie();
-                                die.Presence = Material.MaterialPresence.NotExist;
-                                die.ProcessSatate = Material.MaterialProcessSatate.Unknown;
-                                die.BinX = x;
-                                die.BinY = y;
-                                wafer.Dies.Add(die);
+                                // 중심 기준 정수 좌표(반올림)
+                                int mapX = (int)Math.Round(x - centerX);
+                                int mapY = (int)Math.Round(y - centerY);
 
+                                var die = new MaterialDie
+                                {
+                                    Presence = Material.MaterialPresence.NotExist,
+                                    ProcessSatate = Material.MaterialProcessSatate.Unknown,
+
+                                    // 배치 인덱스(로직용, 0 기반)
+                                    //BinX = x,
+                                    //BinY = y,
+
+                                    BinX = mapX,
+                                    BinY = mapY,
+                                    // 중심 기준 좌표(표시/계산용)
+                                    MapX = mapX,
+                                    MapY = mapY
+                                };
+
+                                wafer.Dies.Add(die);
                             }
                         }
-
                     }
                     catch { measName = null; }
                 }
             }
 
-
             return nRet;
         }
+        //protected int MakePath()
+        //{
+        //    int nRet = 0;
+        //    MaterialWafer wafer = this.GetMaterial() as MaterialWafer;
+        //    if (wafer != null)
+        //    {
+        //        if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+        //        {
+        //            string measName = null;
+        //            wafer.Dies.Clear();
+
+        //            try
+        //            {
+        //                var eq = Equipment.Instance;
+        //                var recipe = eq.EquipmentRecipe.CurrentRecipe;
+        //                for (int y = 0; y < recipe.BinCountY; y++)
+        //                {
+        //                    for (int x = 0; x < recipe.BinCountX; x++)
+        //                    {
+        //                        MaterialDie die = new MaterialDie();
+        //                        die.Presence = Material.MaterialPresence.NotExist;
+        //                        die.ProcessSatate = Material.MaterialProcessSatate.Unknown;
+        //                        die.BinX = x;
+        //                        die.BinY = y;
+        //                        wafer.Dies.Add(die);
+        //                    }
+        //                }
+
+        //            }
+        //            catch { measName = null; }
+        //        }
+        //    }
+
+
+        //    return nRet;
+        //}
 
         protected override void OnMakeSequence()
         {
@@ -891,7 +944,6 @@ namespace QMC.LCP_280.Process.Unit
             this.SequencePlayers.Add(StageLoading);
             this.SequencePlayers.Add(MoveToReady);
             this.SequencePlayers.Add(BinUnloading);
-
         }
 
         #region Seq 단위 동작 함수
