@@ -49,6 +49,7 @@ namespace QMC.LCP_280.Process.Unit
             InputDieTransferTimeout,
             RotaryIndexMoveError,
             eOutputDieTransferTimeout,
+            eRotaryVaccum,
         }
 
         #region InitAlarm
@@ -115,6 +116,14 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eOutputDieTransferTimeout;  
             alarm.Title = "OutputDieTransfer Timeout";
             alarm.Cause = "OutputDieTransfer Place 동작이 Timeout 되었습니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eRotaryVaccum;
+            alarm.Title = "Rotary Vaccum Error";
+            alarm.Cause = "Rotary Vaccum Error.\n 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -1033,7 +1042,7 @@ namespace QMC.LCP_280.Process.Unit
             return true;
         }
 
-        public bool IsVacuumOk(int slotIndex)
+        public bool IsVacuumOK(int slotIndex)
         {
             if (FLOW == null)
             {
@@ -1056,6 +1065,33 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return this.ReadInput(FLOW[slotIndex]);
+        }
+
+        // === Rotary Vacuum 상태 대기 공용 유틸 ===
+        // expectOn: true=ON 될 때까지, false=OFF 될 때까지 대기
+        // timeoutMs/pollMs: 타임아웃/폴링 간격
+        public int WaitVacuumStateOrAlarm(int armIndex, bool expectOn, int timeoutMs = 1000, int pollMs = 1)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            //Todo: 2025-10-10 GYN: Vacuum 해결 되면 return 지우기.
+            return 0;
+
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = IsVacuumOK(armIndex);
+                if (expectOn ? ok : !ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            // 타임아웃 처리
+            PostAlarm((int)AlarmKeys.eRotaryVaccum);
+            Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
+            return -1;
         }
 
         #region Pressure

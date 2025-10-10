@@ -154,6 +154,23 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(0)]
         public int nPlaceUpWaitTime { get; set; } = 0;
 
+        [Category("PlaceUp"), DisplayName("Before Vac. (ms)")]
+        [DefaultValue(0)]
+        public int nPlaceBeforeVacWaitTime { get; set; } = 0;
+
+        [Category("PlaceUp"), DisplayName("After Vac. (ms)")]
+        [DefaultValue(0)]
+        public int nPlaceAfterVacWaitTime { get; set; } = 0;
+
+        [Category("PlaceUp"), DisplayName("Before Blow. (ms)")]
+        [DefaultValue(0)]
+        public int nPlaceBeforeBlowWaitTime { get; set; } = 0;
+
+        [Category("PlaceUp"), DisplayName("After Blow. (ms)")]
+        [DefaultValue(0)]
+        public int nPlaceAfterBlowWaitTime { get; set; } = 0;
+
+
         [Category("SetupConfig"), DisplayName("IndexOfStart")]
         [DefaultValue(0)]
         public int IndexOfStart { get; set; } = 0;
@@ -336,7 +353,11 @@ namespace QMC.LCP_280.Process.Unit
                 "Up Acc (mm/sec2)",
                 "Up Dec (mm/sec2)",
                 "PickUpWaitTime (ms)",
-                "PlaceUpWaitTime (ms)"
+                "PlaceUpWaitTime (ms)",
+                "Before Vac. (ms)",
+                "After Vac. (ms)",
+                "Before Blow. (ms)",
+                "After Blow. (ms)"
             };
         #endregion
     }

@@ -93,7 +93,6 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
-
         }
 
         #endregion
@@ -1314,9 +1313,54 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         #region Arm Vacuum / Blow / Vent Control
-        public bool IsVacuumOK(int armIndex) => armIndex >= 0 && armIndex < ARM_FLOW.Length && ReadInput(ARM_FLOW[armIndex]);
         public bool AirTankOk() => ReadInput(AIR_TANK_PRESS);
         public bool VacuumTankOk() => ReadInput(VAC_TANK_PRESS);
+
+        public bool IsVacuumOK(int armIndex)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                Thread.Sleep(100);
+                return true;
+            }
+
+            switch (armIndex)
+            {
+                case 0: return this.ReadInput(OutputDieTransferConfig.IO.ARM1_FLOW);
+                case 1: return this.ReadInput(OutputDieTransferConfig.IO.ARM2_FLOW);
+                case 2: return this.ReadInput(OutputDieTransferConfig.IO.ARM3_FLOW);
+                case 3: return this.ReadInput(OutputDieTransferConfig.IO.ARM4_FLOW);
+            }
+            return false;
+        }
+
+        // === Arm Vacuum 상태 대기 공용 유틸 ===
+        // expectOn: true=ON 될 때까지, false=OFF 될 때까지 대기
+        // timeoutMs/pollMs: 타임아웃/폴링 간격
+        private int WaitVacuumStateOrAlarm(int armIndex, bool expectOn, int timeoutMs = 1000, int pollMs = 1)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            //Todo: 2025-10-10 GYN: Vacuum 해결 되면 return 지우기.
+            return 0;
+
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = IsVacuumOK(armIndex);
+                if (expectOn ? ok : !ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            // 타임아웃 처리
+            PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
+            Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
+            return -1;
+        }
+
         #endregion
         /// //////////////////////////////////////////////////////////////////
 
@@ -1598,29 +1642,15 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[ChipPickDown] MovePositionPickUpPickZ_Index failed");
                 return -1;
             }
-            
-            if (SetVacuum(nArmindex, true))
-            {
-                var sw = Stopwatch.StartNew();
-                while (!IsVacuumOK(nArmindex))
-                {
-                    if (!Config.IsSimulation && !Config.IsDryRun)
-                    {
-                        if (sw.ElapsedMilliseconds > 2000)
-                        {
-                            PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
-                            Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
-                            return -1;
-                        }
-                        Thread.Sleep(1);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-            }
 
+            SetVacuum(nArmindex, true);
+            nRet = WaitVacuumStateOrAlarm(nArmindex, true);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[OutputDieTrVacuumOn] Vacuum Timeout");
+                return -1;
+            }
+           
             return nRet;
         }
 
@@ -1634,48 +1664,30 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             int nIndex = 0;
+            int nArmindex = 0;
+            nArmindex = GetPlaceArmIndex();
             nIndex = GetUnloaderIndexNo();
 
-            if (Rotary.SetVacuum(nIndex, false))
+            Rotary.SetVacuum(nIndex, false);
+           
+            Thread.Sleep(1); // 약간의 딜레이
+            if(!Rotary.SetVent(nIndex, true))
             {
-                Thread.Sleep(50); // 약간의 딜레이
-                if(!Rotary.SetVent(nIndex, true))
+                if(!Config.IsSimulation)
                 {
-                    if(!Config.IsSimulation)
-                    {
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
-                        Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
-                        return -1;
-                    }   
-                }
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
+                    Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
+                    return -1;
+                }   
+            }
 
-                if(!Rotary.SetBlow(nIndex, true))
+            if(!Rotary.SetBlow(nIndex, true))
+            {
+                if (!Config.IsSimulation)
                 {
-                    if (!Config.IsSimulation)
-                    {
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
-                        Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
-                        return -1;
-                    }
-                }
-
-                var sw = Stopwatch.StartNew();
-                while (!IsVacuumOK(nIndex))
-                {
-                    if(!Config.IsSimulation && !Config.IsDryRun)
-                    {
-                        if (sw.ElapsedMilliseconds > 2000)
-                        {
-                            PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
-                            Log.Write(UnitName, "[DieTrVacuumOff] Vacuum Timeout");
-                            return -1;
-                        }
-                        Thread.Sleep(1);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    PostAlarm((int)AlarmKeys.eOutputDieTransferBlow);
+                    Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
+                    return -1;
                 }
             }
 
@@ -1704,6 +1716,21 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[DieTrVacuumOff] SetBlow failed");
                     return -1;
                 }   
+            }
+
+            //Rotary Vacuum Off 확인.
+            nRet = Rotary.WaitVacuumStateOrAlarm(nArmindex, false);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[RotaryVacuumOff] Vacuum Timeout");
+                return -1;
+            }
+            //OutputDieTransferVacuumOn 확인.
+            nRet = WaitVacuumStateOrAlarm(nArmindex, true);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[OutputDieTrVacuumOn] Vacuum Timeout");
+                return -1;
             }
 
             return nRet;

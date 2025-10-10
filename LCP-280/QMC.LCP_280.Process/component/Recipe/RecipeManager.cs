@@ -1,14 +1,19 @@
-﻿using QMC.LCP_280.Process.Component;
+﻿using QMC.Common; // for BaseRecipe
+using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using QMC.Common; // for BaseRecipe
 
 //코드 
 //BaseRecipe.cs → 공통 Recipe 저장/로드/검증 베이스
 //MeasurementRecipe.cs → 실제 장비에서 사용할 Recipe 클래스
 //MeasurementKey.cs → 검사 항목 정의
 //RecipeManager.cs → Recipe를 Load/Save/관리하는 유틸리티
+
+// 사용 예시
+//var eq = Equipment.Instance;
+//var recip = eq.EquipmentRecipe.CurrentRecipe;
+//double dRadius = recip.WaferDiameter / 2;
 
 // 사용 예시
 //// 1) Recipe 로드/생성

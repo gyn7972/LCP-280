@@ -1352,6 +1352,33 @@ namespace QMC.LCP_280.Process.Unit
             }
             return false;
         }
+        
+        // === Arm Vacuum 상태 대기 공용 유틸 ===
+        // expectOn: true=ON 될 때까지, false=OFF 될 때까지 대기
+        // timeoutMs/pollMs: 타임아웃/폴링 간격
+        private int WaitVacuumStateOrAlarm(int armIndex, bool expectOn, int timeoutMs = 1000, int pollMs = 1)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            //Todo: 2025-10-10 GYN: Vacuum 해결 되면 return 지우기.
+            return 0;
+
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = IsVacuumOK(armIndex);
+                if (expectOn ? ok : !ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            // 타임아웃 처리
+            PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
+            Log.Write(UnitName, expectOn ? "[Vacuum] Arm vacuum ON timeout" : "[Vacuum] Arm vacuum OFF timeout");
+            return -1;
+        }
         /// //////////////////////////////////////////////////////////////////
         #endregion
 
@@ -1488,7 +1515,13 @@ namespace QMC.LCP_280.Process.Unit
             var MaterialDie = GetMaterial() as MaterialDie;
             if (MaterialDie == null || MaterialDie.Presence != Material.MaterialPresence.Exist)
             {
-                if (IsVacuumOK(nArmIndex) == false
+                nRet = WaitVacuumStateOrAlarm(nArmIndex, expectOn: true, timeoutMs: 1000, pollMs: 1);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
+                    return -1;
+                }
+                if (nRet == 0
                  || Config.IsSimulation || Config.IsDryRun)
                 {
                     nRet = RaiseEjectorForPick();
@@ -1769,34 +1802,12 @@ namespace QMC.LCP_280.Process.Unit
             }
            
             SetVacuum(nArmIndex, true);
-            if(IsVacuumOK(nArmIndex) == false)
+            nRet = WaitVacuumStateOrAlarm(nArmIndex, expectOn: true, timeoutMs: 1000, pollMs: 1);
+            if (nRet != 0)
             {
-                PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
-                Log.Write(UnitName, "[ChipPickDown] Vacuum not OK");
+                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
                 return -1;
             }
-            //if (SetVacuum(nArmIndex, true))
-            //{
-            //    var sw = Stopwatch.StartNew();
-            //    while (!IsVacuumOK(nArmIndex))
-            //    {
-            //        if (!Config.IsSimulation && !Config.IsDryRun)
-            //        {
-            //            if (sw.ElapsedMilliseconds > 2000)
-            //            {
-            //                PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
-            //                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
-            //                return -1;
-            //            }
-            //            Thread.Sleep(1);
-            //        }
-            //        else
-            //        {
-            //            break;
-            //        }
-            //    }
-            //}
-
             return nRet;
         }
         public int EjectorVacuumOn(bool bFineSpeed = true)
@@ -2109,31 +2120,33 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             Rotary.SetVacuum(nIndex, true);
+            Thread.Sleep(1);
 
-            //todo: 2025-10-10 GYN: 나중에 열어
-            //if(Rotary.IsVacuumOk(nIndex) == false)
-            //{
-            //    PostAlarm((int)AlarmKeys.eInputStageVaccum);
-            //    Log.Write(UnitName, "[PlaceChipDown] Rotary Vacuum not OK");
-            //    return -1;
-            //}
+            this.WaitByTime(Config.nPlaceBeforeVacWaitTime, 1);//Thread.Sleep(1);
             SetVacuum(armIndex, false);
             SetVent(armIndex, true);
+            this.WaitByTime(Config.nPlaceAfterVacWaitTime, 1);//Thread.Sleep(1);
+
+            SetVent(armIndex, false);
+            Thread.Sleep(1);
+
+            this.WaitByTime(Config.nPlaceBeforeBlowWaitTime, 1);
             SetBlow(armIndex, true);
 
-            if (Config.IsSimulation || Config.IsDryRun)
+            Task.Run(() =>
             {
-                Thread.Sleep(100);
-            }
-
-            //todo: 2025-10-10 GYN: 나중에 열어
-            //else if (IsVacuumOK(armIndex))
-            //{
-            //    PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
-            //    Log.Write(UnitName, "[PlaceChipDown] Arm Vacuum not released");
-            //    return -1;
-            //}
-
+                try
+                {
+                    this.WaitByTime(Config.nPlaceAfterBlowWaitTime, 1);
+                    SetBlow(armIndex, false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    Log.Write(UnitName, "[ScheduleBlowOffAsync] " + ex.Message);
+                }
+            });
+            
             return nRet;
 
         }
@@ -2153,40 +2166,6 @@ namespace QMC.LCP_280.Process.Unit
                 if (armIndex < 0 || armIndex > 3)
                     return -1;
 
-                if (Rotary.SetVacuum(nIndex, true))
-                {
-                    SetVacuum(armIndex, false);
-                    Thread.Sleep(1);
-                    SetVent(armIndex, true);
-                    Thread.Sleep(1);
-                    SetBlow(armIndex, true);
-
-                    var sw = Stopwatch.StartNew();
-                    while (true)
-                    {
-                        break;   
-
-                        if (Rotary.IsVacuumOk(nIndex))
-                        {
-                            break;
-                        }
-                        else if (!Config.IsSimulation && !Config.IsDryRun)
-                        {
-                            if (sw.ElapsedMilliseconds > 5000)
-                            {
-                                PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
-                                return -1;
-                            }
-                            Thread.Sleep(1);
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                }
-
                 this.WaitByTime(Config.nPlaceUpWaitTime, 1);
 
                 // Safety 위치로 상승
@@ -2199,15 +2178,16 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(1);
-                SetVent(armIndex, false);
-                Thread.Sleep(1);
-                SetBlow(armIndex, false);
-
-                if (IsVacuumOK(armIndex))
+                nRet = Rotary.WaitVacuumStateOrAlarm(Rotary.GetLoadIndexNo(), true);
+                if (nRet != 0)
                 {
-                    PostAlarm((int)AlarmKeys.eInputDieTransferVaccum);
-                    Log.Write(UnitName, "[PlaceChipDown] Arm Vacuum not released");
+                    Log.Write(UnitName, "[RotaryVacuumOn] Vacuum Timeout");
+                    return -1;
+                }
+                nRet = WaitVacuumStateOrAlarm(armIndex, false);
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
                     return -1;
                 }
 
