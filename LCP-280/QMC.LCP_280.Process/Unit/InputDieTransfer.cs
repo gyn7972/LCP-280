@@ -2121,16 +2121,32 @@ namespace QMC.LCP_280.Process.Unit
 
             Rotary.SetVacuum(nIndex, true);
             Thread.Sleep(1);
+
+            this.WaitByTime(Config.nPlaceBeforeVacWaitTime, 1);//Thread.Sleep(1);
             SetVacuum(armIndex, false);
-            Thread.Sleep(1);
             SetVent(armIndex, true);
+            this.WaitByTime(Config.nPlaceAfterVacWaitTime, 1);//Thread.Sleep(1);
+
+            SetVent(armIndex, false);
             Thread.Sleep(1);
+
+            this.WaitByTime(Config.nPlaceBeforeBlowWaitTime, 1);
             SetBlow(armIndex, true);
 
-            if (Config.IsSimulation || Config.IsDryRun)
+            Task.Run(() =>
             {
-                Thread.Sleep(100);
-            }
+                try
+                {
+                    this.WaitByTime(Config.nPlaceAfterBlowWaitTime, 1);
+                    SetBlow(armIndex, false);
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                    Log.Write(UnitName, "[ScheduleBlowOffAsync] " + ex.Message);
+                }
+            });
+            
             return nRet;
 
         }
@@ -2150,15 +2166,6 @@ namespace QMC.LCP_280.Process.Unit
                 if (armIndex < 0 || armIndex > 3)
                     return -1;
 
-                if (Rotary.SetVacuum(nIndex, true))
-                {
-                    SetVacuum(armIndex, false);
-                    Thread.Sleep(1);
-                    SetVent(armIndex, true);
-                    Thread.Sleep(1);
-                    SetBlow(armIndex, true);
-                }
-
                 this.WaitByTime(Config.nPlaceUpWaitTime, 1);
 
                 // Safety À§Ä¡·Î »ó½Â
@@ -2171,18 +2178,13 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                Thread.Sleep(1);
-                SetVent(armIndex, false);
-                Thread.Sleep(1);
-                SetBlow(armIndex, false);
-
                 nRet = Rotary.WaitVacuumStateOrAlarm(Rotary.GetLoadIndexNo(), true);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "[RotaryVacuumOn] Vacuum Timeout");
                     return -1;
                 }
-                nRet = WaitVacuumStateOrAlarm(armIndex, expectOn: true, timeoutMs: 1000, pollMs: 1);
+                nRet = WaitVacuumStateOrAlarm(armIndex, false);
                 if (nRet != 0)
                 {
                     Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
