@@ -123,10 +123,10 @@ namespace QMC.LCP_280.Process.Component
                 // 새 WaferData 생성
                 var newWafer = new MaterialWafer
                 {
-                    LotId = lotId,
+                    WaferId = lotId,
                     CarrierId = carrierId,
                     SlotIndex = slot,
-                    LotDate = DateTime.Now.ToString("yyyyMMdd")
+                    WaferDate = DateTime.Now.ToString("yyyyMMdd")
                 };
 
                 AddWafer(carrierId, slot, newWafer);

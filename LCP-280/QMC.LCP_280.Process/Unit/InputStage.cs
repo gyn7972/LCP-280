@@ -43,7 +43,6 @@ namespace QMC.LCP_280.Process.Unit
     {
 
         public delegate void UpdateUIWafer(MaterialWafer wafer);
-
         public event UpdateUIWafer EventUpdateUIWafer;
 
         public enum AlarmKeys

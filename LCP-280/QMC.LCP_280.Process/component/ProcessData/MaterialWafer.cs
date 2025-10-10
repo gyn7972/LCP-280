@@ -11,8 +11,8 @@ namespace QMC.LCP_280.Process.Component
     public sealed class MaterialWafer : QMC.Common.Material
     {
         // ===== Identification =====
-        [DefaultValue("")] public string LotId { get; set; } = "";
-        [DefaultValue("")] public string LotDate { get; set; } = DateTime.Now.ToString("yyyyMMdd");
+        [DefaultValue("")] public string WaferId { get; set; } = "";
+        [DefaultValue("")] public string WaferDate { get; set; } = DateTime.Now.ToString("yyyyMMdd");
 
         [DefaultValue("")] public string CarrierId { get; set; } = "";
         [DefaultValue(-1)] public int SlotIndex { get; set; } = -1;
@@ -29,8 +29,8 @@ namespace QMC.LCP_280.Process.Component
         // ===== Reset =====
         public void Reset()
         {
-            LotId = "";
-            LotDate = DateTime.Now.ToString("yyyyMMdd");
+            WaferId = "";
+            WaferDate = DateTime.Now.ToString("yyyyMMdd");
             CarrierId = "";
             SlotIndex = -1;
             Summary = new WaferSummary();
@@ -48,7 +48,7 @@ namespace QMC.LCP_280.Process.Component
                 MapY = mapY,
                 Presence = MaterialPresence.Exist,
                 State = DieProcessState.Mapped,
-                SourceWaferId = LotId
+                SourceWaferId = WaferId
             };
 
             foreach (var key in RecipeKeys)
@@ -165,7 +165,7 @@ namespace QMC.LCP_280.Process.Component
                         Angle = 0.0,
                         Presence = MaterialPresence.Exist,
                         State = DieProcessState.Mapped,
-                        SourceWaferId = LotId
+                        SourceWaferId = WaferId
                     };
                     temp.Add(chip);
                 }

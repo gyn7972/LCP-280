@@ -10,49 +10,86 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.Common.Material;
+using static QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl;
+
 
 namespace QMC.LCP_280.Process
 {
     [FormOrder(2)]
     public partial class Monitoring_Main : Form
     {
+        private bool _autoReady = false;
+        private bool _autoStarting = false;
+        private CancellationTokenSource _autoReadyCts;
+        private HashSet<string> _readySequences;
+        private HashSet<string> _startSequences;
+
+
         private InputCassetteLifter InputCassetteLifter { get; set; }
-        private InputFeeder Feeder { get; set; }
-        private InputStage inputStage { get; set; }
-
-        private Rotary Rotary;
-
+        private InputFeeder InputFeeder { get; set; }
+        private InputStage InputStage { get; set; }
+        private InputDieTransfer InputDieTransfer { get; set; }
+        private Rotary Rotary { get; set; }
+        private OutputDieTransfer OutputDieTransfer { get; set; }
         private OutputStage OutputStage { get; set; }
         private OutputCassetteLifter OutputCassetteLifter { get; set; }
+
+        private IndexLoadAligner IndexLoadAligner { get; set; }
+        private IndexUnloadAligner IndexUnloadAligner { get; set; }
+        private IndexChipProbeController IndexChipProbeController { get; set; }
+        private OutputFeeder OutputFeeder { get; set; }
+        private InputStageEjector InputStageEjector {get; set; }
 
 
         public Monitoring_Main() : this(
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
             TryGetUnit<InputFeeder>("InputFeeder"),
             TryGetUnit<InputStage>("InputStage"),
+            TryGetUnit<InputDieTransfer>("InputDieTransfer"),
             TryGetUnit<Rotary>("Rotary"),
+            TryGetUnit<OutputDieTransfer>("OutputDieTransfer"),
             TryGetUnit<OutputStage>("OutputStage"),
-            TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"))
+            TryGetUnit<OutputCassetteLifter>("OutputCassetteLifter"),
+            TryGetUnit<IndexLoadAligner>("IndexLoadAligner"),
+            TryGetUnit<IndexChipProbeController>("IndexChipProbeController"),
+            TryGetUnit<IndexUnloadAligner>("IndexUnloadAligner"),
+            TryGetUnit<OutputFeeder>("OutputFeeder"),
+            TryGetUnit<InputStageEjector>("InputStageEjector"))
         {
 
         }
 
-        public Monitoring_Main(InputCassetteLifter inputcassetteLifter, InputFeeder ringTransfer,
-            InputStage inputStage, Rotary rotary, OutputStage outputStage, OutputCassetteLifter outputCassetteLifter)
+        public Monitoring_Main(InputCassetteLifter inputcassetteLifter, InputFeeder inputFeeder,
+            InputStage inputStage, InputDieTransfer inputDieTransfer, Rotary rotary,
+            OutputDieTransfer outputDieTransfer, OutputStage outputStage, OutputCassetteLifter outputCassetteLifter,
+            IndexLoadAligner indexLoadAligner, IndexChipProbeController indexChipProbeController,
+            IndexUnloadAligner indexUnloadAligner, OutputFeeder outputFeeder, InputStageEjector inputStageEjector)
         {
             InitializeComponent();
 
             #region Chart
             InputCassetteLifter = inputcassetteLifter;
-            Feeder = ringTransfer;
-            this.inputStage = inputStage;
+            InputFeeder = inputFeeder;
+            InputStage = inputStage;
+            InputDieTransfer = inputDieTransfer;
             Rotary = rotary;
+            OutputDieTransfer = outputDieTransfer;
             OutputStage = outputStage;
             OutputCassetteLifter = outputCassetteLifter;
+            IndexLoadAligner = indexLoadAligner;
+            IndexChipProbeController = indexChipProbeController;
+            IndexUnloadAligner = indexUnloadAligner;
+            OutputFeeder = outputFeeder;
+            InputStageEjector = inputStageEjector;
 
+            _readySequences = new HashSet<string>();
+            _startSequences = new HashSet<string>();
+            sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
+            
             var materialCassette = InputCassetteLifter?.GetMaterialCassette();
 
             // WaferSelectMapView 이벤트 구독
@@ -91,16 +128,48 @@ namespace QMC.LCP_280.Process
 
             // 이벤트 - Input Control
             dieInputControl1.MotorMoveRequested += OnDieInput_MotorMoveRequested;
-
-            // 이벤트 - Select Control
-            //dieIndexSelectControl1.DieClicked += OnDieClick_Requested;
             dieIndexSelectControl1.RotationRequested += OnDieRotation_Requested;
+
+
             inputStage.EventUpdateUIWafer += InputStage_EventUpdateUIWafer;
             outputStage.EventUpdateUIWafer += OutputStage_EventUpdateUIWafer;
-
             InputCassetteLifter.EventUpdateUICassette += InputCassetteLifter_EventUpdateUICassette;
             OutputCassetteLifter.EventUpdateUICassette += OutputCassetteLifter_EventUpdateUICassette;
 
+            // 이벤트 구독: 픽업 완료 시 입력 뷰에서 해당 다이를 제거(Picked/Empty)로 반영
+            if (InputDieTransfer != null)
+                InputDieTransfer.DiePicked += InputDieTransfer_DiePicked;
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            if (InputDieTransfer != null)
+                InputDieTransfer.DiePicked -= InputDieTransfer_DiePicked;
+
+            base.OnFormClosed(e);
+        }
+
+        private void OutputStage_EventUpdateUIWafer(MaterialWafer wafer)
+        {
+            this.dieOutputControl1.SetDieList(wafer.Dies);
+        }
+
+        private void InputStage_EventUpdateUIWafer(MaterialWafer wafer)
+        {
+            if(wafer.WaferId == string.Empty)
+                wafer.WaferId = string.Format("QMC_{0}", wafer.Dies.Count);
+
+            dieInputControl1.ResetPickedMarks();
+
+            this.dieInputControl1.SetWaferId(wafer.WaferId);
+            this.dieInputControl1.SetDieList(wafer.Dies);
+
+        }
+        private void InputDieTransfer_DiePicked(object sender, InputDieTransfer.DiePickedEventArgs e)
+        {
+            dieInputControl1.MarkCurrentPicked(new System.Drawing.Point(e.MapX, e.MapY));
+            // MarkDieRemoved는 내부적으로 Invoke 처리하므로 바로 호출해도 안전
+            //dieInputControl1.MarkDieRemoved(new System.Drawing.Point(e.MapX, e.MapY), showAsPicked: true);
         }
 
         private void OutputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)
@@ -121,15 +190,7 @@ namespace QMC.LCP_280.Process
             this.inputWaferCarrierControl1.UpdateWaferCount(Cassette.SlotCount);
         }
 
-        private void OutputStage_EventUpdateUIWafer(MaterialWafer wafer)
-        {
-            this.dieOutputControl1.SetDieList(wafer.Dies);
-        }
-
-        private void InputStage_EventUpdateUIWafer(MaterialWafer wafer)
-        {
-            this.dieInputControl1.SetDieList(wafer.Dies);
-        }
+        
 
         private static T TryGetUnit<T>(string unitName) where T : class
         {
@@ -410,10 +471,346 @@ namespace QMC.LCP_280.Process
             {
                 Rotary.LoadIndexChanged -= dieIndexSelectControl1.Rotary_LoadIndexChanged; // 내부 메서드가 private이면 래퍼 필요
             }
+
+            if (sequenceAutoControl != null)
+                sequenceAutoControl.SequenceButtonRequested -= OnAutoSequenceButtonRequested;
+
         }
 
 
+        #region Auto Sequence 처리
+        private void OnAutoSequenceButtonRequested(object sender, AutoSequenceEventArgs e)
+        {
+            Log.Write("Operator_Main", $"Auto Sequence {e.Command} 요청");
+            switch (e.Command)
+            {
+                case "Ready":
+                    HandleAutoReady();
+                    break;
 
+                case "Start":
+                    HandleAutoStart(); // 설비 전체 Start 위임
+                    break;
+
+                case "Stop":
+                    HandleAutoStop();  // 설비 전체 Stop 위임
+                    break;
+
+                case "CycleStop":
+                    HandleAutoCycleStop();
+                    break;
+
+                case "Reset":
+                    HandleAutoReset();
+                    break;
+            }
+        }
+
+        private void HandleAutoReady()
+        {
+            _autoReady = !_autoReady;
+            NotifyAutoSequenceStateChanged("Ready", _autoReady);
+
+            if (_autoReady)
+            {
+                _autoReadyCts?.Cancel();
+                _autoReadyCts = new CancellationTokenSource();
+                var ct = _autoReadyCts.Token;
+                var prev = Cursor.Current;
+                Cursor.Current = Cursors.WaitCursor;
+                ExecuteAutoReadyAsync(ct).ContinueWith(t =>
+                {
+                    try
+                    {
+                        if (IsDisposed || Disposing) return;
+                        BeginInvoke(new Action(() =>
+                        {
+                            Cursor.Current = prev;
+                            if (t.IsFaulted)
+                                Log.Write("Operator_Main", $"Auto Ready 예외: {t.Exception?.GetBaseException().Message}");
+                            if (t.IsCanceled)
+                                Log.Write("Operator_Main", "Auto Ready 취소됨");
+                        }));
+                    }
+                    catch { }
+                });
+                Log.Write("Operator_Main", "Auto Ready ON");
+            }
+            else
+            {
+                _autoReadyCts?.Cancel();
+                Log.Write("Operator_Main", "Auto Ready OFF");
+            }
+        }
+
+        private async void HandleAutoStart()
+        {
+            var eq = Equipment.Instance;
+            if (eq == null) return;
+
+            try
+            {
+                // UI 토글 알림(즉시 반영), 최종 상태는 Eq.StateChanged에서 수렴
+                NotifyAutoSequenceStateChanged("Start", true);
+
+                // 설비 전체 시작
+                var ok = await eq.StartAllUnitsAsync().ConfigureAwait(true);
+                if (!ok)
+                {
+                    NotifyAutoSequenceStateChanged("Start", false);
+                    MessageBox.Show("설비 시작 실패", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _autoStarting = false;
+                    return;
+                }
+
+                // 성공 시 내부 플래그 정리
+                _autoReady = false;
+                _autoStarting = true;
+                Log.Write("Operator_Main", "Auto Start 완료 (Equipment.StartAllUnitsAsync)");
+            }
+            catch (Exception ex)
+            {
+                NotifyAutoSequenceStateChanged("Start", false);
+                _autoStarting = false;
+                Log.Write(ex);
+                MessageBox.Show($"설비 시작 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            //if (!_autoStarting)
+            //{
+            //    if (!_autoReady)
+            //    {
+            //        MessageBox.Show("Auto Ready를 먼저 실행해주세요.");
+            //        return;
+            //    }
+            //    _autoReady = false;
+            //    _autoStarting = true;
+            //    NotifyAutoSequenceStateChanged("Ready", false);
+            //    NotifyAutoSequenceStateChanged("Start", true);
+            //    ExecuteAutoStart();
+            //    Log.Write("Operator_Main", "Auto Start 실행 (Ready OFF)");
+            //}
+            //else
+            //{
+            //    _autoStarting = false;
+            //    NotifyAutoSequenceStateChanged("Start", false);
+            //    Log.Write("Operator_Main", "Auto Start OFF");
+            //}
+        }
+
+        private async void HandleAutoStop()
+        {
+            var eq = Equipment.Instance;
+            if (eq == null) return;
+
+            try
+            {
+                NotifyAutoSequenceStateChanged("Stop", true);
+
+                // 로컬 시퀀스 토글/상태 정리(UI만)
+                _autoReady = false;
+                _autoStarting = false;
+                _readySequences.Clear();
+                _startSequences.Clear();
+                try { sequenceAutoControl.ResetAllButtons(); } catch { }
+
+                // 설비 전체 정지
+                var ok = await eq.StopAllUnitsAsync().ConfigureAwait(true);
+                if (!ok)
+                {
+                    MessageBox.Show("설비 정지 실패(일부 유닛 타임아웃 가능)", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+
+                Log.Write("Operator_Main", "Auto Stop 완료 (Equipment.StopAllUnitsAsync)");
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                MessageBox.Show($"설비 정지 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // 최종 UI 토글 해제, 실제 상태는 Eq.StateChanged에서 최종 수렴
+                NotifyAutoSequenceStateChanged("Stop", false);
+            }
+
+            //_autoReady = false;
+            //_autoStarting = false;
+            //_readySequences.Clear();
+            //_startSequences.Clear();
+            //sequenceAutoControl.ResetAllButtons();
+            //sequenceManualControl.ResetAllButtons();
+            //NotifyAutoSequenceStateChanged("Stop", true);
+            //Task.Delay(500).ContinueWith(_ =>
+            //{
+            //    this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("Stop", false); }));
+            //});
+            //ExecuteAutoStop();
+            //Log.Write("Operator_Main", "Auto Stop 실행 - 모든 Sequence 초기화");
+        }
+
+        private void HandleAutoCycleStop()
+        {
+            NotifyAutoSequenceStateChanged("CycleStop", true);
+            Task.Delay(500).ContinueWith(_ =>
+            {
+                this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("CycleStop", false); }));
+            });
+            ExecuteAutoCycleStop();
+            Log.Write("Operator_Main", "Auto CycleStop 실행");
+        }
+
+        private void HandleAutoReset()
+        {
+            NotifyAutoSequenceStateChanged("Reset", true);
+            Task.Delay(500).ContinueWith(_ =>
+            {
+                this.Invoke(new Action(() => { NotifyAutoSequenceStateChanged("Reset", false); }));
+            });
+            ExecuteAutoReset();
+            Log.Write("Operator_Main", "Auto Reset 실행");
+        }
+
+        private void NotifyAutoSequenceStateChanged(string command, bool isActive)
+        {
+            sequenceAutoControl.OnAutoSequenceStateChanged(new AutoSequenceStateChangedEventArgs
+            {
+                Command = command,
+                IsActive = isActive
+            });
+        }
+
+        private async Task ExecuteAutoReadyAsync(CancellationToken ct)
+        {
+            Log.Write("Operator_Main", "Auto Ready 시작 (공통 로직 사용)");
+            bool ok = await ReadyAllSequencesAsync(ct);
+            if (ok) Log.Write("Operator_Main", "Auto Ready 완료 (모든 시퀀스 Ready ON)");
+            else Log.Write("Operator_Main", "Auto Ready 실패");
+        }
+        // 실행 순서(필요하면 Config 로 대체 가능)
+        private static readonly string[] _sequenceOrder =
+        {
+            "InputWafer","ChipLoading","Process","ChipUnloading","OutputWafer"
+        };
+        private async Task<bool> ReadyAllSequencesAsync(CancellationToken ct)
+        {
+            foreach (var seq in _sequenceOrder)
+            {
+                if (!await ReadySequenceAsync(seq, ct))
+                {
+                    Log.Write("Operator_Main", $"Auto Ready 중단 - {seq} 실패");
+                    return false;
+                }
+            }
+            return true;
+        }
+        private async Task<bool> ReadySequenceAsync(string sequenceName, CancellationToken ct)
+        {
+            if (_readySequences.Contains(sequenceName))
+                return true; // 이미 Ready
+
+            bool ok = await TryReadySequenceAsync(sequenceName, ct);
+            if (ok)
+            {
+                _readySequences.Add(sequenceName);
+                //NotifySequenceStateChanged(sequenceName, "Ready", true, false);
+            }
+            return ok;
+        }
+        private async Task<bool> TryReadySequenceAsync(string sequenceName, CancellationToken ct)
+        {
+            int rc;
+            switch (sequenceName)
+            {
+                case "InputWafer": rc = await HandleInputWaferReadyAsync(ct); break;
+                case "ChipLoading": rc = await HandleChipLoadingReadyAsync(ct); break;
+                case "Process": rc = await HandleProcessReadyAsync(ct); break;
+                case "ChipUnloading": rc = await HandleChipUnloadingReadyAsync(ct); break;
+                case "OutputWafer": rc = await HandleOutputWaferReadyAsync(ct); break;
+                default:
+                    Log.Write("Operator_Main", $"알 수 없는 Sequence '{sequenceName}' Ready 요청");
+                    return false;
+            }
+            if (rc != 0)
+            {
+                Log.Write("Operator_Main", $"{sequenceName} Ready 실패(rc={rc})");
+                return false;
+            }
+            return true;
+        }
+        #region Handle Manual Async Ready
+        private Task<int> HandleInputWaferReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                int nRet = InputFeeder?.EnsureReady() ?? -1;
+                if (nRet != 0) return nRet;
+                ct.ThrowIfCancellationRequested();
+                nRet = InputStageEjector?.CheckReady() ?? -1;
+                return nRet;
+            }, ct);
+        }
+        private Task<int> HandleChipLoadingReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                return InputDieTransfer?.EnsureReady() ?? -1;
+            }, ct);
+        }
+        private Task<int> HandleProcessReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                int nRet = IndexLoadAligner?.EnsureReady() ?? -1;
+                if (nRet != 0) return nRet;
+                ct.ThrowIfCancellationRequested();
+                nRet = IndexChipProbeController?.EnsureReady() ?? -1;
+                return nRet;
+            }, ct);
+        }
+        private Task<int> HandleChipUnloadingReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                return OutputDieTransfer?.EnsureReady() ?? -1;
+            }, ct);
+        }
+        private Task<int> HandleOutputWaferReadyAsync(CancellationToken ct)
+        {
+            return Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                return OutputFeeder?.EnsureReady() ?? -1;
+            }, ct);
+        }
+        #endregion
+
+
+        private void ExecuteAutoCycleStop()
+        {
+        }
+
+        private void ExecuteAutoReset()
+        {
+            InputCassetteLifter.SetMaterial(new Material());
+            InputFeeder.SetMaterial(new Material());
+            InputStage.SetMaterial(new Material());
+            InputDieTransfer.SetMaterial(new Material());
+            Rotary.SetMaterial(new Material());
+            IndexLoadAligner.SetMaterial(new Material());
+            IndexChipProbeController.SetMaterial(new Material());
+            IndexUnloadAligner.SetMaterial(new Material());
+            OutputDieTransfer.SetMaterial(new Material());
+            OutputStage.SetMaterial(new Material());
+            OutputFeeder.SetMaterial(new Material());
+            OutputCassetteLifter.SetMaterial(new Material());
+        }
+
+
+        #endregion
 
     }
 }

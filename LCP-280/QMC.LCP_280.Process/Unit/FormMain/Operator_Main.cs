@@ -962,8 +962,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // 실행 순서(필요하면 Config 로 대체 가능)
         private static readonly string[] _sequenceOrder =
         {
-    "InputWafer","ChipLoading","Process","ChipUnloading","OutputWafer"
-};
+            "InputWafer","ChipLoading","Process","ChipUnloading","OutputWafer"
+        };
 
         // (이미 존재) 시퀀스 → Unit 매핑 재사용
         // private BaseUnit GetUnitForSequence(string sequenceName) { ... }

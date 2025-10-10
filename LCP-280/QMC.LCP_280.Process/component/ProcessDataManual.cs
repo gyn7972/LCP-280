@@ -80,7 +80,7 @@ namespace QMC.LCP_280.Process.Component
                     return;
                 }
                 var wafer = WaferManager.Instance.LoadNewLot(carrierId, slot, lotId);
-                SetStatus($"Loaded new lot: {wafer.LotId} at {wafer.CarrierId}[{wafer.SlotIndex}]");
+                SetStatus($"Loaded new lot: {wafer.WaferId} at {wafer.CarrierId}[{wafer.SlotIndex}]");
                 RefreshChipList();
             }
             catch (Exception ex)

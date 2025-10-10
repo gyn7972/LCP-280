@@ -31,6 +31,25 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputDieTransfer : BaseUnit<InputDieTransferConfig>
     {
+        public class DiePickedEventArgs : EventArgs
+        {
+            public int MapX { get; }
+            public int MapY { get; }
+            public MaterialDie Die { get; }
+
+            public DiePickedEventArgs(MaterialDie die)
+            {
+                Die = die;
+                if (die != null)
+                {
+                    MapX = die.MapX;
+                    MapY = die.MapY;
+                }
+            }
+        }
+
+        public event EventHandler<DiePickedEventArgs> DiePicked;
+
         public enum AlarmKeys
         {
             eInputStageNotSafe = 4001,
@@ -2024,6 +2043,10 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 _currentDie.State = DieProcessState.Picked;
                 _currentDie.ProcessSatate = Material.MaterialProcessSatate.Processing;
+
+                // UI에게 알림: 현재 웨이퍼에서 해당 다이가 픽업되었음을 이벤트로 통지
+                OnDiePicked(_currentDie);
+
                 SetMaterial(_currentDie); // 이후 Complete 단계에서 Rotary로 전달
             }
                
@@ -2357,6 +2380,23 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return nRet;
+        }
+        #endregion
+
+        #region Update UI
+        protected virtual void OnDiePicked(MaterialDie die)
+        {
+            var handler = DiePicked;
+            if (handler == null) return;
+
+            try
+            {
+                handler(this, new DiePickedEventArgs(die));
+            }
+            catch (Exception ex)
+            {
+                Log.Write(UnitName, "[OnDiePicked] " + ex.Message);
+            }
         }
         #endregion
     }

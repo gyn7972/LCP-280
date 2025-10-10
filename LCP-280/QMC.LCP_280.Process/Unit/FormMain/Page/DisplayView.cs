@@ -10,9 +10,10 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
     {
         public enum ItemState
         {
-            Empty,   // 흰색
-            Present, // 검은색
-            Picked   // 초록색
+            Empty,          // 흰색
+            Present,        // 검은색
+            AfterPickUp,   // 흰색
+            PickedUp        // 초록색
         }
 
         public class DisplayItem
@@ -291,11 +292,16 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                         brush = Brushes.Black;
                         pen = Pens.DarkGray;
                         break;
-                    case ItemState.Picked:
+                    case ItemState.PickedUp:
                         brush = Brushes.LimeGreen;
                         pen = Pens.Green;
                         break;
+                    case ItemState.AfterPickUp:
+                        brush = Brushes.White;      // 요청대로 흰색
+                        pen = Pens.DodgerBlue;      // Empty와 구분 위해 파란 테두리
+                        break;
                     case ItemState.Empty:
+                    default:
                         brush = Brushes.White;
                         pen = Pens.LightGray;
                         break;
