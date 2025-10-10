@@ -237,8 +237,9 @@ namespace QMC.LCP_280.Process
             try
             {
                 maintROIControl?.CommitCurrentRoi();
-                var dr = MessageBox.Show(this, "현재 설정을 저장하시겠습니까?", "저장 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (dr == DialogResult.Yes)
+
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("저장 확인", "현재 설정을 저장하시겠습니까?") == DialogResult.Yes)
                 {
                     SaveRecipeForCurrentCamera();
                 }
@@ -249,7 +250,8 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "저장 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "저장 중 오류: " + ex.Message);
             }
         }
 
@@ -739,7 +741,8 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Recipe 저장 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Recipe 저장 실패: " + ex.Message);
             }
         }
 
@@ -795,7 +798,8 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Recipe 로드 실패: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Recipe 로드 실패: " + ex.Message);
             }
         }
         #endregion
@@ -832,13 +836,15 @@ namespace QMC.LCP_280.Process
                 if (_parameters == null || _parameters.TrainImages == null || _parameters.TrainImages.Count == 0 ||
                     _parameters.TrainImages.All(v => v == null || v.GetImage() == null))
                 {
-                    MessageBox.Show(this, "최소 1개 이상의 Train Image가 필요합니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "최소 1개 이상의 Train Image가 필요합니다.");
                     return;
                 }
                 var testImage = AcquireCurrentSearchImage();
                 if (testImage == null || testImage.GetImage() == null)
                 {
-                    MessageBox.Show(this, "검색할 이미지(카메라 또는 로드된 이미지)가 없습니다.", "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "검색할 이미지(카메라 또는 로드된 이미지)가 없습니다.");
                     return;
                 }
                 maintROIControl?.CommitCurrentRoi();
@@ -861,7 +867,8 @@ namespace QMC.LCP_280.Process
                 }
                 if (_runner == null)
                 {
-                    MessageBox.Show(this, "Runner 초기화 실패 (카메라 없음).", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Runner 초기화 실패 (카메라 없음)");
                     return;
                 }
                 _runner.LoadRecipe();
@@ -872,7 +879,10 @@ namespace QMC.LCP_280.Process
                 if (!res.Success || res.RawResult == null)
                 {
                     UpdateStatus("Search Fail: " + res.FailReason);
-                    MessageBox.Show(this, "Search 실패: " + res.FailReason, "알림", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", $"Search 실패: \" + res.FailReason");
+
                     listViewResults.Items.Clear();
                     _lastValues.Clear();
                     _viewer?.Invalidate();
@@ -920,7 +930,9 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "Search 예외: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Search 예외: " + ex.Message);
+
                 UpdateStatus("Search exception");
             }
         }
@@ -1081,8 +1093,9 @@ namespace QMC.LCP_280.Process
             try
             {
                 maintROIControl?.CommitCurrentRoi();
-                var dr = MessageBox.Show(this, "현재 설정을 저장하시겠습니까?", "저장 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (dr == DialogResult.Yes)
+
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("저장 확인", "현재 설정을 저장하시겠습니까?") == DialogResult.Yes)
                 {
                     SaveRecipeForCurrentCamera();
                 }
@@ -1093,7 +1106,8 @@ namespace QMC.LCP_280.Process
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, "저장 중 오류: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"저장 중 오류: " + ex.Message);
             }
         }
 

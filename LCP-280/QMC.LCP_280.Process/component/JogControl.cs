@@ -36,7 +36,7 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 WireAxisSelectionEvent();  // Select Axis 선택 이벤트 연결 (중복 방지)
-                WireJogEvents();           // 조그 버튼/라디오 이벤트 연결
+                WriteEvents();           // 조그 버튼/라디오 이벤트 연결
                 BindAxisList();            // 축 목록 바인딩 (unit 기준)
                 ApplyMoveModeUI();         // 스텝/연속 UI 스위치
                 InitializePositionTimer(); // 위치표시 타이머
@@ -62,18 +62,18 @@ namespace QMC.LCP_280.Process.Unit
                 // rdoStep이 stepLine(FlowLayoutPanel) 안에 있으면 GroupBox와 다른 논리 그룹이 됨 → 제거 후 GroupBox에 직접 부착
                 if (rdoStep.Parent != grpMoveMode)
                 {
-                    if (rdoStep.Parent != null)
-                        rdoStep.Parent.Controls.Remove(rdoStep);
+                    //if (rdoStep.Parent != null)
+                    //    rdoStep.Parent.Controls.Remove(rdoStep);
 
                     // 위치: Continuous 오른쪽 또는 아래 원하는 좌표 재배치
                     // 동일 Y 라인에 두고 싶으면 아래처럼.
-                    var baseLoc = rdoContinuous.Location;
-                    rdoStep.Location = new Point(baseLoc.X + 120, baseLoc.Y); // 간격 120px
-                    grpMoveMode.Controls.Add(rdoStep);
+                    //var baseLoc = rdoContinuous.Location;
+                    //rdoStep.Location = new Point(baseLoc.X + 120, baseLoc.Y); // 간격 120px
+                    //grpMoveMode.Controls.Add(rdoStep);
 
-                    // stepLine에는 NumericUpDown만 남도록 보장
-                    if (stepLine != null && stepLine.Controls.Contains(rdoStep))
-                        stepLine.Controls.Remove(rdoStep);
+                    //// stepLine에는 NumericUpDown만 남도록 보장
+                    //if (stepLine != null && stepLine.Controls.Contains(rdoStep))
+                    //    stepLine.Controls.Remove(rdoStep);
                 }
 
                 // 멀티체크가 이미 발생했다면 하나만 남기기
@@ -167,7 +167,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // ===== 조그/라디오 이벤트 일괄 연결 =====
-        private void WireJogEvents()
+        private void WriteEvents()
         {
             rdoStep.CheckedChanged -= MoveModeChanged;
             rdoContinuous.CheckedChanged -= MoveModeChanged;
@@ -192,6 +192,12 @@ namespace QMC.LCP_280.Process.Unit
 
             // 절대 위치 이동 버튼
             btnCommandPositionMove.Click += BtnCommandPositionMove_Click;
+
+            btnStep1.Click += btnStep1_Click;
+            btnStep10.Click += btnStep10_Click;
+            btnStep100.Click += btnStep100_Click;
+            btnStep1000.Click += btnStep1000_Click;
+            btnStepClear.Click += btnStepClear_Click;
         }
 
         // ===== 모드/축에 따른 UI 스위치 =====
@@ -310,7 +316,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (!CheckSafeToDrive(axis, jc))
                 {
-                    MessageBox.Show(this, "현재 상태에서 해당 축을 구동할 수 없습니다.", "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Interlock!", $"현재 상태에서 해당 축을 구동할 수 없습니다.");
                     return;
                 }
 

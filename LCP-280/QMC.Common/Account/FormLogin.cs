@@ -141,7 +141,9 @@ namespace QMC.Common.Account
             }
             catch (Exception)
             {
-                MessageBox.Show("Invalid account data. Please check the input values.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Invalid account data. Please check the input values.");
+
                 return;
             }
 
@@ -158,26 +160,31 @@ namespace QMC.Common.Account
                     AccountManager.Save();
                     UpdateAccountList();
 
-                    MessageBox.Show($"Account '{tempAccount.UserID}' has been updated.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Info!", $"Account '{tempAccount.UserID}' has been updated.");
                 }
                 else
                 {
                     // Add new account
                     if (!AccountManager.AddAccount(new Account(tempAccount.Grade, tempAccount.UserID, tempAccount.Password)))
                     {
-                        MessageBox.Show($"Failed to add account '{tempAccount.UserID}'. It may already exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        var mb2 = new MessageBoxOk();
+                        mb2.ShowDialog("Error!", $"Failed to add account '{tempAccount.UserID}'. It may already exist.");
+
                         return;
                     }
 
                     AccountManager.Save();
                     UpdateAccountList();
 
-                    MessageBox.Show($"Account '{tempAccount.UserID}' has been added.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb3 = new MessageBoxOk();
+                    mb3.ShowDialog("Info!", $"Account '{tempAccount.UserID}' has been added.");
                 }  
             }
             else
             {
-                MessageBox.Show("Invalid account data. Please check the input values.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Invalid account data. Please check the input values.");
             }
         }
 
@@ -185,8 +192,8 @@ namespace QMC.Common.Account
         {
             if (selectAccount != null)
             {
-                var result = MessageBox.Show($"Are you sure you want to delete the account '{selectAccount.UserID}'?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-                if (result == DialogResult.Yes)
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("Confirm Delete", "Are you sure you want to delete the account '{selectAccount.UserID}'?") == DialogResult.Yes)
                 {
                     AccountManager.RemoveAccount(selectAccount.UserID);
                     AccountManager.Save();

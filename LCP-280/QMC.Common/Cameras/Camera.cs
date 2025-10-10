@@ -663,7 +663,8 @@ namespace QMC.Common.Cameras
 
             //if (this.Simulation.IsSimulatedWithoutResource() == true) return ret;
 
-            if (this.IsLiveOn == false) return ret;
+            if (this.IsLiveOn == false) 
+                return ret;
 
             try
             {
@@ -675,7 +676,8 @@ namespace QMC.Common.Cameras
                 }
                 Console.WriteLine("Start OnStopLive()");
                 stopWatch.Start();
-                if ((ret = this.OnStopLive()) != 0) return ret;
+                if ((ret = this.OnStopLive()) != 0) 
+                    return ret;
                 stopWatch.Stop();
                 Console.WriteLine(string.Format("End OnStopLive() : {0}ms", stopWatch.Elapsed.Milliseconds));
             }

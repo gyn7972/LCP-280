@@ -23,6 +23,11 @@ namespace QMC.LCP_280.Process.Unit
     /// </summary>
     public class InputCassetteLifter : BaseUnit<InputCassetteLifterConfig>
     {
+        public delegate void UpdateUICassette(MaterialCassette Cassette);
+
+        public event UpdateUICassette EventUpdateUICassette;
+
+
         public enum AlarmKeys
         {
             eWaferProtrusionDetected = 1001,
@@ -83,11 +88,6 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitSimMappingIfNeeded()
         {
-            if (!Config.IsSimulation && !Config.IsDryRun)
-            {
-                return;
-            }
-
             lock (_simMapLock)
             {
                 if (_simSimMappingInitialized)
@@ -190,19 +190,28 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.WaferLifterZ, ref _waferLifterZ);
         }
 
-        public void MoveAxisOnce(MotionAxis ax, double target)
+        public void MoveAxisOnce(MotionAxis ax, double target, bool isFine = false)
         {
-            if (ax == null) return;
+            if (ax == null) 
+                return;
+
+            bool IsAuto = false;
+            if (RunMode == UnitRunMode.Auto)
+                IsAuto = true;
+            else
+                IsAuto = false;
+
             if (System.Math.Abs(ax.GetPosition() - target) > ax.Config.InposTolerance * 3)
-                ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
+                ax.MoveAbs(target, IsAuto, isFine);
+                //ax.MoveAbs(target, ax.Config.MaxVelocity, ax.Config.RunAcc, ax.Config.RunDec, ax.Config.AccJerkPercent);
         }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = base.Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = base.Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         #endregion
 
         #region Teaching Helpers
@@ -230,44 +239,34 @@ namespace QMC.LCP_280.Process.Unit
             }
             return result;
         }
-        public bool InPosTeaching(string positionName)
-        {
-            var tp = base.Config.GetTeachingPosition(positionName);
-            if (tp == null) return false;
-            foreach (var kv in tp.AxisPositions)
-                if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
-            return true;
-        }
+        //public bool InPosTeaching(string positionName)
+        //{
+        //    var tp = base.Config.GetTeachingPosition(positionName);
+        //    if (tp == null) return false;
+        //    foreach (var kv in tp.AxisPositions)
+        //        if (!Axes.TryGetValue(kv.Key, out var axis) || !InPos(axis, kv.Value)) return false;
+        //    return true;
+        //}
         #endregion
 
         #region IO / Sensors
-        public bool ReadInput(string name)
-        {
-            var hi = base.Config.HardInputs?.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
-        }
-
         public bool IsCassettePresent0()
         {
-            if(Config.IsSimulation)
+            if(Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
 
-            return ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
+            return this.ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK0);
         }
         public bool IsCassettePresent1()
         {
-            if (Config.IsSimulation)
+            if (Config.IsSimulation || Config.IsDryRun)
             {
                 return true;
             }
 
-            return ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
+            return this.ReadInput(InputCassetteLifterConfig.IO.CASSETTE_CHECK1);
         }
         public bool IsCassettePresentAll() => IsCassettePresent0() && IsCassettePresent1();
         public bool IsAnyCassettePresent() => IsCassettePresent0() || IsCassettePresent1();
@@ -275,7 +274,7 @@ namespace QMC.LCP_280.Process.Unit
        
         public bool IsWaferProtrusionDetectionSensor()
         {
-            bool sensorState = ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+            bool sensorState = this.ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
             return !sensorState;
         }
         public bool MappingSensor()
@@ -310,7 +309,7 @@ namespace QMC.LCP_280.Process.Unit
                 return emit;
             }
 
-            return ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
+            return this.ReadInput(InputCassetteLifterConfig.IO.MAPPING_SENSOR);
         }
         
         #endregion
@@ -405,8 +404,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             var axisPos = GetTeachingPositionValue(InputCassetteLifterConfig.TeachingPositionName.MappingStart, this.WaferLifterZ.Name);
             axisPos -= base.Config.SlotPitch * (base.Config.SlotCount);
-            int ret = this.WaferLifterZ.MoveAbs(axisPos, isFine);
 
+            bool IsAuto = false;
+            if (RunMode == UnitRunMode.Auto)
+                IsAuto = true;
+            else
+                IsAuto = false;
+            int ret = this.WaferLifterZ.MoveAbs(axisPos, IsAuto, isFine);
             Thread.Sleep(10);
             if (ret == 0)
             {
@@ -431,66 +435,57 @@ namespace QMC.LCP_280.Process.Unit
             return GetTP(pos.ToString(), axis);
         }
 
-
-        #region Seq Signals
-       
-        private static bool WaitIf(System.Func<IfState> get, IfState target, int timeoutMs = 10000, System.Threading.CancellationToken? ct = null, int pollMs = 5)
+        public bool IsWaferReadyForLoading()
         {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (true)
-            {
-                if (ct.HasValue && ct.Value.IsCancellationRequested) return false;
-                if (get() == target) return true;
-                if (timeoutMs >= 0 && sw.ElapsedMilliseconds > timeoutMs) return false;
-                System.Threading.Thread.Sleep(pollMs);
-            }
-        }
-        #endregion
+            bool bRet = false;
 
+            // 확인 필요.
+            //MaterialCassette material = GetMaterialCassette();
+            //if (material != null)
+            //{
+            //    if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
+            //    {
+            //        foreach (var v in material.Slots)
+            //        {
+            //            if (v.Presence == Material.MaterialPresence.Exist)
+            //            {
+            //                if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
+            //                {
+            //                    bRet = true;
+            //                    break;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+
+            bRet = true;
+            return bRet;
+        }
 
         #region Lifecycle
         public override int OnRun()
         {
             int ret = 0;
-
-            if (this.RunUnitStatus == UnitStatus.Stopped || 
-                this.RunUnitStatus == UnitStatus.Stopping || 
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                return 1;
+                ret = -1;
             }
-
             if (this.RunUnitStatus == UnitStatus.Running)
             {
                 return 0;
-            }
-
-
-            switch (State)
-            {
-                case ProcessState.Ready:
-                    
-                    break;
-                case ProcessState.Work:
-                    
-                    break;
-                case ProcessState.Complete:
-                    
-                    break;
-                default:
-                    this.IsWaferReadyForUnloding = false;
-                    this.State = ProcessState.Ready;
-                    break;
             }
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return ret;
         }
+        
         public override int OnStop()
         {
             int ret = 0;
@@ -499,54 +494,12 @@ namespace QMC.LCP_280.Process.Unit
             base.OnStop();
             return ret;
         }
-
-        protected override int OnRunReady()
-        {
-            int nRtn = 0;
-            var ct = this.CalcelToken != null ? (System.Threading.CancellationToken?)this.CalcelToken.Token : null;
-
-            //if (IfScan == IfState.Request)
-            //{
-            //    MaterialCassette material = GetMaterialCassette();
-            //    if (material.Presence == Material.MaterialPresence.Exist)
-            //    {
-            //        if (material.ProcessSatate == MaterialCassette.MaterialProcessSatate.Unknown)
-            //        {
-            //            IfScan = IfState.Busy;
-            //            nRtn = ScanWafer();
-            //            if (nRtn != 0)
-            //            {
-            //                Log.Write(this, "ScanWafer Failed");
-            //                return -1;
-            //            }
-            //            IfScan = IfState.Complete;
-            //        }
-            //        State = ProcessState.Work;
-            //    }
-            //    else
-            //    {
-            //        State = ProcessState.None;
-            //    }
-            //}
-
-            return nRtn;
-        }
-
-        protected override int OnRunWork()
-        {
-            int nRtn = 0;
-            var ct = this.CalcelToken != null ? (System.Threading.CancellationToken?)this.CalcelToken.Token : null;
-
-            
-            return nRtn;
-        }
-        protected override int OnRunComplete()
-        {
-            return 0;
-        }
         #endregion
 
-
+        public int GetCurrectSlotID()
+        {
+            return _currentSlotID;
+        }
         public bool IsScanCompleted()
         {
             bool bRet = false;
@@ -597,24 +550,16 @@ namespace QMC.LCP_280.Process.Unit
             base.OnMakeSequence();
             this.SequencePlayers.Add(ScanWafer);
             this.SequencePlayers.Add(MoveToNextSlot);
-            this.SequencePlayers.Add(WaferLoadingBeforeStage);
-            this.SequencePlayers.Add(WaferLoadingFeeder);
-            this.SequencePlayers.Add(WaferLoadingAfterStage);
-
-            this.SequencePlayers.Add(WaferAlignT);
-            this.SequencePlayers.Add(WaferAlignXY);
-            this.SequencePlayers.Add(WaferDieMapping);
-
-            this.SequencePlayers.Add(WaferUnloadingBeforeStage);
-            this.SequencePlayers.Add(WaferUnloadingFeeder);
-            this.SequencePlayers.Add(WaferUnloadingAfterStage);
         }
 
         #region seq 단위 동작
         public int ScanWafer(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = ScanWafer;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = ScanWafer;
+            }
 
             Log.Write(this, "Start ScanWafer");
 
@@ -648,11 +593,17 @@ namespace QMC.LCP_280.Process.Unit
                 material.Slots.Add(new MaterialWafer());
             }
             nRtn = MoveToScanStartPosition(bFineSpeed);
-
             if (nRtn != 0)
             {
+                Log.Write(this, "MoveToScanStartPosition Failed");
                 return nRtn;
             }
+
+            if (RunMode == UnitRunMode.Auto)
+            {
+                if (this.IsStop) { return 0; }
+            }
+
             Task<int> taskMoveEndPos = MoveToScanEndPositionAsync(bFineSpeed);
             bool bDetected = false;
             while (true)
@@ -728,6 +679,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(0);
             }
+
+            EventUpdateUICassette?.BeginInvoke(material, null, null);
+
             material.ProcessSatate = Material.MaterialProcessSatate.Ready;
             Log.Write(this, "End ScanWafer");
             return nRtn;
@@ -740,34 +694,49 @@ namespace QMC.LCP_280.Process.Unit
         public int MoveToNextSlot(bool bFineSpeed = false)
         {
             int nRtn = 0;
-            this.CurrentFunc = MoveToNextSlot;
-
-            MaterialCassette material = GetMaterialCassette();
-            if (material != null)
+            if (RunMode == UnitRunMode.Manual)
             {
-                foreach (var v in GetMaterialCassette().Slots)
-                {
-                    if (v.Presence == Material.MaterialPresence.NotExist || v.Presence == Material.MaterialPresence.Unknown)
-                    {
-                        continue;
-                    }
+                this.CurrentFunc = MoveToNextSlot;
 
-                    if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
+            }
+
+            try
+            {
+                MaterialCassette material = GetMaterialCassette();
+                if (material != null)
+                {
+                    foreach (var v in GetMaterialCassette().Slots)
                     {
-                        nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
+                        if (v.Presence == Material.MaterialPresence.NotExist 
+                         || v.Presence == Material.MaterialPresence.Unknown)
                         {
-                            if (nRtn != 0)
+                            continue;
+                        }
+
+                        if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
+                        {
+                            nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
                             {
-                                Log.Write(this, "MoveToSlot Failed");
-                                return -1;
+                                if (nRtn != 0)
+                                {
+                                    Log.Write(this, "MoveToSlot Failed");
+                                    return -1;
+                                }
+
+                                return nRtn;
                             }
-                            
-                            return nRtn;
                         }
                     }
+                    nRtn = -1;
                 }
-                nRtn = -1;
+
+                return nRtn;
             }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+            }
+
             return nRtn;
         }
         public int MoveToSlot(int slotIndex, bool bFineSpeed = false)
@@ -784,7 +753,6 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-
             if(InputFeeder.IsInterlockOKWithCassete() == false)
             {
                 WaferLifterZ.EmgStop();
@@ -792,6 +760,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Feeder Y Axis is not in Safety Position");
                 return -1;
             }
+
             if (slotIndex < 0 || slotIndex >= base.Config.SlotCount)
             {
                 Log.Write(this, $"Invalid Slot Index {slotIndex}");
@@ -799,9 +768,14 @@ namespace QMC.LCP_280.Process.Unit
             }
             Log.Write(this, $"MoveToSlot {slotIndex + 1}");
             double dPos = GetTP(InputCassetteLifterConfig.TeachingPositionName.CassetteSlot_1.ToString(), AxisNames.WaferLifterZ);
-            dPos += base.Config.SlotPitch * slotIndex;
+
+            //Todo : 시컨스 수정
+            //첫번째 스타트 웨이퍼 어디인지에 따라 위로 아래로 피치 이동 필요
+            //dPos += base.Config.SlotPitch * slotIndex;
+            dPos -= base.Config.SlotPitch * slotIndex;
+
             MoveAxisOnce(WaferLifterZ, dPos);
-            while (!InPos(WaferLifterZ, dPos))
+            while (InPos(WaferLifterZ, dPos) == false)
             {
                 if (!Config.IsSimulation && !Config.IsDryRun)
                 {
@@ -836,188 +810,6 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             });
         }
-
-        private int WaferLoadingBeforeStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = WaferLoadingBeforeStage;
-            MaterialCassette material = GetMaterialCassette();
-
-            nRtn = InputStage.LoadingWaferPrepare();
-            if (nRtn != 0)
-            {
-                Log.Write(this, "InputStage LoadingWaferPrepare Failed");
-                return -1;
-            }
-            return nRtn;
-        }
-
-        public int WaferLoadingFeeder(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            this.CurrentFunc = WaferLoadingFeeder;
-            nRet = InputFeeder.WaferLoading();
-            if (nRet != 0)
-            {
-                Log.Write(this, "InputFeeder WaferLoading Failed");
-                return -1;
-            }
-
-            return nRet;
-        }
-        private int WaferLoadingAfterStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = WaferLoadingAfterStage;
-            MaterialCassette material = GetMaterialCassette();
-
-            nRtn = InputStage.LoadingWaferComplete();
-            if (nRtn != 0)
-            {
-                Log.Write(this, "InputStage LoadingWaferComplete Failed");
-            }
-
-            return nRtn;
-        }
-
-        private int WaferAlignT(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = WaferAlignT;
-            MaterialCassette material = GetMaterialCassette();
-
-            nRtn = InputStage.AlignT();
-            if (nRtn != 0)
-            {
-                Log.Write(this, "InputStage AlignT Failed");
-            }
-
-            return nRtn;
-        }
-
-        private int WaferAlignXY(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = WaferAlignXY;
-            MaterialCassette material = GetMaterialCassette();
-
-            nRtn = InputStage.AlignXY();
-            if (nRtn != 0)
-            {
-                Log.Write(this, "InputStage AlignXY Failed");
-            }
-
-            return nRtn;
-        }
-
-        private int WaferDieMapping(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = WaferDieMapping;
-            MaterialCassette material = GetMaterialCassette();
-
-            //nRtn = InputStage.PerformChipMapping();
-            //if (nRtn != 0)
-            //{
-            //    Log.Write(this, "InputStage AlignXY Failed");
-            //}
-
-            return nRtn;
-        }
-
-        private int WaferUnloadingBeforeStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = WaferUnloadingBeforeStage;
-            MaterialCassette material = GetMaterialCassette();
-
-
-            return nRtn;
-        }
-
-        public int WaferUnloadingFeeder(bool bFineSpeed = false)
-        {
-            int nRet = 0;
-            this.CurrentFunc = WaferUnloadingFeeder;
-
-            //nRet = InputFeeder.WaferUnloading();
-            //if (nRet != 0)
-            //{
-            //    Log.Write(this, "InputFeeder WaferUnloading Failed");
-            //    return -1;
-            //}
-
-            return nRet;
-        }
-
-        private int WaferUnloadingAfterStage(bool bFineSpeed = false)
-        {
-            int nRtn = 0;
-            this.CurrentFunc = WaferUnloadingAfterStage;
-            MaterialCassette material = GetMaterialCassette();
-
-
-            return nRtn;
-        }
-
-        ////Wafer Loading
-        //ScanWafer_Cassette      -> Ready
-        //MoveTonextSlot_Cassette -> work
-
-        //PlateDown_Stage
-        //ClampBackwordDown_Stage
-        //MoveToLaod_Stage
-
-        //MoveToReady_Feeder
-        //MoveToLoadPort_Feeder
-        //ClampDownGripper_Feeder
-        //MoveToBarcode_Feeder
-        //BarcodeRead
-        //MoveToLoadStage_Feeder
-
-        //PlateUp_Stage
-        //ClampUpForword_Stage
-
-        //UnClampGripper_Feeder
-        //ClampUpfeeder
-        //MoveToSafety_Feeder
-
-        //MoveToCenter_Stage
-        //AlignT_Stage
-        //AlignXY_Stage
-        //Mapping_Stage
-        //Complete
-
-        ////Wafer Unloading
-        //WaitToSlot_Cassette (LoadingComp Slot or Empty slot)
-
-        //MoveToUnlaod_Stage
-        //ClampBackwordDown_Stage
-        //PlateDown_Stage
-
-        //ClampDown_Feeder
-        //MoveToUnloadStage_Feeder
-        //ClampGripper_Feeder
-        //MovoToUnloadPort_Feeder
-        //UnClampGripper_Feeder
-        //MoveToReady_Feeder
-        //Complete
-        public int GetCurrectSlotID()
-        {
-            return _currentSlotID;
-        }
-
-        public bool IsWaferReadyForLoading()
-        {
-            //var tp = TeachingPositions[(int)InputStageConfig.TeachingPositionName.Loading];
-            //if (tp == null)
-            //    return false;
-
-            //return InPosTeaching(tp);
-
-            return true;
-        }
-
 
         #endregion
     }

@@ -129,7 +129,8 @@ namespace QMC.Common.Spectrometer
                 // Validate interface type selection
                 if (selectedInterfaceTypeIndex < 0)
                 {
-                    MessageBox.Show("Please select an interface type.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", "Please select an interface type.");
                     return;
                 }
 
@@ -151,20 +152,23 @@ namespace QMC.Common.Spectrometer
                         config.DeviceInterfaceType = CASSpectrometerConfig.DeviceInterface.Ethernet;
                         break;
                     default:
-                        MessageBox.Show("The selected interface is not supported.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Error!", "The selected interface is not supported.");
                         return;
                 }
 
                 // Validate interface option selection
                 if (selectedInterfaceOptionIndex < 0)
                 {
-                    MessageBox.Show("Please select an interface option.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Please select an interface option.");
                     return;
                 }
                 config.DeviceInterfaceOption = supportInterface.Types[selectedInterfaceTypeIndex].Options[selectedInterfaceOptionIndex].Value;
                 if (config.DeviceInterfaceOption < 0)
                 {
-                    MessageBox.Show("The selected interface option is not valid.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"The selected interface option is not valid.");
                     return;
                 }
 
@@ -175,7 +179,8 @@ namespace QMC.Common.Spectrometer
                 }
                 else
                 {
-                    MessageBox.Show("The selected configuration file does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"The selected configuration file does not exist.");
                     return;
                 }
 
@@ -186,12 +191,14 @@ namespace QMC.Common.Spectrometer
                 }
                 else
                 {
-                    MessageBox.Show("The selected calibration file does not exist.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"The selected calibration file does not exist.");
                     return;
                 }
 
                 // Confirm and apply configuration
-                if (MessageBox.Show($"Apply device configuration?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                var ask = new MessageBoxYesNo();
+                if (ask.ShowDialog("Confirm!", "Apply device configuration?") == DialogResult.Yes)
                 {
                     OnNewDeviceConfigApplied?.Invoke(this, config);
                     this.DialogResult = DialogResult.OK;
@@ -200,8 +207,8 @@ namespace QMC.Common.Spectrometer
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error applying configuration: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"Error applying configuration: {ex.Message}");
             }
         }
     }

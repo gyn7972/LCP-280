@@ -15,6 +15,13 @@ namespace QMC.Common
     /// </summary>
     public partial class MessageBoxOk : Form
     {
+        public enum MessageStatus
+        {
+            error,
+            warning,
+            notification
+        }
+
         /// <summary>
         /// 제목
         /// </summary>
@@ -105,6 +112,10 @@ namespace QMC.Common
             this.Title = title;
             this.Message = message;
             this.closedSecs = closedSecs;
+
+            // === Title에 따라 이미지 변경 ===
+            SetImageByTitle(title);
+
             if (this.closedSecs > 0)
             {
                 this.btnOk.Text = $"&Ok ({closedSecs})";
@@ -130,6 +141,52 @@ namespace QMC.Common
             {
                 this.DialogResult = DialogResult.OK;
                 this.Close();
+            }
+        }
+
+        /// <summary>
+        /// Title에 따라 이미지 설정
+        /// </summary>
+        /// <param name="title">제목</param>
+        private void SetImageByTitle(string title)
+        {
+            if (string.IsNullOrEmpty(title))
+            {
+                // 기본 이미지 (현재 설정된 megaphone)
+                this.pictureBox1.Image = global::QMC.Common.Properties.Resources.megaphone_80px;
+                this.panel1.BackColor = Color.DarkOrange;
+                return;
+            }
+
+            string titleLower = title.ToLower();
+
+            if (titleLower.Contains("error"))
+            {
+                // 에러 이미지
+                this.pictureBox1.Image = global::QMC.Common.Properties.Resources.megaphone_Error1; // 리소스에 추가 필요
+                this.panel1.BackColor = Color.Crimson;
+                this.lblTitle.ForeColor = Color.White;
+            }
+            else if (titleLower.Contains("warning"))
+            {
+                // 경고 이미지
+                this.pictureBox1.Image = global::QMC.Common.Properties.Resources.megaphone_Warning1; // 리소스에 추가 필요
+                this.panel1.BackColor = Color.Orange;
+                this.lblTitle.ForeColor = Color.Black;
+            }
+            else if (titleLower.Contains("notification"))
+            {
+                // 알림 이미지
+                this.pictureBox1.Image = global::QMC.Common.Properties.Resources.megaphone_Notification1; // 리소스에 추가 필요
+                this.panel1.BackColor = Color.DodgerBlue;
+                this.lblTitle.ForeColor = Color.White;
+            }
+            else
+            {
+                // 기본 이미지 (megaphone)
+                this.pictureBox1.Image = global::QMC.Common.Properties.Resources.megaphone_80px;
+                this.panel1.BackColor = Color.DarkOrange;
+                this.lblTitle.ForeColor = Color.Black;
             }
         }
 

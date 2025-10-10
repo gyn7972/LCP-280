@@ -35,6 +35,8 @@ namespace QMC.Common.Motions
             {
                 if (_task != null && !_task.IsCompleted) return;
                 _cts = new CancellationTokenSource();
+
+                Thread.CurrentThread.Name = "MotionStatusScanner";
                 _task = Task.Run(() => LoopAsync(_cts.Token), _cts.Token);
             }
         }

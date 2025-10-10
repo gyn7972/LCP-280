@@ -39,7 +39,7 @@
             this.groupBoxManual = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            this.waferMapView = new QMC.LCP_280.Process.Component.WaferMapView();
+            this.waferMapView_OutputWafer = new QMC.LCP_280.Process.Component.WaferMapView();
             this.btnMapping = new QMC.Common.IndividualMenuButton();
             this.groupBoxOutputStageSeq = new System.Windows.Forms.GroupBox();
             this.manualSequenceControlOutputStage = new QMC.LCP_280.Process.Component.ManualSequenceControl();
@@ -59,35 +59,35 @@
             // 
             this.dioControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dioControl.IoSortMode = QMC.LCP_280.Process.Component.DIOControl.SortingMode.AlphabeticalKey;
-            this.dioControl.Location = new System.Drawing.Point(2, 379);
-            this.dioControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.dioControl.Location = new System.Drawing.Point(3, 569);
+            this.dioControl.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.dioControl.Name = "dioControl";
             this.dioControl.RefreshIntervalMs = 400;
-            this.dioControl.Size = new System.Drawing.Size(501, 368);
+            this.dioControl.Size = new System.Drawing.Size(752, 551);
             this.dioControl.TabIndex = 15;
             // 
             // teachingPositionControl
             // 
             this.teachingPositionControl.ButtonSize = new System.Drawing.Size(90, 32);
             this.teachingPositionControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.teachingPositionControl.Location = new System.Drawing.Point(2, 4);
-            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(2, 4, 2, 4);
+            this.teachingPositionControl.Location = new System.Drawing.Point(3, 6);
+            this.teachingPositionControl.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
             this.teachingPositionControl.Name = "teachingPositionControl";
             this.teachingPositionControl.ShowCancelButton = true;
             this.teachingPositionControl.ShowSaveButton = true;
-            this.teachingPositionControl.Size = new System.Drawing.Size(501, 367);
+            this.teachingPositionControl.Size = new System.Drawing.Size(752, 551);
             this.teachingPositionControl.TabIndex = 14;
             this.teachingPositionControl.UnitName = null;
             // 
             // manualSequenceControlCassette
             // 
             this.manualSequenceControlCassette.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlCassette.Location = new System.Drawing.Point(2, 20);
-            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(238, 200);
+            this.manualSequenceControlCassette.Location = new System.Drawing.Point(3, 30);
+            this.manualSequenceControlCassette.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlCassette.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControlCassette.Name = "manualSequenceControlCassette";
             this.manualSequenceControlCassette.ParentUnit = null;
-            this.manualSequenceControlCassette.Size = new System.Drawing.Size(372, 349);
+            this.manualSequenceControlCassette.Size = new System.Drawing.Size(558, 524);
             this.manualSequenceControlCassette.TabIndex = 13;
             // 
             // groupBox1
@@ -95,11 +95,9 @@
             this.groupBox1.Controls.Add(this.manualSequenceControlCassette);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBox1.Location = new System.Drawing.Point(886, 2);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBox1.Location = new System.Drawing.Point(1329, 3);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBox1.Size = new System.Drawing.Size(376, 371);
+            this.groupBox1.Size = new System.Drawing.Size(564, 557);
             this.groupBox1.TabIndex = 16;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Output Wafer Seq";
@@ -109,11 +107,9 @@
             this.groupBoxImageView.Controls.Add(this.tableLayoutPanel5);
             this.groupBoxImageView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxImageView.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxImageView.Location = new System.Drawing.Point(507, 2);
-            this.groupBoxImageView.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxImageView.Location = new System.Drawing.Point(761, 3);
             this.groupBoxImageView.Name = "groupBoxImageView";
-            this.groupBoxImageView.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxImageView.Size = new System.Drawing.Size(375, 371);
+            this.groupBoxImageView.Size = new System.Drawing.Size(562, 557);
             this.groupBoxImageView.TabIndex = 22;
             this.groupBoxImageView.TabStop = false;
             this.groupBoxImageView.Text = "ImageView";
@@ -124,12 +120,13 @@
             this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel5.Controls.Add(this._OutputWaferCameraviewer, 0, 0);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(3, 30);
+            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 2;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(371, 349);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(556, 524);
             this.tableLayoutPanel5.TabIndex = 1;
             // 
             // _OutputWaferCameraviewer
@@ -142,12 +139,11 @@
             this._OutputWaferCameraviewer.FrameRate = 1D;
             this._OutputWaferCameraviewer.InputImage = null;
             this._OutputWaferCameraviewer.IsViewCustomizedImage = false;
-            this._OutputWaferCameraviewer.Location = new System.Drawing.Point(2, 2);
-            this._OutputWaferCameraviewer.Margin = new System.Windows.Forms.Padding(2);
+            this._OutputWaferCameraviewer.Location = new System.Drawing.Point(3, 3);
             this._OutputWaferCameraviewer.Name = "_OutputWaferCameraviewer";
             this._OutputWaferCameraviewer.OperatingType = QMC.Common.Vision.VisionImageViewer.OperatingTypes.Center;
             this._OutputWaferCameraviewer.Simulated = false;
-            this._OutputWaferCameraviewer.Size = new System.Drawing.Size(367, 275);
+            this._OutputWaferCameraviewer.Size = new System.Drawing.Size(550, 413);
             this._OutputWaferCameraviewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this._OutputWaferCameraviewer.TabIndex = 12;
             this._OutputWaferCameraviewer.TabStop = false;
@@ -159,11 +155,9 @@
             this.groupBoxManual.Controls.Add(this.tableLayoutPanel2);
             this.groupBoxManual.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxManual.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxManual.Location = new System.Drawing.Point(507, 377);
-            this.groupBoxManual.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxManual.Location = new System.Drawing.Point(761, 566);
             this.groupBoxManual.Name = "groupBoxManual";
-            this.groupBoxManual.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxManual.Size = new System.Drawing.Size(375, 372);
+            this.groupBoxManual.Size = new System.Drawing.Size(562, 557);
             this.groupBoxManual.TabIndex = 21;
             this.groupBoxManual.TabStop = false;
             this.groupBoxManual.Text = "Manual";
@@ -175,38 +169,40 @@
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel4, 0, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(2, 20);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 30);
+            this.tableLayoutPanel2.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 2;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(371, 350);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(556, 524);
             this.tableLayoutPanel2.TabIndex = 21;
             // 
             // tableLayoutPanel4
             // 
             this.tableLayoutPanel4.ColumnCount = 1;
             this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel4.Controls.Add(this.waferMapView, 0, 0);
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 30F));
+            this.tableLayoutPanel4.Controls.Add(this.waferMapView_OutputWafer, 0, 0);
             this.tableLayoutPanel4.Controls.Add(this.btnMapping, 0, 1);
             this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 3);
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(4, 4);
+            this.tableLayoutPanel4.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 2;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 87F));
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 13F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(179, 274);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(270, 411);
             this.tableLayoutPanel4.TabIndex = 18;
             // 
-            // waferMapView
+            // waferMapView_OutputWafer
             // 
-            this.waferMapView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.waferMapView.Location = new System.Drawing.Point(2, 3);
-            this.waferMapView.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.waferMapView.Name = "waferMapView";
-            this.waferMapView.Size = new System.Drawing.Size(175, 232);
-            this.waferMapView.TabIndex = 16;
+            this.waferMapView_OutputWafer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.waferMapView_OutputWafer.Location = new System.Drawing.Point(3, 4);
+            this.waferMapView_OutputWafer.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.waferMapView_OutputWafer.Name = "waferMapView_OutputWafer";
+            this.waferMapView_OutputWafer.Size = new System.Drawing.Size(264, 349);
+            this.waferMapView_OutputWafer.TabIndex = 16;
             // 
             // btnMapping
             // 
@@ -219,25 +215,24 @@
             this.btnMapping.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
             this.btnMapping.ForeColor = System.Drawing.Color.Black;
             this.btnMapping.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnMapping.Location = new System.Drawing.Point(2, 241);
-            this.btnMapping.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.btnMapping.Location = new System.Drawing.Point(3, 361);
+            this.btnMapping.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnMapping.Name = "btnMapping";
-            this.btnMapping.Size = new System.Drawing.Size(175, 30);
+            this.btnMapping.Size = new System.Drawing.Size(264, 46);
             this.btnMapping.TabIndex = 17;
             this.btnMapping.TabStop = false;
             this.btnMapping.Text = "Mapping";
             this.btnMapping.UseVisualStyleBackColor = false;
+            this.btnMapping.Click += new System.EventHandler(this.btnMapping_Click);
             // 
             // groupBoxOutputStageSeq
             // 
             this.groupBoxOutputStageSeq.Controls.Add(this.manualSequenceControlOutputStage);
             this.groupBoxOutputStageSeq.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBoxOutputStageSeq.Font = new System.Drawing.Font("맑은 고딕", 10F);
-            this.groupBoxOutputStageSeq.Location = new System.Drawing.Point(886, 377);
-            this.groupBoxOutputStageSeq.Margin = new System.Windows.Forms.Padding(2);
+            this.groupBoxOutputStageSeq.Location = new System.Drawing.Point(1329, 566);
             this.groupBoxOutputStageSeq.Name = "groupBoxOutputStageSeq";
-            this.groupBoxOutputStageSeq.Padding = new System.Windows.Forms.Padding(2);
-            this.groupBoxOutputStageSeq.Size = new System.Drawing.Size(376, 372);
+            this.groupBoxOutputStageSeq.Size = new System.Drawing.Size(564, 557);
             this.groupBoxOutputStageSeq.TabIndex = 23;
             this.groupBoxOutputStageSeq.TabStop = false;
             this.groupBoxOutputStageSeq.Text = "OutputStage Manual Seq";
@@ -245,12 +240,12 @@
             // manualSequenceControlOutputStage
             // 
             this.manualSequenceControlOutputStage.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.manualSequenceControlOutputStage.Location = new System.Drawing.Point(2, 20);
-            this.manualSequenceControlOutputStage.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
-            this.manualSequenceControlOutputStage.MinimumSize = new System.Drawing.Size(238, 200);
+            this.manualSequenceControlOutputStage.Location = new System.Drawing.Point(3, 30);
+            this.manualSequenceControlOutputStage.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.manualSequenceControlOutputStage.MinimumSize = new System.Drawing.Size(357, 300);
             this.manualSequenceControlOutputStage.Name = "manualSequenceControlOutputStage";
             this.manualSequenceControlOutputStage.ParentUnit = null;
-            this.manualSequenceControlOutputStage.Size = new System.Drawing.Size(372, 350);
+            this.manualSequenceControlOutputStage.Size = new System.Drawing.Size(558, 524);
             this.manualSequenceControlOutputStage.TabIndex = 13;
             // 
             // tableLayoutPanel1
@@ -267,20 +262,21 @@
             this.tableLayoutPanel1.Controls.Add(this.dioControl, 0, 1);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1896, 1126);
             this.tableLayoutPanel1.TabIndex = 24;
             // 
             // OutputWafer_Working
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1264, 751);
+            this.ClientSize = new System.Drawing.Size(1896, 1126);
             this.Controls.Add(this.tableLayoutPanel1);
-            this.Margin = new System.Windows.Forms.Padding(2, 3, 2, 3);
+            this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.Name = "OutputWafer_Working";
             this.Text = "WaferBin_Working";
             this.groupBox1.ResumeLayout(false);
@@ -304,7 +300,7 @@
         private System.Windows.Forms.GroupBox groupBoxImageView;
         private Common.Vision.VisionImageViewer _OutputWaferCameraviewer;
         private System.Windows.Forms.GroupBox groupBoxManual;
-        private Component.WaferMapView waferMapView;
+        private Component.WaferMapView waferMapView_OutputWafer;
         private Common.IndividualMenuButton btnMapping;
         private System.Windows.Forms.GroupBox groupBoxOutputStageSeq;
         private Component.ManualSequenceControl manualSequenceControlOutputStage;

@@ -57,8 +57,9 @@ namespace QMC.Common
                     Log.Write("LCP_280", "Alarm", "모든 알람이 수동으로 해제되었습니다.");
                 }
             }
-            
-            MessageBox.Show("Alarm Clear");
+
+            var mb = new MessageBoxOk();
+            mb.ShowDialog("Clear!", $"Alarm Clear");
         }
 
 

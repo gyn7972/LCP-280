@@ -1,8 +1,9 @@
-﻿using QMC.LCP_280.Process.Component;
+﻿using QMC.Common;
+using QMC.Common.UI;
+using QMC.LCP_280.Process.Component;
 using System;
-using System.Windows.Forms;
 using System.Threading.Tasks;
-using QMC.Common;
+using System.Windows.Forms;
 
 namespace QMC.LCP_280.Process.Unit.FormWork
 {
@@ -43,6 +44,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             Load += WaferBin_Working_Load;
             FormClosing += WaferBin_Working_FormClosing;
+
+            waferMapView_OutputWafer.SetMaterialCassette(OutputCassetteLifter.GetMaterialCassette());
         }
 
         public void PreloadUI()
@@ -162,7 +165,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent0(), "Cassette Present 0", "OCL_Cass0");
                     dioControl.BindDIOInput(() => OutputCassetteLifter.IsCassettePresent1(), "Cassette Present 1", "OCL_Cass1");
                     dioControl.BindDIOInput(() => OutputCassetteLifter.IsAnyCassettePresent(), "Cassette Any", "OCL_CassAny");
-                    dioControl.BindDIOInput(() => OutputCassetteLifter.RingJut(), "Ring Jut", "OCL_RingJut");
+                    dioControl.BindDIOInput(() => OutputCassetteLifter.IsBinProtrusionDetectionSensor(), "Ring Jut", "OCL_RingJut");
                     dioControl.BindDIOInput(() => OutputCassetteLifter.MappingSensor(), "Mapping Sensor", "OCL_Mapping");
                 }
 
@@ -295,6 +298,46 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void WaferBin_Working_FormClosing(object sender, FormClosingEventArgs e)
         {
             try { } catch { }
+        }
+
+        private void btnMapping_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (OutputCassetteLifter == null)
+                {
+                    MessageBox.Show("InputCassetteLifter 초기화되지 않았습니다.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                // Wafer 감지 수행.
+                var v = OutputCassetteLifter.ScanWaferAsync();
+                ProgressForm progressForm = new ProgressForm("Cassette Mapping", "Scanning......", v);
+                progressForm.ShowDialog(this);
+
+                int nRet = v.Result;
+
+                if (nRet != 0)
+                {
+                    Log.Write("InputWafer_Working", "", $"Wafer 감지 실패. 오류 코드: {nRet}", "오류");
+                    return;
+                }
+                // scan 후 재설정.
+                var materialCassette = OutputCassetteLifter.GetMaterialCassette();
+                if (materialCassette == null)
+                {
+                    MessageBox.Show("Wafer 감지 실패.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                waferMapView_OutputWafer.SetMaterialCassette(materialCassette);
+                waferMapView_OutputWafer.Refresh();
+
+                MessageBox.Show("Wafer 감지가 완료되었습니다.", "정보", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Wafer 감지 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

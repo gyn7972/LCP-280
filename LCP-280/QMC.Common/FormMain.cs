@@ -2,12 +2,69 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace QMC.Common
 {
     public partial class FormMain : Form
     {
+
+        // ==X 버튼 비활성화 코드 시작==
+        private const int CS_NOCLOSE = 0x200;
+        private const int WM_SYSCOMMAND = 0x0112;
+        private const int SC_CLOSE = 0xF060;
+
+        private const int MF_BYCOMMAND = 0x00000000;
+        private const int MF_GRAYED = 0x00000001;
+        private const int MF_DISABLED = 0x00000002;
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var cp = base.CreateParams;
+                // 시스템 메뉴의 Close 항목 비활성화(X 버튼 회색)
+                cp.ClassStyle |= CS_NOCLOSE;
+                return cp;
+            }
+        }
+
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+
+            // 최소화/최대화는 유지
+            this.ControlBox = true;
+            this.MinimizeBox = true;
+            this.MaximizeBox = true;
+
+            // 시스템 메뉴에서 Close 항목 회색 처리 및 제거
+            IntPtr hMenu = GetSystemMenu(this.Handle, false);
+            if (hMenu != IntPtr.Zero)
+            {
+                EnableMenuItem(hMenu, (uint)SC_CLOSE, MF_BYCOMMAND | MF_GRAYED | MF_DISABLED);
+                RemoveMenu(hMenu, (uint)SC_CLOSE, MF_BYCOMMAND);
+                DrawMenuBar(this.Handle);
+            }
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            // X 버튼, Alt+F4, 시스템 메뉴 Close 등 SC_CLOSE을 무시
+            if (m.Msg == WM_SYSCOMMAND && ((m.WParam.ToInt32() & 0xFFF0) == SC_CLOSE))
+                return;
+
+            base.WndProc(ref m);
+        }
+
+        [DllImport("user32.dll")] private static extern IntPtr GetSystemMenu(IntPtr hWnd, bool bRevert);
+        [DllImport("user32.dll")] private static extern bool RemoveMenu(IntPtr hMenu, uint uPosition, uint uFlags);
+        [DllImport("user32.dll")] private static extern bool EnableMenuItem(IntPtr hMenu, uint uIDEnableItem, uint uEnable);
+        [DllImport("user32.dll")] private static extern bool DrawMenuBar(IntPtr hWnd);
+        // ==X 버튼 비활성화 코드 끝==
+
+
         private TabControl mainTabControl;
         private Dictionary<TabPage, Form> _tabFormInstances;
 
@@ -24,18 +81,18 @@ namespace QMC.Common
         {
             InitializeComponent();
 
-            // 🔧 배경색을 흰색으로 설정
+            // 배경색을 흰색으로 설정
             this.BackColor = Color.White;
 
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializemainUI();
 
-            // 🔧 Visible 상태 변경 이벤트: 자식 크기만 동기화
+            // Visible 상태 변경 이벤트: 자식 크기만 동기화
             this.VisibleChanged += Formmain_VisibleChanged;
         }
 
         /// <summary>
-        /// 🔧 FormMain이 보여질 때 탭 자식 크기만 갱신(호스트가 최종 크기를 전달)
+        /// FormMain이 보여질 때 탭 자식 크기만 갱신(호스트가 최종 크기를 전달)
         /// </summary>
         private void Formmain_VisibleChanged(object sender, EventArgs e)
         {
@@ -47,14 +104,14 @@ namespace QMC.Common
 
         private void InitializemainUI()
         {
-            Console.WriteLine("🚀 Formmain.InitializemainUI() 시작");
+            Console.WriteLine("Formmain.InitializemainUI() 시작");
 
-            // 🔧 Formmain 배경색을 확실히 흰색으로 설정
+            // Formmain 배경색을 확실히 흰색으로 설정
             this.BackColor = Color.White;
 
             // TabControl 생성 및 테마 적용
             mainTabControl = new TabControl();
-            // 🔧 Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
+            // Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
             mainTabControl.Dock = DockStyle.Fill;
             mainTabControl.Font = _tabFont;
             mainTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
@@ -63,15 +120,15 @@ namespace QMC.Common
             mainTabControl.DrawItem += mainTabControl_DrawItem;
             mainTabControl.SelectedIndexChanged += mainTabControl_SelectedIndexChanged;
 
-            // 🔧 TabControl 배경색도 흰색으로 설정
+            // TabControl 배경색도 흰색으로 설정
             mainTabControl.BackColor = Color.White;
 
-            Console.WriteLine($"   TabControl 생성 완료: Size={mainTabControl.Size}, Visible={mainTabControl.Visible}");
+            Console.WriteLine($"TabControl 생성 완료: Size={mainTabControl.Size}, Visible={mainTabControl.Visible}");
 
             this.Controls.Add(mainTabControl);
 
-            Console.WriteLine($"   TabControl을 Formmain에 추가 완료");
-            Console.WriteLine($"   Formmain.Controls.Count: {this.Controls.Count}");
+            Console.WriteLine($"TabControl을 Formmain에 추가 완료");
+            Console.WriteLine($"Formmain.Controls.Count: {this.Controls.Count}");
 
             // FormManager에서 등록된 main 폼들을 자동으로 탭으로 추가
             LoadFormsFromManager();
@@ -80,11 +137,11 @@ namespace QMC.Common
             mainTabControl.Visible = true;
             mainTabControl.BringToFront();
 
-            // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
+            // 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
             EnsureFirstTabLoaded();
 
-            Console.WriteLine($"✅ InitializemainUI 완료");
-            Console.WriteLine($"   최종 TabControl 상태: Visible={mainTabControl.Visible}, TabCount={mainTabControl.TabPages.Count}");
+            Console.WriteLine($"InitializemainUI 완료");
+            Console.WriteLine($"최종 TabControl 상태: Visible={mainTabControl.Visible}, TabCount={mainTabControl.TabPages.Count}");
         }
 
         private void EnsureFirstTabLoaded()
@@ -98,7 +155,7 @@ namespace QMC.Common
                 var info = first.Tag as FormInfo;
                 if (info != null && !_tabFormInstances.ContainsKey(first))
                 {
-                    Console.WriteLine("🔹 초기 첫 탭 폼 로드 수행(Main)");
+                    Console.WriteLine("초기 첫 탭 폼 로드 수행(Main)");
                     LoadFormIntoTab(first, info);
                 }
             }
@@ -112,41 +169,44 @@ namespace QMC.Common
         {
             try
             {
-                Console.WriteLine("🔍 Formmain.LoadFormsFromManager() 시작");
+                Console.WriteLine("Formmain.LoadFormsFromManager() 시작");
 
                 var mainForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Main);
-                Console.WriteLine($"   등록된 main 폼 개수: {mainForms.Count}");
+                Console.WriteLine($"등록된 main 폼 개수: {mainForms.Count}");
 
                 foreach (var formInfo in mainForms)
                 {
-                    Console.WriteLine($"   main 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
+                    Console.WriteLine($"main 폼 발견: {formInfo.DisplayName} ({formInfo.FormType.Name})");
                     CreateTabFromFormInfo(formInfo);
                 }
 
                 if (mainForms.Count == 0)
                 {
-                    Console.WriteLine("⚠️ 등록된 main 폼이 없어서 기본 샘플 탭 생성");
+                    Console.WriteLine("등록된 main 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
 
-                Console.WriteLine($"✅ 최종 탭 개수: {mainTabControl.TabPages.Count}");
-                Console.WriteLine($"   mainTabControl.Visible: {mainTabControl.Visible}");
-                Console.WriteLine($"   mainTabControl.Size: {mainTabControl.Size}");
-                Console.WriteLine($"   mainTabControl.Dock: {mainTabControl.Dock}");
-                Console.WriteLine($"   Formmain.Visible: {this.Visible}");
-                Console.WriteLine($"   Formmain.Size: {this.Size}");
+                Console.WriteLine($"최종 탭 개수: {mainTabControl.TabPages.Count}");
+                Console.WriteLine($"mainTabControl.Visible: {mainTabControl.Visible}");
+                Console.WriteLine($"mainTabControl.Size: {mainTabControl.Size}");
+                Console.WriteLine($"mainTabControl.Dock: {mainTabControl.Dock}");
+                Console.WriteLine($"Formmain.Visible: {this.Visible}");
+                Console.WriteLine($"Formmain.Size: {this.Size}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ main 폼 로드 중 오류: {ex.Message}");
-                MessageBox.Show($"main 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Console.WriteLine($"main 폼 로드 중 오류: {ex.Message}");
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"main 폼 로드 중 오류 발생: {ex.Message}");
+
                 CreateSampleTabs();
             }
         }
 
         private void CreateTabFromFormInfo(FormInfo formInfo)
         {
-            Console.WriteLine($"🔧 탭 생성: {formInfo.DisplayName}");
+            Console.WriteLine($"탭 생성: {formInfo.DisplayName}");
             TabPage tabPage = new TabPage(formInfo.DisplayName);
             tabPage.Tag = formInfo;
             tabPage.BackColor = Color.White;
@@ -189,7 +249,9 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"폼 로드 중 오류 발생: {ex.Message}");
+
                 Label errorLabel = new Label
                 {
                     Text = $"폼 로드 실패: {formInfo.DisplayName}",
@@ -336,14 +398,14 @@ namespace QMC.Common
 
         public void SetPanelSize(int width, int height)
         {
-            Console.WriteLine($"🔧 Formmain.SetPanelSize() 호출: width={width}, height={height}");
+            Console.WriteLine($"Formmain.SetPanelSize() 호출: width={width}, height={height}");
             this.Size = new Size(width, height);
             this.ClientSize = new Size(width, height);
             _hostSized = true; // 호스트에서 유효 사이즈 전달 받음
             UpdateActiveChildSize();
             this.Invalidate();
             this.Update();
-            Console.WriteLine($"✅ Formmain.SetPanelSize() 완료: 최종 크기={this.Size}");
+            Console.WriteLine($"Formmain.SetPanelSize() 완료: 최종 크기={this.Size}");
         }
 
         #region Form Border Drawing
@@ -355,7 +417,7 @@ namespace QMC.Common
                 Rectangle borderRect = new Rectangle(0, 0, this.ClientSize.Width - 1, this.ClientSize.Height - 1);
                 e.Graphics.DrawRectangle(borderPen, borderRect);
             }
-            Console.WriteLine($"🖌️ Formmain 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
+            Console.WriteLine($"Formmain 테두리 그리기: Color={FormBorderColor}, Width={FormBorderWidth}, Size={this.ClientSize}");
         }
         protected override void OnResize(EventArgs e)
         {
@@ -369,7 +431,7 @@ namespace QMC.Common
         {
             FormBorderColor = color;
             FormBorderWidth = width;
-            Console.WriteLine($"🎨 Formmain 테두리 스타일 변경: Color={color}, Width={width}");
+            Console.WriteLine($"Formmain 테두리 스타일 변경: Color={color}, Width={width}");
         }
         public void ResetBorderStyle()
         {

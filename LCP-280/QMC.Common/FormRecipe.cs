@@ -24,18 +24,18 @@ namespace QMC.Common
         {
             InitializeComponent();
 
-            // 🔧 배경색을 흰색으로 설정
+            // 배경색을 흰색으로 설정
             this.BackColor = Color.White;
 
             _tabFormInstances = new Dictionary<TabPage, Form>();
             InitializerecipeUI();
 
-            // 🔧 Visible 상태 변경 이벤트: 자식 크기만 동기화
+            // Visible 상태 변경 이벤트: 자식 크기만 동기화
             this.VisibleChanged += Formrecipe_VisibleChanged;
         }
 
         /// <summary>
-        /// 🔧 FormRecipe가 보여질 때 탭 자식 크기만 갱신
+        /// FormRecipe가 보여질 때 탭 자식 크기만 갱신
         /// </summary>
         private void Formrecipe_VisibleChanged(object sender, EventArgs e)
         {
@@ -49,12 +49,12 @@ namespace QMC.Common
         {
             Console.WriteLine("🚀 Formrecipe.InitializerecipeUI() 시작");
 
-            // 🔧 Formrecipe 배경색을 확실히 흰색으로 설정
+            // Formrecipe 배경색을 확실히 흰색으로 설정
             this.BackColor = Color.White;
 
             // TabControl 생성 및 테마 적용
             recipeTabControl = new TabControl();
-            // 🔧 Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
+            // Dock=Fill로 즉시 부모를 가득 채움 → 초기 작은 사이즈 전달 방지
             recipeTabControl.Dock = DockStyle.Fill;
             recipeTabControl.Font = _tabFont;
             recipeTabControl.DrawMode = TabDrawMode.OwnerDrawFixed;
@@ -63,15 +63,15 @@ namespace QMC.Common
             recipeTabControl.DrawItem += recipeTabControl_DrawItem;
             recipeTabControl.SelectedIndexChanged += recipeTabControl_SelectedIndexChanged;
 
-            // 🔧 TabControl 배경색도 흰색으로 설정
+            // TabControl 배경색도 흰색으로 설정
             recipeTabControl.BackColor = Color.White;
 
-            Console.WriteLine($"   TabControl 생성 완료: Size={recipeTabControl.Size}, Visible={recipeTabControl.Visible}");
+            Console.WriteLine($"TabControl 생성 완료: Size={recipeTabControl.Size}, Visible={recipeTabControl.Visible}");
 
             this.Controls.Add(recipeTabControl);
 
-            Console.WriteLine($"   TabControl을 Formrecipe에 추가 완료");
-            Console.WriteLine($"   Formrecipe.Controls.Count: {this.Controls.Count}");
+            Console.WriteLine($"TabControl을 Formrecipe에 추가 완료");
+            Console.WriteLine($"Formrecipe.Controls.Count: {this.Controls.Count}");
 
             // FormManager에서 등록된 recipe 폼들을 자동으로 탭으로 추가
             LoadFormsFromManager();
@@ -80,11 +80,11 @@ namespace QMC.Common
             recipeTabControl.Visible = true;
             recipeTabControl.BringToFront();
 
-            // 🔧 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
+            // 첫 탭 즉시 로드 (크기 전달은 이후 일괄 처리)
             EnsureFirstTabLoaded();
 
-            Console.WriteLine($"✅ InitializerecipeUI 완료");
-            Console.WriteLine($"   최종 TabControl 상태: Visible={recipeTabControl.Visible}, TabCount={recipeTabControl.TabPages.Count}");
+            Console.WriteLine($"InitializerecipeUI 완료");
+            Console.WriteLine($"최종 TabControl 상태: Visible={recipeTabControl.Visible}, TabCount={recipeTabControl.TabPages.Count}");
         }
 
         private void EnsureFirstTabLoaded()
@@ -98,7 +98,7 @@ namespace QMC.Common
                 var info = first.Tag as FormInfo;
                 if (info != null && !_tabFormInstances.ContainsKey(first))
                 {
-                    Console.WriteLine("🔹 초기 첫 탭 폼 로드 수행(Recipe)");
+                    Console.WriteLine("초기 첫 탭 폼 로드 수행(Recipe)");
                     LoadFormIntoTab(first, info);
                 }
             }
@@ -112,10 +112,10 @@ namespace QMC.Common
         {
             try
             {
-                Console.WriteLine("🔍 Formrecipe.LoadFormsFromManager() 시작");
+                Console.WriteLine("Formrecipe.LoadFormsFromManager() 시작");
 
                 var recipeForms = FormManager.Instance.GetRegisteredForms(MenuButtonType.Recipe);
-                Console.WriteLine($"   등록된 recipe 폼 개수: {recipeForms.Count}");
+                Console.WriteLine($"등록된 recipe 폼 개수: {recipeForms.Count}");
 
                 foreach (var formInfo in recipeForms)
                 {
@@ -125,33 +125,36 @@ namespace QMC.Common
 
                 if (recipeForms.Count == 0)
                 {
-                    Console.WriteLine("⚠️ 등록된 recipe 폼이 없어서 기본 샘플 탭 생성");
+                    Console.WriteLine("등록된 recipe 폼이 없어서 기본 샘플 탭 생성");
                     CreateSampleTabs();
                 }
 
-                Console.WriteLine($"✅ 최종 탭 개수: {recipeTabControl.TabPages.Count}");
-                Console.WriteLine($"   recipeTabControl.Visible: {recipeTabControl.Visible}");
-                Console.WriteLine($"   recipeTabControl.Size: {recipeTabControl.Size}");
-                Console.WriteLine($"   recipeTabControl.Dock: {recipeTabControl.Dock}");
-                Console.WriteLine($"   Formrecipe.Visible: {this.Visible}");
-                Console.WriteLine($"   Formrecipe.Size: {this.Size}");
+                Console.WriteLine($"최종 탭 개수: {recipeTabControl.TabPages.Count}");
+                Console.WriteLine($"recipeTabControl.Visible: {recipeTabControl.Visible}");
+                Console.WriteLine($"recipeTabControl.Size: {recipeTabControl.Size}");
+                Console.WriteLine($"recipeTabControl.Dock: {recipeTabControl.Dock}");
+                Console.WriteLine($"Formrecipe.Visible: {this.Visible}");
+                Console.WriteLine($"Formrecipe.Size: {this.Size}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ recipe 폼 로드 중 오류: {ex.Message}");
-                MessageBox.Show($"recipe 폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Console.WriteLine($"recipe 폼 로드 중 오류: {ex.Message}");
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"recipe 폼 로드 중 오류 발생: {ex.Message}");
+
                 CreateSampleTabs();
             }
         }
 
         private void CreateTabFromFormInfo(FormInfo formInfo)
         {
-            Console.WriteLine($"🔧 탭 생성: {formInfo.DisplayName}");
+            Console.WriteLine($"탭 생성: {formInfo.DisplayName}");
             TabPage tabPage = new TabPage(formInfo.DisplayName);
             tabPage.Tag = formInfo;
             tabPage.BackColor = Color.White;
             recipeTabControl.TabPages.Add(tabPage);
-            Console.WriteLine($"   탭 추가 완료. 현재 탭 수: {recipeTabControl.TabPages.Count}");
+            Console.WriteLine($"탭 추가 완료. 현재 탭 수: {recipeTabControl.TabPages.Count}");
         }
 
         private void recipeTabControl_SelectedIndexChanged(object sender, EventArgs e)
@@ -189,7 +192,9 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"폼 로드 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"폼 로드 중 오류 발생: {ex.Message}");
+
                 Label errorLabel = new Label
                 {
                     Text = $"폼 로드 실패: {formInfo.DisplayName}",

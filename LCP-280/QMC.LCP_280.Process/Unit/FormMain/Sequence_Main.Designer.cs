@@ -32,33 +32,33 @@ namespace QMC.LCP_280.Process
             this.btnStopAll = new QMC.Common.IndividualMenuButton();
             this.btnStartAll = new QMC.Common.IndividualMenuButton();
             this.grpUnitCtrl = new System.Windows.Forms.GroupBox();
-            this.lblUnit = new System.Windows.Forms.Label();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.btnStopUnit = new QMC.Common.IndividualMenuButton();
             this.cmbUnits = new System.Windows.Forms.ComboBox();
+            this.btnStartUnit = new QMC.Common.IndividualMenuButton();
+            this.lblUnit = new System.Windows.Forms.Label();
             this.grpStatus = new System.Windows.Forms.GroupBox();
-            this.lblEquipmentInfo = new System.Windows.Forms.Label();
+            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
             this.lblEquipmentState = new System.Windows.Forms.Label();
+            this.lblEquipmentInfo = new System.Windows.Forms.Label();
             this.grpUnitList = new System.Windows.Forms.GroupBox();
             this.lstUnitStatus = new System.Windows.Forms.ListView();
             this.grpLog = new System.Windows.Forms.GroupBox();
             this.rtbLog = new System.Windows.Forms.RichTextBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.btnStartUnit = new QMC.Common.IndividualMenuButton();
-            this.btnStopUnit = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.grpEquipment.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
             this.grpUnitCtrl.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
             this.grpStatus.SuspendLayout();
+            this.tableLayoutPanel6.SuspendLayout();
             this.grpUnitList.SuspendLayout();
             this.grpLog.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
-            this.tableLayoutPanel4.SuspendLayout();
-            this.tableLayoutPanel3.SuspendLayout();
             this.tableLayoutPanel5.SuspendLayout();
-            this.tableLayoutPanel6.SuspendLayout();
+            this.tableLayoutPanel4.SuspendLayout();
             this.SuspendLayout();
             // 
             // grpEquipment
@@ -87,11 +87,11 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel2.Controls.Add(this.btnStopAll, 1, 0);
             this.tableLayoutPanel2.Controls.Add(this.btnStartAll, 0, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 17);
+            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 24);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
             this.tableLayoutPanel2.RowCount = 1;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(742, 43);
+            this.tableLayoutPanel2.Size = new System.Drawing.Size(742, 36);
             this.tableLayoutPanel2.TabIndex = 6;
             // 
             // btnLoadAllRecipes
@@ -107,7 +107,7 @@ namespace QMC.LCP_280.Process
             this.btnLoadAllRecipes.ImageSize = new System.Drawing.Size(45, 45);
             this.btnLoadAllRecipes.Location = new System.Drawing.Point(618, 3);
             this.btnLoadAllRecipes.Name = "btnLoadAllRecipes";
-            this.btnLoadAllRecipes.Size = new System.Drawing.Size(121, 37);
+            this.btnLoadAllRecipes.Size = new System.Drawing.Size(121, 30);
             this.btnLoadAllRecipes.TabIndex = 23;
             this.btnLoadAllRecipes.TabStop = false;
             this.btnLoadAllRecipes.Text = "Load Recipes";
@@ -126,7 +126,7 @@ namespace QMC.LCP_280.Process
             this.btnSaveAllRecipes.ImageSize = new System.Drawing.Size(45, 45);
             this.btnSaveAllRecipes.Location = new System.Drawing.Point(495, 3);
             this.btnSaveAllRecipes.Name = "btnSaveAllRecipes";
-            this.btnSaveAllRecipes.Size = new System.Drawing.Size(117, 37);
+            this.btnSaveAllRecipes.Size = new System.Drawing.Size(117, 30);
             this.btnSaveAllRecipes.TabIndex = 22;
             this.btnSaveAllRecipes.TabStop = false;
             this.btnSaveAllRecipes.Text = "Save Recipes";
@@ -145,7 +145,7 @@ namespace QMC.LCP_280.Process
             this.btnLoadAllConfigs.ImageSize = new System.Drawing.Size(45, 45);
             this.btnLoadAllConfigs.Location = new System.Drawing.Point(372, 3);
             this.btnLoadAllConfigs.Name = "btnLoadAllConfigs";
-            this.btnLoadAllConfigs.Size = new System.Drawing.Size(117, 37);
+            this.btnLoadAllConfigs.Size = new System.Drawing.Size(117, 30);
             this.btnLoadAllConfigs.TabIndex = 21;
             this.btnLoadAllConfigs.TabStop = false;
             this.btnLoadAllConfigs.Text = "Load Configs";
@@ -164,7 +164,7 @@ namespace QMC.LCP_280.Process
             this.btnSaveAllConfigs.ImageSize = new System.Drawing.Size(45, 45);
             this.btnSaveAllConfigs.Location = new System.Drawing.Point(249, 3);
             this.btnSaveAllConfigs.Name = "btnSaveAllConfigs";
-            this.btnSaveAllConfigs.Size = new System.Drawing.Size(117, 37);
+            this.btnSaveAllConfigs.Size = new System.Drawing.Size(117, 30);
             this.btnSaveAllConfigs.TabIndex = 20;
             this.btnSaveAllConfigs.TabStop = false;
             this.btnSaveAllConfigs.Text = "Save Configs";
@@ -183,7 +183,7 @@ namespace QMC.LCP_280.Process
             this.btnStopAll.ImageSize = new System.Drawing.Size(45, 45);
             this.btnStopAll.Location = new System.Drawing.Point(126, 3);
             this.btnStopAll.Name = "btnStopAll";
-            this.btnStopAll.Size = new System.Drawing.Size(117, 37);
+            this.btnStopAll.Size = new System.Drawing.Size(117, 30);
             this.btnStopAll.TabIndex = 19;
             this.btnStopAll.TabStop = false;
             this.btnStopAll.Text = "Stop All";
@@ -202,7 +202,7 @@ namespace QMC.LCP_280.Process
             this.btnStartAll.ImageSize = new System.Drawing.Size(45, 45);
             this.btnStartAll.Location = new System.Drawing.Point(3, 3);
             this.btnStartAll.Name = "btnStartAll";
-            this.btnStartAll.Size = new System.Drawing.Size(117, 37);
+            this.btnStartAll.Size = new System.Drawing.Size(117, 30);
             this.btnStartAll.TabIndex = 18;
             this.btnStartAll.TabStop = false;
             this.btnStartAll.Text = "Start All";
@@ -218,16 +218,43 @@ namespace QMC.LCP_280.Process
             this.grpUnitCtrl.TabStop = false;
             this.grpUnitCtrl.Text = "Individual Unit Control";
             // 
-            // lblUnit
+            // tableLayoutPanel3
             // 
-            this.lblUnit.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblUnit.Location = new System.Drawing.Point(3, 3);
-            this.lblUnit.Margin = new System.Windows.Forms.Padding(3);
-            this.lblUnit.Name = "lblUnit";
-            this.lblUnit.Size = new System.Drawing.Size(117, 37);
-            this.lblUnit.TabIndex = 0;
-            this.lblUnit.Text = "Select Unit:";
-            this.lblUnit.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.tableLayoutPanel3.ColumnCount = 4;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
+            this.tableLayoutPanel3.Controls.Add(this.btnStopUnit, 3, 0);
+            this.tableLayoutPanel3.Controls.Add(this.cmbUnits, 1, 0);
+            this.tableLayoutPanel3.Controls.Add(this.btnStartUnit, 2, 0);
+            this.tableLayoutPanel3.Controls.Add(this.lblUnit, 0, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 24);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 1;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(492, 36);
+            this.tableLayoutPanel3.TabIndex = 6;
+            // 
+            // btnStopUnit
+            // 
+            this.btnStopUnit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStopUnit.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnStopUnit.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStopUnit.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStopUnit.CustomForeColor = System.Drawing.Color.Black;
+            this.btnStopUnit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStopUnit.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStopUnit.ForeColor = System.Drawing.Color.Black;
+            this.btnStopUnit.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnStopUnit.Location = new System.Drawing.Point(372, 3);
+            this.btnStopUnit.Name = "btnStopUnit";
+            this.btnStopUnit.Size = new System.Drawing.Size(117, 30);
+            this.btnStopUnit.TabIndex = 20;
+            this.btnStopUnit.TabStop = false;
+            this.btnStopUnit.Text = "Stop Unit";
+            this.btnStopUnit.UseVisualStyleBackColor = false;
             // 
             // cmbUnits
             // 
@@ -237,8 +264,38 @@ namespace QMC.LCP_280.Process
             this.cmbUnits.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbUnits.Location = new System.Drawing.Point(126, 3);
             this.cmbUnits.Name = "cmbUnits";
-            this.cmbUnits.Size = new System.Drawing.Size(117, 20);
+            this.cmbUnits.Size = new System.Drawing.Size(117, 26);
             this.cmbUnits.TabIndex = 1;
+            // 
+            // btnStartUnit
+            // 
+            this.btnStartUnit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStartUnit.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btnStartUnit.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btnStartUnit.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStartUnit.CustomForeColor = System.Drawing.Color.Black;
+            this.btnStartUnit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.btnStartUnit.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btnStartUnit.ForeColor = System.Drawing.Color.Black;
+            this.btnStartUnit.ImageSize = new System.Drawing.Size(45, 45);
+            this.btnStartUnit.Location = new System.Drawing.Point(249, 3);
+            this.btnStartUnit.Name = "btnStartUnit";
+            this.btnStartUnit.Size = new System.Drawing.Size(117, 30);
+            this.btnStartUnit.TabIndex = 19;
+            this.btnStartUnit.TabStop = false;
+            this.btnStartUnit.Text = "Start Unit";
+            this.btnStartUnit.UseVisualStyleBackColor = false;
+            // 
+            // lblUnit
+            // 
+            this.lblUnit.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblUnit.Location = new System.Drawing.Point(3, 3);
+            this.lblUnit.Margin = new System.Windows.Forms.Padding(3);
+            this.lblUnit.Name = "lblUnit";
+            this.lblUnit.Size = new System.Drawing.Size(117, 30);
+            this.lblUnit.TabIndex = 0;
+            this.lblUnit.Text = "Select Unit:";
+            this.lblUnit.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // grpStatus
             // 
@@ -247,21 +304,25 @@ namespace QMC.LCP_280.Process
             this.grpStatus.Location = new System.Drawing.Point(3, 3);
             this.grpStatus.Name = "grpStatus";
             this.grpStatus.Padding = new System.Windows.Forms.Padding(10);
-            this.grpStatus.Size = new System.Drawing.Size(748, 288);
+            this.grpStatus.Size = new System.Drawing.Size(748, 438);
             this.grpStatus.TabIndex = 2;
             this.grpStatus.TabStop = false;
             this.grpStatus.Text = "Equipment Status";
             // 
-            // lblEquipmentInfo
+            // tableLayoutPanel6
             // 
-            this.lblEquipmentInfo.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblEquipmentInfo.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F);
-            this.lblEquipmentInfo.Location = new System.Drawing.Point(3, 53);
-            this.lblEquipmentInfo.Margin = new System.Windows.Forms.Padding(3);
-            this.lblEquipmentInfo.Name = "lblEquipmentInfo";
-            this.lblEquipmentInfo.Size = new System.Drawing.Size(722, 198);
-            this.lblEquipmentInfo.TabIndex = 0;
-            this.lblEquipmentInfo.Text = "Equipment: LCP-280\nManufacturer: QMC\nRegistered Units: 0";
+            this.tableLayoutPanel6.ColumnCount = 1;
+            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel6.Controls.Add(this.lblEquipmentState, 0, 0);
+            this.tableLayoutPanel6.Controls.Add(this.lblEquipmentInfo, 0, 1);
+            this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel6.Location = new System.Drawing.Point(10, 31);
+            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
+            this.tableLayoutPanel6.RowCount = 2;
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
+            this.tableLayoutPanel6.Size = new System.Drawing.Size(728, 397);
+            this.tableLayoutPanel6.TabIndex = 2;
             // 
             // lblEquipmentState
             // 
@@ -270,10 +331,21 @@ namespace QMC.LCP_280.Process
             this.lblEquipmentState.Location = new System.Drawing.Point(3, 3);
             this.lblEquipmentState.Margin = new System.Windows.Forms.Padding(3);
             this.lblEquipmentState.Name = "lblEquipmentState";
-            this.lblEquipmentState.Size = new System.Drawing.Size(722, 44);
+            this.lblEquipmentState.Size = new System.Drawing.Size(722, 73);
             this.lblEquipmentState.TabIndex = 1;
             this.lblEquipmentState.Text = "State: Ready";
             this.lblEquipmentState.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblEquipmentInfo
+            // 
+            this.lblEquipmentInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblEquipmentInfo.Font = new System.Drawing.Font("¸¼Àº °íµñ", 9F);
+            this.lblEquipmentInfo.Location = new System.Drawing.Point(3, 82);
+            this.lblEquipmentInfo.Margin = new System.Windows.Forms.Padding(3);
+            this.lblEquipmentInfo.Name = "lblEquipmentInfo";
+            this.lblEquipmentInfo.Size = new System.Drawing.Size(722, 312);
+            this.lblEquipmentInfo.TabIndex = 0;
+            this.lblEquipmentInfo.Text = "Equipment: LCP-280\nManufacturer: QMC\nRegistered Units: 0";
             // 
             // grpUnitList
             // 
@@ -282,7 +354,7 @@ namespace QMC.LCP_280.Process
             this.grpUnitList.Location = new System.Drawing.Point(757, 3);
             this.grpUnitList.Name = "grpUnitList";
             this.grpUnitList.Padding = new System.Windows.Forms.Padding(10);
-            this.grpUnitList.Size = new System.Drawing.Size(498, 288);
+            this.grpUnitList.Size = new System.Drawing.Size(498, 438);
             this.grpUnitList.TabIndex = 3;
             this.grpUnitList.TabStop = false;
             this.grpUnitList.Text = "Unit Status";
@@ -294,9 +366,9 @@ namespace QMC.LCP_280.Process
             this.lstUnitStatus.FullRowSelect = true;
             this.lstUnitStatus.GridLines = true;
             this.lstUnitStatus.HideSelection = false;
-            this.lstUnitStatus.Location = new System.Drawing.Point(10, 24);
+            this.lstUnitStatus.Location = new System.Drawing.Point(10, 31);
             this.lstUnitStatus.Name = "lstUnitStatus";
-            this.lstUnitStatus.Size = new System.Drawing.Size(478, 254);
+            this.lstUnitStatus.Size = new System.Drawing.Size(478, 397);
             this.lstUnitStatus.TabIndex = 0;
             this.lstUnitStatus.UseCompatibleStateImageBehavior = false;
             this.lstUnitStatus.View = System.Windows.Forms.View.Details;
@@ -305,10 +377,10 @@ namespace QMC.LCP_280.Process
             // 
             this.grpLog.Controls.Add(this.rtbLog);
             this.grpLog.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grpLog.Location = new System.Drawing.Point(3, 378);
+            this.grpLog.Location = new System.Drawing.Point(3, 528);
             this.grpLog.Name = "grpLog";
             this.grpLog.Padding = new System.Windows.Forms.Padding(10);
-            this.grpLog.Size = new System.Drawing.Size(1258, 370);
+            this.grpLog.Size = new System.Drawing.Size(1258, 220);
             this.grpLog.TabIndex = 4;
             this.grpLog.TabStop = false;
             this.grpLog.Text = "Operation Log";
@@ -319,10 +391,10 @@ namespace QMC.LCP_280.Process
             this.rtbLog.Dock = System.Windows.Forms.DockStyle.Fill;
             this.rtbLog.Font = new System.Drawing.Font("Consolas", 9F);
             this.rtbLog.ForeColor = System.Drawing.Color.LimeGreen;
-            this.rtbLog.Location = new System.Drawing.Point(10, 24);
+            this.rtbLog.Location = new System.Drawing.Point(10, 31);
             this.rtbLog.Name = "rtbLog";
             this.rtbLog.ReadOnly = true;
-            this.rtbLog.Size = new System.Drawing.Size(1238, 336);
+            this.rtbLog.Size = new System.Drawing.Size(1238, 179);
             this.rtbLog.TabIndex = 0;
             this.rtbLog.Text = "";
             // 
@@ -343,78 +415,6 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel1.Size = new System.Drawing.Size(1264, 751);
             this.tableLayoutPanel1.TabIndex = 5;
             // 
-            // tableLayoutPanel4
-            // 
-            this.tableLayoutPanel4.ColumnCount = 2;
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
-            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
-            this.tableLayoutPanel4.Controls.Add(this.grpStatus, 0, 0);
-            this.tableLayoutPanel4.Controls.Add(this.grpUnitList, 1, 0);
-            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 78);
-            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
-            this.tableLayoutPanel4.RowCount = 1;
-            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(1258, 294);
-            this.tableLayoutPanel4.TabIndex = 2;
-            // 
-            // tableLayoutPanel3
-            // 
-            this.tableLayoutPanel3.ColumnCount = 4;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 8.333333F));
-            this.tableLayoutPanel3.Controls.Add(this.btnStopUnit, 3, 0);
-            this.tableLayoutPanel3.Controls.Add(this.cmbUnits, 1, 0);
-            this.tableLayoutPanel3.Controls.Add(this.btnStartUnit, 2, 0);
-            this.tableLayoutPanel3.Controls.Add(this.lblUnit, 0, 0);
-            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 17);
-            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 1;
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(492, 43);
-            this.tableLayoutPanel3.TabIndex = 6;
-            // 
-            // btnStartUnit
-            // 
-            this.btnStartUnit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStartUnit.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnStartUnit.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStartUnit.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStartUnit.CustomForeColor = System.Drawing.Color.Black;
-            this.btnStartUnit.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnStartUnit.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStartUnit.ForeColor = System.Drawing.Color.Black;
-            this.btnStartUnit.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStartUnit.Location = new System.Drawing.Point(249, 3);
-            this.btnStartUnit.Name = "btnStartUnit";
-            this.btnStartUnit.Size = new System.Drawing.Size(117, 37);
-            this.btnStartUnit.TabIndex = 19;
-            this.btnStartUnit.TabStop = false;
-            this.btnStartUnit.Text = "Start Unit";
-            this.btnStartUnit.UseVisualStyleBackColor = false;
-            // 
-            // btnStopUnit
-            // 
-            this.btnStopUnit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStopUnit.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnStopUnit.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnStopUnit.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStopUnit.CustomForeColor = System.Drawing.Color.Black;
-            this.btnStopUnit.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnStopUnit.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnStopUnit.ForeColor = System.Drawing.Color.Black;
-            this.btnStopUnit.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnStopUnit.Location = new System.Drawing.Point(372, 3);
-            this.btnStopUnit.Name = "btnStopUnit";
-            this.btnStopUnit.Size = new System.Drawing.Size(117, 37);
-            this.btnStopUnit.TabIndex = 20;
-            this.btnStopUnit.TabStop = false;
-            this.btnStopUnit.Text = "Stop Unit";
-            this.btnStopUnit.UseVisualStyleBackColor = false;
-            // 
             // tableLayoutPanel5
             // 
             this.tableLayoutPanel5.ColumnCount = 2;
@@ -430,20 +430,20 @@ namespace QMC.LCP_280.Process
             this.tableLayoutPanel5.Size = new System.Drawing.Size(1258, 69);
             this.tableLayoutPanel5.TabIndex = 2;
             // 
-            // tableLayoutPanel6
+            // tableLayoutPanel4
             // 
-            this.tableLayoutPanel6.ColumnCount = 1;
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel6.Controls.Add(this.lblEquipmentState, 0, 0);
-            this.tableLayoutPanel6.Controls.Add(this.lblEquipmentInfo, 0, 1);
-            this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(10, 24);
-            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
-            this.tableLayoutPanel6.RowCount = 2;
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 80F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(728, 254);
-            this.tableLayoutPanel6.TabIndex = 2;
+            this.tableLayoutPanel4.ColumnCount = 2;
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 60F));
+            this.tableLayoutPanel4.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 40F));
+            this.tableLayoutPanel4.Controls.Add(this.grpStatus, 0, 0);
+            this.tableLayoutPanel4.Controls.Add(this.grpUnitList, 1, 0);
+            this.tableLayoutPanel4.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel4.Location = new System.Drawing.Point(3, 78);
+            this.tableLayoutPanel4.Name = "tableLayoutPanel4";
+            this.tableLayoutPanel4.RowCount = 1;
+            this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(1258, 444);
+            this.tableLayoutPanel4.TabIndex = 2;
             // 
             // Sequence_Main
             // 
@@ -457,14 +457,14 @@ namespace QMC.LCP_280.Process
             this.grpEquipment.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
             this.grpUnitCtrl.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
             this.grpStatus.ResumeLayout(false);
+            this.tableLayoutPanel6.ResumeLayout(false);
             this.grpUnitList.ResumeLayout(false);
             this.grpLog.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
-            this.tableLayoutPanel4.ResumeLayout(false);
-            this.tableLayoutPanel3.ResumeLayout(false);
             this.tableLayoutPanel5.ResumeLayout(false);
-            this.tableLayoutPanel6.ResumeLayout(false);
+            this.tableLayoutPanel4.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }

@@ -79,6 +79,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             }).ToList();
 
             displayView1.SetItems(items);
+            displayView1.Refresh();
         }
 
         /// <summary>

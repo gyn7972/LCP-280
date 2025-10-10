@@ -73,8 +73,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_axisManager == null)
                 {
-                    MessageBox.Show("AxisManager가 초기화되지 않았습니다.", "알림",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "AxisManager가 초기화되지 않았습니다.");
+
                     selectAxisListBoxItemsView.SetItems();
                     return;
                 }
@@ -223,7 +224,7 @@ namespace QMC.LCP_280.Process.Unit
             if (axis == null || axis.Status == null || axis.Status.PV == null) return;
 
             double pos = axis.Status.PV.ActualPosition;
-            lblPosition.Text = pos.ToString("0.000", CultureInfo.InvariantCulture);
+            lblPosition.Text = pos.ToString("0.000", CultureInfo.InvariantCulture) + " mm";
         }
 
         // ===== Jog 처리 =====
@@ -281,7 +282,8 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (!CheckSafeToDrive(axis, jc))
                 {
-                    MessageBox.Show(this, "현재 상태에서 해당 축을 구동할 수 없습니다.", "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Interlock!", "현재 상태에서 해당 축을 구동할 수 없습니다.");
                     return;
                 }
 
@@ -332,7 +334,10 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     string reason;
                     if (!rotary.TryMoveIndexPrev(out reason) && !string.IsNullOrEmpty(reason))
-                        MessageBox.Show(this, reason, "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Interlock!", reason);
+                    }
                     return;
                 }
 
@@ -365,7 +370,17 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     string reason;
                     if (!rotary.TryMoveIndexNext(out reason) && !string.IsNullOrEmpty(reason))
-                        MessageBox.Show(this, reason, "Interlock", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    {
+                        var mb = new MessageBoxOk();
+                        mb.ShowDialog("Interlock!", reason);
+                    }
+                    else
+                    {
+                        btnNextIndex.Enabled = btnPrevIndex.Enabled = false;
+                        // LoadIndexChanged 이벤트로 재활성화
+                        rotary.LoadIndexChanged -= Rotary_LoadIndexChanged_ForJog;
+                        rotary.LoadIndexChanged += Rotary_LoadIndexChanged_ForJog;
+                    }
                     return;
                 }
 
@@ -383,6 +398,19 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(ex);
             }
+        }
+        private void Rotary_LoadIndexChanged_ForJog(object sender, int idx)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action<object, int>(Rotary_LoadIndexChanged_ForJog), sender, idx);
+                return;
+            }
+            btnNextIndex.Enabled = btnPrevIndex.Enabled = true;
+            // 필요시 한 번만 구독 유지: 해제
+            var r = sender as Rotary;
+            if (r != null)
+                r.LoadIndexChanged -= Rotary_LoadIndexChanged_ForJog;
         }
 
         private void btnStop_Click(object sender, EventArgs e)

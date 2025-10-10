@@ -82,6 +82,7 @@
             this.btnApplyConfig.TabStop = false;
             this.btnApplyConfig.Text = "Apply && Save";
             this.btnApplyConfig.UseVisualStyleBackColor = false;
+            this.btnApplyConfig.Click += new System.EventHandler(this.btnApplyConfig_Click);
             // 
             // btnReloadConfig
             // 
@@ -101,6 +102,7 @@
             this.btnReloadConfig.TabStop = false;
             this.btnReloadConfig.Text = "Reload";
             this.btnReloadConfig.UseVisualStyleBackColor = false;
+            this.btnReloadConfig.Click += new System.EventHandler(this.btnReloadConfig_Click);
             // 
             // UnitConfig
             // 

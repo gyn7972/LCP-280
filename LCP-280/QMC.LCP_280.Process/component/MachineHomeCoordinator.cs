@@ -225,33 +225,37 @@ namespace QMC.LCP_280.Process.Component
                                     return (false, "Wafer Feeder Unclamp Sensor Not Detected");
 
                                 // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
-                                try
+                                if(inFeeder.Config.IsDryRun == false)
                                 {
-                                    if (inFeeder.IsRingPresent())
+                                    try
                                     {
-                                        var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
-                                        var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
-                                        var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-                                        try { axis.JogStart(+vel); } catch { }
-                                        try
-                                        {
-                                            while (DateTime.UtcNow < jogUntil)
-                                            {
-                                                if (ct.IsCancellationRequested) break;
-                                                if (!inFeeder.IsRingPresent()) break;
-                                                await Task.Delay(20, ct).ConfigureAwait(false);
-                                            }
-                                        }
-                                        finally
-                                        {
-                                            try { axis.JogStop(); } catch { }
-                                        }
                                         if (inFeeder.IsRingPresent())
-                                            return (false, "Wafer Feeder Ring Clear Timeout");
-                                    }
-                                }
-                                catch { /* ignore jog errors */ }
+                                        {
+                                            var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
+                                            var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
+                                            var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+                                            try { axis.JogStart(+vel); } catch { }
+                                            try
+                                            {
+                                                while (DateTime.UtcNow < jogUntil)
+                                                {
+                                                    if (ct.IsCancellationRequested) break;
+                                                    if (!inFeeder.IsRingPresent()) break;
+                                                    await Task.Delay(20, ct).ConfigureAwait(false);
+                                                }
+                                            }
+                                            finally
+                                            {
+                                                try { axis.JogStop(); } catch { }
+                                            }
 
+                                            if (inFeeder.IsRingPresent())
+                                                return (false, "Wafer Feeder Ring Clear Timeout");
+                                        }
+                                    }
+                                    catch { /* ignore jog errors */ }
+                                }    
+                                
                                 await Task.Delay(100, ct).ConfigureAwait(false);
                                 if (!inFeeder.SetLift(true))
                                     return (false, "Wafer Feeder Up Failure");
@@ -290,34 +294,37 @@ namespace QMC.LCP_280.Process.Component
                                 if (!outFeeder.IsUnClamped())
                                     return (false, "Bin Feeder Unclamp Sensor Not Detected");
 
-                                // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
-                                try
+                                if(outFeeder.Config.IsDryRun == false)
                                 {
-                                    if (outFeeder.IsRingPresent())
+                                    // 링 존재 시 → +Y 조그로 센서 OFF까지 이동
+                                    try
                                     {
-                                        var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
-                                        var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
-                                        var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
-                                        try { axis.JogStart(+vel); } catch { }
-                                        try
-                                        {
-                                            while (DateTime.UtcNow < jogUntil)
-                                            {
-                                                if (ct.IsCancellationRequested) break;
-                                                if (!outFeeder.IsRingPresent()) break;
-                                                await Task.Delay(20, ct).ConfigureAwait(false);
-                                            }
-                                        }
-                                        finally
-                                        {
-                                            try { axis.JogStop(); } catch { }
-                                        }
                                         if (outFeeder.IsRingPresent())
-                                            return (false, "Wafer Feeder Ring Clear Timeout");
+                                        {
+                                            var vel = axis.Config != null ? Math.Abs(axis.Config.JogFineVelocity) : 1.0;
+                                            var timeoutMs = axis.Setup != null ? axis.Setup.SensorDetectionTimeoutMs : 3000;
+                                            var jogUntil = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+                                            try { axis.JogStart(+vel); } catch { }
+                                            try
+                                            {
+                                                while (DateTime.UtcNow < jogUntil)
+                                                {
+                                                    if (ct.IsCancellationRequested) break;
+                                                    if (!outFeeder.IsRingPresent()) break;
+                                                    await Task.Delay(20, ct).ConfigureAwait(false);
+                                                }
+                                            }
+                                            finally
+                                            {
+                                                try { axis.JogStop(); } catch { }
+                                            }
+                                            if (outFeeder.IsRingPresent())
+                                                return (false, "Wafer Feeder Ring Clear Timeout");
+                                        }
                                     }
+                                    catch { /* ignore jog errors */ }
                                 }
-                                catch { /* ignore jog errors */ }
-
+                                
                                 await Task.Delay(100, ct).ConfigureAwait(false);
                                 if (!outFeeder.SetLift(true))
                                     return (false, "Bin Feeder Up Failure");
@@ -361,7 +368,8 @@ namespace QMC.LCP_280.Process.Component
                         {
                             if (eq.Units != null && eq.Units.TryGetValue("OutputCassetteLifter", out var uOL) && uOL is OutputCassetteLifter outLifter)
                             {
-                                if (outLifter.RingJut())
+                                //if (outLifter.RingJut())
+                                if(outLifter.IsBinProtrusionDetectionSensor())
                                     return (false, "OutputCassetteLifter Ring JUT Detected");
                             }
                         }

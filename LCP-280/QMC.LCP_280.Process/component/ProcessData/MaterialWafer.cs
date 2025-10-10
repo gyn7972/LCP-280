@@ -108,7 +108,8 @@ namespace QMC.LCP_280.Process.Component
                         merged.Add(p);
                     }
                 }
-                if (merged.Count == 0) return;
+                if (merged.Count == 0) 
+                    return;
 
                 // 2) 좌상단 기준 Chip (X 최소, 그 다음 Y 최소)
                 var topLeft = merged.OrderBy(v => v.X).ThenBy(v => v.Y).First();

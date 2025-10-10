@@ -35,6 +35,7 @@
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.chart = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
+            this.cbDisplayVoltage = new System.Windows.Forms.CheckBox();
             this.nudDataCount = new System.Windows.Forms.NumericUpDown();
             this.label2 = new System.Windows.Forms.Label();
             this.cbDisplayItem = new System.Windows.Forms.ComboBox();
@@ -46,7 +47,6 @@
             this.label3 = new System.Windows.Forms.Label();
             this.tbAxisYMin = new System.Windows.Forms.TextBox();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
-            this.cbDisplayVoltage = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel4.SuspendLayout();
@@ -62,7 +62,7 @@
             this.groupBox1.Font = new System.Drawing.Font("맑은 고딕", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
             this.groupBox1.Location = new System.Drawing.Point(0, 0);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(7);
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(0);
             this.groupBox1.Size = new System.Drawing.Size(652, 423);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
@@ -74,13 +74,13 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel4, 0, 0);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(7, 25);
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 18);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 1;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 391F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 391F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(638, 391);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(652, 405);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // tableLayoutPanel4
@@ -96,7 +96,7 @@
             this.tableLayoutPanel4.Name = "tableLayoutPanel4";
             this.tableLayoutPanel4.RowCount = 1;
             this.tableLayoutPanel4.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel4.Size = new System.Drawing.Size(638, 391);
+            this.tableLayoutPanel4.Size = new System.Drawing.Size(652, 405);
             this.tableLayoutPanel4.TabIndex = 32;
             // 
             // chart
@@ -108,7 +108,7 @@
             this.chart.Legends.Add(legend1);
             this.chart.Location = new System.Drawing.Point(3, 3);
             this.chart.Name = "chart";
-            this.chart.Size = new System.Drawing.Size(482, 385);
+            this.chart.Size = new System.Drawing.Size(496, 399);
             this.chart.TabIndex = 33;
             // 
             // tableLayoutPanel5
@@ -127,8 +127,7 @@
             this.tableLayoutPanel5.Controls.Add(this.label3, 0, 4);
             this.tableLayoutPanel5.Controls.Add(this.tbAxisYMin, 0, 5);
             this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(491, 0);
-            this.tableLayoutPanel5.Margin = new System.Windows.Forms.Padding(3, 0, 3, 0);
+            this.tableLayoutPanel5.Location = new System.Drawing.Point(505, 3);
             this.tableLayoutPanel5.Name = "tableLayoutPanel5";
             this.tableLayoutPanel5.RowCount = 12;
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
@@ -143,8 +142,22 @@
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
             this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(144, 391);
+            this.tableLayoutPanel5.Size = new System.Drawing.Size(144, 399);
             this.tableLayoutPanel5.TabIndex = 34;
+            // 
+            // cbDisplayVoltage
+            // 
+            this.cbDisplayVoltage.AutoSize = true;
+            this.cbDisplayVoltage.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cbDisplayVoltage.Enabled = false;
+            this.cbDisplayVoltage.Location = new System.Drawing.Point(3, 268);
+            this.cbDisplayVoltage.Name = "cbDisplayVoltage";
+            this.cbDisplayVoltage.Size = new System.Drawing.Size(138, 24);
+            this.cbDisplayVoltage.TabIndex = 35;
+            this.cbDisplayVoltage.Text = "Display Voltage";
+            this.cbDisplayVoltage.UseVisualStyleBackColor = true;
+            this.cbDisplayVoltage.Visible = false;
+            this.cbDisplayVoltage.CheckedChanged += new System.EventHandler(this.cbDisplayVoltage_CheckedChanged);
             // 
             // nudDataCount
             // 
@@ -173,9 +186,10 @@
             // label2
             // 
             this.label2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label2.Location = new System.Drawing.Point(3, 50);
+            this.label2.Location = new System.Drawing.Point(3, 53);
+            this.label2.Margin = new System.Windows.Forms.Padding(3);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(138, 20);
+            this.label2.Size = new System.Drawing.Size(138, 14);
             this.label2.TabIndex = 33;
             this.label2.Text = "Data Count";
             this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -184,19 +198,19 @@
             // 
             this.cbDisplayItem.Dock = System.Windows.Forms.DockStyle.Fill;
             this.cbDisplayItem.FormattingEnabled = true;
-            this.cbDisplayItem.Location = new System.Drawing.Point(0, 20);
-            this.cbDisplayItem.Margin = new System.Windows.Forms.Padding(0);
+            this.cbDisplayItem.Location = new System.Drawing.Point(3, 23);
             this.cbDisplayItem.Name = "cbDisplayItem";
-            this.cbDisplayItem.Size = new System.Drawing.Size(144, 25);
+            this.cbDisplayItem.Size = new System.Drawing.Size(138, 25);
             this.cbDisplayItem.TabIndex = 32;
             this.cbDisplayItem.SelectedValueChanged += new System.EventHandler(this.cbDisplayItem_SelectedValueChanged);
             // 
             // label1
             // 
             this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label1.Location = new System.Drawing.Point(3, 0);
+            this.label1.Location = new System.Drawing.Point(3, 3);
+            this.label1.Margin = new System.Windows.Forms.Padding(3);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(138, 20);
+            this.label1.Size = new System.Drawing.Size(138, 14);
             this.label1.TabIndex = 31;
             this.label1.Text = "Display Item";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -204,10 +218,10 @@
             // cbAutoScale
             // 
             this.cbAutoScale.AutoSize = true;
-            this.cbAutoScale.Dock = System.Windows.Forms.DockStyle.Right;
-            this.cbAutoScale.Location = new System.Drawing.Point(50, 238);
+            this.cbAutoScale.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.cbAutoScale.Location = new System.Drawing.Point(3, 238);
             this.cbAutoScale.Name = "cbAutoScale";
-            this.cbAutoScale.Size = new System.Drawing.Size(91, 24);
+            this.cbAutoScale.Size = new System.Drawing.Size(138, 24);
             this.cbAutoScale.TabIndex = 30;
             this.cbAutoScale.Text = "Auto Scale";
             this.cbAutoScale.UseVisualStyleBackColor = true;
@@ -243,9 +257,10 @@
             // label4
             // 
             this.label4.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label4.Location = new System.Drawing.Point(3, 150);
+            this.label4.Location = new System.Drawing.Point(3, 153);
+            this.label4.Margin = new System.Windows.Forms.Padding(3);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(138, 20);
+            this.label4.Size = new System.Drawing.Size(138, 14);
             this.label4.TabIndex = 4;
             this.label4.Text = "Y Axis Max";
             this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -253,9 +268,10 @@
             // label3
             // 
             this.label3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label3.Location = new System.Drawing.Point(3, 100);
+            this.label3.Location = new System.Drawing.Point(3, 103);
+            this.label3.Margin = new System.Windows.Forms.Padding(3);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(138, 20);
+            this.label3.Size = new System.Drawing.Size(138, 14);
             this.label3.TabIndex = 2;
             this.label3.Text = "Y Axis Min";
             this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -267,18 +283,6 @@
             this.tbAxisYMin.Name = "tbAxisYMin";
             this.tbAxisYMin.Size = new System.Drawing.Size(138, 25);
             this.tbAxisYMin.TabIndex = 6;
-            // 
-            // cbDisplayVoltage
-            // 
-            this.cbDisplayVoltage.AutoSize = true;
-            this.cbDisplayVoltage.Dock = System.Windows.Forms.DockStyle.Right;
-            this.cbDisplayVoltage.Location = new System.Drawing.Point(22, 268);
-            this.cbDisplayVoltage.Name = "cbDisplayVoltage";
-            this.cbDisplayVoltage.Size = new System.Drawing.Size(119, 24);
-            this.cbDisplayVoltage.TabIndex = 35;
-            this.cbDisplayVoltage.Text = "Display Voltage";
-            this.cbDisplayVoltage.UseVisualStyleBackColor = true;
-            this.cbDisplayVoltage.CheckedChanged += new System.EventHandler(this.cbDisplayVoltage_CheckedChanged);
             // 
             // StrainGageChart
             // 

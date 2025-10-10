@@ -19,24 +19,49 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             InitializeComponent();
         }
 
-        //public Component.WaferMapView GetWaferMapView()
-        //{
-        //    return waferMapView;
-        //}
 
         public Component.WaferSelectMapView GetWaferSelectMapView()
         {
             return waferSelectMapView;
         }
 
+        // UI 스레드 실행 헬퍼
+        private void RunOnUI(Action action)
+        {
+            if (action == null) return;
+            if (IsDisposed) return;
+            if (!IsHandleCreated)
+            {
+                // 아직 Handle 미생성일 경우 Load 이후로 미루고 싶으면 필요 시 큐에 넣는 로직 추가 가능
+                return;
+            }
+
+            if (InvokeRequired)
+            {
+                try { BeginInvoke(action); } catch { /* Dispose 중 */ }
+            }
+            else
+            {
+                action();
+            }
+        }
+
         public void SetWaferCarrierId(string id)
         {
-            lblWaferIdValue.Text = id;
+            RunOnUI(() =>
+            {
+                if (lblWaferIdValue != null && !lblWaferIdValue.IsDisposed)
+                    lblWaferIdValue.Text = id ?? string.Empty;
+            });
         }
 
         public void UpdateWaferCount(int count)
         {
-            lblWaferCountValue.Text = count.ToString();
+            RunOnUI(() =>
+            {
+                if (lblWaferCountValue != null && !lblWaferCountValue.IsDisposed)
+                    lblWaferCountValue.Text = count.ToString();
+            });
         }
     }
 }

@@ -542,8 +542,18 @@ namespace QMC.Common.Motions
         private static async Task<HomeAxisResult> HomeOneAsync(MotionAxis axis, CancellationToken token)
         {
             if (axis == null) return new HomeAxisResult(null, -1, new ArgumentNullException("axis"), false, "axis null");
+
+
             return await Task.Run(() =>
             {
+                // 스레드 이름 안전 설정 (한 번만 가능, 스레드풀 스레드는 재사용됨)
+                var t = Thread.CurrentThread;
+                if (t.Name == null)
+                {
+                    try { t.Name = $"HOME:{axis.Name}"; } 
+                    catch { /* 이미 이름이 있으면 무시 */ }
+                }
+
                 try
                 {
                     token.ThrowIfCancellationRequested();
@@ -560,7 +570,17 @@ namespace QMC.Common.Motions
                 }
             }, token).ConfigureAwait(false);
         }
-        private static void TryStop(MotionAxis axis) { try { axis?.EmgStop(); } catch { } try { axis?.Stop(); } catch { } }
+        private static void TryStop(MotionAxis axis) 
+        { 
+            try 
+            { 
+                axis?.EmgStop(); 
+            } 
+            catch 
+            { } 
+            
+            try { axis?.Stop(); } 
+            catch { } }
     }
 
     public sealed class HomeAxisResult

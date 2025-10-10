@@ -83,7 +83,8 @@ namespace QMC.Common
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Unit Setup 폼 자동 등록 중 오류: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Warning!", $"Unit Setup 폼 자동 등록 중 오류: {ex.Message}");
             }
         }
 

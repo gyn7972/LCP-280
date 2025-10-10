@@ -13,7 +13,6 @@
  * 
  */
 
-using Newtonsoft.Json.Linq;
 using QMC.Common.Cameras;
 using QMC.Common.Component;
 using QMC.Common.Unit;
@@ -30,7 +29,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.Common.Vision.Tools.PatternMatchingResult;
-using static System.Net.Mime.MediaTypeNames;
+using QMC.LCP_280.Process.Component;
+using QMC.Common.LightController;
+
 //using QMC.eFramework.Vision.Tools;
 
 namespace QMC.Common.Vision
@@ -80,6 +81,8 @@ namespace QMC.Common.Vision
             ImageLoad,
             [Abbreviation("Image save")]
             ImageSave,
+            [Abbreviation("Light Control")]
+            LightControl,
             [Abbreviation("Result overlay clear")]
             ResultOverlayClear,
             [Abbreviation("Image auto fit")]
@@ -1036,6 +1039,8 @@ namespace QMC.Common.Vision
         //    executor.JobManager.SelectedIndexChanged += JobManager_SelectedIndexChanged;
         //}
 
+        public event EventHandler LightControlRequested;
+
         private void M_CameraSwitch_AfterChange(object sender, CameraChangeEventArgs e)
         {
             CameraSwitch cameraSwitch = sender as CameraSwitch;
@@ -1117,6 +1122,7 @@ namespace QMC.Common.Vision
             SaveFileDialog dialog = null;
             StringBuilder builder = null;
             VisionImage.FileFilter[] filter = null;
+
             if (item.Name == MenuItems.ImageLoad.ToString())
             {
                 OpenFileDialog openFileDialog = new OpenFileDialog();
@@ -1201,6 +1207,10 @@ namespace QMC.Common.Vision
                 {
                     this.InputImage.Save(dialog.FileName, filter[dialog.FilterIndex - 1]);
                 }
+            }
+            else if (item.Name == MenuItems.LightControl.ToString())
+            {
+                LightControlRequested?.Invoke(this, EventArgs.Empty);
             }
             else if (item.Name == MenuItems.ImageAutoFit.ToString())
             {
@@ -1705,52 +1715,6 @@ namespace QMC.Common.Vision
                                     }
                                 }
                             }
-                            //lock (bufferedGrphics)
-                            //{
-                            //    OwnedOverlayCollection resultNormal = this.NormalOverlays;
-                            //    try
-                            //    {
-                            //        for (int i = 0; i < resultNormal.Count; i++)
-                            //        {
-                            //            if (resultNormal[i].Visible == true)
-                            //                resultNormal[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-                            //        }
-                            //    }
-                            //    catch (Exception ex)
-                            //    {
-                            //        Log.Write(ex);
-                            //    }
-
-                            //    OwnedOverlayCollection resultOverlays = this.ResultOverlays;
-                            //    {
-                            //        try
-                            //        {
-                            //            lock(resultOverlays)
-                            //            {
-                            //                for (int i = 0; i < resultOverlays.Count; i++)
-                            //                {
-                            //                    lock(bufferedGrphics)
-                            //                    {
-                            //                        //Todo: 확인 해봐야함.
-                            //                        if (resultOverlays[i].Visible == true)
-                            //                        {
-                            //                            resultOverlays[i].Draw(this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-                            //                            //resultOverlays[i].Draw( this.Scale.GetCenterPoint()+ this.Scale.GetOffset(), size, new SizeD(this.Size.Width, this.Size.Height), bufferedGrphics);
-
-                            //                        }
-
-                            //                    }
-
-                            //                }
-                            //            }
-
-                            //        }
-                            //        catch (Exception ex)
-                            //        {
-                            //            Log.Write(ex);
-                            //        }
-                            //    }
-                            //}
                         }
 
                         this.m_IsChanged = false;
@@ -1835,7 +1799,7 @@ namespace QMC.Common.Vision
 
                 this.ContextMenuStrip.Items.Add(item);
 
-                if (items[i] == MenuItems.ImageSave || items[i] == MenuItems.ResultOverlayClear)
+                if (items[i] == MenuItems.LightControl || items[i] == MenuItems.ResultOverlayClear)
                 {
                     this.ContextMenuStrip.Items.Add(new ToolStripSeparator());
                 }

@@ -74,7 +74,27 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        public override int OnRun() { int ret = 0; return ret; }
+        public override int OnRun() 
+        {
+            int ret = 0;
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                ret = -1;
+            }
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+            return ret;
+        }
         public override int OnStop() 
         {
             int ret = 0;
@@ -122,13 +142,13 @@ namespace QMC.LCP_280.Process.Unit
             _boundAxes.Clear();
             foreach (var kv in Axes) _boundAxes.Add(kv.Value);
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         #endregion
 
         #region IO Helpers
@@ -163,7 +183,10 @@ namespace QMC.LCP_280.Process.Unit
         public int MeasureChip(bool bFineSpeed = false)
         {
             int bRet = 0;
-            this.CurrentFunc = MeasureChip;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = MeasureChip;
+            }
             try
             {
                 LogSequence("Start");
@@ -173,18 +196,25 @@ namespace QMC.LCP_280.Process.Unit
                 // 1) Check Can Measure
                 InspectDone = false;
 
-                if (!tester.CanMeasure())
+                if(Config.IsSimulation == false
+                && Config.IsDryRun == false )
                 {
-                    PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
-                    Log.Write(this, "PKG Tester: Not ready to measure.");
-                    return -1;
+                    if (!tester.CanMeasure())
+                    {
+                        PostAlarm((int)AlarmKeys.eNotReadyToMeasure);
+                        Log.Write(this, "PKG Tester: Not ready to measure.");
+                        return -1;
+                    }
+
+                    // 2) Measure Chip
+                    bRet &= Measure();
+                    if (bRet != 0)
+                    {
+                        Log.Write(UnitName, "Measure() Fail");
+                        return -1;
+                    }
                 }
-
-                // 2) Measure Chip
-                bRet &= Measure();
-                if (bRet != 0)
-                    return -1;
-
+                
                 MaterialDie die = this.Rotary.GetProbeSocketMaterial();
                 if(die.Presence == Material.MaterialPresence.Exist)
                 {
@@ -260,7 +290,13 @@ namespace QMC.LCP_280.Process.Unit
 
         private void LogSequence(string log)
         {
-            Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+            if (RunMode == UnitRunMode.Manual)
+            {
+                if (this.CurrentFunc == null)
+                    return;
+
+                Log.Write(UnitName, this.CurrentFunc.Method.Name, $"[Sequence] {log}");
+            }
         }
         #endregion
     }

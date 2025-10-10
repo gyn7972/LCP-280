@@ -191,7 +191,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
                         // Flow 센서(입력) 표시
                         dioControl.BindDIOInput(
-                            () => OutputDieTransfer.ArmFlowOk(idx),
+                            () => OutputDieTransfer.IsVacuumOK(idx),
                             $"{labelBase} Flow OK(Sns)",
                             $"ODT_Arm{idx + 1}_FlowOk");
 
@@ -241,7 +241,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             try
             {
                 // ===== Sensors =====
-                dioControl.BindDIOInput(() => OutputStage.IsVacuum(), "Vacuum OK(Sns)", "OutStageVacOk");
+                dioControl.BindDIOInput(() => OutputStage.IsVacuumOn(), "Vacuum OK(Sns)", "OutStageVacOk");
                 dioControl.BindDIOInput(() => OutputStage.IsPlateUp(), "Plate UP Sns", "OutStagePlateUp");
                 dioControl.BindDIOInput(() => OutputStage.IsPlateDown(), "Plate DOWN Sns", "OutStagePlateDn");
                 dioControl.BindDIOInput(() => OutputStage.IsClampLiftDown(), "ClampLift DOWN Sns", "OutStageLiftDn");
@@ -255,7 +255,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     label: "Vacuum",
                     on: () => OutputStage.SetVacuum(true),
                     off: () => OutputStage.SetVacuum(false),
-                    isOk: () => OutputStage.IsVacuum(),
+                    isOk: () => OutputStage.IsVacuumOn(),
                     isOnState: () => OutputStage.IsVacuumValveOn(),
                     displayKey: "StageVacValve",
                     showOkSensor: false // 위에서 OK 센서 이미 표시
@@ -278,7 +278,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     extend: () => OutputStage.SetClampLift(true),
                     retract: () => OutputStage.SetClampLift(false),
                     // Up 센서가 없으면 밸브 상태 사용, Down은 센서 사용
-                    isExtended: () => OutputStage.IsClampLiftUpValveOn(),
+                    isExtended: () => OutputStage.IsClampLiftUp(),
                     isRetracted: () => OutputStage.IsClampLiftDown(),
                     displayKey: "StageClampUpDn",
                     showSensors: false,

@@ -17,6 +17,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static QMC.Common.MessageBoxOk;
 
 namespace QMC.LCP_280.Process.Unit
 {
@@ -28,11 +29,11 @@ namespace QMC.LCP_280.Process.Unit
         private GageRnR _unit;
         private GageRnRConfig _cfg;
 
+        private HardInputDef[] _hardInputs;
+        private HardOutputDef[] _hardOutputs;
+
         private readonly Size _designerSize;
         private bool _sizeMismatchWarned;
-
-        private readonly List<IoRef> _ioInputs = new List<IoRef>();
-        private readonly List<IoRef> _ioOutputs = new List<IoRef>();
 
         private Timer _axisPosTimer; // reserved
         private Timer _ioTimer;      // reserved
@@ -47,9 +48,6 @@ namespace QMC.LCP_280.Process.Unit
             _designerSize = Size;
             InitializeUI();
             ResumeLayout(true);
-
-            outputView.ItemClicked -= new EventHandler<string>(OnOutputItemClicked);
-            outputView.ItemClicked += new EventHandler<string>(OnOutputItemClicked);
         }
 
         private void InitializeUnit()
@@ -60,26 +58,20 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     _unit = unit as GageRnR;
                     _cfg = _unit?.Config;
+                    _hardInputs = _hardInputs ?? Array.Empty<HardInputDef>();
+                    _hardOutputs = _hardOutputs ?? Array.Empty<HardOutputDef>();
                 }
 
                 if (_unit == null)
                 {
-                    MessageBox.Show(
-                        _UNIT_NAME + " Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.",
-                        "오류",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", _UNIT_NAME + " Unit을 찾을 수 없습니다.\nEquipment에 Unit이 등록되어 있는지 확인하세요.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    "Unit 초기화 중 오류 발생: " + ex.Message,
-                    "오류",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", "Unit 초기화 중 오류 발생: " + ex.Message);
             }
         }
 
@@ -90,8 +82,9 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 SetupPositionTeachingControl(); //PositionTeachingControl에 데이터 전달
+                SetupDigitalIOControl();
 
-                InitializeDigitalIO();
+
                 PopulateAllAxesInJogControl();
                 InitializeUnitConfigPanel(); // <-- 추가
             }
@@ -115,6 +108,13 @@ namespace QMC.LCP_280.Process.Unit
             positionTeachingControl.CurrentPosRequested += OnPositionTeachingCurrentPosRequested;
         }
 
+        private void SetupDigitalIOControl()
+        {
+            if(digitalIOControl == null) return;
+
+            digitalIOControl.SetUnitData(_unit, _cfg, _hardInputs, _hardOutputs);
+        }
+
         /// <summary>
         /// 우측 UnitConfig UserControl 초기화
         /// </summary>
@@ -134,7 +134,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (_cfg.TeachingPositions != null && _cfg.TeachingPositions.Count == 0)
                 {
                     try { _cfg.InitializeDefaultTeachingPositions(); } catch { }
-                    //PopulateTeachingPositionList();
+                    positionTeachingControl.RefreshPositionList();
                 }
             }
             catch (Exception ex)
@@ -159,8 +159,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_unit == null || e.Index < 0 || e.Index >= _unit.TeachingPositions.Count)
                 {
-                    MessageBox.Show("선택된 Teaching Position이 없습니다.",
-                        "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "선택된 Teaching Position이 없습니다.");
+
                     return;
                 }
 
@@ -221,13 +222,13 @@ namespace QMC.LCP_280.Process.Unit
                 // UI 갱신
                 positionTeachingControl.RefreshPositionList();
 
-                MessageBox.Show("변경된 Teaching Position이 저장되었습니다.",
-                    "저장 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                var mb1 = new MessageBoxOk();
+                mb1.ShowDialog("Notification!", "변경된 Teaching Position이 저장되었습니다.");
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"저장 처리 중 오류: {ex.Message}",
-                    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"저장 처리 중 오류: {ex.Message}");
             }
         }
 
@@ -253,19 +254,19 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (result == 0)
                 {
-                    MessageBox.Show("Teaching Position 이동 완료",
-                        "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "Teaching Position 이동 완료.");
                 }
                 else
                 {
-                    MessageBox.Show("일부 축 이동 실패 또는 타임아웃",
-                        "Move", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "일부 축 이동 실패 또는 타임아웃");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Move 처리 중 오류: {ex.Message}",
-                    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"Move 처리 중 오류: {ex.Message}");
             }
         }
 
@@ -275,8 +276,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (_cfg?.TeachingPositions == null || e.Index < 0 || e.Index >= _cfg.TeachingPositions.Count)
                 {
-                    MessageBox.Show("선택된 Teaching Position이 없습니다.",
-                        "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Notification!", "선택된 Teaching Position이 없습니다.");
                     return;
                 }
 
@@ -339,250 +340,13 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"현재 위치 읽기 중 오류: {ex.Message}",
-                    "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"현재 위치 읽기 중 오류: {ex.Message}");
             }
         }
 
         #endregion
 
-        #region Digital IO
-
-        private void InitializeDigitalIO()
-        {
-            try
-            {
-                if (inputView == null || outputView == null)
-                {
-                    return;
-                }
-
-                var eq = Equipment.Instance;
-                var scan = eq?.DioScan;
-                var unitIO = eq?.UnitIO;
-
-                if (scan == null || unitIO == null)
-                {
-                    inputView.SetProperties(new PropertyCollection());
-                    outputView.SetProperties(new PropertyCollection());
-                    return;
-                }
-
-                _ioInputs.Clear();
-                _ioOutputs.Clear();
-
-                HardInputDef[] hardInputs = _cfg?.HardInputs ?? Array.Empty<HardInputDef>();
-                HardOutputDef[] hardOutputs = _cfg?.HardOutputs ?? Array.Empty<HardOutputDef>();
-
-                Func<string, Tuple<string, string>> resolveIn = disp =>
-                {
-                    if (unitIO?.Modules == null) return new Tuple<string, string>(null, disp);
-                    foreach (var m in unitIO.Modules)
-                    {
-                        if (m?.Inputs == null) continue;
-                        foreach (var ch in m.Inputs)
-                        {
-                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
-                            }
-                        }
-                    }
-                    return new Tuple<string, string>(null, disp);
-                };
-
-                Func<string, Tuple<string, string>> resolveOut = disp =>
-                {
-                    if (unitIO?.Modules == null) return new Tuple<string, string>(null, disp);
-                    foreach (var m in unitIO.Modules)
-                    {
-                        if (m?.Outputs == null) continue;
-                        foreach (var ch in m.Outputs)
-                        {
-                            if (string.Equals(ch.DisplayNo, disp, StringComparison.OrdinalIgnoreCase))
-                            {
-                                return new Tuple<string, string>(m.ModuleName, ch.DisplayNo);
-                            }
-                        }
-                    }
-                    return new Tuple<string, string>(null, disp);
-                };
-
-                if (hardInputs.Length > 0)
-                {
-                    var pcIn = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
-                    pcIn.Add(new TitleOnlyProperty("No", "Name", "State"));
-                    foreach (var item in hardInputs)
-                    {
-                        var map = resolveIn(item.Disp);
-                        bool cur = false;
-                        if (map.Item1 != null) scan.TryGetInput(map.Item1, map.Item2, out cur);
-                        string nameCell = item.Disp + " " + item.Name;
-                        var ps = new PropertyState(item.No.ToString(), nameCell, cur);
-                        pcIn.Add(ps);
-                        _ioInputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
-                    }
-                    inputView.SetProperties(pcIn);
-                }
-                else
-                {
-                    inputView.SetProperties(new PropertyCollection());
-                }
-
-                if (hardOutputs.Length > 0)
-                {
-                    var pcOut = new PropertyCollection { ShowNoColumn = true, IsInputParameter = false };
-                    pcOut.Add(new TitleOnlyProperty("No", "Name", "State"));
-                    foreach (var item in hardOutputs)
-                    {
-                        var map = resolveOut(item.Disp);
-                        bool cur = false;
-                        string nameCell = item.Disp + " " + item.Name;
-                        var ps = new PropertyState(item.No.ToString(), nameCell, cur);
-                        pcOut.Add(ps);
-                        _ioOutputs.Add(new IoRef { Module = map.Item1, Disp = map.Item2, Prop = ps });
-                    }
-                    outputView.SetProperties(pcOut);
-                }
-                else
-                {
-                    outputView.SetProperties(new PropertyCollection());
-                }
-
-                scan.InputChanged -= OnDioInputChanged;
-                scan.InputChanged += OnDioInputChanged;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("InitializeDigitalIO error: " + ex.Message);
-            }
-        }
-
-        private void OnDioInputChanged(string module, string disp, bool value)
-        {
-            try
-            {
-                for (int i = 0; i < _ioInputs.Count; i++)
-                {
-                    var item = _ioInputs[i];
-                    if (item.Module == module && item.IsSameIO(module, disp))
-                    {
-                        item.Prop.State = value;
-                        inputView.SetStateByKey(disp, value);
-                        break;
-                    }
-                }
-            }
-            catch
-            {
-                // ignore
-            }
-        }
-
-        private void OnOutputItemClicked(object sender, string key)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(key)) return;
-                var eq = Equipment.Instance;
-                var scan = eq?.DioScan;
-                if (scan == null) return;
-
-                string cmpKey = NormalizeXYKey(key);
-                string module = null;
-                string originalDisp = null;
-
-                foreach (var entry in _ioOutputs)
-                {
-                    string storedDisp = entry.Disp;
-                    if (string.Equals(storedDisp, key, StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(NormalizeXYKey(storedDisp), cmpKey, StringComparison.OrdinalIgnoreCase))
-                    {
-                        module = entry.Module;
-                        originalDisp = storedDisp;
-                        break;
-                    }
-                }
-
-                if (string.IsNullOrEmpty(module) || string.IsNullOrEmpty(originalDisp)) return;
-
-                bool before = false;
-                scan.TryGetOutput(module, originalDisp, out before);
-
-                var dr = MessageBox.Show(
-                    "[" + module + ":" + originalDisp + "] 현재 상태 = " + before + "\r\n변경하시겠습니까?",
-                    "Output Toggle",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question
-                );
-
-                if (dr != DialogResult.Yes) return;
-
-                int rc = scan.WriteOutput(module, originalDisp, !before);
-                if (rc != 0)
-                {
-                    MessageBox.Show(
-                        "WriteOutput 실패 (rc=" + rc + ")",
-                        "Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                    return;
-                }
-
-                scan.RefreshOnce();
-                bool after = before;
-                scan.TryGetOutput(module, originalDisp, out after);
-
-                if (outputView != null)
-                {
-                    outputView.SetStateByKey(key, after);
-                    if (!string.Equals(key, originalDisp, StringComparison.OrdinalIgnoreCase))
-                    {
-                        outputView.SetStateByKey(originalDisp, after);
-                    }
-                    string norm = NormalizeXYKey(key);
-                    if (!string.Equals(norm, key, StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(norm, originalDisp, StringComparison.OrdinalIgnoreCase))
-                    {
-                        outputView.SetStateByKey(norm, after);
-                    }
-                }
-
-                MessageBox.Show(
-                    originalDisp + ": " + before + " -> " + after,
-                    "Info",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "Output 토글 처리 중 오류: " + ex.Message,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-            }
-        }
-
-        private static string NormalizeXYKey(string raw)
-        {
-            if (string.IsNullOrWhiteSpace(raw)) return raw;
-            string trimmed = raw.Trim().ToUpperInvariant();
-            var m = Regex.Match(trimmed, @"^(X|Y)0*(\d+)$");
-            if (m.Success)
-            {
-                string letter = m.Groups[1].Value;
-                string digits = m.Groups[2].Value;
-                if (string.IsNullOrEmpty(digits)) digits = "0";
-                return letter + digits;
-            }
-            return trimmed;
-        }
-
-        #endregion
 
         #region JogControl
 

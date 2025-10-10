@@ -64,25 +64,26 @@ namespace QMC.LCP_280.Process.Component
 
         private void _btnNext_Click(object sender, EventArgs e)
         {
+            if (m_ParentUnit == null) 
+                return;
 
-            if (m_ParentUnit == null) return;
             this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
             this._lstSteps.SelectedIndex = this.SelectedIndex;
             if (this._lstSteps.SelectedIndex < 0)
             {
                 this._lstSteps.SelectedIndex = 0;
             }
+
             if (this._lstSteps.SelectedIndex < m_ParentUnit.SequencePlayers.Count)
             {
                 var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
                 if (func != null)
                 {
-                    
                     Task<int> t = m_ParentUnit.RunManualFunction(func);
+                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Running;
 
                     UpdateSeqList();
                     ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
-
                     if (t != null)
                     {
                         try
@@ -101,7 +102,9 @@ namespace QMC.LCP_280.Process.Component
                             else if (t.IsFaulted)
                             {
                                 // 예외 메시지 표시
-                                MessageBox.Show(t.Exception?.GetBaseException().Message, "Manual Run Error");
+                                var mb = new MessageBoxOk();
+                                mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
+
                             }
                         }
                         catch (Exception ex)
@@ -109,15 +112,8 @@ namespace QMC.LCP_280.Process.Component
                             Log.Write(ex);
                         }
                     }
+                    m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
                 }
-
-                //form.ShowDialog();
-                //if(t.Result == 0)
-                //{
-                //    this.SelectedIndex++;
-                //    this.SelectedIndex = (this.SelectedIndex % this._lstSteps.Items.Count);
-                //    this._lstSteps.SelectedIndex = this.SelectedIndex;
-                //}
             }
         }
 
@@ -129,11 +125,14 @@ namespace QMC.LCP_280.Process.Component
             {
                 this._lstSteps.SelectedIndex = 0;
             }
+
             if (this._lstSteps.SelectedIndex < m_ParentUnit.SequencePlayers.Count)
             {
                 var func = m_ParentUnit.SequencePlayers[this._lstSteps.SelectedIndex];
                 
                 Task<int> t = m_ParentUnit.RunManualFunction(func);
+                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Running;
+
                 SelectedIndex = this._lstSteps.SelectedIndex;
                 UpdateSeqList();
                 ProgressForm form = new ProgressForm("Manual Running", func.Method.Name, t, m_ParentUnit);
@@ -143,6 +142,7 @@ namespace QMC.LCP_280.Process.Component
                     m_ParentUnit.CancelSequence();
                 }
 
+                m_ParentUnit.RunUnitStatus = BaseUnit.UnitStatus.Stopped;
             }
         }
 
@@ -161,24 +161,26 @@ namespace QMC.LCP_280.Process.Component
                 var eq = Equipment.Instance;
                 if (eq == null)
                 {
-                    MessageBox.Show("Equipment 인스턴스가 초기화되지 않았습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Equipment 인스턴스가 초기화되지 않았습니다.");
+
                     return;
                 }
 
                 var unitName = m_ParentUnit.UnitName;
                 if (string.IsNullOrEmpty(unitName))
                 {
-                    MessageBox.Show("UnitName 이 비어있습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"UnitName 이 비어있습니다.");
                     return;
                 }
 
                 // 이미 실행 중인지 간단 체크 (RunStatus 사용 가능 시)
                 if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Running)
                 {
-                    MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Info!", $"Unit '{unitName}' 는 이미 실행 중입니다.");
+
                     return;
                 }
 
@@ -195,8 +197,8 @@ namespace QMC.LCP_280.Process.Component
                 bool ok = await eq.StartUnitAsync(unitName);
                 if (!ok)
                 {
-                    MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Unit '{unitName}' 시작 실패.");
                 }
                 else
                 {
@@ -224,28 +226,19 @@ namespace QMC.LCP_280.Process.Component
                 var eq = Equipment.Instance;
                 if (eq == null)
                 {
-                    MessageBox.Show("Equipment 인스턴스가 없습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Equipment 인스턴스가 없습니다.");
+
                     return;
                 }
 
                 var unitName = m_ParentUnit.UnitName;
                 if (string.IsNullOrEmpty(unitName))
                 {
-                    MessageBox.Show("UnitName 이 비어 있습니다.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"UnitName 이 비어 있습니다.");
                     return;
                 }
-
-                // 이미 정지 상태이면 반환
-                //if (m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopping ||
-                //    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.Stopped ||
-                //    m_ParentUnit.RunUnitStatus == BaseUnit.UnitStatus.CycleStop)
-                //{
-                //    MessageBox.Show($"Unit '{unitName}' 는 이미 정지 상태입니다.", "정보",
-                //        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                //    return;
-                //}
 
                 var btn = sender as Button;
                 bool restore = false;
@@ -260,8 +253,8 @@ namespace QMC.LCP_280.Process.Component
                 bool ok = await eq.StopUnitAsync(unitName);
                 if (!ok)
                 {
-                    MessageBox.Show($"Unit '{unitName}' 정지 실패.", "오류",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var mb = new MessageBoxOk();
+                    mb.ShowDialog("Error!", $"Unit '{unitName}' 정지 실패.");
                 }
                 else
                 {
@@ -274,7 +267,9 @@ namespace QMC.LCP_280.Process.Component
             catch (Exception ex)
             {
                 Log.Write(ex);
-                MessageBox.Show(ex.Message, "정지 처리 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", ex.Message);
             }
         }
     }

@@ -60,6 +60,8 @@ namespace QMC.LCP_280.Process.Component
         private ListBox listSelectedSlots;
         private Label lblSelectedList;
 
+        private readonly object _selectionLock = new object(); // 추가: 선택 컬렉션 보호용
+
         public WaferSelectMapView()
         {
             InitializeComponent();
@@ -353,9 +355,11 @@ namespace QMC.LCP_280.Process.Component
                 return;
             }
 
-            if (pWaferImage != null) pWaferImage.Invalidate();
-            // 부모 Invalidate 제거 - 불필요한 이중 렌더링 방지
-            // Invalidate();
+            if (pWaferImage != null)
+            {
+                pWaferImage.Invalidate();
+                pWaferImage.Refresh();
+            }
         }
 
         #endregion
@@ -460,43 +464,47 @@ namespace QMC.LCP_280.Process.Component
 
         private void SelectSlot(int slotNumber, SlotDisplayState state)
         {
-            _selectedSlots.Add(slotNumber);
-            _selectionOrder[slotNumber] = _nextSelectionNumber;
-            _nextSelectionNumber++;
+            lock (_selectionLock)
+            {
+                if (_selectedSlots.Contains(slotNumber)) return;
+                _selectedSlots.Add(slotNumber);
+                _selectionOrder[slotNumber] = _nextSelectionNumber;
+                _nextSelectionNumber++;
+            }
 
             SafeInvalidate();
-            UpdateUI();
+            RunOnUI(UpdateUI); // 변경: 직접 호출 대신 RunOnUI
 
             // 선택 변경 이벤트 발생
             SlotSelectionChanged?.Invoke(this, new SlotSelectionChangedEventArgs
             {
                 SlotNumber = slotNumber,
                 IsSelected = true,
-                SelectionOrder = _selectionOrder[slotNumber],
+                SelectionOrder = GetSlotSelectionOrder(slotNumber),
                 State = state
             });
         }
 
         private void DeselectSlot(int slotNumber, SlotDisplayState state)
         {
-            if (!_selectionOrder.ContainsKey(slotNumber)) return;
-
-            int currentOrder = _selectionOrder[slotNumber];
-            _selectedSlots.Remove(slotNumber);
-            _selectionOrder.Remove(slotNumber);
-
-            // 순서 재정렬 (선택 해제된 것보다 뒤의 순서들을 앞으로 당김)
-            var toUpdate = _selectionOrder.Where(kvp => kvp.Value > currentOrder).ToList();
-            foreach (var kvp in toUpdate)
+            int currentOrder;
+            lock (_selectionLock)
             {
-                _selectionOrder[kvp.Key] = kvp.Value - 1;
+                if (!_selectionOrder.ContainsKey(slotNumber)) return;
+
+                currentOrder = _selectionOrder[slotNumber];
+                _selectedSlots.Remove(slotNumber);
+                _selectionOrder.Remove(slotNumber);
+
+                var toUpdate = _selectionOrder.Where(kvp => kvp.Value > currentOrder).ToList();
+                foreach (var kvp in toUpdate)
+                    _selectionOrder[kvp.Key] = kvp.Value - 1;
+
+                _nextSelectionNumber = _selectionOrder.Count > 0 ? _selectionOrder.Values.Max() + 1 : 1;
             }
 
-            // 다음 선택 번호 업데이트
-            _nextSelectionNumber = _selectionOrder.Count > 0 ? _selectionOrder.Values.Max() + 1 : 1;
-
             SafeInvalidate();
-            UpdateUI();
+            RunOnUI(UpdateUI);
 
             // 선택 변경 이벤트 발생
             SlotSelectionChanged?.Invoke(this, new SlotSelectionChangedEventArgs
@@ -704,41 +712,74 @@ namespace QMC.LCP_280.Process.Component
 
         #region UI 업데이트
 
-        private void UpdateUI()
+        // UI 스레드 실행 헬퍼
+        private void RunOnUI(Action action)
         {
-            if (lblSelectedCountValue == null || lblNextOrderValue == null || listSelectedSlots == null)
-                return;
-
-            var selectedSlots = GetSelectedSlots();
-            var selectedInOrder = GetSelectedSlotsInOrder();
-
-            // 값이 실제로 변경될 때만 업데이트
-            string countText = selectedSlots.Count.ToString();
-            if (lblSelectedCountValue.Text != countText)
+            if (action == null) return;
+            if (!IsHandleCreated || IsDisposed) return;
+            if (InvokeRequired)
             {
-                lblSelectedCountValue.Text = countText;
-            }
-
-            string nextOrderText = _nextSelectionNumber > _materialCassette.SlotCount ? "1" : _nextSelectionNumber.ToString();
-            if (lblNextOrderValue.Text != nextOrderText)
-            {
-                lblNextOrderValue.Text = nextOrderText;
-            }
-
-            // 선택된 슬롯 목록 업데이트
-            listSelectedSlots.Items.Clear();
-            if (selectedInOrder.Count == 0)
-            {
-                listSelectedSlots.Items.Add("없음");
+                try { BeginInvoke(action); } catch { /* 컨트롤 dispose 중 */ }
             }
             else
             {
-                for (int i = 0; i < selectedInOrder.Count; i++)
+                action();
+            }
+        }
+
+        private void UpdateUI()
+        {
+            if (!IsHandleCreated || IsDisposed) return;
+            if (InvokeRequired)
+            {
+                RunOnUI(UpdateUI);
+                return;
+            }
+
+            if (lblSelectedCountValue == null || lblNextOrderValue == null || listSelectedSlots == null || listSelectedSlots.IsDisposed)
+                return;
+
+            List<int> selectedSlots;
+            List<int> selectedInOrder;
+            int nextSel;
+
+            lock (_selectionLock)
+            {
+                selectedSlots = _selectedSlots.ToList();
+                selectedInOrder = _selectionOrder.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+                nextSel = _nextSelectionNumber;
+            }
+
+            string countText = selectedSlots.Count.ToString();
+            if (lblSelectedCountValue.Text != countText)
+                lblSelectedCountValue.Text = countText;
+
+            string nextOrderText = (_materialCassette != null && nextSel > _materialCassette.SlotCount) ? "1" : nextSel.ToString();
+            if (lblNextOrderValue.Text != nextOrderText)
+                lblNextOrderValue.Text = nextOrderText;
+
+            listSelectedSlots.BeginUpdate();
+            try
+            {
+                listSelectedSlots.Items.Clear();
+                if (selectedInOrder.Count == 0)
                 {
-                    int slotNumber = selectedInOrder[i];
-                    int order = GetSlotSelectionOrder(slotNumber);
-                    listSelectedSlots.Items.Add($"{order}: Slot{slotNumber}");
+                    listSelectedSlots.Items.Add("없음");
                 }
+                else
+                {
+                    foreach (var slotNumber in selectedInOrder)
+                    {
+                        int order;
+                        lock (_selectionLock)
+                            order = _selectionOrder.ContainsKey(slotNumber) ? _selectionOrder[slotNumber] : 0;
+                        listSelectedSlots.Items.Add($"{order}: Slot{slotNumber}");
+                    }
+                }
+            }
+            finally
+            {
+                listSelectedSlots.EndUpdate();
             }
         }
 
@@ -749,39 +790,42 @@ namespace QMC.LCP_280.Process.Component
         /// <summary>모든 선택 해제</summary>
         public void ClearSelection()
         {
-            _selectedSlots.Clear();
-            _selectionOrder.Clear();
-            _nextSelectionNumber = 1;
+            lock (_selectionLock)
+            {
+                _selectedSlots.Clear();
+                _selectionOrder.Clear();
+                _nextSelectionNumber = 1;
+            }
             SafeInvalidate();
-            UpdateUI();
+            RunOnUI(UpdateUI);
         }
 
         /// <summary>선택된 슬롯 번호들 반환</summary>
         public List<int> GetSelectedSlots()
         {
-            return _selectedSlots.ToList();
+            lock (_selectionLock) return _selectedSlots.ToList();
         }
 
         /// <summary>선택 순서대로 슬롯 번호들 반환</summary>
         public List<int> GetSelectedSlotsInOrder()
         {
-            return _selectionOrder.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+            lock (_selectionLock) return _selectionOrder.OrderBy(k => k.Value).Select(k => k.Key).ToList();
         }
 
         /// <summary>특정 슬롯의 선택 순서 반환</summary>
         public int GetSlotSelectionOrder(int slotNumber)
         {
-            return _selectionOrder.ContainsKey(slotNumber) ? _selectionOrder[slotNumber] : 0;
+            lock (_selectionLock) return _selectionOrder.ContainsKey(slotNumber) ? _selectionOrder[slotNumber] : 0;
         }
 
         /// <summary>선택된 슬롯 개수 반환</summary>
         public int GetSelectedCount()
         {
-            return _selectedSlots.Count;
+            lock (_selectionLock) return _selectedSlots.Count;
         }
 
         /// <summary>테스트용 카세트 생성</summary>
-        public void CreateTestCassette(int slotCount = 20)
+        public void CreateTestCassette(int slotCount = 25)
         {
             var testCassette = new MaterialCassette(); // 매개변수 없는 생성자 사용
 

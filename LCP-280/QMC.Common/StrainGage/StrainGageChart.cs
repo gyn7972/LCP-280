@@ -71,6 +71,14 @@ namespace QMC.Common.StrainGage
             UpdateChart();
         }
 
+        private void Monitor_OnVoltageUpdated2(object sender, EventArgs e)
+        {
+            if (!Visible || _monitor == null)
+                return;
+
+            UpdateChart2();
+        }
+
         public void AttachMonitor(StrainGageMonitor monitor)
         {
             if (monitor == null)
@@ -88,11 +96,29 @@ namespace QMC.Common.StrainGage
             InitializeUI();
         }
 
+        public void AttachMonitor2(StrainGageMonitor monitor)
+        {
+            if (monitor == null)
+            {
+                throw new ArgumentNullException(nameof(monitor));
+            }
+            if (_monitor != null)
+            {
+                _monitor.OnVoltageUpdated2 -= Monitor_OnVoltageUpdated2;
+            }
+
+            _monitor = monitor;
+            _monitor.OnVoltageUpdated2 += Monitor_OnVoltageUpdated2;
+
+            InitializeUI();
+        }
+
         public void DetachMonitor()
         {
             if (_monitor != null)
             {
                 _monitor.OnVoltageUpdated -= Monitor_OnVoltageUpdated;
+                _monitor.OnVoltageUpdated2 -= Monitor_OnVoltageUpdated2;
                 _monitor = null;
             }
         }
@@ -176,7 +202,36 @@ namespace QMC.Common.StrainGage
                     var series = chart.Series[gage.Name];
                     if (series != null)
                     {
-                        series.Points.AddY((cbDisplayVoltage.Checked ? gage.Voltage : gage.Force));
+                        series.Points.AddY(gage.Voltage);
+                        if (series.Points.Count > (int)nudDataCount.Value)
+                        {
+                            series.Points.RemoveAt(0);
+                        }
+
+                        UpdateChartAreaYRange();
+                    }
+                }
+                chart.ResumeLayout();
+            }
+        }
+
+        private void UpdateChart2()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(UpdateChart2));
+                return;
+            }
+            else
+            {
+                chart.SuspendLayout();
+                foreach (var item in _monitor.Items)
+                {
+                    var gage = item.strainGage;
+                    var series = chart.Series[gage.Name];
+                    if (series != null)
+                    {
+                        series.Points.AddY(gage.Force);
                         if (series.Points.Count > (int)nudDataCount.Value)
                         {
                             series.Points.RemoveAt(0);

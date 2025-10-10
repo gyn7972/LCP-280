@@ -81,7 +81,9 @@ namespace QMC.LCP_280.Process.Component
             catch (Exception ex)
             {
                 Log.Write(ex);
-                MessageBox.Show("초기화 실패: " + ex.Message);
+
+                var mb = new MessageBoxOk();
+                mb.ShowDialog("Error!", $"초기화 실패: " + ex.Message);
             }
         }
 

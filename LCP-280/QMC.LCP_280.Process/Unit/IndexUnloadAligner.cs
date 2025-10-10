@@ -10,6 +10,7 @@ using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
 using static QMC.LCP_280.Process.Equipment;
 
@@ -98,39 +99,22 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnRun()
         {
             int ret = 0;
-
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                ret = 1;
+                ret = -1;
             }
-            else
+            if (this.RunUnitStatus == UnitStatus.Running)
             {
-                switch (State)
-                {
-                    case ProcessState.Ready:
-                        ret = OnRunReady();
-                        break;
-                    case ProcessState.Work:
-                        ret = OnRunWork();
-                        break;
-                    case ProcessState.Complete:
-                        ret = OnRunComplete();
-                        break;
-                    default:
-                        this.State = ProcessState.Ready;
-                        break;
-                }
+                return 0;
             }
-
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return ret;
         }
         public override int OnStop() 
@@ -253,7 +237,11 @@ namespace QMC.LCP_280.Process.Unit
         public int RunAlignSocketOnce(bool bFineSpeed = false)
         {
             int nRet = 0;
-            this.CurrentFunc = RunAlignSocketOnce;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = RunAlignSocketOnce;
+             
+            }
             Log.Write(UnitName, "Align Start");
 
 
@@ -271,6 +259,9 @@ namespace QMC.LCP_280.Process.Unit
                 return 0;
             }
 
+            var socket = this.Rotary.GetSocket(nIndex);
+            socket.SetState(Rotary.RotarySocketState.Aligning);
+
             if (PrepareForAlign(out var _img) != 0)
             {
                 Log.Write(UnitName, "Fail: Prepare for align");
@@ -280,7 +271,7 @@ namespace QMC.LCP_280.Process.Unit
             var res = CenterSearchViaRunner();
             if (!res.ok)
             {
-                if (!Config.IsSimulation)
+                if (!Config.IsSimulation && !Config.IsDryRun)
                 {
                     PostAlarm((int)AlarmKeys.eVisionSearch);
                     Log.Write(UnitName, "XY_Align", "Fail: Vision offset search");
@@ -312,6 +303,8 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "Align", $"OK: dx={dx:F4} dy={dy:F4} dAngle={res.angle:F3}");
             
             die.State = DieProcessState.Inspected;
+            socket.SetState(Rotary.RotarySocketState.Aligned);
+
             return nRet;
         }
 

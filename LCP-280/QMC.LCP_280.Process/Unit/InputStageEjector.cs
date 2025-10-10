@@ -102,8 +102,19 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (axis == null) return -1;
 
-            if (CheckMoveSafety(axis) != 0)
+            if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
+                AxisEjectorZ.EmgStop();
+                AxisPinZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                return -1;
+            }
+
+            if (InputStage.IsStageInterLockOK() == false)
+            {
+                AxisEjectorZ.EmgStop();
+                AxisPinZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
                 return -1;
             }
 
@@ -124,45 +135,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             return task.Result;
         }
-
-        public override int CheckMoveSafety(MotionAxis ax)
-        {
-            try
-            {
-                //if (/*다른 유닛 축 이동중*/) return (int)AlarmKeys.xxx;
-                // 1) Ejector / PinZ Safety 검사 (우선순위 높음)
-                if (InputStage != null && InputStage.IsAnyAxisMoving())
-                {
-                    AxisEjectorZ.EmgStop();
-                    AxisPinZ.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                    return -1;
-                }
-
-                if(InputStage.CheckMoveSafety(InputStage.AxisX) != 0 ||
-                   InputStage.CheckMoveSafety(InputStage.AxisY) != 0    )
-                {
-                    AxisEjectorZ.EmgStop();
-                    AxisPinZ.EmgStop();
-                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                    return -1;
-                }
-
-                // 추가로 "다른 유닛 축 이동중" 등을 넣고 싶다면 여기서 검사 후 알람 코드 반환
-            }
-            catch (Exception ex)
-            {
-                Log.Write(ex);
-                // 예외 발생 시 보수적으로 이동 중단하도록 임의 알람 
-                AxisEjectorZ.EmgStop();
-                AxisPinZ.EmgStop();
-                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                return -1;
-            }
-
-            return 0; // 0 = OK
-        }
         /// //////////////////////////////////////////////////////////////////////////////////////////////
+        /// 
         // UI, sequence 용 Move 함수
 
         //EjectBlockUp
@@ -202,15 +176,21 @@ namespace QMC.LCP_280.Process.Unit
             // Check Interlock.!!! 구문 넣을것.!!!
             if (InputStage != null && InputStage.IsAnyAxisMoving())
             {
-                AxisEjectorZ.EmgStop();
-                AxisPinZ.EmgStop();
+                if(Config.IsSimulation)
+                {
+                    Thread.Sleep(100);
+                }
+                if(InputStage.IsAnyAxisMoving())
+                {
+                    AxisEjectorZ.EmgStop();
+                    AxisPinZ.EmgStop();
 
-                PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
-                return -1;
+                    PostAlarm((int)AlarmKeys.eInputStageAxesMoving);
+                    return -1;
+                }
             }
 
-            if (InputStage.CheckMoveSafety(InputStage.AxisX) != 0 ||
-                InputStage.CheckMoveSafety(InputStage.AxisY) != 0  )
+            if (InputStage.IsStageInterLockOK() == false)
             {
                 AxisEjectorZ.EmgStop();
                 AxisPinZ.EmgStop();
@@ -332,7 +312,6 @@ namespace QMC.LCP_280.Process.Unit
             ct);
         }
 
-
         //EjectBlocksafety
         public int MovePositionEjectBlockSafety(bool isFine = false)
         {
@@ -407,7 +386,6 @@ namespace QMC.LCP_280.Process.Unit
             },
             ct);
         }
-
 
         //EjectBlockReady
         public int MovePositionEjectPinReady(bool isFine = false)
@@ -485,18 +463,15 @@ namespace QMC.LCP_280.Process.Unit
             ct);
         }
 
-
-
-
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         public double GetTP(TeachingPosition tp, string axisKey) => (tp == null || string.IsNullOrEmpty(axisKey)) ? 0.0 : (tp.AxisPositions.TryGetValue(axisKey, out var v) ? v : 0.0);
         public double GetTP(TeachingPosition tp, MotionAxis axis) => axis == null ? 0.0 : GetTP(tp, axis.Name);
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
         #endregion
 
         #region Teaching
@@ -516,22 +491,9 @@ namespace QMC.LCP_280.Process.Unit
             return rc;
         }
         public int MoveToTeachingPosition(InputStageEjectorConfig.TeachingPositionName name, double vel = 0, double acc = 0, double dec = 0, double jerk = 0) => MoveToTeachingPosition(name.ToString(), vel, acc, dec, jerk);
-        public bool InPosTeaching(string positionName)
-        {
-            var (z, pz) = Config.GetPositionWithOffset(positionName);
-            return InPos(_axEjectorZ, z) && InPos(_axPinZ, pz);
-        }
+        
         #endregion
 
-        public bool InPosTeaching(InputStageEjectorConfig.TeachingPositionName name) => InPosTeaching(name.ToString());
-        /// <summary>
-        /// EjectorZ 축이 Safety Teaching 위치(또는 허용 오차 범위)에 있는지 확인.
-        /// 우선순위: EjectBlockSafety → EjectBlockUp → EjectBlockReady
-        /// </summary>
-        /// <param name="fallbackTolerance">축 InposTolerance를 사용할 수 없을 때 기본 허용오차</param>
-        /// <param name="useAxisInposTolerance">축 Config.InposTolerance 사용 여부</param>
-        /// <param name="treatMissingAsSafe">Teaching 또는 축이 없을 경우 true 로 간주할지 여부</param>
-        /// <param name="allowAbove">안전 위치보다 위(더 +방향)도 허용할지 여부 (일반적으로 Z축 위쪽이면 안전)</param>
         public bool IsEjectorZSafetyPos(double fallbackTolerance = 0.01,
                                          bool useAxisInposTolerance = true,
                                          bool treatMissingAsSafe = true,
@@ -539,19 +501,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (_axEjectorZ == null)
                 return treatMissingAsSafe;
-
-            //var cfg = InputStageEjectorConfig;
-            //if (cfg == null) return false;
-            //string[] candidates =
-            //{
-            //    "EjectBlockSafety",
-            //    "EjectBlockUp",
-            //    "EjectBlockReady"
-            //};
-            //string found = candidates.FirstOrDefault(n => cfg.GetTeachingPosition(n) != null);
-            //if (found == null)
-            //    return treatMissingAsSafe;
-            //var (ejectorTarget, _) = cfg.GetPositionWithOffset(found);
 
             double dZPos = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectBlockSafety.ToString(),
                         AxisNames.EjectorZ);
@@ -566,7 +515,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return System.Math.Abs(cur - dZPos) <= tol;
         }
-
         /// <summary>
         /// PinZ 축이 Safety Teaching 위치(또는 허용 오차 범위)에 있는지 확인.
         /// 우선순위: EjectPinReady → EjectPinChange → EjectPinOffset
@@ -580,79 +528,365 @@ namespace QMC.LCP_280.Process.Unit
                                      bool treatMissingAsSafe = true,
                                      bool allowAbove = false)
         {
-            if (_axPinZ == null)
-                return treatMissingAsSafe;
-
-            var cfg = InputStageEjectorConfig;
-            if (cfg?.TeachingPositions == null || cfg.TeachingPositions.Count == 0)
-                return treatMissingAsSafe;
-
-            // 우선순위 (문서 주석 기준)
-            string[] candidates =
-            {
-                InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
-                InputStageEjectorConfig.TeachingPositionName.EjectPinChange.ToString(),
-                InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString()
-            };
-
-            var targetList = new List<double>();
-
-            foreach (var name in candidates)
-            {
-                var tp = cfg.GetTeachingPosition(name);
-                if (tp?.AxisPositions == null) continue;
-
-                if (tp.AxisPositions.TryGetValue(AxisNames.EjectPinZ, out double val))
-                {
-                    // 실제로 0.0 위치가 유효한 Teaching 일 수도 있으므로 그대로 사용
-                    targetList.Add(val);
-                }
-            }
-
-            if (targetList.Count == 0)
-                return treatMissingAsSafe; // Teaching 에 PinZ 가 하나도 정의 안된 경우 정책상 Safe 처리
-
-            double cur = _axPinZ.GetPosition();
-            double tol = useAxisInposTolerance
-                         ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
-                         : fallbackTolerance;
-
-            if (allowAbove)
-            {
-                // 가장 낮은 위치(위험 가능성 최대) 이상이면 Safe 로 본다 (양(+)방향이 Up 이라고 가정)
-                double minTarget = targetList.Min();
-                return cur >= (minTarget - tol);
-            }
-
-            // 어떤 후보라도 허용오차 내면 Safe
-            return targetList.Any(t => Math.Abs(cur - t) <= tol);
+            var tp = TeachingPositions[(int)InputStageEjectorConfig.TeachingPositionName.EjectPinReady];
+            if (tp == null)
+                return false;
+            return InPosTeaching(tp);
 
             //if (_axPinZ == null)
             //    return treatMissingAsSafe;
 
-            //double dSafetyZPos = 0.0;
-            //double dOffsetZPos = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString(),
-            //            AxisNames.EjectPinZ);
-            //double dReadyZPos = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
-            //            AxisNames.EjectPinZ);
+            //var cfg = InputStageEjectorConfig;
+            //if (cfg?.TeachingPositions == null || cfg.TeachingPositions.Count == 0)
+            //    return treatMissingAsSafe;
+
+            //// 우선순위 (문서 주석 기준)
+            //string[] candidates =
+            //{
+            //    InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(),
+            //    InputStageEjectorConfig.TeachingPositionName.EjectPinChange.ToString(),
+            //    InputStageEjectorConfig.TeachingPositionName.EjectPinOffset.ToString()
+            //};
+
+            //var targetList = new List<double>();
+
+            //foreach (var name in candidates)
+            //{
+            //    var tp = cfg.GetTeachingPosition(name);
+            //    if (tp?.AxisPositions == null) continue;
+
+            //    if (tp.AxisPositions.TryGetValue(AxisNames.EjectPinZ, out double val))
+            //    {
+            //        // 실제로 0.0 위치가 유효한 Teaching 일 수도 있으므로 그대로 사용
+            //        targetList.Add(val);
+            //    }
+            //}
+
+            //if (targetList.Count == 0)
+            //    return treatMissingAsSafe; // Teaching 에 PinZ 가 하나도 정의 안된 경우 정책상 Safe 처리
 
             //double cur = _axPinZ.GetPosition();
             //double tol = useAxisInposTolerance
-            //    ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
-            //    : fallbackTolerance;
-            //if (allowAbove)
-            //    return cur >= (dReadyZPos - tol);
+            //             ? (_axPinZ.Config?.InposTolerance ?? fallbackTolerance)
+            //             : fallbackTolerance;
 
-            //return System.Math.Abs(cur - dReadyZPos) <= tol;
+            //if (allowAbove)
+            //{
+            //    // 가장 낮은 위치(위험 가능성 최대) 이상이면 Safe 로 본다 (양(+)방향이 Up 이라고 가정)
+            //    double minTarget = targetList.Min();
+            //    return cur >= (minTarget - tol);
+            //}
+
+            //// 어떤 후보라도 허용오차 내면 Safe
+            //return targetList.Any(t => Math.Abs(cur - t) <= tol);
         }
+
         /// <summary>
         /// 두 축(EjectorZ & PinZ) 모두 Safety 판단
         /// </summary>
         public bool IsAllSafety() => IsEjectorZSafetyPos() && IsPinZSafetyPos();
 
+        #region Position Checkers
+        /// <summary>
+        /// Teaching 포지션 이름 기준으로 이 유닛의 모든 대상 축이 In-Position인지 확인합니다.
+        /// BaseUnit.InPosTeaching 사용.
+        /// </summary>
+        public bool IsInPosTeaching(string positionName)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(positionName))
+                    return false;
+
+                if (Config == null)
+                    return false;
+
+                var tp = Config.GetTeachingPosition(positionName);
+                if (tp == null)
+                    return false;
+
+                bool inPos = InPosTeaching(positionName);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        /// <summary>
+        /// Teaching 인덱스로 현재 위치 일치 여부 확인.
+        /// BaseConfig.GetTeachingPositionName을 통해 이름으로 매핑 후 InPosTeaching 사용.
+        /// </summary>
+        public bool IsInPosTeaching(int selIndex)
+        {
+            try
+            {
+                if (Config == null)
+                    return false;
+
+                string name;
+                bool ok = Config.GetTeachingPositionName(selIndex, out name);
+                if (ok == false)
+                    return false;
+
+                if (string.IsNullOrEmpty(name))
+                    return false;
+
+                bool inPos = IsInPosTeaching(name);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        /// <summary>
+        /// Teaching enum으로 현재 위치 일치 여부 확인.
+        /// </summary>
+        public bool IsInPosTeaching(InputStageEjectorConfig.TeachingPositionName name)
+        {
+            try
+            {
+                string tpName = name.ToString();
+                bool inPos = IsInPosTeaching(tpName);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        /// <summary>
+        /// EjectorZ 축만 해당 Teaching 포지션 목표와 In-Position인지 확인합니다.
+        /// BaseUnit.GetTP + MotionAxis.InPosition 사용.
+        /// </summary>
+        public bool IsEjectorZInPos(string positionName)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(positionName))
+                    return false;
+
+                if (_axEjectorZ == null)
+                    return true; // 축 미구성 시 통과로 간주 (샘플 코드 정책과 동일)
+
+                var tp = Config?.GetTeachingPosition(positionName);
+                if (tp == null)
+                    return false;
+
+                double target = GetTP(positionName, AxisNames.EjectorZ);
+                bool inpos;
+                try
+                {
+                    inpos = _axEjectorZ.InPosition(target);
+                }
+                catch
+                {
+                    inpos = false;
+                }
+                return inpos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool IsEjectorZInPos(int selIndex)
+        {
+            try
+            {
+                if (Config == null)
+                    return false;
+
+                string name;
+                bool ok = Config.GetTeachingPositionName(selIndex, out name);
+                if (ok == false)
+                    return false;
+
+                if (string.IsNullOrEmpty(name))
+                    return false;
+
+                bool inPos = IsEjectorZInPos(name);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool IsEjectorZInPos(InputStageEjectorConfig.TeachingPositionName name)
+        {
+            try
+            {
+                string tpName = name.ToString();
+                bool inPos = IsEjectorZInPos(tpName);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        /// <summary>
+        /// PinZ 축만 해당 Teaching 포지션 목표와 In-Position인지 확인합니다.
+        /// BaseUnit.GetTP + MotionAxis.InPosition 사용.
+        /// </summary>
+        public bool IsPinZInPos(string positionName)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(positionName))
+                    return false;
+
+                if (_axPinZ == null)
+                    return true; // 축 미구성 시 통과로 간주
+
+                var tp = Config?.GetTeachingPosition(positionName);
+                if (tp == null)
+                    return false;
+
+                double target = GetTP(positionName, AxisNames.EjectPinZ);
+                bool inpos;
+                try
+                {
+                    inpos = _axPinZ.InPosition(target);
+                }
+                catch
+                {
+                    inpos = false;
+                }
+                return inpos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool IsPinZInPos(int selIndex)
+        {
+            try
+            {
+                if (Config == null)
+                    return false;
+
+                string name;
+                bool ok = Config.GetTeachingPositionName(selIndex, out name);
+                if (ok == false)
+                    return false;
+
+                if (string.IsNullOrEmpty(name))
+                    return false;
+
+                bool inPos = IsPinZInPos(name);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool IsPinZInPos(InputStageEjectorConfig.TeachingPositionName name)
+        {
+            try
+            {
+                string tpName = name.ToString();
+                bool inPos = IsPinZInPos(tpName);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+
+        // === 주요 포지션 편의 메서드 (전체 축 기준) ===
+        public bool IsAtEjectBlockUp()
+        {
+            try
+            {
+                bool inPos = IsInPosTeaching(InputStageEjectorConfig.TeachingPositionName.EjectBlockUp);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool IsAtEjectBlockReady()
+        {
+            try
+            {
+                bool inPos = IsInPosTeaching(InputStageEjectorConfig.TeachingPositionName.EjectBlockReady);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool IsAtEjectBlockSafety()
+        {
+            try
+            {
+                bool inPos = IsInPosTeaching(InputStageEjectorConfig.TeachingPositionName.EjectBlockSafety);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        public bool IsAtEjectPinReady()
+        {
+            try
+            {
+                bool inPos = IsInPosTeaching(InputStageEjectorConfig.TeachingPositionName.EjectPinReady);
+                return inPos;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return false;
+            }
+        }
+        #endregion
+
+
 
         #region Lifecycle
-        public override int OnRun() { int ret = 0; return ret; }
+        public override int OnRun() 
+        {
+            int ret = 0;
+            if (this.RunUnitStatus == UnitStatus.Stopped ||
+                this.RunUnitStatus == UnitStatus.Stopping ||
+                this.RunUnitStatus == UnitStatus.CycleStop)
+            {
+                this.State = ProcessState.Stop;
+                ret = -1;
+            }
+            if (this.RunUnitStatus == UnitStatus.Running)
+            {
+                return 0;
+            }
+            if (ret != 0)
+            {
+                this.State = ProcessState.Stop;
+                this.OnStop();
+            }
+            return ret;
+        }
         public override int OnStop() 
         {
             int ret = 0;
@@ -666,21 +900,46 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunComplete() { return 0; }
         #endregion
 
-
         #region Seq 단위 동작 함수
-        public int ChipPickUpWait()
+        #endregion
+
+        #region Ready
+
+        public int CheckReady(bool isFine = false)
         {
-            int nRet = -1;
-            /* TODO */
+            Task<int> task = CheckReadyAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        private Task<int> CheckReadyAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnCheckReady(isFine);
+                return 0;
+            });
+        }
+        private int OnCheckReady(bool isFine)
+        {
+            int nRet = 0;
+
+            if (IsAtEjectBlockSafety() == false ||
+                IsAtEjectPinReady() == false)
+            {
+                nRet = MovePositionEjectBlockSafety(isFine);
+                if (nRet != 0) 
+                    return nRet;
+                nRet = MovePositionEjectPinReady(isFine);
+                if (nRet != 0) 
+                    return nRet;
+            }
+
             return nRet;
         }
 
-        public int ChipLoading()
-        {
-            int nRet = -1;
-            /* TODO */
-            return nRet;
-        }
         #endregion
     }
 }

@@ -17,15 +17,9 @@ namespace QMC.LCP_280.Process
         {
             Log.Write("LCP_280", "Program Start--------------------.");
 
-
-
-
             Application.ThreadException += new System.Threading.ThreadExceptionEventHandler(exceptionDump);
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-
-            
-
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

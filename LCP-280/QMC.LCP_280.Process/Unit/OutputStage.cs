@@ -6,10 +6,12 @@ using QMC.Common.IOUtil;
 using QMC.Common.Motion;
 using QMC.Common.Motions;
 using QMC.Common.Unit;
+using QMC.Common.VisionPart;
 using QMC.LCP_280.Process.Component;
 using System; // added for Obsolete attribute
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -122,7 +124,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             Config.LoadAndBindAxes(Equipment.Instance.AxisManager);
             Config.InitializeDefaultTeachingPositions();
-            
+
             BindAxes();
             BindIoDomains();
             BindCamera();
@@ -166,55 +168,25 @@ namespace QMC.LCP_280.Process.Unit
             BindAxis(mgr, unitName, AxisNames.BinStageY, ref _axY);
             BindAxis(mgr, unitName, AxisNames.BinStageT, ref _axT);
         }
-        public double GetTP(string tpName, string axisName)
-        {
-            var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
-            return 0.0;
-        }
-        
-        public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
-        public bool InPosTeaching(TeachingPosition tp)
-        {
-            if (tp == null)
-                return false;
-            return InPosTeaching(tp.Name);
-        }
-        public bool InPosTeaching(string name)
-        {
-            var (t, pz, plz) = Config.GetPositionWithOffset(name);
-            return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
-        }
-        #endregion
+        //public double GetTP(string tpName, string axisName)
+        //{
+        //    var tp = Config.GetTeachingPosition(tpName);
+        //    if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+        //    return 0.0;
+        //}
 
-        #region IO Low-Level
-        public bool ReadInput(string name)
-        {
-            var hi = Config.HardInputs.FirstOrDefault(i => i.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (hi == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetInput(m.ModuleName, hi.Disp, out var v)) return v;
-            return false;
-        }
-        public bool WriteOutput(string name, bool on)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.WriteOutput(m.ModuleName, ho.Disp, on) == 0) return true;
-            return false;
-        }
-        public bool IsOutputOn(string name)
-        {
-            var ho = Config.HardOutputs.FirstOrDefault(o => o.Name.Equals(name, System.StringComparison.OrdinalIgnoreCase));
-            if (ho == null) return false;
-            var eq = Equipment.Instance; var dio = eq?.DioScan; if (dio == null) return false;
-            foreach (var m in eq.UnitIO.Modules)
-                if (dio.TryGetOutput(m.ModuleName, ho.Disp, out var v)) return v;
-            return false;
-        }
+        //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
+        //public bool InPosTeaching(TeachingPosition tp)
+        //{
+        //    if (tp == null)
+        //        return false;
+        //    return InPosTeaching(tp.Name);
+        //}
+        //public bool InPosTeaching(string name)
+        //{
+        //    var (t, pz, plz) = Config.GetPositionWithOffset(name);
+        //    return InPos(_axX, t) && InPos(_axY, pz) && InPos(_axT, plz);
+        //}
         #endregion
 
         #region IO Domain Mapping (Reorganized)
@@ -273,11 +245,26 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // === Domain Control (표준 구동) ===
-        public bool SetVacuum(bool on)
+        public bool SetVacuum(bool on, bool bCheckSignal = false)
         {
-            if (_vacuum == null) return false;
-            if (on) _vacuum.On();
-            else _vacuum.Off();
+            if (_vacuum == null)
+                return false;
+
+            if (!bCheckSignal)
+            {
+                if (on)
+                    _vacuum.On();
+                else
+                    _vacuum.Off();
+            }
+            else
+            {
+                if (on)
+                    _vacuum.OnWaitOk();
+                else
+                    _vacuum.OffWaitOk();
+            }
+
             return true;
         }
 
@@ -288,14 +275,14 @@ namespace QMC.LCP_280.Process.Unit
 
             if (bUpDn)
             {
-                if (!IsAtTeaching(OutputStageConfig.TeachingPositionName.Loading) &&
-                    !IsAtTeaching(OutputStageConfig.TeachingPositionName.Unloading))
-                {
-                    MessageBox.Show("SetClampPlate Interlock",
-                              "Plate UP blocked: not at Loading/Unloading teaching position.",
-                              MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return false;
-                }
+                //if (!IsAtTeaching(OutputStageConfig.TeachingPositionName.Loading) &&
+                //    !IsAtTeaching(OutputStageConfig.TeachingPositionName.Unloading))
+                //{
+                //    MessageBox.Show("SetClampPlate Interlock",
+                //              "Plate UP blocked: not at Loading/Unloading teaching position.",
+                //              MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                //    return false;
+                //}
                 return _cylPlate.Extend();
             }
             else
@@ -344,20 +331,100 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // --- Existing High-Level APIs (인터락 포함) ---
-        public bool IsVacuum() => (_vacuum?.IsOk() ?? false) || ReadInput(OutputStageConfig.IO.VACUUM_CHECK);
-        public bool IsPlateUp() => ReadInput(OutputStageConfig.IO.PLATE_UP);
-        public bool IsPlateDown() => ReadInput(OutputStageConfig.IO.PLATE_DOWN);
-        public bool IsClampLiftUp() => !IsClampLiftDown();
-        public bool IsClampLiftDown() => ReadInput(OutputStageConfig.IO.CLAMP_DOWN_CHECK);
-        public bool IsClampFwd() => ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
-        public bool IsClampBwd() => !IsClampFwd();
-        public bool Ring0() => ReadInput(OutputStageConfig.IO.RING_CHECK0);
-        public bool Ring1() => ReadInput(OutputStageConfig.IO.RING_CHECK1);
-        
+        public bool IsVacuumOn()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.VACUUM_CHECK);
+        }
+        public bool Ring0()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.RING_CHECK0);
+        }
+
+        public bool Ring1()
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.RING_CHECK1);
+        }
+        public bool IsClampLiftUp()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return !IsClampLiftDown(); 
+        }
+        public bool IsClampLiftDown()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.CLAMP_DOWN_CHECK);
+        }
+        public bool IsClampFwd()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.CLAMP_FWD_CHECK);
+        }
+        public bool IsClampBwd()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return !IsClampFwd();
+        }
+
+        public bool IsPlateUp()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.PLATE_UP);
+        }
+        public bool IsPlateDown()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.ReadInput(OutputStageConfig.IO.PLATE_DOWN);
+        }
 
         // === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
-        public bool IsVacuumValveOn() => IsOutputOn(OutputStageConfig.IO.VACUUM);
-        public bool IsClampLiftUpValveOn() => IsOutputOn(OutputStageConfig.IO.CLAMP_UP);
+        public bool IsVacuumValveOn()
+        {
+            if (Config.IsSimulation)
+            {
+                return true;
+            }
+
+            return this.IsOutputOn(OutputStageConfig.IO.VACUUM);
+        }
         #endregion
 
         // ================== Generic Single Axis Move (Safety Interlock 동일 구조) ==================
@@ -368,16 +435,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (axis == null) return -1;
 
-            if (CheckMoveSafety(axis) != 0)
-            {
-                return -1;
-            }
-
             Task<int> task = MoveAxisPositionOneAsync(axis, target, isFine);
             while (IsEndTask(task) == false)
             {
                 // 동일 Safety Interlock
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eDieTransferPlaceZNotSafe);
@@ -436,7 +498,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -487,7 +549,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPlaceZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPlaceZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -496,27 +558,23 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if(Config.IsSimulation && Config.IsDryRun)
-                {
-                    if (!OutputFeeder.IsFeederZSafetyPosition())
-                    {
-                        this.AxisX.EmgStop();
-                        this.AxisY.EmgStop();
-                        this.AxisT.EmgStop();
-                        PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
-                        return -1;
-                    }
+                //if (!OutputFeeder.IsFeederZSafetyPosition())
+                //{
+                //    this.AxisX.EmgStop();
+                //    this.AxisY.EmgStop();
+                //    this.AxisT.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eOutputFeederCylinderZNotSafe);
+                //    return -1;
+                //}
 
-                }
-
-                if (!OutputFeeder.IsFeederYSafetyPosition())
-                {
-                    this.AxisX.EmgStop();
-                    this.AxisY.EmgStop();
-                    this.AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
-                    return -1;
-                }
+                //if (!OutputFeeder.IsFeederYSafetyPosition())
+                //{
+                //    this.AxisX.EmgStop();
+                //    this.AxisY.EmgStop();
+                //    this.AxisT.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
+                //    return -1;
+                //}
 
                 Thread.Sleep(0);
             }
@@ -541,7 +599,7 @@ namespace QMC.LCP_280.Process.Unit
             while (IsEndTask(task) == false)
             {
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -592,7 +650,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Check Interlock.!!! 구문 넣을것.!!!
                 // DieTransfer PickZ Safety
-                if (!OutputDieTransfer.IsPickZSafetyPos())
+                if (!OutputDieTransfer.IsPositionPickZSafety())
                 {
                     this.AxisX.EmgStop();
                     this.AxisY.EmgStop();
@@ -610,14 +668,14 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
 
-                if (!OutputFeeder.IsFeederYSafetyPosition())
-                {
-                    this.AxisX.EmgStop();
-                    this.AxisY.EmgStop();
-                    this.AxisT.EmgStop();
-                    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
-                    return -1;
-                }
+                //if (!OutputFeeder.IsFeederYSafetyPosition())
+                //{
+                //    this.AxisX.EmgStop();
+                //    this.AxisY.EmgStop();
+                //    this.AxisT.EmgStop();
+                //    PostAlarm((int)AlarmKeys.eOutputFeederYNotSafe);
+                //    return -1;
+                //}
                 Thread.Sleep(0);
             }
             return task.Result;
@@ -705,50 +763,26 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-            #region Lifecycle
+        #region Lifecycle
         public override int OnRun()
         {
             int ret = 0;
-
             if (this.RunUnitStatus == UnitStatus.Stopped ||
                 this.RunUnitStatus == UnitStatus.Stopping ||
                 this.RunUnitStatus == UnitStatus.CycleStop)
             {
                 this.State = ProcessState.Stop;
-                return 1;
+                ret = -1;
             }
-
-            switch (State)
+            if (this.RunUnitStatus == UnitStatus.Running)
             {
-                case ProcessState.Ready:
-                    if(OutputCassetteLifter.RequestStageLoading)
-                    {
-                        RequestInputDie = false;
-                        ret = OnRunReady();
-                    }
-                    break;
-                case ProcessState.Work:
-                    ret = OnRunWork();
-                    break;
-                case ProcessState.Complete:
-                    ret = OnRunComplete();
-                    if (ret == 0)
-                    {
-                        RequestInputDie = true;
-                    }
-                    break;
-                default:
-                    //IsStatus_StageLoadingReady = false;
-                    //IsStatus_StageLoadingDone = false;
-                    this.State = ProcessState.Ready;
-                    break;
+                return 0;
             }
             if (ret != 0)
             {
                 this.State = ProcessState.Stop;
                 this.OnStop();
             }
-
             return ret;
         }
         public override int OnStop() 
@@ -763,6 +797,12 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunWork() { return 0; }
         protected override int OnRunComplete() { return 0; }
         #endregion
+
+        protected override void OnMakeSequence()
+        {
+            base.OnMakeSequence();
+            //this.SequencePlayers.Add(AlignT);
+        }
 
         #region Seq 단위 동작 함수
         public int LoadingBinPrepare()
@@ -790,43 +830,46 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: Move Load");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             bool bSimulation = Config.IsSimulation;
-
             // Clamp Back → Lift Down
             SetClampFB(false);
             if (!IsClampBwd())
             {
-                if(!bSimulation || !Config.IsDryRun)
+                if(!bSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eClampFB);
                     Log.Write(this, "Fail: ClampBack");
                     return -1;
                 }
             }
+            if (IsStop) { return 0; }
 
             SetClampLift(false);
             if (!IsClampLiftDown())
             {
-                if (!bSimulation || !Config.IsDryRun)
+                if (!bSimulation)
                 {
                     PostAlarm((int)AlarmKeys.eClampLift);
                     Log.Write(this, "Fail: ClampLiftDown");
                     return -1;
                 }
             }
+            if (IsStop) { return 0; }
 
             //Plate Down → 
-            SetClampPlate(false);
-            if (!IsPlateDown())
+            SetClampPlate(true);
+            if (!IsPlateUp())
             {
-                if (!bSimulation || !Config.IsDryRun)
+                if (!bSimulation)
                 {
                     PostAlarm((int)AlarmKeys.ePlate);
                     Log.Write(this, "Fail: PlateUp");
                     return -1;
                 }
             }
+            if (IsStop) { return 0; }
 
             BinLoadingReady = true;
             Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
@@ -856,38 +899,41 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 if (!IsPlateUp()|| Config.IsSimulation || Config.IsDryRun)
                 {
-                    SetClampPlate(true);
-                    if (!IsPlateUp())
+                    SetClampPlate(false);
+                    if (!IsPlateDown())
                     {
-                        if(!Config.IsSimulation && !Config.IsDryRun)
+                        if(!Config.IsSimulation)
                         {
                             PostAlarm((int)AlarmKeys.ePlate);
                             Log.Write(this, "Fail: PlateUp");
                             return -1;
                         }
                     }
+                    if (IsStop) { return 0; }
 
                     SetClampLift(true);
                     if (!IsClampLiftUp())
                     {
-                        if (!Config.IsSimulation && !Config.IsDryRun)
+                        if (!Config.IsSimulation)
                         {
                             PostAlarm((int)AlarmKeys.eClampLift);
                             Log.Write(this, "Fail: ClampLiftUp");
                             return -1;
                         }
                     }
+                    if (IsStop) { return 0; }
 
                     SetClampFB(true);
                     if (!IsClampFwd())
                     {
-                        if (!Config.IsSimulation && !Config.IsDryRun)
+                        if (!Config.IsSimulation)
                         {
                             PostAlarm((int)AlarmKeys.eClampFB);
                             Log.Write(this, "Fail: ClampForward");
                             return -1;
                         }
                     }
+                    if (IsStop) { return 0; }
                 }
                 else
                 {
@@ -903,11 +949,14 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
+                var wafer = GetMaterialWafer();
+                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+
                 BinLoadingDone = true;
                 BinLoadingReady = false;
                 Log.Write(UnitName, "LoadingComp", "Done");
 
-                return 0;
+                return ret;
             }
             else
             {
@@ -920,7 +969,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return ret;
         }
-
         public int PrepareOutputStageUnloadingBin()
         {
             int nRtn = 0;
@@ -935,8 +983,10 @@ namespace QMC.LCP_280.Process.Unit
             nRtn = MoveToStageUnloadPosition();
             if (nRtn != 0)
             {
+                Log.Write(this, "Fail: Move Unload");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             SetClampFB(false);
             if (!IsClampBwd())
@@ -945,6 +995,8 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: ClampBack");
                 return -1;
             }
+            if (IsStop) { return 0; }
+
             SetClampLift(false);
             if (!IsClampLiftDown())
             {
@@ -952,13 +1004,16 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: ClampLiftDown");
                 return -1;
             }
-            SetClampPlate(false);
-            if (!IsPlateDown())
+            if (IsStop) { return 0; }
+
+            SetClampPlate(true);
+            if (!IsPlateUp())
             {
                 PostAlarm((int)AlarmKeys.ePlate);
                 Log.Write(this, "Fail: PlateUp");
                 return -1;
             }
+            if (IsStop) { return 0; }
 
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
@@ -979,7 +1034,6 @@ namespace QMC.LCP_280.Process.Unit
             Log.Write(UnitName, "UnloadingComp", "Done");
             return nRtn;
         }
-
         public bool IsRingPresent()
         {
             bool bRtn = true;
@@ -995,32 +1049,74 @@ namespace QMC.LCP_280.Process.Unit
 
             return bRtn;
         }
-
-        public bool IsBinLoadingPosition()
+        public bool IsPositionBinLoading()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.Loading];
             if (tp == null) 
                 return false;
             return InPosTeaching(tp);
         }
-        public bool IsBinUnloadingPosition()
+        public bool IsPositionBinUnloading()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.Unloading];
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
-        public bool IsBinCenterPosition()
+        public bool IsPositionBinCenter()
         {
             var tp = TeachingPositions[(int)OutputStageConfig.TeachingPositionName.CenterPoint];
             if (tp == null) return false;
             return InPosTeaching(tp);
         }
+        public bool IsStageInterLockOK()
+        {
+            // 1) CenterPoint Teaching 확보
+            var tp = Config.GetTeachingPosition(OutputStageConfig.TeachingPositionName.CenterPoint.ToString());
+            if (tp == null || tp.AxisPositions == null)
+            {
+                Log.Write(UnitName, "MoveSafety", "CenterPoint teaching not found");
+                return false;
+            }
 
+            // 2) Center 좌표 (OutputStage 축명은 BinStageX / BinStageY 사용)
+            if (!tp.AxisPositions.TryGetValue(AxisNames.BinStageX, out var centerX) ||
+                !tp.AxisPositions.TryGetValue(AxisNames.BinStageY, out var centerY))
+            {
+                Log.Write(UnitName, "MoveSafety", "CenterPoint BinStageX/BinStageY value missing");
+                return false;
+            }
+
+            // 3) 사각형 Half Range
+            double halfX = Config.SafeStageRectHalfWidthX;
+            double halfY = Config.SafeStageRectHalfHeightY;
+            if (halfX <= 0 || halfY <= 0)
+            {
+                Log.Write(UnitName, "MoveSafety",
+                    $"Invalid rectangle half sizes. HalfX={halfX:F3}, HalfY={halfY:F3}");
+                return false;
+            }
+
+            // 4) 현재 위치
+            double curX = AxisX?.GetPosition() ?? centerX;
+            double curY = AxisY?.GetPosition() ?? centerY;
+
+            // 5) 사각형 내부 판정
+            bool inRect =
+                Math.Abs(curX - centerX) <= halfX &&
+                Math.Abs(curY - centerY) <= halfY;
+
+            if (inRect)
+                return true;
+
+            Log.Write(UnitName, "MoveSafety",
+                $"Fail: Out of RECT safe window. Cur=({curX:F3},{curY:F3}) Center=({centerX:F3},{centerY:F3}) Half=({halfX:F3},{halfY:F3})");
+            return false;
+
+        }
 
         public bool IsCompletedWork()
         {
             bool bRet = false;
-
             try
             {
                 var wafer = GetMaterialWafer();
@@ -1040,18 +1136,12 @@ namespace QMC.LCP_280.Process.Unit
                 bRet = false;
             }
             return bRet;
-
-
-
-            return bRet;
         }
         public void UpdateUI()
         {
-
             MaterialWafer materialWafer = GetMaterialWafer();
             EventUpdateUIWafer?.BeginInvoke(materialWafer, null, null);
         }
-
         internal void PlaceDie(MaterialDie die)
         {
             if(_currentDie != null)
@@ -1070,8 +1160,6 @@ namespace QMC.LCP_280.Process.Unit
                 _currentDie = null;
             }
         }
-
-
         #endregion
     }
 }

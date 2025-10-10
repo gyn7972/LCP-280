@@ -31,10 +31,6 @@
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.iluminatorListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.iluminatorChannelListBoxItemsView = new QMC.Common.ListBoxItemsView();
-            this.illuminatorPropertyCollectionView = new QMC.Common.PropertyCollectionView();
-            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
-            this.btn_Save_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
             this.gbIlluminatorControl = new System.Windows.Forms.GroupBox();
             this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
             this.btn_All_On_Illuminator = new QMC.Common.IndividualMenuButton();
@@ -43,11 +39,20 @@
             this.btn_Disconnect_Illuminator = new QMC.Common.IndividualMenuButton();
             this.btn_On_Illuminator = new QMC.Common.IndividualMenuButton();
             this.btn_Off_Illuminator = new QMC.Common.IndividualMenuButton();
+            this.btn_Save_Illuninator_Setup = new QMC.Common.IndividualMenuButton();
+            this.illuminatorPropertyCollectionView = new QMC.Common.PropertyCollectionView();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.iluminatorChannelListBoxItemsView = new QMC.Common.ListBoxItemsView();
+            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
+            this.label_Intensity = new System.Windows.Forms.Label();
+            this.trackBar_LightIntensity = new System.Windows.Forms.TrackBar();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
-            this.illuminatorPropertyCollectionView.SuspendLayout();
             this.gbIlluminatorControl.SuspendLayout();
             this.tableLayoutPanel7.SuspendLayout();
+            this.illuminatorPropertyCollectionView.SuspendLayout();
+            this.tableLayoutPanel3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar_LightIntensity)).BeginInit();
             this.SuspendLayout();
             // 
             // tableLayoutPanel1
@@ -90,98 +95,31 @@
             // 
             this.tableLayoutPanel2.ColumnCount = 1;
             this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Controls.Add(this.gbIlluminatorControl, 0, 3);
-            this.tableLayoutPanel2.Controls.Add(this.btn_Save_Illuninator_Setup, 0, 2);
-            this.tableLayoutPanel2.Controls.Add(this.illuminatorPropertyCollectionView, 0, 1);
+            this.tableLayoutPanel2.Controls.Add(this.gbIlluminatorControl, 0, 4);
+            this.tableLayoutPanel2.Controls.Add(this.btn_Save_Illuninator_Setup, 0, 3);
+            this.tableLayoutPanel2.Controls.Add(this.illuminatorPropertyCollectionView, 0, 2);
             this.tableLayoutPanel2.Controls.Add(this.iluminatorChannelListBoxItemsView, 0, 0);
+            this.tableLayoutPanel2.Controls.Add(this.tableLayoutPanel3, 0, 1);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(189, 3);
             this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 4;
+            this.tableLayoutPanel2.RowCount = 5;
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 35F));
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 40F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
+            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 35F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 5F));
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(429, 739);
             this.tableLayoutPanel2.TabIndex = 19;
-            // 
-            // iluminatorChannelListBoxItemsView
-            // 
-            this.iluminatorChannelListBoxItemsView.BorderColor = System.Drawing.Color.White;
-            this.iluminatorChannelListBoxItemsView.BorderWidth = 2;
-            this.iluminatorChannelListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.iluminatorChannelListBoxItemsView.GroupBackColor = System.Drawing.Color.White;
-            this.iluminatorChannelListBoxItemsView.GroupForeColor = System.Drawing.Color.Black;
-            this.iluminatorChannelListBoxItemsView.GroupName = "Channel";
-            this.iluminatorChannelListBoxItemsView.ItemBackColor = System.Drawing.Color.Black;
-            this.iluminatorChannelListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
-            this.iluminatorChannelListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
-            this.iluminatorChannelListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
-            this.iluminatorChannelListBoxItemsView.Location = new System.Drawing.Point(3, 6);
-            this.iluminatorChannelListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
-            this.iluminatorChannelListBoxItemsView.Name = "iluminatorChannelListBoxItemsView";
-            this.iluminatorChannelListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
-            this.iluminatorChannelListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
-            this.iluminatorChannelListBoxItemsView.SelectedIndex = -1;
-            this.iluminatorChannelListBoxItemsView.Size = new System.Drawing.Size(423, 246);
-            this.iluminatorChannelListBoxItemsView.TabIndex = 20;
-            // 
-            // illuminatorPropertyCollectionView
-            // 
-            this.illuminatorPropertyCollectionView.Controls.Add(this.individualMenuButton1);
-            this.illuminatorPropertyCollectionView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.illuminatorPropertyCollectionView.FastBuild = true;
-            this.illuminatorPropertyCollectionView.GroupName = "Property";
-            this.illuminatorPropertyCollectionView.Location = new System.Drawing.Point(3, 261);
-            this.illuminatorPropertyCollectionView.Name = "illuminatorPropertyCollectionView";
-            this.illuminatorPropertyCollectionView.Size = new System.Drawing.Size(423, 289);
-            this.illuminatorPropertyCollectionView.SuppressResizeInvalidation = true;
-            this.illuminatorPropertyCollectionView.TabIndex = 21;
-            // 
-            // individualMenuButton1
-            // 
-            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
-            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
-            this.individualMenuButton1.Location = new System.Drawing.Point(330, 312);
-            this.individualMenuButton1.Name = "individualMenuButton1";
-            this.individualMenuButton1.Size = new System.Drawing.Size(100, 40);
-            this.individualMenuButton1.TabIndex = 5;
-            this.individualMenuButton1.TabStop = false;
-            this.individualMenuButton1.Text = "Save";
-            this.individualMenuButton1.UseVisualStyleBackColor = false;
-            // 
-            // btn_Save_Illuninator_Setup
-            // 
-            this.btn_Save_Illuninator_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Illuninator_Setup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btn_Save_Illuninator_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btn_Save_Illuninator_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Illuninator_Setup.CustomForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btn_Save_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
-            this.btn_Save_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
-            this.btn_Save_Illuninator_Setup.Location = new System.Drawing.Point(3, 556);
-            this.btn_Save_Illuninator_Setup.Name = "btn_Save_Illuninator_Setup";
-            this.btn_Save_Illuninator_Setup.Size = new System.Drawing.Size(423, 30);
-            this.btn_Save_Illuninator_Setup.TabIndex = 25;
-            this.btn_Save_Illuninator_Setup.TabStop = false;
-            this.btn_Save_Illuninator_Setup.Text = "Save";
-            this.btn_Save_Illuninator_Setup.UseVisualStyleBackColor = false;
             // 
             // gbIlluminatorControl
             // 
             this.gbIlluminatorControl.BackColor = System.Drawing.Color.White;
             this.gbIlluminatorControl.Controls.Add(this.tableLayoutPanel7);
             this.gbIlluminatorControl.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.gbIlluminatorControl.Location = new System.Drawing.Point(3, 592);
+            this.gbIlluminatorControl.Location = new System.Drawing.Point(3, 591);
             this.gbIlluminatorControl.Name = "gbIlluminatorControl";
-            this.gbIlluminatorControl.Size = new System.Drawing.Size(423, 144);
+            this.gbIlluminatorControl.Size = new System.Drawing.Size(423, 145);
             this.gbIlluminatorControl.TabIndex = 26;
             this.gbIlluminatorControl.TabStop = false;
             this.gbIlluminatorControl.Text = "Control";
@@ -204,7 +142,7 @@
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
             this.tableLayoutPanel7.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 33.33333F));
-            this.tableLayoutPanel7.Size = new System.Drawing.Size(417, 124);
+            this.tableLayoutPanel7.Size = new System.Drawing.Size(417, 125);
             this.tableLayoutPanel7.TabIndex = 2;
             // 
             // btn_All_On_Illuminator
@@ -315,6 +253,109 @@
             this.btn_Off_Illuminator.Text = "Off";
             this.btn_Off_Illuminator.UseVisualStyleBackColor = false;
             // 
+            // btn_Save_Illuninator_Setup
+            // 
+            this.btn_Save_Illuninator_Setup.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Illuninator_Setup.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.btn_Save_Illuninator_Setup.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.btn_Save_Illuninator_Setup.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Illuninator_Setup.CustomForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Illuninator_Setup.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.btn_Save_Illuninator_Setup.ForeColor = System.Drawing.Color.Black;
+            this.btn_Save_Illuninator_Setup.ImageSize = new System.Drawing.Size(45, 45);
+            this.btn_Save_Illuninator_Setup.Location = new System.Drawing.Point(3, 555);
+            this.btn_Save_Illuninator_Setup.Name = "btn_Save_Illuninator_Setup";
+            this.btn_Save_Illuninator_Setup.Size = new System.Drawing.Size(423, 30);
+            this.btn_Save_Illuninator_Setup.TabIndex = 25;
+            this.btn_Save_Illuninator_Setup.TabStop = false;
+            this.btn_Save_Illuninator_Setup.Text = "Save";
+            this.btn_Save_Illuninator_Setup.UseVisualStyleBackColor = false;
+            // 
+            // illuminatorPropertyCollectionView
+            // 
+            this.illuminatorPropertyCollectionView.Controls.Add(this.individualMenuButton1);
+            this.illuminatorPropertyCollectionView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.illuminatorPropertyCollectionView.FastBuild = true;
+            this.illuminatorPropertyCollectionView.GroupName = "Property";
+            this.illuminatorPropertyCollectionView.Location = new System.Drawing.Point(3, 297);
+            this.illuminatorPropertyCollectionView.Name = "illuminatorPropertyCollectionView";
+            this.illuminatorPropertyCollectionView.Size = new System.Drawing.Size(423, 252);
+            this.illuminatorPropertyCollectionView.SuppressResizeInvalidation = true;
+            this.illuminatorPropertyCollectionView.TabIndex = 21;
+            // 
+            // individualMenuButton1
+            // 
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(330, 312);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(100, 40);
+            this.individualMenuButton1.TabIndex = 5;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "Save";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
+            // 
+            // iluminatorChannelListBoxItemsView
+            // 
+            this.iluminatorChannelListBoxItemsView.BorderColor = System.Drawing.Color.White;
+            this.iluminatorChannelListBoxItemsView.BorderWidth = 2;
+            this.iluminatorChannelListBoxItemsView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.iluminatorChannelListBoxItemsView.GroupBackColor = System.Drawing.Color.White;
+            this.iluminatorChannelListBoxItemsView.GroupForeColor = System.Drawing.Color.Black;
+            this.iluminatorChannelListBoxItemsView.GroupName = "Channel";
+            this.iluminatorChannelListBoxItemsView.ItemBackColor = System.Drawing.Color.Black;
+            this.iluminatorChannelListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
+            this.iluminatorChannelListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
+            this.iluminatorChannelListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
+            this.iluminatorChannelListBoxItemsView.Location = new System.Drawing.Point(3, 6);
+            this.iluminatorChannelListBoxItemsView.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
+            this.iluminatorChannelListBoxItemsView.Name = "iluminatorChannelListBoxItemsView";
+            this.iluminatorChannelListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
+            this.iluminatorChannelListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
+            this.iluminatorChannelListBoxItemsView.SelectedIndex = -1;
+            this.iluminatorChannelListBoxItemsView.Size = new System.Drawing.Size(423, 246);
+            this.iluminatorChannelListBoxItemsView.TabIndex = 20;
+            // 
+            // tableLayoutPanel3
+            // 
+            this.tableLayoutPanel3.ColumnCount = 2;
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 80F));
+            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Controls.Add(this.label_Intensity, 0, 0);
+            this.tableLayoutPanel3.Controls.Add(this.trackBar_LightIntensity, 1, 0);
+            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel3.Location = new System.Drawing.Point(3, 261);
+            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
+            this.tableLayoutPanel3.RowCount = 1;
+            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel3.Size = new System.Drawing.Size(423, 30);
+            this.tableLayoutPanel3.TabIndex = 27;
+            // 
+            // label_Intensity
+            // 
+            this.label_Intensity.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.label_Intensity.Location = new System.Drawing.Point(3, 3);
+            this.label_Intensity.Margin = new System.Windows.Forms.Padding(3);
+            this.label_Intensity.Name = "label_Intensity";
+            this.label_Intensity.Size = new System.Drawing.Size(74, 24);
+            this.label_Intensity.TabIndex = 0;
+            // 
+            // trackBar_LightIntensity
+            // 
+            this.trackBar_LightIntensity.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.trackBar_LightIntensity.Location = new System.Drawing.Point(83, 3);
+            this.trackBar_LightIntensity.Maximum = 4095;
+            this.trackBar_LightIntensity.Name = "trackBar_LightIntensity";
+            this.trackBar_LightIntensity.Size = new System.Drawing.Size(337, 24);
+            this.trackBar_LightIntensity.TabIndex = 1;
+            this.trackBar_LightIntensity.TickFrequency = 256;
+            // 
             // LightControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -324,9 +365,12 @@
             this.Size = new System.Drawing.Size(621, 745);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel2.ResumeLayout(false);
-            this.illuminatorPropertyCollectionView.ResumeLayout(false);
             this.gbIlluminatorControl.ResumeLayout(false);
             this.tableLayoutPanel7.ResumeLayout(false);
+            this.illuminatorPropertyCollectionView.ResumeLayout(false);
+            this.tableLayoutPanel3.ResumeLayout(false);
+            this.tableLayoutPanel3.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar_LightIntensity)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -348,5 +392,8 @@
         private Common.IndividualMenuButton btn_Disconnect_Illuminator;
         private Common.IndividualMenuButton btn_On_Illuminator;
         private Common.IndividualMenuButton btn_Off_Illuminator;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
+        private System.Windows.Forms.Label label_Intensity;
+        private System.Windows.Forms.TrackBar trackBar_LightIntensity;
     }
 }

@@ -53,16 +53,16 @@ namespace QMC.LCP_280.Process.Unit
             this.grpSelectAxis = new System.Windows.Forms.GroupBox();
             this.selectAxisListBoxItemsView = new QMC.Common.ListBoxItemsView();
             this.layoutRight = new System.Windows.Forms.TableLayoutPanel();
+            this.grpMove = new System.Windows.Forms.GroupBox();
+            this.rdoFine = new System.Windows.Forms.RadioButton();
+            this.rdoCoarse = new System.Windows.Forms.RadioButton();
+            this.grpMoveMode = new System.Windows.Forms.GroupBox();
             this.presetRow = new System.Windows.Forms.FlowLayoutPanel();
             this.btnStep1 = new System.Windows.Forms.Button();
             this.btnStep10 = new System.Windows.Forms.Button();
             this.btnStep100 = new System.Windows.Forms.Button();
             this.btnStep1000 = new System.Windows.Forms.Button();
             this.btnStepClear = new System.Windows.Forms.Button();
-            this.grpMove = new System.Windows.Forms.GroupBox();
-            this.rdoFine = new System.Windows.Forms.RadioButton();
-            this.rdoCoarse = new System.Windows.Forms.RadioButton();
-            this.grpMoveMode = new System.Windows.Forms.GroupBox();
             this.rdoContinuous = new System.Windows.Forms.RadioButton();
             this.rdoStep = new System.Windows.Forms.RadioButton();
             this.nudStep = new System.Windows.Forms.NumericUpDown();
@@ -83,9 +83,9 @@ namespace QMC.LCP_280.Process.Unit
             this.layoutLeft.SuspendLayout();
             this.grpSelectAxis.SuspendLayout();
             this.layoutRight.SuspendLayout();
-            this.presetRow.SuspendLayout();
             this.grpMove.SuspendLayout();
             this.grpMoveMode.SuspendLayout();
+            this.presetRow.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudStep)).BeginInit();
             this.tblJog.SuspendLayout();
             this.SuspendLayout();
@@ -163,12 +163,12 @@ namespace QMC.LCP_280.Process.Unit
             this.selectAxisListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
             this.selectAxisListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
             this.selectAxisListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
-            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(6, 20);
+            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(6, 24);
             this.selectAxisListBoxItemsView.Name = "selectAxisListBoxItemsView";
             this.selectAxisListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.selectAxisListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.selectAxisListBoxItemsView.SelectedIndex = -1;
-            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(176, 281);
+            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(176, 277);
             this.selectAxisListBoxItemsView.TabIndex = 0;
             // 
             // layoutRight
@@ -189,6 +189,57 @@ namespace QMC.LCP_280.Process.Unit
             this.layoutRight.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 15F));
             this.layoutRight.Size = new System.Drawing.Size(344, 391);
             this.layoutRight.TabIndex = 1;
+            // 
+            // grpMove
+            // 
+            this.grpMove.Controls.Add(this.rdoFine);
+            this.grpMove.Controls.Add(this.rdoCoarse);
+            this.grpMove.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.grpMove.Location = new System.Drawing.Point(6, 6);
+            this.grpMove.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
+            this.grpMove.Name = "grpMove";
+            this.grpMove.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
+            this.grpMove.Size = new System.Drawing.Size(332, 50);
+            this.grpMove.TabIndex = 0;
+            this.grpMove.TabStop = false;
+            this.grpMove.Text = "Move Speed";
+            // 
+            // rdoFine
+            // 
+            this.rdoFine.AutoSize = true;
+            this.rdoFine.Location = new System.Drawing.Point(12, 22);
+            this.rdoFine.Name = "rdoFine";
+            this.rdoFine.Size = new System.Drawing.Size(55, 19);
+            this.rdoFine.TabIndex = 0;
+            this.rdoFine.Text = "Fine";
+            // 
+            // rdoCoarse
+            // 
+            this.rdoCoarse.AutoSize = true;
+            this.rdoCoarse.Checked = true;
+            this.rdoCoarse.Location = new System.Drawing.Point(80, 22);
+            this.rdoCoarse.Name = "rdoCoarse";
+            this.rdoCoarse.Size = new System.Drawing.Size(75, 19);
+            this.rdoCoarse.TabIndex = 1;
+            this.rdoCoarse.TabStop = true;
+            this.rdoCoarse.Text = "Coarse";
+            // 
+            // grpMoveMode
+            // 
+            this.grpMoveMode.Controls.Add(this.presetRow);
+            this.grpMoveMode.Controls.Add(this.rdoContinuous);
+            this.grpMoveMode.Controls.Add(this.rdoStep);
+            this.grpMoveMode.Controls.Add(this.nudStep);
+            this.grpMoveMode.Controls.Add(this.btnStepPreset);
+            this.grpMoveMode.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.grpMoveMode.Location = new System.Drawing.Point(6, 62);
+            this.grpMoveMode.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
+            this.grpMoveMode.Name = "grpMoveMode";
+            this.grpMoveMode.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
+            this.grpMoveMode.Size = new System.Drawing.Size(332, 76);
+            this.grpMoveMode.TabIndex = 1;
+            this.grpMoveMode.TabStop = false;
+            this.grpMoveMode.Text = "Move Mode (mm)";
             // 
             // presetRow
             // 
@@ -261,64 +312,13 @@ namespace QMC.LCP_280.Process.Unit
             this.btnStepClear.Text = "0\'";
             this.btnStepClear.Click += new System.EventHandler(this.btnStepClear_Click);
             // 
-            // grpMove
-            // 
-            this.grpMove.Controls.Add(this.rdoFine);
-            this.grpMove.Controls.Add(this.rdoCoarse);
-            this.grpMove.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grpMove.Location = new System.Drawing.Point(6, 6);
-            this.grpMove.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
-            this.grpMove.Name = "grpMove";
-            this.grpMove.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.grpMove.Size = new System.Drawing.Size(332, 50);
-            this.grpMove.TabIndex = 0;
-            this.grpMove.TabStop = false;
-            this.grpMove.Text = "Move";
-            // 
-            // rdoFine
-            // 
-            this.rdoFine.AutoSize = true;
-            this.rdoFine.Location = new System.Drawing.Point(12, 22);
-            this.rdoFine.Name = "rdoFine";
-            this.rdoFine.Size = new System.Drawing.Size(47, 16);
-            this.rdoFine.TabIndex = 0;
-            this.rdoFine.Text = "Fine";
-            // 
-            // rdoCoarse
-            // 
-            this.rdoCoarse.AutoSize = true;
-            this.rdoCoarse.Checked = true;
-            this.rdoCoarse.Location = new System.Drawing.Point(80, 22);
-            this.rdoCoarse.Name = "rdoCoarse";
-            this.rdoCoarse.Size = new System.Drawing.Size(64, 16);
-            this.rdoCoarse.TabIndex = 1;
-            this.rdoCoarse.TabStop = true;
-            this.rdoCoarse.Text = "Coarse";
-            // 
-            // grpMoveMode
-            // 
-            this.grpMoveMode.Controls.Add(this.presetRow);
-            this.grpMoveMode.Controls.Add(this.rdoContinuous);
-            this.grpMoveMode.Controls.Add(this.rdoStep);
-            this.grpMoveMode.Controls.Add(this.nudStep);
-            this.grpMoveMode.Controls.Add(this.btnStepPreset);
-            this.grpMoveMode.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grpMoveMode.Location = new System.Drawing.Point(6, 62);
-            this.grpMoveMode.Margin = new System.Windows.Forms.Padding(0, 0, 0, 6);
-            this.grpMoveMode.Name = "grpMoveMode";
-            this.grpMoveMode.Padding = new System.Windows.Forms.Padding(10, 8, 10, 8);
-            this.grpMoveMode.Size = new System.Drawing.Size(332, 76);
-            this.grpMoveMode.TabIndex = 1;
-            this.grpMoveMode.TabStop = false;
-            this.grpMoveMode.Text = "Move Mode";
-            // 
             // rdoContinuous
             // 
             this.rdoContinuous.AutoSize = true;
             this.rdoContinuous.Checked = true;
             this.rdoContinuous.Location = new System.Drawing.Point(12, 22);
             this.rdoContinuous.Name = "rdoContinuous";
-            this.rdoContinuous.Size = new System.Drawing.Size(87, 16);
+            this.rdoContinuous.Size = new System.Drawing.Size(103, 19);
             this.rdoContinuous.TabIndex = 0;
             this.rdoContinuous.TabStop = true;
             this.rdoContinuous.Text = "Continuous";
@@ -326,9 +326,9 @@ namespace QMC.LCP_280.Process.Unit
             // rdoStep
             // 
             this.rdoStep.AutoSize = true;
-            this.rdoStep.Location = new System.Drawing.Point(110, 22);
+            this.rdoStep.Location = new System.Drawing.Point(123, 22);
             this.rdoStep.Name = "rdoStep";
-            this.rdoStep.Size = new System.Drawing.Size(48, 16);
+            this.rdoStep.Size = new System.Drawing.Size(58, 19);
             this.rdoStep.TabIndex = 1;
             this.rdoStep.Text = "Step";
             // 
@@ -336,7 +336,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             this.nudStep.DecimalPlaces = 3;
             this.nudStep.Enabled = false;
-            this.nudStep.Location = new System.Drawing.Point(160, 20);
+            this.nudStep.Location = new System.Drawing.Point(191, 20);
             this.nudStep.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -348,7 +348,7 @@ namespace QMC.LCP_280.Process.Unit
             0,
             196608});
             this.nudStep.Name = "nudStep";
-            this.nudStep.Size = new System.Drawing.Size(70, 21);
+            this.nudStep.Size = new System.Drawing.Size(70, 25);
             this.nudStep.TabIndex = 2;
             this.nudStep.Value = new decimal(new int[] {
             1000,
@@ -358,7 +358,7 @@ namespace QMC.LCP_280.Process.Unit
             // 
             // btnStepPreset
             // 
-            this.btnStepPreset.Location = new System.Drawing.Point(236, 19);
+            this.btnStepPreset.Location = new System.Drawing.Point(267, 19);
             this.btnStepPreset.Name = "btnStepPreset";
             this.btnStepPreset.Size = new System.Drawing.Size(28, 23);
             this.btnStepPreset.TabIndex = 3;
@@ -527,11 +527,11 @@ namespace QMC.LCP_280.Process.Unit
             this.layoutLeft.ResumeLayout(false);
             this.grpSelectAxis.ResumeLayout(false);
             this.layoutRight.ResumeLayout(false);
-            this.presetRow.ResumeLayout(false);
             this.grpMove.ResumeLayout(false);
             this.grpMove.PerformLayout();
             this.grpMoveMode.ResumeLayout(false);
             this.grpMoveMode.PerformLayout();
+            this.presetRow.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.nudStep)).EndInit();
             this.tblJog.ResumeLayout(false);
             this.ResumeLayout(false);
