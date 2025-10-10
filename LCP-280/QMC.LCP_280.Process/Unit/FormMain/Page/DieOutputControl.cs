@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using QMC.Common;
 using QMC.Common.Controls;                 // DisplayView_DieOutputControl
 using QMC.LCP_280.Process.Component;       // MaterialDie, DieProcessState
 
@@ -77,7 +78,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             var items = _dies.Select(d => new DisplayView_DieOutputControl.DisplayItem
             {
-                Position = new Point(d.BinX, d.BinY),
+                Position = new PointD(d.BinX, d.BinY),
                 State = ConvertState(d.State),
                 DieId = d.Index,
                 Info = d.TesterResult.BinningResult.BinLabel    // MaterialDie 에 BinCode / 기타 출력용 필드가 있다고 가정

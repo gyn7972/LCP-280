@@ -387,10 +387,12 @@ namespace QMC.LCP_280.Process.Unit
                 // 폴백: 기존 직접 축 호출
                 if (_axisManager == null) return;
                 string axisName = selectAxisListBoxItemsView.SelectedItemName;
-                if (string.IsNullOrEmpty(axisName)) return;
+                if (string.IsNullOrEmpty(axisName)) 
+                    return;
 
                 MotionAxis axis = _axisManager.Get(UNIT_NAME, axisName);
-                if (axis == null) return;
+                if (axis == null) 
+                    return;
 
                 axis.MoveNextIndex();
             }

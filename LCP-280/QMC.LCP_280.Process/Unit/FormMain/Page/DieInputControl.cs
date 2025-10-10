@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using QMC.Common;
 using QMC.Common.Controls;
 using QMC.LCP_280.Process.Component;
 
@@ -67,7 +68,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             // 좌표 기준으로 Picked 강제 재적용
             foreach (var c in incoming)
             {
-                var p = new Point(c.MapX, c.MapY);
+                var p = new PointD(c.MapX, c.MapY);
                 if (_pickedCoords.Contains(p))
                 {
                     c.State = DieProcessState.Picked;
@@ -79,7 +80,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             var items = _chips.Select(c =>
             {
-                var p = new Point(c.MapX, c.MapY);
+                var p = new PointD(c.MapX, c.MapY);
 
                 // 기본 상태
                 var state = ConvertState(c.State);
@@ -242,7 +243,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             foreach (var chip in _chips)
             {
-                var p = new Point(chip.MapX, chip.MapY);
+                var p = new PointD(chip.MapX, chip.MapY);
                 if (removed.Contains(p))
                 {
                     chip.State = showAsPicked ? DieProcessState.Picked : DieProcessState.None;
@@ -269,7 +270,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             foreach (var chip in _chips)
             {
-                var p = new Point(chip.MapX, chip.MapY);
+                var p = new PointD(chip.MapX, chip.MapY);
 
                 if (_pickedCoords.Contains(p))
                 {

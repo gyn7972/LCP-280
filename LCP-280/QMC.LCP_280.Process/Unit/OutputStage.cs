@@ -25,8 +25,8 @@ namespace QMC.LCP_280.Process.Unit
         public sealed class DiePlacedEventArgs : EventArgs
         {
             public MaterialDie Die { get; }
-            public int BinX { get; }
-            public int BinY { get; }
+            public double BinX { get; }
+            public double BinY { get; }
 
             public DiePlacedEventArgs(MaterialDie die)
             {
@@ -1190,7 +1190,7 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         // 다음 빈 Bin을 예약(내부 _currentDie 설정)하고 Bin 좌표 반환
-        public bool TryReserveNextEmptyBin(out int binX, out int binY, out MaterialDie slot)
+        public bool TryReserveNextEmptyBin(out double binX, out double binY, out MaterialDie slot)
         {
             binX = binY = -1;
             slot = null;
@@ -1216,7 +1216,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // 레시피와 센터 Teaching을 기준으로 Bin의 XY 세계좌표(mm) 계산
-        public (double x, double y) GetBinWorldPosition(int binX, int binY)
+        public (double x, double y) GetBinWorldPosition(double binX, double binY)
         {
             var eq = Equipment.Instance;
             var recipe = eq.EquipmentRecipe.CurrentRecipe;
@@ -1242,7 +1242,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         
         
-        public int MoveToBinPosition(int binX, int binY, bool isFine = false)
+        public int MoveToBinPosition(double binX, double binY, bool isFine = false)
         {
             // 지정 Bin 위치로 XY 이동
             var (tx, ty) = GetBinWorldPosition(binX, binY);

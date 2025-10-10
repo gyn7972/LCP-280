@@ -178,7 +178,7 @@ namespace QMC.LCP_280.Process
         }
         private void InputDieTransfer_DiePicked(object sender, InputDieTransfer.DiePickedEventArgs e)
         {
-            dieInputControl1.MarkCurrentPicked(new System.Drawing.Point(e.MapX, e.MapY));
+            dieInputControl1.MarkCurrentPicked(new PointD(e.MapX, e.MapY));
             // MarkDieRemoved는 내부적으로 Invoke 처리하므로 바로 호출해도 안전
             //dieInputControl1.MarkDieRemoved(new System.Drawing.Point(e.MapX, e.MapY), showAsPicked: true);
         }
@@ -189,7 +189,7 @@ namespace QMC.LCP_280.Process
             Console.WriteLine($"[Out] Placed at Bin ({e.BinX},{e.BinY})");
 
             // Placed를 초록색으로 보여주고 싶으면 Picked로 매핑
-            dieOutputControl1.UpdateDie(new Point(e.BinX, e.BinY), DieProcessState.Picked);
+            dieOutputControl1.UpdateDie(new PointD(e.BinX, e.BinY), DieProcessState.Picked);
         }
 
         private void OutputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)

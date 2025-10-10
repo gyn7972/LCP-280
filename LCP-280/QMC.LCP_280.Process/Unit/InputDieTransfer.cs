@@ -33,8 +33,8 @@ namespace QMC.LCP_280.Process.Unit
     {
         public class DiePickedEventArgs : EventArgs
         {
-            public int MapX { get; }
-            public int MapY { get; }
+            public double MapX { get; }
+            public double MapY { get; }
             public MaterialDie Die { get; }
 
             public DiePickedEventArgs(MaterialDie die)

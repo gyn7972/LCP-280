@@ -28,16 +28,7 @@ namespace QMC.LCP_280.Process.Unit
         // === Load 인덱스 변경 이벤트 (UI 연동용) ===
         public delegate void LoadIndexChangedHandler(object sender, int loadIndex0Based);
         public event LoadIndexChangedHandler LoadIndexChanged;
-        protected virtual void OnLoadIndexChanged(int loadIndex0Based)
-        {
-            LoadIndexChangedHandler handler = this.LoadIndexChanged;
-            if (handler != null)
-            {
-                handler(this, loadIndex0Based);
-            }
-        }
-
-
+        
         public enum AlarmKeys
         {
             eIndexRotary = 4800,
@@ -1714,7 +1705,10 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 if (loadOk && unloadOk)
+                {
+                    OnLoadIndexChanged(GetLoadIndexNo());
                     return 0;
+                }
 
                 if (timeout.IsCompleted)
                 {
@@ -1979,7 +1973,16 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
-        
+
         #endregion
+
+        protected virtual void OnLoadIndexChanged(int loadIndex0Based)
+        {
+            LoadIndexChangedHandler handler = this.LoadIndexChanged;
+            if (handler != null)
+            {
+                handler(this, loadIndex0Based);
+            }
+        }
     }
 }

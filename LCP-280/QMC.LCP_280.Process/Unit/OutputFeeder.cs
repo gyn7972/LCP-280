@@ -871,9 +871,10 @@ namespace QMC.LCP_280.Process.Unit
                             for (int x = 0; x < recipe.BinCountX; x++)
                             {
                                 // 중심 기준 정수 좌표(반올림)
-                                int mapX = (int)Math.Round(x - centerX);
-                                int mapY = (int)Math.Round(y - centerY);
-
+                                //double mapX = (int)Math.Round(x - centerX);
+                                //double mapY = (int)Math.Round(y - centerY);
+                                double mapX = (x - centerX);
+                                double mapY = (y - centerY);
                                 var die = new MaterialDie
                                 {
                                     Presence = Material.MaterialPresence.NotExist,

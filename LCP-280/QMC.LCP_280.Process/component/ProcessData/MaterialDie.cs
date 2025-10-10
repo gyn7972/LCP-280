@@ -24,11 +24,11 @@ namespace QMC.LCP_280.Process.Component
     {
         // ===== 식별 =====
         [DefaultValue(-1)] public int Index { get; set; } = -1;
-        [DefaultValue(0)] public int MapX { get; set; } = 0;
-        [DefaultValue(0)] public int MapY { get; set; } = 0;
+        [DefaultValue(0)] public double MapX { get; set; } = 0;
+        [DefaultValue(0)] public double MapY { get; set; } = 0;
 
-        [DefaultValue(0)] public int BinX { get; set; } = 0;
-        [DefaultValue(0)] public int BinY { get; set; } = 0;
+        [DefaultValue(0)] public double BinX { get; set; } = 0;
+        [DefaultValue(0)] public double BinY { get; set; } = 0;
 
 
 

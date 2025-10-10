@@ -8,6 +8,21 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
 {
     public partial class DisplayView_DieOutputControl : UserControl
     {
+        //// double 좌표용 구조체
+        //public struct PointD
+        //{
+        //    public double X;
+        //    public double Y;
+        //    public PointD(double x, double y) { X = x; Y = y; }
+
+        //    // System.Drawing.Point -> PointD 암시 변환
+        //    public static implicit operator PointD(Point p) => new PointD(p.X, p.Y);
+        //    // 필요 시 PointF 도 지원
+        //    public static implicit operator PointD(PointF p) => new PointD(p.X, p.Y);
+        //    // PointD -> System.Drawing.Point 암시 변환(라운딩)
+        //    public static implicit operator Point(PointD p) => new Point((int)Math.Round(p.X), (int)Math.Round(p.Y));
+        //}
+
         public enum ItemState
         {
             Empty,   // 흰색
@@ -17,7 +32,7 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
 
         public class DisplayItem
         {
-            public Point Position { get; set; }   // 중심 (0,0) 기준 좌표
+            public PointD Position { get; set; }   // 중심 (0,0) 기준 좌표 (double)
             public ItemState State { get; set; }  // 상태
             public string Info { get; set; } = "";  // 추가 정보 (BinCode, Test결과 등)
             public int DieId { get; set; }       // 다이 ID
@@ -85,26 +100,28 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
             int cx = this.Width / 2;
             int cy = this.Height / 2;
 
-            // 데이터 범위 계산
-            int maxX = _items.Max(d => Math.Abs(d.Position.X));
-            int maxY = _items.Max(d => Math.Abs(d.Position.Y));
-            if (maxX == 0) maxX = 1;
-            if (maxY == 0) maxY = 1;
+            // 데이터 범위 계산 (double)
+            double maxX = _items.Max(d => Math.Abs(d.Position.X));
+            double maxY = _items.Max(d => Math.Abs(d.Position.Y));
+            if (maxX <= 0) maxX = 1;
+            if (maxY <= 0) maxY = 1;
 
-            float baseScale = Math.Min(
-                (float)(this.Width / 2 - 20) / maxX,
-                (float)(this.Height / 2 - 20) / maxY
+            double baseScale = Math.Min(
+                ((this.Width / 2.0) - 20.0) / maxX,
+                ((this.Height / 2.0) - 20.0) / maxY
             );
 
-            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5f));
+            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5));
             int hitRadius = Math.Max(itemSize / 2, 3); // 최소 3픽셀 클릭 영역
 
             foreach (var item in _items)
             {
-                int x = (int)(cx + item.Position.X * baseScale * _scale + _offset.X);
-                int y = (int)(cy - item.Position.Y * baseScale * _scale + _offset.Y);
+                int x = (int)(cx + item.Position.X * baseScale * _scale + (double)_offset.X);
+                int y = (int)(cy - item.Position.Y * baseScale * _scale + (double)_offset.Y);
 
-                double distance = Math.Sqrt(Math.Pow(mousePos.X - x, 2) + Math.Pow(mousePos.Y - y, 2));
+                double dx = mousePos.X - x;
+                double dy = mousePos.Y - y;
+                double distance = Math.Sqrt(dx * dx + dy * dy);
                 if (distance <= hitRadius)
                 {
                     return item;
@@ -212,6 +229,7 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                     this.Invalidate();
                     break;
             }
+
         }
 
 
@@ -264,20 +282,20 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
             int cx = this.Width / 2;
             int cy = this.Height / 2;
 
-            // 데이터 범위 계산
-            int maxX = _items.Max(d => Math.Abs(d.Position.X));
-            int maxY = _items.Max(d => Math.Abs(d.Position.Y));
-            if (maxX == 0) maxX = 1;
-            if (maxY == 0) maxY = 1;
+            // 데이터 범위 계산 (double)
+            double maxX = _items.Max(d => Math.Abs(d.Position.X));
+            double maxY = _items.Max(d => Math.Abs(d.Position.Y));
+            if (maxX <= 0) maxX = 1;
+            if (maxY <= 0) maxY = 1;
 
             // 전체 데이터가 화면에 들어오도록 기본 스케일
-            float baseScale = Math.Min(
-                (float)(this.Width / 2 - 20) / maxX,
-                (float)(this.Height / 2 - 20) / maxY
+            double baseScale = Math.Min(
+                ((this.Width / 2.0) - 20.0) / maxX,
+                ((this.Height / 2.0) - 20.0) / maxY
             );
 
             // 칩 크기
-            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5f));
+            int itemSize = Math.Max(2, (int)(baseScale * _scale * 0.5));
 
             foreach (var item in _items)
             {
@@ -295,13 +313,14 @@ namespace QMC.Common.Controls   // 공용 네임스페이스
                         pen = Pens.Green;
                         break;
                     case ItemState.Empty:
+                    default:
                         brush = Brushes.White;
                         pen = Pens.LightGray;
                         break;
                 }
 
-                int x = (int)(cx + item.Position.X * baseScale * _scale + _offset.X);
-                int y = (int)(cy - item.Position.Y * baseScale * _scale + _offset.Y);
+                int x = (int)(cx + item.Position.X * baseScale * _scale + (double)_offset.X);
+                int y = (int)(cy - item.Position.Y * baseScale * _scale + (double)_offset.Y);
 
                 // 아이템 그리기
                 g.FillEllipse(brush, x - itemSize / 2, y - itemSize / 2, itemSize, itemSize);

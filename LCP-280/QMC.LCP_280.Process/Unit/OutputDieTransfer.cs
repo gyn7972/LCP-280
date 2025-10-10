@@ -1629,7 +1629,7 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            if (!OutputStage.TryReserveNextEmptyBin(out var binX, out var binY, out var slot))
+            if (!OutputStage.TryReserveNextEmptyBin(out double binX, out double binY, out var slot))
             {
                 Log.Write(UnitName, "[MoveOutStage] No empty bin slot.");
                 return 0; // 더 놓을 자리가 없으면 정상 종료로 간주
