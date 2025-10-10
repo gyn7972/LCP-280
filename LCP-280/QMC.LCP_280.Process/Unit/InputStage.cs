@@ -2053,8 +2053,36 @@ namespace QMC.LCP_280.Process.Unit
         // 매핑 파라미터 (Config 로 승격 가능)
         public double MappingRoiWidthMm { get; set; } = 2.0;
         public double MappingRoiHeightMm { get; set; } = 2.0;
-        public double ChipPitchXmm { get; set; } = 0.5;
-        public double ChipPitchYmm { get; set; } = 0.5;
+        public double ChipPitchXmm 
+        {
+            get 
+            {
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+                return recip.ChipWidth;
+            }
+            set 
+            {
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+                recip.ChipWidth = value;
+            } 
+        }
+        public double ChipPitchYmm
+        {
+            get
+            {
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+                return recip.ChipHeight;
+            }
+            set
+            {
+                var eq = Equipment.Instance;
+                var recip = eq.EquipmentRecipe.CurrentRecipe;
+                recip.ChipHeight = value;
+            }
+        }
         public double DuplicateDistMm { get; set; } = 0.8;          // 중복 판단
         public double MarkMinScore { get; set; } = 0.6;             // Vision 점수 기준 (예시)
         public double MissingAllowScore { get; set; } = 0.5;

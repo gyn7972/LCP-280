@@ -396,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                     string labelBase = $"Index{idx + 1}";
 
                     dioControl.BindDIOInput(
-                        () => Rotary.IsVacuumOk(idx),
+                        () => Rotary.IsVacuumOK(idx),
                         $"IndexSlot{idx + 1} FLOW",
                         $"Index_S{idx + 1}_Flow");
 
