@@ -618,12 +618,13 @@ namespace QMC.LCP_280.Process
 
                 SetAndRaiseUnitState(unitName, UnitStatus.Starting);
 
-                if (_equipmentCancellationTokenSource == null)
+                // [FIX] 설비 토큰이 취소 상태면 재생성
+                if (_equipmentCancellationTokenSource == null || _equipmentCancellationTokenSource.IsCancellationRequested)
+                {
+                    try { _equipmentCancellationTokenSource?.Dispose(); } catch { }
                     _equipmentCancellationTokenSource = new CancellationTokenSource();
+                }
 
-                //execInfo.CancellationTokenSource = IsProtectedUnit(unitObj)
-                //    ? new CancellationTokenSource()
-                //    : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
                 var linkedCts = IsProtectedUnit(unitObj)
                                ? new CancellationTokenSource()
                                : CancellationTokenSource.CreateLinkedTokenSource(_equipmentCancellationTokenSource.Token);
@@ -665,7 +666,6 @@ namespace QMC.LCP_280.Process
             {
                 Log.Write(ex);
                 SetAndRaiseUnitState(unitName, UnitStatus.Error);
-                //OnUnitStateChanged(unitName, UnitStatus.Error);
                 OnErrorOccurred($"Unit '{unitName}' 시작 중 오류: {ex.Message}");
                 return false;
             }
@@ -817,6 +817,11 @@ namespace QMC.LCP_280.Process
                     await Task.WhenAll(stopTasks).ConfigureAwait(false);
 
                 OnStateChanged(EquipmentState.Stopped);
+
+                // [FIX] 정지 후 취소된 설비 토큰 정리
+                try { _equipmentCancellationTokenSource?.Dispose(); } catch { }
+                _equipmentCancellationTokenSource = null;
+
                 Console.WriteLine("설비 전체 정지 완료");
                 return true;
             }

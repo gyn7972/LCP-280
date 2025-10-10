@@ -1551,6 +1551,8 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
+        
+
         protected override int OnRunComplete()
         {
             int nRet = 0;
@@ -1559,7 +1561,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return nRet;
             }
-            
+
             // Rotary에서 Place 위치 도착 신호 오면 수행.
             MaterialDie Die = this.Rotary.GetLoadSocketMaterial();
             if(Die != null)
@@ -1679,6 +1681,47 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+        private int RecheckDieAndAlign(bool bFineSpeed = false)
+        {
+            int nRet = 0;
+            if (RunMode == UnitRunMode.Manual)
+            {
+                this.CurrentFunc = RecheckDieAndAlign;
+                var mb = new MessageBoxOk();
+                mb.Focus();
+                mb.ShowDialog("알림", "웨이퍼 스테이지 이동 후 진행 바랍니다.");
+                return 0;
+            }
+            if (InputStage == null)
+            {
+                Log.Write(UnitName, "[RecheckDieAndAlign] InputStage is null");
+                return -1;
+            }
+            MaterialWafer wafer = this.InputStage.GetMaterialWafer();
+            if (wafer == null)
+            {
+                Log.Write(UnitName, "[RecheckDieAndAlign] wafer is null");
+                return -1;
+            }
+            if (wafer.Presence != Material.MaterialPresence.Exist)
+            {
+                Log.Write(UnitName, "[RecheckDieAndAlign] wafer is not exist");
+                return -1;
+            }
+            if (wafer.ProcessSatate != Material.MaterialProcessSatate.Processing)
+            {
+                Log.Write(UnitName, "[RecheckDieAndAlign] wafer is not processing state");
+                return -1;
+            }
+            nRet = InputStage.RecheckDieAndAlign(bFineSpeed);
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[RecheckDieAndAlign] InputStage.RecheckDieAndAlign failed");
+                return -1;
+            }
+            return nRet;
+        }
+
         public int RaiseEjectorForPick(bool bFineSpeed = false)
         {
             int nRet = 0;
@@ -1999,6 +2042,18 @@ namespace QMC.LCP_280.Process.Unit
                 // 진행 중 모니터링(필요 시 비전/로그 등)
                 double dPos = AxisToolT.GetPosition();
                 // TODO: 옵션에 따라 사진 촬영/좌표 업데이트 등 처리
+                
+                
+                // 여기서 Die 유/무 재확인 및 Image Grab 후 2차 얼라인 수행.
+                // InputStage class의 RecheckDieAndAlign 함수 불러와서 수행.
+                nRet = RecheckDieAndAlign();
+                if (nRet != 0)
+                {
+                    Log.Write(UnitName, "[OnRunWork] RecheckDieAndAlign failed");
+                    return -1;
+                }
+
+
                 Thread.Sleep(1);
             }
 

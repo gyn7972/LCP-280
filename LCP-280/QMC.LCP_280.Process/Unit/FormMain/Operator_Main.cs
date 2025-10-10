@@ -7,6 +7,7 @@ using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Threading;
@@ -841,23 +842,32 @@ namespace QMC.LCP_280.Process.Unit.FormMain
                 {
                     MessageBox.Show($"Unit '{unitName}' 는 이미 실행 중입니다.", "정보",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return false;
+                    return true;
                 }
 
                 var prev = Cursor.Current;
                 Cursor.Current = Cursors.WaitCursor;
                 try
                 {
-                    bool ok = await eq.StartUnitAsync(unitName);
+                    bool ok = await eq.StartUnitAsync(unitName).ConfigureAwait(true);
                     if (!ok)
                     {
                         MessageBox.Show($"Unit '{unitName}' 시작 실패.", "오류",
                             MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return false; // 중요: 실제 실패 반환
                     }
+                    return true;
                 }
-                finally { Cursor.Current = prev; }
+                finally 
+                { 
+                    Cursor.Current = prev; 
+                }
             }
-            catch (Exception ex) { Log.Write(ex); }
+            catch (Exception ex) 
+            { 
+                Log.Write(ex);
+                return false; // 예외 시 실패 반환 (중요)
+            }
             return true;
         }
 
@@ -972,13 +982,38 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running)
                 return true;
 
-            bool ok = await TryStartUnitAsync(unit);
-            if (!ok || unit.RunUnitStatus != BaseUnit.UnitStatus.Running)
+            // 1) Start 시도
+            var started = await TryStartUnitAsync(unit).ConfigureAwait(true);
+            if (!started)
             {
-                Log.Write("Operator_Main", $"StartSequenceAsync 실패: {sequenceName}");
+                Log.Write("Operator_Main", $"StartSequenceAsync 실패(시작 요청 실패): {sequenceName}");
                 return false;
             }
+
+            // 2) Running 전이 대기 (타임아웃 내 폴링)
+            const int timeoutMs = 5000; // 필요 시 설정값으로 분리
+            var ok = await WaitForUnitRunningAsync(unit, timeoutMs, ct).ConfigureAwait(true);
+            if (!ok)
+            {
+                Log.Write("Operator_Main", $"StartSequenceAsync 실패(Running 전이 타임아웃): {sequenceName}");
+                return false;
+            }
+
             return true;
+        }
+        // Unit Running 대기 유틸
+        private async Task<bool> WaitForUnitRunningAsync(BaseUnit unit, int timeoutMs, CancellationToken ct)
+        {
+            var sw = Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds < timeoutMs)
+            {
+                ct.ThrowIfCancellationRequested();
+                if (unit.RunUnitStatus == BaseUnit.UnitStatus.Running || unit.IsRunning)
+                    return true;
+
+                await Task.Delay(100, ct).ConfigureAwait(true);
+            }
+            return unit.RunUnitStatus == BaseUnit.UnitStatus.Running || unit.IsRunning;
         }
 
         // Ready 공통 (Manual/Auto 공용) : 실패 시 false
