@@ -1752,6 +1752,7 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
+
                 _currentDie = die;
             }
 
