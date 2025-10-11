@@ -586,6 +586,59 @@ namespace QMC.LCP_280.Process.Unit
             }
             return this.ReadInput(OutputFeederConfig.IO.FEEDER_OVERLOAD);
         }
+
+        // === Cylinder 완료 대기 Helper ===
+        // Clamp: expectClamp=true(Clamp 완료 기대), false(Unclamp 완료 기대)
+        private int WaitClampStateOrAlarm(bool expectClamp, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectClamp ? IsClamped() : IsUnClamped();
+                if (ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            int alarm = expectClamp
+                ? (int)AlarmKeys.Alarm_GripperClampFailed
+                : (int)AlarmKeys.Alarm_GripperUnClampFailed;
+
+            PostAlarm(alarm);
+            Log.Write(UnitName, expectClamp ? "[Clamp] Gripper CLAMP timeout" : "[Clamp] Gripper UNCLAMP timeout");
+            return -1;
+        }
+
+        // Lift: expectUp=true(UP 완료 기대), false(DOWN 완료 기대)
+        private int WaitLiftStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectUp ? IsFeederUp() : IsFeederDown();
+                if (ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            // 별도 Down 실패 알람 키가 없어 기존 키 사용
+            int alarm = expectUp
+                ? (int)AlarmKeys.Alarm_FeederClampUp
+                : (int)AlarmKeys.Alarm_WaferLoadingFailed;
+
+            PostAlarm(alarm);
+            Log.Write(UnitName, expectUp ? "[Lift] Feeder UP timeout" : "[Lift] Feeder DOWN timeout");
+            return -1;
+        }
+
         #endregion
 
         #region === Direct Valve Control ===
@@ -1320,54 +1373,87 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
             this.SetClamp(true);
-            if (!IsClamped())
+            nRet = WaitClampStateOrAlarm(expectClamp: true, timeoutMs: 1500, pollMs: 2);
+            if (nRet != 0)
             {
+                AxisInputFeederY?.EmgStop();
                 Log.Write(this, "Clamp Failed");
-                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
-                nRet = -1;
-                return nRet;
+                return -1;
             }
-            return nRet;
+            return 0;
+
+            //if (!IsClamped())
+            //{
+            //    Log.Write(this, "Clamp Failed");
+            //    PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
+            //    nRet = -1;
+            //    return nRet;
+            //}
+            //return nRet;
         }
         public int UnClampGripper()
         {
             int nRet = 0;
             this.SetClamp(false);
-            if (!IsUnClamped())
+            nRet = WaitClampStateOrAlarm(expectClamp: false, timeoutMs: 1500, pollMs: 2);
+            if (nRet != 0)
             {
+                AxisInputFeederY?.EmgStop();
                 Log.Write(this, "Unclamp Failed");
-                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
-                nRet = -1;
-                return nRet;
+                return -1;
             }
-            return nRet;
+            return 0;
+            //if (!IsUnClamped())
+            //{
+            //    Log.Write(this, "Unclamp Failed");
+            //    PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
+            //    nRet = -1;
+            //    return nRet;
+            //}
+            //return nRet;
         }
         public int UpFeeder()
         {
             int nRet = 0;
             this.SetLift(true);
-            if (!IsFeederUp())
+            nRet = WaitLiftStateOrAlarm(expectUp: true, timeoutMs: 1500, pollMs: 2);
+            if (nRet != 0)
             {
+                AxisInputFeederY?.EmgStop();
                 Log.Write(this, "Feeder Up Failed");
-                PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
-                nRet = -1;
-                return nRet;
+                return -1;
             }
-            return nRet;
+            return 0;
+            //if (!IsFeederUp())
+            //{
+            //    Log.Write(this, "Feeder Up Failed");
+            //    PostAlarm((int)AlarmKeys.Alarm_GripperClampFailed);
+            //    nRet = -1;
+            //    return nRet;
+            //}
+            //return nRet;
         }
         public int DownFeeder()
         {
             int nRet = 0;
             this.SetLift(false);
-            if (!IsFeederDown())
+            nRet = WaitLiftStateOrAlarm(expectUp: false, timeoutMs: 1500, pollMs: 2);
+            if (nRet != 0)
             {
-                AxisInputFeederY.EmgStop();
+                AxisInputFeederY?.EmgStop();
                 Log.Write("InputFeeder", "WaferLoading", "Feeder Down Failed");
-                PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
-                nRet = -1;
-                return nRet;
+                return -1;
             }
-            return nRet;
+            return 0;
+            //if (!IsFeederDown())
+            //{
+            //    AxisInputFeederY.EmgStop();
+            //    Log.Write("InputFeeder", "WaferLoading", "Feeder Down Failed");
+            //    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+            //    nRet = -1;
+            //    return nRet;
+            //}
+            //return nRet;
         }
 
         private bool IsInterlockOKWaferLoading()
