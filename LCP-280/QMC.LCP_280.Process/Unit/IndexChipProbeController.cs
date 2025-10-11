@@ -1340,7 +1340,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (IsTopRequired())
             {
-                if(SetContectTop(true))
+                if(SetContectTop(true) == false)
                 {
                     Log.Write(UnitName, "[RunInspection] SetContectTop(Top) failed");
                     return -1;
@@ -1355,7 +1355,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                if (SetContectTop(false))
+                if (SetContectTop(false) == false)
                 {
                     Log.Write(UnitName, "[RunInspection] SetContectTop(Bottom) failed");
                     return -1;
@@ -1468,7 +1468,6 @@ namespace QMC.LCP_280.Process.Unit
                     nRet = -1;
                 }
                 LogSequence("End");
-                
             }
 
             return nRet;

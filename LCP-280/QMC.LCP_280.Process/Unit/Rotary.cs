@@ -1577,23 +1577,39 @@ namespace QMC.LCP_280.Process.Unit
                         unloadDie != null &&
                         unloadDie.Presence == Material.MaterialPresence.Exist;
 
-                    if (hasDie == true)
+                    if (hasDie == true) 
                     {
-                        PrepareOutputDieTransferHandshake();
-                        
-                        // OutputDieTransfer가 Running 상태이고 Work로 진입해 Start 대기를 할 준비가 되었는지 확인
-                        //if (OutputDieTransfer.RunUnitStatus == UnitStatus.Running &&
-                        //    OutputDieTransfer.State == ProcessState.Work)
-                        //{
-                        //    return 0;
-                        //}
+                        // 기존: PrepareOutputDieTransferHandshake(); Start Set; Done 대기
+                        // 변경: 잔여 신호 리셋 → ODT가 Start 대기 준비 완료될 때까지 대기 → Start → Done 대기
+                        try
+                        {
+                            OutputDieTransfer.ResetPickupHandshake();
+                            // 상대가 Start 대기에 진입했는지 확인 (최대 2초, 필요시 Config로 조절)
+                            bool ready = OutputDieTransfer.WaitReadyForStart(
+                                Config.OutputDieTransferTimeoutMs > 0
+                                    ? Math.Min(2000, Config.OutputDieTransferTimeoutMs) // 과도 대기 방지
+                                    : 2000);
 
-                        this.OutputDieTransfer.RisePickupStartEvent();
-                        bRet = OutputDieTransfer.WaitPickupDoneEvent(Config.OutputDieTransferTimeoutMs > 0
-                                                        ? Config.OutputDieTransferTimeoutMs
-                                                        : 60000);
+                            if (!ready)
+                            {
+                                Log.Write(UnitName, "[OutputDieTransfer] Not ready to receive Start (WaitReadyForStart timeout). Forcing start anyway.");
+                            }
+
+                            this.OutputDieTransfer.RisePickupStartEvent();
+                            bRet = OutputDieTransfer.WaitPickupDoneEvent(
+                                Config.OutputDieTransferTimeoutMs > 0
+                                    ? Config.OutputDieTransferTimeoutMs
+                                    : 60000 * 2);
+                        }
+                        catch (Exception ex)
+                        {
+                            bRet = false;
+                            Log.Write(UnitName, $"[OutputDieTransfer] Handshake exception: {ex.Message}");
+                        }
+
                         if (!bRet)
                         {
+                            AxisT.EmgStop();
                             PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
                             Log.Write(UnitName, "OnExecuteUnitAction Fail (OutputDieTransfer WaitPickupDoneEvent Timeout)");
                             return -1;
@@ -1648,6 +1664,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (r1 != 0 || r2 != 0 || r3 != 0)
                 {
+                    AxisT.EmgStop();
                     Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3})");
                     return -1;
                 }
@@ -1656,6 +1673,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             catch (Exception ex)
             {
+                AxisT.EmgStop();
                 Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
                 return -1;
             }

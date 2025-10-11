@@ -127,6 +127,25 @@ namespace QMC.LCP_280.Process.Unit
 
         private readonly AutoResetEvent _pickUpStartEvent = new AutoResetEvent(false);
         private readonly AutoResetEvent _pickUpdoneEvent = new AutoResetEvent(false);
+        private readonly ManualResetEventSlim _readyForStart = new ManualResetEventSlim(false);
+
+        public void ResetPickupHandshake()
+        {
+            try
+            {
+                // 잔여 신호 모두 소거
+                while (_pickUpStartEvent.WaitOne(0)) { }
+                while (_pickUpdoneEvent.WaitOne(0)) { }
+            }
+            catch { /* ignore */ }
+
+            _readyForStart.Reset();
+        }
+
+        public bool WaitReadyForStart(int timeoutMs = 2000)
+        {
+            return _readyForStart.Wait(timeoutMs);
+        }
 
         public void RisePickupStartEvent()
         {
@@ -151,8 +170,6 @@ namespace QMC.LCP_280.Process.Unit
             bRet = _pickUpdoneEvent.WaitOne(timeoutMs);
             return bRet;
         }
-
-
 
         public OutputDieTransfer(OutputDieTransferConfig config = null)
             : base(new OutputDieTransferConfig())
@@ -1404,6 +1421,12 @@ namespace QMC.LCP_280.Process.Unit
             {
                 ret = -1;
             }
+            finally
+            {
+                // Motion 및 Data Ready 상태 완료 후 
+                // 정지되도록 코드 구현 필요.
+
+            }
             
             if (ret != 0)
             {
@@ -1418,6 +1441,7 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
             _pickUpStartEvent.Set();
             _pickUpdoneEvent.Set();
+            _readyForStart.Set(); // Ready 대기중인 Rotary 해제
 
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
@@ -1457,29 +1481,34 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunWork()
         {
             int nRtn = 0;
+            bool started = false; // ← 실제 Start 수신 여부
             try
             {
                 if (IsStop)
                 {
-                    RisePickupDoneEvent();
                     return 0;
                 }
 
                 if (Rotary != null && Rotary.IsAnyAxisMoving())
                 {
-                    RisePickupDoneEvent();
                     return 0;
                 }
 
                 MaterialDie die = Rotary.GetUnloadSocketMaterial();
                 if (die == null || die.Presence != Material.MaterialPresence.Exist)
                 {
-                    RisePickupDoneEvent();
                     return 0;
                 }
                 
-                const int timeoutMs = 60000*5; // 필요시 설정값으로 치환
-                bool started = WaitPickupStartEvent(timeoutMs);
+                // Rotary가 Start를 보내기 전에 "대기 준비 완료" 신호
+                _readyForStart.Set();
+
+                const int timeoutMs = 60000 * 5; // 필요 시 설정값으로 치환
+                started = WaitPickupStartEvent(timeoutMs);
+
+                // 더 이상 Start 대기가 아님
+                _readyForStart.Reset();
+
                 if (!started)
                 {
                     AxisPickZ?.EmgStop();
@@ -1532,13 +1561,22 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                //RisePickupDoneEvent();
+                // Start를 실제로 받았을 때만 Done을 보냄 (기존 무조건 Done 해제 → 타이밍 깨짐 방지)
+                if (started && this.State != ProcessState.Complete)
+                {
+                    RisePickupDoneEvent();
+                }
             }
             return 0;
         }
         protected override int OnRunComplete()
         {
             int nRtn = 0;
+
+            if(OutputStage.CanPlaceDie() == false)
+            {
+                return 0;
+            }
 
             Material wafer = OutputStage.GetMaterialWafer();
             if(wafer != null && wafer.Presence == Material.MaterialPresence.Exist)
@@ -1548,7 +1586,6 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
                 
-                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
                 nRtn = MoveOutStage();
                 if (nRtn != 0)
                 {
@@ -1631,7 +1668,7 @@ namespace QMC.LCP_280.Process.Unit
 
             if (!OutputStage.TryReserveNextEmptyBin(out double binX, out double binY, out var slot))
             {
-                Log.Write(UnitName, "[MoveOutStage] No empty bin slot.");
+                //Log.Write(UnitName, "[MoveOutStage] No empty bin slot.");
                 return 0; // 더 놓을 자리가 없으면 정상 종료로 간주
             }
 

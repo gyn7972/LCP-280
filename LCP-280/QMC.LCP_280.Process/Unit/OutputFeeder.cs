@@ -638,17 +638,60 @@ namespace QMC.LCP_280.Process.Unit
 
             MaterialWafer wafer = this.OutputStage.GetMaterialWafer();
             // Stage 요청 인지 시 Busy로 표시(선택)
-            if(Config.IsUnitDryRun == false && _dryLoadedToStage == false)
+            //if(Config.IsUnitDryRun == false && _dryLoadedToStage == false)
+            //{
+            //    if (this.OutputStage.IsWorking() == true)
+            //    {
+            //        if (wafer != null)
+            //        {
+            //            if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+            //            {
+            //                nRet = PreparetoOutputStage();
+            //            }
+            //            else if( wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
+            //            {
+            //                if (OutputStage.IsStageInterLockOK() == false)
+            //                {
+            //                    nRet = OutputStage.LoadingBinComplete();
+            //                    if (nRet != 0)
+            //                    {
+            //                        AxisOutputFeederY.EmgStop();
+            //                        PostAlarm((int)AlarmKeys.Alarm_StageLoadingFailed);
+            //                        this.State = ProcessState.Error;
+            //                        return nRet;
+            //                    }
+            //                    if (this.IsStop) { return 0; }
+            //                }
+            //                else
+            //                {
+            //                    return 0;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+
+            try
             {
-                if (this.OutputStage.IsWorking() == true)
+                NeedUnloadFirst = OutputStage.IsWorking();
+                if (OutputStage.IsWorking())
                 {
+                    if (OutputStage.HasNextDie())
+                    {
+                        NeedUnloadFirst = false;
+                    }
+                    else
+                    {
+                        NeedUnloadFirst = true;
+                    }
+
                     if (wafer != null)
                     {
                         if (wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
                         {
-                            nRet = PreparetoOutputStage();
+                            return nRet = PreparetoOutputStage();
                         }
-                        else if( wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
+                        else if (wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
                         {
                             if (OutputStage.IsStageInterLockOK() == false)
                             {
@@ -662,19 +705,9 @@ namespace QMC.LCP_280.Process.Unit
                                 }
                                 if (this.IsStop) { return 0; }
                             }
+                            return nRet;
                         }
                     }
-                    return nRet;
-                }
-            }
-
-            // 0) Stage에 제품이 있으면 "언로딩 먼저"
-            try
-            {
-                NeedUnloadFirst = OutputStage.IsCompletedWork();
-                if (NeedUnloadFirst)
-                {
-
                 }
             }
             catch (Exception ex)
@@ -683,6 +716,7 @@ namespace QMC.LCP_280.Process.Unit
                 NeedUnloadFirst = false;
             }
 
+            // 0) Stage에 제품이 있으면 "언로딩 먼저"
             if (NeedUnloadFirst || _dryLoadedToStage)
             {
                 NeedUnloadFirst = true;
@@ -757,14 +791,6 @@ namespace QMC.LCP_280.Process.Unit
                     this.State = ProcessState.Error;
                     return nRet;
                 }
-                MakePath();
-                this.MoveMaterial(new MaterialWafer(), OutputStage);
-                var waferOutputStage = OutputStage.GetMaterialWafer();
-                waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
-                OutputStage.SetMaterial(waferOutputStage);
-
-                this.OutputStage.UpdateUI();
-
                 if (this.IsStop) { return 0; }
 
                 nRet = MoveToReady();
@@ -797,6 +823,14 @@ namespace QMC.LCP_280.Process.Unit
                     return nRet;
                 }
 
+                MakePath();
+                this.MoveMaterial(new MaterialWafer(), OutputStage);
+                var waferOutputStage = OutputStage.GetMaterialWafer();
+                //waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
+                waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                OutputStage.SetMaterial(waferOutputStage);
+
+                this.OutputStage.UpdateUI();
 
                 if (Config.IsUnitDryRun)
                 {

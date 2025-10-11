@@ -660,7 +660,7 @@ namespace QMC.LCP_280.Process.Unit
             // 0) Stage에 제품이 있으면 "언로딩 먼저"
             try
             {
-                NeedUnloadFirst = InputStage.IsCompletedWork();
+                NeedUnloadFirst = InputStage.IsWorking();
                 if (NeedUnloadFirst)
                 {
 

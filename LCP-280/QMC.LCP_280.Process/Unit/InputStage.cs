@@ -2163,31 +2163,6 @@ namespace QMC.LCP_280.Process.Unit
             return MoveToNextChipForPickup();
         }
 
-        public bool IsCompletedWork()
-        {
-            bool bRet = false;
-            try
-            {
-                var wafer = GetMaterialWafer();
-                if (wafer == null)
-                    return false;
-
-                if (wafer.Presence == Material.MaterialPresence.Exist)
-                {
-                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
-                    {
-                        bRet = true;
-                    }
-                }
-            }
-            catch
-            {
-                bRet = false;
-            }
-            return bRet;
-
-        }
-
         public bool IsWorking()
         {
             bool bRet = false;

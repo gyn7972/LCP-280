@@ -456,7 +456,7 @@ namespace QMC.LCP_280.Process.Unit
             while (IsEndTask(task) == false)
             {
                 // 동일 Safety Interlock
-                if (!OutputDieTransfer.IsPositionPickZSafety())
+                if (!OutputDieTransfer.IsPositionPlaceZSafety())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eDieTransferPlaceZNotSafe);
@@ -974,8 +974,8 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
-                var wafer = GetMaterialWafer();
-                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                //var wafer = GetMaterialWafer();
+                //wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
 
                 BinLoadingDone = true;
                 BinLoadingReady = false;
@@ -1137,29 +1137,7 @@ namespace QMC.LCP_280.Process.Unit
             return false;
 
         }
-        public bool IsCompletedWork()
-        {
-            bool bRet = false;
-            try
-            {
-                var wafer = GetMaterialWafer();
-                if (wafer == null)
-                    return false;
-
-                if (wafer.Presence == Material.MaterialPresence.Exist)
-                {
-                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
-                    {
-                        bRet = true;
-                    }
-                }
-            }
-            catch
-            {
-                bRet = false;
-            }
-            return bRet;
-        }
+        
         public void UpdateUI()
         {
             MaterialWafer materialWafer = GetMaterialWafer();
@@ -1188,6 +1166,45 @@ namespace QMC.LCP_280.Process.Unit
             OnDiePlaced(die);
         }
         #endregion
+
+        /// <summary>
+        /// NextDie(Processing 상태에서 Mapped + Presence == Exist)가 존재하는지 여부만 확인.
+        /// 내부 상태 변경(Completed 전환 등) 없이 순수 조회만 수행.
+        /// </summary>
+        public bool HasNextDie()
+        {
+            var wafer = GetMaterialWafer();
+            if (wafer == null) return false;
+
+            lock (wafer)
+            {
+                if (wafer.Presence != Material.MaterialPresence.Exist) 
+                    return false;
+
+                if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed) 
+                    return false;
+
+                if (wafer.ProcessSatate != Material.MaterialProcessSatate.Processing) 
+                    return false;
+
+                var next = wafer.Dies
+                .Where(d => d != null && d.Presence != Material.MaterialPresence.Exist)
+                .OrderBy(d => d.BinY).ThenBy(d => d.BinX)
+                .FirstOrDefault();
+
+                if (next != null)
+                {
+                    Log.Write(UnitName, "HasNextDie", $"Next Die found: Index={next.Index}, Bin=({next.BinX},{next.BinY})");
+                }
+                else
+                {
+                    wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
+                    Log.Write(UnitName, "HasNextDie", "No next die found");
+                }
+
+                return next != null;
+            }
+        }
 
         // 다음 빈 Bin을 예약(내부 _currentDie 설정)하고 Bin 좌표 반환
         public bool TryReserveNextEmptyBin(out double binX, out double binY, out MaterialDie slot)
@@ -1241,7 +1258,6 @@ namespace QMC.LCP_280.Process.Unit
             return (targetX, targetY);
         }
         
-        
         public int MoveToBinPosition(double binX, double binY, bool isFine = false)
         {
             // 지정 Bin 위치로 XY 이동
@@ -1267,6 +1283,11 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "[OnDiePlaced] " + ex.Message);
             }
+        }
+
+        public bool CanPlaceDie()
+        {
+            return HasNextDie();
         }
         #endregion
     }

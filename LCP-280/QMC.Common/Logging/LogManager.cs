@@ -183,8 +183,8 @@ namespace QMC.Common
         }
 
 		protected void WriteLog(LogInfo log)
-		{
-			//	원래 것
+        {
+            //	원래 것
             //string strFileName = string.Format("{0}\\{1}_{2}.log", m_strLogPath, log.Classification, log.CreationDate);
             //using (StreamWriter writer = new StreamWriter(strFileName, true))
             //{
@@ -193,23 +193,41 @@ namespace QMC.Common
             //}
 
 
-			//	용량 분할
+            //	용량 분할
             string strFileName_Target = "";
             string strFileName = string.Format("{0}\\{1}_{2}.log", m_strLogPath, log.Classification, log.CreationDate);
 
+
+            string strAllLog_Target = "";
+            string strAllLog = string.Format("{0}\\LCP_280_{1}.log", m_strLogPath, log.CreationDate);
             //	용량이 4MB 이상일 경우, 현재 로그파일 이름을 변경하고 다시 저장하기 시작한다.
+            if (GetFileSize(strAllLog) > 4000000)
+            {
+                strAllLog_Target = string.Format("{0}\\LCP_280_{1}_{2}.log", m_strLogPath, log.CreationDate, Environment.TickCount);
+                System.IO.File.Move(strFileName, strAllLog_Target);
+            }
+
             if (GetFileSize(strFileName) > 4000000)
             {
                 strFileName_Target = string.Format("{0}\\{1}_{2}_{3}.log", m_strLogPath, log.Classification, log.CreationDate, Environment.TickCount);
                 System.IO.File.Move(strFileName, strFileName_Target);
             }
 
+            WriteLog(log, strFileName);
+			if(log.Level  >= LogLevel.Normal)
+			{
+	            WriteLog(log, strAllLog);
+			}
+        }
+
+        private static void WriteLog(LogInfo log, string strFileName)
+        {
             using (StreamWriter writer = new StreamWriter(strFileName, true))
             {
                 writer.WriteLine(log.ToString());
                 writer.Close();
             }
-		}
+        }
 
         public long GetFileSize(string filePath)
         {
