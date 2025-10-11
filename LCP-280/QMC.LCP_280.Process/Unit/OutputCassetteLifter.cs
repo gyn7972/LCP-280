@@ -560,6 +560,14 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            if (IsCassettePresentAll() == false)
+            {
+                BinLifterZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eBinProtrusionDetected);
+                Log.Write(this, "Cassette Sensor is not Detected");
+                return -1;
+            }
+
             MaterialCassette material = GetMaterialCassette();
             int nSlotCount = base.Config.SlotCount;
             material.Slots = new List<MaterialWafer>();
@@ -568,7 +576,6 @@ namespace QMC.LCP_280.Process.Unit
                 material.Slots.Add(new MaterialWafer());
             }
             material.Presence = Material.MaterialPresence.Exist;
-
 
             nRtn = MoveToScanStartPosition(bFineSpeed);
 

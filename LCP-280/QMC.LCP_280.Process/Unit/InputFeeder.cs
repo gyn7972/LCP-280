@@ -788,13 +788,17 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                nRet = MoveToReady();
-                if (nRet != 0)
+                if(IsPositionReady() == false)
                 {
-                    AxisInputFeederY.EmgStop();
-                    PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
-                    this.State = ProcessState.Error;
-                    return nRet;
+                    nRet = MoveToReady();
+                    if (nRet != 0)
+                    {
+                        AxisInputFeederY.EmgStop();
+                        PostAlarm((int)AlarmKeys.Alarm_WaferLoadingFailed);
+                        this.State = ProcessState.Error;
+                        return nRet;
+                    }
+
                 }
             }
             return nRet;

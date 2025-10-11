@@ -842,14 +842,18 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                nRet = MoveToReady();
-                if (nRet != 0)
+                if(IsPositionReady() == false)
                 {
-                    AxisOutputFeederY.EmgStop();
-                    PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
-                    this.State = ProcessState.Error;
-                    return nRet;
+                    nRet = MoveToReady();
+                    if (nRet != 0)
+                    {
+                        AxisOutputFeederY.EmgStop();
+                        PostAlarm((int)AlarmKeys.Alarm_BinLoadingFailed);
+                        this.State = ProcessState.Error;
+                        return nRet;
+                    }
                 }
+                
             }
             return nRet;
         }
@@ -880,7 +884,7 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        protected int MakePath()
+        public int MakePath()
         {
             int nRet = 0;
             MaterialWafer wafer = this.GetMaterial() as MaterialWafer;

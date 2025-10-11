@@ -32,6 +32,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             eWaferProtrusionDetected = 1001,
             eFeederYSafetyPosition,
+            eCassetteNotDetected
         }
 
         #region InitAlarm
@@ -51,6 +52,15 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Code = (int)AlarmKeys.eFeederYSafetyPosition;
             alarm.Title = "eFeederY SafetyPosition이 아닙니다.";
             alarm.Cause = "FeederY Axis 확인바랍니다.\n FeederY Axis 점검 하고 다시 시작 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            //eCassetteNotDetected
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eCassetteNotDetected;
+            alarm.Title = "eCassetteNotDetected Sensor 아닙니다.";
+            alarm.Cause = "eCassetteNotDetected 확인바랍니다.\n eCassetteNotDetected 점검 하고 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -585,6 +595,14 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
+            if (IsCassettePresentAll() == false)
+            {
+                WaferLifterZ.EmgStop();
+                PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                return -1;
+            }
+
             MaterialCassette material = GetMaterialCassette();
             int nSlotCount = base.Config.SlotCount;
             material.Slots = new List<MaterialWafer>();
@@ -595,6 +613,7 @@ namespace QMC.LCP_280.Process.Unit
             nRtn = MoveToScanStartPosition(bFineSpeed);
             if (nRtn != 0)
             {
+                WaferLifterZ.EmgStop();
                 Log.Write(this, "MoveToScanStartPosition Failed");
                 return nRtn;
             }

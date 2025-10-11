@@ -757,9 +757,25 @@ namespace QMC.LCP_280.Process.Unit
             bool bRet = false;
             try
             {
+
                 var wafer = GetMaterialWafer();
                 if (wafer == null)
-                    return false;
+                {
+                    if(IsRingPresent()== false)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        OutputFeeder.MakePath();
+                        OutputFeeder.MoveMaterial(new MaterialWafer(), this);
+                        var waferOutputStage = this.GetMaterialWafer();
+                        //waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
+                        waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                        this.SetMaterial(waferOutputStage);
+                        this.UpdateUI();
+                    }
+                }
 
                 if (wafer.Presence == Material.MaterialPresence.Exist)
                 {
@@ -921,6 +937,18 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = Config.IsSimulation;
             if (IsRingPresent() || bRtn || Config.IsDryRun)
             {
+                SetClampPlate(false);
+                if (!IsPlateDown())
+                {
+                    if (!Config.IsSimulation)
+                    {
+                        PostAlarm((int)AlarmKeys.ePlate);
+                        Log.Write(this, "Fail: PlateUp");
+                        return -1;
+                    }
+                }
+                if (IsStop) { return 0; }
+
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 if (!IsPlateUp()|| Config.IsSimulation || Config.IsDryRun)
                 {
