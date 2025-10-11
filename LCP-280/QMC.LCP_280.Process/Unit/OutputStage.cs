@@ -340,8 +340,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                if (!IsClampLiftUp())
-                    return false; // 기존 인터락 유지
+                //if (!IsClampLiftUp())
+                //    return false; // 기존 인터락 유지
 
                 return _cylClampFB.Retract();
             }

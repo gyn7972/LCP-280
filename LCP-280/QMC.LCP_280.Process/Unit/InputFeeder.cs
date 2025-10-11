@@ -564,11 +564,13 @@ namespace QMC.LCP_280.Process.Unit
         }
         public bool IsUnClamped()
         {
+            bool bRtn = false;
             if (Config.IsSimulation)
             {
                 return true;
             }
-            return this.ReadInput(InputFeederConfig.IO.FEEDER_UNCLAMP);
+            bRtn = this.ReadInput(InputFeederConfig.IO.FEEDER_UNCLAMP);
+            return bRtn;
         }
         public bool IsRingPresent()
         {
