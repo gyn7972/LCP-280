@@ -1119,7 +1119,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else if (!Ring0() || !Ring1())
             {
-                Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
+                //Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
                 return false;
             }
 

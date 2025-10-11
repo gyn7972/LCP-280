@@ -1067,7 +1067,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else if (!Ring0() || !Ring1())
             {
-                Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
+                //Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
                 return false;
             }
 
@@ -1194,7 +1194,7 @@ namespace QMC.LCP_280.Process.Unit
 
                 if (next != null)
                 {
-                    Log.Write(UnitName, "HasNextDie", $"Next Die found: Index={next.Index}, Bin=({next.BinX},{next.BinY})");
+                    //Log.Write(UnitName, "HasNextDie", $"Next Die found: Index={next.Index}, Bin=({next.BinX},{next.BinY})");
                 }
                 else
                 {
