@@ -91,13 +91,13 @@ namespace QMC.LCP_280.Process.Component
         [DefaultValue(50)]
         public int BinCountY { get; set; } = 50;
 
-        [Category("Bin Array"), DisplayName("Bin Pitch X (um)")]
-        [DefaultValue(1500)]
-        public int BinPitchXUm { get; set; } = 1500;
+        [Category("Bin Array"), DisplayName("Bin Pitch X (mm)")]
+        [DefaultValue(1)]
+        public int BinPitchXmm { get; set; } = 1;
 
-        [Category("Bin Array"), DisplayName("Bin Pitch Y (um)")]
-        [DefaultValue(1500)]
-        public int BinPitchYUm { get; set; } = 1500;
+        [Category("Bin Array"), DisplayName("Bin Pitch Y (mm)")]
+        [DefaultValue(1)]
+        public int BinPitchYmm { get; set; } = 1;
 
         // Material
         [Category("Material"), DisplayName("Tape Thickness (um)")]

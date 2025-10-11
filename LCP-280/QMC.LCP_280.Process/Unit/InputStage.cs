@@ -826,6 +826,69 @@ namespace QMC.LCP_280.Process.Unit
             }
             return this.ReadInput(InputStageConfig.IO.EXPANDER_DOWN_SNS);
         }
+
+        // === Cylinder 완료 대기 Helpers ===
+        // Plate: expectUp=true(UP 기대), false(DOWN 기대)
+        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectUp ? IsPlateUp() : IsPlateDown();
+                if (ok) return 0;
+                Thread.Sleep(pollMs);
+            }
+
+            AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+            PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+            Log.Write(UnitName, expectUp ? "[Plate] UP timeout" : "[Plate] DOWN timeout");
+            return -1;
+        }
+
+        // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
+        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectUp ? IsClampLiftUp() : IsClampLiftDown();
+                if (ok) return 0;
+                Thread.Sleep(pollMs);
+            }
+
+            AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+            PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+            Log.Write(UnitName, expectUp ? "[ClampLift] UP timeout" : "[ClampLift] DOWN timeout");
+            return -1;
+        }
+
+        // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
+        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectFwd ? IsClampFwd() : IsClampBwd();
+                if (ok) return 0;
+                Thread.Sleep(pollMs);
+            }
+
+            AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+            PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+            Log.Write(UnitName, expectFwd ? "[ClampFB] FWD timeout" : "[ClampFB] BWD timeout");
+            return -1;
+        }
+
+
         #endregion
 
         // === Direct Valve Control (강제 구동) ===
@@ -901,7 +964,6 @@ namespace QMC.LCP_280.Process.Unit
         public double MaxXYOffsetMm { get; set; } = 2.0;   // XY 최대 보정 허용치 (mm)
         public bool IsStatus_RequestWafer { get; internal set; } = false;
 
-        
 
         public override int OnRun()
         {
@@ -1172,29 +1234,32 @@ namespace QMC.LCP_280.Process.Unit
             if (this.IsStop) { return 0; }
 
             // Clamp Back → Lift Down
-            SetClampFB(false);
-            if (!IsClampBwd())
-            {
-                Log.Write(this, "Fail: ClampBack");
-                return -1;
-            }
+            ClampBackward();
+            //SetClampFB(false);
+            //if (!IsClampBwd())
+            //{
+            //    Log.Write(this, "Fail: ClampBack");
+            //    return -1;
+            //}
             if (this.IsStop) { return 0; }
 
-            SetClampLift(false);
-            if (!IsClampLiftDown())
-            {
-                Log.Write(this, "Fail: ClampLiftDown");
-                return -1;
-            }
+            ClampLiftDown();
+            //SetClampLift(false);
+            //if (!IsClampLiftDown())
+            //{
+            //    Log.Write(this, "Fail: ClampLiftDown");
+            //    return -1;
+            //}
             if (this.IsStop) { return 0; }
 
             //Plate Down → 
-            SetClampPlate(false);
-            if (!IsPlateDown())
-            {
-                Log.Write(this, "Fail: PlateUp");
-                return -1;
-            }
+            PlateDown();
+            //SetClampPlate(false);
+            //if (!IsPlateDown())
+            //{
+            //    Log.Write(this, "Fail: PlateUp");
+            //    return -1;
+            //}
 
             Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
             Log.Write(UnitName, "End LoadingWaferPrepare");
@@ -1313,27 +1378,33 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "LoadingComp", "Wafer detected -> Completing");
 
-                SetClampPlate(true);
-                if (!IsPlateUp())
-                {
-                    Log.Write(this, "Fail: PlateUp");
-                    return -1;
-                }
+                PlateUp();
+                //SetClampPlate(true);
+                //if (!IsPlateUp())
+                //{
+                //    Log.Write(this, "Fail: PlateUp");
+                //    return -1;
+                //}
+                if(this.IsStop) { return 0; }
 
-                SetClampLift(true);
-                if (!IsClampLiftUp())
-                {
-                    Log.Write(this, "Fail: ClampLiftUp");
-                    return -1;
-                }
+                ClampLiftUp();
+                //SetClampLift(true);
+                //if (!IsClampLiftUp())
+                //{
+                //    Log.Write(this, "Fail: ClampLiftUp");
+                //    return -1;
+                //}
+                if (this.IsStop) { return 0; }
 
-                SetClampFB(true);
-                if (!IsClampFwd())
-                {
-                    Log.Write(this, "Fail: ClampForward");
-                    return -1;
-                }
-                
+                ClampForward();
+                //SetClampFB(true);
+                //if (!IsClampFwd())
+                //{
+                //    Log.Write(this, "Fail: ClampForward");
+                //    return -1;
+                //}
+                if (this.IsStop) { return 0; }
+
                 // 센터 Teaching 이동
                 ret = MoveToStageCenterPosition();
                 if (ret != 0)
@@ -1914,25 +1985,34 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
+            if (this.IsStop) { return 0; }
 
-            SetClampFB(false);
-            if (!IsClampBwd())
-            {
-                Log.Write(this, "Fail: ClampBack");
-                return -1;
-            }
-            SetClampLift(false);
-            if (!IsClampLiftDown())
-            {
-                Log.Write(this, "Fail: ClampLiftDown");
-                return -1;
-            }
-            SetClampPlate(false);
-            if (!IsPlateDown())
-            {
-                Log.Write(this, "Fail: PlateUp");
-                return -1;
-            }
+            ClampBackward();
+            //SetClampFB(false);
+            //if (!IsClampBwd())
+            //{
+            //    Log.Write(this, "Fail: ClampBack");
+            //    return -1;
+            //}
+            if (this.IsStop) { return 0; }
+
+            ClampLiftDown();
+            //SetClampLift(false);
+            //if (!IsClampLiftDown())
+            //{
+            //    Log.Write(this, "Fail: ClampLiftDown");
+            //    return -1;
+            //}
+            if (this.IsStop) { return 0; }
+
+            PlateDown();
+            //SetClampPlate(false);
+            //if (!IsPlateDown())
+            //{
+            //    Log.Write(this, "Fail: PlateUp");
+            //    return -1;
+            //}
+
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
@@ -2298,6 +2378,82 @@ namespace QMC.LCP_280.Process.Unit
 
             }
         }
+
+
+
+        // === Cylinder 고레벨 제어(완료 대기 포함) ===
+        public int PlateUp()
+        {
+            SetClampPlate(true);
+            int r = WaitPlateStateOrAlarm(expectUp: true);
+            if (r != 0) Log.Write(this, "PlateUp Failed");
+            return r;
+        }
+
+        public int PlateDown()
+        {
+            SetClampPlate(false);
+            int r = WaitPlateStateOrAlarm(expectUp: false);
+            if (r != 0) Log.Write(this, "PlateDown Failed");
+            return r;
+        }
+
+        public int ClampLiftUp()
+        {
+            SetClampLift(true);
+            int r = WaitClampLiftStateOrAlarm(expectUp: true);
+            if (r != 0) Log.Write(this, "ClampLiftUp Failed");
+            return r;
+        }
+
+        public int ClampLiftDown()
+        {
+            // 인터락은 SetClampLift(false) 내부에서 IsClampBwd() 확인
+            bool issued = SetClampLift(false);
+            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            {
+                PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+                Log.Write(this, "ClampLiftDown Command Rejected (Interlock)");
+                return -1;
+            }
+
+            int r = WaitClampLiftStateOrAlarm(expectUp: false);
+            if (r != 0) Log.Write(this, "ClampLiftDown Failed");
+            return r;
+        }
+
+        public int ClampForward()
+        {
+            // 인터락은 SetClampFB(true) 내부에서 IsClampLiftUp() 확인
+            bool issued = SetClampFB(true);
+            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            {
+                PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+                Log.Write(this, "ClampForward Command Rejected (Interlock)");
+                return -1;
+            }
+
+            int r = WaitClampFBStateOrAlarm(expectFwd: true);
+            if (r != 0) Log.Write(this, "ClampForward Failed");
+            return r;
+        }
+
+        public int ClampBackward()
+        {
+            bool issued = SetClampFB(false);
+            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            {
+                PostAlarm((int)AlarmKeys.eInputStageMoveFail);
+                Log.Write(this, "ClampBackward Command Rejected (Interlock)");
+                return -1;
+            }
+
+            int r = WaitClampFBStateOrAlarm(expectFwd: false);
+            if (r != 0) Log.Write(this, "ClampBackward Failed");
+            return r;
+        }
+
+
         #endregion
     }
 }
