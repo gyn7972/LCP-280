@@ -295,35 +295,22 @@ namespace QMC.Common.Unit
 
         public int Start()
         {
-            if (m_workThread != null && RunMode == UnitRunMode.Auto)
+            m_bExit = false;
+            if (m_workThread == null )
             {
-                m_bExit = true;
-                while (true)
-                {
-                    if(RunMode == UnitRunMode.Manual)
-                    {
-                        break;
-                    }
-                }
-                m_workThread.Join(1000000);
+                m_workThread = new Thread(OnMainProcedure) { IsBackground = true };
+                m_workThread.Start();
+            }
+            else
+            {
+
             }
 
             SetRunMode(UnitRunMode.Auto);
             RunUnitStatus = UnitStatus.Running;
             
-            m_bExit = false;
-            m_workThread = new Thread(OnMainProcedure) { IsBackground = true };
-            m_workThread.Start();
-
-            if (this.CalcelToken != null)
-            {
-                if (!this.CalcelToken.IsCancellationRequested)
-                {
-                    this.CalcelToken.Cancel();
-                }
-                this.CalcelToken.Dispose();
-                this.CalcelToken = null;
-            }
+           
+           
             this.CalcelToken = new CancellationTokenSource();
             return OnStart();
         }
@@ -338,25 +325,12 @@ namespace QMC.Common.Unit
 
         public virtual int OnStop()
         {
-            if (this.CalcelToken == null)
-            {
-                this.CalcelToken = new CancellationTokenSource();
-            }
-            else
-            {
-                if (!this.CalcelToken.IsCancellationRequested)
-                {
-                    this.CalcelToken.Cancel();
-                }
-                this.CalcelToken.Dispose();
-                this.CalcelToken = new CancellationTokenSource();
-            }
-            this.CalcelToken.Cancel();
-
-            m_bExit = true;
-            SetRunMode(UnitRunMode.Manual);
+            
+            
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
+            
+            
             return 0;
         }
 
@@ -383,35 +357,43 @@ namespace QMC.Common.Unit
 
             while (true)
             {
-                if(State == ProcessState.Manual)
+                if(IsStop)
+                {
+                    SetRunMode(UnitRunMode.Manual);
+                }
+                if (m_bExit)
+                    break;
+
+                if (State == ProcessState.Manual)
                 {
                     switch (EquipmentLocator.Instance.EqState)
                     {
                         case EquipmentState.Stopped:
                         case EquipmentState.Error:
                         case EquipmentState.Stopping:
-                            m_bExit = true;
+                           
                             break;
                         default:
                             break;
                     }
+                    Thread.Sleep(1); 
+                    continue;
                 }
                 
 
-                if (m_bExit) 
-                    break;
 
                 if ((ret = OnRun()) != 0)
                 {
                     Log.Write(this, $"OnRun Return: {ret}");
-                    break;
+                    OnStop();
+                    //break;
                 }
                 
                 Thread.Sleep(1);
             }
             //OnStop();
         }
-
+        public void Terminate() { m_bExit = true; }
         public string GetUnitName() => UnitName;
         public Material GetMaterial() => m_currentMaterial;
         //public virtual void SetMaterial(Material m) => m_currentMaterial = m;

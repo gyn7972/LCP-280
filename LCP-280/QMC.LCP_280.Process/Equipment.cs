@@ -779,6 +779,27 @@ namespace QMC.LCP_280.Process
         /// <summary>
         /// 설비 전체 정지
         /// </summary>
+        /// 
+        public async Task<bool> TerminateAllUnitsAsync()
+        {
+            foreach (var kvp in _unitExecutions)
+            {
+                var unitName = kvp.Key;
+                var execInfo = kvp.Value;
+
+                SetAndRaiseUnitState(unitName, UnitStatus.Stopping);
+
+                // 유닛 내부에도 Stop 신호
+                if (Units.TryGetValue(unitName, out var u))
+                {
+
+                    (u as QMC.Common.Unit.BaseUnit)?.Stop();
+                    (u as QMC.Common.Unit.BaseUnit)?.Terminate();
+                }
+
+            }
+            return true;
+        }
         public async Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = false)
         {
             try
@@ -832,6 +853,8 @@ namespace QMC.LCP_280.Process
                 return false;
             }
         }
+
+
         // 기존 Equipment 구현(이미 public) + IDisposable
         //public async System.Threading.Tasks.Task<bool> StopAllUnitsAsync() => await StopAllUnitsAsync(); // 기존 메서드 연결
         // Dispose()는 기존 구현 사용

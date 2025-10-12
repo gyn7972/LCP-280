@@ -115,7 +115,7 @@ namespace QMC.Common.IOUtil
             }
             catch (Exception ex)
             {
-                Log.Write(ex);
+                //Log.Write(ex);
             }
 
             return false;

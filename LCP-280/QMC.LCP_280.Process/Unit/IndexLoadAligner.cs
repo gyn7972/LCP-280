@@ -816,8 +816,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
-                AxisIndexZ.EmgStop();
-                AxisAlignT.EmgStop();
+                //AxisIndexZ.EmgStop();
+                //AxisAlignT.EmgStop();
 
                 //확인용이니깐 알람은 울리지 말자.
                 //PostAlarm((int)AlarmKeys.eRotaryNotSafe);

@@ -1241,14 +1241,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             int ret = 0;
 
-            this.RunUnitStatus = UnitStatus.Stopped;
-            this.State = ProcessState.Stop;
-
             IndexLoadAligner?.OnStop();
             IndexChipProbeController?.OnStop();
             IndexUnloadAligner?.OnStop();
 
             base.OnStop();
+
+
             return ret;
         }
         protected override int OnRunReady() 
@@ -1383,7 +1382,7 @@ namespace QMC.LCP_280.Process.Unit
 
             nRet = Rotate();
 
-            OutputDieTransfer. ReSetPickupStartEvent();
+            OutputDieTransfer.ReSetPickupStartEvent();
             if (nRet != 0)
             {
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
@@ -1951,14 +1950,7 @@ namespace QMC.LCP_280.Process.Unit
                     //
                     isZUp1 = IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
                     isZUp2 = IndexChipProbeController.IsBottomIndexZUp(IndexChipProbeController.GetProbeIndexNo());
-                    //if (IndexChipProbeController.Config.ContectTopMode)
-                    //{
-                    //    isZUp1 = IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
-                    //}
-                    //else
-                    //{
-                    //    isZUp2 = IndexChipProbeController.IsBottomIndexZUp(IndexChipProbeController.GetProbeIndexNo());
-                    //}
+                    
                 }
                 catch
                 {
@@ -2059,11 +2051,11 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = MovePositionAsyncRotate(isFine);
             while (IsEndTask(task) == false)
             {
-                if (IsInterlockOKWidthAllUnit() == false)
-                {
-                    Log.Write(UnitName, "MovePositionRotate Interlock Fail");
-                    return -1;
-                }
+                //if (IsInterlockOKWidthAllUnit() == false)
+                //{
+                //    Log.Write(UnitName, "MovePositionRotate Interlock Fail");
+                //    return -1;
+                //}
 
                 Thread.Sleep(1);
             }
@@ -2188,11 +2180,7 @@ namespace QMC.LCP_280.Process.Unit
                     // 취소 요청 감지: 예외 대신 정상 종료 코드 반환
                     //this.CalcelToken?.Token.ThrowIfCancellationRequested();
                     //if (this.CalcelToken?.Token.IsCancellationRequested == true || this.IsStop)
-                    if (this.CalcelToken?.Token.IsCancellationRequested == true)
-                    {
-                        Log.Write(UnitName, "[InitializeAfterHome] Canceled by user");
-                        return -2; // 취소 코드(프로젝트 규칙에 맞게 조정 가능)
-                    }
+                   
                     
                     if (SetTrashEjector(true) == false)
                     {

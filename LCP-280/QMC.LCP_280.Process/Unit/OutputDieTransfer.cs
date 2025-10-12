@@ -1554,6 +1554,7 @@ namespace QMC.LCP_280.Process.Unit
                     SetPickupDoneEvent();
 
                     _lastPickSucceeded = true;
+                    State = ProcessState.Complete;
                 }
 
                 if (MaterialDie != null && MaterialDie.Presence == Material.MaterialPresence.Exist)
@@ -1709,6 +1710,8 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
+            SetVacuum(nArmindex, true);
+
             nRet = MovePositionPickUpPickZ_Index(bFineSpeed);
             if (nRet != 0)
             {
@@ -1716,14 +1719,24 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
 
-            SetVacuum(nArmindex, true);
             nRet = WaitVacuumStateOrAlarm(nArmindex, true);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[OutputDieTrVacuumOn] Vacuum Timeout");
                 return -1;
             }
-           
+
+            Rotary.SetVacuum(GetUnloaderIndexNo(), false);
+            Thread.Sleep(1);
+            Rotary.SetVent(GetUnloaderIndexNo(), true);
+            Thread.Sleep(50);
+            Rotary.SetVent(GetUnloaderIndexNo(), false);
+            Thread.Sleep(1);
+            Rotary.SetBlow(GetUnloaderIndexNo(), true);
+
+            //대기
+            Thread.Sleep(50);
+
             return nRet;
         }
 
@@ -1744,15 +1757,15 @@ namespace QMC.LCP_280.Process.Unit
             Rotary.SetVacuum(nIndex, false);
            
             Thread.Sleep(1); // 약간의 딜레이
-            if(!Rotary.SetVent(nIndex, true))
-            {
-                if(!Config.IsSimulation)
-                {
-                    PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
-                    Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
-                    return -1;
-                }   
-            }
+            //if(!Rotary.SetVent(nIndex, true))
+            //{
+            //    if(!Config.IsSimulation)
+            //    {
+            //        PostAlarm((int)AlarmKeys.eOutputDieTransferVent);
+            //        Log.Write(UnitName, "[DieTrVacuumOff] SetVent failed");
+            //        return -1;
+            //    }   
+            //}
 
             if(!Rotary.SetBlow(nIndex, true))
             {
@@ -1858,7 +1871,11 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
                 SetVent(armIndex, true);
+                Thread.Sleep(5);
+                SetVent(armIndex, false);
+
                 SetBlow(armIndex, true);
+                Thread.Sleep(50);
 
                 nRet = MovePositionSafetyZ(bFindSpeed);
                 if (nRet != 0)
@@ -1866,12 +1883,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] MovePositionSafetyZ 실패");
                     return -1;
                 }
-
-                SetVent(armIndex, false);
                 SetBlow(armIndex, false);
-
-                //여기서 OutStage Die 정보를 UI에 뿌려줘야함.
-
 
                 nRet = MovePositionPickUpToolT_Index(bFindSpeed);
                 if (nRet != 0)

@@ -40,6 +40,6 @@ namespace QMC.LCP_280.Process
         {
             MinidumpHelp.Minidump.install_self_mini_dump();
         }
-
+        
     }
 }

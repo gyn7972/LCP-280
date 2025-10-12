@@ -249,7 +249,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = tester.MeasureAsync(rotaryIndex);
             while (!IsEndTask(task))
             {
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }

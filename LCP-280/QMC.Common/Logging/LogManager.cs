@@ -204,7 +204,7 @@ namespace QMC.Common
             if (GetFileSize(strAllLog) > 4000000)
             {
                 strAllLog_Target = string.Format("{0}\\LCP_280_{1}_{2}.log", m_strLogPath, log.CreationDate, Environment.TickCount);
-                System.IO.File.Move(strFileName, strAllLog_Target);
+                System.IO.File.Move(strAllLog, strAllLog_Target);
             }
 
             if (GetFileSize(strFileName) > 4000000)

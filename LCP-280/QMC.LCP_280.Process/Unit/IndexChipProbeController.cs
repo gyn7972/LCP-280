@@ -1204,13 +1204,13 @@ namespace QMC.LCP_280.Process.Unit
         {
             if (Rotary != null && Rotary.IsAnyAxisMoving())
             {
-                AxisProbeCardX.EmgStop();
-                AxisProbeCardY.EmgStop();
-                AxisProbeCardZ.EmgStop();
-                AxisProbeZ.EmgStop();
-                AxisSphereZ.EmgStop();
+                //AxisProbeCardX.EmgStop();
+                //AxisProbeCardY.EmgStop();
+                //AxisProbeCardZ.EmgStop();
+                //AxisProbeZ.EmgStop();
+                //AxisSphereZ.EmgStop();
 
-                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                //PostAlarm((int)AlarmKeys.eRotaryNotSafe);
                 return -1;
             }
             return 0;
@@ -1250,11 +1250,11 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = -1;
 
-            nRet = IsRotaryIdle();
-            if (nRet != 0)
+            while(IsRotaryIdle() != 0)
             {
-                return 0;
+                Thread.Sleep(1);
             }
+            
 
             if (SetSphereFB(true))
             {

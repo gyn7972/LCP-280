@@ -28,6 +28,8 @@ namespace QMC.Common
         EquipmentState EqState { get; set; }
 
         System.Threading.Tasks.Task<bool> StopAllUnitsAsync(bool includeEquipmentStatus = false);
+
+        System.Threading.Tasks.Task<bool> TerminateAllUnitsAsync();
         System.Threading.Tasks.Task<bool> StopUnitAsync(string unitName);
 
         // 최소 공개 API만 신중히 추가:
@@ -75,10 +77,14 @@ namespace QMC.Common
             try
             {
                 var stopTask = _instance.StopAllUnitsAsync();
+                var terminateTask = _instance.TerminateAllUnitsAsync();
                 if (!stopTask.Wait(stopTimeoutMs))
                 {
                     // timeout -> 계속 진행하여 Dispose
                 }
+
+                terminateTask.Wait(stopTimeoutMs);
+
             }
             catch { /* 로그 필요시 추가 */ }
             finally

@@ -740,7 +740,7 @@ namespace QMC.LCP_280.Process.Unit
             if (this.InputStageEjector.IsEjectorZSafetyPos() == false)
             {
                 double dCurrentPositionPinZ = this.InputStageEjector.AxisPinZ.GetPosition();
-                double dReadyPosition = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectBlockReady.ToString(), this.InputStageEjector.AxisPinZ.Name);
+                double dReadyPosition = this.InputStageEjector.GetTP(InputStageEjectorConfig.TeachingPositionName.EjectPinReady.ToString(), this.InputStageEjector.AxisPinZ.Name);
                 if (dCurrentPositionPinZ > (dReadyPosition + this.InputStageEjector.AxisPinZ.Config.InposTolerance))
                 {
 
@@ -1191,7 +1191,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 foreach (var pt in path)
                 {
-                    this.CalcelToken?.Token.ThrowIfCancellationRequested();
+                    // this.CalcelToken?.Token.ThrowIfCancellationRequested();
+
+                    if (this.IsStop) { return 0; }
+
                     nRet = MoveStage(pt.X, pt.Y, bFineSpeed);
                     if (nRet != 0)
                     {
@@ -1760,8 +1763,15 @@ namespace QMC.LCP_280.Process.Unit
             }
             try 
             {
-                StageCamera.GrabSync(out VisionImage img);
-                PmRunner.SearchTheta(img, out double angle);
+                VisionImage img = null;
+                double angle = 0;
+                StageCamera.GrabSync(out img);
+                PmRunner.SearchTheta(img, out angle);
+                if(angle == 0)
+                { 
+                    StageCamera.GrabSync(out img);
+                    PmRunner.SearchTheta(img, out angle);
+                }
                 double currentAngle = this.AxisT.GetPosition();
                 double dTarget = currentAngle + angle * AngleApplyGain;
                 Log.Write(UnitName, "T_Align", $"Vision angle={angle:F4} currentT={currentAngle:F4}");
@@ -2438,7 +2448,8 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> tImageProcess = null;
             try
             {
-                this.CalcelToken?.Token.ThrowIfCancellationRequested();
+                if (this.IsStop) {  return 0; }
+
                 if (this.Config.IsSimulation == false && this.Config.IsDryRun == false)
                 {
                     double dpoX = AxisX.GetPosition();
