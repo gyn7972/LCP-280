@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Shapes;
+using static QMC.Common.Component.BaseComponent;
 using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Equipment;
 using static QMC.LCP_280.Process.PatternMatchingRunner;
@@ -666,23 +667,130 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write("InputStage", "BindIoDomains", "Vacuums not found: InStageVac");
             }
+            
 
             // Cylinder는 중앙 별칭으로 조회만
             if (!IoAutoBindings.Cylinders.TryGetValue("InStageExpander", out _cylPlate))
             {
                 Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageExpander");
             }
+            BindCylinder(_cylPlate);
 
             if (!IoAutoBindings.Cylinders.TryGetValue("InStageClampLift", out _cylClampLift))
             {
                 Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampLift");
             }
+            BindCylinder(_cylClampLift);
 
             if (!IoAutoBindings.Cylinders.TryGetValue("InStageClampFB", out _cylClampFB))
             {
                 Log.Write("InputStage", "BindIoDomains", "Cylinder not found: InStageClampFB");
             }
+            BindCylinder(_cylPlate);
         }
+        public override bool IsInterlockOK(BaseComponent baseComponent, InterlockEventArgs e)
+        {
+            bool bRet = base.IsInterlockOK(baseComponent, e); ;
+            if(baseComponent == this.AxisX || baseComponent  == this.AxisY || baseComponent == this.AxisT)
+            {
+                // Interlock Check EjectorZ Safety Position
+                bRet &= IsInterlockOkWidthEjecterZ(baseComponent, e);
+                if(this.InputFeeder.IsFeederZSafetyPosition() == false)
+                {
+                    if (this.InputFeeder.IsPositionReady() == false)
+                    {
+                        bRet = false;
+                    }
+                }
+
+                if (!bRet)
+                {
+                    PostAlarm((int)AlarmKeys.eInputFeederCylinderZNotSafe);
+                    return bRet;
+                }
+                bRet = IsInterlockOkEjectorPinZ();
+                if (bRet == false)
+                {
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorPinZNotSafe);
+                    return bRet;
+                }
+
+            }
+            else if (baseComponent == this._cylClampLift)
+            {
+                if(e.IsExtend)
+                {
+                    // Todo : 상황 봐서 인터락 걸자. 이건 꼬라 박지는 안는거 같다.
+
+                    //if(this.IsRingPresent() == false)
+                    //{
+
+                    //}
+                }
+            }
+            else
+            {
+
+            }
+            return bRet;
+        }
+
+        private bool IsInterlockOkEjectorPinZ()
+        {
+            if (this.InputStageEjector.IsEjectorZSafetyPos() == false)
+            {
+                double dCurrentPositionPinZ = this.InputStageEjector.AxisPinZ.GetPosition();
+                double dReadyPosition = GetTP(InputStageEjectorConfig.TeachingPositionName.EjectBlockReady.ToString(), this.InputStageEjector.AxisPinZ.Name);
+                if (dCurrentPositionPinZ > (dReadyPosition + this.InputStageEjector.AxisPinZ.Config.InposTolerance))
+                {
+
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private bool IsInterlockOkWidthEjecterZ(BaseComponent baseComponent, InterlockEventArgs e)
+        {
+            bool bRet = true;
+            if (this.InputStageEjector.IsEjectorZSafetyPos() == false)
+            {
+                double dCurrentX = this.AxisX.GetPosition();
+                double dCurrentY = this.AxisY.GetPosition();
+
+                if (IsStageInterLockOK(dCurrentX, dCurrentY) == true)
+                {
+                    if (baseComponent == this.AxisX)
+                    {
+                        dCurrentX = e.dTargetPosition;
+                    }
+                    else if (baseComponent == this.AxisY)
+                    {
+                        dCurrentY = e.dTargetPosition;
+                    }
+                    if (IsStageInterLockOK(dCurrentX, dCurrentY) == false)
+                    {
+                        bRet = false;
+
+                    }
+                }
+                else
+                {
+                    bRet = false;
+
+                }
+
+                if (bRet == false)
+                {
+                    PostAlarm((int)AlarmKeys.eInputStageEjectorZNotSafe);
+                    
+                }
+            }
+
+            return bRet;
+        }
+
         // === Domain Control (표준 구동) ===
         public bool SetVacuum(bool on, bool bCheckSignal = false)
         {

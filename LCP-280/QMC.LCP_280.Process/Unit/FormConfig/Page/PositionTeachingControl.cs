@@ -19,6 +19,8 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
         public event EventHandler<SavePositionEventArgs> SaveRequested;
         public event EventHandler<MovePositionEventArgs> MoveRequested;
         public event EventHandler<CurrentPosEventArgs> CurrentPosRequested;
+        // 각 축 이동 요청 이벤트(선택된 Teaching Position 내 특정 축만 이동)
+        public event EventHandler<MoveAxisEventArgs> MoveAxisRequested;
 
         public PositionTeachingControl()
         {
@@ -51,7 +53,7 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
 
         private void InitializeRadioButtonView()
         {
-            rbTeachingMoveMode?.SetOptions(true, "Fine", "Coarse");
+            rbTeachingMoveMode?.SetOptions(false, "Fine", "Coarse");
         }
 
         public void RefreshPositionList()
@@ -70,10 +72,18 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
                         .ToArray();
 
                     positionItemView?.SetItems(names);
+
+                    // 선택된 항목 기준으로 축 버튼도 갱신
+                    int selIndex = GetSelectedIndex();
+                    if (selIndex >= 0)
+                        RefreshAxisButtonsForIndex(selIndex);
+                    else
+                        BuildAxisButtons(Enumerable.Empty<string>());
                 }
                 else
                 {
                     positionItemView?.SetItems();
+                    BuildAxisButtons(Enumerable.Empty<string>());
                 }
             }
             catch (Exception ex)
@@ -116,6 +126,7 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             try
             {
                 ShowTeachingPositionInEditor(selectedIndex);
+                RefreshAxisButtonsForIndex(selectedIndex);
 
                 // 부모에게 선택 변경 알림
                 PositionSelected?.Invoke(this, new PositionSelectedEventArgs { Index = selectedIndex });
@@ -288,7 +299,121 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
             return isFine;
         }
 
+        private void RefreshAxisButtonsForIndex(int selectedIndex)
+        {
+            try
+            {
+                if (_config?.TeachingPositions == null || selectedIndex < 0 || selectedIndex >= _config.TeachingPositions.Count)
+                {
+                    BuildAxisButtons(Enumerable.Empty<string>());
+                    return;
+                }
+
+                var tp = _config.TeachingPositions[selectedIndex];
+                var axisNames = (tp.AxisPositions != null) ? tp.AxisPositions.Keys.ToArray() : new string[0];
+                BuildAxisButtons(axisNames);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("RefreshAxisButtonsForIndex error: " + ex.Message);
+            }
+        }
+
+        private void BuildAxisButtons(IEnumerable<string> axisNames)
+        {
+            if (axisButtonPanel == null) return;
+
+            axisButtonPanel.SuspendLayout();
+            try
+            {
+                axisButtonPanel.Controls.Clear();
+                if (axisNames == null) return;
+
+                foreach (var name in axisNames)
+                {
+                    if (string.IsNullOrWhiteSpace(name)) continue;
+
+                    var btn = new QMC.Common.IndividualMenuButton();
+                    btn.Name = "btnAxis_" + name;
+                    btn.Text = name;
+                    // 동일 크기 적용
+                    if (btnMovePosition != null)
+                    {
+                        btn.Size = btnMovePosition.Size;
+                        btn.CustomBackColor = btnMovePosition.CustomBackColor;
+                        btn.CustomForeColor = btnMovePosition.CustomForeColor;
+                        btn.CustomFont = btnMovePosition.CustomFont;
+                        btn.Font = btnMovePosition.Font;
+                        btn.ImageSize = btnMovePosition.ImageSize;
+                    }
+                    btn.Margin = new Padding(0);
+                    btn.Tag = name; // 축 이름 저장
+                    btn.Click += OnAxisButtonClick;
+                    axisButtonPanel.Controls.Add(btn);
+                }
+            }
+            finally
+            {
+                axisButtonPanel.ResumeLayout();
+            }
+        }
+
+        private void OnAxisButtonClick(object sender, EventArgs e)
+        {
+            try
+            {
+                int selIndex = GetSelectedIndex();
+                if (selIndex < 0)
+                {
+                    MessageBox.Show("선택된 Teaching Position이 없습니다.",
+                        "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var btn = sender as Control;
+                var axisName = btn != null ? (btn.Tag as string ?? btn.Text) : null;
+                if (string.IsNullOrEmpty(axisName)) return;
+
+                bool isFine = GetSelectedMoveModeIsFine();
+
+                double dTargetPos = 0.0;
+                if (_config?.TeachingPositions != null &&
+                    selIndex >= 0 && selIndex < _config.TeachingPositions.Count)
+                {
+                    var tp = _config.TeachingPositions[selIndex];
+                    if (tp.AxisPositions != null && tp.AxisPositions.ContainsKey(axisName))
+                    {
+                        dTargetPos = tp.AxisPositions[axisName];
+                    }
+                    else
+                    {
+                        MessageBox.Show($"선택된 Teaching Position에 축 '{axisName}' 정보가 없습니다.",
+                            "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("선택된 Teaching Position 정보가 올바르지 않습니다.",
+                        "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // 부모에게 축 이동 요청 이벤트 발생
+                _unit.MoveAxisPositionOneAsync(axisName, dTargetPos, isFine);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("OnAxisButtonClick error: " + ex.Message);
+            }
+        }
+
         #endregion
+
+        private void btnMovePosition_Click_1(object sender, EventArgs e)
+        {
+
+        }
     }
 
     #region EventArgs Classes
@@ -313,6 +438,13 @@ namespace QMC.LCP_280.Process.Unit.FormConfig
     public class CurrentPosEventArgs : EventArgs
     {
         public int Index { get; set; }
+    }
+
+    public class MoveAxisEventArgs : EventArgs
+    {
+        public int Index { get; set; }
+        public string AxisName { get; set; }
+        public bool IsFine { get; set; }
     }
 
     #endregion

@@ -189,6 +189,31 @@ namespace QMC.LCP_280.Process.Unit
             const string unitName = "Unit"; // Equipment에서 축 등록 시 사용한 유닛명과 동일해야 함
             BindAxis(mgr, unitName, AxisNames.WaferLifterZ, ref _waferLifterZ);
         }
+        public override bool IsInterlockOK(BaseComponent baseComponent, BaseComponent.InterlockEventArgs e)
+        {
+            bool bRet = base.IsInterlockOK(baseComponent, e);
+            if(baseComponent == this.WaferLifterZ )
+            {
+                if (this.InputFeeder.IsInterlockOKWithCassete() == false)
+                {
+                    if (InputFeeder.IsInterlockOKWithCassete() == false)
+                    {
+                        WaferLifterZ.EmgStop();
+                        PostAlarm((int)AlarmKeys.eFeederYSafetyPosition);
+                        Log.Write(this, "Feeder Y Axis is not in Safety Position");
+                        return false;
+                    }
+                }
+                if(IsWaferProtrusionDetectionSensor())
+                {
+                    this.WaferLifterZ.EmgStop();
+                    PostAlarm((int)AlarmKeys.eWaferProtrusionDetected);
+                    return false;
+                }
+            }
+            
+            return bRet;
+        }
 
         public void MoveAxisOnce(MotionAxis ax, double target, bool isFine = false)
         {

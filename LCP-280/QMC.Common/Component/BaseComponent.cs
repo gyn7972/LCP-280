@@ -10,6 +10,27 @@ namespace QMC.Common.Component
 {
     public abstract class BaseComponent
     {
+
+        public class InterlockEventArgs : EventArgs
+        {
+            public double dTargetPosition = 0;
+            public double dCurrentPosition = 0;
+            public bool IsExtend = false;
+        }
+
+
+        public delegate bool IsInterlockOKEvent(object sender, InterlockEventArgs e);
+        public event IsInterlockOKEvent IsInterlockOK;
+
+        public bool OnIsInterlockOK(InterlockEventArgs e)
+        {
+            if (IsInterlockOK != null)
+            {
+                return this.IsInterlockOK(this, e);
+            }
+            return true;
+        }
+
         public string Name { get; set; }
         public BaseUnit ParentUnit { get; set; }
         public BaseConfig Config { get; set; }
