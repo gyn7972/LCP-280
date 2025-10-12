@@ -1299,6 +1299,41 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
                     msg += "\r\n\r\n" + detail;
                 }
+
+                Task<int> t = Rotary.RunManualFunction(Rotary.InitializeAfterHome);
+                ProgressForm form = new ProgressForm("Manual Running", nameof(Rotary.InitializeAfterHome), t, this.Rotary);
+                if (t != null)
+                {
+                    try
+                    {
+                        form.ShowDialog();
+                        if (form.DialogResult == DialogResult.Cancel)
+                        {
+                            this.Rotary.CancelSequence();
+                            MessageBox.Show("Rotary InitializeAfterHome 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            // 취소는 정상 흐름으로 처리: 실패 메시지 표시하지 않음
+                            return;
+                        }
+                        else if (t.IsFaulted)
+                        {
+                            // 예외 메시지 표시
+                            var mb = new MessageBoxOk();
+                            mb.ShowDialog("Manual Run Error!", t.Exception?.GetBaseException().Message);
+
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+                }
+                // 여기서 정상적으로 종료 후에... 초기화 완료 후 추가 시컨스 적용해야 한다...
+                //int nRet = Rotary.InitializeAfterHome();   // Index Clear 위치로 한 스텝씩 이동하면서 기존에 있는 제품 제거.
+                //if(nRet != 0)
+                //{
+                //    MessageBox.Show("Rotary InitializeAfterHome 실패", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //}
+
                 MessageBox.Show(msg, "Home");
             }
             catch (OperationCanceledException)

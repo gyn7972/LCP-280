@@ -229,14 +229,19 @@ namespace QMC.Common
             tableLayoutPanel.ColumnStyles.Clear();
             if (colCount == 2)
             {
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+                //tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
+                //tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 90F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
             }
             else
             {
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F));
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
-                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F));
+                //tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F));
+                //tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
+                //tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 15F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 80F));
+                tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
             }
 
             int row = 0;
@@ -321,8 +326,10 @@ namespace QMC.Common
                         Padding = new Padding(2),
                         BackColor = _listBackColor,
                         ForeColor = _listForeColor,
-                        Tag = "IONameLabel"
+                        Tag = "IONameLabel",
+                        AutoEllipsis = true
                     };
+                    _nameToolTip.SetToolTip(nameLabel, nameLabel.Text);
                     nameLabel.Click += (s, e) =>
                     {
                         if (_selectedNameLabel != null)
@@ -349,8 +356,11 @@ namespace QMC.Common
                         Padding = new Padding(2),
                         BackColor = _listBackColor,
                         ForeColor = _listForeColor,
-                        Tag = "IONameLabel"
+                        Tag = "IONameLabel",
+                        AutoEllipsis = true
                     };
+                    _nameToolTip.SetToolTip(nameLabel, nameLabel.Text);
+
                     nameLabel.Click += (s, e) =>
                     {
                         if (_selectedNameLabel != null)
@@ -553,5 +563,15 @@ namespace QMC.Common
             if (_statePicByKey.TryGetValue(key, out var pb))
                 ApplyStateColor(pb, key, on);
         }
+
+        private readonly ToolTip _nameToolTip = new ToolTip
+        {
+            ShowAlways = true,
+            InitialDelay = 300,
+            ReshowDelay = 100,
+            AutoPopDelay = 10000
+        };
+
+
     }
 }

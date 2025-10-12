@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Controls;
+using QMC.Common.UI;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit;
 using QMC.LCP_280.Process.Unit.FormMain;
@@ -23,6 +24,8 @@ namespace QMC.LCP_280.Process
     public partial class Monitoring_Main : Form
     {
         private bool _autoReady = false;
+        private bool _autoReadyBusy = false;
+
         private bool _autoStarting = false;
         private CancellationTokenSource _autoReadyCts;
         private HashSet<string> _readySequences;
@@ -90,8 +93,6 @@ namespace QMC.LCP_280.Process
             _startSequences = new HashSet<string>();
             sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
             
-            
-
             // WaferSelectMapView 이벤트 구독
             if (inputWaferCarrierControl1?.GetWaferSelectMapView() != null)
             {
@@ -560,39 +561,122 @@ namespace QMC.LCP_280.Process
 
         private void HandleAutoReady()
         {
-            _autoReady = !_autoReady;
-            NotifyAutoSequenceStateChanged("Ready", _autoReady);
+            if (_autoReadyBusy)
+            {
+                Log.Write("Monitoring_Main", "Auto Ready 작업 진행 중 - 요청 무시");
+                return;
+            }
 
-            if (_autoReady)
+            // Ready 버튼 비활성화
+            try { sequenceAutoControl.SetButtonEnabled("Ready", false); } catch { }
+            sequenceAutoControl.Enabled = false;
+            _autoReadyBusy = true;
+
+            // 상태 토글 ON (UI 하이라이트용)
+            _autoReady = true;
+            NotifyAutoSequenceStateChanged("Ready", true);
+
+            // 매번 강제로 Ready 절차를 수행하도록 캐시 초기화
+            _readySequences.Clear();
+
+            _autoReadyCts?.Cancel();
+            _autoReadyCts = new CancellationTokenSource();
+            var ct = _autoReadyCts.Token;
+
+            // ProgressForm 이 요구하는 Task<int>로 래핑
+            Task<int> readyTask = Task.Run(() =>
             {
-                _autoReadyCts?.Cancel();
-                _autoReadyCts = new CancellationTokenSource();
-                var ct = _autoReadyCts.Token;
-                var prev = Cursor.Current;
-                Cursor.Current = Cursors.WaitCursor;
-                ExecuteAutoReadyAsync(ct).ContinueWith(t =>
+                try
                 {
-                    try
-                    {
-                        if (IsDisposed || Disposing) return;
-                        BeginInvoke(new Action(() =>
-                        {
-                            Cursor.Current = prev;
-                            if (t.IsFaulted)
-                                Log.Write("Operator_Main", $"Auto Ready 예외: {t.Exception?.GetBaseException().Message}");
-                            if (t.IsCanceled)
-                                Log.Write("Operator_Main", "Auto Ready 취소됨");
-                        }));
-                    }
-                    catch { }
-                });
-                Log.Write("Operator_Main", "Auto Ready ON");
-            }
-            else
+                    // 실제 Ready 실행 (취소 지원)
+                    var ok = ReadyAllSequencesAsync(ct).GetAwaiter().GetResult();
+                    return ok ? 0 : -1;
+                }
+                catch (OperationCanceledException)
+                {
+                    return -2; // 취소 코드
+                }
+                catch (Exception ex)
+                {
+                    Log.Write("Monitoring_Main", $"Auto Ready 예외: {ex.Message}");
+                    return -1;
+                }
+            }, ct);
+
+            var form = new ProgressForm("Auto Ready", "ReadyAllSequences", readyTask, this.Rotary);
+            try
             {
-                _autoReadyCts?.Cancel();
-                Log.Write("Operator_Main", "Auto Ready OFF");
+                form.ShowDialog(this);
+
+                if (form.DialogResult == DialogResult.Cancel)
+                {
+                    try { _autoReadyCts.Cancel(); } catch { }
+                    Log.Write("Monitoring_Main", "Auto Ready 취소 요청");
+                }
+
+                // 작업 결과 확인 (취소는 정상 흐름으로 간주)
+                if (readyTask.IsFaulted)
+                {
+                    var ex = readyTask.Exception?.GetBaseException();
+                    if (!(ex is OperationCanceledException))
+                    {
+                        MessageBox.Show($"Auto Ready 오류: {ex?.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                else
+                {
+                    int rc = readyTask.Status == TaskStatus.RanToCompletion ? readyTask.Result : -1;
+                    if (rc == -1)
+                    {
+                        MessageBox.Show("Auto Ready 실패", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    // rc == 0: 성공, rc == -2: 취소 → 메시지 표시 없음
+                }
             }
+            finally
+            {
+                // Ready 버튼/컨트롤 복구
+                try { sequenceAutoControl.SetButtonEnabled("Ready", true); } catch { }
+                sequenceAutoControl.Enabled = true;
+
+                _autoReadyBusy = false;
+                _autoReady = false;
+                NotifyAutoSequenceStateChanged("Ready", false);
+            }
+
+            //_autoReady = !_autoReady;
+            //NotifyAutoSequenceStateChanged("Ready", _autoReady);
+
+            //if (_autoReady)
+            //{
+            //    _autoReadyCts?.Cancel();
+            //    _autoReadyCts = new CancellationTokenSource();
+            //    var ct = _autoReadyCts.Token;
+            //    var prev = Cursor.Current;
+            //    Cursor.Current = Cursors.WaitCursor;
+            //    ExecuteAutoReadyAsync(ct).ContinueWith(t =>
+            //    {
+            //        try
+            //        {
+            //            if (IsDisposed || Disposing) return;
+            //            BeginInvoke(new Action(() =>
+            //            {
+            //                Cursor.Current = prev;
+            //                if (t.IsFaulted)
+            //                    Log.Write("Operator_Main", $"Auto Ready 예외: {t.Exception?.GetBaseException().Message}");
+            //                if (t.IsCanceled)
+            //                    Log.Write("Operator_Main", "Auto Ready 취소됨");
+            //            }));
+            //        }
+            //        catch { }
+            //    });
+            //    Log.Write("Operator_Main", "Auto Ready ON");
+            //}
+            //else
+            //{
+            //    _autoReadyCts?.Cancel();
+            //    Log.Write("Operator_Main", "Auto Ready OFF");
+            //}
         }
 
         private async void HandleAutoStart()

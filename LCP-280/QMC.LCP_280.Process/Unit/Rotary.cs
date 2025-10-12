@@ -1033,6 +1033,39 @@ namespace QMC.LCP_280.Process.Unit
             return true;
         }
 
+        public bool SetTrashEjector(bool on)
+        {
+            bool bRet = false;
+            if (on)
+                bRet = this.WriteOutput(TRASH_CNA_EJECTOR, true);
+            else
+                bRet = this.WriteOutput(TRASH_CNA_EJECTOR, false);
+            
+            if(Config.IsSimulation)
+            {
+                bRet = true;
+            }
+
+            return bRet;
+        }
+
+        public bool SetTrashVacuum(bool on)
+        {
+            bool bRet = false;
+            if (on)
+                bRet = this.WriteOutput(TRASH_CNA_VACUUM, true);
+            else
+                bRet = this.WriteOutput(TRASH_CNA_VACUUM, false);
+
+            if (Config.IsSimulation)
+            {
+                bRet = true;
+            }
+
+            return bRet;
+        }
+
+
         public bool IsVacuumOK(int slotIndex)
         {
             if (FLOW == null)
@@ -2001,6 +2034,112 @@ namespace QMC.LCP_280.Process.Unit
             {
                 handler(this, loadIndex0Based);
             }
+        }
+
+
+        public int InitializeAfterHome(bool isFine = false)
+        {
+            Task<int> task = InitializeAfterHomeAsync(isFine);
+            while (IsEndTask(task) == false)
+            {
+                Thread.Sleep(1);
+            }
+            return task.Result;
+        }
+        public Task<int> InitializeAfterHomeAsync(bool isFine = false)
+        {
+            return Task.Run(() =>
+            {
+                OnInitializeAfterHome(isFine);
+                return 0;
+            });
+        }
+        private int OnInitializeAfterHome(bool isFine = false)
+        {
+            int nRet = 0;
+
+            try
+            {
+                int socketCount = GetIndexCount();
+
+                for (int i = 0; i < socketCount; i++)
+                {
+                    // 취소 요청 감지: 예외 대신 정상 종료 코드 반환
+                    //this.CalcelToken?.Token.ThrowIfCancellationRequested();
+                    //if (this.CalcelToken?.Token.IsCancellationRequested == true || this.IsStop)
+                    if (this.CalcelToken?.Token.IsCancellationRequested == true)
+                    {
+                        Log.Write(UnitName, "[InitializeAfterHome] Canceled by user");
+                        return -2; // 취소 코드(프로젝트 규칙에 맞게 조정 가능)
+                    }
+                    
+                    if (SetTrashEjector(true) == false)
+                    {
+                        Log.Write(UnitName, "[InitializeAfterHome] TrashEjector ON fail");
+                        return -1;
+                    }
+
+                    if (SetTrashVacuum(true) == false)
+                    {
+                        Log.Write(UnitName, "[InitializeAfterHome] TrashVacuum ON fail");
+                        SetTrashEjector(false);
+                        return -1;
+                    }
+
+                    //일정 시간 대기
+                    WaitByTime(GetClearTimeMs()); // 기본: 500ms
+
+                    if (SetTrashVacuum(false) == false)
+                    {
+                        Log.Write(UnitName, "[InitializeAfterHome] TrashVacuum OFF fail");
+                        SetTrashEjector(false);
+                        return -1;
+                    }
+
+                    if (SetTrashEjector(false) == false)
+                    {
+                        Log.Write(UnitName, "[InitializeAfterHome] TrashEjector OFF fail");
+                        return -1;
+                    }
+
+                    //일정 시간 대기
+                    WaitByTime(100);
+                    Log.Write(UnitName, $"[InitializeAfterHome] Clear Comp. {i}");
+
+                    // 2) 다음 인덱스로 한 칸 이동 (전체 소켓 수 만큼 반복 → 원위치 복귀)
+                    string reason;
+                    if (TryMoveIndexNext(out reason) == false)
+                    {
+                        Log.Write(UnitName, $"[InitializeAfterHome] Index move start fail: {reason}");
+                        PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
+                        return -1;
+                    }
+
+                    nRet = WaitIndexMoveDone();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[InitializeAfterHome] Index move wait timeout");
+                        PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
+                        return -1;
+                    }
+                }
+
+                return nRet;
+            }
+            catch (Exception ex)
+            {
+                Log.Write(ex);
+                return -1;
+            }
+
+            return nRet;
+        }
+
+        private int GetClearTimeMs()
+        {
+            // 0 또는 음수면 기본 500ms로 사용, 그 외 값은 그대로 사용
+            int v = (Config != null) ? Config.ClearTimeMs : 0;
+            return (v <= 0) ? 500 : v;
         }
     }
 }

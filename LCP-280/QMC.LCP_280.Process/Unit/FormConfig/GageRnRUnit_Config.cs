@@ -84,7 +84,6 @@ namespace QMC.LCP_280.Process.Unit
                 SetupPositionTeachingControl(); //PositionTeachingControl에 데이터 전달
                 SetupDigitalIOControl();
 
-
                 PopulateAllAxesInJogControl();
                 InitializeUnitConfigPanel(); // <-- 추가
             }

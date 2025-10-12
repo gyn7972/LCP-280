@@ -37,6 +37,9 @@ namespace QMC.LCP_280.Process.Unit
             public const string VENT1 = "INDEX 1 VENT"; public const string VENT2 = "INDEX 2 VENT"; public const string VENT3 = "INDEX 3 VENT"; public const string VENT4 = "INDEX 4 VENT";
             public const string VENT5 = "INDEX 5 VENT"; public const string VENT6 = "INDEX 6 VENT"; public const string VENT7 = "INDEX 7 VENT"; public const string VENT8 = "INDEX 8 VENT";
 
+            public const string TRASH_CNA_EJECTOR = "TRASH CAN EJECTOR"; // Y089
+            public const string TRASH_CNA_VACUUM = "TRASH CAN VACUUM"; // Y090
+
             // Flow Inputs (¼ø¼­: 1~8)
             public static readonly string[] FLOW = { FLOW1, FLOW2, FLOW3, FLOW4, FLOW5, FLOW6, FLOW7, FLOW8 };
 
@@ -120,6 +123,8 @@ namespace QMC.LCP_280.Process.Unit
             new HardOutputDef { No = 22, Name = IO.VENT6, Disp = "Y072" },
             new HardOutputDef { No = 23, Name = IO.VENT7, Disp = "Y073" },
             new HardOutputDef { No = 24, Name = IO.VENT8, Disp = "Y074" },
+            new HardOutputDef { No = 25, Name = IO.TRASH_CNA_EJECTOR, Disp = "Y089" },
+            new HardOutputDef { No = 26, Name = IO.TRASH_CNA_VACUUM,  Disp = "Y090" },
         };
         #endregion
 
@@ -159,9 +164,13 @@ namespace QMC.LCP_280.Process.Unit
         [DefaultValue(false)]
         public bool UseSocket8 { get; set; } = false;
 
-        [Category("TimeOut"), DisplayName("TimeOut (ms)")]
-        [DefaultValue(false)]
+        [Category("TimeOut"), DisplayName("OutputTimeOut (ms)")]
+        [DefaultValue(2000)]
         public int OutputDieTransferTimeoutMs { get; set; }
+
+        [Category("WaitTime"), DisplayName("ClearTime (ms)")]
+        [DefaultValue(500)]
+        public int ClearTimeMs { get; set; }
 
         public RotaryConfig() : base("RotaryConfig") { }
 

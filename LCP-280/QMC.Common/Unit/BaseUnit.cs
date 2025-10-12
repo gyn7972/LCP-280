@@ -833,10 +833,11 @@ namespace QMC.Common.Unit
         public double GetTP(string tpName, string axisName)
         {
             var tp = Config.GetTeachingPosition(tpName);
-            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) return v;
+            if (tp != null && tp.AxisPositions != null && tp.AxisPositions.TryGetValue(axisName, out var v)) 
+                return v;
+
             return 0.0;
         }
-
 
         #endregion
 
@@ -860,13 +861,13 @@ namespace QMC.Common.Unit
 
         public void SetName(string name) => UnitName = name;
 
+        
         public Task<int> RunManualFunction(Func<bool, int> func)
         {
             Task<int> task = null;
             
             if (func != null && !IsRunning)
             {
-
                 CurrentFunc = func;
                 if (this.CalcelToken == null || this.CalcelToken.IsCancellationRequested) 
                 {
@@ -882,18 +883,17 @@ namespace QMC.Common.Unit
                             {
                                 string threadName = "ManualRun_" + UnitName + "_" + CurrentFunc.Method.Name;
                                 Thread.CurrentThread.Name = threadName;
-
                             }
                         }
-                        catch { }
+                        catch (Exception ex) 
+                        { Log.Write(ex); }
+                        
                         try
                         {
                             ret = func(false);
                         }
                         catch(Exception ex)
-                        {
-                            Log.Write(ex);
-                        }
+                        {   Log.Write(ex); }
 
                         return ret;
                     }
