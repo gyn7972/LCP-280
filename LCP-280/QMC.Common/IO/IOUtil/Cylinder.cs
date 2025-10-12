@@ -51,6 +51,15 @@ namespace QMC.Common.IOUtil
             DIO.Out(_bwdOutKey, false);
             DIO.Out(_fwdOutKey, true);
 
+            InterlockEventArgs args = new InterlockEventArgs();
+            args.IsExtend = true;
+            if(OnIsInterlockOK(args) == false)
+            {
+
+                return false;
+            }
+
+
             _lastCommandExtend = true;
             _lastCommandTicks = Stopwatch.GetTimestamp();
 
@@ -77,6 +86,14 @@ namespace QMC.Common.IOUtil
         {
             DIO.Out(_fwdOutKey, false);
             DIO.Out(_bwdOutKey, true);
+
+            InterlockEventArgs args = new InterlockEventArgs();
+            args.IsExtend = false;
+            if (OnIsInterlockOK(args) == false)
+            {
+
+                return false;
+            }
 
             _lastCommandExtend = false;
             _lastCommandTicks = Stopwatch.GetTimestamp();

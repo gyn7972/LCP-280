@@ -513,9 +513,55 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write("InputFeeder", "BindIoDomains", "Cylinder not found: InFeederClamp");
             }
+            BindCylinder(_cylClamp);
         }
         #endregion
 
+        public override bool IsInterlockOK(BaseComponent baseComponent, BaseComponent.InterlockEventArgs e)
+        {
+            bool bRet = base.IsInterlockOK(baseComponent, e);
+            if(baseComponent == this.AxisInputFeederY)
+            {
+                if(this.IsFeederDown())
+                {
+                    if (this.InputStage.IsWaferLoadingPosition() == false)
+                    {
+                        bRet = false;
+                    }
+                    else
+                    {
+                        //if(this.InputStage.IsRingPresent())
+                        {
+                            bRet = IsInterlockOKWithStage(e);
+                            if (bRet == false)
+                            {
+                                PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                                return bRet;
+                            }
+                        }
+                    }
+                }
+                
+            }
+            return bRet;
+        }
+
+        private bool IsInterlockOKWithStage(BaseComponent.InterlockEventArgs e)
+        {
+            if (this.InputStage.IsPlateUp() || this.InputStage.IsClampLiftUp())
+            {
+                double dCurrentY = this.AxisInputFeederY.GetPosition();
+                double dStageY = this.GetTP(InputFeederConfig.TeachingPositionName.Stage.ToString(), this.AxisInputFeederY.Name);
+                if (dCurrentY < dStageY + this.AxisInputFeederY.Config.InposTolerance
+                    || e.dTargetPosition < dStageY + this.AxisInputFeederY.Config.InposTolerance)
+                {
+                    return false;
+                }
+
+            }
+
+            return true;
+        }
         #region Status Helpers
         public bool SetLift(bool bUpDn)
         {

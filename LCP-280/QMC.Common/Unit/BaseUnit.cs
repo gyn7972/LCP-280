@@ -14,6 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static QMC.Common.Component.BaseComponent;
 using static QMC.Common.Motions.MotionAxis;
 
 namespace QMC.Common.Unit
@@ -242,6 +243,8 @@ namespace QMC.Common.Unit
             if (mgr != null && mgr.TryGet(unitName, axisName, out var axis) && axis != null)
             {
                 field = axis;
+                axis.IsInterlockOK += Axis_IsInterlockOK; ;
+
                 Axes[axisName] = axis;
             }
             else
@@ -249,6 +252,42 @@ namespace QMC.Common.Unit
                 if (Axes.ContainsKey(axisName)) Axes.Remove(axisName);
                 Log.Write("UnitAxis", $"[BindAxes] Axis '{unitName}||{axisName}' 바인딩 실패");
             }
+        }
+
+        public void BindCylinder(Cylinder field)
+        {
+            if (field != null)
+            {
+                field.IsInterlockOK += Axis_IsInterlockOK;
+            }
+        }
+
+
+        private bool Axis_IsInterlockOK(object sender, InterlockEventArgs e)
+        {
+            if (sender is BaseComponent baseComponent)
+            {                
+                return IsInterlockOK(baseComponent , e);
+            }
+            return true;
+        }
+
+        public MotionAxis GetAxis(string axisName)
+        {
+            if (Axes.TryGetValue(axisName, out var axis))
+                return axis;
+            return null;
+        }
+        public int GetAxisIndex(string axisName)
+        {
+            int index = 0;
+            foreach (var key in Axes.Keys)
+            {
+                if (key.Equals(axisName, StringComparison.OrdinalIgnoreCase))
+                    return index;
+                index++;
+            }
+            return -1;
         }
 
         public void BindUnit() => OnBindUnit();
@@ -411,7 +450,7 @@ namespace QMC.Common.Unit
 
 
         #region TeachingPosition Helpers (기존 구조 유지)
-        public virtual bool IsInterlockOK(int selIndex) => true;
+        public virtual bool IsInterlockOK(BaseComponent baseComponent, InterlockEventArgs e) => true;
         protected IList<object> ResolveTeachingPositionObjectList()
         {
             try
@@ -932,6 +971,17 @@ namespace QMC.Common.Unit
             {
                 Thread.Sleep(pollMs);
             }
+        }
+
+        public Task<int> MoveAxisPositionOneAsync(string axisName, double dTargetPos, bool isFine)
+        {
+            MotionAxis axis = GetAxis(axisName);
+            Task<int> task = null;
+            if (axis != null)
+            {
+                task = MoveAxisPositionOneAsync(axis, dTargetPos, isFine);
+            }
+            return task;
         }
         #endregion
     }

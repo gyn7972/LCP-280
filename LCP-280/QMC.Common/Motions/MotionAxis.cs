@@ -50,9 +50,11 @@ namespace QMC.Common.Motions
         }
         #endregion
 
+        
+
         // === 홈 성공 알림 이벤트(글로벌) ===
         public static event Action<MotionAxis> HomeSucceeded;
-
+        
         private readonly object _gate = new object();
         private readonly AjinDriver _driver;
         private readonly CKDMotorDriver _ckdDriver;
@@ -493,6 +495,13 @@ namespace QMC.Common.Motions
 
         public int MoveAbs(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
+            InterlockEventArgs args = new InterlockEventArgs();
+            args.dTargetPosition = logicalTarget;
+
+            if(OnIsInterlockOK(args) == false)
+            {
+                return -1;
+            }
             if (IsSim)
             {
                 try
@@ -551,6 +560,8 @@ namespace QMC.Common.Motions
 
         public int MoveRel(double logicalTarget, double vel, double acc, double dec, double jerkPercent)
         {
+
+
             if (IsSim)
             {
                 var target = GetPosition() + logicalTarget;
