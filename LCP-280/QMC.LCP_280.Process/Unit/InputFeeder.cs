@@ -522,22 +522,26 @@ namespace QMC.LCP_280.Process.Unit
             bool bRet = base.IsInterlockOK(baseComponent, e);
             if(baseComponent == this.AxisInputFeederY)
             {
-                if(this.InputStage.IsWaferLoadingPosition() == false)
+                if(this.IsFeederDown())
                 {
-                    bRet = false;
-                }
-                else
-                {
-                    //if(this.InputStage.IsRingPresent())
+                    if (this.InputStage.IsWaferLoadingPosition() == false)
                     {
-                        bRet = IsInterlockOKWithStage(e);
-                        if (bRet == false)
+                        bRet = false;
+                    }
+                    else
+                    {
+                        //if(this.InputStage.IsRingPresent())
                         {
-                            PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
-                            return bRet;
+                            bRet = IsInterlockOKWithStage(e);
+                            if (bRet == false)
+                            {
+                                PostAlarm((int)AlarmKeys.Alarm_InputStageInterlockFailed);
+                                return bRet;
+                            }
                         }
                     }
                 }
+                
             }
             return bRet;
         }
