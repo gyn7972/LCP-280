@@ -247,7 +247,9 @@ namespace QMC.Common.Motions
             if (_driver != null)
             {
                 var pos = GetPosition();
-                return Math.Abs(pos - logicalTarget) <= Config.InposTolerance;
+                bool bRet = Math.Abs(pos - logicalTarget) <= Config.InposTolerance;
+                bRet &= this.IsMoveDone();
+                return bRet;
             }
             else if (_ckdDriver != null)
             {

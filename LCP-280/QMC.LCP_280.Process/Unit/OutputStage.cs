@@ -340,8 +340,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                if (!IsClampLiftUp())
-                    return false; // 기존 인터락 유지
+                //if (!IsClampLiftUp())
+                //    return false; // 기존 인터락 유지
 
                 return _cylClampFB.Retract();
             }
@@ -366,7 +366,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return this.ReadInput(OutputStageConfig.IO.RING_CHECK0);
         }
-
         public bool Ring1()
         {
             if (Config.IsSimulation || Config.IsDryRun)
@@ -412,7 +411,6 @@ namespace QMC.LCP_280.Process.Unit
 
             return !IsClampFwd();
         }
-
         public bool IsPlateUp()
         {
             if (Config.IsSimulation)
@@ -430,6 +428,70 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             return this.ReadInput(OutputStageConfig.IO.PLATE_DOWN);
+        }
+
+        // === Cylinder 완료 대기 Helpers ===
+        // Plate: expectUp=true(UP 기대), false(DOWN 기대)
+        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectUp ? IsPlateUp() : IsPlateDown();
+                if (ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            PostAlarm((int)AlarmKeys.ePlate);
+            Log.Write(UnitName, expectUp ? "[Plate] UP timeout" : "[Plate] DOWN timeout");
+            return -1;
+        }
+
+        // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
+        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectUp ? IsClampLiftUp() : IsClampLiftDown();
+                if (ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            PostAlarm((int)AlarmKeys.eClampLift);
+            Log.Write(UnitName, expectUp ? "[ClampLift] UP timeout" : "[ClampLift] DOWN timeout");
+            return -1;
+        }
+
+        // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
+        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 1500, int pollMs = 2)
+        {
+            if (Config.IsSimulation || Config.IsDryRun)
+                return 0;
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (sw.ElapsedMilliseconds <= timeoutMs)
+            {
+                bool ok = expectFwd ? IsClampFwd() : IsClampBwd();
+                if (ok)
+                    return 0;
+
+                Thread.Sleep(pollMs);
+            }
+
+            PostAlarm((int)AlarmKeys.eClampFB);
+            Log.Write(UnitName, expectFwd ? "[ClampFB] FWD timeout" : "[ClampFB] BWD timeout");
+            return -1;
         }
 
         // === Direct Valve Control (입력 신호/인터락 무관 강제 구동용) ===
@@ -456,7 +518,7 @@ namespace QMC.LCP_280.Process.Unit
             while (IsEndTask(task) == false)
             {
                 // 동일 Safety Interlock
-                if (!OutputDieTransfer.IsPositionPickZSafety())
+                if (!OutputDieTransfer.IsPositionPlaceZSafety())
                 {
                     AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
                     PostAlarm((int)AlarmKeys.eDieTransferPlaceZNotSafe);
@@ -759,7 +821,30 @@ namespace QMC.LCP_280.Process.Unit
             {
                 var wafer = GetMaterialWafer();
                 if (wafer == null)
-                    return false;
+                {
+                    if(Config.IsSimulation)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        if (IsRingPresent() == false)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            OutputFeeder.MakePath();
+                            OutputFeeder.MoveMaterial(new MaterialWafer(), this);
+                            var waferOutputStage = this.GetMaterialWafer();
+                            //waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
+                            waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                            this.SetMaterial(waferOutputStage);
+                            this.UpdateUI();
+                        }
+                    }
+                    
+                }
 
                 if (wafer.Presence == Material.MaterialPresence.Exist)
                 {
@@ -854,41 +939,44 @@ namespace QMC.LCP_280.Process.Unit
 
             bool bSimulation = Config.IsSimulation;
             // Clamp Back → Lift Down
-            SetClampFB(false);
-            if (!IsClampBwd())
-            {
-                if(!bSimulation)
-                {
-                    PostAlarm((int)AlarmKeys.eClampFB);
-                    Log.Write(this, "Fail: ClampBack");
-                    return -1;
-                }
-            }
+            ClampBackward();
+            //SetClampFB(false);
+            //if (!IsClampBwd())
+            //{
+            //    if(!bSimulation)
+            //    {
+            //        PostAlarm((int)AlarmKeys.eClampFB);
+            //        Log.Write(this, "Fail: ClampBack");
+            //        return -1;
+            //    }
+            //}
             if (IsStop) { return 0; }
 
-            SetClampLift(false);
-            if (!IsClampLiftDown())
-            {
-                if (!bSimulation)
-                {
-                    PostAlarm((int)AlarmKeys.eClampLift);
-                    Log.Write(this, "Fail: ClampLiftDown");
-                    return -1;
-                }
-            }
+            ClampLiftDown();
+            //SetClampLift(false);
+            //if (!IsClampLiftDown())
+            //{
+            //    if (!bSimulation)
+            //    {
+            //        PostAlarm((int)AlarmKeys.eClampLift);
+            //        Log.Write(this, "Fail: ClampLiftDown");
+            //        return -1;
+            //    }
+            //}
             if (IsStop) { return 0; }
 
-            //Plate Down → 
-            SetClampPlate(true);
-            if (!IsPlateUp())
-            {
-                if (!bSimulation)
-                {
-                    PostAlarm((int)AlarmKeys.ePlate);
-                    Log.Write(this, "Fail: PlateUp");
-                    return -1;
-                }
-            }
+            //Plate UP → 
+            PlateUp();
+            //SetClampPlate(true);
+            //if (!IsPlateUp())
+            //{
+            //    if (!bSimulation)
+            //    {
+            //        PostAlarm((int)AlarmKeys.ePlate);
+            //        Log.Write(this, "Fail: PlateUp");
+            //        return -1;
+            //    }
+            //}
             if (IsStop) { return 0; }
 
             BinLoadingReady = true;
@@ -921,43 +1009,59 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = Config.IsSimulation;
             if (IsRingPresent() || bRtn || Config.IsDryRun)
             {
+                PlateDown();
+                //SetClampPlate(false);
+                //if (!IsPlateDown())
+                //{
+                //    if (!Config.IsSimulation)
+                //    {
+                //        PostAlarm((int)AlarmKeys.ePlate);
+                //        Log.Write(this, "Fail: PlateUp");
+                //        return -1;
+                //    }
+                //}
+                if (IsStop) { return 0; }
+
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 if (!IsPlateUp()|| Config.IsSimulation || Config.IsDryRun)
                 {
-                    SetClampPlate(false);
-                    if (!IsPlateDown())
-                    {
-                        if(!Config.IsSimulation)
-                        {
-                            PostAlarm((int)AlarmKeys.ePlate);
-                            Log.Write(this, "Fail: PlateUp");
-                            return -1;
-                        }
-                    }
+                    PlateDown();
+                    //SetClampPlate(false);
+                    //if (!IsPlateDown())
+                    //{
+                    //    if(!Config.IsSimulation)
+                    //    {
+                    //        PostAlarm((int)AlarmKeys.ePlate);
+                    //        Log.Write(this, "Fail: PlateUp");
+                    //        return -1;
+                    //    }
+                    //}
                     if (IsStop) { return 0; }
 
-                    SetClampLift(true);
-                    if (!IsClampLiftUp())
-                    {
-                        if (!Config.IsSimulation)
-                        {
-                            PostAlarm((int)AlarmKeys.eClampLift);
-                            Log.Write(this, "Fail: ClampLiftUp");
-                            return -1;
-                        }
-                    }
+                    ClampLiftUp();
+                    //SetClampLift(true);
+                    //if (!IsClampLiftUp())
+                    //{
+                    //    if (!Config.IsSimulation)
+                    //    {
+                    //        PostAlarm((int)AlarmKeys.eClampLift);
+                    //        Log.Write(this, "Fail: ClampLiftUp");
+                    //        return -1;
+                    //    }
+                    //}
                     if (IsStop) { return 0; }
 
-                    SetClampFB(true);
-                    if (!IsClampFwd())
-                    {
-                        if (!Config.IsSimulation)
-                        {
-                            PostAlarm((int)AlarmKeys.eClampFB);
-                            Log.Write(this, "Fail: ClampForward");
-                            return -1;
-                        }
-                    }
+                    ClampForward();
+                    //SetClampFB(true);
+                    //if (!IsClampFwd())
+                    //{
+                    //    if (!Config.IsSimulation)
+                    //    {
+                    //        PostAlarm((int)AlarmKeys.eClampFB);
+                    //        Log.Write(this, "Fail: ClampForward");
+                    //        return -1;
+                    //    }
+                    //}
                     if (IsStop) { return 0; }
                 }
                 else
@@ -974,8 +1078,8 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
-                var wafer = GetMaterialWafer();
-                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                //var wafer = GetMaterialWafer();
+                //wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
 
                 BinLoadingDone = true;
                 BinLoadingReady = false;
@@ -1013,31 +1117,34 @@ namespace QMC.LCP_280.Process.Unit
             }
             if (IsStop) { return 0; }
 
-            SetClampFB(false);
-            if (!IsClampBwd())
-            {
-                PostAlarm((int)AlarmKeys.eClampFB);
-                Log.Write(this, "Fail: ClampBack");
-                return -1;
-            }
+            ClampBackward();
+            //SetClampFB(false);
+            //if (!IsClampBwd())
+            //{
+            //    PostAlarm((int)AlarmKeys.eClampFB);
+            //    Log.Write(this, "Fail: ClampBack");
+            //    return -1;
+            //}
             if (IsStop) { return 0; }
 
-            SetClampLift(false);
-            if (!IsClampLiftDown())
-            {
-                PostAlarm((int)AlarmKeys.eClampLift);
-                Log.Write(this, "Fail: ClampLiftDown");
-                return -1;
-            }
+            ClampLiftDown();
+            //SetClampLift(false);
+            //if (!IsClampLiftDown())
+            //{
+            //    PostAlarm((int)AlarmKeys.eClampLift);
+            //    Log.Write(this, "Fail: ClampLiftDown");
+            //    return -1;
+            //}
             if (IsStop) { return 0; }
 
-            SetClampPlate(true);
-            if (!IsPlateUp())
-            {
-                PostAlarm((int)AlarmKeys.ePlate);
-                Log.Write(this, "Fail: PlateUp");
-                return -1;
-            }
+            PlateUp();
+            //SetClampPlate(true);
+            //if (!IsPlateUp())
+            //{
+            //    PostAlarm((int)AlarmKeys.ePlate);
+            //    Log.Write(this, "Fail: PlateUp");
+            //    return -1;
+            //}
             if (IsStop) { return 0; }
 
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
@@ -1067,7 +1174,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             else if (!Ring0() || !Ring1())
             {
-                Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
+                //Log.Write(UnitName, "IsRingPresent", $"Ring not present (R0={Ring0()}, R1={Ring1()})");
                 return false;
             }
 
@@ -1137,29 +1244,7 @@ namespace QMC.LCP_280.Process.Unit
             return false;
 
         }
-        public bool IsCompletedWork()
-        {
-            bool bRet = false;
-            try
-            {
-                var wafer = GetMaterialWafer();
-                if (wafer == null)
-                    return false;
-
-                if (wafer.Presence == Material.MaterialPresence.Exist)
-                {
-                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
-                    {
-                        bRet = true;
-                    }
-                }
-            }
-            catch
-            {
-                bRet = false;
-            }
-            return bRet;
-        }
+        
         public void UpdateUI()
         {
             MaterialWafer materialWafer = GetMaterialWafer();
@@ -1188,6 +1273,45 @@ namespace QMC.LCP_280.Process.Unit
             OnDiePlaced(die);
         }
         #endregion
+
+        /// <summary>
+        /// NextDie(Processing 상태에서 Mapped + Presence == Exist)가 존재하는지 여부만 확인.
+        /// 내부 상태 변경(Completed 전환 등) 없이 순수 조회만 수행.
+        /// </summary>
+        public bool HasNextDie()
+        {
+            var wafer = GetMaterialWafer();
+            if (wafer == null) return false;
+
+            lock (wafer)
+            {
+                if (wafer.Presence != Material.MaterialPresence.Exist) 
+                    return false;
+
+                if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed) 
+                    return false;
+
+                if (wafer.ProcessSatate != Material.MaterialProcessSatate.Processing) 
+                    return false;
+
+                var next = wafer.Dies
+                .Where(d => d != null && d.Presence != Material.MaterialPresence.Exist)
+                .OrderBy(d => d.BinY).ThenBy(d => d.BinX)
+                .FirstOrDefault();
+
+                if (next != null)
+                {
+                    //Log.Write(UnitName, "HasNextDie", $"Next Die found: Index={next.Index}, Bin=({next.BinX},{next.BinY})");
+                }
+                else
+                {
+                    wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
+                    Log.Write(UnitName, "HasNextDie", "No next die found");
+                }
+
+                return next != null;
+            }
+        }
 
         // 다음 빈 Bin을 예약(내부 _currentDie 설정)하고 Bin 좌표 반환
         public bool TryReserveNextEmptyBin(out double binX, out double binY, out MaterialDie slot)
@@ -1222,10 +1346,10 @@ namespace QMC.LCP_280.Process.Unit
             var recipe = eq.EquipmentRecipe.CurrentRecipe;
 
             // Pitch 및 카운트
-            double pitchX = recipe.BinPitchXUm > 0 ? recipe.BinPitchXUm : 1.0;
-            double pitchY = recipe.BinPitchYUm > 0 ? recipe.BinPitchYUm : 1.0;
-            pitchX /= 1000;
-            pitchY /= 1000;
+            double pitchX = recipe.BinPitchXmm > 0 ? recipe.BinPitchXmm : 1.0;
+            double pitchY = recipe.BinPitchYmm > 0 ? recipe.BinPitchYmm : 1.0;
+            //pitchX /= 1000;
+            //pitchY /= 1000;
             int cntX = recipe.BinCountX > 0 ? recipe.BinCountX : 1;
             int cntY = recipe.BinCountY > 0 ? recipe.BinCountY : 1;
 
@@ -1240,7 +1364,6 @@ namespace QMC.LCP_280.Process.Unit
             double targetY = centerY + offsetY;
             return (targetX, targetY);
         }
-        
         
         public int MoveToBinPosition(double binX, double binY, bool isFine = false)
         {
@@ -1268,6 +1391,110 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnDiePlaced] " + ex.Message);
             }
         }
+
+        public bool CanPlaceDie()
+        {
+            return HasNextDie();
+        }
+
+
+        // === Cylinder 고레벨 제어(완료 대기 포함) ===
+        public int PlateUp()
+        {
+            SetClampPlate(true);
+            int r = WaitPlateStateOrAlarm(expectUp: true);
+            if (r != 0)
+            {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                Log.Write(this, "PlateUp Failed");
+            }
+            return r;
+        }
+
+        public int PlateDown()
+        {
+            SetClampPlate(false);
+            int r = WaitPlateStateOrAlarm(expectUp: false);
+            if (r != 0)
+            {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                Log.Write(this, "PlateDown Failed");
+            }
+            return r;
+        }
+
+        public int ClampLiftUp()
+        {
+            SetClampLift(true);
+            int r = WaitClampLiftStateOrAlarm(expectUp: true);
+            if (r != 0)
+            {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                Log.Write(this, "ClampLiftUp Failed");
+            }
+            return r;
+        }
+
+        public int ClampLiftDown()
+        {
+            // 인터락은 SetClampLift(false) 내부에서 IsClampBwd() 확인
+            bool issued = SetClampLift(false);
+            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            {
+                PostAlarm((int)AlarmKeys.eClampLift);
+                Log.Write(this, "ClampLiftDown Command Rejected (Interlock)");
+                return -1;
+            }
+
+            int r = WaitClampLiftStateOrAlarm(expectUp: false);
+            if (r != 0)
+            {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                Log.Write(this, "ClampLiftDown Failed");
+            }
+            return r;
+        }
+
+        public int ClampForward()
+        {
+            // 인터락은 SetClampFB(true) 내부에서 IsClampLiftUp() 확인
+            bool issued = SetClampFB(true);
+            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            {
+                PostAlarm((int)AlarmKeys.eClampFB);
+                Log.Write(this, "ClampForward Command Rejected (Interlock)");
+                return -1;
+            }
+
+            int r = WaitClampFBStateOrAlarm(expectFwd: true);
+            if (r != 0)
+            {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                Log.Write(this, "ClampForward Failed");
+            }
+            return r;
+        }
+
+        public int ClampBackward()
+        {
+            // 인터락은 SetClampFB(false) 내부에서 IsClampLiftUp() 확인
+            bool issued = SetClampFB(false);
+            if (!issued && !(Config.IsSimulation || Config.IsDryRun))
+            {
+                PostAlarm((int)AlarmKeys.eClampFB);
+                Log.Write(this, "ClampBackward Command Rejected (Interlock)");
+                return -1;
+            }
+
+            int r = WaitClampFBStateOrAlarm(expectFwd: false);
+            if (r != 0)
+            {
+                AxisX?.EmgStop(); AxisY?.EmgStop(); AxisT?.EmgStop();
+                Log.Write(this, "ClampBackward Failed");
+            }
+            return r;
+        }
+
         #endregion
     }
 }

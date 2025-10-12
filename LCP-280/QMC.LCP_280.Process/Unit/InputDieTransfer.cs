@@ -1551,18 +1551,18 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     if (IsStop) { return 0; }
 
-                    nRet = ChipPickDown();
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
-                        return -1;
-                    }
-                    if (IsStop) { return 0; }
-
                     nRet = EjectorVacuumOn();
                     if (nRet != 0)
                     {
                         Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
+                        return -1;
+                    }
+                    if (IsStop) { return 0; }
+
+                    nRet = ChipPickDown();
+                    if (nRet != 0)
+                    {
+                        Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                         return -1;
                     }
                     if (IsStop) { return 0; }
@@ -1580,6 +1580,14 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
                     if (IsStop) { return 0; }
+
+
+                    // Release
+                    (bool flowControl, int value) = InputStageVaccumOff();
+                    if (!flowControl)
+                    {
+                        return value;
+                    }
 
                     nRet = CommitPickedDie();
                     if (nRet != 0)
@@ -1603,7 +1611,23 @@ namespace QMC.LCP_280.Process.Unit
             return nRet;
         }
 
-        
+        private (bool flowControl, int value) InputStageVaccumOff()
+        {
+            InputStage.SetVacuum(false, true);
+            if (Config.IsSimulation || Config.IsDryRun)
+            {
+                Thread.Sleep(100);
+            }
+            else if (InputStage.IsVacuumOn() == true)
+            {
+                PostAlarm((int)AlarmKeys.eInputStageVaccum);
+                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
+                return (flowControl: false, value: -1);
+            }
+
+            return (flowControl: true, value: default);
+        }
+
 
         protected override int OnRunComplete()
         {
@@ -1727,6 +1751,7 @@ namespace QMC.LCP_280.Process.Unit
                     // 더 이상 픽할 다이가 없으면 우아하게 스킵
                     return 0;
                 }
+
 
                 _currentDie = die;
             }
@@ -1936,40 +1961,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.CurrentFunc = SyncPickPinRetreat;
             }
-
-            // Release
-            InputStage.SetVacuum(false, true);
-            if (Config.IsSimulation || Config.IsDryRun)
-            {
-                Thread.Sleep(100);
-            }
-            else if (InputStage.IsVacuumOn() == true)
-            {
-                PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
-                return -1;
-            }
-            //if (InputStage.SetVacuum(false))
-            //{
-            //    if(Config.IsSimulation || Config.IsDryRun)
-            //    {
-            //        Thread.Sleep(100);
-            //    }
-            //    else
-            //    {
-            //        var sw = Stopwatch.StartNew();
-            //        while (InputStage.IsVacuumOn())
-            //        {
-            //            if (sw.ElapsedMilliseconds > 1000)
-            //            {
-            //                PostAlarm((int)AlarmKeys.eInputStageVaccum);
-            //                Log.Write(UnitName, "[SyncPickPinRetreat] Vacuum Release Timeout");
-            //                return -1;
-            //            }
-            //            Thread.Sleep(1);
-            //        }
-            //    }
-            //}
 
             this.WaitByTime(Config.nPickUpWaitTime, 1);
 

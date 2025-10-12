@@ -861,7 +861,10 @@ namespace QMC.LCP_280.Process
                         CrossHalfLength = 15,
                         EnableSaveImage = false
                     };
-                    _runner = new PatternMatchingRunner(_viewer.Camera, _viewer, opt);
+                    //_runner = new PatternMatchingRunner(_viewer.Camera, _viewer, opt);
+
+                    _runner = VisionRunnerHub.GetOrCreate(_viewer.Camera.Name);
+                    
                     UpdateRunnerModeFromUI();
                     ApplyOverlayOptionCheckboxes();
                 }
@@ -1098,6 +1101,9 @@ namespace QMC.LCP_280.Process
                 if (ask.ShowDialog("저장 확인", "현재 설정을 저장하시겠습니까?") == DialogResult.Yes)
                 {
                     SaveRecipeForCurrentCamera();
+
+                    _runner = VisionRunnerHub.GetOrCreate(_viewer.Camera.Name);
+                    _runner.LoadRecipe();
                 }
                 else
                 {
