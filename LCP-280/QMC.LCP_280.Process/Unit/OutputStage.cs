@@ -1252,21 +1252,25 @@ namespace QMC.LCP_280.Process.Unit
         }
         public void PlaceDie(MaterialDie die)
         {
-            if (_currentDie != null)
+            lock(this)
             {
-                die.BinX = _currentDie.BinX;
-                die.BinY = _currentDie.BinY;
-                MaterialWafer wafer = GetMaterialWafer();
-                if (wafer != null)
+                if (_currentDie != null)
                 {
-                    int index = wafer.Dies.IndexOf(_currentDie);
-                    if (index >= 0)
+                    die.BinX = _currentDie.BinX;
+                    die.BinY = _currentDie.BinY;
+                    MaterialWafer wafer = GetMaterialWafer();
+                    if (wafer != null)
                     {
-                        wafer.Dies[index] = die;
+                        int index = wafer.Dies.IndexOf(_currentDie);
+                        if (index >= 0)
+                        {
+                            wafer.Dies[index] = die;
+                        }
                     }
+                    _currentDie = null;
                 }
-                _currentDie = null;
             }
+            
 
             // UI 갱신 이벤트 발행 + 개별 배치 이벤트
             UpdateUI();
@@ -1280,37 +1284,41 @@ namespace QMC.LCP_280.Process.Unit
         /// </summary>
         public bool HasNextDie()
         {
-            var wafer = GetMaterialWafer();
-            if (wafer == null) return false;
-
-            lock (wafer)
+            lock(this)
             {
-                if (wafer.Presence != Material.MaterialPresence.Exist) 
-                    return false;
+                var wafer = GetMaterialWafer();
+                if (wafer == null) return false;
 
-                if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed) 
-                    return false;
-
-                if (wafer.ProcessSatate != Material.MaterialProcessSatate.Processing) 
-                    return false;
-
-                var next = wafer.Dies
-                .Where(d => d != null && d.Presence != Material.MaterialPresence.Exist)
-                .OrderBy(d => d.BinY).ThenBy(d => d.BinX)
-                .FirstOrDefault();
-
-                if (next != null)
+                lock (wafer)
                 {
-                    //Log.Write(UnitName, "HasNextDie", $"Next Die found: Index={next.Index}, Bin=({next.BinX},{next.BinY})");
-                }
-                else
-                {
-                    wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
-                    Log.Write(UnitName, "HasNextDie", "No next die found");
-                }
+                    if (wafer.Presence != Material.MaterialPresence.Exist)
+                        return false;
 
-                return next != null;
+                    if (wafer.ProcessSatate == Material.MaterialProcessSatate.Completed)
+                        return false;
+
+                    if (wafer.ProcessSatate != Material.MaterialProcessSatate.Processing)
+                        return false;
+
+                    var next = wafer.Dies
+                    .Where(d => d != null && d.Presence != Material.MaterialPresence.Exist)
+                    .OrderBy(d => d.BinY).ThenBy(d => d.BinX)
+                    .FirstOrDefault();
+
+                    if (next != null)
+                    {
+                        //Log.Write(UnitName, "HasNextDie", $"Next Die found: Index={next.Index}, Bin=({next.BinX},{next.BinY})");
+                    }
+                    else
+                    {
+                        wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
+                        Log.Write(UnitName, "HasNextDie", "No next die found");
+                    }
+
+                    return next != null;
+                }
             }
+            
         }
 
         // 다음 빈 Bin을 예약(내부 _currentDie 설정)하고 Bin 좌표 반환

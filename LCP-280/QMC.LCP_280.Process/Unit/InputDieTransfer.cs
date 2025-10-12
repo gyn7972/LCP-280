@@ -1403,8 +1403,6 @@ namespace QMC.LCP_280.Process.Unit
 
 
         #region Seq Signals
-        public bool CompleteInputDie { get; set; } = false;
-        public bool CompleteWork { get; internal set; } = false;
         private MaterialDie _currentDie;         // PrepareNextDie에서 보관, CommitPickedDie에서 사용
         #endregion
 
@@ -1484,6 +1482,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if(wafer.Presence == Material.MaterialPresence.Exist)
                 {
+                    //Processing 일떄만 동작 되도록 수정 필요한디..
                     if(wafer.ProcessSatate == Material.MaterialProcessSatate.Ready
                     || wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
                     {
@@ -1497,9 +1496,6 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRet = 0;
 
-            // PrepareNextDie 안에 있지만 여기서도 방어적으로 웨이퍼/상태 점검.
-            // PrepareNextDie 안에서 0으로 리턴되면 여기서도 0으로 리턴되기 때문에 
-            // 아래 코드는 사실상 중복이지만 안전을 위해 남겨둠.
             int nArmIndex = GetInputTrArmIndex();
             MaterialWafer wafer = this.InputStage.GetMaterialWafer();
             if (wafer == null)
@@ -1528,7 +1524,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return 0;
             }
-            if (IsStop) { return 0; }
+            //if (IsStop) { return 0; }
 
             //Die를 가지고 있으면 바로 Place를 수행한다.
             var MaterialDie = GetMaterial() as MaterialDie;
@@ -1540,8 +1536,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
                     return -1;
                 }
-                if (nRet == 0
-                 || Config.IsSimulation || Config.IsDryRun)
+                if (nRet == 0 || Config.IsSimulation || Config.IsDryRun)
                 {
                     nRet = RaiseEjectorForPick();
                     if (nRet != 0)
@@ -1549,7 +1544,7 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "[OnRunWork] RaiseEjectorForPick failed");
                         return -1;
                     }
-                    if (IsStop) { return 0; }
+                    //if (IsStop) { return 0; }
 
                     nRet = EjectorVacuumOn();
                     if (nRet != 0)
@@ -1557,7 +1552,7 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
                         return -1;
                     }
-                    if (IsStop) { return 0; }
+                    //if (IsStop) { return 0; }
 
                     nRet = ChipPickDown();
                     if (nRet != 0)
@@ -1565,7 +1560,7 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                         return -1;
                     }
-                    if (IsStop) { return 0; }
+                    //if (IsStop) { return 0; }
 
                     nRet = SyncPickPinUp();
                     if (nRet != 0)
@@ -1579,7 +1574,7 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "[OnRunWork] SyncPickPinRetreat failed");
                         return -1;
                     }
-                    if (IsStop) { return 0; }
+                    //if (IsStop) { return 0; }
 
 
                     // Release
@@ -1595,7 +1590,7 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
                         return -1;
                     }
-                    if (IsStop) { return 0; }
+                    //if (IsStop) { return 0; }
                 }
             }
 
@@ -1605,7 +1600,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace_AsyncWait failed");
                 return -1;
             }
-            if (IsStop) { return 0; }
+            //if (IsStop) { return 0; }
 
             State = ProcessState.Complete;
             return nRet;
@@ -1805,10 +1800,14 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = RaiseEjectorForPick;
-
             }
+
             if (InputStageEjector == null)
             {
+                AxisPickZ.EmgStop();
+                AxisPlaceZ.EmgStop();
+                AxisToolT.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageNotSafe);
                 Log.Write(UnitName, "[RaiseEjectorForPick] InputStageEjector is null");
                 return -1;
             }
@@ -1816,6 +1815,10 @@ namespace QMC.LCP_280.Process.Unit
             int blockUpResult = InputStageEjector.MovePositionEjectBlockUp(bFineSpeed);
             if (blockUpResult != 0)
             {
+                AxisPickZ.EmgStop();
+                AxisPlaceZ.EmgStop();
+                AxisToolT.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageNotSafe);
                 Log.Write(UnitName, "[RaiseEjectorForPick] EjectBlockUp 이동 실패");
                 return -1;
             }
@@ -1823,6 +1826,10 @@ namespace QMC.LCP_280.Process.Unit
             int pinReadyResult = InputStageEjector.MovePositionEjectPinReady(bFineSpeed);
             if (pinReadyResult != 0)
             {
+                AxisPickZ.EmgStop();
+                AxisPlaceZ.EmgStop();
+                AxisToolT.EmgStop();
+                PostAlarm((int)AlarmKeys.eInputStageNotSafe);
                 Log.Write(UnitName, "[RaiseEjectorForPick] EjectPinReady 이동 실패");
                 return -1;
             }

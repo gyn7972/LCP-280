@@ -194,7 +194,7 @@ namespace QMC.LCP_280.Process
             Console.WriteLine($"[Out] Placed at Bin ({e.BinX},{e.BinY})");
 
             // Placed를 초록색으로 보여주고 싶으면 Picked로 매핑
-            dieOutputControl1.UpdateDie(new PointD(e.BinX, e.BinY), DieProcessState.Picked);
+            dieOutputControl1.UpdateDie(new PointD(e.BinX, e.BinY), DieProcessState.Placed);
         }
 
         private void OutputCassetteLifter_EventUpdateUICassette(MaterialCassette Cassette)

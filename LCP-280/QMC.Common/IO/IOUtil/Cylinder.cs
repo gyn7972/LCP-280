@@ -55,10 +55,8 @@ namespace QMC.Common.IOUtil
             args.IsExtend = true;
             if(OnIsInterlockOK(args) == false)
             {
-
                 return false;
             }
-
 
             _lastCommandExtend = true;
             _lastCommandTicks = Stopwatch.GetTimestamp();

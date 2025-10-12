@@ -311,6 +311,18 @@ namespace QMC.LCP_280.Process.Unit
             // 9. 결과(물리 소켓 ID: 0 ~ count-1)
             return index;
         }
+
+        public int GetTrashCanIndexNo()
+        {
+            int loadIndex = this.GetLoadIndexNo();
+
+            // 반시계 방향으로 1칸 이동
+            int probeIndex = (loadIndex - 5 + this.GetIndexCount()) % this.GetIndexCount();
+
+            return probeIndex;
+        }
+
+
         public int GetIndexCount()
         {
             return 8;
@@ -409,6 +421,13 @@ namespace QMC.LCP_280.Process.Unit
             SocketInfo socket = GetUnloadSocketInfo();
             return socket.GetMaterialDie();
         }
+        public void MoveMaterialToOutputDieTransfer()
+        {
+            var socket = GetUnloadSocketInfo();
+            var die = socket.GetMaterialDie();
+            OutputDieTransfer.SetMaterial(die);
+            socket.SetMaterialDie(null);
+        }
         private SocketInfo GetUnloadSocketInfo()
         {
             int idx = OutputDieTransfer.GetUnloaderIndexNo();
@@ -419,6 +438,28 @@ namespace QMC.LCP_280.Process.Unit
         }
 
 
+        //
+        public MaterialDie GetTrashCanSocketMaterial()
+        {
+            var socket = GetTrashCanSocketInfo();
+            return socket.GetMaterialDie();
+        }
+        public SocketInfo GetTrashCanSocketInfo()
+        {
+            int idx = GetTrashCanIndexNo();
+            lock (_socketLock)
+            {
+                var die = _sockets[idx].GetMaterialDie();
+                if (die == null)
+                {
+                    _sockets[idx].SetMaterialDie(new MaterialDie());
+                }
+
+                return _sockets[idx];
+            }
+        }
+
+        
         public Rotary(RotaryConfig config = null) : base(new RotaryConfig())
         {
 
@@ -1131,7 +1172,7 @@ namespace QMC.LCP_280.Process.Unit
 
         #region Seq Signal
         public bool RequestInputDieTrDie { get; set; } = false;
-        public bool DoneInputDieTrDie { get; set; } = false;
+        public bool RequestOutputDieTrDie { get; set; } = false;
         #endregion
 
 
@@ -1287,11 +1328,11 @@ namespace QMC.LCP_280.Process.Unit
                     var loadDie = loadSock.GetMaterialDie();
                     bool needLoad = useSocket &&
                                     (loadDie == null || loadDie.Presence != Material.MaterialPresence.Exist);
-                    if (needLoad)
-                    {
-                        RequestInputDieTrDie = true;
-                        return 0; // 아직 로딩 안됨 → 회전/후속 공정 금지
-                    }
+                    //if (needLoad)
+                    //{
+                    //    RequestInputDieTrDie = true;
+                    //    return 0; // 아직 로딩 안됨 → 회전/후속 공정 금지
+                    //}
                     // 요구사항:
                     // 1) 사용(Enable)된 소켓 중 하나라도 제품(Exist)이 있으면 → 이후 공정(Align/Probe/Unload)을 순차 진행
                     // 2) 사용 소켓 모두 비어있으면 → 제품이 투입될 때까지 대기 (회전/공정 진행 X)
@@ -1307,7 +1348,10 @@ namespace QMC.LCP_280.Process.Unit
                     //}
                 }
             }
-            
+            if(IsHaveDie() == false && RequestInputDieTrDie == false)
+            {
+                return 0;
+            }
             nRet = ExecuteUnitAction();
             if (nRet != 0)
             {
@@ -1328,16 +1372,18 @@ namespace QMC.LCP_280.Process.Unit
 
             // 5) 회전 전 최종 안전 조건:
             //    - 현재 Load 소켓이 사용중 && 아직도 비어있다면 회전 금지 (이중 방어)
-            var finalLoadSock = GetLoadSocketInfo();
-            var finalDie = finalLoadSock.GetMaterialDie();
-            if (useSocket && (finalDie == null || finalDie.Presence != Material.MaterialPresence.Exist))
-            {
-                // 예상치 못하게 아직 로딩 안됨 → 다시 로딩 시도
-                RequestInputDieTrDie = true;
-                return 0;
-            }
+            //var finalLoadSock = GetLoadSocketInfo();
+            //var finalDie = finalLoadSock.GetMaterialDie();
+            //if (useSocket && (finalDie == null || finalDie.Presence != Material.MaterialPresence.Exist))
+            //{
+            //    // 예상치 못하게 아직 로딩 안됨 → 다시 로딩 시도
+            //    RequestInputDieTrDie = true;
+            //    return 0;
+            //}
 
             nRet = Rotate();
+
+            OutputDieTransfer. ReSetPickupStartEvent();
             if (nRet != 0)
             {
                 PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
@@ -1350,6 +1396,25 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
+        private bool IsHaveDie()
+        {
+            bool bRet = false;
+            foreach(var v in this._sockets)
+            {
+                var die = v.GetMaterialDie();
+                if(die != null)
+                {
+                    if (die.Presence == Material.MaterialPresence.Exist)
+                    {
+                        return true;
+                    }
+                }
+
+            }
+            return bRet;
+        }
+
         protected override int OnRunComplete() 
         {
             int nRtn = 0;
@@ -1385,7 +1450,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = ExecuteUnitActionReadyAsync(isFine);
             while (IsEndTask(task) == false)
             {
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 ExecuteUnitActionInterlockLoadMAlign();
                 ExecuteUnitActionInterlockProbe();
@@ -1473,7 +1538,7 @@ namespace QMC.LCP_280.Process.Unit
             Task<int> task = ExecuteUnitActionAsync(isFine);
             while (IsEndTask(task) == false)
             {
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 ExecuteUnitActionInterlockLoadMAlign();
                 ExecuteUnitActionInterlockProbe();
@@ -1539,6 +1604,17 @@ namespace QMC.LCP_280.Process.Unit
                         return IndexUnloadAligner.RunAlignSocketOnce();
                     })
                     : Task.FromResult(0);
+
+                var t4 = Task.Run(() =>
+                    {
+                        var th = Thread.CurrentThread;
+                        if (th.Name == null)
+                        {
+                            try { th.Name = "RunTrashCanSocketOnce(Rotary)"; } catch { }
+                        }
+                        return RunTrashCanSocketOnce();
+                    });
+
 
                 if (Config.IsUnitDryRun)
                 {
@@ -1616,23 +1692,33 @@ namespace QMC.LCP_280.Process.Unit
                         // 변경: 잔여 신호 리셋 → ODT가 Start 대기 준비 완료될 때까지 대기 → Start → Done 대기
                         try
                         {
-                            OutputDieTransfer.ResetPickupHandshake();
-                            // 상대가 Start 대기에 진입했는지 확인 (최대 2초, 필요시 Config로 조절)
-                            bool ready = OutputDieTransfer.WaitReadyForStart(
-                                Config.OutputDieTransferTimeoutMs > 0
-                                    ? Math.Min(2000, Config.OutputDieTransferTimeoutMs) // 과도 대기 방지
-                                    : 2000);
+                            //OutputDieTransfer.ResetPickupHandshake();
 
-                            if (!ready)
+                            this.OutputDieTransfer.SetPickupStartEvent();
+                            
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            double timeoutMs = 60000 * 10;
+                            while (true)
                             {
-                                Log.Write(UnitName, "[OutputDieTransfer] Not ready to receive Start (WaitReadyForStart timeout). Forcing start anyway.");
-                            }
+                                if(IsStop) 
+                                {
+                                    this.OutputDieTransfer.ReSetPickupStartEvent();
+                                    return 0; 
+                                }
 
-                            this.OutputDieTransfer.RisePickupStartEvent();
-                            bRet = OutputDieTransfer.WaitPickupDoneEvent(
-                                Config.OutputDieTransferTimeoutMs > 0
-                                    ? Config.OutputDieTransferTimeoutMs
-                                    : 60000 * 2);
+                                bRet = OutputDieTransfer.WaitPickupDoneEvent(10);
+                                if (bRet) 
+                                {
+                                    this.OutputDieTransfer.ResetPickupDoneEvent();
+                                    break; 
+                                }
+
+                                if (sw.ElapsedMilliseconds > timeoutMs) 
+                                {
+                                    Log.Write(UnitName, $"[OutputDieTransfer] Waiting for Done... Elapsed {sw.ElapsedMilliseconds}ms");
+                                    break;
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -1684,21 +1770,22 @@ namespace QMC.LCP_280.Process.Unit
                     else
                     {
                         // OutputDieTransfer가 Work 상태에서 Start만 기다릴 가능성 → 직접 Done 보내 종료 유도
-                        OutputDieTransfer.RisePickupDoneEvent();
+                        //OutputDieTransfer.SetPickupDoneEvent();
                     }
                 }
 
                 //Task.WaitAll(t1, t2, t3);
-                Task.WaitAll(t1, t2);
+                Task.WaitAll(t1, t2, t4);
 
                 int r1 = t1.Result;
                 int r2 = t2.Result;
                 int r3 = t3.Result;
+                int r4 = t4.Result;
 
-                if (r1 != 0 || r2 != 0 || r3 != 0)
+                if (r1 != 0 || r2 != 0 || r3 != 0 || r4 != 0)
                 {
                     AxisT.EmgStop();
-                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3})");
+                    Log.Write(UnitName, $"OnExecuteUnitAction Fail (LoadAligner={r1}, Probe={r2}, UnloadAligner={r3}, TrashCan={r4})");
                     return -1;
                 }
 
@@ -1712,14 +1799,46 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-        // OutputDieTransfer 사용 직전 (Start 이벤트 Set 전에) 추가
-        private void PrepareOutputDieTransferHandshake()
+        private int RunTrashCanSocketOnce()
         {
-            if (OutputDieTransfer == null) return;
-            // 이전 Done 잔여 신호 제거 (있으면 소비)
-            OutputDieTransfer.WaitPickupDoneEvent(0);
-            // 이전 Start 잔여 신호 제거 (있으면 소비)
-            OutputDieTransfer.WaitPickupStartEvent(0);
+            int nRet = 0;
+            if (SetTrashEjector(true) == false)
+            {
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector ON fail");
+                return -1;
+            }
+
+            if (SetTrashVacuum(true) == false)
+            {
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashVacuum ON fail");
+                SetTrashEjector(false);
+                return -1;
+            }
+
+            //일정 시간 대기
+            WaitByTime(GetClearTimeMs()); // 기본: 500ms
+
+            if (SetTrashVacuum(false) == false)
+            {
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashVacuum OFF fail");
+                SetTrashEjector(false);
+                return -1;
+            }
+
+            if (SetTrashEjector(false) == false)
+            {
+                Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector OFF fail");
+                return -1;
+            }
+
+            var Socket = GetTrashCanSocketInfo();
+            Socket.SetMaterialDie(new MaterialDie());
+
+            //일정 시간 대기
+            WaitByTime(1);
+            Log.Write(UnitName, $"[RunTrashCanSocketOnce] Clear Comp.");
+
+            return nRet;
         }
 
         private int WaitPostActionSettled(bool needLoadWait, int timeoutMs)
@@ -1746,21 +1865,20 @@ namespace QMC.LCP_280.Process.Unit
                     socket.SetState(RotarySocketState.Loaded);
 
                 }
-
+                if (loadOk)
+                    break;
                 // 2) Unloader Aligner에 잔류품 없음을 확인
                 bool unloadOk = true;
-                if (IndexUnloadAligner != null)
-                {
-                    var unloaderDie = GetUnloaderAlignSocketMaterial();
-                    unloadOk = (unloaderDie == null || unloaderDie.Presence != Material.MaterialPresence.Exist);
-                }
+                //if (IndexUnloadAligner != null)
+                //{
+                //    var unloaderDie = GetUnloaderAlignSocketMaterial();
+                //    unloadOk = (unloaderDie == null || unloaderDie.Presence != Material.MaterialPresence.Exist);
+                //}
 
-                if (loadOk && unloadOk)
-                {
-                    OnLoadIndexChanged(GetLoadIndexNo());
-                    return 0;
-                }
-
+                //if (loadOk && unloadOk)
+                //{
+                    
+                //}
                 if (timeout.IsCompleted)
                 {
                     if (!loadOk)
@@ -1777,6 +1895,9 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 Thread.Sleep(1);
             }
+
+            OnLoadIndexChanged(GetLoadIndexNo());
+            return 0;
         }
 
         public int Rotate(bool isFine = false)

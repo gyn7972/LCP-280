@@ -1339,7 +1339,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: Move Load");
                 return nRtn;
             }
-            if (this.IsStop) { return 0; }
+            //if (this.IsStop) { return 0; }
 
             // Clamp Back → Lift Down
             ClampBackward();
@@ -1349,7 +1349,7 @@ namespace QMC.LCP_280.Process.Unit
             //    Log.Write(this, "Fail: ClampBack");
             //    return -1;
             //}
-            if (this.IsStop) { return 0; }
+            //if (this.IsStop) { return 0; }
 
             ClampLiftDown();
             //SetClampLift(false);
@@ -1358,7 +1358,7 @@ namespace QMC.LCP_280.Process.Unit
             //    Log.Write(this, "Fail: ClampLiftDown");
             //    return -1;
             //}
-            if (this.IsStop) { return 0; }
+            //if (this.IsStop) { return 0; }
 
             //Plate Down → 
             PlateDown();
@@ -1493,7 +1493,7 @@ namespace QMC.LCP_280.Process.Unit
                 //    Log.Write(this, "Fail: PlateUp");
                 //    return -1;
                 //}
-                if(this.IsStop) { return 0; }
+                //if(this.IsStop) { return 0; }
 
                 ClampLiftUp();
                 //SetClampLift(true);
@@ -1502,7 +1502,7 @@ namespace QMC.LCP_280.Process.Unit
                 //    Log.Write(this, "Fail: ClampLiftUp");
                 //    return -1;
                 //}
-                if (this.IsStop) { return 0; }
+                //if (this.IsStop) { return 0; }
 
                 ClampForward();
                 //SetClampFB(true);
@@ -1511,7 +1511,7 @@ namespace QMC.LCP_280.Process.Unit
                 //    Log.Write(this, "Fail: ClampForward");
                 //    return -1;
                 //}
-                if (this.IsStop) { return 0; }
+                //if (this.IsStop) { return 0; }
 
                 // 센터 Teaching 이동
                 ret = MoveToStageCenterPosition();
@@ -2093,7 +2093,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-            if (this.IsStop) { return 0; }
+            //if (this.IsStop) { return 0; }
 
             ClampBackward();
             //SetClampFB(false);
@@ -2102,7 +2102,7 @@ namespace QMC.LCP_280.Process.Unit
             //    Log.Write(this, "Fail: ClampBack");
             //    return -1;
             //}
-            if (this.IsStop) { return 0; }
+            //if (this.IsStop) { return 0; }
 
             ClampLiftDown();
             //SetClampLift(false);
@@ -2111,7 +2111,7 @@ namespace QMC.LCP_280.Process.Unit
             //    Log.Write(this, "Fail: ClampLiftDown");
             //    return -1;
             //}
-            if (this.IsStop) { return 0; }
+            //if (this.IsStop) { return 0; }
 
             PlateDown();
             //SetClampPlate(false);

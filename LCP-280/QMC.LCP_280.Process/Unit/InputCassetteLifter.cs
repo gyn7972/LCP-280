@@ -309,8 +309,16 @@ namespace QMC.LCP_280.Process.Unit
        
         public bool IsWaferProtrusionDetectionSensor()
         {
-            bool sensorState = this.ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
-            return !sensorState;
+            bool sensorState = false;
+            if (Config.IsSimulation == false && Config.IsDryRun == false)
+            {
+                sensorState = this.ReadInput(InputCassetteLifterConfig.IO.WAFER_PROTRUSION_DETECTION_SENSOR);
+                return !sensorState;
+            }
+            else
+            {
+                return sensorState;
+            }
         }
         public bool MappingSensor()
         {

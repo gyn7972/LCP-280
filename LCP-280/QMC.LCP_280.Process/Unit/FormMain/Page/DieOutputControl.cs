@@ -96,7 +96,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             var die = _dies.FirstOrDefault(d => d.BinX == mapCoord.X && d.BinY == mapCoord.Y);
             if (die == null) return;
 
-            die.State = newState;
             UpdateDieCount();
             // 뷰 전체 갱신 (부분 갱신 인터페이스 없으면 재바인딩)
             SetDieList(_dies);

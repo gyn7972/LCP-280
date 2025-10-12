@@ -125,49 +125,45 @@ namespace QMC.LCP_280.Process.Unit
         }
         #endregion
 
-        private readonly AutoResetEvent _pickUpStartEvent = new AutoResetEvent(false);
-        private readonly AutoResetEvent _pickUpdoneEvent = new AutoResetEvent(false);
-        private readonly ManualResetEventSlim _readyForStart = new ManualResetEventSlim(false);
+        private readonly ManualResetEventSlim _pickUpStartEvent = new ManualResetEventSlim(false);
+        private readonly ManualResetEventSlim _pickUpdoneEvent = new ManualResetEventSlim(false);
 
         public void ResetPickupHandshake()
         {
-            try
-            {
-                // 잔여 신호 모두 소거
-                while (_pickUpStartEvent.WaitOne(0)) { }
-                while (_pickUpdoneEvent.WaitOne(0)) { }
-            }
-            catch { /* ignore */ }
-
-            _readyForStart.Reset();
+            _pickUpStartEvent.Reset();
+            _pickUpdoneEvent.Reset();
         }
 
-        public bool WaitReadyForStart(int timeoutMs = 2000)
-        {
-            return _readyForStart.Wait(timeoutMs);
-        }
-
-        public void RisePickupStartEvent()
+        public void SetPickupStartEvent()
         {
             _pickUpStartEvent.Set();
+        }
+        public void ReSetPickupStartEvent()
+        {
+            _pickUpStartEvent.Reset();
         }
 
         public bool WaitPickupStartEvent(int timeoutMs = Timeout.Infinite)
         {
             bool bRet = false;
-            bRet = _pickUpStartEvent.WaitOne(timeoutMs);
+            bRet = _pickUpStartEvent.Wait(timeoutMs);
             return bRet;
         }
 
-        public void RisePickupDoneEvent()
+        public void SetPickupDoneEvent()
         {
             _pickUpdoneEvent.Set();
+        }
+
+        public void ResetPickupDoneEvent()
+        {
+            _pickUpdoneEvent.Reset();
         }
 
         public bool WaitPickupDoneEvent(int timeoutMs = Timeout.Infinite)
         {
             bool bRet = false;
-            bRet = _pickUpdoneEvent.WaitOne(timeoutMs);
+            bRet = _pickUpdoneEvent.Wait(timeoutMs);
             return bRet;
         }
 
@@ -1439,9 +1435,8 @@ namespace QMC.LCP_280.Process.Unit
         public override int OnStop()
         {
             int ret = 0;
-            _pickUpStartEvent.Set();
-            _pickUpdoneEvent.Set();
-            _readyForStart.Set(); // Ready 대기중인 Rotary 해제
+            _pickUpStartEvent.Reset();
+            _pickUpdoneEvent.Reset();
 
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
@@ -1481,14 +1476,9 @@ namespace QMC.LCP_280.Process.Unit
         protected override int OnRunWork()
         {
             int nRtn = 0;
-            bool started = false; // ← 실제 Start 수신 여부
+            bool bRet = false;
             try
             {
-                if (IsStop)
-                {
-                    return 0;
-                }
-
                 if (Rotary != null && Rotary.IsAnyAxisMoving())
                 {
                     return 0;
@@ -1500,32 +1490,46 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
                 
-                // Rotary가 Start를 보내기 전에 "대기 준비 완료" 신호
-                _readyForStart.Set();
-
-                const int timeoutMs = 60000 * 5; // 필요 시 설정값으로 치환
-                started = WaitPickupStartEvent(timeoutMs);
-
-                // 더 이상 Start 대기가 아님
-                _readyForStart.Reset();
-
-                if (!started)
-                {
-                    AxisPickZ?.EmgStop();
-                    AxisToolT?.EmgStop();
-                    PostAlarm((int)AlarmKeys.eOutputDieTransferError);
-                    Log.Write(UnitName, "[OnRunWork] WaitPickupStartEvent timeout");
-                    return -1;
-                }
-                if (IsStop) { return 0; }
-
-
-                _lastPickSucceeded = false;
-
                 //Die를 가지고 있으면 바로 Place를 수행한다.
                 var MaterialDie = GetMaterial() as MaterialDie;
                 if (MaterialDie == null || MaterialDie.Presence != Material.MaterialPresence.Exist)
                 {
+                    //started = WaitPickupStartEvent(timeoutMs);
+                    //if (!started)
+                    //{
+                    //    AxisPickZ?.EmgStop();
+                    //    AxisToolT?.EmgStop();
+                    //    PostAlarm((int)AlarmKeys.eOutputDieTransferError);
+                    //    Log.Write(UnitName, "[OnRunWork] WaitPickupStartEvent timeout");
+                    //    return -1;
+                    //}
+
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    int timeoutMs = 60000 * 10;
+                    while (true)
+                    {
+                        if (IsStop)
+                        {
+                            ReSetPickupStartEvent();
+                            _lastPickSucceeded = false;
+                            return 0;
+                        }
+
+                        bRet = WaitPickupStartEvent(10);
+                        if (bRet)
+                        {
+                            ReSetPickupStartEvent();
+                            _lastPickSucceeded = false;
+                            break;
+                        }
+
+                        if (sw.ElapsedMilliseconds > timeoutMs)
+                        {
+                            Log.Write(UnitName, $"[OutputDieTransfer] Waiting for Done... Elapsed {sw.ElapsedMilliseconds}ms");
+                            break;
+                        }
+                    }
+                    
                     nRtn = ChipPickDown();
                     if (nRtn != 0)
                     {
@@ -1534,7 +1538,6 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "[OnRunWork] ChipPickDown failed");
                         return -1;
                     }
-                    if (IsStop) { return 0; }
 
                     nRtn = ChipPickUp();
                     if (nRtn != 0)
@@ -1546,14 +1549,17 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     die.State = DieProcessState.Picked;
                     die.ProcessSatate = Material.MaterialProcessSatate.Processing;
-                    SetMaterial(die);
+
+                    Rotary.MoveMaterialToOutputDieTransfer();
+                    SetPickupDoneEvent();
+
+                    _lastPickSucceeded = true;
                 }
 
-                _lastPickSucceeded = true;
-                // 3) 완료 신호 (Rotary 대기 해제)
-                RisePickupDoneEvent();
-                State = ProcessState.Complete;
-
+                if (MaterialDie != null && MaterialDie.Presence == Material.MaterialPresence.Exist)
+                {
+                    State = ProcessState.Complete;
+                }
             }
             catch (Exception ex)
             {
@@ -1561,11 +1567,7 @@ namespace QMC.LCP_280.Process.Unit
             }
             finally
             {
-                // Start를 실제로 받았을 때만 Done을 보냄 (기존 무조건 Done 해제 → 타이밍 깨짐 방지)
-                if (started && this.State != ProcessState.Complete)
-                {
-                    RisePickupDoneEvent();
-                }
+                
             }
             return 0;
         }
@@ -1579,7 +1581,9 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             Material wafer = OutputStage.GetMaterialWafer();
-            if(wafer != null && wafer.Presence == Material.MaterialPresence.Exist)
+
+            MaterialDie die = GetMaterial() as MaterialDie;
+            if (wafer != null && wafer.Presence == Material.MaterialPresence.Exist && die != null && die.Presence == Material.MaterialPresence.Exist)
             {
                 if(OutputStage.IsStageInterLockOK() == false)
                 {
@@ -1594,7 +1598,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunWork] MoveOutStage failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 nRtn = RotateToolTForPlace();
                 if (nRtn != 0)
@@ -1604,7 +1608,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunWork] RotateToolTForPlace failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 nRtn = ReleaseVacuumAndPlaceUp();
                 if (nRtn != 0)
@@ -1613,19 +1617,18 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[OnRunWork] ReleaseVacuumAndPlaceUp failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
-                MaterialDie die = GetMaterial() as MaterialDie;
                 die.State = DieProcessState.Placed;
                 die.ProcessSatate = Material.MaterialProcessSatate.Completed;
-
-                OutputStage.PlaceDie(die);
+                
+                 OutputStage.PlaceDie(die);
 
                 SetMaterial(new MaterialDie() { Presence = Material.MaterialPresence.NotExist });
 
-                State = ProcessState.None;
+               
             }
-
+            State = ProcessState.None;
             return 0;
         }
 

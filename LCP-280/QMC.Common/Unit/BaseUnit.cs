@@ -305,6 +305,7 @@ namespace QMC.Common.Unit
                         break;
                     }
                 }
+                m_workThread.Join(1000000);
             }
 
             SetRunMode(UnitRunMode.Auto);

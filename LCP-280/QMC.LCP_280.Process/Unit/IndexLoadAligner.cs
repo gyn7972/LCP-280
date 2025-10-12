@@ -847,7 +847,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                
 
                 // 3) Z Up
                 bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
@@ -920,7 +920,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady/MovePositionAlignZReady");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                
 
                 // 3) Z Up
                 bRtn = MovePositionAlignUp(nIndex, bFineSpeed);
@@ -929,7 +929,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                
 
                 // 4) T Forward
                 bRtn = MovePositionAlignTForward(bFineSpeed);
@@ -938,7 +938,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTForward");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                
 
                 // 5) T Backward
                 bRtn = MovePositionAlignTBackward(bFineSpeed);

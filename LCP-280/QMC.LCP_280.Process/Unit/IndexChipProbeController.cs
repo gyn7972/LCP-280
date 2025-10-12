@@ -1270,7 +1270,7 @@ namespace QMC.LCP_280.Process.Unit
                     Thread.Sleep(1);
                 }
             }
-            if(IsStop) { return 0; }
+            //if(IsStop) { return 0; }
 
             // 적분구 공정 위치.
             nRet = MovePositionSphereZDown();
@@ -1279,7 +1279,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[RunInspectionReady] MovePositionSphereZDown failed");
                 return -1;
             }
-            if (IsStop) { return 0; }
+            //if (IsStop) { return 0; }
 
             // 하부 Z-Axis.
             nRet = MovePositionSafetyZ();
@@ -1423,7 +1423,7 @@ namespace QMC.LCP_280.Process.Unit
                         Thread.Sleep(1);
                     }
                 }
-                if(IsStop) { return 0; }
+                //if(IsStop) { return 0; }
 
                 nRet = MovePositionSphereZDown(); //실제로는 다운임.
                 if (nRet != 0)
@@ -1431,7 +1431,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[TopContactOnce] MovePositionSphereZDown failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
 
                 nRet = MovePositionTopContact_Index_Up(nIndex, bFineSpeed);
@@ -1440,7 +1440,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[TopContactOnce] OnMovePositionTopContact_Index_Up failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 // 6) 검사 요구 동기 처리
 
@@ -1519,7 +1519,7 @@ namespace QMC.LCP_280.Process.Unit
                         Thread.Sleep(1);
                     }
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 nRet = MovePositionSphereZDown(); //실제로는 다운임.
                 if (nRet != 0)
@@ -1527,7 +1527,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[BottomContactOnce] MovePositionSphereZDown failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 nRet = MovePositionBottomContact_Index_Ready(nIndex, bFineSpeed);
                 if (nRet != 0)
@@ -1535,7 +1535,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Ready failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 nRet = OnMovePositionBottomContact_Index_Up(nIndex, bFineSpeed);
                 if (nRet != 0)
@@ -1543,7 +1543,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[BottomContactOnce] MovePositionBottomContact_Index_Up failed");
                     return -1;
                 }
-                if (IsStop) { return 0; }
+                //if (IsStop) { return 0; }
 
                 // 6) 검사 요구 신호
                 SetChipProberRequest(true);
