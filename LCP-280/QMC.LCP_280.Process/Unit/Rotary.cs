@@ -1579,7 +1579,15 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             try { th.Name = "RunAlignSocketOnce(LoadAligner)"; } catch { }
                         }
-                        return IndexLoadAligner.RunAlignSocketOnce();
+                        int ret = 0;
+                        try
+                        {
+                            ret = IndexLoadAligner.RunAlignSocketOnce();
+                        }catch(Exception ex)
+                        {
+                            Log.Write(ex);
+                        }
+                        return ret;
                     })
                     : Task.FromResult(0);
 

@@ -432,7 +432,7 @@ namespace QMC.LCP_280.Process.Unit
 
         // === Cylinder 완료 대기 Helpers ===
         // Plate: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
                 return 0;
@@ -453,7 +453,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
                 return 0;
@@ -474,7 +474,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
-        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 1500, int pollMs = 2)
+        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
                 return 0;
@@ -1023,7 +1023,7 @@ namespace QMC.LCP_280.Process.Unit
                 if (IsStop) { return 0; }
 
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
-                if (!IsPlateUp()|| Config.IsSimulation || Config.IsDryRun)
+                //if (Config.IsSimulation || Config.IsDryRun)
                 {
                     ClampLiftUp();
                     //SetClampLift(true);
@@ -1061,11 +1061,11 @@ namespace QMC.LCP_280.Process.Unit
                     //    }
                     //}
                 }
-                else
-                {
-                    Log.Write(UnitName, "LoadingComp", "Not IsPlateUp");
-                    return -1;
-                }
+                //else
+                //{
+                //    Log.Write(UnitName, "LoadingComp", "Not IsPlateUp");
+                //    return -1;
+                //}
 
                 // 센터 Teaching 이동
                 ret = MoveToStageCenterPosition();

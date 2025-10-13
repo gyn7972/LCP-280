@@ -1480,6 +1480,10 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[TopContactOnce] MovePositionSafetyZ failed");
                     nRet = -1;
                 }
+                while (this.IsProbeSafetyAxisPos() == false)
+                {
+                    Thread.Sleep(1);
+                }
                 LogSequence("End");
             }
 
