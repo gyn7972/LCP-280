@@ -316,9 +316,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int loadIndex = this.GetLoadIndexNo();
 
-            // 반시계 방향으로 1칸 이동
             int probeIndex = (loadIndex - 5 + this.GetIndexCount()) % this.GetIndexCount();
-
             return probeIndex;
         }
 
