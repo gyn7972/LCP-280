@@ -340,6 +340,11 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
+        public void SetSocket(int no, SocketInfo socketInfo)
+        {
+            _sockets[no] = socketInfo;
+        }
+
         public SocketInfo[] GetAllSockets()
         {
             lock (_socketLock)
