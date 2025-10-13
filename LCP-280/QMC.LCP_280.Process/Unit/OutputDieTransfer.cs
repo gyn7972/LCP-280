@@ -1547,6 +1547,7 @@ namespace QMC.LCP_280.Process.Unit
                         Log.Write(UnitName, "[OnRunWork] ChipPickUp failed");
                         return -1;
                     }
+
                     die.State = DieProcessState.Picked;
                     die.ProcessSatate = Material.MaterialProcessSatate.Processing;
 
@@ -1789,6 +1790,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 Log.Write(UnitName, "[ChipPickUp] MovePositionSafetyZ failed");
                 return -1;
+            }
+            while(IsPositionPickZSafety() == false)
+            {
+                Thread.Sleep(1);
             }
 
             if (Rotary.SetVent(nIndex, false) == false)

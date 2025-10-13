@@ -1442,7 +1442,7 @@ namespace QMC.LCP_280.Process
                         if (st.IO.ServoOn) continue;
                         int rc = axis.Servo(true);
                         if (rc != 0) Log.Write("Equipment", $"[ServoOn] Axis='{axis.Name}' 실패 rc={rc}");
-                        Thread.Sleep(5);
+                        Thread.Sleep(0);
                     }
                     catch (Exception ex) { Log.Write(ex); }
                 }

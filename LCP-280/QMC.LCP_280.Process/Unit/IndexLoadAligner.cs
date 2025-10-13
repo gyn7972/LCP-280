@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Mime;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,6 +108,10 @@ namespace QMC.LCP_280.Process.Unit
                 }
 
                 Thread.Sleep(0);
+            }
+            while(this.IsAlignZSafetyPos() == false)
+            {
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -898,11 +903,12 @@ namespace QMC.LCP_280.Process.Unit
                     return 0;
                 }
 
-                bRtn = IsRotaryIdle();
-                if(bRtn != 0)
+                //bRtn = IsRotaryIdle();
+                while(IsRotaryIdle() != 0)
                 {
-                    return 0;
+                    Thread.Sleep(1);
                 }
+               
 
                 var socket = this.Rotary.GetSocket(nIndex);
                 socket.SetState(Rotary.RotarySocketState.Aligning);
@@ -937,6 +943,20 @@ namespace QMC.LCP_280.Process.Unit
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTBackward");
+                    return -1;
+                }
+
+                bRtn = MovePositionAlignTReady(bFineSpeed);
+                if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
+                    return -1;
+                }
+
+                bRtn = MovePositionSafetyZ(bFineSpeed);
+                if (bRtn != 0)
+                {
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
                     return -1;
                 }
 
