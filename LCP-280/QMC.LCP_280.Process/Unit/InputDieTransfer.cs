@@ -1511,8 +1511,17 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return 0;
             }
+            int nArmIndext = GetInputTrArmIndex();
 
+            SetVacuum(nArmIndext, true);
+           
             nRet = PrepareNextDie();
+            nRet = EjectorVacuumOn();
+            if (nRet != 0)
+            {
+                Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
+                return -1;
+            }
             if (nRet != 0)
             {
                 //Die ¾øÀ½.
@@ -1536,6 +1545,7 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
                     return -1;
                 }
+
                 if (nRet == 0 || Config.IsSimulation || Config.IsDryRun)
                 {
                     nRet = RaiseEjectorForPick();
@@ -1546,12 +1556,7 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     //if (IsStop) { return 0; }
 
-                    nRet = EjectorVacuumOn();
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[OnRunWork] EjectorVacuumOn failed");
-                        return -1;
-                    }
+                    
                     //if (IsStop) { return 0; }
 
                     nRet = ChipPickDown();
@@ -1578,11 +1583,11 @@ namespace QMC.LCP_280.Process.Unit
 
 
                     // Release
-                    (bool flowControl, int value) = InputStageVaccumOff();
-                    if (!flowControl)
-                    {
-                        return value;
-                    }
+                    //(bool flowControl, int value) = InputStageVaccumOff();
+                    //if (!flowControl)
+                    //{
+                    //    return value;
+                    //}
 
                     nRet = CommitPickedDie();
                     if (nRet != 0)
@@ -1670,7 +1675,9 @@ namespace QMC.LCP_280.Process.Unit
                         Rotary.SetMaterial(die);
                         SetMaterial(new Material());
                         _currentDie = null;
+                        int nArmIndext = GetInputTrArmIndex();
 
+                        SetVacuum(nArmIndext, true);
                         State = ProcessState.None;
                     }
                 }
@@ -1845,6 +1852,9 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             int nArmIndex = GetInputTrArmIndex();
+
+            SetVacuum(nArmIndex, true);
+            
             nRet = MovePositionPickUp(bFineSpeed);
             if (nRet != 0)
             {
@@ -1852,13 +1862,6 @@ namespace QMC.LCP_280.Process.Unit
                 return -1;
             }
            
-            SetVacuum(nArmIndex, true);
-            nRet = WaitVacuumStateOrAlarm(nArmIndex, expectOn: true, timeoutMs: 1000, pollMs: 1);
-            if (nRet != 0)
-            {
-                Log.Write(UnitName, "[DieTrVacuumOn] Vacuum Timeout");
-                return -1;
-            }
             return nRet;
         }
         public int EjectorVacuumOn(bool bFineSpeed = true)
@@ -1873,12 +1876,12 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             InputStage.SetVacuum(true, true);
-            if (InputStage.IsVacuumOn() == false)
-            {
-                PostAlarm((int)AlarmKeys.eInputStageVaccum);
-                Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-                return -1;
-            }
+            //if (InputStage.IsVacuumOn() == false)
+            //{
+            //    PostAlarm((int)AlarmKeys.eInputStageVaccum);
+            //    Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
+            //    return -1;
+            //}
 
             //if (InputStage.SetVacuum(true))
             //{
