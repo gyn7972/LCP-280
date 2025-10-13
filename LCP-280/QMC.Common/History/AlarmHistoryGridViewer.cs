@@ -48,7 +48,7 @@ namespace QMC.Common.History
             if (dataGridView1.Rows.Count > 500)
                 dataGridView1.Rows.RemoveAt(0);
 
-            var row = dataGridView1.Rows[rowIndex];
+            var row = dataGridView1.Rows[rowIndex - 1];
             row.Cells["Time"].Value = history.Info.GeneratedTime.ToString("yyyy-MM-dd HH:mm:ss");
             row.Cells["AlarmType"].Value = history.Info.Grade;
             row.Cells["AlarmCode"].Value = history.Info.Code;
