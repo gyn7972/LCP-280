@@ -1009,7 +1009,7 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = Config.IsSimulation;
             if (IsRingPresent() || bRtn || Config.IsDryRun)
             {
-                PlateDown();
+                //PlateDown();
                 //SetClampPlate(false);
                 //if (!IsPlateDown())
                 //{
@@ -1025,19 +1025,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 if (!IsPlateUp()|| Config.IsSimulation || Config.IsDryRun)
                 {
-                    PlateDown();
-                    //SetClampPlate(false);
-                    //if (!IsPlateDown())
-                    //{
-                    //    if(!Config.IsSimulation)
-                    //    {
-                    //        PostAlarm((int)AlarmKeys.ePlate);
-                    //        Log.Write(this, "Fail: PlateUp");
-                    //        return -1;
-                    //    }
-                    //}
-                    if (IsStop) { return 0; }
-
                     ClampLiftUp();
                     //SetClampLift(true);
                     //if (!IsClampLiftUp())
@@ -1049,7 +1036,6 @@ namespace QMC.LCP_280.Process.Unit
                     //        return -1;
                     //    }
                     //}
-                    if (IsStop) { return 0; }
 
                     ClampForward();
                     //SetClampFB(true);
@@ -1062,7 +1048,18 @@ namespace QMC.LCP_280.Process.Unit
                     //        return -1;
                     //    }
                     //}
-                    if (IsStop) { return 0; }
+
+                    PlateDown();
+                    //SetClampPlate(false);
+                    //if (!IsPlateDown())
+                    //{
+                    //    if(!Config.IsSimulation)
+                    //    {
+                    //        PostAlarm((int)AlarmKeys.ePlate);
+                    //        Log.Write(this, "Fail: PlateUp");
+                    //        return -1;
+                    //    }
+                    //}
                 }
                 else
                 {
@@ -1402,7 +1399,13 @@ namespace QMC.LCP_280.Process.Unit
 
         public bool CanPlaceDie()
         {
-            return HasNextDie();
+            bool bRet = true;
+            bRet &= this.AxisX.IsMoveDone();
+            bRet &= this.AxisY.IsMoveDone();
+            bRet &= this.AxisT.IsMoveDone();
+            bRet &= HasNextDie();
+
+            return bRet;
         }
 
 

@@ -1586,10 +1586,10 @@ namespace QMC.LCP_280.Process.Unit
             MaterialDie die = GetMaterial() as MaterialDie;
             if (wafer != null && wafer.Presence == Material.MaterialPresence.Exist && die != null && die.Presence == Material.MaterialPresence.Exist)
             {
-                if(OutputStage.IsStageInterLockOK() == false)
-                {
-                    return 0;
-                }
+                //if(OutputStage.IsStageInterLockOK() == false)
+                //{
+                //    return 0;
+                //}
                 
                 nRtn = MoveOutStage();
                 if (nRtn != 0)
@@ -1664,11 +1664,18 @@ namespace QMC.LCP_280.Process.Unit
             if (OutputStage == null)
                 return -1;
 
-            if (!OutputStage.IsStageInterLockOK())
+            //if (!OutputStage.IsStageInterLockOK())
+            //{
+            //    Log.Write(UnitName, "[MoveOutStage] Stage Interlock not OK.");
+            //    return -1;
+            //}
+            if(OutputStage.IsPlateUp())
             {
-                Log.Write(UnitName, "[MoveOutStage] Stage Interlock not OK.");
+                PostAlarm((int)AlarmKeys.eOutputStageAxesMoving);
                 return -1;
             }
+
+
 
             if (!OutputStage.TryReserveNextEmptyBin(out double binX, out double binY, out var slot))
             {
