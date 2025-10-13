@@ -1940,24 +1940,14 @@ namespace QMC.LCP_280.Process.Unit
             bool bRetInputTr = false;
             bool bRetOutputTr = false;
 
-
-            // ZUp이 아닌 경우 OK
-            //bRet = (IndexChipProbeController == null)
-            //    ? true
-            //    : !IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
-            // Z-Up이 아닌 경우 OK (고전 if/else 방식)
             if (IndexChipProbeController == null)
             {
                 bRet = true;
             }
             else
             {
-                //bool bRetZUp1 = false, bRetZUp2 = false;
                 try
                 {
-
-                    //isZUp1 = IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
-                    //isZUp2 = IndexChipProbeController.IsBottomIndexZUp(IndexChipProbeController.GetProbeIndexNo());
                     bRetProbe = IndexChipProbeController.IsProbeSafetyAxisPos();
                 }
                 catch (Exception ex)
@@ -1973,10 +1963,8 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                //bool isZUp = false;
                 try
                 {
-                    //bRetMAlign = IndexLoadAligner.IsAlignZIndexUp(IndexLoadAligner.GetAlignIndexNo());
                     bRetMAlign = IndexLoadAligner.IsAlignZSafetyPos();
                 }
                 catch (Exception ex)
@@ -1992,16 +1980,15 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                bool isZUp = false;
                 try
                 {
-                    isZUp = InputDieTransfer.IsPositionPlaceZSafety();
+                    bRetInputTr = InputDieTransfer.IsPositionPlaceZSafety();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    isZUp = false;
+                    bRetInputTr = false;
+                    Log.Write(ex);
                 }
-                bRet = isZUp; // Z-Up이 아니면 OK
             }
 
             if(OutputDieTransfer == null)
@@ -2010,37 +1997,61 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                bool isZUp = false;
                 try
                 {
-                    isZUp = OutputDieTransfer.IsPositionPickZSafety();
+                    bRetOutputTr = OutputDieTransfer.IsPositionPickZSafety();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    isZUp = false;
+                    bRetOutputTr = false;
+                    Log.Write(ex);
                 }
-                bRet = isZUp; // Z-Up이 아니면 OK
             }
 
             if (RunUnitStatus != UnitStatus.Running)
             {
-                if (!VerifyAllUnitsSafe(out reason))
+                if(RunUnitStatus == UnitStatus.Stopped)
                 {
-                    //PostAlarm((int)AlarmKeys.eRotaryNotSafe);
-                    reason = "Not Safe: " + reason;
-                    return false;
+                    if (!VerifyAllUnitsSafe(out reason))
+                    {
+                        reason = "Not Safe: " + reason;
+                        return false;
+                    }
                 }
             }
 
-            if (_sockets == null)
+            if (bRetProbe && bRetMAlign && bRetInputTr && bRetOutputTr)
             {
-                //PostAlarm((int)AlarmKeys.eIndexRotary);
-                reason = "Socket array NULL";
-                return false;
+                bRet = true;
+            }
+            else
+            {
+                bRet = false;
+                if (!bRetProbe)
+                {
+                    reason = "Probe Not Safe";
+                    Log.Write(UnitName, "Probe Not Safe");
+                }
+                else if (!bRetMAlign)
+                {
+                    reason = "MAlign Not Safe";
+                    Log.Write(UnitName, "MAlign Not Safe");
+                }
+                else if (!bRetInputTr)
+                {
+                    reason = "InputTr Not Safe";
+                    Log.Write(UnitName, "InputTr Not Safe");
+                }
+                else if (!bRetOutputTr)
+                {
+                    reason = "OutputTr Not Safe";
+                    Log.Write(UnitName, "OutputTr Not Safe");
+                }
             }
 
             return bRet;
         }
+
         public int MovePositionRotate(bool isFine = false)
         {
             if (IsInterlockOKWidthAllUnit() == false)
