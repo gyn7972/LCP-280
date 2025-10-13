@@ -177,7 +177,7 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
-        public int MovePositionAlignUp(int nIndex = 0, bool isFine = false)
+        public int MovePositionAlignZUp(int nIndex = 0, bool isFine = false)
         {
             Task<int> task = MovePositionAsyncAlignUp(nIndex, isFine);
             while (IsEndTask(task) == false)
@@ -534,7 +534,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -917,14 +917,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 
                 // 3) Z Up
-                bRtn = MovePositionAlignUp(nIndex, bFineSpeed);
+                bRtn = MovePositionAlignZUp(nIndex, bFineSpeed);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
                     return -1;
                 }
                 
-
                 // 4) T Forward
                 bRtn = MovePositionAlignTForward(bFineSpeed);
                 if (bRtn != 0)
