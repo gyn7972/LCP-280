@@ -32,6 +32,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         public event EventHandler<Rotary.SocketInfo> SocketSelected;
         public event EventHandler<Rotary.SocketInfo> SocketHovered;
         public event EventHandler<int> RotationRequested; // int = 회전 스텝(+1/-1)
+        public event EventHandler<Rotary.SocketInfo> SelectIndexRequested;
 
         private Rotary _rotary;
         private readonly List<SocketView> _socketViews = new List<SocketView>();
@@ -305,18 +306,30 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             switch (s.State)
             {
                 case Rotary.RotarySocketState.Empty:
-                    fill = Color.FromArgb(170, 170, 170); text = Color.FromArgb(60, 60, 60); break;
-                case Rotary.RotarySocketState.Loading: fill = Color.SkyBlue; break;
-                case Rotary.RotarySocketState.Loaded: fill = Color.FromArgb(0, 160, 0); break;
-                case Rotary.RotarySocketState.Aligning: fill = Color.Orange; break;
-                case Rotary.RotarySocketState.Aligned: fill = Color.DarkOrange; break;
-                case Rotary.RotarySocketState.Probing: fill = Color.MediumPurple; break;
-                case Rotary.RotarySocketState.Probed: fill = Color.Indigo; break;
-                case Rotary.RotarySocketState.Unloading: fill = Color.Goldenrod; break;
-                case Rotary.RotarySocketState.Outputting: fill = Color.Teal; break;
-                case Rotary.RotarySocketState.Completed: fill = Color.DarkGreen; break;
-                case Rotary.RotarySocketState.Error: fill = Color.Red; break;
-                default: fill = Color.Gray; break;
+                    fill = Color.FromArgb(170, 170, 170); 
+                    text = Color.FromArgb(60, 60, 60); break;
+                case Rotary.RotarySocketState.Loading: 
+                    fill = Color.SkyBlue; break;
+                case Rotary.RotarySocketState.Loaded: 
+                    fill = Color.FromArgb(0, 160, 0); break;
+                case Rotary.RotarySocketState.Aligning:
+                    fill = Color.Orange; break;
+                case Rotary.RotarySocketState.Aligned: 
+                    fill = Color.DarkOrange; break;
+                case Rotary.RotarySocketState.Probing: 
+                    fill = Color.MediumPurple; break;
+                case Rotary.RotarySocketState.Probed: 
+                    fill = Color.Indigo; break;
+                case Rotary.RotarySocketState.Unloading:
+                    fill = Color.Goldenrod; break;
+                case Rotary.RotarySocketState.Outputting: 
+                    fill = Color.Teal; break;
+                case Rotary.RotarySocketState.Completed: 
+                    fill = Color.DarkGreen; break;
+                case Rotary.RotarySocketState.Error: 
+                    fill = Color.Red; break;
+                default: 
+                    fill = Color.Gray; break;
             }
             if (!s.UseSocket)
             {
@@ -411,12 +424,72 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             UpdateCursor(e.Location);
         }
 
-        private void DisplayPanel_MouseClick(object sender, MouseEventArgs e) { }
+        private void DisplayPanel_MouseClick(object sender, MouseEventArgs e) 
+        {
+
+        }
 
         private void DisplayPanel_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
+            {
                 ResetView();
+            } else if(e.Button == MouseButtons.Left)
+            {
+                var sv = GetSocketAtPoint(e.Location);
+
+                if (sv != null)
+                {
+                    var ask = new MessageBoxDieStatusSelect();
+
+                    // 속성 직접 설정 후 ShowDialog() 호출
+                    ask.Title = $"Update Data: {sv.Socket.LastUpdated.ToString()}";
+                    ask.Message = $"Index '{sv.Socket.No}' is currently selected, and its status is '{sv.Socket.State}'.";
+
+                    if (ask.ShowDialog() == DialogResult.OK)  // 파라미터 없이 호출
+                    {
+                        switch (ask.RotateStatus)
+                        {
+                            case (int)Rotary.RotarySocketState.Empty:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Empty);
+                                break;
+                            case (int)Rotary.RotarySocketState.Loading:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Loading);
+                                break;
+                            case (int)Rotary.RotarySocketState.Loaded:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Loaded);
+                                break;
+                            case (int)Rotary.RotarySocketState.Aligning:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Aligning);
+                                break;
+                            case (int)Rotary.RotarySocketState.Aligned:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Aligned);
+                                break;
+                            case (int)Rotary.RotarySocketState.Probing:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Probing);
+                                break;
+                            case (int)Rotary.RotarySocketState.Probed:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Probed);
+                                break;
+                            case (int)Rotary.RotarySocketState.Unloading:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Unloading);
+                                break;
+                            case (int)Rotary.RotarySocketState.Outputting:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Outputting);
+                                break;
+                            case (int)Rotary.RotarySocketState.Completed:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Completed);
+                                break;
+                            case (int)Rotary.RotarySocketState.Error:
+                                sv.Socket.SetState(Rotary.RotarySocketState.Error);
+                                break;
+                        }
+
+                        _rotary.SetSocket(sv.Socket.No, sv.Socket);
+                    }
+                    //SelectIndexRequested?.Invoke(this, sv.Socket);
+                }
+            } 
         }
 
         private void DisplayPanel_MouseMove(object sender, MouseEventArgs e)
@@ -571,6 +644,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private async void btnAutoSequence_Click(object sender, EventArgs e)
         {
             if (_isAutoSequencing) return;
+
             _isAutoSequencing = true;
             btnAutoSequence.Enabled = false;
             btnReset.Enabled = false;

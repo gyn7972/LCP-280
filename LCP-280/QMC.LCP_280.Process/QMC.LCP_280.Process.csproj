@@ -291,6 +291,12 @@
     <Compile Include="Unit\FormMain\Page\MeasurementControl.Designer.cs">
       <DependentUpon>MeasurementControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Unit\FormMain\Page\MessageBoxDieStatusSelect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Unit\FormMain\Page\MessageBoxDieStatusSelect.Designer.cs">
+      <DependentUpon>MessageBoxDieStatusSelect.cs</DependentUpon>
+    </Compile>
     <Compile Include="Unit\FormMain\Page\OutputWaferCarrierControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -703,6 +709,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="Unit\FormMain\Page\MessageBoxDieStatusSelect.resx">
+      <DependentUpon>MessageBoxDieStatusSelect.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\OutputWaferCarrierControl.resx">
       <DependentUpon>OutputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>
@@ -884,6 +893,7 @@
   <ItemGroup>
     <Content Include="Resources\JogPanel_ico.ico" />
     <Content Include="Resources\JogPanel.png" />
+    <None Include="Resources\megaphone_80px.png" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
