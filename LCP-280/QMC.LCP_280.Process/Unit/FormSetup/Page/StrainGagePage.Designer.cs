@@ -38,8 +38,8 @@
             this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel4 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel7 = new System.Windows.Forms.TableLayoutPanel();
-            this.btnDialog = new QMC.Common.IndividualMenuButton();
-            this.btnDeviceInfo = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton1 = new QMC.Common.IndividualMenuButton();
+            this.individualMenuButton2 = new QMC.Common.IndividualMenuButton();
             this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
             this.btnStart = new QMC.Common.IndividualMenuButton();
             this.btnResetZeroSet = new QMC.Common.IndividualMenuButton();
@@ -206,9 +206,9 @@
             this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 29F));
-            this.tableLayoutPanel7.Controls.Add(this.btnDialog, 0, 1);
-            this.tableLayoutPanel7.Controls.Add(this.btnDeviceInfo, 0, 0);
+            this.tableLayoutPanel7.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 21F));
+            this.tableLayoutPanel7.Controls.Add(this.individualMenuButton1, 0, 1);
+            this.tableLayoutPanel7.Controls.Add(this.individualMenuButton2, 0, 0);
             this.tableLayoutPanel7.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel7.Location = new System.Drawing.Point(3, 241);
             this.tableLayoutPanel7.Name = "tableLayoutPanel7";
@@ -218,25 +218,24 @@
             this.tableLayoutPanel7.Size = new System.Drawing.Size(594, 97);
             this.tableLayoutPanel7.TabIndex = 30;
             // 
-            // btnDialog
+            // individualMenuButton1
             // 
-            this.btnDialog.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnDialog.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
-            this.btnDialog.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
-            this.btnDialog.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
-            this.btnDialog.CustomForeColor = System.Drawing.Color.Black;
-            this.btnDialog.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnDialog.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnDialog.ForeColor = System.Drawing.Color.Black;
-            this.btnDialog.ImageSize = new System.Drawing.Size(45, 45);
-            this.btnDialog.Location = new System.Drawing.Point(3, 51);
-            this.btnDialog.Name = "btnDialog";
-            this.btnDialog.Size = new System.Drawing.Size(121, 43);
-            this.btnDialog.TabIndex = 31;
-            this.btnDialog.TabStop = false;
-            this.btnDialog.Text = "Show Monitoring Dialog";
-            this.btnDialog.UseVisualStyleBackColor = false;
-            this.btnDialog.Click += new System.EventHandler(this.btnDialog_Click);
+            this.individualMenuButton1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
+            this.individualMenuButton1.CustomBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(217)))), ((int)(((byte)(217)))), ((int)(((byte)(217)))));
+            this.individualMenuButton1.CustomFont = new System.Drawing.Font("Arial", 10F, System.Drawing.FontStyle.Bold);
+            this.individualMenuButton1.CustomForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.individualMenuButton1.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.individualMenuButton1.ForeColor = System.Drawing.Color.Black;
+            this.individualMenuButton1.ImageSize = new System.Drawing.Size(45, 45);
+            this.individualMenuButton1.Location = new System.Drawing.Point(3, 51);
+            this.individualMenuButton1.Name = "individualMenuButton1";
+            this.individualMenuButton1.Size = new System.Drawing.Size(123, 43);
+            this.individualMenuButton1.TabIndex = 31;
+            this.individualMenuButton1.TabStop = false;
+            this.individualMenuButton1.Text = "Show Monitoring Dialog";
+            this.individualMenuButton1.UseVisualStyleBackColor = false;
             // 
             // btnDeviceInfo
             // 
@@ -403,7 +402,7 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel4;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel7;
-        private Common.IndividualMenuButton btnDeviceInfo;
-        private Common.IndividualMenuButton btnDialog;
+        private Common.IndividualMenuButton individualMenuButton2;
+        private Common.IndividualMenuButton individualMenuButton1;
     }
 }
