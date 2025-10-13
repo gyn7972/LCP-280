@@ -316,12 +316,9 @@ namespace QMC.LCP_280.Process.Unit
         {
             int loadIndex = this.GetLoadIndexNo();
 
-            // 반시계 방향으로 1칸 이동
             int probeIndex = (loadIndex - 5 + this.GetIndexCount()) % this.GetIndexCount();
-
             return probeIndex;
         }
-
 
         public int GetIndexCount()
         {
@@ -1111,7 +1108,6 @@ namespace QMC.LCP_280.Process.Unit
             return bRet;
         }
 
-
         public bool IsVacuumOK(int slotIndex)
         {
             if (FLOW == null)
@@ -1328,10 +1324,10 @@ namespace QMC.LCP_280.Process.Unit
                     // 2) (기존 로직 교체) : "사용 중인 현재 Load 소켓이 비어있으면 절대 돌지 않는다"
                     // (주의) 다른 소켓이 비어있어도 '현재 Load 위치 소켓' 이 이미 로딩되어 있다면 공정/회전 진행.
                     // 요구사항: "소켓을 사용중인데(현재 위치) 로딩 안되어 있으면 돌면 안돼" 에 맞춘 최소 제한.
-                    var loadSock = GetLoadSocketInfo();
-                    var loadDie = loadSock.GetMaterialDie();
-                    bool needLoad = useSocket &&
-                                    (loadDie == null || loadDie.Presence != Material.MaterialPresence.Exist);
+                    //var loadSock = GetLoadSocketInfo();
+                    //var loadDie = loadSock.GetMaterialDie();
+                    //bool needLoad = useSocket &&
+                    //                (loadDie == null || loadDie.Presence != Material.MaterialPresence.Exist);
                     //if (needLoad)
                     //{
                     //    RequestInputDieTrDie = true;
@@ -1817,6 +1813,10 @@ namespace QMC.LCP_280.Process.Unit
         private int RunTrashCanSocketOnce()
         {
             int nRet = 0;
+
+            int nIndexTrash = GetTrashCanIndexNo();
+
+            SetBlow(nIndexTrash, true);
             if (SetTrashEjector(true) == false)
             {
                 Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector ON fail");
@@ -1829,7 +1829,6 @@ namespace QMC.LCP_280.Process.Unit
                 SetTrashEjector(false);
                 return -1;
             }
-
             //일정 시간 대기
             WaitByTime(GetClearTimeMs()); // 기본: 500ms
 
@@ -1852,14 +1851,13 @@ namespace QMC.LCP_280.Process.Unit
             //일정 시간 대기
             WaitByTime(1);
             Log.Write(UnitName, $"[RunTrashCanSocketOnce] Clear Comp.");
-
+            SetBlow(nIndexTrash, false);
             return nRet;
         }
 
         private int WaitPostActionSettled(bool needLoadWait, int timeoutMs)
         {
             var timeout = new TimeoutChecker(timeoutMs, autoStart: true);
-
             while (true)
             {
                 if (IsStop) { return 0; }
@@ -1870,7 +1868,6 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     var socket = GetLoadSocketInfo();
                     var die = socket.GetMaterialDie();
-
                     var loadDie = GetLoadSocketMaterial();
                     loadOk = (loadDie != null && loadDie.Presence == Material.MaterialPresence.Exist);
 
@@ -1882,29 +1879,13 @@ namespace QMC.LCP_280.Process.Unit
                 }
                 if (loadOk)
                     break;
-                // 2) Unloader Aligner에 잔류품 없음을 확인
-                bool unloadOk = true;
-                //if (IndexUnloadAligner != null)
-                //{
-                //    var unloaderDie = GetUnloaderAlignSocketMaterial();
-                //    unloadOk = (unloaderDie == null || unloaderDie.Presence != Material.MaterialPresence.Exist);
-                //}
-
-                //if (loadOk && unloadOk)
-                //{
-                    
-                //}
+                
                 if (timeout.IsCompleted)
                 {
                     if (!loadOk)
                     {
                         Log.Write(UnitName, "[WaitPostActionSettled] Load socket die not supplied (timeout)");
                         PostAlarm((int)AlarmKeys.InputDieTransferTimeout);
-                    }
-                    if (!unloadOk)
-                    {
-                        Log.Write(UnitName, "[WaitPostActionSettled] UnloadAligner still has die (timeout)");
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferTimeout);
                     }
                     return -1;
                 }
@@ -2199,6 +2180,20 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 int socketCount = GetIndexCount();
+                int CrashCanIdx = GetTrashCanIndexNo();
+
+                if (SetTrashEjector(true) == false)
+                {
+                    Log.Write(UnitName, "[InitializeAfterHome] TrashEjector ON fail");
+                    return -1;
+                }
+
+                if (SetTrashVacuum(true) == false)
+                {
+                    Log.Write(UnitName, "[InitializeAfterHome] TrashVacuum ON fail");
+                    SetTrashEjector(false);
+                    return -1;
+                }
 
                 for (int i = 0; i < socketCount; i++)
                 {
@@ -2206,40 +2201,18 @@ namespace QMC.LCP_280.Process.Unit
                     //this.CalcelToken?.Token.ThrowIfCancellationRequested();
                     //if (this.CalcelToken?.Token.IsCancellationRequested == true || this.IsStop)
                    
-                    
-                    if (SetTrashEjector(true) == false)
-                    {
-                        Log.Write(UnitName, "[InitializeAfterHome] TrashEjector ON fail");
-                        return -1;
-                    }
+                    //if(IsStop)
+                    //{
+                    //    SetTrashVacuum(false);
+                    //    SetTrashEjector(false);
+                    //    SetBlow(CrashCanIdx, false);
+                    //    Log.Write(UnitName, "[InitializeAfterHome] Canceled");
+                    //    return 0;
+                    //}
 
-                    if (SetTrashVacuum(true) == false)
-                    {
-                        Log.Write(UnitName, "[InitializeAfterHome] TrashVacuum ON fail");
-                        SetTrashEjector(false);
-                        return -1;
-                    }
-
+                    SetBlow(CrashCanIdx, true);
                     //일정 시간 대기
                     WaitByTime(GetClearTimeMs()); // 기본: 500ms
-
-                    if (SetTrashVacuum(false) == false)
-                    {
-                        Log.Write(UnitName, "[InitializeAfterHome] TrashVacuum OFF fail");
-                        SetTrashEjector(false);
-                        return -1;
-                    }
-
-                    if (SetTrashEjector(false) == false)
-                    {
-                        Log.Write(UnitName, "[InitializeAfterHome] TrashEjector OFF fail");
-                        return -1;
-                    }
-
-                    //일정 시간 대기
-                    WaitByTime(100);
-                    Log.Write(UnitName, $"[InitializeAfterHome] Clear Comp. {i}");
-
                     // 2) 다음 인덱스로 한 칸 이동 (전체 소켓 수 만큼 반복 → 원위치 복귀)
                     string reason;
                     if (TryMoveIndexNext(out reason) == false)
@@ -2256,8 +2229,23 @@ namespace QMC.LCP_280.Process.Unit
                         PostAlarm((int)AlarmKeys.RotaryIndexMoveError);
                         return -1;
                     }
+
+                    SetBlow(CrashCanIdx, false);
+                    Log.Write(UnitName, $"[InitializeAfterHome] Clear Comp. {i}");
                 }
 
+                if (SetTrashVacuum(false) == false)
+                {
+                    Log.Write(UnitName, "[InitializeAfterHome] TrashVacuum OFF fail");
+                    SetTrashEjector(false);
+                    return -1;
+                }
+
+                if (SetTrashEjector(false) == false)
+                {
+                    Log.Write(UnitName, "[InitializeAfterHome] TrashEjector OFF fail");
+                    return -1;
+                }
                 return nRet;
             }
             catch (Exception ex)
@@ -2265,10 +2253,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(ex);
                 return -1;
             }
-
-            return nRet;
         }
-
         private int GetClearTimeMs()
         {
             // 0 또는 음수면 기본 500ms로 사용, 그 외 값은 그대로 사용

@@ -370,7 +370,7 @@ namespace QMC.Common.PKGTester
                 handler = (s) => { tcs.TrySetResult(true); };
                 spectrometer.OnMeasureCommandSended += handler;
 
-                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));
+                //var timeoutTask = Task.Delay(TimeSpan.FromSeconds(1));
 
                 // Spectrometer task start
 
@@ -382,6 +382,8 @@ namespace QMC.Common.PKGTester
                 catch { }
                 
                 spcTask = Task.Run(() => DoSpectrometerMeasure());
+
+                var timeoutTask = Task.Delay(2000);
 
                 // Wait spectrometer command sent
                 if (HasTaskSpectrometer())

@@ -1307,7 +1307,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // === Domain Control (표준 구동) ===
-        public bool SetVacuum(int nNo, bool on, bool bCheckSignal = true)
+        public bool SetVacuum(int nNo, bool on, bool bCheckSignal = false)
         {
             if (_vacuum[nNo] == null) 
                 return false;
@@ -1581,20 +1581,30 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     //if (IsStop) { return 0; }
 
-                    
-                    // Release
-                    (bool flowControl, int value) = InputStageVaccumOff();
-                    if (!flowControl)
+                    if(IsVacuumOK(0))
                     {
-                        return value;
-                    }
+                        // Release
+                        (bool flowControl, int value) = InputStageVaccumOff();
+                        if (!flowControl)
+                        {
+                            return value;
+                        }
 
-                    nRet = CommitPickedDie();
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
-                        return -1;
+                        nRet = CommitPickedDie();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
+                            return -1;
+                        }
+
                     }
+                    else
+                    {
+                        this.State = ProcessState.Ready;
+                        return 0;
+                    }
+                    
+                   
                     //if (IsStop) { return 0; }
                 }
             }
@@ -1714,9 +1724,9 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.CurrentFunc = PrepareNextDie;
 
-                var mb = new MessageBoxOk();
-                mb.Focus();
-                mb.ShowDialog("알림", "웨이퍼 스테이지 이동 후 진행 바랍니다.");
+                //var mb = new MessageBoxOk();
+                //mb.Focus();
+                //mb.ShowDialog("알림", "웨이퍼 스테이지 이동 후 진행 바랍니다.");
                 return 0;
             }
 
@@ -1753,8 +1763,6 @@ namespace QMC.LCP_280.Process.Unit
                     // 더 이상 픽할 다이가 없으면 우아하게 스킵
                     return 0;
                 }
-
-
                 _currentDie = die;
             }
 
@@ -1766,9 +1774,9 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = RecheckDieAndAlign;
-                var mb = new MessageBoxOk();
-                mb.Focus();
-                mb.ShowDialog("알림", "웨이퍼 스테이지 이동 후 진행 바랍니다.");
+                //var mb = new MessageBoxOk();
+                //mb.Focus();
+                //mb.ShowDialog("알림", "웨이퍼 스테이지 이동 후 진행 바랍니다.");
                 return 0;
             }
             if (InputStage == null)
@@ -1876,43 +1884,6 @@ namespace QMC.LCP_280.Process.Unit
             int nRet = 0;
 
             InputStage.SetVacuum(true, false);
-            //if (InputStage.IsVacuumOn() == false)
-            //{
-            //    PostAlarm((int)AlarmKeys.eInputStageVaccum);
-            //    Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-            //    return -1;
-            //}
-
-            //if (InputStage.SetVacuum(true))
-            //{
-            //    var sw = Stopwatch.StartNew();
-            //    while (true)
-            //    {
-            //        if(InputStage.IsVacuumOn())
-            //        {
-            //            break;
-            //        }
-            //        else if (!Config.IsSimulation && !Config.IsDryRun)
-            //        {
-            //            if (sw.ElapsedMilliseconds > 2000)
-            //            {
-            //                PostAlarm((int)AlarmKeys.eInputStageVaccum);
-            //                Log.Write(UnitName, "[EjectorVacuumOn] Vacuum Timeout");
-            //                return -1;
-            //            }
-            //            Thread.Sleep(1);
-            //        }
-            //        else
-            //        {
-            //            break;
-            //        }
-            //    }
-            //}
-            //else
-            //{
-            //    Log.Write(UnitName, "[EjectorVacuumOn] SetVacuum(true) failed");
-            //    return -1;
-            //}
 
             return nRet;
         }
@@ -2147,7 +2118,7 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             this.WaitByTime(Config.nPlaceBeforeVacWaitTime, 1);//Thread.Sleep(1);
-            SetVacuum(armIndex, false,false);
+            SetVacuum(armIndex, false, false);
             SetVent(armIndex, true);
             this.WaitByTime(Config.nPlaceAfterVacWaitTime, 1);//Thread.Sleep(1);
 

@@ -30,11 +30,11 @@
         {
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.strainGageDataGridViewer1 = new QMC.Common.StrainGage.StrainGageDataGridViewer();
             this.tabControl = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.strainGageChart1 = new QMC.Common.StrainGage.StrainGageChart();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.strainGageDataGridViewer1 = new QMC.Common.StrainGage.StrainGageDataGridViewer();
+            this.strainGageChart1 = new QMC.Common.StrainGage.StrainGageChart();
             this.strainGageChart2 = new QMC.Common.StrainGage.StrainGageChart();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -61,7 +61,7 @@
             // tableLayoutPanel2
             // 
             this.tableLayoutPanel2.ColumnCount = 1;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 625F));
+            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 796F));
             this.tableLayoutPanel2.Controls.Add(this.strainGageDataGridViewer1, 0, 0);
             this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel2.Location = new System.Drawing.Point(0, 0);
@@ -71,15 +71,6 @@
             this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel2.Size = new System.Drawing.Size(796, 200);
             this.tableLayoutPanel2.TabIndex = 1;
-            // 
-            // strainGageDataGridViewer1
-            // 
-            this.strainGageDataGridViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.strainGageDataGridViewer1.Location = new System.Drawing.Point(4, 4);
-            this.strainGageDataGridViewer1.Margin = new System.Windows.Forms.Padding(4);
-            this.strainGageDataGridViewer1.Name = "strainGageDataGridViewer1";
-            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(788, 192);
-            this.strainGageDataGridViewer1.TabIndex = 1;
             // 
             // tabControl
             // 
@@ -103,15 +94,6 @@
             this.tabPage1.Text = "Voltage (V)";
             this.tabPage1.UseVisualStyleBackColor = true;
             // 
-            // strainGageChart1
-            // 
-            this.strainGageChart1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.strainGageChart1.Location = new System.Drawing.Point(3, 3);
-            this.strainGageChart1.Margin = new System.Windows.Forms.Padding(4);
-            this.strainGageChart1.Name = "strainGageChart1";
-            this.strainGageChart1.Size = new System.Drawing.Size(776, 502);
-            this.strainGageChart1.TabIndex = 2;
-            // 
             // tabPage2
             // 
             this.tabPage2.Controls.Add(this.strainGageChart2);
@@ -122,6 +104,24 @@
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Force (g)";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // strainGageDataGridViewer1
+            // 
+            this.strainGageDataGridViewer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.strainGageDataGridViewer1.Location = new System.Drawing.Point(4, 4);
+            this.strainGageDataGridViewer1.Margin = new System.Windows.Forms.Padding(4);
+            this.strainGageDataGridViewer1.Name = "strainGageDataGridViewer1";
+            this.strainGageDataGridViewer1.Size = new System.Drawing.Size(788, 192);
+            this.strainGageDataGridViewer1.TabIndex = 1;
+            // 
+            // strainGageChart1
+            // 
+            this.strainGageChart1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.strainGageChart1.Location = new System.Drawing.Point(3, 3);
+            this.strainGageChart1.Margin = new System.Windows.Forms.Padding(4);
+            this.strainGageChart1.Name = "strainGageChart1";
+            this.strainGageChart1.Size = new System.Drawing.Size(776, 502);
+            this.strainGageChart1.TabIndex = 2;
             // 
             // strainGageChart2
             // 
@@ -140,6 +140,7 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Name = "FormStrainGageDialog";
             this.Text = "Strain Gage Monitor";
+            this.TopMost = true;
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FormStrainGageDialog_FormClosed);
             this.Load += new System.EventHandler(this.FormStrainGageDialog_Load);
             this.tableLayoutPanel1.ResumeLayout(false);

@@ -22,10 +22,10 @@ namespace QMC.Common.Motions
         /// <summary>축 하나의 최신 스냅샷이 올라옵니다.</summary>
         public event Action<MotionAxis, MotionAxisStatus> AxisStatusUpdated;
 
-        public MotionStatusScanner(MotionAxisManager manager, int periodMs = 20)
+        public MotionStatusScanner(MotionAxisManager manager, int periodMs = 2)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
-            if (periodMs < 5) periodMs = 5; // 너무 빠른 폴링 방지
+            if (periodMs < 3) periodMs = 2; // 너무 빠른 폴링 방지
             _periodMs = periodMs;
         }
 

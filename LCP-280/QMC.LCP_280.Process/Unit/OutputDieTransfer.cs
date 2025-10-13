@@ -1548,14 +1548,24 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    die.State = DieProcessState.Picked;
-                    die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                    if(IsVacuumOK(0))
+                    {
+                        die.State = DieProcessState.Picked;
+                        die.ProcessSatate = Material.MaterialProcessSatate.Processing;
 
-                    Rotary.MoveMaterialToOutputDieTransfer();
-                    SetPickupDoneEvent();
+                        Rotary.MoveMaterialToOutputDieTransfer();
+                        SetPickupDoneEvent();
 
-                    _lastPickSucceeded = true;
-                    State = ProcessState.Complete;
+                        _lastPickSucceeded = true;
+                        State = ProcessState.Complete;
+                    }
+                    else
+                    {
+                        die.State = DieProcessState.Rejected;
+                        SetPickupDoneEvent();
+                        return 0;
+                    }
+                    
                 }
 
                 if (MaterialDie != null && MaterialDie.Presence == Material.MaterialPresence.Exist)
@@ -1736,14 +1746,14 @@ namespace QMC.LCP_280.Process.Unit
 
             Rotary.SetVacuum(GetUnloaderIndexNo(), false);
             Thread.Sleep(1);
-            Rotary.SetVent(GetUnloaderIndexNo(), true);
-            Thread.Sleep(50);
-            Rotary.SetVent(GetUnloaderIndexNo(), false);
-            Thread.Sleep(1);
+            //Rotary.SetVent(GetUnloaderIndexNo(), true);
+            //Thread.Sleep(50);
+            //Rotary.SetVent(GetUnloaderIndexNo(), false);
+            //Thread.Sleep(1);
             Rotary.SetBlow(GetUnloaderIndexNo(), true);
 
             //´ë±â
-            Thread.Sleep(50);
+            Thread.Sleep(100);
 
             return nRet;
         }
@@ -1873,15 +1883,8 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
 
                 // Release
-                if(!SetVacuum(armIndex, false))
-                {
-                    if(!Config.IsSimulation && !Config.IsDryRun)
-                    {
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
-                        Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] SetVacuum failed");
-                        return -1;
-                    }
-                }
+                SetVacuum(armIndex, false);
+                Thread.Sleep(1);
                 SetVent(armIndex, true);
                 Thread.Sleep(5);
                 SetVent(armIndex, false);
