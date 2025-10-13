@@ -837,6 +837,10 @@ namespace QMC.LCP_280.Process.Unit
                             OutputFeeder.MakePath();
                             OutputFeeder.MoveMaterial(new MaterialWafer(), this);
                             var waferOutputStage = this.GetMaterialWafer();
+                            if(waferOutputStage == null)
+                            {
+                                return false;
+                            }
                             //waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
                             waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Processing;
                             this.SetMaterial(waferOutputStage);

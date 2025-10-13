@@ -2198,14 +2198,14 @@ namespace QMC.LCP_280.Process.Unit
                     //this.CalcelToken?.Token.ThrowIfCancellationRequested();
                     //if (this.CalcelToken?.Token.IsCancellationRequested == true || this.IsStop)
                    
-                    if(IsStop)
-                    {
-                        SetTrashVacuum(false);
-                        SetTrashEjector(false);
-                        SetBlow(CrashCanIdx, false);
-                        Log.Write(UnitName, "[InitializeAfterHome] Canceled");
-                        return 0;
-                    }
+                    //if(IsStop)
+                    //{
+                    //    SetTrashVacuum(false);
+                    //    SetTrashEjector(false);
+                    //    SetBlow(CrashCanIdx, false);
+                    //    Log.Write(UnitName, "[InitializeAfterHome] Canceled");
+                    //    return 0;
+                    //}
 
                     SetBlow(CrashCanIdx, true);
                     //일정 시간 대기
