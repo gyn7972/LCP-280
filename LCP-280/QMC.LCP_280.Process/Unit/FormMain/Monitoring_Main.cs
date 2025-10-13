@@ -967,12 +967,15 @@ namespace QMC.LCP_280.Process
             InputCassetteLifter.SetMaterial(new Material());
             InputFeeder.SetMaterial(new Material());
             InputStage.SetMaterial(new Material());
-            InputDieTransfer.SetMaterial(new Material());
-            Rotary.SetMaterial(new Material());
-            IndexLoadAligner.SetMaterial(new Material());
-            IndexChipProbeController.SetMaterial(new Material());
-            IndexUnloadAligner.SetMaterial(new Material());
-            OutputDieTransfer.SetMaterial(new Material());
+
+            //이건 나중에 하고..
+            //InputDieTransfer.SetMaterial(new Material());
+            //Rotary.SetMaterial(new Material());
+            //IndexLoadAligner.SetMaterial(new Material());
+            //IndexChipProbeController.SetMaterial(new Material());
+            //IndexUnloadAligner.SetMaterial(new Material());
+            //OutputDieTransfer.SetMaterial(new Material());
+
             OutputStage.SetMaterial(new Material());
             OutputFeeder.SetMaterial(new Material());
             OutputCassetteLifter.SetMaterial(new Material());

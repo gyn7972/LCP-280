@@ -267,7 +267,7 @@ namespace QMC.LCP_280.Process.Unit
             if (_vacuum == null)
                 return false;
 
-            if (!bCheckSignal)
+            if (bCheckSignal == false)
             {
                 if (on)
                     _vacuum.On();
@@ -1009,57 +1009,16 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = Config.IsSimulation;
             if (IsRingPresent() || bRtn || Config.IsDryRun)
             {
-                //PlateDown();
-                //SetClampPlate(false);
-                //if (!IsPlateDown())
-                //{
-                //    if (!Config.IsSimulation)
-                //    {
-                //        PostAlarm((int)AlarmKeys.ePlate);
-                //        Log.Write(this, "Fail: PlateUp");
-                //        return -1;
-                //    }
-                //}
-                if (IsStop) { return 0; }
-
                 Log.Write(UnitName, "LoadingComp", "Bin detected -> Completing");
                 //if (Config.IsSimulation || Config.IsDryRun)
                 {
                     ClampLiftUp();
-                    //SetClampLift(true);
-                    //if (!IsClampLiftUp())
-                    //{
-                    //    if (!Config.IsSimulation)
-                    //    {
-                    //        PostAlarm((int)AlarmKeys.eClampLift);
-                    //        Log.Write(this, "Fail: ClampLiftUp");
-                    //        return -1;
-                    //    }
-                    //}
 
                     ClampForward();
-                    //SetClampFB(true);
-                    //if (!IsClampFwd())
-                    //{
-                    //    if (!Config.IsSimulation)
-                    //    {
-                    //        PostAlarm((int)AlarmKeys.eClampFB);
-                    //        Log.Write(this, "Fail: ClampForward");
-                    //        return -1;
-                    //    }
-                    //}
 
                     PlateDown();
-                    //SetClampPlate(false);
-                    //if (!IsPlateDown())
-                    //{
-                    //    if(!Config.IsSimulation)
-                    //    {
-                    //        PostAlarm((int)AlarmKeys.ePlate);
-                    //        Log.Write(this, "Fail: PlateUp");
-                    //        return -1;
-                    //    }
-                    //}
+
+                    SetVacuum(true);
                 }
                 //else
                 //{
@@ -1075,9 +1034,6 @@ namespace QMC.LCP_280.Process.Unit
                     return ret;
                 }
 
-                //var wafer = GetMaterialWafer();
-                //wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
-
                 BinLoadingDone = true;
                 BinLoadingReady = false;
                 Log.Write(UnitName, "LoadingComp", "Done");
@@ -1092,8 +1048,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "LoadingComp", "No Bin detected");
                 return -1;
             }
-
-            return ret;
         }
         public int PrepareOutputStageUnloadingBin()
         {
@@ -1112,7 +1066,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(this, "Fail: Move Unload");
                 return -1;
             }
-            if (IsStop) { return 0; }
 
             ClampBackward();
             //SetClampFB(false);
@@ -1122,7 +1075,6 @@ namespace QMC.LCP_280.Process.Unit
             //    Log.Write(this, "Fail: ClampBack");
             //    return -1;
             //}
-            if (IsStop) { return 0; }
 
             ClampLiftDown();
             //SetClampLift(false);
@@ -1132,7 +1084,6 @@ namespace QMC.LCP_280.Process.Unit
             //    Log.Write(this, "Fail: ClampLiftDown");
             //    return -1;
             //}
-            if (IsStop) { return 0; }
 
             PlateUp();
             //SetClampPlate(true);
@@ -1142,7 +1093,7 @@ namespace QMC.LCP_280.Process.Unit
             //    Log.Write(this, "Fail: PlateUp");
             //    return -1;
             //}
-            if (IsStop) { return 0; }
+            SetVacuum(false);
 
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;

@@ -1873,15 +1873,8 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
 
                 // Release
-                if(!SetVacuum(armIndex, false))
-                {
-                    if(!Config.IsSimulation && !Config.IsDryRun)
-                    {
-                        PostAlarm((int)AlarmKeys.eOutputDieTransferVacuum);
-                        Log.Write(UnitName, "[ReleaseVacuumAndPlaceUp] SetVacuum failed");
-                        return -1;
-                    }
-                }
+                SetVacuum(armIndex, false);
+                Thread.Sleep(1);
                 SetVent(armIndex, true);
                 Thread.Sleep(5);
                 SetVent(armIndex, false);
