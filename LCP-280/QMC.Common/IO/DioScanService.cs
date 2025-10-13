@@ -18,7 +18,7 @@ namespace QMC.Common.DIO
         private readonly object _gate = new object();
         private Thread _worker;
         private volatile bool _running;
-        private int _periodMs = 10;
+        private int _periodMs = 5;
 
         // 캐시(key="ModuleName|DisplayNo")
         private readonly Dictionary<string, bool> _inputCache = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
