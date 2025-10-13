@@ -264,18 +264,31 @@ namespace QMC.LCP_280.Process.Unit
             if (!System.IO.Directory.Exists(logDir))
                 System.IO.Directory.CreateDirectory(logDir);
 
-            string logFile = System.IO.Path.Combine(logDir, $"PKGTesterResult_{DateTime.Now:yyyyMMdd}.log");
+            string logFile = System.IO.Path.Combine(logDir, $"PKGTesterResult_{DateTime.Now:yyyyMMdd}.csv");
 
-            var lines = new List<string>();
-            lines.Add($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] PKGTesterResult 기록 시작");
-            lines.Add($"BinningResult: {result.BinningResult}");
-            foreach (var item in result.Items)
+            bool fileExists = System.IO.File.Exists(logFile);
+
+            using (var writer = new System.IO.StreamWriter(logFile, true, System.Text.Encoding.UTF8))
             {
-                lines.Add($"Item: {item.Key}, Value: {item.Value}");
-            }
-            lines.Add("--------------------------------------------------");
+                // 파일이 없으면 헤더 추가
+                if (!fileExists)
+                {
+                    writer.Write("Timestamp,");
+                    foreach (var item in result.Items)
+                    {
+                        writer.Write($",{item.Key}");
+                    }
+                    writer.WriteLine();
+                }
 
-            System.IO.File.AppendAllLines(logFile, lines);
+                // 데이터 행 추가
+                writer.Write($"{DateTime.Now:yyyy-MM-dd HH:mm:ss},");
+                foreach (var item in result.Items)
+                {
+                    writer.Write($",{item.Value}");
+                }
+                writer.WriteLine();
+            }
             // ---------------------
             return 0;
         }
