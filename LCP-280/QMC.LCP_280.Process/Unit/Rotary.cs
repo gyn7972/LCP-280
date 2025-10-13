@@ -1928,10 +1928,15 @@ namespace QMC.LCP_280.Process.Unit
             string reason = null;
             if (_axisT == null)
             {
-                //PostAlarm((int)AlarmKeys.eIndexRotary);
                 reason = "AxisT NULL";
                 return false;
             }
+
+            bool bRetProbe = false;
+            bool bRetMAlign = false;
+            bool bRetInputTr = false;
+            bool bRetOutputTr = false;
+
 
             // ZUp이 아닌 경우 OK
             //bRet = (IndexChipProbeController == null)
@@ -1944,26 +1949,18 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                bool isZUp1 = false, isZUp2 = false;
+                //bool bRetZUp1 = false, bRetZUp2 = false;
                 try
                 {
-                    //
-                    isZUp1 = IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
-                    isZUp2 = IndexChipProbeController.IsBottomIndexZUp(IndexChipProbeController.GetProbeIndexNo());
-                    
+
+                    //isZUp1 = IndexChipProbeController.IsTopContactIndexZUp(IndexChipProbeController.GetProbeIndexNo());
+                    //isZUp2 = IndexChipProbeController.IsBottomIndexZUp(IndexChipProbeController.GetProbeIndexNo());
+                    bRetProbe = IndexChipProbeController.IsProbeSafetyAxisPos();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    isZUp1 = false;
-                    isZUp2 = false;
-                }
-                if (isZUp1 == false && isZUp2 == false)
-                {
-                    bRet = true;
-                }
-                else
-                {
-                    bRet = false;
+                    bRetProbe = false;
+                    Log.Write(ex);
                 }
             }
 
@@ -1973,16 +1970,17 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
-                bool isZUp = false;
+                //bool isZUp = false;
                 try
                 {
-                    isZUp = IndexLoadAligner.IsAlignZIndexUp(IndexLoadAligner.GetAlignIndexNo());
+                    //bRetMAlign = IndexLoadAligner.IsAlignZIndexUp(IndexLoadAligner.GetAlignIndexNo());
+                    bRetMAlign = IndexLoadAligner.IsAlignZSafetyPos();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    isZUp = false;
+                    bRetMAlign = false;
+                    Log.Write(ex);
                 }
-                bRet = !isZUp; // Z-Up이 아니면 OK
             }
 
             if (InputDieTransfer == null)

@@ -982,6 +982,14 @@ namespace QMC.LCP_280.Process.Unit
                IsAxisProbeCardZSafetyPos() &&
                IsAxisSphereZSafetyPos();
 
+        public bool IsProbeSafetyAxisPos()
+        {
+            bool bRet1 = false, bRet2 = false;
+            bRet1 = IsAxisProbeZSafetyPos();
+            bRet2 = IsAxisProbeCardZSafetyPos();
+
+            return bRet1 && bRet2;
+        }
 
         //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         //public double GetTP(string tpName, string axisName)
