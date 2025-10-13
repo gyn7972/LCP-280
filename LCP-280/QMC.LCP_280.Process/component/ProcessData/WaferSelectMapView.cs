@@ -50,15 +50,15 @@ namespace QMC.LCP_280.Process.Component
         private int _hoveredSlot = -1;
 
         // 테스트 버튼들
-        private Button btnAll;
-        private Button btnResetAll;
+        //private Button btnAll;
+        //private Button btnResetAll;
 
-        private Label lblSelectedCount;
-        private Label lblSelectedCountValue;
-        private Label lblNextOrder;
-        private Label lblNextOrderValue;
-        private ListBox listSelectedSlots;
-        private Label lblSelectedList;
+        //private Label lblSelectedCount;
+        //private Label lblSelectedCountValue;
+        //private Label lblNextOrder;
+        //private Label lblNextOrderValue;
+        //private ListBox listSelectedSlots;
+        //private Label lblSelectedList;
 
         private readonly object _selectionLock = new object();
 
@@ -179,107 +179,108 @@ namespace QMC.LCP_280.Process.Component
             // 더블 버퍼링
             EnablePanelDoubleBuffering(rightPanel);
 
-            int yPos = 10;
-            int buttonHeight = 25;
-            int spacing = 30;
-            int buttonWidth = 80;
+            //int yPos = 10;
+            //int buttonHeight = 25;
+            //int spacing = 30;
+            //int buttonWidth = 80;
 
-            // 전체 선택 버튼 (현재 데이터 기준 선택만, Presence 변경 없음)
-            btnAll = new Button
-            {
-                Text = "전체 선택",
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, buttonHeight),
-                BackColor = Color.DarkGray,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Arial", 8)
-            };
-            btnAll.Click += BtnAll_Click;
-            rightPanel.Controls.Add(btnAll);
-            yPos += spacing;
+            //// 전체 선택 버튼 (현재 데이터 기준 선택만, Presence 변경 없음)
+            //btnAll = new Button
+            //{
+            //    Text = "전체 선택",
+            //    Location = new Point(5, yPos),
+            //    Size = new Size(buttonWidth, buttonHeight),
+            //    BackColor = Color.DarkGray,
+            //    ForeColor = Color.White,
+            //    FlatStyle = FlatStyle.Flat,
+            //    Font = new Font("Arial", 8)
+            //};
 
-            // 전체 초기화 버튼 (슬롯 Presence를 NotExist로 초기화)
-            btnResetAll = new Button
-            {
-                Text = "전체 초기화",
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, buttonHeight),
-                BackColor = Color.DarkGray,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Arial", 8)
-            };
-            btnResetAll.Click += BtnResetAll_Click;
-            rightPanel.Controls.Add(btnResetAll);
-            yPos += spacing;
+            //btnAll.Click += BtnAll_Click;
+            //rightPanel.Controls.Add(btnAll);
+            //yPos += spacing;
 
-            // 선택된 슬롯 수 라벨
-            lblSelectedCount = new Label
-            {
-                Text = "선택:",
-                Location = new Point(5, yPos),
-                Size = new Size(35, 15),
-                Font = new Font("Arial", 7, FontStyle.Bold)
-            };
-            rightPanel.Controls.Add(lblSelectedCount);
+            //// 전체 초기화 버튼 (슬롯 Presence를 NotExist로 초기화)
+            //btnResetAll = new Button
+            //{
+            //    Text = "전체 초기화",
+            //    Location = new Point(5, yPos),
+            //    Size = new Size(buttonWidth, buttonHeight),
+            //    BackColor = Color.DarkGray,
+            //    ForeColor = Color.White,
+            //    FlatStyle = FlatStyle.Flat,
+            //    Font = new Font("Arial", 8)
+            //};
+            //btnResetAll.Click += BtnResetAll_Click;
+            //rightPanel.Controls.Add(btnResetAll);
+            //yPos += spacing;
 
-            lblSelectedCountValue = new Label
-            {
-                Text = "0",
-                Location = new Point(45, yPos),
-                Size = new Size(30, 15),
-                Font = new Font("Arial", 7),
-                ForeColor = Color.Blue
-            };
-            rightPanel.Controls.Add(lblSelectedCountValue);
-            yPos += 20;
+            //// 선택된 슬롯 수 라벨
+            //lblSelectedCount = new Label
+            //{
+            //    Text = "선택:",
+            //    Location = new Point(5, yPos),
+            //    Size = new Size(35, 15),
+            //    Font = new Font("Arial", 7, FontStyle.Bold)
+            //};
+            //rightPanel.Controls.Add(lblSelectedCount);
 
-            // 다음 순서 라벨
-            lblNextOrder = new Label
-            {
-                Text = "순서:",
-                Location = new Point(5, yPos),
-                Size = new Size(35, 15),
-                Font = new Font("Arial", 7, FontStyle.Bold)
-            };
-            rightPanel.Controls.Add(lblNextOrder);
+            //lblSelectedCountValue = new Label
+            //{
+            //    Text = "0",
+            //    Location = new Point(45, yPos),
+            //    Size = new Size(30, 15),
+            //    Font = new Font("Arial", 7),
+            //    ForeColor = Color.Blue
+            //};
+            //rightPanel.Controls.Add(lblSelectedCountValue);
+            //yPos += 20;
 
-            lblNextOrderValue = new Label
-            {
-                Text = "1",
-                Location = new Point(45, yPos),
-                Size = new Size(30, 15),
-                Font = new Font("Arial", 7),
-                ForeColor = Color.Blue
-            };
-            rightPanel.Controls.Add(lblNextOrderValue);
-            yPos += 25;
+            //// 다음 순서 라벨
+            //lblNextOrder = new Label
+            //{
+            //    Text = "순서:",
+            //    Location = new Point(5, yPos),
+            //    Size = new Size(35, 15),
+            //    Font = new Font("Arial", 7, FontStyle.Bold)
+            //};
+            //rightPanel.Controls.Add(lblNextOrder);
 
-            // 선택목록 라벨
-            lblSelectedList = new Label
-            {
-                Text = "선택목록:",
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, 15),
-                Font = new Font("Arial", 7, FontStyle.Bold)
-            };
-            rightPanel.Controls.Add(lblSelectedList);
-            yPos += 15;
+            //lblNextOrderValue = new Label
+            //{
+            //    Text = "1",
+            //    Location = new Point(45, yPos),
+            //    Size = new Size(30, 15),
+            //    Font = new Font("Arial", 7),
+            //    ForeColor = Color.Blue
+            //};
+            //rightPanel.Controls.Add(lblNextOrderValue);
+            //yPos += 25;
 
-            // 선택목록 리스트박스
-            listSelectedSlots = new ListBox
-            {
-                Location = new Point(5, yPos),
-                Size = new Size(buttonWidth, 60),
-                Font = new Font("Consolas", 6),
-                BackColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            rightPanel.Controls.Add(listSelectedSlots);
+            //// 선택목록 라벨
+            //lblSelectedList = new Label
+            //{
+            //    Text = "선택목록:",
+            //    Location = new Point(5, yPos),
+            //    Size = new Size(buttonWidth, 15),
+            //    Font = new Font("Arial", 7, FontStyle.Bold)
+            //};
+            //rightPanel.Controls.Add(lblSelectedList);
+            //yPos += 15;
 
-            // 테이블 레이아웃의 두 번째 열에 추가
-            tableLayoutPanel1.Controls.Add(rightPanel, 1, 0);
+            //// 선택목록 리스트박스
+            //listSelectedSlots = new ListBox
+            //{
+            //    Location = new Point(5, yPos),
+            //    Size = new Size(buttonWidth, 60),
+            //    Font = new Font("Consolas", 6),
+            //    BackColor = Color.White,
+            //    BorderStyle = BorderStyle.FixedSingle
+            //};
+            //rightPanel.Controls.Add(listSelectedSlots);
+
+            //// 테이블 레이아웃의 두 번째 열에 추가
+            //tableLayoutPanel1.Controls.Add(rightPanel, 1, 0);
         }
 
         private void InitializeToolTip()
@@ -295,7 +296,7 @@ namespace QMC.LCP_280.Process.Component
         }
 
         #region 버튼 이벤트 핸들러
-        private void BtnAll_Click(object sender, EventArgs e)
+        private void btn_All_Click(object sender, EventArgs e)
         {
             if (_materialCassette == null) return;
 
@@ -310,7 +311,7 @@ namespace QMC.LCP_280.Process.Component
             }
         }
 
-        private void BtnResetAll_Click(object sender, EventArgs e)
+        private void btn_ResetAll_Click(object sender, EventArgs e)
         {
             if (_materialCassette == null) return;
 
@@ -793,7 +794,7 @@ namespace QMC.LCP_280.Process.Component
         private void DrawSlotNumber(Graphics g, Rectangle rect, int slotNumber)
         {
             using (var font = new Font("Arial", Math.Max(6, _cellSize * 0.3f), FontStyle.Regular))
-            using (var brush = new SolidBrush(Color.White))
+            using (var brush = new SolidBrush(Color.Black))
             {
                 g.DrawString(slotNumber.ToString(), font, brush, rect.Left + 2, rect.Top + 2);
             }
@@ -835,7 +836,7 @@ namespace QMC.LCP_280.Process.Component
                 return;
             }
 
-            if (lblSelectedCountValue == null || lblNextOrderValue == null || listSelectedSlots == null || listSelectedSlots.IsDisposed)
+            if (lbl_SelectedCountValue == null || lbl_NextOrderValue == null || list_SelectedSlots == null || list_SelectedSlots.IsDisposed)
                 return;
 
             List<int> selectedSlots;
@@ -850,20 +851,20 @@ namespace QMC.LCP_280.Process.Component
             }
 
             string countText = selectedSlots.Count.ToString();
-            if (lblSelectedCountValue.Text != countText)
-                lblSelectedCountValue.Text = countText;
+            if (lbl_SelectedCountValue.Text != countText)
+                lbl_SelectedCountValue.Text = countText;
 
             string nextOrderText = (_materialCassette != null && nextSel > _materialCassette.SlotCount) ? "1" : nextSel.ToString();
-            if (lblNextOrderValue.Text != nextOrderText)
-                lblNextOrderValue.Text = nextOrderText;
+            if (lbl_NextOrderValue.Text != nextOrderText)
+                lbl_NextOrderValue.Text = nextOrderText;
 
-            listSelectedSlots.BeginUpdate();
+            list_SelectedSlots.BeginUpdate();
             try
             {
-                listSelectedSlots.Items.Clear();
+                list_SelectedSlots.Items.Clear();
                 if (selectedInOrder.Count == 0)
                 {
-                    listSelectedSlots.Items.Add("없음");
+                    list_SelectedSlots.Items.Add("없음");
                 }
                 else
                 {
@@ -872,13 +873,13 @@ namespace QMC.LCP_280.Process.Component
                         int order;
                         lock (_selectionLock)
                             order = _selectionOrder.ContainsKey(slotNumber) ? _selectionOrder[slotNumber] : 0;
-                        listSelectedSlots.Items.Add($"{order}: Slot{slotNumber}");
+                        list_SelectedSlots.Items.Add($"{order}: Slot{slotNumber}");
                     }
                 }
             }
             finally
             {
-                listSelectedSlots.EndUpdate();
+                list_SelectedSlots.EndUpdate();
             }
         }
         #endregion
@@ -972,5 +973,7 @@ namespace QMC.LCP_280.Process.Component
             SetMaterialCassette(testCassette);
         }
         #endregion
+
+
     }
 }

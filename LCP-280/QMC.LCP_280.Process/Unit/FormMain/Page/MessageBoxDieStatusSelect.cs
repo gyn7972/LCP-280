@@ -134,13 +134,13 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            this.secs++;
-            this.btn_Ok.Text = $"&Ok ({this.closedSecs - this.secs})";
-            if (this.secs >= this.closedSecs)
-            {
-                this.DialogResult = DialogResult.OK;
-                this.Close();
-            }
+            //this.secs++;
+            //this.btn_Ok.Text = $"&Ok ({this.closedSecs - this.secs})";
+            //if (this.secs >= this.closedSecs)
+            //{
+            //    this.DialogResult = DialogResult.OK;
+            //    this.Close();
+            //}
         }
 
         private void btn_Skip_Click(object sender, EventArgs e)

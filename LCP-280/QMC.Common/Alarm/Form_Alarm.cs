@@ -79,6 +79,7 @@ namespace QMC.Common.Alarm
                 baseButton.Size = ConfirmButton;
                 baseButton.TextAlign = ContentAlignment.MiddleCenter;
                 baseButton.FlatStyle = FlatStyle.Flat;
+                baseButton.Dock = DockStyle.Fill;
                 baseButton.Click += ButtonComfirm_Click;
 
                 this.panelComfirm.Controls.Add(baseButton);
