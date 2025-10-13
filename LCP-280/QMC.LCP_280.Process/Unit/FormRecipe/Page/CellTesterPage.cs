@@ -62,7 +62,7 @@ namespace QMC.LCP_280.Process.Unit.FormRecipe.Page
                 return;
             }
 
-            MessageBox.Show("Measurement was stopped due to an error.", "Error");
+            //MessageBox.Show("Measurement was stopped due to an error.", "Error");
         }
 
         private void Tester_OnConditionSetChanged(object sender)

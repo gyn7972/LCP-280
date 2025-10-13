@@ -440,54 +440,54 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
                 if (sv != null)
                 {
-                    var ask = new MessageBoxDieStatusSelect();
+                    //var ask = new MessageBoxDieStatusSelect();
 
-                    // 속성 직접 설정 후 ShowDialog() 호출
-                    ask.Title = $"Update Data: {sv.Socket.LastUpdated.ToString()}";
-                    ask.Message = $"Index '{sv.Socket.No}' is currently selected, and its status is '{sv.Socket.State}'.";
+                    //// 속성 직접 설정 후 ShowDialog() 호출
+                    //ask.Title = $"Update Data: {sv.Socket.LastUpdated.ToString()}";
+                    //ask.Message = $"Index '{sv.Socket.No}' is currently selected, and its status is '{sv.Socket.State}'.";
 
-                    if (ask.ShowDialog() == DialogResult.OK)  // 파라미터 없이 호출
-                    {
-                        switch (ask.RotateStatus)
-                        {
-                            case (int)Rotary.RotarySocketState.Empty:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Empty);
-                                break;
-                            case (int)Rotary.RotarySocketState.Loading:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Loading);
-                                break;
-                            case (int)Rotary.RotarySocketState.Loaded:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Loaded);
-                                break;
-                            case (int)Rotary.RotarySocketState.Aligning:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Aligning);
-                                break;
-                            case (int)Rotary.RotarySocketState.Aligned:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Aligned);
-                                break;
-                            case (int)Rotary.RotarySocketState.Probing:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Probing);
-                                break;
-                            case (int)Rotary.RotarySocketState.Probed:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Probed);
-                                break;
-                            case (int)Rotary.RotarySocketState.Unloading:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Unloading);
-                                break;
-                            case (int)Rotary.RotarySocketState.Outputting:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Outputting);
-                                break;
-                            case (int)Rotary.RotarySocketState.Completed:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Completed);
-                                break;
-                            case (int)Rotary.RotarySocketState.Error:
-                                sv.Socket.SetState(Rotary.RotarySocketState.Error);
-                                break;
-                        }
+                    //if (ask.ShowDialog() == DialogResult.OK)  // 파라미터 없이 호출
+                    //{
+                    //    switch (ask.RotateStatus)
+                    //    {
+                    //        case (int)Rotary.RotarySocketState.Empty:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Empty);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Loading:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Loading);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Loaded:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Loaded);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Aligning:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Aligning);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Aligned:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Aligned);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Probing:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Probing);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Probed:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Probed);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Unloading:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Unloading);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Outputting:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Outputting);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Completed:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Completed);
+                    //            break;
+                    //        case (int)Rotary.RotarySocketState.Error:
+                    //            sv.Socket.SetState(Rotary.RotarySocketState.Error);
+                    //            break;
+                    //    }
 
-                        _rotary.SetSocket(sv.Socket.No, sv.Socket);
-                    }
-                    //SelectIndexRequested?.Invoke(this, sv.Socket);
+                    //    _rotary.SetSocket(sv.Socket.No, sv.Socket);
+                    //}
+                    ////SelectIndexRequested?.Invoke(this, sv.Socket);
                 }
             } 
         }
