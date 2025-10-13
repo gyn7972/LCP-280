@@ -376,7 +376,7 @@ namespace QMC.Common.Unit
                         default:
                             break;
                     }
-                    Thread.Sleep(1); 
+                    Thread.Sleep(10); 
                     continue;
                 }
                 
@@ -384,7 +384,7 @@ namespace QMC.Common.Unit
 
                 if ((ret = OnRun()) != 0)
                 {
-                    Log.Write(this, $"OnRun Return: {ret}");
+                    //Log.Write(this, $"OnRun Return: {ret}");
                     OnStop();
                     //break;
                 }

@@ -797,7 +797,7 @@ namespace QMC.LCP_280.Process.Unit
             if (_vacuum == null)
                 return false;
 
-            if (!bCheckSignal)
+            if (bCheckSignal == false)
             {
                 if (on)
                     _vacuum.On();
