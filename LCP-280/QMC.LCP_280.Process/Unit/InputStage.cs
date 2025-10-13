@@ -937,7 +937,7 @@ namespace QMC.LCP_280.Process.Unit
 
         // === Cylinder 완료 대기 Helpers ===
         // Plate: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        private int WaitPlateStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
                 return 0;
@@ -957,7 +957,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // ClampLift: expectUp=true(UP 기대), false(DOWN 기대)
-        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 1500, int pollMs = 2)
+        private int WaitClampLiftStateOrAlarm(bool expectUp, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
                 return 0;
@@ -977,7 +977,7 @@ namespace QMC.LCP_280.Process.Unit
         }
 
         // Clamp F/B: expectFwd=true(FWD 기대), false(BWD 기대)
-        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 1500, int pollMs = 2)
+        private int WaitClampFBStateOrAlarm(bool expectFwd, int timeoutMs = 3000, int pollMs = 2)
         {
             if (Config.IsSimulation || Config.IsDryRun)
                 return 0;
@@ -1328,10 +1328,13 @@ namespace QMC.LCP_280.Process.Unit
             if(!Config.IsSimulation && !Config.IsDryRun)    
             {
                 if (IsRingPresent())
-                if (IsRingPresent())
                 {
-                    Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
-                    return nRtn;
+                    MaterialWafer wafer = GetMaterialWafer();
+                    if(wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                    {
+                        Log.Write(UnitName, "LoadingPrep", "Wafer already present -> Skip prepare");
+                        return nRtn;
+                    }
                 }
             }
             
@@ -1390,6 +1393,7 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "MoveToStageUnloadPosition", "Fail: Ejector Move Ready");
                 return -1;
             }
+
             nRet = this.InputStageEjector.MovePositionEjectPinReady();
             if (nRet != 0)
             {
@@ -1434,10 +1438,12 @@ namespace QMC.LCP_280.Process.Unit
                     PostAlarm((int)AlarmKeys.eDieTransferPickZNotSafe);
                     return -1;
                 }
+
                 if (Config.IsSimulation || Config.IsDryRun)
                 {
                     //Simulation - ok
                 }
+
                 else if (!InputFeeder.IsFeederZSafetyPosition())
                 {
                     this.AxisX.EmgStop();
