@@ -1548,14 +1548,24 @@ namespace QMC.LCP_280.Process.Unit
                         return -1;
                     }
 
-                    die.State = DieProcessState.Picked;
-                    die.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                    if(IsVacuumOK(0))
+                    {
+                        die.State = DieProcessState.Picked;
+                        die.ProcessSatate = Material.MaterialProcessSatate.Processing;
 
-                    Rotary.MoveMaterialToOutputDieTransfer();
-                    SetPickupDoneEvent();
+                        Rotary.MoveMaterialToOutputDieTransfer();
+                        SetPickupDoneEvent();
 
-                    _lastPickSucceeded = true;
-                    State = ProcessState.Complete;
+                        _lastPickSucceeded = true;
+                        State = ProcessState.Complete;
+                    }
+                    else
+                    {
+                        die.State = DieProcessState.Rejected;
+                        SetPickupDoneEvent();
+                        return 0;
+                    }
+                    
                 }
 
                 if (MaterialDie != null && MaterialDie.Presence == Material.MaterialPresence.Exist)

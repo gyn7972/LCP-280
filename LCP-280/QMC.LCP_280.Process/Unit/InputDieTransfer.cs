@@ -1581,20 +1581,30 @@ namespace QMC.LCP_280.Process.Unit
                     }
                     //if (IsStop) { return 0; }
 
-                    
-                    // Release
-                    (bool flowControl, int value) = InputStageVaccumOff();
-                    if (!flowControl)
+                    if(IsVacuumOK(0))
                     {
-                        return value;
-                    }
+                        // Release
+                        (bool flowControl, int value) = InputStageVaccumOff();
+                        if (!flowControl)
+                        {
+                            return value;
+                        }
 
-                    nRet = CommitPickedDie();
-                    if (nRet != 0)
-                    {
-                        Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
-                        return -1;
+                        nRet = CommitPickedDie();
+                        if (nRet != 0)
+                        {
+                            Log.Write(UnitName, "[OnRunWork] CommitPickedDie failed");
+                            return -1;
+                        }
+
                     }
+                    else
+                    {
+                        this.State = ProcessState.Ready;
+                        return 0;
+                    }
+                    
+                   
                     //if (IsStop) { return 0; }
                 }
             }
