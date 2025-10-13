@@ -1,5 +1,6 @@
 ﻿using QMC.Common;
 using QMC.Common.Controls;
+using QMC.Common.PKGTester;
 using QMC.Common.UI;
 using QMC.LCP_280.Process.Component;
 using QMC.LCP_280.Process.Unit;
@@ -13,9 +14,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
 using static QMC.Common.Material;
 using static QMC.LCP_280.Process.Unit.FormMain.SequenceAutoControl;
+using MessageBox = System.Windows.Forms.MessageBox;
+using Point = System.Drawing.Point;
 
 
 namespace QMC.LCP_280.Process
@@ -47,6 +51,8 @@ namespace QMC.LCP_280.Process
         private OutputFeeder OutputFeeder { get; set; }
         private InputStageEjector InputStageEjector {get; set; }
 
+        // Add
+        private PKGTester Tester => Equipment.Instance.Tester;
 
         public Monitoring_Main() : this(
             TryGetUnit<InputCassetteLifter>("InputCassetteLifter"),
@@ -148,6 +154,33 @@ namespace QMC.LCP_280.Process
             if (OutputStage != null)
                 OutputStage.DiePlaced += OutputStage_DiePlaced;
 
+            // Add
+            if(Tester != null)
+            {
+                Tester.OnMeasureCompleted += Tester_OnMeasureCompleted;
+                casSpectrumViewer1.AttachSpectrometer(Tester.Spectrometer);
+            }
+        }
+
+        private void Tester_OnMeasureCompleted(object sender)
+        {
+            PKGTesterResult result = Tester.Result;
+            BinningResult binningResult = result.BinningResult;
+            switch (binningResult.BinType)
+            {
+                case BinningType.GoodBin:
+                    lbResultValue.Text = $"{binningResult.BinNo}. {binningResult.BinLabel}";
+                    lbResultValue.ForeColor = Color.Lime;
+                    break;
+                case BinningType.NgBin:
+                    lbResultValue.Text = "NG";
+                    lbResultValue.ForeColor = Color.Red;
+                    break;
+                default:
+                    lbResultValue.Text = "UNKNOWN";
+                    lbResultValue.ForeColor = Color.Gray;
+                    break;
+            }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
