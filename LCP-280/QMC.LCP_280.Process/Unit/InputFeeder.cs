@@ -771,7 +771,8 @@ namespace QMC.LCP_280.Process.Unit
             // 0) Stage에 제품이 있으면 "언로딩 먼저"
             try
             {
-                NeedUnloadFirst = InputStage.IsWorking();
+                NeedUnloadFirst = InputStage.IsRingPresent();
+
                 if (NeedUnloadFirst)
                 {
 
@@ -917,8 +918,8 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected override int OnStart()
         {
-            this.InputCassetteLifter.Start();
-            this.InputStage.Start();
+            //this.InputCassetteLifter.Start();
+            //this.InputStage.Start();
 
             return base.OnStart();
         }

@@ -67,28 +67,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             monitor.Stop();
         }
 
-        private void btnDeviceInfo_Click(object sender, EventArgs e)
-        {
-            List<NIDAQResource> list = NIDAQResourceManager.FindAll();
-            
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"Found {list.Count} NI-DAQ devices");
-
-            int devIndex = 1;
-            foreach (var resource in list)
-            {
-                sb.AppendLine($"[{devIndex}] Dev: {resource.DeviceName}");
-                foreach (var aiChannel in resource.AIPhysicalChannels)
-                    sb.AppendLine($"ai: {aiChannel}");
-                foreach (var aoChannel in resource.AOPhysicalChannels)
-                    sb.AppendLine($"ao: {aoChannel}");
-                sb.AppendLine("");
-                devIndex++;
-            }
-
-            MessageBox.Show(sb.ToString());
-        }
-
         private void btnSave_Click(object sender, EventArgs e)
         {
             pcvConfig.Apply();
@@ -96,20 +74,6 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
             selectGage.Config.ApplyValueFromPropertyCollection(pcConfig);
             selectGage.Config.Save();
             selectGage.Initialize();
-        }
-
-        private void btnShowDialog_Click(object sender, EventArgs e)
-        {
-            if (dialog == null || dialog.IsDisposed)
-            {
-                dialog = new FormStrainGageDialog(monitor);
-                dialog.FormClosed += (s, args) => { dialog = null; };
-                dialog.Show();
-            }
-            else
-            {
-                dialog.BringToFront();
-            }
         }
 
         private void btnZeroSet_Click(object sender, EventArgs e)
@@ -139,6 +103,42 @@ namespace QMC.LCP_280.Process.Unit.FormSetup.Page
                 , MessageBoxIcon.Question);
 
             selectGage.ResetZeroVoltage();
+        }
+
+        private void btnDeviceInfo_Click(object sender, EventArgs e)
+        {
+            List<NIDAQResource> list = NIDAQResourceManager.FindAll();
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Found {list.Count} NI-DAQ devices");
+
+            int devIndex = 1;
+            foreach (var resource in list)
+            {
+                sb.AppendLine($"[{devIndex}] Dev: {resource.DeviceName}");
+                foreach (var aiChannel in resource.AIPhysicalChannels)
+                    sb.AppendLine($"ai: {aiChannel}");
+                foreach (var aoChannel in resource.AOPhysicalChannels)
+                    sb.AppendLine($"ao: {aoChannel}");
+                sb.AppendLine("");
+                devIndex++;
+            }
+
+            MessageBox.Show(sb.ToString());
+        }
+
+        private void btnDialog_Click(object sender, EventArgs e)
+        {
+            if (dialog == null || dialog.IsDisposed)
+            {
+                dialog = new FormStrainGageDialog(monitor);
+                dialog.FormClosed += (s, args) => { dialog = null; };
+                dialog.Show();
+            }
+            else
+            {
+                dialog.BringToFront();
+            }
         }
     }
 }
