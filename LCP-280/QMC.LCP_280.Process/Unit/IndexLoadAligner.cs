@@ -177,8 +177,7 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
-
-        public int MovePositionAlignUp(int nIndex = 0, bool isFine = false)
+        public int MovePositionAlignZUp(int nIndex = 0, bool isFine = false)
         {
             Task<int> task = MovePositionAsyncAlignUp(nIndex, isFine);
             while (IsEndTask(task) == false)
@@ -393,7 +392,6 @@ namespace QMC.LCP_280.Process.Unit
             }, ct);
         }
 
-
         // === AlignT_Foward ===
         public int MovePositionAlignTForward(bool isFine = false)
         {
@@ -455,7 +453,6 @@ namespace QMC.LCP_280.Process.Unit
                 return coreTask.Result;
             }, ct);
         }
-
 
         // === AlignT_Backward ===
         public int MovePositionAlignTBackward(bool isFine = false)
@@ -537,7 +534,7 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return -1;
                 }
-                Thread.Sleep(0);
+                Thread.Sleep(1);
             }
             return task.Result;
         }
@@ -847,7 +844,6 @@ namespace QMC.LCP_280.Process.Unit
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignTReady");
                     return -1;
                 }
-                
 
                 // 3) Z Up
                 bRtn = MovePositionAlignZReady(nIndex, bFineSpeed);
@@ -866,7 +862,6 @@ namespace QMC.LCP_280.Process.Unit
             {
                 LogSequence("End");
             }
-
             return bRtn;
         }
 
@@ -921,16 +916,14 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
                 
-
                 // 3) Z Up
-                bRtn = MovePositionAlignUp(nIndex, bFineSpeed);
+                bRtn = MovePositionAlignZUp(nIndex, bFineSpeed);
                 if (bRtn != 0)
                 {
                     Log.Write(UnitName, "MAlign", "Fail: MovePositionAlignUp");
                     return -1;
                 }
                 
-
                 // 4) T Forward
                 bRtn = MovePositionAlignTForward(bFineSpeed);
                 if (bRtn != 0)
@@ -939,7 +932,6 @@ namespace QMC.LCP_280.Process.Unit
                     return -1;
                 }
                 
-
                 // 5) T Backward
                 bRtn = MovePositionAlignTBackward(bFineSpeed);
                 if (bRtn != 0)
@@ -962,13 +954,20 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // 6) T Ready
                 bRtn = MovePositionAlignTReady(bFineSpeed);
-
                 // 7) Z Ready
-                bRtn += MovePositionAlignZReady(nIndex, bFineSpeed);
-                if(bRtn == 0)
+                //bRtn += MovePositionAlignZReady(nIndex, bFineSpeed);
+                //if(bRtn == 0)
+                //{
+                //    CompleteLoadAligner = true;
+                //}
+                // 7) Z Ready
+                bRtn += MovePositionSafetyZ(bFineSpeed);
+                if (bRtn != 0)
                 {
-                    CompleteLoadAligner = true;
+                    Log.Write(UnitName, "MAlign", "Fail: MovePositionSafetyZ");
                 }
+                
+                CompleteLoadAligner = true;
                 LogSequence("End");
             }
 

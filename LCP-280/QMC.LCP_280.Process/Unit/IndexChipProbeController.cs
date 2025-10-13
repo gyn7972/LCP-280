@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using static QMC.LCP_280.Process.Equipment;
 
 namespace QMC.LCP_280.Process.Unit
@@ -982,6 +983,14 @@ namespace QMC.LCP_280.Process.Unit
                IsAxisProbeCardZSafetyPos() &&
                IsAxisSphereZSafetyPos();
 
+        public bool IsProbeSafetyAxisPos()
+        {
+            bool bRet1 = false, bRet2 = false;
+            bRet1 = IsAxisProbeZSafetyPos();
+            bRet2 = IsAxisProbeCardZSafetyPos();
+
+            return bRet1 && bRet2;
+        }
 
         //public bool InPos(MotionAxis ax, double target) => ax == null || ax.InPosition(target);
         //public double GetTP(string tpName, string axisName)
@@ -1288,7 +1297,6 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "[RunInspectionReady] MovePositionSafetyZ failed");
                 return -1;
             }
-
             return nRet;
         }
 
@@ -1337,7 +1345,6 @@ namespace QMC.LCP_280.Process.Unit
 
             var socket = this.Rotary.GetSocket(nIndex);
             socket.SetState(Rotary.RotarySocketState.Probing);
-
             if (IsTopRequired())
             {
                 if(SetContectTop(true) == false)
@@ -1369,16 +1376,24 @@ namespace QMC.LCP_280.Process.Unit
                 }
             }
 
-            if(IsAxisProbeCardZSafetyPos() == false)
+            nRet = MovePositionSafetyZ();
+            if (nRet != 0)
             {
-                Log.Write(UnitName, "[RunInspection] ProbeCardZ not in SafetyPos");
                 PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                Log.Write(UnitName, "[RunInspection] MovePositionSafetyZ failed");
+                return -1;
+            }
+
+            if (IsAxisProbeCardZSafetyPos() == false)
+            {
+                PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                Log.Write(UnitName, "[RunInspection] ProbeCardZ not in SafetyPos");
                 return -1;
             }
             if (IsAxisProbeZSafetyPos() == false)
             {
-                Log.Write(UnitName, "[RunInspection] ProbeZ not in SafetyPos");
                 PostAlarm((int)AlarmKeys.eRotaryNotSafe);
+                Log.Write(UnitName, "[RunInspection] ProbeZ not in SafetyPos");
                 return -1;
             }
 
@@ -1443,8 +1458,6 @@ namespace QMC.LCP_280.Process.Unit
                 //if (IsStop) { return 0; }
 
                 // 6) 검사 요구 동기 처리
-
-
                 nRet = IndexChipProber.MeasureChip();
                 if (nRet != 0)
                 {
