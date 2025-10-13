@@ -1379,7 +1379,10 @@ namespace QMC.LCP_280.Process.Unit
             //    RequestInputDieTrDie = true;
             //    return 0;
             //}
-
+            if(IsStop)
+            {
+                return 0;
+            }
             nRet = Rotate();
 
             OutputDieTransfer.ReSetPickupStartEvent();

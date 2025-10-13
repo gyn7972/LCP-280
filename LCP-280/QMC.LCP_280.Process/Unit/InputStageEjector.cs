@@ -929,6 +929,7 @@ namespace QMC.LCP_280.Process.Unit
             if (IsAtEjectBlockSafety() == false ||
                 IsAtEjectPinReady() == false)
             {
+                InputStage.SetVacuum(false, true);
                 nRet = MovePositionEjectBlockSafety(isFine);
                 if (nRet != 0) 
                     return nRet;
