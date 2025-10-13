@@ -1746,14 +1746,14 @@ namespace QMC.LCP_280.Process.Unit
 
             Rotary.SetVacuum(GetUnloaderIndexNo(), false);
             Thread.Sleep(1);
-            Rotary.SetVent(GetUnloaderIndexNo(), true);
-            Thread.Sleep(50);
-            Rotary.SetVent(GetUnloaderIndexNo(), false);
-            Thread.Sleep(1);
+            //Rotary.SetVent(GetUnloaderIndexNo(), true);
+            //Thread.Sleep(50);
+            //Rotary.SetVent(GetUnloaderIndexNo(), false);
+            //Thread.Sleep(1);
             Rotary.SetBlow(GetUnloaderIndexNo(), true);
 
             //´ë±â
-            Thread.Sleep(50);
+            Thread.Sleep(100);
 
             return nRet;
         }

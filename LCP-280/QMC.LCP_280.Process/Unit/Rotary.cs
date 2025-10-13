@@ -1813,6 +1813,10 @@ namespace QMC.LCP_280.Process.Unit
         private int RunTrashCanSocketOnce()
         {
             int nRet = 0;
+
+            int nIndexTrash = GetTrashCanIndexNo();
+
+            SetBlow(nIndexTrash, true);
             if (SetTrashEjector(true) == false)
             {
                 Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector ON fail");
@@ -1825,7 +1829,6 @@ namespace QMC.LCP_280.Process.Unit
                 SetTrashEjector(false);
                 return -1;
             }
-
             //일정 시간 대기
             WaitByTime(GetClearTimeMs()); // 기본: 500ms
 
@@ -1848,7 +1851,7 @@ namespace QMC.LCP_280.Process.Unit
             //일정 시간 대기
             WaitByTime(1);
             Log.Write(UnitName, $"[RunTrashCanSocketOnce] Clear Comp.");
-
+            SetBlow(nIndexTrash, false);
             return nRet;
         }
 
