@@ -120,6 +120,9 @@ namespace QMC.Common.Account
                 if (!AccountManager.Login(id, pw))
                 {
                     lbError.Text = "Invalid User ID or Password.";
+                } else
+                {
+                    this.Close();
                 }
             }
 

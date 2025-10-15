@@ -66,6 +66,12 @@ namespace QMC.Common
             this.Controls.Add(rightPanel);
 
             CreateButton();
+
+            // 로그인 상태 변경 이벤트 구독
+            AccountManager.OnLoginStateChanged += OnLoginStateChanged;
+
+            // 초기 버튼 상태 설정
+            UpdateButtonAccessByPermission();
         }
 
         private void CreateButton()
@@ -133,6 +139,31 @@ namespace QMC.Common
             }
         }
 
+        // 로그인 상태 변경 시 호출되는 이벤트 핸들러
+        private void OnLoginStateChanged(object sender, EventArgs e)
+        {
+            UpdateButtonAccessByPermission();
+        }
+
+        // 권한에 따라 버튼 활성화/비활성화
+        private void UpdateButtonAccessByPermission()
+        {
+            bool hasPermission = AccountManager.HasParameterAccessPermission();
+
+            foreach (IndividualMenuButton button in _listMenuButtons)
+            {
+                MenuButtonType buttonType = (MenuButtonType)button.Tag;
+
+                // Config와 Setup 버튼은 Maintenance 이상 권한 필요
+                if (buttonType == MenuButtonType.Config || buttonType == MenuButtonType.Setup)
+                {
+                    button.Enabled = hasPermission;
+                }
+            }
+        }
+
+
+
         public void SetPanelSize(int width, int height)
         {
             this.Width = width;
@@ -156,13 +187,26 @@ namespace QMC.Common
                     Application.Exit();
                     return;
                 }
-                else if(menuButtons == MenuButtonType.Login)
+                else if (menuButtons == MenuButtonType.Login)
                 {
                     FormLogin loginDialog = new FormLogin();
                     loginDialog.ShowDialog();
+                    // 로그인 다이얼로그를 닫은 후 버튼 상태 업데이트
+                    // (OnLoginStateChanged 이벤트가 자동으로 호출되므로 별도 호출 불필요)
                     return;
                 }
-                
+
+                // Config/Setup 버튼 클릭 시 권한 재확인 (추가 보안)
+                if (menuButtons == MenuButtonType.Config || menuButtons == MenuButtonType.Setup)
+                {
+                    if (!AccountManager.HasParameterAccessPermission())
+                    {
+                        MessageBox.Show("Maintenance 이상의 권한이 필요합니다.", "권한 없음",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+
                 ClickBottomMenuButton?.Invoke(menuButtons);
             }
         }

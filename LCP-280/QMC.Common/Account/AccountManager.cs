@@ -31,6 +31,26 @@ namespace QMC.Common.Account
         public static IReadOnlyList<Account> Accounts { get => accounts.AsReadOnly(); }
         #endregion
 
+        #region Authorization
+        /// <summary>
+        /// 현재 로그인한 사용자가 Maintenance 이상의 권한을 가지고 있는지 확인
+        /// </summary>
+        public static bool HasParameterAccessPermission()
+        {
+            return currentAcount != null &&
+                   currentAcount.Grade >= UserGrade.Maintenance;
+        }
+
+        /// <summary>
+        /// 특정 등급 이상의 권한이 있는지 확인
+        /// </summary>
+        public static bool HasPermission(UserGrade requiredGrade)
+        {
+            return currentAcount != null &&
+                   currentAcount.Grade >= requiredGrade;
+        }
+        #endregion
+
         #region Account Management
         public static void Clear()
         {
