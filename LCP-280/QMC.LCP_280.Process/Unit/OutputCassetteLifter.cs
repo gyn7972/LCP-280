@@ -41,7 +41,7 @@ namespace QMC.LCP_280.Process.Unit
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eBinProtrusionDetected;
             alarm.Title = "돌출 감지 센서가 감지 되었습니다.";
-            alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다.\n 카세트를 점검 하고 다시 시작 하십시요.";
+            alarm.Cause = "카세트 맵핑 하는데 돌출 감지 센서가 감지 되었습니다. 카세트를 점검 하고 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -49,7 +49,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eFeederYSafetyPosition;
             alarm.Title = "Feeder Y축이 안전 위치에 있지 않습니다.";
-            alarm.Cause = "Feeder Y축이 안전 위치에 있지 않습니다.\n Feeder Y축을 안전 위치로 이동 후 다시 시작 하십시요.";
+            alarm.Cause = "Feeder Y축이 안전 위치에 있지 않습니다. Feeder Y축을 안전 위치로 이동 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);

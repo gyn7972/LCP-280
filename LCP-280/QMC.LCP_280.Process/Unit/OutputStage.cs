@@ -61,7 +61,7 @@ namespace QMC.LCP_280.Process.Unit
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eDieTransferPlaceZNotSafe;
             alarm.Title = "Die TrZAxis Not Sfarety Pos.";
-            alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -69,7 +69,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputFeederCylinderZNotSafe;
             alarm.Title = "Feeder Z-Cylinder Not Sfarety Pos.";
-            alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -78,7 +78,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputFeederYNotSafe;
             alarm.Title = "Feeder Y-Axis Not Sfarety Pos.";
-            alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -87,7 +87,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eNoBinDetected;
             alarm.Title = "No Bin Detected";
-            alarm.Cause = "Bin이 감지되지 않았습니다.\n Bin이 있는지 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Bin이 감지되지 않았습니다. Bin이 있는지 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -96,7 +96,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eClampFB;
             alarm.Title = "Clamp F/B Not Pos.";
-            alarm.Cause = "Clamp F/B가 지정 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Clamp F/B가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -104,7 +104,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eClampLift;
             alarm.Title = "Clamp Lift Not Pos.";
-            alarm.Cause = "Clamp Lift가 지정 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Clamp Lift가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -112,7 +112,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.ePlate;
             alarm.Title = "Plate Not Pos.";
-            alarm.Cause = "Plate가 지정 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Plate가 지정 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);

@@ -43,7 +43,7 @@ namespace QMC.LCP_280.Process.Unit
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
             alarm.Title = "Rorary Not Sfarety Pos.";
-            alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Rorary가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -51,7 +51,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eProbeTimeout;
             alarm.Title = "Probe Timeout.";
-            alarm.Cause = "Probe Timeout입니다.\n Probe 확인 및 재 측정 바랍니다.";
+            alarm.Cause = "Probe Timeout입니다. Probe 확인 및 재 측정 바랍니다.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -59,7 +59,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eSphereNotForward;
             alarm.Title = "Sphere Cylinder Not Forward.";
-            alarm.Cause = "Sphere Cylinder가 Forward 위치가 아닙니다.\n 포지션 확인 바랍니다.";
+            alarm.Cause = "Sphere Cylinder가 Forward 위치가 아닙니다. 포지션 확인 바랍니다.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -67,7 +67,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eSphereFBTimeout;
             alarm.Title = "Sphere Cylinder Forward/Backward Timeout.";
-            alarm.Cause = "Sphere Cylinder Forward/Backward Timeout입니다.\n Cylinder 확인 바랍니다.";
+            alarm.Cause = "Sphere Cylinder Forward/Backward Timeout입니다. Cylinder 확인 바랍니다.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
