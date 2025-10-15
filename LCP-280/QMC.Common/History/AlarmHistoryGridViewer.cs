@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace QMC.Common.History
@@ -31,11 +33,14 @@ namespace QMC.Common.History
             if (!initComplete)
             {
                 // 페이지 크기 기본값 설정
-                cmbPageSize.SelectedIndex = 3; //0: 1~10 등등등.. 3: 1 ~ 100 까지 보게 수정
+                cmbPageSize.SelectedIndex = 3; // 0: 10개, 3: 100개 
 
                 // DateTimePicker 오늘 날짜로 설정
                 dtpDateFilter.Value = DateTime.Today;
-                chkEnableDateFilter.Checked = true; // 기본적으로 오늘 날짜 필터 활성화
+                chkEnableDateFilter.Checked = true;
+
+                // 알람 있는 날짜 목록 로드
+                LoadRecentAlarmDates();
 
                 // 오늘 날짜 데이터 로드
                 LoadAlarmsByDate(DateTime.Today);
@@ -56,29 +61,21 @@ namespace QMC.Common.History
             }
         }
 
-        /// <summary>
-        /// 실시간 알람 추가 (현재 표시 중인 날짜에만 반영)
-        /// </summary>
         private void AddRealtimeAlarm(AlarmHistory history)
         {
-            // 현재 날짜 필터에 해당하는 알람만 화면에 추가
             if (chkEnableDateFilter.Checked && history.Info.GeneratedTime.Date == currentDate.Date)
             {
                 currentAlarms.Insert(0, history);
                 UpdateStatistics();
                 ApplyFilters();
             }
-            // 날짜가 다르면 화면에는 추가 안하지만, 해당 날짜 캐시는 무효화
             else
             {
-                // 해당 날짜의 캐시 삭제 (다음에 조회할 때 파일에서 다시 읽도록)
                 HistoryManager.Instance.ClearCacheByDate(history.Info.GeneratedTime.Date);
+                LoadRecentAlarmDates();
             }
         }
 
-        /// <summary>
-        /// 특정 날짜의 알람 로드
-        /// </summary>
         private void LoadAlarmsByDate(DateTime date)
         {
             currentDate = date;
@@ -91,11 +88,9 @@ namespace QMC.Common.History
         {
             filteredAlarms = currentAlarms.Where(a =>
             {
-                // Type 필터
                 if (currentTypeFilter != "All" && a.Info.Grade != currentTypeFilter)
                     return false;
 
-                // 검색 필터
                 if (!string.IsNullOrWhiteSpace(searchKeyword))
                 {
                     string keyword = searchKeyword.ToLower();
@@ -117,7 +112,6 @@ namespace QMC.Common.History
                 return true;
             }).ToList();
 
-            // 페이지 재계산
             int totalPages = (int)Math.Ceiling(filteredAlarms.Count / (double)pageSize);
             if (currentPage > totalPages && totalPages > 0)
                 currentPage = totalPages;
@@ -148,7 +142,6 @@ namespace QMC.Common.History
                 row.Cells["AlarmTitle"].Value = history.Info.Title;
                 row.Cells["AlarmCause"].Value = history.Info.Cause;
 
-                // Type에 따른 색상 구분
                 if (history.Info.Grade == "Error")
                     row.DefaultCellStyle.BackColor = Color.FromArgb(255, 240, 240);
                 else if (history.Info.Grade == "Warning")
@@ -183,7 +176,6 @@ namespace QMC.Common.History
             lblCurrentPage.Text = $"Page {currentPage} / {Math.Max(1, totalPages)}";
         }
 
-        // 필터 버튼 이벤트
         private void btnFilterAll_Click(object sender, EventArgs e)
         {
             currentTypeFilter = "All";
@@ -217,7 +209,6 @@ namespace QMC.Common.History
             activeButton.BackColor = Color.FromArgb(0, 120, 215);
             activeButton.ForeColor = Color.White;
 
-            // 나머지는 기본 색상
             foreach (Button btn in new[] { btnFilterAll, btnFilterError, btnFilterWarning })
             {
                 if (btn != activeButton)
@@ -225,7 +216,6 @@ namespace QMC.Common.History
             }
         }
 
-        // 날짜 필터
         private void dtpDateFilter_ValueChanged(object sender, EventArgs e)
         {
             if (chkEnableDateFilter.Checked)
@@ -241,22 +231,19 @@ namespace QMC.Common.History
 
             if (chkEnableDateFilter.Checked)
             {
-                // 날짜 필터 활성화 - 선택된 날짜 로드
                 currentPage = 1;
                 LoadAlarmsByDate(dtpDateFilter.Value.Date);
             }
             else
             {
-                // 날짜 필터 비활성화 - 최근 7일 데이터 로드
                 currentPage = 1;
                 currentAlarms = HistoryManager.Instance.LoadRecentAlarmHistory(7);
-                currentDate = DateTime.MinValue; // 날짜 필터 없음 표시
+                currentDate = DateTime.MinValue;
                 UpdateStatistics();
                 ApplyFilters();
             }
         }
 
-        // 페이지 크기 변경
         private void cmbPageSize_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cmbPageSize.SelectedItem != null)
@@ -267,7 +254,6 @@ namespace QMC.Common.History
             }
         }
 
-        // 페이지 네비게이션
         private void btnPrevPage_Click(object sender, EventArgs e)
         {
             if (currentPage > 1)
@@ -307,7 +293,6 @@ namespace QMC.Common.History
             }
         }
 
-        // 검색 기능
         private void txtSearch_TextChanged(object sender, EventArgs e)
         {
             if (txtSearch == null) return;
@@ -326,6 +311,60 @@ namespace QMC.Common.History
             searchKeyword = string.Empty;
             currentPage = 1;
             ApplyFilters();
+        }
+
+        private void LoadRecentAlarmDates()
+        {
+            string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
+            if (!Directory.Exists(logFolder))
+                return;
+
+            cmbRecentDates.Items.Clear();
+            cmbRecentDates.Items.Add("-- 날짜 선택 --");
+
+            var files = Directory.GetFiles(logFolder, "AlarmLog_*.csv")
+                .OrderByDescending(f => f)
+                .Take(30);
+
+            foreach (var file in files)
+            {
+                try
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+                    string dateStr = fileName.Replace("AlarmLog_", "");
+
+                    if (DateTime.TryParseExact(dateStr, "yyyyMMdd", null,
+                        System.Globalization.DateTimeStyles.None, out DateTime date))
+                    {
+                        var lines = File.ReadAllLines(file, Encoding.UTF8);
+                        int count = lines.Where(l => !string.IsNullOrWhiteSpace(l)).Count();
+
+                        if (count > 0)
+                        {
+                            cmbRecentDates.Items.Add($"{date:yyyy-MM-dd} ({count}개)");
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            cmbRecentDates.SelectedIndex = 0;
+        }
+
+        private void cmbRecentDates_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cmbRecentDates.SelectedIndex > 0 && cmbRecentDates.SelectedItem != null)
+            {
+                string selected = cmbRecentDates.SelectedItem.ToString();
+                string dateStr = selected.Substring(0, 10);
+
+                if (DateTime.TryParse(dateStr, out DateTime date))
+                {
+                    dtpDateFilter.Value = date;
+                    chkEnableDateFilter.Checked = true;
+                    LoadAlarmsByDate(date);
+                }
+            }
         }
     }
 }

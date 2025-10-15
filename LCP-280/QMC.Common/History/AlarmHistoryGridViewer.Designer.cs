@@ -13,6 +13,8 @@
             base.Dispose(disposing);
         }
 
+        #region Component Designer generated code
+
         private void InitializeComponent()
         {
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
@@ -27,23 +29,20 @@
             this.lblError = new System.Windows.Forms.Label();
             this.lblTotal = new System.Windows.Forms.Label();
             this.panelFilter = new System.Windows.Forms.Panel();
-            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel6 = new System.Windows.Forms.TableLayoutPanel();
+            this.cmbRecentDates = new System.Windows.Forms.ComboBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.btnClearSearch = new System.Windows.Forms.Button();
+            this.txtSearch = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
             this.cmbPageSize = new System.Windows.Forms.ComboBox();
             this.label4 = new System.Windows.Forms.Label();
-            this.tableLayoutPanel5 = new System.Windows.Forms.TableLayoutPanel();
-            this.btnClearSearch = new System.Windows.Forms.Button();
-            this.label3 = new System.Windows.Forms.Label();
-            this.txtSearch = new System.Windows.Forms.TextBox();
-            this.tableLayoutPanel3 = new System.Windows.Forms.TableLayoutPanel();
-            this.label2 = new System.Windows.Forms.Label();
-            this.dtpDateFilter = new System.Windows.Forms.DateTimePicker();
             this.chkEnableDateFilter = new System.Windows.Forms.CheckBox();
-            this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
-            this.label1 = new System.Windows.Forms.Label();
-            this.btnFilterAll = new System.Windows.Forms.Button();
-            this.btnFilterError = new System.Windows.Forms.Button();
+            this.dtpDateFilter = new System.Windows.Forms.DateTimePicker();
+            this.label2 = new System.Windows.Forms.Label();
             this.btnFilterWarning = new System.Windows.Forms.Button();
+            this.btnFilterError = new System.Windows.Forms.Button();
+            this.btnFilterAll = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
             this.panelBottom = new System.Windows.Forms.Panel();
             this.lblCurrentPage = new System.Windows.Forms.Label();
             this.btnLastPage = new System.Windows.Forms.Button();
@@ -54,11 +53,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
             this.panelTop.SuspendLayout();
             this.panelFilter.SuspendLayout();
-            this.tableLayoutPanel1.SuspendLayout();
-            this.tableLayoutPanel6.SuspendLayout();
-            this.tableLayoutPanel5.SuspendLayout();
-            this.tableLayoutPanel3.SuspendLayout();
-            this.tableLayoutPanel2.SuspendLayout();
             this.panelBottom.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -76,14 +70,14 @@
             this.AlarmTitle,
             this.AlarmCause});
             this.dataGridView1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dataGridView1.Location = new System.Drawing.Point(0, 65);
+            this.dataGridView1.Location = new System.Drawing.Point(0, 100);
             this.dataGridView1.MultiSelect = false;
             this.dataGridView1.Name = "dataGridView1";
             this.dataGridView1.ReadOnly = true;
             this.dataGridView1.RowHeadersVisible = false;
             this.dataGridView1.RowTemplate.Height = 23;
             this.dataGridView1.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dataGridView1.Size = new System.Drawing.Size(1140, 305);
+            this.dataGridView1.Size = new System.Drawing.Size(1140, 270);
             this.dataGridView1.TabIndex = 0;
             // 
             // Time
@@ -146,7 +140,7 @@
             this.lblWarning.AutoSize = true;
             this.lblWarning.Location = new System.Drawing.Point(180, 8);
             this.lblWarning.Name = "lblWarning";
-            this.lblWarning.Size = new System.Drawing.Size(64, 12);
+            this.lblWarning.Size = new System.Drawing.Size(69, 12);
             this.lblWarning.TabIndex = 2;
             this.lblWarning.Text = "Warning: 0";
             // 
@@ -155,7 +149,7 @@
             this.lblError.AutoSize = true;
             this.lblError.Location = new System.Drawing.Point(100, 8);
             this.lblError.Name = "lblError";
-            this.lblError.Size = new System.Drawing.Size(46, 12);
+            this.lblError.Size = new System.Drawing.Size(50, 12);
             this.lblError.TabIndex = 1;
             this.lblError.Text = "Error: 0";
             // 
@@ -164,7 +158,7 @@
             this.lblTotal.AutoSize = true;
             this.lblTotal.Location = new System.Drawing.Point(10, 8);
             this.lblTotal.Name = "lblTotal";
-            this.lblTotal.Size = new System.Drawing.Size(47, 12);
+            this.lblTotal.Size = new System.Drawing.Size(52, 12);
             this.lblTotal.TabIndex = 0;
             this.lblTotal.Text = "Total: 0";
             // 
@@ -172,54 +166,76 @@
             // 
             this.panelFilter.BackColor = System.Drawing.Color.WhiteSmoke;
             this.panelFilter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panelFilter.Controls.Add(this.tableLayoutPanel1);
+            this.panelFilter.Controls.Add(this.cmbRecentDates);
+            this.panelFilter.Controls.Add(this.label5);
+            this.panelFilter.Controls.Add(this.btnClearSearch);
+            this.panelFilter.Controls.Add(this.txtSearch);
+            this.panelFilter.Controls.Add(this.label3);
+            this.panelFilter.Controls.Add(this.cmbPageSize);
+            this.panelFilter.Controls.Add(this.label4);
+            this.panelFilter.Controls.Add(this.chkEnableDateFilter);
+            this.panelFilter.Controls.Add(this.dtpDateFilter);
+            this.panelFilter.Controls.Add(this.label2);
+            this.panelFilter.Controls.Add(this.btnFilterWarning);
+            this.panelFilter.Controls.Add(this.btnFilterError);
+            this.panelFilter.Controls.Add(this.btnFilterAll);
+            this.panelFilter.Controls.Add(this.label1);
             this.panelFilter.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelFilter.Location = new System.Drawing.Point(0, 30);
             this.panelFilter.Name = "panelFilter";
-            this.panelFilter.Size = new System.Drawing.Size(1140, 35);
+            this.panelFilter.Size = new System.Drawing.Size(1140, 70);
             this.panelFilter.TabIndex = 2;
             // 
-            // tableLayoutPanel1
+            // cmbRecentDates
             // 
-            this.tableLayoutPanel1.ColumnCount = 5;
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 5F));
-            this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel6, 2, 0);
-            this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel5, 3, 0);
-            this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel3, 1, 0);
-            this.tableLayoutPanel1.Controls.Add(this.tableLayoutPanel2, 0, 0);
-            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 1;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1138, 33);
-            this.tableLayoutPanel1.TabIndex = 6;
+            this.cmbRecentDates.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbRecentDates.FormattingEnabled = true;
+            this.cmbRecentDates.Location = new System.Drawing.Point(370, 39);
+            this.cmbRecentDates.Name = "cmbRecentDates";
+            this.cmbRecentDates.Size = new System.Drawing.Size(200, 20);
+            this.cmbRecentDates.TabIndex = 12;
+            this.cmbRecentDates.SelectedIndexChanged += new System.EventHandler(this.cmbRecentDates_SelectedIndexChanged);
             // 
-            // tableLayoutPanel6
+            // label5
             // 
-            this.tableLayoutPanel6.ColumnCount = 2;
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 30F));
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 70F));
-            this.tableLayoutPanel6.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel6.Controls.Add(this.cmbPageSize, 1, 0);
-            this.tableLayoutPanel6.Controls.Add(this.label4, 0, 0);
-            this.tableLayoutPanel6.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel6.Location = new System.Drawing.Point(571, 3);
-            this.tableLayoutPanel6.Name = "tableLayoutPanel6";
-            this.tableLayoutPanel6.RowCount = 1;
-            this.tableLayoutPanel6.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel6.Size = new System.Drawing.Size(221, 27);
-            this.tableLayoutPanel6.TabIndex = 7;
+            this.label5.AutoSize = true;
+            this.label5.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label5.Location = new System.Drawing.Point(280, 42);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(81, 12);
+            this.label5.TabIndex = 13;
+            this.label5.Text = "Quick Date:";
+            // 
+            // btnClearSearch
+            // 
+            this.btnClearSearch.Location = new System.Drawing.Point(215, 38);
+            this.btnClearSearch.Name = "btnClearSearch";
+            this.btnClearSearch.Size = new System.Drawing.Size(55, 23);
+            this.btnClearSearch.TabIndex = 11;
+            this.btnClearSearch.Text = "Clear";
+            this.btnClearSearch.UseVisualStyleBackColor = true;
+            this.btnClearSearch.Click += new System.EventHandler(this.btnClearSearch_Click);
+            // 
+            // txtSearch
+            // 
+            this.txtSearch.Location = new System.Drawing.Point(60, 39);
+            this.txtSearch.Name = "txtSearch";
+            this.txtSearch.Size = new System.Drawing.Size(150, 21);
+            this.txtSearch.TabIndex = 10;
+            this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label3.Location = new System.Drawing.Point(10, 42);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(50, 12);
+            this.label3.TabIndex = 9;
+            this.label3.Text = "Search:";
             // 
             // cmbPageSize
             // 
-            this.cmbPageSize.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbPageSize.FormattingEnabled = true;
             this.cmbPageSize.Items.AddRange(new object[] {
@@ -227,198 +243,93 @@
             "20",
             "50",
             "100"});
-            this.cmbPageSize.Location = new System.Drawing.Point(69, 3);
+            this.cmbPageSize.Location = new System.Drawing.Point(610, 9);
             this.cmbPageSize.Name = "cmbPageSize";
-            this.cmbPageSize.Size = new System.Drawing.Size(149, 20);
-            this.cmbPageSize.TabIndex = 9;
+            this.cmbPageSize.Size = new System.Drawing.Size(60, 20);
+            this.cmbPageSize.TabIndex = 8;
             this.cmbPageSize.SelectedIndexChanged += new System.EventHandler(this.cmbPageSize_SelectedIndexChanged);
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Dock = System.Windows.Forms.DockStyle.Fill;
             this.label4.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label4.Location = new System.Drawing.Point(3, 3);
-            this.label4.Margin = new System.Windows.Forms.Padding(3);
+            this.label4.Location = new System.Drawing.Point(560, 12);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(60, 21);
-            this.label4.TabIndex = 8;
+            this.label4.Size = new System.Drawing.Size(44, 12);
+            this.label4.TabIndex = 7;
             this.label4.Text = "Rows:";
-            this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // tableLayoutPanel5
-            // 
-            this.tableLayoutPanel5.ColumnCount = 3;
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 30F));
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
-            this.tableLayoutPanel5.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel5.Controls.Add(this.btnClearSearch, 2, 0);
-            this.tableLayoutPanel5.Controls.Add(this.label3, 0, 0);
-            this.tableLayoutPanel5.Controls.Add(this.txtSearch, 1, 0);
-            this.tableLayoutPanel5.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel5.Location = new System.Drawing.Point(798, 3);
-            this.tableLayoutPanel5.Name = "tableLayoutPanel5";
-            this.tableLayoutPanel5.RowCount = 1;
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel5.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 27F));
-            this.tableLayoutPanel5.Size = new System.Drawing.Size(278, 27);
-            this.tableLayoutPanel5.TabIndex = 3;
-            // 
-            // btnClearSearch
-            // 
-            this.btnClearSearch.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnClearSearch.Location = new System.Drawing.Point(225, 3);
-            this.btnClearSearch.Name = "btnClearSearch";
-            this.btnClearSearch.Size = new System.Drawing.Size(50, 21);
-            this.btnClearSearch.TabIndex = 11;
-            this.btnClearSearch.Text = "Clear";
-            this.btnClearSearch.UseVisualStyleBackColor = true;
-            this.btnClearSearch.Click += new System.EventHandler(this.btnClearSearch_Click);
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label3.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label3.Location = new System.Drawing.Point(3, 3);
-            this.label3.Margin = new System.Windows.Forms.Padding(3);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(77, 21);
-            this.label3.TabIndex = 9;
-            this.label3.Text = "Search:";
-            this.label3.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // txtSearch
-            // 
-            this.txtSearch.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtSearch.Location = new System.Drawing.Point(86, 3);
-            this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(133, 21);
-            this.txtSearch.TabIndex = 10;
-            this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
-            // 
-            // tableLayoutPanel3
-            // 
-            this.tableLayoutPanel3.ColumnCount = 3;
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 70F));
-            this.tableLayoutPanel3.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 10F));
-            this.tableLayoutPanel3.Controls.Add(this.label2, 0, 0);
-            this.tableLayoutPanel3.Controls.Add(this.dtpDateFilter, 1, 0);
-            this.tableLayoutPanel3.Controls.Add(this.chkEnableDateFilter, 2, 0);
-            this.tableLayoutPanel3.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel3.Location = new System.Drawing.Point(287, 3);
-            this.tableLayoutPanel3.Name = "tableLayoutPanel3";
-            this.tableLayoutPanel3.RowCount = 1;
-            this.tableLayoutPanel3.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel3.Size = new System.Drawing.Size(278, 27);
-            this.tableLayoutPanel3.TabIndex = 1;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label2.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label2.Location = new System.Drawing.Point(3, 3);
-            this.label2.Margin = new System.Windows.Forms.Padding(3);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(49, 21);
-            this.label2.TabIndex = 4;
-            this.label2.Text = "Date:";
-            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // dtpDateFilter
-            // 
-            this.dtpDateFilter.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.dtpDateFilter.Enabled = false;
-            this.dtpDateFilter.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpDateFilter.Location = new System.Drawing.Point(58, 3);
-            this.dtpDateFilter.Name = "dtpDateFilter";
-            this.dtpDateFilter.Size = new System.Drawing.Size(188, 21);
-            this.dtpDateFilter.TabIndex = 5;
-            this.dtpDateFilter.ValueChanged += new System.EventHandler(this.dtpDateFilter_ValueChanged);
             // 
             // chkEnableDateFilter
             // 
             this.chkEnableDateFilter.AutoSize = true;
-            this.chkEnableDateFilter.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chkEnableDateFilter.Location = new System.Drawing.Point(252, 3);
+            this.chkEnableDateFilter.Location = new System.Drawing.Point(480, 11);
             this.chkEnableDateFilter.Name = "chkEnableDateFilter";
-            this.chkEnableDateFilter.Size = new System.Drawing.Size(23, 21);
+            this.chkEnableDateFilter.Size = new System.Drawing.Size(15, 14);
             this.chkEnableDateFilter.TabIndex = 6;
             this.chkEnableDateFilter.UseVisualStyleBackColor = true;
             this.chkEnableDateFilter.CheckedChanged += new System.EventHandler(this.chkEnableDateFilter_CheckedChanged);
             // 
-            // tableLayoutPanel2
+            // dtpDateFilter
             // 
-            this.tableLayoutPanel2.ColumnCount = 4;
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel2.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 25F));
-            this.tableLayoutPanel2.Controls.Add(this.label1, 0, 0);
-            this.tableLayoutPanel2.Controls.Add(this.btnFilterAll, 1, 0);
-            this.tableLayoutPanel2.Controls.Add(this.btnFilterError, 2, 0);
-            this.tableLayoutPanel2.Controls.Add(this.btnFilterWarning, 3, 0);
-            this.tableLayoutPanel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel2.Location = new System.Drawing.Point(3, 3);
-            this.tableLayoutPanel2.Name = "tableLayoutPanel2";
-            this.tableLayoutPanel2.RowCount = 1;
-            this.tableLayoutPanel2.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel2.Size = new System.Drawing.Size(278, 27);
-            this.tableLayoutPanel2.TabIndex = 0;
+            this.dtpDateFilter.Enabled = false;
+            this.dtpDateFilter.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpDateFilter.Location = new System.Drawing.Point(350, 8);
+            this.dtpDateFilter.Name = "dtpDateFilter";
+            this.dtpDateFilter.Size = new System.Drawing.Size(120, 21);
+            this.dtpDateFilter.TabIndex = 5;
+            this.dtpDateFilter.ValueChanged += new System.EventHandler(this.dtpDateFilter_ValueChanged);
             // 
-            // label1
+            // label2
             // 
-            this.label1.AutoSize = true;
-            this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label1.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label1.Location = new System.Drawing.Point(3, 3);
-            this.label1.Margin = new System.Windows.Forms.Padding(3);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(63, 21);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Type:";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.label2.AutoSize = true;
+            this.label2.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label2.Location = new System.Drawing.Point(300, 12);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(40, 12);
+            this.label2.TabIndex = 4;
+            this.label2.Text = "Date:";
             // 
-            // btnFilterAll
+            // btnFilterWarning
             // 
-            this.btnFilterAll.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(215)))));
-            this.btnFilterAll.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnFilterAll.ForeColor = System.Drawing.Color.White;
-            this.btnFilterAll.Location = new System.Drawing.Point(72, 3);
-            this.btnFilterAll.Name = "btnFilterAll";
-            this.btnFilterAll.Size = new System.Drawing.Size(63, 21);
-            this.btnFilterAll.TabIndex = 1;
-            this.btnFilterAll.Text = "All";
-            this.btnFilterAll.UseVisualStyleBackColor = false;
-            this.btnFilterAll.Click += new System.EventHandler(this.btnFilterAll_Click);
+            this.btnFilterWarning.Location = new System.Drawing.Point(200, 7);
+            this.btnFilterWarning.Name = "btnFilterWarning";
+            this.btnFilterWarning.Size = new System.Drawing.Size(70, 23);
+            this.btnFilterWarning.TabIndex = 3;
+            this.btnFilterWarning.Text = "Warning";
+            this.btnFilterWarning.UseVisualStyleBackColor = true;
+            this.btnFilterWarning.Click += new System.EventHandler(this.btnFilterWarning_Click);
             // 
             // btnFilterError
             // 
-            this.btnFilterError.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnFilterError.Location = new System.Drawing.Point(141, 3);
+            this.btnFilterError.Location = new System.Drawing.Point(130, 7);
             this.btnFilterError.Name = "btnFilterError";
-            this.btnFilterError.Size = new System.Drawing.Size(63, 21);
+            this.btnFilterError.Size = new System.Drawing.Size(70, 23);
             this.btnFilterError.TabIndex = 2;
             this.btnFilterError.Text = "Error";
             this.btnFilterError.UseVisualStyleBackColor = true;
             this.btnFilterError.Click += new System.EventHandler(this.btnFilterError_Click);
             // 
-            // btnFilterWarning
+            // btnFilterAll
             // 
-            this.btnFilterWarning.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.btnFilterWarning.Location = new System.Drawing.Point(210, 3);
-            this.btnFilterWarning.Name = "btnFilterWarning";
-            this.btnFilterWarning.Size = new System.Drawing.Size(65, 21);
-            this.btnFilterWarning.TabIndex = 3;
-            this.btnFilterWarning.Text = "Warning";
-            this.btnFilterWarning.UseVisualStyleBackColor = true;
-            this.btnFilterWarning.Click += new System.EventHandler(this.btnFilterWarning_Click);
+            this.btnFilterAll.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(120)))), ((int)(((byte)(215)))));
+            this.btnFilterAll.ForeColor = System.Drawing.Color.White;
+            this.btnFilterAll.Location = new System.Drawing.Point(60, 7);
+            this.btnFilterAll.Name = "btnFilterAll";
+            this.btnFilterAll.Size = new System.Drawing.Size(70, 23);
+            this.btnFilterAll.TabIndex = 1;
+            this.btnFilterAll.Text = "All";
+            this.btnFilterAll.UseVisualStyleBackColor = false;
+            this.btnFilterAll.Click += new System.EventHandler(this.btnFilterAll_Click);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
+            this.label1.Location = new System.Drawing.Point(10, 12);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(43, 12);
+            this.label1.TabIndex = 0;
+            this.label1.Text = "Type:";
             // 
             // panelBottom
             // 
@@ -495,7 +406,7 @@
             this.lblPagination.AutoSize = true;
             this.lblPagination.Location = new System.Drawing.Point(10, 8);
             this.lblPagination.Name = "lblPagination";
-            this.lblPagination.Size = new System.Drawing.Size(43, 12);
+            this.lblPagination.Size = new System.Drawing.Size(49, 12);
             this.lblPagination.TabIndex = 0;
             this.lblPagination.Text = "0-0 / 0";
             // 
@@ -514,20 +425,13 @@
             this.panelTop.ResumeLayout(false);
             this.panelTop.PerformLayout();
             this.panelFilter.ResumeLayout(false);
-            this.tableLayoutPanel1.ResumeLayout(false);
-            this.tableLayoutPanel6.ResumeLayout(false);
-            this.tableLayoutPanel6.PerformLayout();
-            this.tableLayoutPanel5.ResumeLayout(false);
-            this.tableLayoutPanel5.PerformLayout();
-            this.tableLayoutPanel3.ResumeLayout(false);
-            this.tableLayoutPanel3.PerformLayout();
-            this.tableLayoutPanel2.ResumeLayout(false);
-            this.tableLayoutPanel2.PerformLayout();
+            this.panelFilter.PerformLayout();
             this.panelBottom.ResumeLayout(false);
             this.panelBottom.PerformLayout();
             this.ResumeLayout(false);
-
         }
+
+        #endregion
 
         private System.Windows.Forms.DataGridView dataGridView1;
         private System.Windows.Forms.DataGridViewTextBoxColumn Time;
@@ -554,16 +458,13 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.DateTimePicker dtpDateFilter;
         private System.Windows.Forms.CheckBox chkEnableDateFilter;
+        private System.Windows.Forms.ComboBox cmbPageSize;
+        private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label lblCurrentPage;
         private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Button btnClearSearch;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel5;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel3;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel2;
-        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel6;
-        private System.Windows.Forms.ComboBox cmbPageSize;
-        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.ComboBox cmbRecentDates;
+        private System.Windows.Forms.Label label5;
     }
 }
