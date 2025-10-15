@@ -231,6 +231,7 @@
             this.cmbPageSize.Name = "cmbPageSize";
             this.cmbPageSize.Size = new System.Drawing.Size(149, 20);
             this.cmbPageSize.TabIndex = 9;
+            this.cmbPageSize.SelectedIndexChanged += new System.EventHandler(this.cmbPageSize_SelectedIndexChanged);
             // 
             // label4
             // 

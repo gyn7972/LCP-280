@@ -31,7 +31,7 @@ namespace QMC.Common.History
             if (!initComplete)
             {
                 // 페이지 크기 기본값 설정
-                cmbPageSize.SelectedIndex = 0;
+                cmbPageSize.SelectedIndex = 3; //0: 1~10 등등등.. 3: 1 ~ 100 까지 보게 수정
 
                 // DateTimePicker 오늘 날짜로 설정
                 dtpDateFilter.Value = DateTime.Today;
