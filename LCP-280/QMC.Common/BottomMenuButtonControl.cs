@@ -178,6 +178,17 @@ namespace QMC.Common
             {
                 MenuButtonType menuButtons = (MenuButtonType)button.Tag;
 
+                // Config/Setup 버튼 클릭 시 권한 재확인 (추가 보안)
+                if (menuButtons == MenuButtonType.Config || menuButtons == MenuButtonType.Setup)
+                {
+                    if (!AccountManager.HasParameterAccessPermission())
+                    {
+                        MessageBox.Show("Maintenance 이상의 권한이 필요합니다.", "권한 없음",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+
                 if (menuButtons == MenuButtonType.Exit)
                 {
                     var ask = new MessageBoxYesNo();
@@ -194,17 +205,6 @@ namespace QMC.Common
                     // 로그인 다이얼로그를 닫은 후 버튼 상태 업데이트
                     // (OnLoginStateChanged 이벤트가 자동으로 호출되므로 별도 호출 불필요)
                     return;
-                }
-
-                // Config/Setup 버튼 클릭 시 권한 재확인 (추가 보안)
-                if (menuButtons == MenuButtonType.Config || menuButtons == MenuButtonType.Setup)
-                {
-                    if (!AccountManager.HasParameterAccessPermission())
-                    {
-                        MessageBox.Show("Maintenance 이상의 권한이 필요합니다.", "권한 없음",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
                 }
 
                 ClickBottomMenuButton?.Invoke(menuButtons);

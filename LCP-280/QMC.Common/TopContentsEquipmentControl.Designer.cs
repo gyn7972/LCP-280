@@ -31,12 +31,14 @@ namespace QMC.Common
         /// </summary>
         private void InitializeComponent()
         {
-            this.tableLayoutContentsEquipmentPanel = new DeleteLogoBorderTableLayoutPanel();
+            this.tableLayoutContentsEquipmentPanel = new QMC.Common.CustomControl.DeleteLogoBorderTableLayoutPanel();
             this.SuspendLayout();
             // 
             // tableLayoutContentsEquipmentPanel
             // 
             this.tableLayoutContentsEquipmentPanel.AutoSize = true;
+            this.tableLayoutContentsEquipmentPanel.BorderColor = System.Drawing.Color.Black;
+            this.tableLayoutContentsEquipmentPanel.BorderWidth = 1;
             this.tableLayoutContentsEquipmentPanel.ColumnCount = 1;
             this.tableLayoutContentsEquipmentPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutContentsEquipmentPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
