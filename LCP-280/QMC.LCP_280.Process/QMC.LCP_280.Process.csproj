@@ -279,11 +279,11 @@
     <Compile Include="Unit\FormMain\Page\InputWaferCarrierControl.Designer.cs">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Component\LightChannelControlcs.cs">
+    <Compile Include="Component\SimpleLightControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Component\LightChannelControlcs.Designer.cs">
-      <DependentUpon>LightChannelControlcs.cs</DependentUpon>
+    <Compile Include="Component\SimpleLightControl.Designer.cs">
+      <DependentUpon>SimpleLightControl.cs</DependentUpon>
     </Compile>
     <Compile Include="Unit\FormMain\Page\MeasurementControl.cs">
       <SubType>UserControl</SubType>
@@ -693,8 +693,8 @@
     <EmbeddedResource Include="Unit\FormMain\Page\InputWaferCarrierControl.resx">
       <DependentUpon>InputWaferCarrierControl.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Component\LightChannelControlcs.resx">
-      <DependentUpon>LightChannelControlcs.cs</DependentUpon>
+    <EmbeddedResource Include="Component\SimpleLightControl.resx">
+      <DependentUpon>SimpleLightControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Unit\FormMain\Page\MeasurementControl.resx">
       <DependentUpon>MeasurementControl.cs</DependentUpon>
