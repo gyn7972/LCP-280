@@ -56,8 +56,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         private Form_AxisJogPopup _jogPopup = null;
         private AxisPostionPopup _axisPosPopup = null;
 
-        private Form _lightControlPopup = null;
-
         public Operator_Main() : this(
             TryGetUnit<InputFeeder>("InputFeeder"),
             TryGetUnit<InputDieTransfer>("InputDieTransfer"),
@@ -193,6 +191,8 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         private void LightControlRequested(object sender, EventArgs e)
         {
+            Form _lightControlPopup = null;
+
             if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
             {
                 _lightControlPopup.Close();

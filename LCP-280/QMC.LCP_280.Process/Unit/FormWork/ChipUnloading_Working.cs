@@ -1,7 +1,9 @@
 ﻿using QMC.Common;
 using QMC.Common.Cameras;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
+using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.LCP_280.Process.Unit.OutputDieTransferConfig.IO; // ODT IO 상수
@@ -58,6 +60,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             Load += ChipUnloading_Working_Load;
             FormClosing += ChipUnloading_Working_FormClosing;
+
+            _ChipUnloadingCameraviewer.LightControlRequested += LightControlRequested;
         }
 
         public void PreloadUI()
@@ -345,6 +349,39 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             try { }
             catch { }
+        }
+
+        private void LightControlRequested(object sender, EventArgs e)
+        {
+            Form _lightControlPopup = null;
+
+            if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
+            {
+                _lightControlPopup.Close();
+            }
+
+            Form popupForm = new Form();
+            popupForm.Text = "Light Control";
+            popupForm.Size = new Size(467, 286);
+            popupForm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            popupForm.MaximizeBox = false;
+            popupForm.MinimizeBox = false;
+            popupForm.ShowInTaskbar = false;
+
+            popupForm.StartPosition = FormStartPosition.Manual;
+            Point cursorPos = Cursor.Position;
+            popupForm.Location = cursorPos;
+
+            popupForm.Owner = null;
+
+            SimpleLightControl lightControl = new SimpleLightControl();
+            lightControl.Dock = DockStyle.Fill;
+            popupForm.Controls.Add(lightControl);
+
+            _lightControlPopup = popupForm;
+            popupForm.FormClosed += (s, ev) => { _lightControlPopup = null; };
+            popupForm.Show();
+            this.Activate();
         }
     }
 }
