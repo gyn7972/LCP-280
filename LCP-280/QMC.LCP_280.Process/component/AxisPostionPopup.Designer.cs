@@ -19,6 +19,7 @@
         #region Windows Form Designer generated code
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AxisPostionPopup));
             this.listViewAxis = new System.Windows.Forms.ListView();
             this.colAxisName = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colPosition = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -63,6 +64,7 @@
             this.ClientSize = new System.Drawing.Size(304, 691);
             this.Controls.Add(this.listViewAxis);
             this.DoubleBuffered = true;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "AxisPostionPopup";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;

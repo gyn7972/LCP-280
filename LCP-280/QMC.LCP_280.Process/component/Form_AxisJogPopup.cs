@@ -41,7 +41,7 @@ namespace QMC.LCP_280.Process.Unit
 
             // Jog Panel
             this.Text = "JogPanel";   // ← 작업표시줄 툴팁에 보이는 문자열
-            this.Icon = Properties.Resources.JogPanel_ico;  // 내장된 아이콘 로드
+            //this.Icon = Properties.Resources.JogPanel_ico;  // 내장된 아이콘 로드
             InitializeUI();
 
         }
