@@ -114,7 +114,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eVisionTsearch;
             alarm.Title = "Vision T Search.";
-            alarm.Cause = "Vision T Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Vision T Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -122,7 +122,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eVisionXYsearch;
             alarm.Title = "Vision XY Search.";
-            alarm.Cause = "Vision XY Search Fail.\n Chip Mark 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Vision XY Search Fail. Chip Mark 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);

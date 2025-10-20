@@ -355,7 +355,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             //todo : 사용금지 - config 불러오기/저장 다시 만들어야함.
             var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "DryRun 모드를 변경합니다.\n진행하시겠습니까?") != DialogResult.Yes)
+            if (ask.ShowDialog("확인", "DryRun 모드를 변경합니다. 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
             if (checkBoxTest.Checked)
@@ -376,7 +376,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         {
             //todo : 사용금지 - config 불러오기/저장 다시 만들어야함.
             var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "Simulation 모드를 변경합니다.\n진행하시겠습니까?") != DialogResult.Yes)
+            if (ask.ShowDialog("확인", "Simulation 모드를 변경합니다. 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
             if (checkBoxSimulation.Checked)
@@ -396,7 +396,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
         private void buttonRequstInput_Click(object sender, EventArgs e)
         {
             var ask = new MessageBoxYesNo();
-            if (ask.ShowDialog("확인", "RequestLoadWafe.\n진행하시겠습니까?") != DialogResult.Yes)
+            if (ask.ShowDialog("확인", "RequestLoadWafe. 진행하시겠습니까?") != DialogResult.Yes)
                 return;
 
         }
