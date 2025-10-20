@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Drawing;
-using System.Windows.Forms;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Windows.Forms;
 using static QMC.Common.Material;
 
 namespace QMC.LCP_280.Process.Component
@@ -793,10 +794,27 @@ namespace QMC.LCP_280.Process.Component
 
         private void DrawSlotNumber(Graphics g, Rectangle rect, int slotNumber)
         {
-            using (var font = new Font("Arial", Math.Max(6, _cellSize * 0.3f), FontStyle.Regular))
-            using (var brush = new SolidBrush(Color.Black))
+            using (var font = new Font("Arial", Math.Max(6, _cellSize * 0.3f), FontStyle.Bold))
+            using (var path = new GraphicsPath())
+            using (var outlinePen = new Pen(Color.White, 3f)) // 외곽선 두께
+            using (var fillBrush = new SolidBrush(Color.Black))
             {
-                g.DrawString(slotNumber.ToString(), font, brush, rect.Left + 2, rect.Top + 2);
+                string text = slotNumber.ToString();
+                float x = rect.Left + 2;
+                float y = rect.Top + 2;
+
+                // GraphicsPath에 텍스트 추가
+                path.AddString(text, font.FontFamily, (int)font.Style, font.Size,
+                               new PointF(x, y), StringFormat.GenericDefault);
+
+                // 안티앨리어싱 활성화
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                // 1. 흰색 외곽선 그리기
+                g.DrawPath(outlinePen, path);
+
+                // 2. 검은색 텍스트 채우기
+                g.FillPath(fillBrush, path);
             }
         }
 

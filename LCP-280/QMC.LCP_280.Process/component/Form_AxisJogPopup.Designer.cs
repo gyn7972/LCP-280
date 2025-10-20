@@ -47,6 +47,7 @@ namespace QMC.LCP_280.Process.Unit
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form_AxisJogPopup));
             this.layoutRoot = new System.Windows.Forms.TableLayoutPanel();
             this.layoutLeft = new System.Windows.Forms.TableLayoutPanel();
             this.lblPosition = new System.Windows.Forms.Label();
@@ -163,12 +164,12 @@ namespace QMC.LCP_280.Process.Unit
             this.selectAxisListBoxItemsView.ItemForeColor = System.Drawing.Color.Lime;
             this.selectAxisListBoxItemsView.ListBackColor = System.Drawing.Color.Black;
             this.selectAxisListBoxItemsView.ListForeColor = System.Drawing.Color.Lime;
-            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(6, 24);
+            this.selectAxisListBoxItemsView.Location = new System.Drawing.Point(6, 20);
             this.selectAxisListBoxItemsView.Name = "selectAxisListBoxItemsView";
             this.selectAxisListBoxItemsView.SelectedBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(198)))), ((int)(((byte)(255)))), ((int)(((byte)(0)))));
             this.selectAxisListBoxItemsView.SelectedForeColor = System.Drawing.Color.Black;
             this.selectAxisListBoxItemsView.SelectedIndex = -1;
-            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(176, 277);
+            this.selectAxisListBoxItemsView.Size = new System.Drawing.Size(176, 281);
             this.selectAxisListBoxItemsView.TabIndex = 0;
             // 
             // layoutRight
@@ -209,7 +210,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rdoFine.AutoSize = true;
             this.rdoFine.Location = new System.Drawing.Point(12, 22);
             this.rdoFine.Name = "rdoFine";
-            this.rdoFine.Size = new System.Drawing.Size(55, 19);
+            this.rdoFine.Size = new System.Drawing.Size(47, 16);
             this.rdoFine.TabIndex = 0;
             this.rdoFine.Text = "Fine";
             // 
@@ -219,7 +220,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rdoCoarse.Checked = true;
             this.rdoCoarse.Location = new System.Drawing.Point(80, 22);
             this.rdoCoarse.Name = "rdoCoarse";
-            this.rdoCoarse.Size = new System.Drawing.Size(75, 19);
+            this.rdoCoarse.Size = new System.Drawing.Size(64, 16);
             this.rdoCoarse.TabIndex = 1;
             this.rdoCoarse.TabStop = true;
             this.rdoCoarse.Text = "Coarse";
@@ -318,7 +319,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rdoContinuous.Checked = true;
             this.rdoContinuous.Location = new System.Drawing.Point(12, 22);
             this.rdoContinuous.Name = "rdoContinuous";
-            this.rdoContinuous.Size = new System.Drawing.Size(103, 19);
+            this.rdoContinuous.Size = new System.Drawing.Size(87, 16);
             this.rdoContinuous.TabIndex = 0;
             this.rdoContinuous.TabStop = true;
             this.rdoContinuous.Text = "Continuous";
@@ -328,7 +329,7 @@ namespace QMC.LCP_280.Process.Unit
             this.rdoStep.AutoSize = true;
             this.rdoStep.Location = new System.Drawing.Point(123, 22);
             this.rdoStep.Name = "rdoStep";
-            this.rdoStep.Size = new System.Drawing.Size(58, 19);
+            this.rdoStep.Size = new System.Drawing.Size(48, 16);
             this.rdoStep.TabIndex = 1;
             this.rdoStep.Text = "Step";
             // 
@@ -348,7 +349,7 @@ namespace QMC.LCP_280.Process.Unit
             0,
             196608});
             this.nudStep.Name = "nudStep";
-            this.nudStep.Size = new System.Drawing.Size(70, 25);
+            this.nudStep.Size = new System.Drawing.Size(70, 21);
             this.nudStep.TabIndex = 2;
             this.nudStep.Value = new decimal(new int[] {
             1000,
@@ -520,6 +521,7 @@ namespace QMC.LCP_280.Process.Unit
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
             this.ClientSize = new System.Drawing.Size(544, 391);
             this.Controls.Add(this.layoutRoot);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MinimumSize = new System.Drawing.Size(560, 430);
             this.Name = "Form_AxisJogPopup";
             this.Text = "Jog Panel";

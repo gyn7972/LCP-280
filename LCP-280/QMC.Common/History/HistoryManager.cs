@@ -12,9 +12,7 @@ namespace QMC.Common.History
     {
         #region Field
         private static List<AlarmHistory> alarms = new List<AlarmHistory>();
-        #endregion
-
-        #region Property
+        private static Dictionary<string, List<AlarmHistory>> cachedAlarms = new Dictionary<string, List<AlarmHistory>>();
         #endregion
 
         #region Constructor
@@ -47,61 +45,128 @@ namespace QMC.Common.History
         #endregion
 
         #region Alarm History Method
-        public bool LoadAlarmHistory()
+
+        /// <summary>
+        /// 오늘 날짜의 알람만 로드 (기본)
+        /// </summary>
+        public List<AlarmHistory> LoadTodayAlarmHistory()
         {
-            string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
-            if (!Directory.Exists(logFolder))
-                return false;
-
-            var files = Directory.GetFiles(logFolder, "AlarmLog_*.csv");
-            for (int i = files.Length - 1; i >= 0; i--)
-            {
-                if (alarms.Count >= 500)
-                    break;
-
-                LoadAlarmHistoryFromAlarmLogFile(files[i]);
-            }
-            return true;
+            return LoadAlarmHistoryByDate(DateTime.Today);
         }
+
+        /// <summary>
+        /// 특정 날짜의 알람 로드
+        /// </summary>
+        public List<AlarmHistory> LoadAlarmHistoryByDate(DateTime date)
+        {
+            string dateKey = date.ToString("yyyy-MM-dd");
+
+            // 캐시에 있으면 반환
+            if (cachedAlarms.ContainsKey(dateKey))
+                return cachedAlarms[dateKey];
+
+            // 파일에서 로드
+            List<AlarmHistory> dateAlarms = new List<AlarmHistory>();
+            string logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AlarmLog");
+
+            if (!Directory.Exists(logFolder))
+                return dateAlarms;
+
+            string fileName = $"AlarmLog_{date:yyyyMMdd}.csv";
+            string filePath = Path.Combine(logFolder, fileName);
+
+            if (File.Exists(filePath))
+            {
+                dateAlarms = LoadAlarmHistoryFromFile(filePath, date);
+                cachedAlarms[dateKey] = dateAlarms;
+            }
+
+            return dateAlarms;
+        }
+
+        /// <summary>
+        /// 날짜 범위로 알람 로드
+        /// </summary>
+        public List<AlarmHistory> LoadAlarmHistoryByDateRange(DateTime startDate, DateTime endDate)
+        {
+            List<AlarmHistory> result = new List<AlarmHistory>();
+
+            for (DateTime date = startDate.Date; date <= endDate.Date; date = date.AddDays(1))
+            {
+                result.AddRange(LoadAlarmHistoryByDate(date));
+            }
+
+            return result.OrderByDescending(a => a.Info.GeneratedTime).ToList();
+        }
+
+        /// <summary>
+        /// 최근 N일의 알람 로드
+        /// </summary>
+        public List<AlarmHistory> LoadRecentAlarmHistory(int days = 7)
+        {
+            DateTime endDate = DateTime.Today;
+            DateTime startDate = endDate.AddDays(-days + 1);
+            return LoadAlarmHistoryByDateRange(startDate, endDate);
+        }
+
+        /// <summary>
+        /// 실시간 알람 추가 (메모리에만 유지)
+        /// </summary>
         private void AddAlarmHistory(AlarmInfo alarm)
         {
             AlarmHistory newItem = new AlarmHistory(alarm);
-
             alarms.Add(newItem);
-            if (alarms.Count > 500)
-                alarms.RemoveAt(0);
+
+            // 캐시에도 추가 (해당 날짜가 이미 로드되어 있다면)
+            string dateKey = alarm.GeneratedTime.ToString("yyyy-MM-dd");
+            if (cachedAlarms.ContainsKey(dateKey))
+            {
+                // 기존 캐시에 추가 (최신이 맨 앞)
+                cachedAlarms[dateKey].Insert(0, newItem);
+            }
+            // 캐시에 없으면 나중에 파일에서 읽을 때 자동으로 포함됨
 
             OnAddAlarmHistory?.Invoke(this, newItem);
         }
-        private bool LoadAlarmHistoryFromAlarmLogFile(string filePath)
+
+        /// <summary>
+        /// 파일에서 특정 날짜의 알람 로드
+        /// </summary>
+        private List<AlarmHistory> LoadAlarmHistoryFromFile(string filePath, DateTime targetDate)
         {
+            List<AlarmHistory> result = new List<AlarmHistory>();
+
             try
             {
-                if (!System.IO.File.Exists(filePath))
-                    return false;
+                if (!File.Exists(filePath))
+                    return result;
 
-                var lines = System.IO.File.ReadAllLines(filePath, Encoding.UTF8);
+                var lines = File.ReadAllLines(filePath, Encoding.UTF8);
+
                 foreach (var line in lines)
                 {
-                    // 빈 줄 무시
                     if (string.IsNullOrWhiteSpace(line)) continue;
 
                     // CSV: 날짜,Title,Grade,Source,Cause,Code
                     var tokens = line.Split(',');
                     if (tokens.Length < 6) continue;
 
-                    // 날짜 파싱
                     if (!DateTime.TryParse(tokens[0], out DateTime generatedTime))
+                        continue;
+
+                    // 날짜가 다르면 스킵
+                    if (generatedTime.Date != targetDate.Date)
                         continue;
 
                     string title = tokens[1];
                     string grade = tokens[2];
                     string source = tokens[3];
                     string cause = tokens[4];
+
                     if (!int.TryParse(tokens[5], out int code))
                         continue;
 
-                    var alarmInfo = new QMC.Common.Alarm.AlarmInfo
+                    var alarmInfo = new AlarmInfo
                     {
                         Title = title,
                         Grade = grade,
@@ -111,19 +176,38 @@ namespace QMC.Common.History
                         GeneratedTime = generatedTime
                     };
 
-                    // 중복 방지: 이미 같은 코드+시간이 있으면 추가하지 않음
-                    if (!alarms.Any(a => a.Info.Code == code && a.Info.GeneratedTime == generatedTime))
-                    {
-                        AddAlarmHistory(alarmInfo);
-                    }
+                    result.Add(new AlarmHistory(alarmInfo));
                 }
-                return true;
+
+                // 최신순 정렬
+                result = result.OrderByDescending(a => a.Info.GeneratedTime).ToList();
             }
             catch
             {
-                return false;
+                // 로드 실패 시 빈 리스트 반환
             }
+
+            return result;
         }
+
+        /// <summary>
+        /// 캐시 클리어 (메모리 관리용)
+        /// </summary>
+        public void ClearCache()
+        {
+            cachedAlarms.Clear();
+        }
+
+        /// <summary>
+        /// 특정 날짜의 캐시만 클리어
+        /// </summary>
+        public void ClearCacheByDate(DateTime date)
+        {
+            string dateKey = date.ToString("yyyy-MM-dd");
+            if (cachedAlarms.ContainsKey(dateKey))
+                cachedAlarms.Remove(dateKey);
+        }
+
         #endregion
     }
 }

@@ -50,7 +50,7 @@ namespace QMC.LCP_280.Process.Unit
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
             alarm.Title = "Rorary Not Sfarety Pos.";
-            alarm.Cause = "Rorary가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Rorary가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -58,7 +58,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.InputDieTraansferPlaceZError;
             alarm.Title = "InputDieTraansferPlaceZ Not Sfarety Pos.";
-            alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -66,7 +66,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
             alarm.Title = "IndexLoadAlignerZ Not Sfarety Pos.";
-            alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -74,7 +74,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
             alarm.Title = "IndexChipProbeControllerZ Not Sfarety Pos.";
-            alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -82,7 +82,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.OutputDieTransferPlaceZError;
             alarm.Title = "OutputDieTransferPlaceZ Not Sfarety Pos.";
-            alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -90,7 +90,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.InputDieTransferTimeout;
             alarm.Title = "InputDieTransfer Timeout";
-            alarm.Cause = "InputDieTransfer Place 동작이 Timeout 되었습니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "InputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -98,7 +98,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.RotaryIndexMoveError;
             alarm.Title = "Rotary Index Move Error";
-            alarm.Cause = "Rotary Index Move 중 Error가 발생하였습니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Rotary Index Move 중 Error가 발생하였습니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -106,7 +106,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputDieTransferTimeout;  
             alarm.Title = "OutputDieTransfer Timeout";
-            alarm.Cause = "OutputDieTransfer Place 동작이 Timeout 되었습니다.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "OutputDieTransfer Place 동작이 Timeout 되었습니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -114,7 +114,7 @@ namespace QMC.LCP_280.Process.Unit
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRotaryVaccum;
             alarm.Title = "Rotary Vaccum Error";
-            alarm.Cause = "Rotary Vaccum Error.\n 포지션 확인 후 다시 시작 하십시요.";
+            alarm.Cause = "Rotary Vaccum Error. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
@@ -1813,6 +1813,10 @@ namespace QMC.LCP_280.Process.Unit
         private int RunTrashCanSocketOnce()
         {
             int nRet = 0;
+
+            int nIndexTrash = GetTrashCanIndexNo();
+
+            SetBlow(nIndexTrash, true);
             if (SetTrashEjector(true) == false)
             {
                 Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector ON fail");
@@ -1825,7 +1829,6 @@ namespace QMC.LCP_280.Process.Unit
                 SetTrashEjector(false);
                 return -1;
             }
-
             //일정 시간 대기
             WaitByTime(GetClearTimeMs()); // 기본: 500ms
 
@@ -1848,7 +1851,7 @@ namespace QMC.LCP_280.Process.Unit
             //일정 시간 대기
             WaitByTime(1);
             Log.Write(UnitName, $"[RunTrashCanSocketOnce] Clear Comp.");
-
+            SetBlow(nIndexTrash, false);
             return nRet;
         }
 

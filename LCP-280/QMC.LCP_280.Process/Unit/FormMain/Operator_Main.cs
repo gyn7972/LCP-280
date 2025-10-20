@@ -5,6 +5,7 @@ using QMC.Common.UI;
 using QMC.Common.Unit;
 using QMC.Common.Vision;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -54,8 +55,6 @@ namespace QMC.LCP_280.Process.Unit.FormMain
         // Jog Popup
         private Form_AxisJogPopup _jogPopup = null;
         private AxisPostionPopup _axisPosPopup = null;
-
-        private Form _lightControlPopup = null;
 
         public Operator_Main() : this(
             TryGetUnit<InputFeeder>("InputFeeder"),
@@ -113,7 +112,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             sequenceAutoControl.SequenceButtonRequested += OnAutoSequenceButtonRequested;
             sequenceManualControl.SequenceButtonRequested += OnManualSequenceButtonRequested;
-            InputWaferCamera.LightControlRequested += InputWaferCamera_LightControlRequested;
+
+            InputWaferCamera.LightControlRequested += LightControlRequested;
+            IndexOutputCamera.LightControlRequested += LightControlRequested;
+            OutputWaferCamera.LightControlRequested += LightControlRequested;
         }
 
         #region Form Cleanup
@@ -187,8 +189,10 @@ namespace QMC.LCP_280.Process.Unit.FormMain
             // sequenceManualControl.OnSequenceStateChanged(new SequenceStateChangedEventArgs { ... });
         }
 
-        private void InputWaferCamera_LightControlRequested(object sender, EventArgs e)
+        private void LightControlRequested(object sender, EventArgs e)
         {
+            Form _lightControlPopup = null;
+
             if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
             {
                 _lightControlPopup.Close();
@@ -196,7 +200,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             Form popupForm = new Form();
             popupForm.Text = "Light Control";
-            popupForm.Size = new Size(450, 350);
+            popupForm.Size = new Size(467, 286);
             popupForm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
             popupForm.MaximizeBox = false;
             popupForm.MinimizeBox = false;
@@ -208,7 +212,7 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
             popupForm.Owner = null;
 
-            LightChannelControlcs lightControl = new LightChannelControlcs();
+            SimpleLightControl lightControl = new SimpleLightControl();
             lightControl.Dock = DockStyle.Fill;
             popupForm.Controls.Add(lightControl);
 

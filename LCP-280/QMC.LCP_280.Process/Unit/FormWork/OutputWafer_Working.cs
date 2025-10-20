@@ -1,7 +1,9 @@
 ﻿using QMC.Common;
 using QMC.Common.UI;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
+using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -44,6 +46,8 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             Load += WaferBin_Working_Load;
             FormClosing += WaferBin_Working_FormClosing;
+
+            _OutputWaferCameraviewer.LightControlRequested += LightControlRequested;
 
             waferMapView_OutputWafer.SetMaterialCassette(OutputCassetteLifter.GetMaterialCassette());
         }
@@ -338,6 +342,39 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             {
                 MessageBox.Show($"Wafer 감지 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void LightControlRequested(object sender, EventArgs e)
+        {
+            Form _lightControlPopup = null;
+
+            if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
+            {
+                _lightControlPopup.Close();
+            }
+
+            Form popupForm = new Form();
+            popupForm.Text = "Light Control";
+            popupForm.Size = new Size(467, 286);
+            popupForm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            popupForm.MaximizeBox = false;
+            popupForm.MinimizeBox = false;
+            popupForm.ShowInTaskbar = false;
+
+            popupForm.StartPosition = FormStartPosition.Manual;
+            Point cursorPos = Cursor.Position;
+            popupForm.Location = cursorPos;
+
+            popupForm.Owner = null;
+
+            SimpleLightControl lightControl = new SimpleLightControl();
+            lightControl.Dock = DockStyle.Fill;
+            popupForm.Controls.Add(lightControl);
+
+            _lightControlPopup = popupForm;
+            popupForm.FormClosed += (s, ev) => { _lightControlPopup = null; };
+            popupForm.Show();
+            this.Activate();
         }
     }
 }

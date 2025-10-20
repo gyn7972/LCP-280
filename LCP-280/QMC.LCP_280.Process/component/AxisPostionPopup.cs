@@ -39,7 +39,9 @@ namespace QMC.LCP_280.Process.Component
             this.Owner = null;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.Text = "Axis Position Monitor";
-            try { this.Icon = Properties.Resources.JogPanel_ico; } catch { }
+            try { 
+                //this.Icon = Properties.Resources.JogPanel_ico; 
+            } catch { }
 
             // 행 높이(예: 28px) 늘리기 위한 더미 SmallImageList
             var dummy = new ImageList();

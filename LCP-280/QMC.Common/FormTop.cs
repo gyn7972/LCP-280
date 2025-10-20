@@ -2,6 +2,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using QMC.LCP_280.Process;
 
 namespace QMC.Common
 {
@@ -18,6 +19,7 @@ namespace QMC.Common
         private TopContentsEquipmentControl _topContentsEquipmentControl;
         private TopContentsStatusControl _topContentsStatusControl;
         private TopContentsLoginModeControl _topContentsLoginModeControl;
+        private TopContentsIOStatusControl _topContentsIOStatusControl;
         private TableLayoutPanel _tableLayoutPanelFormTop;
 
         public FormTop()
@@ -30,7 +32,6 @@ namespace QMC.Common
             _topContentsEquipmentControl = new TopContentsEquipmentControl();
             _topContentsEquipmentControl.Dock = DockStyle.None;
             this.Controls.Add(_topContentsEquipmentControl);
-            
 
             _topContentsStatusControl = new TopContentsStatusControl();
             _topContentsStatusControl.Dock = DockStyle.None;
@@ -39,6 +40,10 @@ namespace QMC.Common
             _topContentsLoginModeControl = new TopContentsLoginModeControl();
             _topContentsLoginModeControl.Dock = DockStyle.None;
             this.Controls.Add(_topContentsLoginModeControl);
+
+            _topContentsIOStatusControl = new TopContentsIOStatusControl();
+            _topContentsIOStatusControl.Dock = DockStyle.None;
+            this.Controls.Add(_topContentsIOStatusControl);
 
             _topContentsStatusControl.ClickTopAlarmClearButton += GetTopContentsStatusControl_ClickTopAlarmClearButton;
         }
@@ -70,14 +75,20 @@ namespace QMC.Common
             this.ClientSize = new System.Drawing.Size(width, height);
 
             _topContentsEquipmentControl.SetPanelSize(230, height);
-            _topContentsStatusControl.SetPanelSize(896, height);
+            _topContentsStatusControl.SetPanelSize(746, height);
             _topContentsLoginModeControl.SetPanelSize(150, height);
+            _topContentsIOStatusControl.SetPanelSize(150, height);
 
-            _topContentsEquipmentControl.Location = new Point(0, 3);
+            _topContentsEquipmentControl.Location = new Point(2, 4);
+
             _topContentsStatusControl.Location = new Point(
                 _topContentsEquipmentControl.Location.X - 1 + _topContentsEquipmentControl.Width, _topContentsEquipmentControl.Location.Y);
+
             _topContentsLoginModeControl.Location = new Point(
                 _topContentsStatusControl.Location.X - 1 + _topContentsStatusControl.Width, _topContentsStatusControl.Location.Y);
+
+            _topContentsIOStatusControl.Location = new Point(
+                _topContentsLoginModeControl.Location.X - 1 + _topContentsLoginModeControl.Width, _topContentsLoginModeControl.Location.Y);
         }
     }
 }

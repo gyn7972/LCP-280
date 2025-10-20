@@ -790,6 +790,12 @@ namespace QMC.LCP_280.Process.Unit
             if (NeedUnloadFirst)
             {
                 // 8) Feeder -> Stage: WaferUnloadingBeforeStage
+                if(wafer == null)
+                {
+                    wafer = new MaterialWafer();
+                    wafer.SlotIndex = 0;
+                }
+
                 nRet = WaferUnloading(wafer);
                 if (nRet != 0)
                 {
@@ -1208,6 +1214,12 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
             //if (IsStop) { return 0; }
+
+            if(wafer == null)
+            {
+                wafer = new MaterialWafer();
+                wafer.SlotIndex = 0;
+            }
 
             int nSlot = wafer.SlotIndex;
             nRet = this.InputCassetteLifter.MoveToSlot(nSlot); // 언로딩 해야하는 Slot으로 이동 요청.

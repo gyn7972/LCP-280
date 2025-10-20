@@ -2,7 +2,9 @@
 using QMC.Common;
 using QMC.Common.UI;
 using QMC.LCP_280.Process.Component;
+using QMC.LCP_280.Process.Unit.FormSetup;
 using System;
+using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static QMC.Common.Unit.BaseUnit;
@@ -51,9 +53,9 @@ namespace QMC.LCP_280.Process.Unit.FormWork
 
             Load += InputWafer_Working_Load;
             FormClosing += InputWafer_Working_FormClosing;
+            _InputWaferCameraviewer.LightControlRequested += LightControlRequested;
 
             waferMapView_InputWafer.SetMaterialCassette(InputCassetteLifter.GetMaterialCassette());
-
         }
 
         /// <summary>
@@ -67,6 +69,7 @@ namespace QMC.LCP_280.Process.Unit.FormWork
             EnsureInitialized();
             var handle = Handle; // 강제 핸들 생성
         }
+
 
         private void InputWafer_Working_Load(object sender, EventArgs e)
         {
@@ -397,5 +400,39 @@ namespace QMC.LCP_280.Process.Unit.FormWork
                 return;
 
         }
+
+        private void LightControlRequested(object sender, EventArgs e)
+        {
+            Form _lightControlPopup = null;
+
+            if (_lightControlPopup != null && !_lightControlPopup.IsDisposed)
+            {
+                _lightControlPopup.Close();
+            }
+
+            Form popupForm = new Form();
+            popupForm.Text = "Light Control";
+            popupForm.Size = new Size(467, 286);
+            popupForm.FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            popupForm.MaximizeBox = false;
+            popupForm.MinimizeBox = false;
+            popupForm.ShowInTaskbar = false;
+
+            popupForm.StartPosition = FormStartPosition.Manual;
+            Point cursorPos = Cursor.Position;
+            popupForm.Location = cursorPos;
+
+            popupForm.Owner = null;
+
+            SimpleLightControl lightControl = new SimpleLightControl();
+            lightControl.Dock = DockStyle.Fill;
+            popupForm.Controls.Add(lightControl);
+
+            _lightControlPopup = popupForm;
+            popupForm.FormClosed += (s, ev) => { _lightControlPopup = null; };
+            popupForm.Show();
+            this.Activate();
+        }
+
     }
 }

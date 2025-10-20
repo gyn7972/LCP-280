@@ -1,4 +1,6 @@
-﻿namespace QMC.Common
+﻿using QMC.Common.Account;
+
+namespace QMC.Common
 {
     partial class BottomMenuButtonControl
     {
@@ -15,6 +17,8 @@
         {
             if (disposing && (components != null))
             {
+                AccountManager.OnLoginStateChanged -= OnLoginStateChanged;
+
                 components.Dispose();
             }
             base.Dispose(disposing);

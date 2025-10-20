@@ -39,16 +39,219 @@ namespace QMC.LCP_280.Process.Unit.FormMain
 
         #endregion
 
+        #region Fields
+
         private Dictionary<IndividualMenuButton, string> _buttonCommands;
         private readonly Color _defaultColor = Color.FromArgb(217, 217, 217);
         private readonly Color _activeColor = Color.LightGreen;
+
+        // I/O 상태 모니터링
+        private Timer _ioMonitorTimer;
+        private EquipmentStatus _equipmentStatus;
+        private bool _lastStartSwState = false;
+        private bool _lastStopSwState = false;
+        private bool _lastResetSwState = false;
+
+        #endregion
 
         public SequenceAutoControl()
         {
             InitializeComponent();
             InitializeButtonCommands();
             RegisterButtonEvents();
+            InitializeIOMonitoring();
         }
+
+        #region I/O Monitoring
+
+        /// <summary>
+        /// I/O 모니터링 초기화
+        /// </summary>
+        private void InitializeIOMonitoring()
+        {
+            try
+            {
+                // EquipmentStatus 유닛 가져오기
+                var eq = Equipment.Instance;
+                if (eq?.Units?.TryGetValue("EquipmentStatus", out var unit) == true)
+                {
+                    _equipmentStatus = unit as EquipmentStatus;
+                }
+
+                // I/O 상태 모니터링 타이머 (100ms)
+                _ioMonitorTimer = new Timer();
+                _ioMonitorTimer.Interval = 100;
+                _ioMonitorTimer.Tick += OnIOMonitorTick;
+                _ioMonitorTimer.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.Write("SequenceAutoControl", $"InitializeIOMonitoring error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// I/O 상태 주기적 확인
+        /// </summary>
+        private void OnIOMonitorTick(object sender, EventArgs e)
+        {
+            if (_equipmentStatus == null) return;
+
+            try
+            {
+                var snapshot = _equipmentStatus.GetSnapshot();
+                if (snapshot == null) return;
+
+                // START_SW (X000) 체크 - Rising Edge
+                if (snapshot.Inputs.TryGetValue("START_SW", out bool startSw))
+                {
+                    if (startSw && !_lastStartSwState) // Rising edge
+                    {
+                        OnPhysicalButtonPressed("Start");
+                    }
+                    _lastStartSwState = startSw;
+                }
+
+                // STOP_SW (X001) 체크 - Rising Edge
+                if (snapshot.Inputs.TryGetValue("STOP_SW", out bool stopSw))
+                {
+                    if (stopSw && !_lastStopSwState) // Rising edge
+                    {
+                        OnPhysicalButtonPressed("Stop");
+                    }
+                    _lastStopSwState = stopSw;
+                }
+
+                // RESET_SW (X002) 체크 - Rising Edge
+                if (snapshot.Inputs.TryGetValue("RESET_SW", out bool resetSw))
+                {
+                    if (resetSw && !_lastResetSwState) // Rising edge
+                    {
+                        OnPhysicalButtonPressed("Reset");
+                    }
+                    _lastResetSwState = resetSw;
+                }
+
+                // 램프 상태 업데이트 (출력 상태 표시)
+                UpdateLampStates(snapshot);
+            }
+            catch (Exception ex)
+            {
+                // 예외는 조용히 처리 (로그만)
+                System.Diagnostics.Debug.WriteLine($"IO Monitor error: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 물리 버튼 눌림 처리
+        /// </summary>
+        private void OnPhysicalButtonPressed(string command)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => OnPhysicalButtonPressed(command)));
+                return;
+            }
+
+            Log.Write("SequenceAutoControl", $"Physical button pressed: {command}");
+
+            // UI 버튼과 동일한 동작 수행
+            switch (command)
+            {
+                case "Start":
+                    // Ready 상태에서만 Start 가능하도록 체크
+                    if (btn_Auto_Start.Enabled)
+                    {
+                        PerformSequenceCommand("Start");
+                    }
+                    break;
+
+                case "Stop":
+                    if (btn_Auto_Stop.Enabled)
+                    {
+                        PerformSequenceCommand("Stop");
+                    }
+                    break;
+
+                case "Reset":
+                    if (btn_Auto_Reset.Enabled)
+                    {
+                        PerformSequenceCommand("Reset");
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 시퀀스 명령 실행 (물리 버튼용)
+        /// </summary>
+        private void PerformSequenceCommand(string command)
+        {
+            // 부모 Form으로 이벤트 전달 (확인 다이얼로그 없이)
+            SequenceButtonRequested?.Invoke(this, new AutoSequenceEventArgs
+            {
+                Command = command
+            });
+
+            // 램프 상태 업데이트
+            UpdateButtonLamp(command, true);
+        }
+
+        /// <summary>
+        /// 램프 상태 업데이트
+        /// </summary>
+        private void UpdateLampStates(EquipmentStatusSnapshot snapshot)
+        {
+            if (snapshot?.Outputs == null) return;
+
+            // START_LAMP (Y000) 상태
+            if (snapshot.Outputs.TryGetValue("START_LAMP", out bool startLamp))
+            {
+                btn_Auto_Start.BackColor = startLamp ? _activeColor : _defaultColor;
+            }
+
+            // STOP_LAMP (Y001) 상태
+            if (snapshot.Outputs.TryGetValue("STOP_LAMP", out bool stopLamp))
+            {
+                btn_Auto_Stop.BackColor = stopLamp ? _activeColor : _defaultColor;
+            }
+
+            // RESET_LAMP (Y002) 상태
+            if (snapshot.Outputs.TryGetValue("RESET_LAMP", out bool resetLamp))
+            {
+                btn_Auto_Reset.BackColor = resetLamp ? _activeColor : _defaultColor;
+            }
+        }
+
+        /// <summary>
+        /// 버튼 램프 제어 (출력)
+        /// </summary>
+        private void UpdateButtonLamp(string command, bool on)
+        {
+            if (_equipmentStatus == null) return;
+
+            try
+            {
+                switch (command)
+                {
+                    case "Start":
+                        _equipmentStatus.SetOutput("START_LAMP", on);
+                        break;
+                    case "Stop":
+                        _equipmentStatus.SetOutput("STOP_LAMP", on);
+                        break;
+                    case "Reset":
+                        _equipmentStatus.SetOutput("RESET_LAMP", on);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("SequenceAutoControl", $"UpdateButtonLamp error: {ex.Message}");
+            }
+        }
+
+        #endregion
 
         private void InitializeButtonCommands()
         {

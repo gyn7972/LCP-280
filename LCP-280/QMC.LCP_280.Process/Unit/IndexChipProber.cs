@@ -32,7 +32,7 @@ namespace QMC.LCP_280.Process.Unit
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eNotReadyToMeasure;
             alarm.Title = "측정 준비가 되지 않았습니다.";
-            alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오.\n2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
+            alarm.Cause = "1. 적용된 Test Condition Set가 있는지 확인하여 주십시오. 2. 계측기가 정상적으로 Initialize 되어 있는지 확인하여 주십시오.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);

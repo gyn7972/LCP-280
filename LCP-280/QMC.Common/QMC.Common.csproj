@@ -512,6 +512,12 @@
     </Compile>
     <Compile Include="StrainGage\StrainGageLookupTable.cs" />
     <Compile Include="StrainGage\StrainGageMonitor.cs" />
+    <Compile Include="TopContentsIOStatusControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="TopContentsIOStatusControl.Designer.cs">
+      <DependentUpon>TopContentsIOStatusControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\ProgressForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -646,6 +652,9 @@
     <EmbeddedResource Include="StrainGage\StrainGageDataGridViewer.resx">
       <DependentUpon>StrainGageDataGridViewer.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="TopContentsIOStatusControl.resx">
+      <DependentUpon>TopContentsIOStatusControl.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\ProgressForm.resx" />
     <None Include="WMX\WmxLib.cs" />
     <EmbeddedResource Include="Alarm\Form_Alarm.resx">
@@ -762,6 +771,18 @@
     <Content Include="Ajin\Library\AxtWaferScanLib.dll" />
     <Content Include="Ajin\Library\EzbasicAxl.dll" />
     <Content Include="Cameras\HIKVISION\Library\MvCameraControl.Net.dll" />
+    <None Include="Resources\ico_circle_green_14.png" />
+    <None Include="Resources\ico_circle_off_14.png" />
+    <None Include="Resources\ico_circle_red_14.png" />
+    <None Include="Resources\ico_circle_yellow_14.png" />
+    <None Include="Resources\ico_speaker_gray_14.png" />
+    <None Include="Resources\ico_speaker_green_14.png" />
+    <None Include="Resources\ico_circle_green_141.png" />
+    <None Include="Resources\ico_circle_off_141.png" />
+    <None Include="Resources\ico_circle_red_141.png" />
+    <None Include="Resources\ico_circle_yellow_141.png" />
+    <None Include="Resources\ico_speaker_gray_141.png" />
+    <None Include="Resources\ico_speaker_green_141.png" />
     <Content Include="Resources\Logo.png" />
     <Content Include="Resources\megaphone_80px.png" />
     <Content Include="Resources\megaphone_80px_q.png" />
