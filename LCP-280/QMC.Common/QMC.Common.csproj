@@ -311,6 +311,12 @@
     </Compile>
     <Compile Include="History\BaseHistory.cs" />
     <Compile Include="History\HistoryManager.cs" />
+    <Compile Include="History\LogHistoryGridViewer.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="History\LogHistoryGridViewer.Designer.cs">
+      <DependentUpon>LogHistoryGridViewer.cs</DependentUpon>
+    </Compile>
     <Compile Include="IEquipment.cs" />
     <Compile Include="IO\AjinDioDriver.cs" />
     <Compile Include="IO\DIOChannel.cs" />
