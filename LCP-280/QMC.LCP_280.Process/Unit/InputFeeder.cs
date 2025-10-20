@@ -771,12 +771,15 @@ namespace QMC.LCP_280.Process.Unit
             // 0) Stage에 제품이 있으면 "언로딩 먼저"
             try
             {
-                NeedUnloadFirst = InputStage.IsRingPresent();
-
-                if (NeedUnloadFirst)
+                if(Config.IsSimulation == false)
                 {
+                    NeedUnloadFirst = InputStage.IsRingPresent();
+                    if (NeedUnloadFirst)
+                    {
 
+                    }
                 }
+                
             }
             catch (Exception ex)
             {
@@ -1220,7 +1223,7 @@ namespace QMC.LCP_280.Process.Unit
 
             nRet = UnloadWaferFeederToCassette(true);
             if (nRet != 0)
-            {
+            { 
                 AxisInputFeederY.EmgStop();
                 PostAlarm((int)AlarmKeys.Alarm_WaferUnloadingFailed);
                 this.State = ProcessState.Error;
