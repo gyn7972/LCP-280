@@ -140,7 +140,7 @@
             this.lblWarning.AutoSize = true;
             this.lblWarning.Location = new System.Drawing.Point(180, 8);
             this.lblWarning.Name = "lblWarning";
-            this.lblWarning.Size = new System.Drawing.Size(69, 12);
+            this.lblWarning.Size = new System.Drawing.Size(64, 12);
             this.lblWarning.TabIndex = 2;
             this.lblWarning.Text = "Warning: 0";
             // 
@@ -149,7 +149,7 @@
             this.lblError.AutoSize = true;
             this.lblError.Location = new System.Drawing.Point(100, 8);
             this.lblError.Name = "lblError";
-            this.lblError.Size = new System.Drawing.Size(50, 12);
+            this.lblError.Size = new System.Drawing.Size(46, 12);
             this.lblError.TabIndex = 1;
             this.lblError.Text = "Error: 0";
             // 
@@ -158,7 +158,7 @@
             this.lblTotal.AutoSize = true;
             this.lblTotal.Location = new System.Drawing.Point(10, 8);
             this.lblTotal.Name = "lblTotal";
-            this.lblTotal.Size = new System.Drawing.Size(52, 12);
+            this.lblTotal.Size = new System.Drawing.Size(47, 12);
             this.lblTotal.TabIndex = 0;
             this.lblTotal.Text = "Total: 0";
             // 
@@ -190,7 +190,7 @@
             // 
             this.cmbRecentDates.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbRecentDates.FormattingEnabled = true;
-            this.cmbRecentDates.Location = new System.Drawing.Point(370, 39);
+            this.cmbRecentDates.Location = new System.Drawing.Point(372, 8);
             this.cmbRecentDates.Name = "cmbRecentDates";
             this.cmbRecentDates.Size = new System.Drawing.Size(200, 20);
             this.cmbRecentDates.TabIndex = 12;
@@ -200,7 +200,7 @@
             // 
             this.label5.AutoSize = true;
             this.label5.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label5.Location = new System.Drawing.Point(280, 42);
+            this.label5.Location = new System.Drawing.Point(282, 12);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(81, 12);
             this.label5.TabIndex = 13;
@@ -208,7 +208,7 @@
             // 
             // btnClearSearch
             // 
-            this.btnClearSearch.Location = new System.Drawing.Point(215, 38);
+            this.btnClearSearch.Location = new System.Drawing.Point(518, 37);
             this.btnClearSearch.Name = "btnClearSearch";
             this.btnClearSearch.Size = new System.Drawing.Size(55, 23);
             this.btnClearSearch.TabIndex = 11;
@@ -218,9 +218,9 @@
             // 
             // txtSearch
             // 
-            this.txtSearch.Location = new System.Drawing.Point(60, 39);
+            this.txtSearch.Location = new System.Drawing.Point(60, 38);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(150, 21);
+            this.txtSearch.Size = new System.Drawing.Size(452, 21);
             this.txtSearch.TabIndex = 10;
             this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
             // 
@@ -228,9 +228,9 @@
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label3.Location = new System.Drawing.Point(10, 42);
+            this.label3.Location = new System.Drawing.Point(2, 42);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(50, 12);
+            this.label3.Size = new System.Drawing.Size(56, 12);
             this.label3.TabIndex = 9;
             this.label3.Text = "Search:";
             // 
@@ -243,7 +243,7 @@
             "20",
             "50",
             "100"});
-            this.cmbPageSize.Location = new System.Drawing.Point(610, 9);
+            this.cmbPageSize.Location = new System.Drawing.Point(638, 38);
             this.cmbPageSize.Name = "cmbPageSize";
             this.cmbPageSize.Size = new System.Drawing.Size(60, 20);
             this.cmbPageSize.TabIndex = 8;
@@ -253,16 +253,16 @@
             // 
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label4.Location = new System.Drawing.Point(560, 12);
+            this.label4.Location = new System.Drawing.Point(588, 43);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(44, 12);
+            this.label4.Size = new System.Drawing.Size(46, 12);
             this.label4.TabIndex = 7;
             this.label4.Text = "Rows:";
             // 
             // chkEnableDateFilter
             // 
             this.chkEnableDateFilter.AutoSize = true;
-            this.chkEnableDateFilter.Location = new System.Drawing.Point(480, 11);
+            this.chkEnableDateFilter.Location = new System.Drawing.Point(774, 12);
             this.chkEnableDateFilter.Name = "chkEnableDateFilter";
             this.chkEnableDateFilter.Size = new System.Drawing.Size(15, 14);
             this.chkEnableDateFilter.TabIndex = 6;
@@ -273,9 +273,9 @@
             // 
             this.dtpDateFilter.Enabled = false;
             this.dtpDateFilter.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpDateFilter.Location = new System.Drawing.Point(350, 8);
+            this.dtpDateFilter.Location = new System.Drawing.Point(638, 8);
             this.dtpDateFilter.Name = "dtpDateFilter";
-            this.dtpDateFilter.Size = new System.Drawing.Size(120, 21);
+            this.dtpDateFilter.Size = new System.Drawing.Size(125, 21);
             this.dtpDateFilter.TabIndex = 5;
             this.dtpDateFilter.ValueChanged += new System.EventHandler(this.dtpDateFilter_ValueChanged);
             // 
@@ -283,9 +283,9 @@
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label2.Location = new System.Drawing.Point(300, 12);
+            this.label2.Location = new System.Drawing.Point(594, 13);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(40, 12);
+            this.label2.Size = new System.Drawing.Size(39, 12);
             this.label2.TabIndex = 4;
             this.label2.Text = "Date:";
             // 
@@ -325,7 +325,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("굴림", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(129)));
-            this.label1.Location = new System.Drawing.Point(10, 12);
+            this.label1.Location = new System.Drawing.Point(15, 13);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(43, 12);
             this.label1.TabIndex = 0;
@@ -406,7 +406,7 @@
             this.lblPagination.AutoSize = true;
             this.lblPagination.Location = new System.Drawing.Point(10, 8);
             this.lblPagination.Name = "lblPagination";
-            this.lblPagination.Size = new System.Drawing.Size(49, 12);
+            this.lblPagination.Size = new System.Drawing.Size(43, 12);
             this.lblPagination.TabIndex = 0;
             this.lblPagination.Text = "0-0 / 0";
             // 
@@ -429,6 +429,7 @@
             this.panelBottom.ResumeLayout(false);
             this.panelBottom.PerformLayout();
             this.ResumeLayout(false);
+
         }
 
         #endregion

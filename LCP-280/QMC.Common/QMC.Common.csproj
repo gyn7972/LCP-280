@@ -649,6 +649,9 @@
     <EmbeddedResource Include="History\AlarmHistoryGridViewer.resx">
       <DependentUpon>AlarmHistoryGridViewer.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="History\LogHistoryGridViewer.resx">
+      <DependentUpon>LogHistoryGridViewer.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="StrainGage\FormStrainGageDialog.resx">
       <DependentUpon>FormStrainGageDialog.cs</DependentUpon>
     </EmbeddedResource>
