@@ -50,7 +50,7 @@ namespace QMC.LCP_280.Process.Unit
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
                 "Barcode Reading Failed",
-                "바코드 읽기에 실패 하였습니다.\n바코드 상태를 확인 하여 주십시요",
+                "바코드 읽기에 실패 하였습니다. 바코드 상태를 확인 하여 주십시요",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
                 "Stage Loading Failed",
@@ -66,36 +66,36 @@ namespace QMC.LCP_280.Process.Unit
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_OutputStageInterlockFailed,
                 "Output Stage Interlock Failed",
-                "Bin 로딩을 위한 인터락이 맞지 않습니다.\n장비 상태를 확인 하여 주십시요.",
+                "Bin 로딩을 위한 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
                 "Gripper Clamp Failed",
-                "그리퍼 클램프에 실패 하였습니다.\n장비 상태를 확인 하여 주십시요.",
+                "그리퍼 클램프에 실패 하였습니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_FeederClampUp,
                 "Feeder Clamp Up Failed",
-                "피더 클램프 업 상태가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "피더 클램프 업 상태가 아닙니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
 
             // = 2022,
             AlarmRegister((int)AlarmKeys.Alarm_IsBinReadyForLoading,
                 "Bin ReadyForLoading Failed",
-                "Ready for Loading 위치가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "Ready for Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             // = 2023,
             AlarmRegister((int)AlarmKeys.Alarm_BinLoadingPosition,
                 "Bin Loading Position Failed",
-                "Loading 위치가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "Loading 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             // = 2024,
             AlarmRegister((int)AlarmKeys.Alarm_OutputFeederNoPosition,
                 "Output Feeder No Position",
-                "Output Feeder 위치가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "Output Feeder 위치가 아닙니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             // = 2025,
             AlarmRegister((int)AlarmKeys.Alarm_OutputFeederInterlockFailed,
                 "Output Feeder Interlock Failed",
-                "Output Feeder 인터락이 맞지 않습니다.\n장비 상태를 확인 하여 주십시요.",
+                "Output Feeder 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
         }
         #endregion

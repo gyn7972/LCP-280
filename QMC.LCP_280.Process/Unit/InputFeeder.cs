@@ -45,7 +45,7 @@ namespace QMC.LCP_280.Process.Unit
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_BarcodeReadingFailed,
                 "Barcode Reading Failed",
-                "바코드 읽기에 실패 하였습니다.\n바코드 상태를 확인 하여 주십시요",
+                "바코드 읽기에 실패 하였습니다. 바코드 상태를 확인 하여 주십시요",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_StageLoadingFailed,
                 "Stage Loading Failed",
@@ -61,39 +61,39 @@ namespace QMC.LCP_280.Process.Unit
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_InputStageInterlockFailed,
                 "Input Stage Interlock Failed",
-                "웨이퍼 로딩을 위한 인터락이 맞지 않습니다.\n장비 상태를 확인 하여 주십시요.",
+                "웨이퍼 로딩을 위한 인터락이 맞지 않습니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_GripperClampFailed,
                 "Gripper Clamp Failed",
-                "그리퍼 클램프에 실패 하였습니다.\n장비 상태를 확인 하여 주십시요.",
+                "그리퍼 클램프에 실패 하였습니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_FeederClampUp,
                 "Feeder Clamp Up Failed",
-                "피더 클램프 업 상태가 아닙니다.\n장비 상태를 확인 하여 주십시요.",
+                "피더 클램프 업 상태가 아닙니다. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_IsWaferReadyForLoading,
                 "IsWaferReadyForLoading Fail",
-                "Cassette Ready For Loading Signal Fail.\n장비 상태를 확인 하여 주십시요.",
+                "Cassette Ready For Loading Signal Fail. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_WaferLoadingPosition,
                 "WaferLoadingPosition",
-                "Wafer LoadingPosition Fail\n장비 상태를 확인 하여 주십시요.",
+                "Wafer LoadingPosition Fail. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_InputCassetteLifteInterlockFailed,
                 "Input Cassette Lifter Interlock Failed",
-                "Input Cassette Lifter Interlock Failed.\n장비 상태를 확인 하여 주십시요.",
+                "Input Cassette Lifter Interlock Failed. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_InputFeederNoPosition,
                 "Input Feeder No Position",
-                "Input Feeder No Position.\n장비 상태를 확인 하여 주십시요.",
+                "Input Feeder No Position. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_InputFeederInterlockFailed,
                 "Input Feeder Interlock Failed",
-                "Input Feeder Interlock Failed.\n장비 상태를 확인 하여 주십시요.",
+                "Input Feeder Interlock Failed. 장비 상태를 확인 하여 주십시요.",
                 "Error");
             AlarmRegister((int)AlarmKeys.Alarm_GripperUnClampFailed,
                 "Gripper UnClamp Failed",
-                "Gripper UnClamp Failed.\n장비 상태를 확인 하여 주십시요.",
+                "Gripper UnClamp Failed. n장비 상태를 확인 하여 주십시요.",
                 "Error");
         }
         #endregion
