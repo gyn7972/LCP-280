@@ -785,28 +785,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 // Stage가 가동 중인 경우(공정 진행 중)
                 if (this.OutputStage.IsWorking())
+                    //|| IsBinStageReadyForPlace())
                 {
                     if (waferBin != null)
                     {
-                        //bool canPlace = OutputStage.CanPlaceDie();
-                        //if (!canPlace)
-                        //{
-                        //    // 더 이상 놓을 공간이 없음 → 언로딩부터 수행하도록 플래그 세팅 후 Work로 전환
-                        //    waferBin.ProcessSatate = Material.MaterialProcessSatate.Completed;
-                        //    if (waferBin != null && waferBin.SlotIndex != -1)
-                        //    {
-                        //        // 실기: 센서 기반 존재 판단
-                        //        NeedUnloadFirst = OutputStage.IsRingPresent();
-                        //    }
-                        //    else
-                        //    {
-                        //        NeedUnloadFirst = false;
-                        //    }
-                        //    //NeedUnloadFirst = true;
-                        //    this.State = ProcessState.Work;
-                        //    return 0;
-                        //}
-
                         // 정지했다가 다시 했을 경우에만 들어와야함. 안들어와야 정상임.
                         if (waferBin.ProcessSatate == Material.MaterialProcessSatate.Ready)
                         {
@@ -905,6 +887,27 @@ namespace QMC.LCP_280.Process.Unit
 
             return nRet;
         }
+
+        private bool IsBinStageReadyForPlace()
+        {
+            try
+            {
+                if (OutputStage == null)
+                    return false;
+                // 스테이지 로딩 최종 완료 + Plate Down + Center 위치
+                if (OutputStage.BinLoadingDone == false)
+                    return false;
+                if (OutputStage.IsPlateDown() == false)
+                    return false;
+                //if (!OutputStage.IsPositionBinCenter()) return false;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         protected override int OnRunWork()
         {
             int nRet = 0;
@@ -1115,7 +1118,22 @@ namespace QMC.LCP_280.Process.Unit
             if (this.OutputCassetteLifter.IsHaveMoreProcessWafer())
             {
                 // 재시작/이상 종료 후 전 슬롯 완료 여부 1회 알람(필요 시)
-                // Output 쪽에도 필요하면 동일 로직 추가 가능
+                // ← 추가: 전 슬롯 완료되었는지 검사하여 1회 알람
+                try
+                {
+                    nRet = this.OutputCassetteLifter.CheckCassetteCompletedAndAlarmOnce();
+                    if (nRet != 0)
+                    {
+                        this.Stop();
+                        OutputCassetteLifter.Stop();
+                        OutputStage.Stop();
+                        return 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
 
                 // 재시작 시 현재 상태로부터 스텝 유추 후 1스텝만 수행
                 InitLoadStepIfNeeded();
@@ -1188,7 +1206,8 @@ namespace QMC.LCP_280.Process.Unit
                             }
 
                             this.MoveMaterial(waferOnFeeder2, OutputStage);
-                            waferOnFeeder2.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                            //waferOnFeeder2.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                            waferOnFeeder2.ProcessSatate = Material.MaterialProcessSatate.Ready;
                             OutputStage.SetMaterial(waferOnFeeder2);
                             this.SetMaterial(null);
 
@@ -1262,9 +1281,26 @@ namespace QMC.LCP_280.Process.Unit
             }
             else
             {
+                //카세트 교체 알람 발생.
+                // ← 추가: 전 슬롯 완료되었는지 검사하여 1회 알람
+                try
+                {
+                    nRet = this.OutputCassetteLifter.CheckCassetteCompletedAndAlarmOnce();
+                    if (nRet != 0)
+                    {
+                        this.Stop();
+                        OutputCassetteLifter.Stop();
+                        OutputStage.Stop();
+                        return 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
+
                 // 로딩할 웨이퍼가 없으면 Ready 복귀 및 스텝 초기화
                 _loadStep = LoadFlowStep.None;
-
                 if (!IsPositionReady())
                 {
                     nRet = MoveToReady();
@@ -1675,7 +1711,8 @@ namespace QMC.LCP_280.Process.Unit
             {
                 wafer.Presence = Material.MaterialPresence.Exist;
                 if (wafer.SlotIndex < 0) wafer.SlotIndex = nIndex; // 유실 대비 보정
-                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                //wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                wafer.ProcessSatate = Material.MaterialProcessSatate.Ready;
 
                 // 경로가 없으면 즉시 생성
                 if (wafer.Dies == null || wafer.Dies.Count == 0)

@@ -32,6 +32,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             eBinProtrusionDetected = 5001,
             eFeederYSafetyPosition = 5002,
+            eCassetteChangeRequired = 5003,
         }
 
         #region InitAlarm
@@ -54,6 +55,13 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
 
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eCassetteChangeRequired;
+            alarm.Title = "Cassette 교체 필요";
+            alarm.Cause = "Cassette에 남은 Wafer가 없습니다. Cassette를 교체 하십시요.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
 
             //AlarmRegister((int)AlarmKeys.eBinProtrusionDetected,
             //                "Bin Protrusion Detected",
@@ -792,6 +800,47 @@ namespace QMC.LCP_280.Process.Unit
                 MoveToSlot(slotIndex);
                 return 0;
             });
+        }
+
+        private bool _cassetteAllCompletedAlarmRaised = false;
+        // 모든 존재(Exist) 슬롯이 Completed 인지 검사 (적어도 1개 이상의 Exist 슬롯이 있었을 때만 true)
+        public bool IsCassetteAllCompleted()
+        {
+            var material = GetMaterialCassette();
+            if (material == null || material.Slots == null || material.Slots.Count == 0)
+                return false;
+
+            bool sawAnyExist = false;
+            for (int i = 0; i < material.Slots.Count; i++)
+            {
+                var w = material.Slots[i];
+                if (w != null && w.Presence == Material.MaterialPresence.Exist)
+                {
+                    sawAnyExist = true;
+                    if (w.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                        return false;
+                }
+            }
+            return sawAnyExist;
+        }
+        // 한 번만 알람 발생. 새 카세트/재스캔 시 리셋.
+        public int CheckCassetteCompletedAndAlarmOnce()
+        {
+            // 카세트가 없으면 플래그 리셋
+            if (IsCassettePresentAll() == false)
+            {
+                _cassetteAllCompletedAlarmRaised = false;
+                return 0;
+            }
+            bool bCheck = IsCassetteAllCompleted();
+            if (_cassetteAllCompletedAlarmRaised == false && bCheck)
+            {
+                PostAlarm((int)AlarmKeys.eCassetteChangeRequired);
+                _cassetteAllCompletedAlarmRaised = true;
+                return 1;
+            }
+
+            return 0;
         }
         #endregion
     }

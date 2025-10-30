@@ -704,6 +704,11 @@ namespace QMC.LCP_280.Process.Unit
 
         public int MoveToStageLoadPosition(bool isFine = false)
         {
+            if(IsPositionBinLoading())
+            {
+                return 0;
+            }
+
             Task<int> task = MoveToStageLoadPositionAsync();
             while (IsEndTask(task) == false)
             {
@@ -1204,6 +1209,10 @@ namespace QMC.LCP_280.Process.Unit
 
                 BinLoadingDone = true;
                 BinLoadingReady = false;
+
+                var Bin = GetMaterialWafer();
+                Bin.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                SetMaterial(Bin);
                 Log.Write(UnitName, "LoadingComp", "Done");
 
                 return ret;

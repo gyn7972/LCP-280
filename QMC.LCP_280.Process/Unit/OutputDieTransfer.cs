@@ -1527,11 +1527,13 @@ namespace QMC.LCP_280.Process.Unit
             {   
                 return 0;
             }
-
-            if(wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
-            {
-                wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
-            }
+            
+            //여기에서 이걸 하면 안되는거 같은디.
+            //binstage에서 로딩완료하고 웨이퍼 상태 변경
+            //if(wafer.ProcessSatate == Material.MaterialProcessSatate.Ready)
+            //{
+            //    wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+            //}
 
             if(wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
             {
@@ -1553,14 +1555,6 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     return 0;
                 }
-
-                // 1) 암에 이미 다이가 있으면, 즉시 Place 단계로 전환
-                //var dieOnArm = GetMaterial() as MaterialDie;
-                //if (dieOnArm != null && dieOnArm.Presence == Material.MaterialPresence.Exist)
-                //{
-                //    State = ProcessState.Complete;
-                //    return 0;
-                //}
 
                 MaterialDie die = Rotary.GetUnloadSocketMaterial();
                 if (die == null || die.Presence != Material.MaterialPresence.Exist)
@@ -1657,7 +1651,7 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
 
-            if(IsStageReadyForPlace() == false || OutputStage.CanPlaceDie() == false)
+            if(IsBinStageReadyForPlace() == false || OutputStage.CanPlaceDie() == false)
             {
                 return 0;
             }
@@ -1732,14 +1726,17 @@ namespace QMC.LCP_280.Process.Unit
         #endregion
 
         #region Seq 단위 동작 함수
-        private bool IsStageReadyForPlace()
+        private bool IsBinStageReadyForPlace()
         {
             try
             {
-                if (OutputStage == null) return false;
+                if (OutputStage == null)
+                    return false;
                 // 스테이지 로딩 최종 완료 + Plate Down + Center 위치
-                if (!OutputStage.BinLoadingDone) return false;
-                if (!OutputStage.IsPlateDown()) return false;
+                if (OutputStage.BinLoadingDone == false) 
+                    return false;
+                if (OutputStage.IsPlateDown() == false)
+                    return false;
                 //if (!OutputStage.IsPositionBinCenter()) return false;
                 return true;
             }

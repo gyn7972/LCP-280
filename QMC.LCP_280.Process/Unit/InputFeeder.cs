@@ -1050,7 +1050,8 @@ namespace QMC.LCP_280.Process.Unit
 
                                 this.MoveMaterial(waferOnFeeder, InputStage);
                                 // 가공 상태 유지/설정
-                                waferOnFeeder.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                                //waferOnFeeder.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                                waferOnFeeder.ProcessSatate = Material.MaterialProcessSatate.Ready;
                                 InputStage.SetMaterial(waferOnFeeder);
 
                                 // Feeder의 material 비우기
