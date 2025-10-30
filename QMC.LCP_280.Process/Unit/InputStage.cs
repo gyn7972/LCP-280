@@ -72,7 +72,7 @@ namespace QMC.LCP_280.Process.Unit
             base.InitAlarm();
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eDieTransferPickZNotSafety;
-            alarm.Title = "Die Tr Z-Axis Not Sfarety Pos.";
+            alarm.Title = "Die Tr Z-Axis Not safety Pos.";
             alarm.Cause = "Die TrZAxis이 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -80,7 +80,7 @@ namespace QMC.LCP_280.Process.Unit
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputFeederCylinderZNotSafety;
-            alarm.Title = "Feeder Z-Cylinder Not Sfarety Pos.";
+            alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
             alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -89,7 +89,7 @@ namespace QMC.LCP_280.Process.Unit
             //,
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputStageEjectorPinZNotSafety;
-            alarm.Title = "EjectorPin Z-Axis Not Sfarety Pos.";
+            alarm.Title = "EjectorPin Z-Axis Not safety Pos.";
             alarm.Cause = "EjectorPin Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -97,7 +97,7 @@ namespace QMC.LCP_280.Process.Unit
             //,
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputStageEjectorZNotSafety;
-            alarm.Title = "Ejector Z-Axis Not Sfarety Pos.";
+            alarm.Title = "Ejector Z-Axis Not safety Pos.";
             alarm.Cause = "Ejector Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -106,7 +106,7 @@ namespace QMC.LCP_280.Process.Unit
             //
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eInputFeederYNotSafe;
-            alarm.Title = "Feeder Y-Axis Not Sfarety Pos.";
+            alarm.Title = "Feeder Y-Axis Not safety Pos.";
             alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -1155,6 +1155,9 @@ namespace QMC.LCP_280.Process.Unit
             this.RunUnitStatus = UnitStatus.Stopped;
             this.State = ProcessState.Stop;
 
+            // 맵 상태 리셋 -> 여기서 리셋하면 안되지...
+            //ResetChipMappingState();
+
             base.OnStop();
             return ret;
         }
@@ -1239,6 +1242,9 @@ namespace QMC.LCP_280.Process.Unit
                 Log.Write(UnitName, "ChipMap", "Wafer (Ring) not present");
                 return -1;
             }
+
+            // 맵 시작 직전 리셋(이미 false로 세팅하고 있으나, 공통화)
+            ResetChipMappingState();
             MakeScanPath(out List<PointD> path);
             List<PointD> chips = new List<PointD>();
             Task<int> tImageProcess = null;
@@ -1319,6 +1325,10 @@ namespace QMC.LCP_280.Process.Unit
             UpdateChipInfo(chips);
             MaterialWafer wafer = GetMaterialWafer();
             wafer.ProcessSatate = Material.MaterialProcessSatate.Processing;
+
+            // 여기가 '맵핑 완료' 시점: 반드시 true 설정
+            ChipMappingDone = true;
+
             return nRet;
         }
         public int MoveStageToNextDie(bool bFine = false)
@@ -1347,7 +1357,9 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = true;
             if (Config.IsSimulation || Config.IsDryRun)
             {
-                return true;
+                // 시뮬레이션: 실제 보유 머티리얼로 판단
+                return this.GetMaterial() is MaterialWafer;
+                //return true;
             }
             else if (!Ring0() || !Ring1())
             {
@@ -1382,9 +1394,13 @@ namespace QMC.LCP_280.Process.Unit
             int nRtn = 0;
 
             Log.Write(this, "Start LoadingWaferPrepare");
-            
+
+            // 새 웨이퍼 준비 진입 → 맵 상태 리셋
+            ResetChipMappingState();
+
             // 이미 웨이퍼 존재하면 준비 단계 불필요 (바로 완료 단계 가능)
-            if(!Config.IsSimulation && !Config.IsDryRun)    
+            if (Config.IsSimulation == false 
+                && Config.IsDryRun == false)    
             {
                 if (IsRingPresent())
                 {
@@ -1401,43 +1417,34 @@ namespace QMC.LCP_280.Process.Unit
             nRtn = MoveToStageLoadPosition();
             if (nRtn != 0)
             {
-                Log.Write(this, "Fail: Move Load");
+                Log.Write(UnitName, "LoadingWaferPrepare", "Fail: MoveToStageLoadPosition");
                 return nRtn;
             }
-            //if (this.IsStop) { return 0; }
+            nRtn = ClampBackward();
+            if (nRtn != 0)
+            {
+                Log.Write(UnitName, "LoadingWaferPrepare", "Fail: ClampBackward");
+                return nRtn;
+            }
 
-            // Clamp Back → Lift Down
-            ClampBackward();
-            //SetClampFB(false);
-            //if (!IsClampBwd())
-            //{
-            //    Log.Write(this, "Fail: ClampBack");
-            //    return -1;
-            //}
-            //if (this.IsStop) { return 0; }
+            nRtn = ClampLiftDown();
+            if (nRtn != 0)
+            {
+                Log.Write(UnitName, "LoadingWaferPrepare", "Fail: ClampLiftDown");
+                return nRtn;
+            }
 
-            ClampLiftDown();
-            //SetClampLift(false);
-            //if (!IsClampLiftDown())
-            //{
-            //    Log.Write(this, "Fail: ClampLiftDown");
-            //    return -1;
-            //}
-            //if (this.IsStop) { return 0; }
+            nRtn = PlateDown();
+            if (nRtn != 0)
+            {
+                Log.Write(UnitName, "LoadingWaferPrepare", "Fail: PlateDown");
+                return nRtn;
+            }
 
-            //Plate Down → 
-            PlateDown();
-            //SetClampPlate(false);
-            //if (!IsPlateDown())
-            //{
-            //    Log.Write(this, "Fail: PlateUp");
-            //    return -1;
-            //}
-
-            Log.Write(UnitName, "LoadingPrep", "StageLoadingReady = TRUE (Wait wafer)");
-            Log.Write(UnitName, "End LoadingWaferPrepare");
+            Log.Write(UnitName, "LoadingWaferPrepare", "End LoadingWaferPrepare");
             return 0;
         }
+
         public int MoveToStageLoadPosition(bool isFine = false)
         {
             int nRet = 0;
@@ -1542,7 +1549,7 @@ namespace QMC.LCP_280.Process.Unit
             int ret = 0;
 
             // 준비 안 되었으면 호출 순서 오류
-            if (!IsRingPresent())
+            if (IsRingPresent() == false)
             {
                 Log.Write(UnitName, "LoadingComp", "Not prepared (call LoadingWaferPrepare first)");
                 return -1;
@@ -1793,7 +1800,10 @@ namespace QMC.LCP_280.Process.Unit
             IsStatus_LastAppliedTAngle = 0;
             _lastCenterAlignTp = null;
 
-            if(this.Config.IsSimulation || this.Config.IsDryRun)
+            // 얼라인 시작 → 이전 맵은 무효. 반드시 리셋
+            ResetChipMappingState();
+
+            if (this.Config.IsSimulation || this.Config.IsDryRun)
             {
                 MaterialWafer wafer = GetMaterialWafer();
                 if (wafer is null)
@@ -2160,7 +2170,10 @@ namespace QMC.LCP_280.Process.Unit
         {
             int nRtn = 0;
             Log.Write(UnitName, "UnloadingPrep", "Start");
-            
+
+            // 언로딩 준비 진입 → 맵 상태 리셋
+            ResetChipMappingState();
+
             if (!IsRingPresent())
             {
                 Log.Write(UnitName, "UnloadingPrep", "No wafer -> Skip");
@@ -2172,37 +2185,29 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return -1;
             }
-            //if (this.IsStop) { return 0; }
 
             ClampBackward();
-            //SetClampFB(false);
-            //if (!IsClampBwd())
-            //{
-            //    Log.Write(this, "Fail: ClampBack");
-            //    return -1;
-            //}
-            //if (this.IsStop) { return 0; }
+            if (nRtn != 0)
+            {
+                return -1;
+            }
 
             ClampLiftDown();
-            //SetClampLift(false);
-            //if (!IsClampLiftDown())
-            //{
-            //    Log.Write(this, "Fail: ClampLiftDown");
-            //    return -1;
-            //}
-            //if (this.IsStop) { return 0; }
+            if (nRtn != 0)
+            {
+                return -1;
+            }
 
             PlateDown();
-            //SetClampPlate(false);
-            //if (!IsPlateDown())
-            //{
-            //    Log.Write(this, "Fail: PlateUp");
-            //    return -1;
-            //}
+            if (nRtn != 0)
+            {
+                return -1;
+            }
 
             Log.Write(UnitName, "UnloadingPrep", "StageUnloadingReady = TRUE (Wait wafer pick)");
             return 0;
         }
+
         public int MoveToStageUnloadPosition(bool isFine = false)
         {
             int nRet = 0;
@@ -2354,9 +2359,14 @@ namespace QMC.LCP_280.Process.Unit
 
         public ChipMapResult CurrentChipMap { get; private set; }
         public bool ChipMappingDone { get; private set; }
-        
-
         private int _chipPickupCursor = 0;
+        private void ResetChipMappingState()
+        {
+            // 맵핑 상태/커서/결과 초기화
+            ChipMappingDone = false;
+            _chipPickupCursor = 0;
+            CurrentChipMap = null;
+        }
 
         public class ChipMapEntry
         {
@@ -2496,9 +2506,10 @@ namespace QMC.LCP_280.Process.Unit
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 bRet = false;
+                Log.Write(ex);
             }
             return bRet;
         }
@@ -2530,7 +2541,23 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 var wafer = GetMaterialWafer();
-                if (wafer == null) return false;
+                if (wafer == null) 
+                    return false;
+
+                // 맵핑이 아직 안 됐으면 다음 다이 없음으로 취급 (안전 가드)
+                if (ChipMappingDone == false)
+                    return false;
+
+                bool bRingPresent = false;
+                if(Config.IsSimulation 
+                    || Config.IsDryRun )
+                {
+                    bRingPresent = false;
+                }
+                else
+                {
+                    bRingPresent = IsRingPresent();
+                }
 
                 lock (wafer)
                 {
@@ -2547,7 +2574,9 @@ namespace QMC.LCP_280.Process.Unit
                         .OrderBy(d => d.Index)
                         .FirstOrDefault();
 
-                    if (next == null)
+                    if (next == null
+                        && wafer.Presence == Material.MaterialPresence.Exist
+                        && wafer.ProcessSatate == Material.MaterialProcessSatate.Processing)
                     {
                         wafer.ProcessSatate = Material.MaterialProcessSatate.Completed;
                         return false;
@@ -2658,8 +2687,6 @@ namespace QMC.LCP_280.Process.Unit
             }
         }
 
-
-
         // === Cylinder 고레벨 제어(완료 대기 포함) ===
         public int PlateUp()
         {
@@ -2728,7 +2755,9 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             int r = WaitClampFBStateOrAlarm(expectFwd: false);
-            if (r != 0) Log.Write(this, "ClampBackward Failed");
+            if (r != 0) 
+                Log.Write(this, "ClampBackward Failed");
+
             return r;
         }
 

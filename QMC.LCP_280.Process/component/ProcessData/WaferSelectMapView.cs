@@ -327,6 +327,9 @@ namespace QMC.LCP_280.Process.Component
                 wafer.ProcessSatate = MaterialProcessSatate.Unknown;
             }
 
+            //inputcassette랑 연결해서 Data 초기화 해야함.
+
+
             NotifyCassetteChanged();
         }
         #endregion

@@ -32,7 +32,8 @@ namespace QMC.LCP_280.Process.Unit
         {
             eWaferProtrusionDetected = 1001,
             eFeederYSafetyPosition,
-            eCassetteNotDetected
+            eCassetteNotDetected,
+            eCassetteChangeRequired
         }
 
         #region InitAlarm
@@ -63,6 +64,14 @@ namespace QMC.LCP_280.Process.Unit
             alarm.Cause = "eCassetteNotDetected 확인바랍니다. eCassetteNotDetected 점검 하고 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
+            m_dicAlarms.Add(alarm.Code, alarm);
+
+            alarm = new AlarmInfo();
+            alarm.Code = (int)AlarmKeys.eCassetteChangeRequired;
+            alarm.Title = "Cassette 교체 필요";
+            alarm.Cause = "Cassette 내 모든 웨이퍼 처리가 완료되었습니다. Cassette를 교체해 주십시오.";
+            alarm.Source = this.UnitName;
+            alarm.Grade = AlarmInfo.AlarmType.Warning.ToString();
             m_dicAlarms.Add(alarm.Code, alarm);
         }
         #endregion
@@ -372,6 +381,7 @@ namespace QMC.LCP_280.Process.Unit
             {
                 cd.Presence = Material.MaterialPresence.NotExist;
                 cd.ProcessSatate = Material.MaterialProcessSatate.Unknown;
+                _cassetteAllCompletedAlarmRaised = false; // ← Cassette 제거 시 리셋
             }
             return cd;
         }
@@ -499,6 +509,50 @@ namespace QMC.LCP_280.Process.Unit
             return bRet;
         }
 
+
+        private bool _cassetteAllCompletedAlarmRaised = false;
+        // 모든 존재(Exist) 슬롯이 Completed 인지 검사 (적어도 1개 이상의 Exist 슬롯이 있었을 때만 true)
+        public bool IsCassetteAllCompleted()
+        {
+            var material = GetMaterialCassette();
+            if (material == null || material.Slots == null || material.Slots.Count == 0)
+                return false;
+
+            bool sawAnyExist = false;
+            for (int i = 0; i < material.Slots.Count; i++)
+            {
+                var w = material.Slots[i];
+                if (w != null && w.Presence == Material.MaterialPresence.Exist)
+                {
+                    sawAnyExist = true;
+                    if (w.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                        return false;
+                }
+            }
+            return sawAnyExist;
+        }
+
+        // 한 번만 알람 발생. 새 카세트/재스캔 시 리셋.
+        public int CheckCassetteCompletedAndAlarmOnce()
+        {
+            // 카세트가 없으면 플래그 리셋
+            if (IsCassettePresentAll() == false)
+            {
+                _cassetteAllCompletedAlarmRaised = false;
+                return 0;
+            }
+            bool bCheck = IsCassetteAllCompleted();
+            if (_cassetteAllCompletedAlarmRaised == false && bCheck)
+            {
+                PostAlarm((int)AlarmKeys.eCassetteChangeRequired);
+                _cassetteAllCompletedAlarmRaised = true;
+                return 1;
+            }
+
+            return 0;
+        }
+
+
         #region Lifecycle
         public override int OnRun()
         {
@@ -550,8 +604,13 @@ namespace QMC.LCP_280.Process.Unit
             {
                 if (material.ProcessSatate == Material.MaterialProcessSatate.Ready)
                 {
+                    
+                        
                     foreach(var v in material.Slots)
                     {
+                        if (v == null)
+                            continue;
+
                         if (v.Presence == Material.MaterialPresence.Exist)
                         {
                             bRet = true;
@@ -572,6 +631,9 @@ namespace QMC.LCP_280.Process.Unit
                 {
                     foreach (var v in material.Slots)
                     {
+                        if (v == null)
+                            continue;
+
                         if (v.Presence == Material.MaterialPresence.Exist)
                         {
                             if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
@@ -601,8 +663,10 @@ namespace QMC.LCP_280.Process.Unit
             {
                 this.CurrentFunc = ScanWafer;
             }
-
             Log.Write(this, "Start ScanWafer");
+
+            // 새 스캔 시 알람 1회 플래그 리셋
+            _cassetteAllCompletedAlarmRaised = false;
 
             if (Config.IsSimulation || Config.IsDryRun)
             {
@@ -747,16 +811,23 @@ namespace QMC.LCP_280.Process.Unit
             if (RunMode == UnitRunMode.Manual)
             {
                 this.CurrentFunc = MoveToNextSlot;
-
             }
 
             try
             {
                 MaterialCassette material = GetMaterialCassette();
+                if (material == null || material.Slots == null) return -1;
+
                 if (material != null)
                 {
-                    foreach (var v in GetMaterialCassette().Slots)
+                    //foreach (var v in GetMaterialCassette().Slots)
+                    foreach (var v in material.Slots)
                     {
+                        if (v == null)
+                        {
+                            continue;
+                        }
+
                         if (v.Presence == Material.MaterialPresence.NotExist 
                          || v.Presence == Material.MaterialPresence.Unknown)
                         {
@@ -765,6 +836,19 @@ namespace QMC.LCP_280.Process.Unit
 
                         if (v.ProcessSatate == MaterialWafer.MaterialProcessSatate.Ready)
                         {
+                            // 선택 슬롯은 반드시 객체가 존재해야 함
+                            if (material.GetWafer(v.SlotIndex) == null)
+                            {
+                                var w = new MaterialWafer
+                                {
+                                    SlotIndex = v.SlotIndex,
+                                    CarrierId = material.CarrierId,
+                                    Presence = Material.MaterialPresence.Exist,
+                                    ProcessSatate = Material.MaterialProcessSatate.Ready
+                                };
+                                material.SetWafer(v.SlotIndex, w);
+                            }
+
                             nRtn = MoveToSlot(v.SlotIndex, bFineSpeed);
                             {
                                 if (nRtn != 0)

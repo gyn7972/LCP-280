@@ -62,7 +62,7 @@ namespace QMC.LCP_280.Process.Unit
             base.InitAlarm();
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eDieTransferPlaceZNotSafety;
-            alarm.Title = "Die TrZAxis Not Sfarety Pos.";
+            alarm.Title = "Die TrZAxis Not safety Pos.";
             alarm.Cause = "Die Transfer Z-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -70,7 +70,7 @@ namespace QMC.LCP_280.Process.Unit
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputFeederCylinderZNotSafety;
-            alarm.Title = "Feeder Z-Cylinder Not Sfarety Pos.";
+            alarm.Title = "Feeder Z-Cylinder Not safety Pos.";
             alarm.Cause = "Feeder Z-Cylinder가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -79,7 +79,7 @@ namespace QMC.LCP_280.Process.Unit
             //
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eOutputFeederYNotSafe;
-            alarm.Title = "Feeder Y-Axis Not Sfarety Pos.";
+            alarm.Title = "Feeder Y-Axis Not safety Pos.";
             alarm.Cause = "Feeder Y-Axis가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -901,60 +901,125 @@ namespace QMC.LCP_280.Process.Unit
             try
             {
                 var wafer = GetMaterialWafer();
-                if (wafer == null)
+                if (Config.IsSimulation == false
+                    && Config.IsDryRun == false)
                 {
-                    if(Config.IsSimulation)
+                    if (IsRingPresent() == true)
                     {
-                        return false;
+                        if (wafer == null)
+                        {
+                            //알람 발생 해야함.
+                            // 제품이 있는데 wafer 정보가 없으면 이상
+                            //이건 다른곳에서 확인해야 하나? 이 함수에서는,,
+                            Log.Write(UnitName, "IsWorkCompleted", "Wafer present but wafer info is null");
+                            return false;
+                        }
                     }
                     else
                     {
-                        if (IsRingPresent() == false)
+                        if (wafer == null)
                         {
                             return false;
                         }
-                        else
+                    }
+                }
+                else
+                {
+                    if (wafer == null)
+                    {
+                        return false;
+                    }
+                }
+
+                if (Config.IsSimulation == false
+                   && Config.IsDryRun == false)
+                {
+                    if (IsRingPresent() == false)
+                    {
+                        return false;
+                    }
+                    else //제품이 있고 wafer상태가 Completed 가 아니면 작업중으로 간주
+                    {
+                        if (wafer.Presence == Material.MaterialPresence.Exist)
                         {
-                            // 새 Wafer를 만들되, SlotIndex를 유추해 -1 발생을 줄임
-                            int slotId = OutputCassetteLifter?.GetCurrectSlotID() ?? -1;
-                            var placeholder = new MaterialWafer()
+                            if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
                             {
-                                Presence = Material.MaterialPresence.Exist,
-                                ProcessSatate = Material.MaterialProcessSatate.Processing,
-                                SlotIndex = slotId
-                            };
-                            this.SetMaterial(placeholder);
-                            this.UpdateUI();
-                            //기존 코드
-                            {
-                                //OutputFeeder.MakePath();
-                                //OutputFeeder.MoveMaterial(new MaterialWafer(), this);
-                                //var waferOutputStage = this.GetMaterialWafer();
-                                //if(waferOutputStage == null)
-                                //{
-                                //    return false;
-                                //}
-                                ////waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
-                                //waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Processing;
-                                //this.SetMaterial(waferOutputStage);
-                                //this.UpdateUI();
+                                bRet = true;
                             }
                         }
                     }
                 }
-
-                wafer = GetMaterialWafer();
-                if (wafer != null && wafer.Presence == Material.MaterialPresence.Exist)
+                else
                 {
-                    if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                    if (wafer.Presence == Material.MaterialPresence.Exist)
                     {
-                        bRet = true;
+                        if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                        {
+                            // 작업 중임.
+                            bRet = true;
+                        }
                     }
                 }
+
+                //기존코드
+                {
+                    //if (wafer == null)
+                    //{
+                    //    if(Config.IsSimulation)
+                    //    {
+                    //        return false;
+                    //    }
+                    //    else
+                    //    {
+                    //        if (IsRingPresent() == false)
+                    //        {
+                    //            return false;
+                    //        }
+                    //        else
+                    //        {
+                    //            // 새 Wafer를 만들되, SlotIndex를 유추해 -1 발생을 줄임
+                    //            int slotId = OutputCassetteLifter?.GetCurrectSlotID() ?? -1;
+                    //            var placeholder = new MaterialWafer()
+                    //            {
+                    //                Presence = Material.MaterialPresence.Exist,
+                    //                ProcessSatate = Material.MaterialProcessSatate.Processing,
+                    //                SlotIndex = slotId
+                    //            };
+                    //            this.SetMaterial(placeholder);
+                    //            this.UpdateUI();
+                    //            //기존 코드
+                    //            {
+                    //                //OutputFeeder.MakePath();
+                    //                //OutputFeeder.MoveMaterial(new MaterialWafer(), this);
+                    //                //var waferOutputStage = this.GetMaterialWafer();
+                    //                //if(waferOutputStage == null)
+                    //                //{
+                    //                //    return false;
+                    //                //}
+                    //                ////waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Ready;
+                    //                //waferOutputStage.ProcessSatate = Material.MaterialProcessSatate.Processing;
+                    //                //this.SetMaterial(waferOutputStage);
+                    //                //this.UpdateUI();
+                    //            }
+                    //        }
+                    //    }
+                    //}
+
+                    //wafer = GetMaterialWafer();
+                    //if (wafer != null && wafer.Presence == Material.MaterialPresence.Exist)
+                    //{
+                    //    if (wafer.ProcessSatate != Material.MaterialProcessSatate.Completed)
+                    //    {
+                    //        bRet = true;
+                    //    }
+                    //}
+                }
+
             }
-            catch
+            catch (Exception ex)
             {
                 bRet = false;
+                Log.Write(ex);
             }
             return bRet;
         }
@@ -1221,7 +1286,9 @@ namespace QMC.LCP_280.Process.Unit
             bool bRtn = true;
             if (Config.IsSimulation || Config.IsDryRun)
             {
-                return true;
+                // 시뮬레이션: 실제 보유 머티리얼로 판단
+                return this.GetMaterial() is MaterialWafer;
+                //return true;
             }
             else if (!Ring0() || !Ring1())
             {
@@ -1318,7 +1385,7 @@ namespace QMC.LCP_280.Process.Unit
                             wafer.Dies[index] = die;
                         }
                     }
-                    _currentDie = null;
+                    _currentDie = die;
                 }
             }
             

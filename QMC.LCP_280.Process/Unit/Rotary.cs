@@ -49,7 +49,7 @@ namespace QMC.LCP_280.Process.Unit
             base.InitAlarm();
             AlarmInfo alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.eRotaryNotSafe;
-            alarm.Title = "Rorary Not Sfarety Pos.";
+            alarm.Title = "Rorary Not safety Pos.";
             alarm.Cause = "Rorary가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -57,7 +57,7 @@ namespace QMC.LCP_280.Process.Unit
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.InputDieTransferPlaceZError;
-            alarm.Title = "InputDieTraansferPlaceZ Not Sfarety Pos.";
+            alarm.Title = "InputDieTraansferPlaceZ Not safety Pos.";
             alarm.Cause = "InputDieTraansferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -65,7 +65,7 @@ namespace QMC.LCP_280.Process.Unit
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.IndexLoadAlignerZError;
-            alarm.Title = "IndexLoadAlignerZ Not Sfarety Pos.";
+            alarm.Title = "IndexLoadAlignerZ Not safety Pos.";
             alarm.Cause = "IndexLoadAlignerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -73,7 +73,7 @@ namespace QMC.LCP_280.Process.Unit
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.IndexChipProbeControllerZError;
-            alarm.Title = "IndexChipProbeControllerZ Not Sfarety Pos.";
+            alarm.Title = "IndexChipProbeControllerZ Not safety Pos.";
             alarm.Cause = "IndexChipProbeControllerZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -81,7 +81,7 @@ namespace QMC.LCP_280.Process.Unit
 
             alarm = new AlarmInfo();
             alarm.Code = (int)AlarmKeys.OutputDieTransferPickZError;
-            alarm.Title = "OutputDieTransferPlaceZ Not Sfarety Pos.";
+            alarm.Title = "OutputDieTransferPlaceZ Not safety Pos.";
             alarm.Cause = "OutputDieTransferPlaceZ가 안전 위치가 아닙니다. 포지션 확인 후 다시 시작 하십시요.";
             alarm.Source = this.UnitName;
             alarm.Grade = AlarmInfo.AlarmType.Error.ToString();
@@ -324,6 +324,24 @@ namespace QMC.LCP_280.Process.Unit
         {
             return 8;
         }
+
+        private MaterialDie EnsureSocketDie(SocketInfo s)
+        {
+            if (s == null) return null;
+            var d = s.GetMaterialDie();
+            if (d == null)
+            {
+                d = new MaterialDie
+                {
+                    Presence = Material.MaterialPresence.Unknown,
+                    ProcessSatate = Material.MaterialProcessSatate.Unknown
+                };
+                s.SetMaterialDie(d);
+            }
+            return d;
+        }
+
+
         #endregion
 
         #region Socket Public Accessors
@@ -370,14 +388,23 @@ namespace QMC.LCP_280.Process.Unit
             int idx = GetLoadIndexNo();
             lock (_socketLock)
             {
-                var die = _sockets[idx].GetMaterialDie();
-                if (die == null)
-                {
-                    _sockets[idx].SetMaterialDie(new MaterialDie());
-                }
-
-                return _sockets[idx];
+                var s = _sockets[idx];
+                EnsureSocketDie(s); // ← 플레이스홀더 보장
+                return s;
             }
+
+            //자동 생성 제거 + 빈 소켓 판단 헬퍼 추가
+            //int idx = GetLoadIndexNo();
+            //lock (_socketLock)
+            //{
+            //    var die = _sockets[idx].GetMaterialDie();
+            //    if (die == null)
+            //    {
+            //        _sockets[idx].SetMaterialDie(new MaterialDie());
+            //    }
+
+            //    return _sockets[idx];
+            //}
         }
         public MaterialDie GetMAlignSocketMaterial()
         {
@@ -428,7 +455,20 @@ namespace QMC.LCP_280.Process.Unit
             var socket = GetUnloadSocketInfo();
             var die = socket.GetMaterialDie();
             OutputDieTransfer.SetMaterial(die);
+
             socket.SetMaterialDie(null);
+            // null 대입 대신 새 플레이스홀더로 교체 (기존 로직과 시퀀스 가정 유지)
+            //socket.SetMaterialDie(new MaterialDie
+            //{
+            //    Presence = Material.MaterialPresence.Unknown,
+            //    ProcessSatate = Material.MaterialProcessSatate.Unknown
+            //});
+
+            //기존코드
+            //var socket = GetUnloadSocketInfo();
+            //var die = socket.GetMaterialDie();
+            //OutputDieTransfer.SetMaterial(die);
+            //socket.SetMaterialDie(null);
         }
         private SocketInfo GetUnloadSocketInfo()
         {
@@ -451,17 +491,35 @@ namespace QMC.LCP_280.Process.Unit
             int idx = GetTrashCanIndexNo();
             lock (_socketLock)
             {
-                var die = _sockets[idx].GetMaterialDie();
-                if (die == null)
-                {
-                    _sockets[idx].SetMaterialDie(new MaterialDie());
-                }
-
-                return _sockets[idx];
+                var s = _sockets[idx];
+                EnsureSocketDie(s); // ← 플레이스홀더 보장
+                return s;
             }
+            //자동 생성 제거 + 빈 소켓 판단 헬퍼 추가
+            //int idx = GetTrashCanIndexNo();
+            //lock (_socketLock)
+            //{
+            //    var die = _sockets[idx].GetMaterialDie();
+            //    if (die == null)
+            //    {
+            //        _sockets[idx].SetMaterialDie(new MaterialDie());
+            //    }
+
+            //    return _sockets[idx];
+            //}
         }
 
-        
+        // 빈 소켓 판단(중앙화)
+        public bool IsLoadSocketEmpty()
+        {
+            var s = GetLoadSocketInfo();
+            var d = s?.GetMaterialDie();
+            return d == null
+                || d.Presence == Material.MaterialPresence.NotExist
+                || d.Presence == Material.MaterialPresence.Unknown;
+        }
+
+
         public Rotary(RotaryConfig config = null) : base(new RotaryConfig())
         {
 
@@ -1213,24 +1271,6 @@ namespace QMC.LCP_280.Process.Unit
             }
             return bRet;
         }
-        // 모든 사용 소켓이 비어있는지 검사 (사용 설정된 소켓만 대상)
-        private bool IsAllUsedSocketsEmpty()
-        {
-            if (_sockets == null) return true;
-            lock (_socketLock)
-            {
-                foreach (var s in _sockets)
-                {
-                    if (!s.UseSocket) continue;
-                    var die = s.GetMaterialDie();
-                    if (die != null && die.Presence == Material.MaterialPresence.Exist)
-                        return false; // 하나라도 존재
-                }
-                return true;
-            }
-        }
-
-
         #endregion
 
 
@@ -1388,16 +1428,27 @@ namespace QMC.LCP_280.Process.Unit
             {
                 return 0;
             }
+
             nRet = ExecuteUnitAction();
             if (nRet != 0)
             {
+                // ODT Start 신호가 남지 않도록 방어적 리셋(실패 시에도)
+                try 
+                { 
+                    OutputDieTransfer?.ReSetPickupStartEvent(); 
+                } 
+                catch (Exception ex)
+                {
+                    Log.Write(ex);
+                }
+
                 Log.Write(UnitName, "[ExecuteUnitAction] Failed");
                 return -1;
             }
 
             // 여기 블록(Load 투입 대기 + Unloader 배출 확인)이 확실히 완료된 다음에만 Rotate
             bool needLoadWait = (RequestInputDieTrDie == true) && useSocket;
-            nRet = WaitPostActionSettled(needLoadWait, 60000 * 1000);
+            nRet = WaitPostActionSettled(needLoadWait, 60000 * 10);
             if (nRet != 0)
             {
                 Log.Write(UnitName, "[WaitPostActionSettled] Failed");
@@ -1406,22 +1457,14 @@ namespace QMC.LCP_280.Process.Unit
             // 투입 완료되었으면 요청 플래그 내림
             RequestInputDieTrDie = false;
 
-            // 5) 회전 전 최종 안전 조건:
-            //    - 현재 Load 소켓이 사용중 && 아직도 비어있다면 회전 금지 (이중 방어)
-            //var finalLoadSock = GetLoadSocketInfo();
-            //var finalDie = finalLoadSock.GetMaterialDie();
-            //if (useSocket && (finalDie == null || finalDie.Presence != Material.MaterialPresence.Exist))
-            //{
-            //    // 예상치 못하게 아직 로딩 안됨 → 다시 로딩 시도
-            //    RequestInputDieTrDie = true;
-            //    return 0;
-            //}
             if(IsStop)
             {
                 return 0;
             }
+
             nRet = Rotate();
 
+            // 회전 직후 Start 신호 재설정(기존 동작 유지)
             OutputDieTransfer.ReSetPickupStartEvent();
             if (nRet != 0)
             {
@@ -1430,9 +1473,7 @@ namespace QMC.LCP_280.Process.Unit
                 return nRet;
             }
 
-            
             State = ProcessState.Complete;
-
             return nRet;
         }
         protected override int OnRunComplete() 
@@ -1585,12 +1626,13 @@ namespace QMC.LCP_280.Process.Unit
         }
         protected int OnExecuteUnitAction(bool isFine = false)
         {
+            // Start 신호 리셋을 보장하기 위한 플래그
+            bool pickupStartSet = false;
+
             try
             {
                 bool bRet = false;
 
-                // DryRun에서도 IndexLoadAligner / IndexChipProbeController / IndexUnloadAligner 는 실제 실행
-                // 단, InputDieTransfer / OutputDieTransfer 와의 인터페이스만 배제
                 var t1 = (IndexLoadAligner != null)
                     ? Task.Run(() =>
                     {
@@ -1603,9 +1645,11 @@ namespace QMC.LCP_280.Process.Unit
                         try
                         {
                             ret = IndexLoadAligner.RunAlignSocketOnce();
-                        }catch(Exception ex)
+                        }
+                        catch(Exception ex)
                         {
                             Log.Write(ex);
+                            return -1;
                         }
                         return ret;
                     })
@@ -1619,7 +1663,17 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             try { th.Name = "RunInspection(ProbeController)"; } catch { }
                         }
-                        return IndexChipProbeController.RunInspection();
+                        int ret = 0;
+                        try
+                        {
+                            ret = IndexChipProbeController.RunInspection();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Write(ex);
+                            return -1;
+                        }
+                        return ret;
                     })
                     : Task.FromResult(0);
 
@@ -1631,7 +1685,17 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             try { th.Name = "RunAlignSocketOnce(UnloadAligner)"; } catch { }
                         }
-                        return IndexUnloadAligner.RunAlignSocketOnce();
+                        int ret = 0;
+                        try
+                        {
+                            ret = IndexUnloadAligner.RunAlignSocketOnce();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Write(ex);
+                            return -1;
+                        }
+                        return ret;
                     })
                     : Task.FromResult(0);
 
@@ -1642,7 +1706,17 @@ namespace QMC.LCP_280.Process.Unit
                         {
                             try { th.Name = "RunTrashCanSocketOnce(Rotary)"; } catch { }
                         }
-                        return RunTrashCanSocketOnce();
+                        int ret = 0;
+                        try
+                        {
+                            ret = RunTrashCanSocketOnce();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Write(ex);
+                            return -1;
+                        }
+                        return ret;
                     });
 
 
@@ -1707,9 +1781,10 @@ namespace QMC.LCP_280.Process.Unit
                     {
                         unloadDie = GetUnloadSocketMaterial();
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         unloadDie = null;
+                        Log.Write(ex);
                     }
 
                     bool hasDie =
@@ -1725,7 +1800,8 @@ namespace QMC.LCP_280.Process.Unit
                             //OutputDieTransfer.ResetPickupHandshake();
 
                             this.OutputDieTransfer.SetPickupStartEvent();
-                            
+                            pickupStartSet = true;
+
                             var sw = System.Diagnostics.Stopwatch.StartNew();
                             double timeoutMs = 60000 * 10;
                             while (true)
@@ -1733,6 +1809,7 @@ namespace QMC.LCP_280.Process.Unit
                                 if(IsStop) 
                                 {
                                     this.OutputDieTransfer.ReSetPickupStartEvent();
+                                    pickupStartSet = false;
                                     return 0; 
                                 }
 
@@ -1753,7 +1830,7 @@ namespace QMC.LCP_280.Process.Unit
                         catch (Exception ex)
                         {
                             bRet = false;
-                            Log.Write(UnitName, $"[OutputDieTransfer] Handshake exception: {ex.Message}");
+                            Log.Write(ex);
                         }
 
                         if (!bRet)
@@ -1787,7 +1864,7 @@ namespace QMC.LCP_280.Process.Unit
                             }
                             catch (Exception ex)
                             {
-                                Log.Write(UnitName, $"[OutputDieTransfer] 소켓 상태 초기화 실패: {ex.Message}");
+                                Log.Write(ex);
                             }
                         }
                         else
@@ -1824,8 +1901,23 @@ namespace QMC.LCP_280.Process.Unit
             catch (Exception ex)
             {
                 AxisT.EmgStop();
-                Log.Write(UnitName, $"OnExecuteUnitAction Exception: {ex.Message}");
+                Log.Write(ex);
                 return -1;
+            }
+            finally
+            {
+                // 어떤 경로로 종료하더라도 Start 신호가 남지 않도록 보장
+                if (pickupStartSet)
+                {
+                    try 
+                    { 
+                        this.OutputDieTransfer.ReSetPickupStartEvent(); 
+                    } 
+                    catch (Exception ex)
+                    {
+                        Log.Write(ex);
+                    }
+                }
             }
         }
 
@@ -1835,7 +1927,7 @@ namespace QMC.LCP_280.Process.Unit
 
             int nIndexTrash = GetTrashCanIndexNo();
 
-            SetBlow(nIndexTrash, true);
+            this.SetBlow(nIndexTrash, true);
             if (SetTrashEjector(true) == false)
             {
                 Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector ON fail");
@@ -1850,14 +1942,12 @@ namespace QMC.LCP_280.Process.Unit
             }
             //일정 시간 대기
             WaitByTime(GetClearTimeMs()); // 기본: 500ms
-
             if (SetTrashVacuum(false) == false)
             {
                 Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashVacuum OFF fail");
                 SetTrashEjector(false);
                 return -1;
             }
-
             if (SetTrashEjector(false) == false)
             {
                 Log.Write(UnitName, "[RunTrashCanSocketOnce] TrashEjector OFF fail");
@@ -1865,12 +1955,13 @@ namespace QMC.LCP_280.Process.Unit
             }
 
             var Socket = GetTrashCanSocketInfo();
-            Socket.SetMaterialDie(new MaterialDie());
+            //Socket.SetMaterialDie(new MaterialDie());
+            Socket.SetMaterialDie(null);
 
             //일정 시간 대기
             WaitByTime(1);
+            this.SetBlow(nIndexTrash, false);
             Log.Write(UnitName, $"[RunTrashCanSocketOnce] Clear Comp.");
-            SetBlow(nIndexTrash, false);
             return nRet;
         }
 
@@ -1886,16 +1977,24 @@ namespace QMC.LCP_280.Process.Unit
                 if (needLoadWait)
                 {
                     var socket = GetLoadSocketInfo();
-                    var die = socket.GetMaterialDie();
-                    var loadDie = GetLoadSocketMaterial();
+                    var loadDie = socket?.GetMaterialDie();
                     loadOk = (loadDie != null && loadDie.Presence == Material.MaterialPresence.Exist);
-
-                    //loadDie.Presence = Material.MaterialPresence.Exist;
-                    //loadDie.ProcessSatate = Material.MaterialProcessSatate.Ready;
-                    socket.SetMaterialDie(loadDie);
-                    socket.SetState(RotarySocketState.Loaded);
-
+                    if (loadOk)
+                    {
+                        socket.SetState(RotarySocketState.Loaded);
+                    }
                 }
+
+                //if (needLoadWait)
+                //{
+                //    var socket = GetLoadSocketInfo();
+                //    var die = socket.GetMaterialDie();
+                //    var loadDie = GetLoadSocketMaterial();
+                //    loadOk = (loadDie != null && loadDie.Presence == Material.MaterialPresence.Exist);
+                //    socket.SetMaterialDie(loadDie);
+                //    socket.SetState(RotarySocketState.Loaded);
+                //}
+
                 if (loadOk)
                     break;
                 
@@ -2195,7 +2294,6 @@ namespace QMC.LCP_280.Process.Unit
         private int OnInitializeAfterHome(bool isFine = false)
         {
             int nRet = 0;
-
             try
             {
                 int socketCount = GetIndexCount();

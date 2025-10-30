@@ -1196,21 +1196,21 @@ namespace QMC.LCP_280.Process
 
         private void ExecuteAutoReset()
         {
-            InputCassetteLifter.SetMaterial(new Material());
-            InputFeeder.SetMaterial(new Material());
-            InputStage.SetMaterial(new Material());
+            InputCassetteLifter.SetMaterial(null);
+            InputFeeder.SetMaterial(null);
+            InputStage.SetMaterial(null);
 
             //이건 나중에 하고..
-            //InputDieTransfer.SetMaterial(new Material());
-            //Rotary.SetMaterial(new Material());
-            //IndexLoadAligner.SetMaterial(new Material());
-            //IndexChipProbeController.SetMaterial(new Material());
-            //IndexUnloadAligner.SetMaterial(new Material());
-            //OutputDieTransfer.SetMaterial(new Material());
+            InputDieTransfer.SetMaterial(null);
+            Rotary.SetMaterial(null);
+            IndexLoadAligner.SetMaterial(null);
+            IndexChipProbeController.SetMaterial(null);
+            IndexUnloadAligner.SetMaterial(null);
+            OutputDieTransfer.SetMaterial(null);
 
-            OutputStage.SetMaterial(new Material());
-            OutputFeeder.SetMaterial(new Material());
-            OutputCassetteLifter.SetMaterial(new Material());
+            OutputStage.SetMaterial(null);
+            OutputFeeder.SetMaterial(null);
+            OutputCassetteLifter.SetMaterial(null);
         }
         #endregion
 
